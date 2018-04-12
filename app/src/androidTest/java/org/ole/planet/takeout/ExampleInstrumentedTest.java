@@ -1,4 +1,4 @@
-package org.ole.planet.takeaway;
+package org.ole.planet.takeout;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
