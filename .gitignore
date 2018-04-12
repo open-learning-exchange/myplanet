@@ -1,3 +1,29 @@
+# Mac OS X clutter
+*.DS_Store
+.idea/gradle.xml
+.DS_Store
+.DS_Store
+# Windows clutter
+Thumbs.db
+
+# Intellij IDEA (see https://intellij-support.jetbrains.com/entries/23393067)
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/datasources.xml
+.idea/dataSources.ids
+.idea/*
+.idea/
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+
+#Gradle generated files
+.gradle/
+.gradle/*
+.idea/runConfigurations.xml
+# Signing files
+.signing/
+
 # Built application files
 *.apk
 *.ap_
@@ -26,6 +52,10 @@ proguard/
 # Log Files
 *.log
 
+#Raw files
+
+assets/
+
 # Android Studio Navigation editor temp files
 .navigation/
 
@@ -35,21 +65,7 @@ captures/
 # Intellij
 *.iml
 .idea/workspace.xml
-.idea/tasks.xml
-.idea/gradle.xml
-.idea/dictionaries
-.idea/libraries
 
 # Keystore files
 *.jks
 
-# External native build folder generated in Android Studio 2.2 and later
-.externalNativeBuild
-
-# Google Services (e.g. APIs or Firebase)
-google-services.json
-
-# Freeline
-freeline.py
-freeline/
-freeline_project_description.json
