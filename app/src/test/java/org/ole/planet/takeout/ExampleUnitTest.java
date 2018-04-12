@@ -1,4 +1,4 @@
-package org.ole.planet.takeaway;
+package org.ole.planet.takeout;
 
 import org.junit.Test;
 
