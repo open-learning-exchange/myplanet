@@ -1,19 +1,12 @@
 package org.ole.planet.takeout;
 
-import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
-import android.graphics.drawable.Drawable;
-import android.support.design.widget.TextInputLayout;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.design.widget.TextInputLayout;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
-import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -21,12 +14,10 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import static java.security.AccessController.getContext;
-
 public class LoginActivity extends AppCompatActivity {
 
     private EditText inputName, inputPassword;
-    private TextInputLayout inputLayoutName, inputLayoutEmail, inputLayoutPassword;
+    private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
 
     @Override
@@ -66,35 +57,25 @@ public class LoginActivity extends AppCompatActivity {
      *  Form Validation
      */
     private void submitForm() {
-        if (!validateName()) {
+        if (!validateEditText(inputName,inputLayoutName,getString(R.string.err_msg_name))) {
             return;
         }
-        if (!validatePassword()) {
+        if (!validateEditText(inputPassword,inputLayoutPassword,getString(R.string.err_msg_password))) {
             return;
         }
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
     }
 
-    private boolean validateName() {
-        if (inputName.getText().toString().trim().isEmpty()) {
-            inputLayoutName.setError(getString(R.string.err_msg_name));
-            requestFocus(inputName);
+    private boolean validateEditText(EditText textField,TextInputLayout textLayout,String err_message ){
+        if (textField.getText().toString().trim().isEmpty()) {
+            textLayout.setError(err_message);
+            requestFocus(textField);
             return false;
         } else {
-            inputLayoutName.setErrorEnabled(false);
+            textLayout.setErrorEnabled(false);
         }
         return true;
-    }
 
-    private boolean validatePassword() {
-        if (inputPassword.getText().toString().trim().isEmpty()) {
-            inputLayoutPassword.setError(getString(R.string.err_msg_password));
-            requestFocus(inputPassword);
-            return false;
-        } else {
-            inputLayoutPassword.setErrorEnabled(false);
-        }
-        return true;
     }
 
     private void requestFocus(View view) {
@@ -115,10 +96,10 @@ public class LoginActivity extends AppCompatActivity {
         public void afterTextChanged(Editable editable) {
             switch (view.getId()) {
                 case R.id.input_name:
-                    validateName();
+                    validateEditText(inputName,inputLayoutName,getString(R.string.err_msg_name));
                     break;
                 case R.id.input_password:
-                    validatePassword();
+                    validateEditText(inputPassword,inputLayoutPassword,getString(R.string.err_msg_password));
                     break;
             }
         }
