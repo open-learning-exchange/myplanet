@@ -14,6 +14,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+
 public class LoginActivity extends AppCompatActivity {
 
     private EditText inputName, inputPassword;
@@ -44,7 +45,6 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
-
     public int adjustAlpha(int color, float factor) {
         int alpha = Math.round(Color.alpha(color) * factor);
         int red = Color.red(color);
@@ -52,7 +52,6 @@ public class LoginActivity extends AppCompatActivity {
         int blue = Color.blue(color);
         return Color.argb(alpha, red, green, blue);
     }
-
     /**
      *  Form Validation
      */
@@ -65,7 +64,6 @@ public class LoginActivity extends AppCompatActivity {
         }
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
     }
-
     private boolean validateEditText(EditText textField,TextInputLayout textLayout,String err_message ){
         if (textField.getText().toString().trim().isEmpty()) {
             textLayout.setError(err_message);
@@ -75,7 +73,6 @@ public class LoginActivity extends AppCompatActivity {
             textLayout.setErrorEnabled(false);
         }
         return true;
-
     }
 
     private void requestFocus(View view) {
