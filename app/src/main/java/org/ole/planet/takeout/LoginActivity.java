@@ -34,14 +34,15 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         ImageView logo = findViewById(R.id.logoImageView);
-        animateImageView(logo);
+        final int newColor = getResources().getColor(android.R.color.white);
+        int alphaWhite = adjustAlpha(newColor,10);
+        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
 
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         inputName = findViewById(R.id.input_name);
         inputPassword = findViewById(R.id.input_password);
         btnSignIn = findViewById(R.id.btn_signin);
-
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
 
@@ -51,30 +52,8 @@ public class LoginActivity extends AppCompatActivity {
                 submitForm();
             }
         });
-
-
     }
 
-    public void animateImageView(final ImageView v) {
-        final int newColor = getResources().getColor(android.R.color.white);
-        final ValueAnimator colorAnim = ObjectAnimator.ofFloat(0f, 1f);
-        colorAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                float mul = (Float) animation.getAnimatedValue();
-                int alphaWhite = adjustAlpha(newColor, mul);
-                v.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
-                if (mul == 0.0) {
-                    v.setColorFilter(null);
-                }
-            }
-        });
-        colorAnim.setDuration(1000);
-        colorAnim.setRepeatMode(ValueAnimator.REVERSE);
-        colorAnim.setRepeatCount(-1);
-        colorAnim.start();
-
-    }
     public int adjustAlpha(int color, float factor) {
         int alpha = Math.round(Color.alpha(color) * factor);
         int red = Color.red(color);
@@ -84,7 +63,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     /**
-     * Validating form
+     *  Form Validation
      */
     private void submitForm() {
         if (!validateName()) {

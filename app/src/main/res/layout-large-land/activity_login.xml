@@ -57,6 +57,7 @@
                     android:layout_weight="0.7"
                     android:text="Planet Learning"
                     android:textAlignment="center"
+                    android:textColor="@android:color/white"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -66,7 +67,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Version 0.1"
-                    android:textAlignment="center" />
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white" />
             </LinearLayout>
         </LinearLayout>
 
@@ -86,7 +88,8 @@
                 <android.support.design.widget.TextInputLayout
                     android:id="@+id/input_layout_name"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
 
                     <EditText
                         android:id="@+id/input_name"
@@ -101,7 +104,8 @@
                 <android.support.design.widget.TextInputLayout
                     android:id="@+id/input_layout_password"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
 
                     <EditText
                         android:id="@+id/input_password"

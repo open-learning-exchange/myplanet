@@ -57,6 +57,7 @@
                     android:layout_weight="0.7"
                     android:text="Planet Learning"
                     android:textAlignment="center"
+                    android:textColor="@android:color/white"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -66,7 +67,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Version 0.1"
-                    android:textAlignment="center" />
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white" />
             </LinearLayout>
         </LinearLayout>
 
@@ -78,8 +80,9 @@
             android:orientation="horizontal">
 
             <LinearLayout
-                android:layout_width="250dp"
+                android:layout_width="300dp"
                 android:layout_height="wrap_content"
+                android:gravity="center"
                 android:orientation="vertical">
 
                 <android.support.design.widget.TextInputLayout
@@ -92,7 +95,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/hint_name"
-                        android:singleLine="true" />
+                        android:singleLine="true"
+                        android:textColor="@android:color/background_dark"
+                        android:textColorHint="@android:color/darker_gray" />
                 </android.support.design.widget.TextInputLayout>
 
                 <android.support.design.widget.TextInputLayout
@@ -105,12 +110,14 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/hint_password"
-                        android:inputType="textPassword" />
+                        android:inputType="textPassword"
+                        android:textColor="@android:color/background_dark"
+                        android:textColorHint="@android:color/darker_gray" />
                 </android.support.design.widget.TextInputLayout>
 
                 <Button
                     android:id="@+id/btn_signin"
-                    android:layout_width="fill_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="40dp"
                     android:background="@color/colorPrimary"
