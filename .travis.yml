@@ -1,0 +1,69 @@
+language: android
+sudo: false
+jdk: oraclejdk8
+before_install:
+- openssl aes-256-cbc -K $encrypted_0d351ba6a4f8_key -iv $encrypted_0d351ba6a4f8_iv
+  -in keystore.enc -out keystore -d
+- chmod +x gradlew
+before_script:
+- echo no | android create avd --force -n test -t android-22 --abi armeabi-v7a
+- emulator -avd test -no-skin -no-audio -no-window &
+- android-wait-for-emulator
+- adb shell input keyevent 82 &
+install:
+- echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
+- echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
+- echo y | android update sdk -u -a -t tools
+- echo y | android update sdk -u -a -t platform-tools
+- echo y | android update sdk -u -a -t build-tools-26.1.0
+- echo y | android update sdk -u -a -t android-26
+- echo y | android update sdk -u -a -t extra-google-m2repository
+- echo y | android update sdk -u -a -t extra-android-m2repository
+env:
+  global:
+  - ANDROID_API=22
+  - EMULATOR_API=21
+  - ANDROID_BUILD_TOOLS=26.1.0
+  - ADB_INSTALL_TIMEOUT=5
+  - secure: 3QdGzrK+yE0smDraCQV/4aDXYr4Y+dz2QgBFHn0uzq7vclKJLcAO9Qq4foyHfOdOyQKwHrNLBRr2H3qopmWmWjmj2mhEuLmsglrzxBDMtEgjyGjgSy0QvLHafNfR/nj4P5ddEEMXimaTp8InIUF3K49AG6v2VNJS1dXtv/ZVvWlDuTUsA5yiiQf1JX5aYF0hI5M/cblUC66ehWvsUfObj9GLRcvIl2xcX0QLbGvrhnpBIascd9ULZahEfQhijd3hC9VHu9hM+YHvLHM4KE9h13n41hTKndofDQggG4HVPAFCV5ngDzlifGoZmoma0XGfmBMgJOwQkLT9l6YICpGGN8ebLlC2zC4yZZvE/bPKoh8e3rRzbQjiPJqW16nKx1/k5viKdgjAAiiWXoWY2QHv2QII2l9Dxs4Xh9Sc+qOA6LYBaZeNOKkNp+Ux1mfVM8rFm8N5BvH7LPLQO0Ru0Ty5Esb21qbRU1urj4OInZMjGEoUJl4IWCpiy0btboGCHTnuvX8ot0VDvSvG8dgk5PPg7MsiRFz3WyD3iP4QIxK8SaXMzI4E2IP6HN8nZI2cwyjisIojQxrOxYM7X8yoJSBo2rKouSO5Qn7gMKLYnWu6wohB+1aPqSwNR30NnE+tXP+2OVqbdUTHTrFnb2jJ/2pf4M9TPWw8tlGwRZ/1IMsQzaA=
+  - secure: zNtIaEcxzVYac7Di+6zR90zbKRAy1tQtOrW2GyHXH1LRiP7FemH3vvtJfSs7NT0dMSLYmRJD9YNKRumN+8tABvt2i8zFr+liUl5A+vp484Nsn7AKn2gf5B8IR7TNLp8DTdvHsx3iR8yyM/HWVJjSXmE7xAMmMqh4kPmGIUKCuiKlmFYze5vF0imtNjYU4Q3PeEb/4HsQC/qE8fchy1VNU15ywgDBhxNhb/MIGHwEkjOwLHnK7Nu6fINBheMjcoTkePQRrMY4XoABSzNrZoSshjJhRv2E0G77+CnEfVzH/9rzCx0ANlRLNNVnfYSzRVeAJigrfzABEhGvWnftYLBtlKYj3hRiDJZo822Hh2vyRoZTFyeAZTXGU2iW3176wwbDTNC9q84cMizqXt4D0hx8rnzdDm+KshCOddi1PXrZg/GXbngYq4/arszs8Vo6Z+Wha2yeaw6D/PcocQQWelBkrVKP7cYDpiR7fYOw1ZtH1OxnY3rTOmp718kavwO7CkFa/ni8r6ws1QkVLhfmMBSWcVhi8TQX2j48d5w04oWK0ea0B75yBidDNmRprU0g0jcscs6N2DsN3uX6wFQBFgGpyTXvV2NY9Rgolr1nMzPF/iQA53dcW0YxR4sSsOOR+MVylUw/pzplSGn8gw2cAcNR4jxU3A+4RJEUoDa5JQT6dWM=
+  - secure: vvSWBsTsQN0MWsiyUR83zhCg2v7cZUHFywF2aJSCszGUxHpQb/cXWT+p2zfBHro445RSXTFA+lxKYwoupH2HHgeUsT8wSMLXr2xZetmf8i/puTxb1v0Lzjso7LwocPJTvsWbOg2jKdIctoq9XGGgSA1AMbo1oq5MWOe4l14EY1LJss3giL1338XQK96JoRLtDPSz7l0UASxyZWadtQWFLfIw3iY7UlDafu0SmlRRLvJVVv/NDL4QioXs/l2xieB2/MwDjsBIB+L2uOVOBSohYGTFMJ+UApj0AHiqlPMOvt2u23qClbfbGWnRZPJ6Jmd5pFMtd4LEGy1WAkm2TSWMTrdMr96CBvduz4/Cc/d1uBYmDa6Ssrk8MkhcC2MwTzH5WVvsXAsAcnnmF/SBjRN7qaWgHAzAfDqGteKHEtm8DdE10MTkj9wHmtzT6r3Utymvi42P1dkn8o+hMU7SkKsdRAgc/WH+NKUaY0Juc9+s5Zoep46P/drXHn9Z1oAmkFTGm37jX3e0oJeIWMQw+Mhp+cPl8EBJgxaOOBW3U0w6oHamB8QvDgOSCV/GiHQ5XvXKZDjEQ1txii9JH9iNMTZUqye9Fw7umbo5yj5+gChDw6ek0q2j4DXN0iANPjQjVyusL1TyFAXznYLZO2PdCeH84i9xYUkCoH0fjZmJU10Rdy8=
+  - secure: Rx0UgigZRmWpMNUVByjxQTYyUQn6uDISu5dtD3tvNdeyRdeNjJF9v4WjJxBXWOo3weiR6WUZ/VrpJ0xC0S2/CnhuS7TvTXq3IZn6qgBALag0GxpdnuFkNd21IYPhsv8O8UdyGXI3RhLsfmXrnACNJG/ODXTfaNzy4eeuLYLXMgrtZ0CT5UKa06g5xjIhHJPxBEmsGgDuOVNRWMEMZrN4sZ0NddvPlg/0JZ/zL2kB0N3iU+CpqfDX3lqPSxy2DXlm8vLPQAUwXwV4tM3XF1l8l8HSVzKRKgOC3PvE9AQi7WVwz5Cv6okF2S9Vv1CunTl23pcaBKErkMWssnby80niUZfY4QGfDYL0cc2d088U4iIg40EVtbGojNRH9fFSW5VJ7uIZyxR+qumV7L3gM6NkXiWWzDpYbYOo+eXllRJLR5tJusBxvpPBIg3us90oNJTfUKJik80bzrHmAfxPpMr2Zmaxax5keKiq2usJF79GaNp3zaYCPr+VIO/n7QFCQFJorLy1ff+3fnxlOsrjH9EtdAujkWNRfwfD9bgo7oqvtocJ9DKNGIEDOK2aagcxBphNz8i145sIxJAxRtCP9OSgM8tlxHLgyh8Fr9oQGjlwOtLb5jGVjt+OsKX2E3ruO9Eg9+JDpZp3e7V3Xg768I3hX6tM9PMaoHjz42fmxsJVja4=
+android:
+  components:
+  - tools
+  - platform-tools
+  - build-tools-$ANDROID_BUILD_TOOLS
+  - android-$ANDROID_API
+  - android-$EMULATOR_API_LEVEL
+  - extra-google-m2repository
+  - extra-android-m2repository
+  - addon-google_apis-google-19
+  - sys-img-armeabi-v7a-addon-google_apis-google-$ANDROID_API_LEVEL
+  - sys-img-armeabi-v7a-addon-google_apis-google-$EMULATOR_API_LEVEL
+  - build-tools-26.1.0
+  - android-25
+  - android-24
+  - android-23
+  - android-22
+  - sys-img-armeabi-v7a-android-22
+  - extra-android-support
+  - extra-android-m2repository
+  licenses:
+  - android-sdk-preview-license-.+
+  - android-sdk-license-.+
+  - google-gdk-license-.+
+notifications:
+  email: false
+deploy:
+  provider: releases
+  api_key:
+    secure: "rsZw8MbCWO+Omm/X2Lk4Fs1lrWnDgDPLdVbt5mlMyNSd6SQfOVgtqy7xG2Q/kFLvAeOYaOeBC5xwWTFYzJ3FHXVwZsimuBVFml8/dmDV0qFOUgj/9aIjiB65c/kXDwoPUnU8fuvxT62HbTneAcofmTluccNfF9CXcmtbUgrpxm4naLEUGm0+0jkTsP1NQoKdIOFRaDEoPqYR7QBgv9IvsZJqZNwfxrOGsWSnmsjsbdwQawRGhRhshIjovK7xrVgZmsiovBYQand6+I8LtgZMNSRR1FgwZF1kiyfi7VTQdQFqLLhyEW5C2nu/1NxaAucwiQ3sL3bRSgvFIFe7DPU18bV/MiGWaBmGXt4rucWKEQjDG8X2w1qpexoNjGg88+KFnqVk0Mw4KvlmkFjbn5zRN7hZtuAavlABlQ/5DH6CC2y/KQyUi/e2Gh8Y71HbHbTUjufF+dR9eutcta8Jsqs8l2nYuxY7BvT1pqGbVwsgWudLNIOL1WoqpUn24lSzX4r2a76XQwhh5IBA03qfdoLEQ4lxJci1qI5lDY+LQhVYdHwRg8frwwLDc/Z8/vGHRikkxYDF//PzZJrXCe6UBq/JwWcdD3dyEeSYdbuCevNUIMF5+psEzALPJN3dwJ5jBQDKpyrLAxzCYZMdnDErWH0OaTqzauwnNNWNe8iWANRApGw="
+  file_glob: true
+  file: app/build/outputs/apk/debug/*
+  skip-cleanup: true
+  on:
+    branch: master
+    repo: ole-vi/takeout
+after_success:
+- sh scripts/tag.sh
