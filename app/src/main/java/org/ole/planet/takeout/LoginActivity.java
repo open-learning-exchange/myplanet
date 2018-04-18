@@ -51,6 +51,7 @@ public class LoginActivity extends AppCompatActivity {
         int blue = Color.blue(color);
         return Color.argb(alpha, red, green, blue);
     }
+
     /** Form  Validation  */
     private void submitForm() {
         if (!validateEditText(inputName,inputLayoutName,getString(R.string.err_msg_name))) {
