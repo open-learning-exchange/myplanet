@@ -16,7 +16,6 @@ import android.widget.Toast;
 
 
 public class LoginActivity extends AppCompatActivity {
-
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
@@ -52,9 +51,7 @@ public class LoginActivity extends AppCompatActivity {
         int blue = Color.blue(color);
         return Color.argb(alpha, red, green, blue);
     }
-    /**
-     *  Form Validation
-     */
+    /** Form  Validation  */
     private void submitForm() {
         if (!validateEditText(inputName,inputLayoutName,getString(R.string.err_msg_name))) {
             return;
