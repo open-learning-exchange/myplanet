@@ -54,10 +54,11 @@
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
                     android:layout_height="0dp"
-                    android:layout_weight="0.7"
+                    android:layout_weight="0.9"
                     android:text="Planet Learning"
                     android:textAlignment="center"
-                    android:textSize="8sp"
+                    android:textColor="@android:color/white"
+                    android:textSize="5sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -67,60 +68,92 @@
                     android:layout_weight="1"
                     android:text="Version 0.1"
                     android:textAlignment="center"
-                    android:textSize="8sp" />
+                    android:textColor="@android:color/white"
+                    android:textSize="5sp" />
             </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/lyt"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="6"
             android:gravity="center"
-            android:orientation="horizontal">
+            android:orientation="vertical"
+            android:weightSum="6">
 
             <LinearLayout
-                android:layout_width="70dp"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginRight="10dp"
+                android:layout_weight="0.5"
+                android:gravity="right"
+                android:orientation="horizontal">
 
-                <android.support.design.widget.TextInputLayout
-                    android:id="@+id/input_layout_name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:id="@+id/input_name"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_name"
-                        android:singleLine="true"
-                        android:textColor="@android:color/white"
-                        android:textSize="4sp" />
-                </android.support.design.widget.TextInputLayout>
-
-                <android.support.design.widget.TextInputLayout
-                    android:id="@+id/input_layout_password"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
-
-                    <EditText
-                        android:id="@+id/input_password"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_password"
-                        android:inputType="textPassword"
-                        android:textColor="@android:color/white"
-                        android:textSize="4sp" />
-                </android.support.design.widget.TextInputLayout>
-
-                <Button
-                    android:id="@+id/btn_signin"
-                    android:layout_width="fill_parent"
+                <ImageButton
+                    android:id="@+id/imageButton"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="40dp"
-                    android:background="@color/colorPrimary"
-                    android:text="@string/btn_sign_up"
-                    android:textColor="@android:color/white" />
+                    android:background="@null"
+                    app:srcCompat="@drawable/ic_settings_black_18dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="5.5"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="70dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <android.support.design.widget.TextInputLayout
+                        android:id="@+id/input_layout_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
+
+                        <EditText
+                            android:id="@+id/input_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/hint_name"
+                            android:singleLine="true"
+                            android:textColor="@android:color/background_dark"
+                            android:textColorHint="@android:color/darker_gray"
+                            android:textSize="4sp" />
+                    </android.support.design.widget.TextInputLayout>
+
+                    <android.support.design.widget.TextInputLayout
+                        android:id="@+id/input_layout_password"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
+
+                        <EditText
+                            android:id="@+id/input_password"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/hint_password"
+                            android:inputType="textPassword"
+                            android:textColor="@android:color/background_dark"
+                            android:textColorHint="@android:color/darker_gray"
+                            android:textSize="4sp" />
+                    </android.support.design.widget.TextInputLayout>
+
+                    <Button
+                        android:id="@+id/btn_signin"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@color/colorPrimary"
+                        android:text="@string/btn_sign_in"
+                        android:textColor="@android:color/white"
+                        android:textSize="5sp" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
