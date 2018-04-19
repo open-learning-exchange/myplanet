@@ -38,16 +38,7 @@ public class LoginActivity extends AppCompatActivity {
         final int newColor = getResources().getColor(android.R.color.white);
         int alphaWhite = adjustAlpha(newColor,10);
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
-        //layouts
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
-        //editText
-        inputName = findViewById(R.id.input_name);
-        inputPassword = findViewById(R.id.input_password);
-        //buttons
-        btnSignIn = findViewById(R.id.btn_signin);
-        imgBtnSetting = findViewById(R.id.imgBtnSetting);
-
+        decleareElements();
         //listeners / actions
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
@@ -64,6 +55,20 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
+
+    public void decleareElements(){
+        //layouts
+        inputLayoutName = findViewById(R.id.input_layout_name);
+        inputLayoutPassword = findViewById(R.id.input_layout_password);
+        //editText
+        inputName = findViewById(R.id.input_name);
+        inputPassword = findViewById(R.id.input_password);
+        //buttons
+        btnSignIn = findViewById(R.id.btn_signin);
+        imgBtnSetting = findViewById(R.id.imgBtnSetting);
+
+    }
+
     public int adjustAlpha(int color, float factor) {
         int alpha = Math.round(Color.alpha(color) * factor);
         int red = Color.red(color);
