@@ -10,4 +10,9 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_email">Enter valid email address</string>
     <string name="err_msg_password">Enter the password</string>
+    <string name="btn_agree">Agree</string>
+    <string name="hint_serverURl">Planet Server Address</string>
+    <string name="hint_serverPassword">Password</string>
+    <string name="err_msg_server_url">Enter valid server url</string>
+    <string name="btn_connect">Connect</string>
 </resources>
