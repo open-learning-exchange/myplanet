@@ -56,6 +56,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
         dbsetup.dbSetup(this.context);
+
     }
 
     public void decleareElements(){
