@@ -28,6 +28,7 @@ public class LoginActivity extends AppCompatActivity {
     private ImageButton imgBtnSetting;
     Context context;
     private View positiveAction;
+    dbSetup dbsetup =  new dbSetup();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +55,8 @@ public class LoginActivity extends AppCompatActivity {
                 settingDialog();
             }
         });
+        dbsetup.dbSetup(this.context);
+
     }
 
     public void decleareElements(){
