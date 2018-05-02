@@ -1,13 +1,18 @@
 package org.ole.planet.takeout;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
@@ -19,6 +24,16 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.github.kittinunf.fuel.Fuel;
+import com.github.kittinunf.fuel.core.FuelError;
+import com.github.kittinunf.fuel.core.Handler;
+import com.github.kittinunf.fuel.core.Request;
+import com.github.kittinunf.fuel.core.Response;
+
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class LoginActivity extends AppCompatActivity {
@@ -28,6 +43,7 @@ public class LoginActivity extends AppCompatActivity {
     private ImageButton imgBtnSetting;
     Context context;
     private View positiveAction;
+    boolean connectionResult;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
         final int newColor = getResources().getColor(android.R.color.white);
         int alphaWhite = adjustAlpha(newColor,10);
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
-        decleareElements();
+        declareElements();
         //listeners / actions
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
@@ -56,7 +72,7 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    public void decleareElements(){
+    public void declareElements(){
         //layouts
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
@@ -130,7 +146,15 @@ public class LoginActivity extends AppCompatActivity {
         MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this)
                 .title(R.string.action_settings)
                 .customView(R.layout.dialog_server_url, wrapInScrollView)
-                .positiveText(R.string.btn_connect);
+                .positiveText(R.string.btn_connect)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        dialog.dismiss();
+                        EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+                        isServerReachable(serverUrl.getText().toString());
+                    }
+                });
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
@@ -140,7 +164,7 @@ public class LoginActivity extends AppCompatActivity {
 
                     @Override
                     public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
+                       positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
                     }
 
                     @Override
@@ -149,5 +173,50 @@ public class LoginActivity extends AppCompatActivity {
         positiveAction.setEnabled(false);
         dialog.show();
     }
+
+    public boolean isServerReachable(String url) {
+        final Fuel ful = new Fuel();
+        ful.get(url).responseString(new Handler<String>() {
+            @Override
+            public void success(Request request, Response response, String s) {
+                try {
+                    List<String> myList = new ArrayList<String>();
+                    myList.clear();
+                    myList = Arrays.asList(s.split(","));
+                    if (myList.size() < 8) {
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
+                    } else {
+                        alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void failure(Request request, Response response, FuelError fuelError) {
+                Log.d("request", request.toString());
+                Log.d("respose", response.toString());
+                Log.d("error", fuelError.toString());
+                alertDialogOkay("Device couldn't reach server. Check and try again");
+            }
+        });
+        return connectionResult;
+    }
+
+    public void alertDialogOkay(String Message) {
+        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+        builder1.setMessage(Message);
+        builder1.setCancelable(true);
+        builder1.setNegativeButton("Okay",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+        AlertDialog alert11 = builder1.create();
+        alert11.show();
+    }
+
 
 }
