@@ -1,6 +1,7 @@
 package org.ole.planet.takeout;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -39,7 +40,7 @@ public class LoginActivity extends AppCompatActivity {
         final int newColor = getResources().getColor(android.R.color.white);
         int alphaWhite = adjustAlpha(newColor,10);
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
-        decleareElements();
+        declareElements();
         //listeners / actions
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
@@ -59,7 +60,7 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
-    public void decleareElements(){
+    public void declareElements(){
         //layouts
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
@@ -89,6 +90,9 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+        Intent dashboard = new Intent(getApplicationContext(),Dashboard.class);
+        startActivity(dashboard);
+
     }
     private boolean validateEditText(EditText textField,TextInputLayout textLayout,String err_message ){
         if (textField.getText().toString().trim().isEmpty()) {
