@@ -143,11 +143,7 @@ public class LoginActivity extends AppCompatActivity {
 
     public void  settingDialog(){
         boolean wrapInScrollView = true;
-        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this)
-                .title(R.string.action_settings)
-                .customView(R.layout.dialog_server_url, wrapInScrollView)
-                .positiveText(R.string.btn_connect)
-                .onPositive(new MaterialDialog.SingleButtonCallback() {
+        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, wrapInScrollView).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         dialog.dismiss();
@@ -188,9 +184,7 @@ public class LoginActivity extends AppCompatActivity {
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                } catch (Exception e) {e.printStackTrace();}
             }
 
             @Override
