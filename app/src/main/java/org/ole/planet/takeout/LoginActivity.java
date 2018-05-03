@@ -154,7 +154,7 @@ public class LoginActivity extends AppCompatActivity {
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-        serverUrl.addTextChangedListener(new TextWatcher() {
+       serverUrl.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
@@ -172,7 +172,7 @@ public class LoginActivity extends AppCompatActivity {
 
     public boolean isServerReachable(String url) {
         final Fuel ful = new Fuel();
-        ful.get(url).responseString(new Handler<String>() {
+        ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
