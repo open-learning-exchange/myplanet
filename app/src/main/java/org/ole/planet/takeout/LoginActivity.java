@@ -44,6 +44,7 @@ public class LoginActivity extends AppCompatActivity {
     Context context;
     private View positiveAction;
     boolean connectionResult;
+    dbSetup dbsetup =  new dbSetup();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +71,8 @@ public class LoginActivity extends AppCompatActivity {
                 settingDialog();
             }
         });
+        dbsetup.dbSetup(this.context);
+
     }
 
     public void declareElements(){
