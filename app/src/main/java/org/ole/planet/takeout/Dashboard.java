@@ -36,9 +36,21 @@ public class Dashboard extends AppCompatActivity {
         toolbar.setBackgroundColor(Color.BLACK);
         //toolbar.getBackground().setAlpha(90);
         setSupportActionBar(toolbar);
+        AccountHeader headerResult = getAccountHeader();
+        createDrawer(savedInstanceState, toolbar, headerResult);
+        result.setSelection(1, true);
+        result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
 
+        if (Build.VERSION.SDK_INT >= 19) {
+            result.getDrawerLayout().setFitsSystemWindows(false);
+        }
+    }
+
+    private AccountHeader getAccountHeader() {
         //Create User profile header
-        AccountHeader headerResult = new AccountHeaderBuilder()
+        return new AccountHeaderBuilder()
                 .withActivity(this)
                 .addProfiles(
                         new ProfileDrawerItem()
@@ -53,8 +65,9 @@ public class Dashboard extends AppCompatActivity {
                     }
                 })
                 .build();
+    }
 
-
+    private void createDrawer(Bundle savedInstanceState, Toolbar toolbar, AccountHeader headerResult) {
         //Create the drawer
         result = new DrawerBuilder()
                 .withActivity(this)
@@ -82,16 +95,6 @@ public class Dashboard extends AppCompatActivity {
                     }
                 })
                 .build();
-        result.setSelection(1, true);
-        result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
-
-        if (Build.VERSION.SDK_INT >= 19) {
-            result.getDrawerLayout().setFitsSystemWindows(false);
-        }
-
-
     }
 
     @Override
