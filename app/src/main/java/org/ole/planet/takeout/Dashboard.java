@@ -10,13 +10,17 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 
 import com.mikepenz.fontawesome_typeface_library.FontAwesome;
+import com.mikepenz.materialdrawer.AccountHeader;
+import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.DividerDrawerItem;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
+import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
 import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 
 import org.ole.planet.takeout.R;
 
@@ -28,34 +32,75 @@ public class Dashboard extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setBackgroundColor(Color.BLACK);
-        toolbar.getBackground().setAlpha(90);
+        //toolbar.getBackground().setAlpha(90);
         setSupportActionBar(toolbar);
-        new DrawerBuilder().withActivity(this).build();
+
+        //Create User profile header
+        AccountHeader headerResult = new AccountHeaderBuilder()
+                .withActivity(this)
+                .addProfiles(
+                        new ProfileDrawerItem()
+                                .withName("Leonard Mensah")
+                                .withEmail("Learner")
+                                .withIcon(getResources().getDrawable(R.drawable.profile))
+                )
+                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
+                    @Override
+                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
+                        return false;
+                    }
+                })
+                .build();
+
 
         //Create the drawer
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
+                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
+                .withToolbar(toolbar)
+                .withAccountHeader(headerResult)
                 .addDrawerItems(
-                        new PrimaryDrawerItem().withName("Home").withIcon(FontAwesome.Icon.faw_home).withIdentifier(1),
-                        new PrimaryDrawerItem().withName("Library").withIcon(FontAwesome.Icon.faw_gamepad),
-                        new PrimaryDrawerItem().withName("Courses").withIcon(FontAwesome.Icon.faw_eye),
-                        new PrimaryDrawerItem().withName("Meetups").withIcon(FontAwesome.Icon.faw_eye),
-                        new PrimaryDrawerItem().withName("Surveys").withIcon(FontAwesome.Icon.faw_eye)
+                        new PrimaryDrawerItem().withName("Home").withIcon(getResources().getDrawable(R.drawable.home)).withIdentifier(1).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                        new DividerDrawerItem(),
+                        new PrimaryDrawerItem().withName("Library").withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                        new DividerDrawerItem(),
+                        new PrimaryDrawerItem().withName("Courses").withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                        new DividerDrawerItem(),
+                        new PrimaryDrawerItem().withName("Meetups").withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                        new DividerDrawerItem(),
+                        new PrimaryDrawerItem().withName("Surveys").withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                        new DividerDrawerItem()
                 )
-                .withSavedInstance(savedInstanceState)
+                .withSavedInstance(savedInstanceState).withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
+                    @Override
+                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
+                        // do something with the clicked item :D
+                        return true;
+                    }
+                })
                 .build();
-
-        //set the back arrow in the toolbar
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(false);
+        result.setSelection(1, true);
+        result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
 
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
 
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (result != null && result.isDrawerOpen()) {
+            result.closeDrawer();
+        } else {
+            super.onBackPressed();
+        }
     }
 
 }
