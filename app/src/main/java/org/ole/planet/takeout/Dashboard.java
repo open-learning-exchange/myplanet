@@ -34,7 +34,6 @@ public class Dashboard extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setBackgroundColor(Color.BLACK);
-        //toolbar.getBackground().setAlpha(90);
         setSupportActionBar(toolbar);
         AccountHeader headerResult = getAccountHeader();
         createDrawer(savedInstanceState, toolbar, headerResult);
