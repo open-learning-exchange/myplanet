@@ -3,6 +3,7 @@ package org.ole.planet.takeout;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -77,24 +78,9 @@ public class Dashboard extends AppCompatActivity {
                 .withToolbar(toolbar)
                 .withAccountHeader(headerResult)
                 .addDrawerItems(
-                        new PrimaryDrawerItem().withName("Home").withIcon(getResources().getDrawable(R.drawable.home)).withIdentifier(1).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                        new DividerDrawerItem(),
-                        new PrimaryDrawerItem().withName("Library").withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                        new DividerDrawerItem(),
-                        new PrimaryDrawerItem().withName("Courses").withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                        new DividerDrawerItem(),
-                        new PrimaryDrawerItem().withName("Meetups").withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                        new DividerDrawerItem(),
-                        new PrimaryDrawerItem().withName("Surveys").withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                        new DividerDrawerItem()
+                        getDrawerItems()
                 )
-                .withSavedInstance(savedInstanceState).withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
-                    @Override
-                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
-                        // do something with the clicked item :D
-                        return true;
-                    }
-                }).withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
+                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
                         if (drawerItem != null) {
@@ -106,6 +92,22 @@ public class Dashboard extends AppCompatActivity {
                     }
                 })
                 .build();
+    }
+
+    @NonNull
+    private IDrawerItem[] getDrawerItems() {
+        return new IDrawerItem[]{
+                new PrimaryDrawerItem().withName("Home").withIcon(getResources().getDrawable(R.drawable.home)).withIdentifier(1).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new DividerDrawerItem(),
+                new PrimaryDrawerItem().withName("Library").withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new DividerDrawerItem(),
+                new PrimaryDrawerItem().withName("Courses").withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new DividerDrawerItem(),
+                new PrimaryDrawerItem().withName("Meetups").withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new DividerDrawerItem(),
+                new PrimaryDrawerItem().withName("Surveys").withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new DividerDrawerItem()
+        };
     }
 
     @Override
