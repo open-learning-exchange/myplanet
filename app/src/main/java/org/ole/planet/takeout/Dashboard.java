@@ -25,6 +25,7 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+
 import org.ole.planet.takeout.R;
 
 public class Dashboard extends AppCompatActivity {
@@ -93,7 +94,6 @@ public class Dashboard extends AppCompatActivity {
                 })
                 .build();
     }
-
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         return new IDrawerItem[]{
@@ -104,7 +104,6 @@ public class Dashboard extends AppCompatActivity {
                 new PrimaryDrawerItem().withName("Surveys").withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
         };
     }
-
     @Override
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
