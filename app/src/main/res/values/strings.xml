@@ -15,4 +15,5 @@
     <string name="hint_serverPassword">Password</string>
     <string name="err_msg_server_url">Enter valid server url</string>
     <string name="btn_connect">Connect</string>
+    <string name="title_activity_dashboard">Dashboard</string>
 </resources>
