@@ -97,16 +97,11 @@ public class Dashboard extends AppCompatActivity {
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         return new IDrawerItem[]{
-                new PrimaryDrawerItem().withName("Home").withIcon(getResources().getDrawable(R.drawable.home)).withIdentifier(1).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new DividerDrawerItem(),
+                new PrimaryDrawerItem().withName("Home").withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
                 new PrimaryDrawerItem().withName("Library").withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new DividerDrawerItem(),
                 new PrimaryDrawerItem().withName("Courses").withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new DividerDrawerItem(),
                 new PrimaryDrawerItem().withName("Meetups").withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new DividerDrawerItem(),
                 new PrimaryDrawerItem().withName("Surveys").withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new DividerDrawerItem()
         };
     }
 
