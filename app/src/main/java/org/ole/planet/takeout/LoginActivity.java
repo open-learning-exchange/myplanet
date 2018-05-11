@@ -2,6 +2,7 @@ package org.ole.planet.takeout;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -105,6 +106,9 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+        Intent dashboard = new Intent(getApplicationContext(),Dashboard.class);
+        startActivity(dashboard);
+
     }
     private boolean validateEditText(EditText textField,TextInputLayout textLayout,String err_message ){
         if (textField.getText().toString().trim().isEmpty()) {
