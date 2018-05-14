@@ -1,44 +1,35 @@
 package org.ole.planet.takeout;
 
-import android.app.Fragment;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.widget.Toast;
 
-import com.mikepenz.fontawesome_typeface_library.FontAwesome;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
-import com.mikepenz.materialdrawer.model.DividerDrawerItem;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
-import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
-import com.mikepenz.materialdrawer.model.SectionDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
-
-import org.ole.planet.takeout.R;
-
 public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setBackgroundColor(Color.BLACK);
+        //toolbar.setBackgroundColor(Color.BLACK);
         setSupportActionBar(toolbar);
         AccountHeader headerResult = getAccountHeader();
         createDrawer(savedInstanceState, toolbar, headerResult);
@@ -73,6 +64,7 @@ public class Dashboard extends AppCompatActivity {
 
     private void createDrawer(Bundle savedInstanceState, Toolbar toolbar, AccountHeader headerResult) {
         //Create the drawer
+
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
@@ -99,6 +91,7 @@ public class Dashboard extends AppCompatActivity {
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId){
             case R.string.menu_home:
+                openCallFragment(new DashboardFragment());
                 break;
             case R.string.menu_library:
                 break;
@@ -111,8 +104,12 @@ public class Dashboard extends AppCompatActivity {
         }
     }
 
-    public void openCallFragment(Fragment fragment){
-
+    public void openCallFragment(Fragment newfragment){
+        newfragment = new DashboardFragment();
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
     }
 
     @NonNull
