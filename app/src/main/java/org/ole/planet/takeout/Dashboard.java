@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.app.Fragment;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -86,7 +87,7 @@ public class Dashboard extends AppCompatActivity {
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
                         if (drawerItem != null) {
                             if (drawerItem instanceof Nameable) {
-                                Toast.makeText(Dashboard.this, ((Nameable) drawerItem).getName().getText(Dashboard.this), Toast.LENGTH_SHORT).show();
+                                menuAction(((Nameable) drawerItem).getName().getTextRes());
                             }
                         }
                         return false;
@@ -94,14 +95,34 @@ public class Dashboard extends AppCompatActivity {
                 })
                 .build();
     }
+
+    private void menuAction(int selectedMenuId) {
+        switch (selectedMenuId){
+            case R.string.menu_home:
+                break;
+            case R.string.menu_library:
+                break;
+            case R.string.menu_meetups:
+                break;
+            case R.string.menu_surveys:
+                break;
+            case R.string.menu_courses:
+                break;
+        }
+    }
+
+    public void openCallFragment(Fragment fragment){
+
+    }
+
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         return new IDrawerItem[]{
-                new PrimaryDrawerItem().withName("Home").withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName("Library").withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName("Courses").withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName("Meetups").withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName("Surveys").withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new PrimaryDrawerItem().withName(R.string.menu_home).withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new PrimaryDrawerItem().withName(R.string.menu_library).withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new PrimaryDrawerItem().withName(R.string.menu_courses).withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new PrimaryDrawerItem().withName(R.string.menu_meetups).withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new PrimaryDrawerItem().withName(R.string.menu_surveys).withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
         };
     }
     @Override
