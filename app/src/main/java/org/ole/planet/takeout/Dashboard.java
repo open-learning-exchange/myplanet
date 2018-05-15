@@ -10,6 +10,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.view.WindowManager;
 
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -28,16 +29,17 @@ public class Dashboard extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        //Toolbar toolbar = findViewById(R.id.toolbar);
         //toolbar.setBackgroundColor(Color.BLACK);
-        setSupportActionBar(toolbar);
+        //setSupportActionBar(toolbar);
         AccountHeader headerResult = getAccountHeader();
-        createDrawer(savedInstanceState, toolbar, headerResult);
+        createDrawer(savedInstanceState, headerResult);
         result.setSelection(1, true);
         result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
-
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+//        result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
@@ -62,14 +64,14 @@ public class Dashboard extends AppCompatActivity {
                 .build();
     }
 
-    private void createDrawer(Bundle savedInstanceState, Toolbar toolbar, AccountHeader headerResult) {
+    private void createDrawer(Bundle savedInstanceState,  AccountHeader headerResult) {
         //Create the drawer
-
+//.withToolbar(toolbar)
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
                 .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
-                .withToolbar(toolbar)
+
                 .withAccountHeader(headerResult)
                 .addDrawerItems(
                         getDrawerItems()

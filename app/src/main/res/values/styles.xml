@@ -10,7 +10,7 @@
 
     <style name="FullscreenTheme" parent="MaterialDrawerTheme.Light.DarkToolbar.TranslucentStatus">
         <item name="android:actionBarStyle">@style/FullscreenActionBarStyle</item>
-        <item name="android:windowActionBarOverlay">true</item>
+        <item name="android:windowActionBarOverlay">false</item>
         <item name="metaButtonBarStyle">?android:attr/buttonBarStyle</item>
         <item name="metaButtonBarButtonStyle">?android:attr/buttonBarButtonStyle</item>
     </style>
@@ -23,7 +23,7 @@
 
     <style name="MyMaterialTheme.Base" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="windowNoTitle">true</item>
-        <item name="windowActionBar">true</item>
+        <item name="windowActionBar">false</item>
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
@@ -55,7 +55,7 @@
         <item name="material_drawer_header_selection_text">@color/material_drawer_dark_primary_text</item>
 
         <!-- CAB :D -->
-        <item name="windowActionModeOverlay">true</item>
+        <item name="windowActionModeOverlay">false</item>
     </style>
 
 </resources>
