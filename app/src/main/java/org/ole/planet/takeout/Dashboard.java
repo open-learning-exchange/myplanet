@@ -1,23 +1,20 @@
 package org.ole.planet.takeout;
 
-import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
-import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
@@ -28,33 +25,35 @@ public class Dashboard extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
-
-        //Toolbar toolbar = findViewById(R.id.toolbar);
-        //toolbar.setBackgroundColor(Color.BLACK);
-        //setSupportActionBar(toolbar);
         AccountHeader headerResult = getAccountHeader();
-        createDrawer(savedInstanceState, headerResult);
-        result.setSelection(1, true);
-        result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
-//        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-//        result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        createDrawer(headerResult);
+        //result.setSelection(1, true);
+        //result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
+
+        initElements();
+        openCallFragment(new DashboardFragment());
+
+    }
+
+    private void initElements() {
+        ImageButton imgbtnHamburger = findViewById(R.id.imgbtnHamburgger);
+        imgbtnHamburger.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                result.openDrawer();
+            }
+        });
     }
 
     private AccountHeader getAccountHeader() {
         //Create User profile header
         return new AccountHeaderBuilder()
                 .withActivity(this)
-                .addProfiles(
-                        new ProfileDrawerItem()
-                                .withName("Leonard Mensah")
-                                .withEmail("Learner")
-                                .withIcon(getResources().getDrawable(R.drawable.profile))
-                )
                 .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
                     @Override
                     public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
@@ -64,15 +63,12 @@ public class Dashboard extends AppCompatActivity {
                 .build();
     }
 
-    private void createDrawer(Bundle savedInstanceState,  AccountHeader headerResult) {
-        //Create the drawer
-//.withToolbar(toolbar)
+    private void createDrawer(AccountHeader headerResult) {
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
                 .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
-
-                .withAccountHeader(headerResult)
+    //            .withAccountHeader(headerResult)
                 .addDrawerItems(
                         getDrawerItems()
                 )
@@ -87,6 +83,7 @@ public class Dashboard extends AppCompatActivity {
                         return false;
                     }
                 })
+                .withDrawerWidthDp(200)
                 .build();
     }
 

@@ -20,7 +20,7 @@
             android:weightSum="10">
 
             <ImageButton
-                android:id="@+id/imgBtn "
+                android:id="@+id/imgbtnHamburgger"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -33,7 +33,8 @@
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"></FrameLayout>
+        android:layout_height="match_parent"
+        android:paddingTop="60dp"></FrameLayout>
 
 
 </android.support.design.widget.CoordinatorLayout>
