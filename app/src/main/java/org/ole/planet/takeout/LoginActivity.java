@@ -157,8 +157,7 @@ public class LoginActivity extends AppCompatActivity {
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         dialog.dismiss();
                         EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-                        isServerReachable(serverUrl.getText().toString());
-                    }
+                        isServerReachable(serverUrl.getText().toString());    }
                 });
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
@@ -168,12 +167,10 @@ public class LoginActivity extends AppCompatActivity {
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         //action before text change
                     }
-
                     @Override
                     public void onTextChanged(CharSequence s, int start, int before, int count) {
                        positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
                     }
-
                     @Override
                     public void afterTextChanged(Editable s) {
                         //action after text change
