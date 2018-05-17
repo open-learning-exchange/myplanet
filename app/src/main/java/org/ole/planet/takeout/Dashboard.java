@@ -25,10 +25,7 @@ public class Dashboard extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
-        AccountHeader headerResult = getAccountHeader();
-        createDrawer(headerResult);
-        //result.setSelection(1, true);
-        //result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
+        createDrawer();
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 19) {
@@ -50,20 +47,7 @@ public class Dashboard extends AppCompatActivity {
         });
     }
 
-    private AccountHeader getAccountHeader() {
-        //Create User profile header
-        return new AccountHeaderBuilder()
-                .withActivity(this)
-                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
-                    @Override
-                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
-                        return false;
-                    }
-                })
-                .build();
-    }
-
-    private void createDrawer(AccountHeader headerResult) {
+    private void createDrawer() {
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
@@ -100,6 +84,10 @@ public class Dashboard extends AppCompatActivity {
                 break;
             case R.string.menu_courses:
                 break;
+            default:
+                 openCallFragment(new DashboardFragment());
+                 break;
+
         }
     }
 

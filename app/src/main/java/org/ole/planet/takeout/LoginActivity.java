@@ -11,7 +11,6 @@ import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
@@ -31,7 +30,6 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -72,7 +70,7 @@ public class LoginActivity extends AppCompatActivity {
                 settingDialog();
             }
         });
-        dbsetup.dbSetup(this.context);
+        dbsetup.Setup_db(this.context);
 
     }
 
@@ -133,8 +131,10 @@ public class LoginActivity extends AppCompatActivity {
             this.view = view;
         }
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            //action before text change
         }
         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            //action on or during text change
         }
         public void afterTextChanged(Editable editable) {
             switch (view.getId()) {
@@ -144,6 +144,8 @@ public class LoginActivity extends AppCompatActivity {
                 case R.id.input_password:
                     validateEditText(inputPassword,inputLayoutPassword,getString(R.string.err_msg_password));
                     break;
+                    default:
+                        break;
             }
         }
     }
@@ -163,7 +165,9 @@ public class LoginActivity extends AppCompatActivity {
         EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
        serverUrl.addTextChangedListener(new TextWatcher() {
                     @Override
-                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        //action before text change
+                    }
 
                     @Override
                     public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -171,7 +175,9 @@ public class LoginActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void afterTextChanged(Editable s) {}
+                    public void afterTextChanged(Editable s) {
+                        //action after text change
+                    }
         });
         positiveAction.setEnabled(false);
         dialog.show();

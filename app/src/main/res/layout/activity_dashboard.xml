@@ -23,9 +23,35 @@
                 android:id="@+id/imgbtnHamburgger"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
+                android:layout_weight="0.5"
                 android:background="@null"
                 app:srcCompat="@drawable/baseline_menu" />
+
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:text="@string/system_name"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="8"
+                android:gravity="right|center_vertical"
+                android:orientation="horizontal"
+                android:weightSum="6">
+
+                <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+                    android:id="@+id/profile_image"
+                    android:layout_width="0dp"
+                    android:layout_height="45dp"
+                    android:layout_weight="1"
+                    android:paddingRight="50dp"
+                    android:src="@drawable/profile" />
+            </LinearLayout>
         </LinearLayout>
 
     </android.support.design.widget.AppBarLayout>
