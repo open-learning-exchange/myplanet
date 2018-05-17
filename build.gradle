@@ -1,6 +1,18 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
+    ext {
+        setup = [
+                compileSdk: 27,
+                buildTools: "27.0.3",
+                minSdk    : 19,
+                targetSdk : 27
+        ]
+
+        versions = [
+                supportLib: "27.1.0"
+        ]
+    }
     
     repositories {
         google()
