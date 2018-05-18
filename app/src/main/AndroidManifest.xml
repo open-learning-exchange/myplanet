@@ -25,5 +25,4 @@
             android:label="@string/title_activity_dashboard"
             android:theme="@style/FullscreenTheme"></activity>
     </application>
-
 </manifest>
