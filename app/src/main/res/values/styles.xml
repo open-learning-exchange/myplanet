@@ -1,5 +1,12 @@
 <resources>
-
+    <!-- Toolbar -->
+    <style name="HeaderBar">
+        <item name="android:background">#303F9F</item>
+    </style>
+    <style name="overFlowMenuStyle" parent="Widget.AppCompat.PopupMenu.Overflow">
+        <item name="overlapAnchor">false</item>
+        <!--<item name="android:dropDownVerticalOffset">5dp</item>-->
+    </style>
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
@@ -57,5 +64,6 @@
         <!-- CAB :D -->
         <item name="windowActionModeOverlay">false</item>
     </style>
+
 
 </resources>

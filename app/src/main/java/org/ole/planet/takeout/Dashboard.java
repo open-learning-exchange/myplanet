@@ -6,9 +6,13 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -21,10 +25,13 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
+    private Toolbar mTopToolbar;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
+        mTopToolbar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(mTopToolbar);
         createDrawer();
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -36,15 +43,38 @@ public class Dashboard extends AppCompatActivity {
         openCallFragment(new DashboardFragment());
 
     }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_dashboard, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_email) {
+            Toast.makeText(Dashboard.this, "Action clicked", Toast.LENGTH_LONG).show();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
 
     private void initElements() {
-        ImageButton imgbtnHamburger = findViewById(R.id.imgbtnHamburgger);
-        imgbtnHamburger.setOnClickListener(new View.OnClickListener() {
+//        ImageButton imgbtnHamburger = findViewById(R.id.imgbtnHamburgger);
+/*      imgbtnHamburger.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 result.openDrawer();
             }
-        });
+        });*/
     }
 
     private void createDrawer() {
