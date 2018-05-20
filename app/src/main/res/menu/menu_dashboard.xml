@@ -5,16 +5,16 @@
 
 
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/menu_settings"
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />
     <item
-        android:id="@+id/action_email"
+        android:id="@+id/menu_email"
         android:orderInCategory="200"
         android:title="User"
         android:icon="@drawable/email"
-        app:showAsAction="ifRoom"></item>
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/menu_profile"
@@ -23,10 +23,20 @@
         android:title="Profile"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/notifications_alerts_menu_item"
+        android:id="@+id/menu_notifications"
         android:orderInCategory="400"
         app:actionLayout="@layout/view_notification"
         android:title="Alerts"
         app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/menu_language"
+        android:orderInCategory="500"
+        android:title="User"
+        android:icon="@drawable/en"
+        app:showAsAction="ifRoom"/>
+
+
+
 
 </menu>
