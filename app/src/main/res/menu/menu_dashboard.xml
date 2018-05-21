@@ -3,12 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="org.ole.planet.takeout.Dashboard">
 
-
-    <item
-        android:id="@+id/menu_settings"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never" />
     <item
         android:id="@+id/menu_email"
         android:orderInCategory="200"

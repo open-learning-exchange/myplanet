@@ -2,6 +2,7 @@
     <!-- Toolbar -->
     <style name="HeaderBar">
         <item name="android:background">#303F9F</item>
+
     </style>
     <style name="overFlowMenuStyle" parent="Widget.AppCompat.PopupMenu.Overflow">
         <item name="overlapAnchor">false</item>
