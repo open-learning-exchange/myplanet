@@ -13,16 +13,19 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
-
+import com.mikepenz.materialdrawer.AccountHeader;
+import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
+import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
     private Toolbar mTopToolbar;
+    AccountHeader headerResult;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,6 +35,7 @@ public class Dashboard extends AppCompatActivity {
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
 
+        headerResult = getAccountHeader();
         createDrawer();
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
@@ -41,7 +45,6 @@ public class Dashboard extends AppCompatActivity {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
 
-        initElements();
         openCallFragment(new DashboardFragment());
 
     }
@@ -64,14 +67,17 @@ public class Dashboard extends AppCompatActivity {
     }
 
 
-    private void initElements() {
-//        ImageButton imgbtnHamburger = findViewById(R.id.imgbtnHamburgger);
-/*      imgbtnHamburger.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                result.openDrawer();
-            }
-        });*/
+    private AccountHeader getAccountHeader() {
+        //Create User profile header
+        return new AccountHeaderBuilder()
+                .withActivity(this)
+                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
+                    @Override
+                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
+                        return false;
+                    }
+                })
+                .build();
     }
 
     private void createDrawer() {
@@ -80,7 +86,7 @@ public class Dashboard extends AppCompatActivity {
                 .withFullscreen(true)
                 .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
                 .withToolbar(mTopToolbar)
-    //            .withAccountHeader(headerResult)
+                .withAccountHeader(headerResult)
                 .addDrawerItems(
                         getDrawerItems()
                 )
