@@ -13,14 +13,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
+
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
-import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+
 
 public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
@@ -70,23 +71,23 @@ public class Dashboard extends AppCompatActivity {
     private AccountHeader getAccountHeader() {
         //Create User profile header
         return new AccountHeaderBuilder()
-                .withActivity(this)
-                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
-                    @Override
-                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
-                        return false;
-                    }
-                })
+                .withActivity(Dashboard.this)
+                .withHeightDp(20)
+                .withTextColor(getResources().getColor(R.color.bg_white))
                 .build();
+
     }
 
     private void createDrawer() {
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(70);
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
                 .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
+                .withHeaderHeight(dimenHolder)
+                .withDisplayBelowStatusBar(false)
                 .addDrawerItems(
                         getDrawerItems()
                 )
@@ -103,6 +104,7 @@ public class Dashboard extends AppCompatActivity {
                 })
                 .withDrawerWidthDp(200)
                 .build();
+
     }
 
     private void menuAction(int selectedMenuId) {
