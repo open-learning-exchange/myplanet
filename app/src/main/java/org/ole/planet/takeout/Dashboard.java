@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
@@ -72,22 +73,22 @@ public class Dashboard extends AppCompatActivity {
         //Create User profile header
         return new AccountHeaderBuilder()
                 .withActivity(Dashboard.this)
-                .withHeightDp(20)
                 .withTextColor(getResources().getColor(R.color.bg_white))
+                .withHeaderBackground(R.drawable.header)
+                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .build();
 
     }
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(70);
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
+                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimaryDark))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
-                .withDisplayBelowStatusBar(false)
                 .addDrawerItems(
                         getDrawerItems()
                 )
