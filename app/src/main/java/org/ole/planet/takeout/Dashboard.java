@@ -1,14 +1,19 @@
 package org.ole.planet.takeout;
 
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -16,59 +21,74 @@ import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
-import com.mikepenz.materialdrawer.model.interfaces.IProfile;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+
 
 public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
+    private Toolbar mTopToolbar;
+    AccountHeader headerResult;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
-        AccountHeader headerResult = getAccountHeader();
-        createDrawer(headerResult);
-        //result.setSelection(1, true);
-        //result.addStickyFooterItem(new PrimaryDrawerItem().withName("Logout"));
+        mTopToolbar = findViewById(R.id.my_toolbar);
+        setSupportActionBar(mTopToolbar);
+        mTopToolbar.setTitleTextColor(Color.WHITE);
+        mTopToolbar.setSubtitleTextColor(Color.WHITE);
 
+        headerResult = getAccountHeader();
+        createDrawer();
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        getSupportActionBar().setTitle(R.string.app_project_name);
+        result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
 
-        initElements();
         openCallFragment(new DashboardFragment());
 
     }
-
-    private void initElements() {
-        ImageButton imgbtnHamburger = findViewById(R.id.imgbtnHamburgger);
-        imgbtnHamburger.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                result.openDrawer();
-            }
-        });
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_dashboard, menu);
+        return true;
     }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.menu_email) {
+            Toast.makeText(Dashboard.this, "Action clicked", Toast.LENGTH_LONG).show();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
 
     private AccountHeader getAccountHeader() {
         //Create User profile header
         return new AccountHeaderBuilder()
-                .withActivity(this)
-                .withOnAccountHeaderListener(new AccountHeader.OnAccountHeaderListener() {
-                    @Override
-                    public boolean onProfileChanged(View view, IProfile profile, boolean currentProfile) {
-                        return false;
-                    }
-                })
+                .withActivity(Dashboard.this)
+                .withTextColor(getResources().getColor(R.color.bg_white))
+                .withHeaderBackground(R.drawable.header)
+                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .build();
+
     }
 
-    private void createDrawer(AccountHeader headerResult) {
+    private void createDrawer() {
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
-    //            .withAccountHeader(headerResult)
+                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimaryDark))
+                .withToolbar(mTopToolbar)
+                .withAccountHeader(headerResult)
+                .withHeaderHeight(dimenHolder)
                 .addDrawerItems(
                         getDrawerItems()
                 )
@@ -85,6 +105,7 @@ public class Dashboard extends AppCompatActivity {
                 })
                 .withDrawerWidthDp(200)
                 .build();
+
     }
 
     private void menuAction(int selectedMenuId) {
@@ -100,6 +121,10 @@ public class Dashboard extends AppCompatActivity {
                 break;
             case R.string.menu_courses:
                 break;
+            default:
+                 openCallFragment(new DashboardFragment());
+                 break;
+
         }
     }
 

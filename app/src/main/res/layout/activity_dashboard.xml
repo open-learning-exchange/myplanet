@@ -5,36 +5,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="org.ole.planet.takeout.Dashboard">
-
-    <android.support.design.widget.AppBarLayout
+    <android.support.v7.widget.Toolbar
+        android:id="@+id/my_toolbar"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:theme="@style/MyMaterialTheme.AppBarOverlay">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:weightSum="10">
-
-            <ImageButton
-                android:id="@+id/imgbtnHamburgger"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="@null"
-                app:srcCompat="@drawable/baseline_menu" />
-        </LinearLayout>
-
-    </android.support.design.widget.AppBarLayout>
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        app:popupTheme="@style/CustomTheme"
+        android:elevation="4dp"
+        />
 
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingTop="60dp"></FrameLayout>
+        android:paddingTop="60dp">
+
+    </FrameLayout>
 
 
 </android.support.design.widget.CoordinatorLayout>

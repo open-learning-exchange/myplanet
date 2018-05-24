@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 public class DashboardFragment extends Fragment {
 
     public DashboardFragment() {
+        //init dashboard
     }
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
