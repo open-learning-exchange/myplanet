@@ -180,7 +180,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:text="@string/txt_myLibrary"
+                        android:text="@string/txt_myCourses"
                         android:textColor="@color/textColorPrimary"
                         android:textSize="18sp"
                         android:typeface="sans" />
@@ -225,7 +225,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:text="@string/txt_myLibrary"
+                        android:text="@string/txt_myMeetups"
                         android:textColor="@color/textColorPrimary"
                         android:textSize="18sp"
                         android:typeface="sans" />
@@ -270,7 +270,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:text="@string/txt_myLibrary"
+                        android:text="@string/txt_myTeams"
                         android:textColor="@color/textColorPrimary"
                         android:textSize="18sp"
                         android:typeface="sans" />
