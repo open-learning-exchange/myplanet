@@ -34,7 +34,8 @@
                 android:layout_weight="2.7"
                 android:background="@color/material_drawer_primary"
                 android:orientation="vertical"
-                android:padding="10dp"
+                android:paddingLeft="10dp"
+                android:paddingTop="10dp"
                 android:weightSum="5">
 
                 <ImageView
@@ -42,7 +43,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="5dp"
-                    android:layout_marginRight="5dp"
                     android:layout_weight="2.5"
                     android:scaleType="fitCenter"
                     android:textAlignment="center"
