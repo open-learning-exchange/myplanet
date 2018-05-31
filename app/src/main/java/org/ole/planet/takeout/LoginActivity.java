@@ -3,6 +3,7 @@ package org.ole.planet.takeout;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -44,11 +45,14 @@ public class LoginActivity extends AppCompatActivity {
     private View positiveAction;
     boolean connectionResult;
     dbSetup dbsetup =  new dbSetup();
+    public static final String PREFS_NAME = "OLE_PLANET";
+    SharedPreferences settings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         context = this.getApplicationContext();
         ImageView logo = findViewById(R.id.logoImageView);
         final int newColor = getResources().getColor(android.R.color.white);
@@ -162,7 +166,15 @@ public class LoginActivity extends AppCompatActivity {
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-       serverUrl.addTextChangedListener(new TextWatcher() {
+        serverUrl.setText(settings.getString("serverURL",""));
+        serverUrl.setSelection(serverUrl.getText().length());
+        editTextListener(serverUrl);
+        positiveAction.setEnabled(serverUrl.getText().length() > 0 && URLUtil.isValidUrl(serverUrl.getText().toString()));
+        dialog.show();
+    }
+
+    private void editTextListener(EditText serverUrl) {
+        serverUrl.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         //action before text change
@@ -176,11 +188,9 @@ public class LoginActivity extends AppCompatActivity {
                         //action after text change
                     }
         });
-        positiveAction.setEnabled(false);
-        dialog.show();
     }
 
-    public boolean isServerReachable(String url) {
+    public boolean isServerReachable(final String url) {
         final Fuel ful = new Fuel();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
@@ -193,6 +203,9 @@ public class LoginActivity extends AppCompatActivity {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putString("serverURL", url);
+                        editor.commit();
                     }
                 } catch (Exception e) {e.printStackTrace();}
             }
