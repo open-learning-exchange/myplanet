@@ -29,7 +29,7 @@ public class replicateDb {
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
 
-    public void replicationFromCoucDb(android.content.Context context){
+    public void replicationFromCoucDb(android.content.Context context) {
         databaseList();
         this.context = context;
         try {
@@ -42,7 +42,7 @@ public class replicateDb {
 
     }
 
-    public void databaseList(){
+    public void databaseList() {
         serverDbNameList.add("_global_changes");
         serverDbNameList.add("_replicator");
         serverDbNameList.add("_users");
@@ -70,11 +70,11 @@ public class replicateDb {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        if(replicateDirection.equalsIgnoreCase("pull")) {
+        if (replicateDirection.equalsIgnoreCase("pull")) {
             Replication pull = database.createPullReplication(url);
             pull.setContinuous(true);
             pull.start();
-        }else{
+        } else {
             Replication push = database.createPushReplication(url);
             push.setContinuous(true);
             push.start();
