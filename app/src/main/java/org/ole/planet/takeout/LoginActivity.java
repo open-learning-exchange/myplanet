@@ -45,6 +45,7 @@ public class LoginActivity extends AppCompatActivity {
     private View positiveAction;
     boolean connectionResult;
     dbSetup dbsetup =  new dbSetup();
+    Fuel ful = new Fuel();
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
 
@@ -191,7 +192,6 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     public boolean isServerReachable(final String url) {
-        final Fuel ful = new Fuel();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
@@ -204,17 +204,13 @@ public class LoginActivity extends AppCompatActivity {
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         SharedPreferences.Editor editor = settings.edit();
-                        editor.putString("serverURL", url);
-                        editor.commit();
+                        editor.putString("serverURL", url).commit();
                     }
                 } catch (Exception e) {e.printStackTrace();}
             }
-
             @Override
             public void failure(Request request, Response response, FuelError fuelError) {
-                Log.d("request", request.toString());
-                Log.d("respose", response.toString());
-                Log.d("error", fuelError.toString());
+                Log.d("fuelError", fuelError.toString());
                 alertDialogOkay("Device couldn't reach server. Check and try again");
             }
         });
