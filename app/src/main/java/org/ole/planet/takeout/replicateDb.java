@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.content.SharedPreferences;
 import android.util.Log;
 
 
@@ -25,6 +26,8 @@ import java.util.Map;
 public class replicateDb {
     android.content.Context context;
     List<String> serverDbNameList = new ArrayList<>();
+    public static final String PREFS_NAME = "OLE_PLANET";
+    SharedPreferences settings;
 
     public void replicationFromCoucDb(android.content.Context context){
         databaseList();
@@ -56,23 +59,15 @@ public class replicateDb {
 
     private void replicate(String databaseName,String replicateDirection) {
         // Create a manager
+
         Manager manager = null;
-        try {
-            manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         Database database = null;
-        try {
-            database = manager.getDatabase(databaseName);
-        } catch (CouchbaseLiteException e) {
-            e.printStackTrace();
-        }
-        // Create replicators to push & pull changes to & from Sync Gateway.
         URL url = null;
         try {
-            url = new URL("http://10.0.2.2:4984/hello");
-        } catch (MalformedURLException e) {
+            manager = new Manager(new AndroidContext(context), Manager.DEFAULT_OPTIONS);
+            database = manager.getDatabase(databaseName);
+            url = new URL(settings.getString("serverURL","") + databaseName);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         if(replicateDirection.equalsIgnoreCase("pull")) {
