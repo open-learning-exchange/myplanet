@@ -14,6 +14,8 @@
     <color name="ole_blue">#2196f3</color>
     <color name="red">#66ff0000</color>
 
+    <color name="dialog_sync_labels">#000000</color>
+
     <color name="material_drawer_selected_text">#3F51B5</color>
     <color name="material_drawer_dark_selected_text">#3F51B5</color>
 </resources>
