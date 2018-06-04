@@ -21,26 +21,25 @@
             android:layout_height="match_parent"
             android:layout_weight="3"
             android:orientation="vertical"
-            android:paddingLeft="2dp"
-            android:paddingRight="1dp"
+            android:padding="2.5dp"
             android:weightSum="10">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_gravity="center"
+                android:layout_gravity="left"
                 android:layout_weight="7"
                 android:background="@color/material_drawer_primary"
-                android:clipToPadding="false"
                 android:orientation="vertical"
-                android:padding="5dp"
+                android:padding="2.5dp"
                 android:weightSum="5">
 
                 <ImageView
                     android:id="@+id/imageView"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_margin="5dp"
+                    android:layout_marginBottom="5dp"
+                    android:layout_marginRight="5dp"
                     android:layout_weight="2.5"
                     android:scaleType="fitCenter"
                     android:textAlignment="center"
@@ -52,8 +51,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginRight="2dp"
                     android:layout_weight="0.9"
-                    android:paddingLeft="2dp"
-                    android:paddingRight="2dp"
                     android:text="Leonard Maximus Mensah"
                     android:textAlignment="center"
                     android:textColor="@color/textColorPrimary"
@@ -84,7 +81,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="7"
+                android:layout_weight="3"
                 android:orientation="vertical"></LinearLayout>
         </LinearLayout>
 
@@ -106,32 +103,32 @@
                 android:elevation="1dp"
                 android:orientation="horizontal"
                 android:paddingBottom="10dp"
-                android:paddingTop="0dp"
                 android:weightSum="6">
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="2.5"
+                    android:layout_weight="2.4"
                     android:background="@android:color/holo_red_light"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:weightSum="4">
 
                     <TextView
                         android:id="@+id/textView3"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_height="0dp"
+                        android:layout_weight="3"
                         android:text="@string/txt_myLibrary"
                         android:textColor="@color/textColorPrimary"
                         android:textSize="8sp"
                         android:typeface="sans" />
-
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="4.9"
+                    android:layout_weight="3.59"
                     android:background="@color/material_drawer_header_selection_text"
                     android:orientation="horizontal"></LinearLayout>
             </LinearLayout>
@@ -147,15 +144,17 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="2.5"
+                    android:layout_weight="2.4"
                     android:background="@color/md_amber_700"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:weightSum="4">
 
                     <TextView
                         android:id="@+id/textView4"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_height="0dp"
+                        android:layout_weight="3"
                         android:text="@string/txt_myCourses"
                         android:textColor="@color/textColorPrimary"
                         android:textSize="8sp"
@@ -165,7 +164,7 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="4.9"
+                    android:layout_weight="3.59"
                     android:background="@color/material_drawer_header_selection_text"
                     android:orientation="horizontal"></LinearLayout>
             </LinearLayout>
@@ -181,15 +180,17 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="2.5"
+                    android:layout_weight="2.4"
                     android:background="@android:color/holo_purple"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:weightSum="4">
 
                     <TextView
                         android:id="@+id/textView5"
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_height="0dp"
+                        android:layout_weight="3"
                         android:text="@string/txt_myMeetups"
                         android:textColor="@color/textColorPrimary"
                         android:textSize="8sp"
@@ -199,7 +200,7 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="4.9"
+                    android:layout_weight="3.59"
                     android:background="@color/material_drawer_header_selection_text"
                     android:orientation="horizontal"></LinearLayout>
             </LinearLayout>
@@ -215,15 +216,17 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="2.5"
+                    android:layout_weight="2.4"
                     android:background="@android:color/holo_green_dark"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:weightSum="4">
 
                     <TextView
                         android:id="@+id/textView6"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_weight="3"
                         android:text="@string/txt_myTeams"
                         android:textColor="@color/textColorPrimary"
                         android:textSize="8sp"
@@ -233,7 +236,7 @@
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="4.9"
+                    android:layout_weight="3.59"
                     android:background="@color/material_drawer_header_selection_text"
                     android:orientation="horizontal"></LinearLayout>
             </LinearLayout>
