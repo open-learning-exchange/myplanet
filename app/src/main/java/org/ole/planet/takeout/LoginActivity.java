@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.realm.Realm;
+
 
 public class LoginActivity extends AppCompatActivity {
     private EditText inputName, inputPassword;
@@ -44,6 +46,9 @@ public class LoginActivity extends AppCompatActivity {
     private View positiveAction;
     boolean connectionResult;
     dbSetup dbsetup =  new dbSetup();
+    private Realm realm;
+    //db_Model db_Model = new db_Model();
+    //db_Model.User user = new db_Model.User();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +76,12 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
         dbsetup.Setup_db(this.context);
+
+        Realm.init(context);
+        realm = Realm.getDefaultInstance();
+        db_Model.User user = new db_Model.User();
+
+
 
     }
 

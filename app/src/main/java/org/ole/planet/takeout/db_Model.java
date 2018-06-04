@@ -3,8 +3,8 @@ package org.ole.planet.takeout;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
-public class db_model {
-    public class user extends RealmObject {
+public class db_Model {
+    public static class User extends RealmObject {
         @PrimaryKey
         private String id;
         private String _rev;
