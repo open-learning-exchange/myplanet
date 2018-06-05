@@ -60,9 +60,6 @@ public class LoginActivity extends SyncActivity {
         context = this.getApplicationContext();
         changeLogoColor();
         declareElements();
-        //listeners / actions
-        inputName.addTextChangedListener(new MyTextWatcher(inputName));
-        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -105,6 +102,10 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         // textviews
         syncOption = findViewById(R.id.syncOption);
+        
+        //listeners / actions
+        inputName.addTextChangedListener(new MyTextWatcher(inputName));
+        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
     }
 
     public int adjustAlpha(int color, float factor) {
