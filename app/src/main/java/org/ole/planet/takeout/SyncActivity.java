@@ -25,16 +25,12 @@ abstract class SyncActivity extends AppCompatActivity {
 
     // Server feedback dialog
     public void  feedbackDialog(){
-
-        MaterialDialog dialog = new MaterialDialog.Builder(this)
-                .title(R.string.title_sync_settings)
+        MaterialDialog dialog = new MaterialDialog.Builder(this).title(R.string.title_sync_settings)
                 .customView(R.layout.dialog_sync_feedback, true)
-                .positiveText(R.string.btn_sync)
-                .negativeText(R.string.btn_sync_cancel)
-                .neutralText(R.string.btn_sync_save).onPositive(new MaterialDialog.SingleButtonCallback() {
+                .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(MaterialDialog dialog, DialogAction which) {
-                        Log.e("MD: ", "Clicked Positive (Sync now)");
                         Toast.makeText(SyncActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
                     }
                 })
@@ -47,23 +43,18 @@ abstract class SyncActivity extends AppCompatActivity {
                 .onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        Log.e("MD: ", "Clicked Netural (Save)");
                         Toast.makeText(SyncActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .build();
-
-        // Check Autosync switch (Toggler)
-        syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
-        intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
-
-
         syncCheck(dialog);
-
         dialog.show();
     }
 
     private void syncCheck(MaterialDialog dialog) {
+        // Check Autosync switch (Toggler)
+        syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
+        intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
         syncSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
