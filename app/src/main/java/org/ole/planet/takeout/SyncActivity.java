@@ -22,6 +22,7 @@ abstract class SyncActivity extends AppCompatActivity {
     private TextView intervalLabel;
     private Spinner spinner;
     private Switch syncSwitch;
+    int convertedDate;
 
     // Server feedback dialog
     public void  feedbackDialog(){
@@ -47,11 +48,11 @@ abstract class SyncActivity extends AppCompatActivity {
                     }
                 })
                 .build();
-        syncCheck(dialog);
+        sync(dialog);
         dialog.show();
     }
 
-    private void syncCheck(MaterialDialog dialog) {
+    private void sync(MaterialDialog dialog) {
         // Check Autosync switch (Toggler)
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
@@ -69,9 +70,13 @@ abstract class SyncActivity extends AppCompatActivity {
                 }
             }
         });
+        dateCheck(dialog);
 
-        int convertedDate = convertDate();
 
+    }
+
+    private void dateCheck(MaterialDialog dialog) {
+        convertedDate = convertDate();
         // Check if the user never synced
         if (convertedDate == 0){
             syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
@@ -90,21 +95,17 @@ abstract class SyncActivity extends AppCompatActivity {
     // Converts OS date to human date
     private int convertDate(){
         // Context goes here
-
         return 0; // <=== modify this when implementing this method
     }
 
     // Create items in the spinner
     public void syncDropdownAdd(){
         List<String> list = new ArrayList<>();
-
         list.add("15 Minutes");
         list.add("30 Minutes");
         list.add("1 Hour");
         list.add("3 Hours");
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplicationContext(),
-                android.R.layout.simple_spinner_item, list);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getApplicationContext(),android.R.layout.simple_spinner_item, list);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
