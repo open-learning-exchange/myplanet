@@ -58,10 +58,7 @@ public class LoginActivity extends SyncActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         context = this.getApplicationContext();
-        ImageView logo = findViewById(R.id.logoImageView);
-        final int newColor = getResources().getColor(android.R.color.white);
-        int alphaWhite = adjustAlpha(newColor,10);
-        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
+        changeLogoColor();
         declareElements();
         //listeners / actions
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
@@ -87,6 +84,13 @@ public class LoginActivity extends SyncActivity {
 
         dbsetup.Setup_db(this.context);
 
+    }
+    
+    public void changeLogoColor(){
+        ImageView logo = findViewById(R.id.logoImageView);
+        final int newColor = getResources().getColor(android.R.color.white);
+        int alphaWhite = adjustAlpha(newColor,10);
+        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
     }
 
     public void declareElements(){
