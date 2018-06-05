@@ -58,6 +58,12 @@ abstract class SyncActivity extends AppCompatActivity {
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
 
 
+        syncCheck(dialog);
+
+        dialog.show();
+    }
+
+    private void syncCheck(MaterialDialog dialog) {
         syncSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -88,8 +94,6 @@ abstract class SyncActivity extends AppCompatActivity {
         // Init spinner dropdown items
         spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
         syncDropdownAdd();
-
-        dialog.show();
     }
 
     // Converts OS date to human date
