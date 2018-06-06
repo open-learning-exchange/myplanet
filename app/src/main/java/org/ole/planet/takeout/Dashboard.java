@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +29,8 @@ public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
     private Toolbar mTopToolbar;
     AccountHeader headerResult;
+    public static final String PREFS_NAME = "OLE_PLANET";
+    SharedPreferences settings;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

@@ -3,6 +3,7 @@ package org.ole.planet.takeout;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -52,11 +53,15 @@ public class LoginActivity extends SyncActivity {
     private View positiveAction;
     boolean connectionResult;
     dbSetup dbsetup =  new dbSetup();
+    Fuel ful = new Fuel();
+    public static final String PREFS_NAME = "OLE_PLANET";
+    SharedPreferences settings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         context = this.getApplicationContext();
         changeLogoColor();
         declareElements();
@@ -86,7 +91,11 @@ public class LoginActivity extends SyncActivity {
     public void changeLogoColor(){
         ImageView logo = findViewById(R.id.logoImageView);
         final int newColor = getResources().getColor(android.R.color.white);
-        int alphaWhite = adjustAlpha(newColor,10);
+        int alpha = Math.round(Color.alpha(newColor) * 10);
+        int red = Color.red(newColor);
+        int green = Color.green(newColor);
+        int blue = Color.blue(newColor);
+        int alphaWhite = Color.argb(alpha, red, green, blue);
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
     }
 
@@ -106,14 +115,6 @@ public class LoginActivity extends SyncActivity {
         //listeners / actions
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-    }
-
-    public int adjustAlpha(int color, float factor) {
-        int alpha = Math.round(Color.alpha(color) * factor);
-        int red = Color.red(color);
-        int green = Color.green(color);
-        int blue = Color.blue(color);
-        return Color.argb(alpha, red, green, blue);
     }
 
     /** Form  Validation  */
@@ -183,7 +184,15 @@ public class LoginActivity extends SyncActivity {
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-       serverUrl.addTextChangedListener(new TextWatcher() {
+        serverUrl.setText(settings.getString("serverURL",""));
+        serverUrl.setSelection(serverUrl.getText().length());
+        editTextListener(serverUrl);
+        positiveAction.setEnabled(serverUrl.getText().length() > 0 && URLUtil.isValidUrl(serverUrl.getText().toString()));
+        dialog.show();
+    }
+
+    private void editTextListener(EditText serverUrl) {
+        serverUrl.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         //action before text change
@@ -197,13 +206,9 @@ public class LoginActivity extends SyncActivity {
                         //action after text change
                     }
         });
-        positiveAction.setEnabled(false);
-        dialog.show();
     }
 
-
-    public boolean isServerReachable(String url) {
-        final Fuel ful = new Fuel();
+    public boolean isServerReachable(final String url) {
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
@@ -215,15 +220,14 @@ public class LoginActivity extends SyncActivity {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putString("serverURL", url).commit();
                     }
                 } catch (Exception e) {e.printStackTrace();}
             }
-
             @Override
             public void failure(Request request, Response response, FuelError fuelError) {
-                Log.d("request", request.toString());
-                Log.d("respose", response.toString());
-                Log.d("error", fuelError.toString());
+                Log.d("fuelError", fuelError.toString());
                 alertDialogOkay("Device couldn't reach server. Check and try again");
             }
         });
@@ -243,6 +247,4 @@ public class LoginActivity extends SyncActivity {
         AlertDialog alert11 = builder1.create();
         alert11.show();
     }
-
-
 }
