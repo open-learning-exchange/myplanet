@@ -16,10 +16,15 @@ import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.Spinner;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -30,16 +35,19 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends SyncActivity {
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
     private ImageButton imgBtnSetting;
+    private TextView syncOption;
     Context context;
     private View positiveAction;
     boolean connectionResult;
@@ -50,14 +58,8 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         context = this.getApplicationContext();
-        ImageView logo = findViewById(R.id.logoImageView);
-        final int newColor = getResources().getColor(android.R.color.white);
-        int alphaWhite = adjustAlpha(newColor,10);
-        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
+        changeLogoColor();
         declareElements();
-        //listeners / actions
-        inputName.addTextChangedListener(new MyTextWatcher(inputName));
-        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -70,8 +72,22 @@ public class LoginActivity extends AppCompatActivity {
                 settingDialog();
             }
         });
+        syncOption.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                feedbackDialog();
+            }
+        });
+
         dbsetup.Setup_db(this.context);
 
+    }
+    
+    public void changeLogoColor(){
+        ImageView logo = findViewById(R.id.logoImageView);
+        final int newColor = getResources().getColor(android.R.color.white);
+        int alphaWhite = adjustAlpha(newColor,10);
+        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
     }
 
     public void declareElements(){
@@ -84,7 +100,12 @@ public class LoginActivity extends AppCompatActivity {
         //buttons
         btnSignIn = findViewById(R.id.btn_signin);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
-
+        // textviews
+        syncOption = findViewById(R.id.syncOption);
+        
+        //listeners / actions
+        inputName.addTextChangedListener(new MyTextWatcher(inputName));
+        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
     }
 
     public int adjustAlpha(int color, float factor) {
@@ -179,6 +200,7 @@ public class LoginActivity extends AppCompatActivity {
         positiveAction.setEnabled(false);
         dialog.show();
     }
+
 
     public boolean isServerReachable(String url) {
         final Fuel ful = new Fuel();
