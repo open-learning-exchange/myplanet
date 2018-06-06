@@ -39,6 +39,7 @@
 
     <style name="MyAppTheme.TextInputLayout" parent="@android:style/TextAppearance">
         <item name="android:textColor">@color/red</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="MyMaterialTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
