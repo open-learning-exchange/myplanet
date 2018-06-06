@@ -77,12 +77,18 @@ public class LoginActivity extends AppCompatActivity {
         });
         dbsetup.Setup_db(this.context);
 
+        realmInit();
+
+
+
+    }
+
+    private void realmInit() {
         Realm.init(context);
         realm = Realm.getDefaultInstance();
+        realm.beginTransaction();
         db_Model.User user = new db_Model.User();
-
-
-
+        user.setId("");
     }
 
     public void declareElements(){
