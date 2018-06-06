@@ -91,7 +91,11 @@ public class LoginActivity extends SyncActivity {
     public void changeLogoColor(){
         ImageView logo = findViewById(R.id.logoImageView);
         final int newColor = getResources().getColor(android.R.color.white);
-        int alphaWhite = adjustAlpha(newColor,10);
+        int alpha = Math.round(Color.alpha(newColor) * 10);
+        int red = Color.red(newColor);
+        int green = Color.green(newColor);
+        int blue = Color.blue(newColor);
+        int alphaWhite = Color.argb(alpha, red, green, blue);
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
     }
 
@@ -111,14 +115,6 @@ public class LoginActivity extends SyncActivity {
         //listeners / actions
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-    }
-
-    public int adjustAlpha(int color, float factor) {
-        int alpha = Math.round(Color.alpha(color) * factor);
-        int red = Color.red(color);
-        int green = Color.green(color);
-        int blue = Color.blue(color);
-        return Color.argb(alpha, red, green, blue);
     }
 
     /** Form  Validation  */
@@ -251,6 +247,4 @@ public class LoginActivity extends SyncActivity {
         AlertDialog alert11 = builder1.create();
         alert11.show();
     }
-
-
 }
