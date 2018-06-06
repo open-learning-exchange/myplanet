@@ -86,6 +86,7 @@
             android:weightSum="6">
 
             <RelativeLayout
+                android:layout_width="222dp"
                 android:layout_width="wrap_content"
                 android:layout_height="6dp"
                 android:layout_marginRight="10dp"
