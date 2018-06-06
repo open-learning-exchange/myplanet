@@ -30,6 +30,8 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.lightcouch.CouchDbClient;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,6 +49,7 @@ public class LoginActivity extends AppCompatActivity {
     boolean connectionResult;
     dbSetup dbsetup =  new dbSetup();
     private Realm realm;
+    String serverURL;
     //db_Model db_Model = new db_Model();
     //db_Model.User user = new db_Model.User();
 
@@ -78,17 +81,14 @@ public class LoginActivity extends AppCompatActivity {
         dbsetup.Setup_db(this.context);
 
         realmInit();
-
-
-
     }
 
     private void realmInit() {
         Realm.init(context);
         realm = Realm.getDefaultInstance();
         realm.beginTransaction();
-        db_Model.User user = new db_Model.User();
-        user.setId("");
+        realm_UserModel rm_user = new realm_UserModel();
+        rm_user.setId("");
     }
 
     public void declareElements(){
@@ -197,7 +197,7 @@ public class LoginActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    public boolean isServerReachable(String url) {
+    public boolean isServerReachable(final String url) {
         final Fuel ful = new Fuel();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
@@ -210,6 +210,8 @@ public class LoginActivity extends AppCompatActivity {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                        serverURL = url;
+                        syncDB("_users");
                     }
                 } catch (Exception e) {e.printStackTrace();}
             }
@@ -237,6 +239,19 @@ public class LoginActivity extends AppCompatActivity {
                 });
         AlertDialog alert11 = builder1.create();
         alert11.show();
+    }
+
+    public void syncDB(String db){
+        CouchDbClient dbClient = new CouchDbClient(db,
+                false,
+                "http",
+                "address",
+                2300,
+                "username",
+                "password");
+
+
+
     }
 
 

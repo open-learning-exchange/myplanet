@@ -1,11 +1,6 @@
 package org.ole.planet.takeout;
 
 import android.content.Context;
-import android.util.Log;
-
-import com.couchbase.lite.CouchbaseLiteException;
-import com.couchbase.lite.Database;
-import com.couchbase.lite.DatabaseConfiguration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,12 +12,10 @@ public class dbSetup {
     public void Setup_db(Context context){
         this.context = context;
         initDatabases();
-
-
     }
     public void initDatabases(){
         populateDatabaseList();
-        DatabaseConfiguration config = new DatabaseConfiguration(context);
+       /* DatabaseConfiguration config = new DatabaseConfiguration(context);
         try {
             for (int i = 0; i < databaseList.size(); i++) {
                 Database db = new Database(databaseList.get(i), config);
@@ -31,7 +24,7 @@ public class dbSetup {
 
         } catch (CouchbaseLiteException e) {
             e.printStackTrace();
-        }
+        } */
     }
     public void populateDatabaseList(){
         databaseList.add("communityregistrationrequests");
