@@ -10,21 +10,16 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -35,8 +30,6 @@ import com.github.kittinunf.fuel.core.FuelError;
 import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,8 +46,6 @@ public class LoginActivity extends SyncActivity {
     private View positiveAction;
     boolean connectionResult;
     dbSetup dbsetup =  new dbSetup();
-    public static final String PREFS_NAME = "OLE_PLANET";
-    SharedPreferences settings;
     EditText serverUrl;
 
     @Override
@@ -182,6 +173,7 @@ public class LoginActivity extends SyncActivity {
         });
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverUrl.setText(settings.getString("serverURL",""));
         serverUrl.addTextChangedListener(new TextWatcher() {
                     @Override
@@ -215,8 +207,9 @@ public class LoginActivity extends SyncActivity {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
-                        SharedPreferences.Editor editor = settings.edit();
-                         editor.putString("serverURL", url).commit();
+                        //Todo get password from EditText
+                        setUrlParts(url, "");
+
                     }
                 } catch (Exception e) {e.printStackTrace();}
             }
