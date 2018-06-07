@@ -3,6 +3,7 @@ package org.ole.planet.takeout;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -18,6 +19,11 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.gson.JsonObject;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ArrayNode;
+import org.json.JSONObject;
 import org.lightcouch.CouchDbClient;
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
@@ -25,8 +31,12 @@ import org.lightcouch.Document;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 
 abstract class SyncActivity extends AppCompatActivity {
     private TextView syncDate;
@@ -162,7 +172,14 @@ abstract class SyncActivity extends AppCompatActivity {
                 List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
                 for (int i = 0; i < allDocs.size(); i++){
                     Document doc = allDocs.get(i);
-                    Log.e("CouchClient -- ",doc.getId());
+                    JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                    try {
+                        Log.e("CouchClient -- ",doc.getId());
+
+                    } catch (Exception e) {
+                        Log.e("MyCouch", "its a json object: = " + e.toString());
+                        e.printStackTrace();
+                    }
                 }
             }
         });
