@@ -55,6 +55,9 @@ public class LoginActivity extends SyncActivity {
         context = this.getApplicationContext();
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         changeLogoColor();
+        //layouts
+        inputLayoutName = findViewById(R.id.input_layout_name);
+        inputLayoutPassword = findViewById(R.id.input_layout_password);
         declareElements();
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -80,9 +83,6 @@ public class LoginActivity extends SyncActivity {
     }
 
     public void declareElements(){
-        //layouts
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
         //editText
         inputName = findViewById(R.id.input_name);
         inputPassword = findViewById(R.id.input_password);
