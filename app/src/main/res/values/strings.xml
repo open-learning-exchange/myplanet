@@ -31,4 +31,5 @@
     <string name="txt_myCourses">myCourses</string>
     <string name="txt_myMeetups">myMeetups</string>
     <string name="txt_myTeams">myTeams</string>
+    <string name="title_activity_pdfreader">PDFReaderActivity</string>
 </resources>
