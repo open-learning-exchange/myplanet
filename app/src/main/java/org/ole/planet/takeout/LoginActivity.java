@@ -29,9 +29,11 @@ import com.github.kittinunf.fuel.core.FuelError;
 import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
+import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClient;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -198,8 +200,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     public boolean isServerReachable(final String url) {
-        final Fuel ful = new Fuel();
-        ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
+       final Fuel ful = new Fuel();
+        ful.get(url + ":2300/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
@@ -242,13 +244,32 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     public void syncDB(String db){
+        URI uri = URI.create(serverURL);
+        String url_Scheme = uri.getScheme();
+        String url_Host = uri.getHost();
+        int url_Port = uri.getPort();
+        String url_user = null, url_pwd = null;
+        if (serverURL.contains("@")) {
+            String[] userinfo = uri.getUserInfo().split(":");
+            url_user = userinfo[0];
+            url_pwd = userinfo[1];
+        }
+
         CouchDbClient dbClient = new CouchDbClient(db,
                 false,
                 "http",
-                "address",
+                serverURL,
                 2300,
-                "username",
+                "leomaxi",
                 "password");
+        // views
+        List<JsonObject> list = dbClient.view("_all_docs")
+                .includeDocs(true)
+                .query(JsonObject.class);
+        long count = dbClient.view("_all_docs")
+                .key("couchdb").queryForLong();
+        Log.e("CouchClint",list.toString());
+
 
 
 
