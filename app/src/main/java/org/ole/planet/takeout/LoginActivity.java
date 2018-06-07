@@ -65,7 +65,15 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                settingDialog();
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, true).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        dialog.dismiss();
+                        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+                        isServerReachable(serverUrl.getText().toString());
+                    }
+                });
+                settingDialog(builder);
             }
         });
         syncOption.setOnClickListener(new View.OnClickListener() {
@@ -162,15 +170,7 @@ public class LoginActivity extends SyncActivity {
         }
     }
 
-    public void  settingDialog(){
-        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, true).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        dialog.dismiss();
-                        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-                        isServerReachable(serverUrl.getText().toString());
-                    }
-        });
+    public void  settingDialog(MaterialDialog.Builder builder){
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
