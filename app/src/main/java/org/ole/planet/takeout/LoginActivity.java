@@ -183,7 +183,6 @@ public class LoginActivity extends SyncActivity {
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         serverUrl.setText(settings.getString("serverURL",""));
-        serverUrl.setSelection(serverUrl.getText().length());
         serverUrl.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
