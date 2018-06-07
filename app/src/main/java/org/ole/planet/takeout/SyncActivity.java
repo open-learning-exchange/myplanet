@@ -172,19 +172,17 @@ abstract class SyncActivity extends AppCompatActivity {
                 List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
                 for (int i = 0; i < allDocs.size(); i++){
                     Document doc = allDocs.get(i);
-                    JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                     try {
-                        Log.e("CouchClient -- ",doc.getId());
+                        JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                        Log.e("MyCouch", " item id"+jsonDoc.get("_id"));
 
                     } catch (Exception e) {
-                        Log.e("MyCouch", "its a json object: = " + e.toString());
+                        Log.e("MyCouch", "it isn't a json object: = " + e.toString());
                         e.printStackTrace();
                     }
                 }
             }
         });
         td.start();
-
-
     }
 }
