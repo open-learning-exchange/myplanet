@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'realm-android'
 
 android {
     compileSdkVersion 27
@@ -17,6 +18,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/ASL2.0'
+    }
 }
 
 dependencies {
@@ -26,6 +37,7 @@ dependencies {
     implementation 'com.github.kittinunf.fuel:fuel-android:1.12.1'
     implementation 'com.couchbase.lite:couchbase-lite-android:2.0.0'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
+    implementation 'org.lightcouch:lightcouch:0.2.0'
     implementation("com.mikepenz:materialdrawer:6.0.7@aar") {
         transitive = true
     }
@@ -45,3 +57,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 
 }
+realm {
+    syncEnabled = true;
+}
+
