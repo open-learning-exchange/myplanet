@@ -55,6 +55,7 @@ public class LoginActivity extends SyncActivity {
     dbSetup dbsetup =  new dbSetup();
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
+    EditText serverUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +74,6 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean wrapInScrollView = true;
                 settingDialog();
             }
         });
@@ -172,17 +172,16 @@ public class LoginActivity extends SyncActivity {
     }
 
     public void  settingDialog(){
-        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, wrapInScrollView).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
+        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, true).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         dialog.dismiss();
-                        EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+                        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
                         isServerReachable(serverUrl.getText().toString());
                     }
         });
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
-        EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverUrl.setText(settings.getString("serverURL",""));
         serverUrl.setSelection(serverUrl.getText().length());
         serverUrl.addTextChangedListener(new TextWatcher() {
