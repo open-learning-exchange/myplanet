@@ -62,29 +62,10 @@ public class LoginActivity extends SyncActivity {
                 submitForm();
             }
         });
-        imgBtnSetting.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, true).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        dialog.dismiss();
-                        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-                        isServerReachable(serverUrl.getText().toString());
-                    }
-                });
-                settingDialog(builder);
-            }
-        });
-        syncOption.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                feedbackDialog();
-            }
-        });
-
+        //listeners / actions
+        inputName.addTextChangedListener(new MyTextWatcher(inputName));
+        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         dbsetup.Setup_db(this.context);
-
     }
     
     public void changeLogoColor(){
@@ -110,10 +91,27 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         // textviews
         syncOption = findViewById(R.id.syncOption);
-        
-        //listeners / actions
-        inputName.addTextChangedListener(new MyTextWatcher(inputName));
-        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
+
+        imgBtnSetting.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, true).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        dialog.dismiss();
+                        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+                        isServerReachable(serverUrl.getText().toString());
+                    }
+                });
+                settingDialog(builder);
+            }
+        });
+        syncOption.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                feedbackDialog();
+            }
+        });
     }
     /** Form  Validation  */
     private void submitForm() {
