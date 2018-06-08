@@ -3,27 +3,23 @@ package org.ole.planet.takeout;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,8 +30,6 @@ import com.github.kittinunf.fuel.core.FuelError;
 import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
-
-import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,13 +46,18 @@ public class LoginActivity extends SyncActivity {
     private View positiveAction;
     boolean connectionResult;
     dbSetup dbsetup =  new dbSetup();
+    EditText serverUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         context = this.getApplicationContext();
+        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         changeLogoColor();
+        //layouts
+        inputLayoutName = findViewById(R.id.input_layout_name);
+        inputLayoutPassword = findViewById(R.id.input_layout_password);
         declareElements();
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -66,34 +65,24 @@ public class LoginActivity extends SyncActivity {
                 submitForm();
             }
         });
-        imgBtnSetting.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                settingDialog();
-            }
-        });
-        syncOption.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                feedbackDialog();
-            }
-        });
-
+        //listeners / actions
+        inputName.addTextChangedListener(new MyTextWatcher(inputName));
+        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         dbsetup.Setup_db(this.context);
-
     }
     
     public void changeLogoColor(){
         ImageView logo = findViewById(R.id.logoImageView);
         final int newColor = getResources().getColor(android.R.color.white);
-        int alphaWhite = adjustAlpha(newColor,10);
+        int alpha = Math.round(Color.alpha(newColor) * 10);
+        int red = Color.red(newColor);
+        int green = Color.green(newColor);
+        int blue = Color.blue(newColor);
+        int alphaWhite = Color.argb(alpha, red, green, blue);
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
     }
 
     public void declareElements(){
-        //layouts
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
         //editText
         inputName = findViewById(R.id.input_name);
         inputPassword = findViewById(R.id.input_password);
@@ -102,20 +91,28 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         // textviews
         syncOption = findViewById(R.id.syncOption);
-        
-        //listeners / actions
-        inputName.addTextChangedListener(new MyTextWatcher(inputName));
-        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-    }
 
-    public int adjustAlpha(int color, float factor) {
-        int alpha = Math.round(Color.alpha(color) * factor);
-        int red = Color.red(color);
-        int green = Color.green(color);
-        int blue = Color.blue(color);
-        return Color.argb(alpha, red, green, blue);
+        imgBtnSetting.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, true).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        dialog.dismiss();
+                        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+                        isServerReachable(serverUrl.getText().toString());
+                    }
+                });
+                settingDialog(builder);
+            }
+        });
+        syncOption.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                feedbackDialog();
+            }
+        });
     }
-
     /** Form  Validation  */
     private void submitForm() {
         if (!validateEditText(inputName,inputLayoutName,getString(R.string.err_msg_name))) {
@@ -171,19 +168,12 @@ public class LoginActivity extends SyncActivity {
         }
     }
 
-    public void  settingDialog(){
-        boolean wrapInScrollView = true;
-        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url, wrapInScrollView).positiveText(R.string.btn_connect).onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        dialog.dismiss();
-                        EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-                        isServerReachable(serverUrl.getText().toString());    }
-                });
+    public void  settingDialog(MaterialDialog.Builder builder){
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
-        EditText serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-       serverUrl.addTextChangedListener(new TextWatcher() {
+        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+        serverUrl.setText(settings.getString("serverURL",""));
+        serverUrl.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         //action before text change
@@ -202,7 +192,7 @@ public class LoginActivity extends SyncActivity {
     }
 
 
-    public boolean isServerReachable(String url) {
+    public boolean isServerReachable(final String url) {
         final Fuel ful = new Fuel();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
@@ -215,14 +205,15 @@ public class LoginActivity extends SyncActivity {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                        //Todo get password from EditText
+                        setUrlParts(url, "");
+
                     }
                 } catch (Exception e) {e.printStackTrace();}
             }
 
             @Override
             public void failure(Request request, Response response, FuelError fuelError) {
-                Log.d("request", request.toString());
-                Log.d("respose", response.toString());
                 Log.d("error", fuelError.toString());
                 alertDialogOkay("Device couldn't reach server. Check and try again");
             }
