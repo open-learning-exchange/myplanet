@@ -1,5 +1,9 @@
 package org.ole.planet.takeout;
 
+import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Message;
+import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -13,9 +17,26 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.gson.JsonObject;
 
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ArrayNode;
+import org.json.JSONObject;
+import org.lightcouch.CouchDbClient;
+import org.lightcouch.CouchDbClientAndroid;
+import org.lightcouch.CouchDbProperties;
+import org.lightcouch.Document;
+
+import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 
 abstract class SyncActivity extends AppCompatActivity {
     private TextView syncDate;
@@ -23,6 +44,8 @@ abstract class SyncActivity extends AppCompatActivity {
     private Spinner spinner;
     private Switch syncSwitch;
     int convertedDate;
+    public static final String PREFS_NAME = "OLE_PLANET";
+    SharedPreferences settings;
 
     // Server feedback dialog
     public void  feedbackDialog(){
@@ -71,8 +94,6 @@ abstract class SyncActivity extends AppCompatActivity {
             }
         });
         dateCheck(dialog);
-
-
     }
 
     private void dateCheck(MaterialDialog dialog) {
@@ -108,6 +129,60 @@ abstract class SyncActivity extends AppCompatActivity {
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(this,R.layout.spinner_item,list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
+    }
+    public void setUrlParts(String url, String password){
+        URI uri = URI.create(url);
+        String url_Scheme = uri.getScheme();
+        String url_Host = uri.getHost();
+        int url_Port = uri.getPort();
+        String url_user = null, url_pwd = null;
+        if (url.contains("@")) {
+            String[] userinfo = uri.getUserInfo().split(":");
+            url_user = userinfo[0];
+            url_pwd = userinfo[1];
+        }else{
+            url_user="";
+            url_pwd = password;
+        }
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("serverURL", url);
+        editor.putString("url_Scheme", url_Scheme);
+        editor.putString("url_Host", url_Host);
+        editor.putInt("url_Port", url_Port);
+        editor.putString("url_user", url_user);
+        editor.putString("url_pwd", url_pwd);
+        editor.commit();
+        syncDatabase("_users");
+    }
+    public void syncDatabase(final String databaseName){
+        Thread td = new Thread(new Runnable() {
+            public void run() {
+                CouchDbProperties properties = new CouchDbProperties()
+                        .setDbName(databaseName)
+                        .setCreateDbIfNotExist(false)
+                        .setProtocol(settings.getString("url_Scheme","http"))
+                        .setHost(settings.getString("url_Host","192.168.2.1"))
+                        .setPort(settings.getInt("url_Port",3000))
+                        .setUsername(settings.getString("url_user",""))
+                        .setPassword(settings.getString("url_pwd",""))
+                        .setMaxConnections(100)
+                        .setConnectionTimeout(0);
 
+                CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+                for (int i = 0; i < allDocs.size(); i++){
+                    Document doc = allDocs.get(i);
+                    try {
+                        JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                        Log.e("MyCouch", " item id"+jsonDoc.get("_id"));
+
+                    } catch (Exception e) {
+                        Log.e("MyCouch", "it isn't a json object: = " + e.toString());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+        td.start();
     }
 }
