@@ -78,35 +78,31 @@
             android:layout_height="match_parent"
             android:layout_weight="6"
             android:gravity="center"
-            android:orientation="vertical"
-            android:weightSum="6">
+            android:orientation="vertical">
 
             <RelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="6dp"
-                android:layout_marginRight="10dp"
-                android:layout_marginTop="10dp"
-                android:layout_weight="0.6"
-                android:gravity="right"
-                android:orientation="horizontal">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
-                <TextView
+                <ImageButton
                     android:id="@+id/syncOption"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentLeft="true"
-                    android:text="Sync"
-                    android:layout_marginLeft="24dp"
-                    android:textAlignment="gravity" />
+                    android:background="@null"
+                    android:paddingLeft="12dp"
+                    android:paddingTop="8dp"
+                    app:srcCompat="@drawable/ic_sync_black_36dp" />
 
                 <ImageButton
                     android:id="@+id/imgBtnSetting"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
-                    android:layout_marginRight="8dp"
+                    android:paddingRight="12dp"
+                    android:paddingTop="8dp"
                     android:background="@null"
-                    app:srcCompat="@drawable/ic_settings_black_18dp" />
+                    app:srcCompat="@drawable/ic_settings_black_36dp" />
 
             </RelativeLayout>
 
