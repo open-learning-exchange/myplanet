@@ -56,7 +56,8 @@ dependencies {
     implementation 'de.hdodenhof:circleimageview:2.2.0'
     implementation 'com.mikepenz:itemanimators:1.0.2@aar'
     implementation 'com.mikepenz:crossfader:1.5.1@aar'
-    implementation 'com.mikepenz:crossfadedrawerlayout:1.0.1@aar'
+    implementation('com.mikepenz:crossfadedrawerlayout:1.0.1@aar')
+    implementation 'com.github.barteksc:android-pdf-viewer:3.0.0-beta.5'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
