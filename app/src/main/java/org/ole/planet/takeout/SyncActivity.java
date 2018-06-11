@@ -196,18 +196,20 @@ abstract class SyncActivity extends AppCompatActivity {
                 for (int i = 0; i < allDocs.size(); i++){
                     Document doc = allDocs.get(i);
                     try {
-                        JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                        Object value = jsonDoc.get("_id");
-                        if (value == JSONObject.NULL) {
-                            // Handle NULL
-                            Log.e("Realm", " Null "+jsonDoc.get("_id"));
-                        } else if (value instanceof JSONObject) {
-                            // Handle JSONObject
-                            Log.e("Realm", " JSON OBJECT "+jsonDoc.get("_id"));
-                        } else {
-                            // Handle String
-                            populateUsersTable(jsonDoc);
-                            Log.e("Realm", " STRING "+jsonDoc.get("_id"));
+                        if(!doc.getId().equalsIgnoreCase("_design/_auth")) {
+                            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                            Object value = jsonDoc.get("_id");
+                            if (value == JSONObject.NULL) {
+                                // Handle NULL
+                                Log.e("Realm", " Null "+jsonDoc.get("_id"));
+                            } else if (value instanceof JSONObject) {
+                                // Handle JSONObject
+                                Log.e("Realm", " JSON OBJECT "+jsonDoc.get("_id"));
+                            } else {
+                                // Handle String
+                                populateUsersTable(jsonDoc);
+                                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
+                            }
                         }
                     } catch (Exception e) {
                         Log.e("Realm", "it isn't a json object: = " + e.toString());
@@ -219,41 +221,44 @@ abstract class SyncActivity extends AppCompatActivity {
         td.start();
     }
     public void populateUsersTable(JsonObject jsonDoc){
+        try {
+            mRealm.beginTransaction();
+            realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
+            //user.setId(jsonDoc.get("_id").getAsString());
+            user.set_rev(jsonDoc.get("_rev").getAsString());
+            user.setName(jsonDoc.get("name").getAsString());
+            JsonElement userRoles = jsonDoc.get("roles");
+            JsonArray userRolesAsJsonArray = userRoles.getAsJsonArray();
+            //user.setRoles(userRolesAsJsonArray.getAsString());
+            user.setRoles("");
+            if (jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true")) {
+                user.setUserAdmin(true);
+            } else {
+                user.setUserAdmin(false);
+            }
+            user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
+            user.setFirstName(jsonDoc.get("firstName").getAsString());
+            user.setLastName(jsonDoc.get("lastName").getAsString());
+            user.setMiddleName(jsonDoc.get("middleName").getAsString());
+            user.setEmail(jsonDoc.get("email").getAsString());
+            user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
+            user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
+            user.setIterations(jsonDoc.get("iterations").getAsString());
+            user.setDerived_key(jsonDoc.get("derived_key").getAsString());
+            user.setSalt(jsonDoc.get("salt").getAsString());
+            //mRealm.commitTransaction();
+            Log.e("RealmDB", " item id " + jsonDoc.get("_id"));
 
-        mRealm.beginTransaction();
-        realm_UserModel user = mRealm.createObject(realm_UserModel.class,jsonDoc.get("_id").getAsString());
-        //user.setId(jsonDoc.get("_id").getAsString());
-        user.set_rev(jsonDoc.get("_rev").getAsString());
-        user.setName(jsonDoc.get("name").getAsString());
-        JsonElement userRoles = jsonDoc.get("roles");
-        JsonArray userRolesAsJsonArray= userRoles.getAsJsonArray();
-        //user.setRoles(userRolesAsJsonArray.getAsString());
-        user.setRoles("");
-        if(jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true")){
-            user.setUserAdmin(true);
-        }else{
-            user.setUserAdmin(false);
+            RealmResults<realm_UserModel> result = mRealm.where(realm_UserModel.class)
+                    .beginGroup()
+                    .contains("_id", "leomaxi")
+                    .endGroup()
+                    .findAll();
+
+            Log.e("RealmDB", " DB result " + result);
+        }catch(Exception err){
+            err.printStackTrace();
         }
-        user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
-        user.setFirstName(jsonDoc.get("firstName").getAsString());
-        user.setLastName(jsonDoc.get("lastName").getAsString());
-        user.setMiddleName(jsonDoc.get("middleName").getAsString());
-        user.setEmail(jsonDoc.get("email").getAsString());
-        user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
-        user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
-        user.setIterations(jsonDoc.get("iterations").getAsString());
-        user.setDerived_key(jsonDoc.get("derived_key").getAsString());
-        user.setSalt(jsonDoc.get("salt").getAsString());
-        mRealm.commitTransaction();
-        Log.e("RealmDB", " item id"+jsonDoc.get("_id"));
-
-        RealmResults<realm_UserModel> result = mRealm.where(realm_UserModel.class)
-                .beginGroup()
-                .contains("_id", "leomaxi")
-                .endGroup()
-                .findAll();
-
-        Log.e("RealmDB", " DB result "+result);
     }
 
 }
