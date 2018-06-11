@@ -208,6 +208,7 @@ abstract class SyncActivity extends AppCompatActivity {
                             } else {
                                 // Handle String
                                 populateUsersTable(jsonDoc);
+                                //putUserDataInRealm(jsonDoc);
                                 Log.e("Realm", " STRING " + jsonDoc.get("_id"));
                             }
                         }
@@ -224,7 +225,6 @@ abstract class SyncActivity extends AppCompatActivity {
         try {
             mRealm.beginTransaction();
             realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
-            //user.setId(jsonDoc.get("_id").getAsString());
             user.set_rev(jsonDoc.get("_rev").getAsString());
             user.setName(jsonDoc.get("name").getAsString());
             JsonElement userRoles = jsonDoc.get("roles");
@@ -248,17 +248,46 @@ abstract class SyncActivity extends AppCompatActivity {
             user.setSalt(jsonDoc.get("salt").getAsString());
             //mRealm.commitTransaction();
             Log.e("RealmDB", " item id " + jsonDoc.get("_id"));
-
-            RealmResults<realm_UserModel> result = mRealm.where(realm_UserModel.class)
+            /*RealmResults<realm_UserModel> result = mRealm.where(realm_UserModel.class)
                     .beginGroup()
                     .contains("_id", "leomaxi")
                     .endGroup()
                     .findAll();
 
             Log.e("RealmDB", " DB result " + result);
+            */
         }catch(Exception err){
             err.printStackTrace();
         }
+    }
+    private void putUserDataInRealm(ArrayList<realm_UserModel> resultObj) {
+        mRealm.beginTransaction();
+        for (realm_UserModel member : resultObj) {
+            realm_UserModel user = new realm_UserModel();
+            user.set_rev(member.get_rev());
+            user.setName(member.getName());
+            //JsonElement userRoles = jsonDoc.get("roles");
+            //JsonArray userRolesAsJsonArray = userRoles.getAsJsonArray();
+            //user.setRoles(userRolesAsJsonArray.getAsString());
+            user.setRoles("");
+            if (member.getUserAdmin().toString().equalsIgnoreCase("true")) {
+                user.setUserAdmin(true);
+            } else {
+                user.setUserAdmin(false);
+            }
+            user.setJoinDate(member.getJoinDate());
+            user.setFirstName(member.getFirstName());
+            user.setLastName(member.getLastName());
+            user.setMiddleName(member.getMiddleName());
+            user.setEmail(member.getEmail());
+            user.setPhoneNumber(member.getPhoneNumber());
+            user.setPassword_scheme(member.getPassword_scheme());
+            user.setIterations(member.getIterations());
+            user.setDerived_key(member.getDerived_key());
+            user.setSalt(member.getSalt());
+            mRealm.insertOrUpdate(user);
+        }
+        mRealm.commitTransaction();
     }
 
 }
