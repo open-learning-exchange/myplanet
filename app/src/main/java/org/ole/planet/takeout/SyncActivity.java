@@ -245,7 +245,6 @@ abstract class SyncActivity extends AppCompatActivity {
             user.setIterations(jsonDoc.get("iterations").getAsString());
             user.setDerived_key(jsonDoc.get("derived_key").getAsString());
             user.setSalt(jsonDoc.get("salt").getAsString());
-            //mRealm.commitTransaction();
             Log.e("RealmDB", " item id " + jsonDoc.get("_id"));
             /*RealmResults<realm_UserModel> result = mRealm.where(realm_UserModel.class)
                     .beginGroup()
@@ -255,6 +254,7 @@ abstract class SyncActivity extends AppCompatActivity {
 
             Log.e("RealmDB", " DB result " + result);
             */
+            mRealm.commitTransaction();
         }catch(Exception err){
             err.printStackTrace();
         }
