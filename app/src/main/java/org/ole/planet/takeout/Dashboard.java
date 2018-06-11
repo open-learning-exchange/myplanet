@@ -43,7 +43,8 @@ public class Dashboard extends AppCompatActivity {
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        if (Build.VERSION.SDK_INT >= 19) {
+
+      if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
 
@@ -80,6 +81,7 @@ public class Dashboard extends AppCompatActivity {
 
     }
 
+
     private void createDrawer() {
         com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);
         result = new DrawerBuilder()
@@ -100,7 +102,7 @@ public class Dashboard extends AppCompatActivity {
                                 menuAction(((Nameable) drawerItem).getName().getTextRes());
                             }
                         }
-                        return false;
+                      return false;
                     }
                 })
                 .withDrawerWidthDp(200)
@@ -136,14 +138,15 @@ public class Dashboard extends AppCompatActivity {
         fragmentTransaction.commit();
     }
 
+
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         return new IDrawerItem[]{
-                new PrimaryDrawerItem().withName(R.string.menu_home).withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_library).withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_courses).withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_meetups).withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_surveys).withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                new PrimaryDrawerItem().withName(R.string.menu_home).withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.home_blue),
+                new PrimaryDrawerItem().withName(R.string.menu_library).withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.library_blue),
+                new PrimaryDrawerItem().withName(R.string.menu_courses).withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.courses_blue),
+                new PrimaryDrawerItem().withName(R.string.menu_meetups).withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.meetups_blue),
+                new PrimaryDrawerItem().withName(R.string.menu_surveys).withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.survey_blue),
         };
     }
     @Override
@@ -155,4 +158,4 @@ public class Dashboard extends AppCompatActivity {
         }
     }
 
-}
+    }
