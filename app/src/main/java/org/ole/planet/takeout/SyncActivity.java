@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
@@ -38,6 +39,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
+
 abstract class SyncActivity extends AppCompatActivity {
     private TextView syncDate;
     private TextView intervalLabel;
@@ -46,6 +50,7 @@ abstract class SyncActivity extends AppCompatActivity {
     int convertedDate;
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
+    private Realm mRealm;
 
     // Server feedback dialog
     public void  feedbackDialog(){
@@ -174,8 +179,7 @@ abstract class SyncActivity extends AppCompatActivity {
                     Document doc = allDocs.get(i);
                     try {
                         JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                        Log.e("MyCouch", " item id"+jsonDoc.get("_id"));
-
+                        populateUsersTable(jsonDoc);
                     } catch (Exception e) {
                         Log.e("MyCouch", "it isn't a json object: = " + e.toString());
                         e.printStackTrace();
@@ -185,4 +189,31 @@ abstract class SyncActivity extends AppCompatActivity {
         });
         td.start();
     }
+    public void populateUsersTable(JsonObject jsonDoc){
+        mRealm= Realm.getInstance(Realm.getDefaultConfiguration());
+        mRealm.beginTransaction();
+        realm_UserModel user = mRealm.createObject(realm_UserModel.class);
+        user.setId(jsonDoc.get("_id").getAsString());
+        user.set_rev(jsonDoc.get("_rev").getAsString());
+        user.setName(jsonDoc.get("name").getAsString());
+        user.setRoles(jsonDoc.get("roles").getAsString());
+        if(jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true")){
+            user.setUserAdmin(true);
+        }else{
+            user.setUserAdmin(false);
+        }
+        user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
+        user.setFirstName(jsonDoc.get("firstName").getAsString());
+        user.setLastName(jsonDoc.get("lastName").getAsString());
+        user.setMiddleName(jsonDoc.get("middleName").getAsString());
+        user.setEmail(jsonDoc.get("email").getAsString());
+        user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
+        user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
+        user.setIterations(jsonDoc.get("iterations").getAsString());
+        user.setDerived_key(jsonDoc.get("derived_key").getAsString());
+        user.setSalt(jsonDoc.get("salt").getAsString());
+        mRealm.commitTransaction();
+        Log.e("MyCouch", " item id"+jsonDoc.get("_id"));
+    }
+
 }
