@@ -48,6 +48,7 @@ public class LoginActivity extends SyncActivity {
     Context context;
     private View positiveAction;
     boolean connectionResult;
+    public Realm dbRealm;
     dbSetup dbsetup =  new dbSetup();
     EditText serverUrl;
 
@@ -72,6 +73,7 @@ public class LoginActivity extends SyncActivity {
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         dbsetup.Setup_db(this.context);
+
     }
     
     public void changeLogoColor(){
@@ -209,7 +211,7 @@ public class LoginActivity extends SyncActivity {
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
-                        setUrlParts(url, "");
+                        setUrlParts(url, "",context);
 
                     }
                 } catch (Exception e) {e.printStackTrace();}

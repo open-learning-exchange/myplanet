@@ -18,6 +18,9 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.github.kittinunf.fuel.android.core.Json;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.codehaus.jackson.JsonFactory;
@@ -25,6 +28,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.json.JSONObject;
+import org.json.JSONStringer;
 import org.lightcouch.CouchDbClient;
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
@@ -41,6 +45,7 @@ import java.util.Map;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmResults;
 
 abstract class SyncActivity extends AppCompatActivity {
     private TextView syncDate;
@@ -50,7 +55,8 @@ abstract class SyncActivity extends AppCompatActivity {
     int convertedDate;
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
-    private Realm mRealm;
+    Realm mRealm;
+    Context context;
 
     // Server feedback dialog
     public void  feedbackDialog(){
@@ -135,7 +141,8 @@ abstract class SyncActivity extends AppCompatActivity {
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
     }
-    public void setUrlParts(String url, String password){
+    public void setUrlParts(String url, String password, Context context){
+        this.context  = context;
         URI uri = URI.create(url);
         String url_Scheme = uri.getScheme();
         String url_Host = uri.getHost();
@@ -160,8 +167,19 @@ abstract class SyncActivity extends AppCompatActivity {
         syncDatabase("_users");
     }
     public void syncDatabase(final String databaseName){
+        /// mRealm = Realm.getDefaultInstance();
         Thread td = new Thread(new Runnable() {
             public void run() {
+
+                Realm.init(context);
+                RealmConfiguration config = new RealmConfiguration.Builder()
+                        .name(Realm.DEFAULT_REALM_NAME)
+                        .deleteRealmIfMigrationNeeded()
+                        .schemaVersion(4)
+                        .build();
+                Realm.setDefaultConfiguration(config);
+                mRealm = Realm.getInstance(config);
+
                 CouchDbProperties properties = new CouchDbProperties()
                         .setDbName(databaseName)
                         .setCreateDbIfNotExist(false)
@@ -179,9 +197,20 @@ abstract class SyncActivity extends AppCompatActivity {
                     Document doc = allDocs.get(i);
                     try {
                         JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                        populateUsersTable(jsonDoc);
+                        Object value = jsonDoc.get("_id");
+                        if (value == JSONObject.NULL) {
+                            // Handle NULL
+                            Log.e("Realm", " Null "+jsonDoc.get("_id"));
+                        } else if (value instanceof JSONObject) {
+                            // Handle JSONObject
+                            Log.e("Realm", " JSON OBJECT "+jsonDoc.get("_id"));
+                        } else {
+                            // Handle String
+                            populateUsersTable(jsonDoc);
+                            Log.e("Realm", " STRING "+jsonDoc.get("_id"));
+                        }
                     } catch (Exception e) {
-                        Log.e("MyCouch", "it isn't a json object: = " + e.toString());
+                        Log.e("Realm", "it isn't a json object: = " + e.toString());
                         e.printStackTrace();
                     }
                 }
@@ -190,13 +219,16 @@ abstract class SyncActivity extends AppCompatActivity {
         td.start();
     }
     public void populateUsersTable(JsonObject jsonDoc){
-        mRealm= Realm.getInstance(Realm.getDefaultConfiguration());
+
         mRealm.beginTransaction();
-        realm_UserModel user = mRealm.createObject(realm_UserModel.class);
-        user.setId(jsonDoc.get("_id").getAsString());
+        realm_UserModel user = mRealm.createObject(realm_UserModel.class,jsonDoc.get("_id").getAsString());
+        //user.setId(jsonDoc.get("_id").getAsString());
         user.set_rev(jsonDoc.get("_rev").getAsString());
         user.setName(jsonDoc.get("name").getAsString());
-        user.setRoles(jsonDoc.get("roles").getAsString());
+        JsonElement userRoles = jsonDoc.get("roles");
+        JsonArray userRolesAsJsonArray= userRoles.getAsJsonArray();
+        //user.setRoles(userRolesAsJsonArray.getAsString());
+        user.setRoles("");
         if(jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true")){
             user.setUserAdmin(true);
         }else{
@@ -213,7 +245,15 @@ abstract class SyncActivity extends AppCompatActivity {
         user.setDerived_key(jsonDoc.get("derived_key").getAsString());
         user.setSalt(jsonDoc.get("salt").getAsString());
         mRealm.commitTransaction();
-        Log.e("MyCouch", " item id"+jsonDoc.get("_id"));
+        Log.e("RealmDB", " item id"+jsonDoc.get("_id"));
+
+        RealmResults<realm_UserModel> result = mRealm.where(realm_UserModel.class)
+                .beginGroup()
+                .contains("_id", "leomaxi")
+                .endGroup()
+                .findAll();
+
+        Log.e("RealmDB", " DB result "+result);
     }
 
 }
