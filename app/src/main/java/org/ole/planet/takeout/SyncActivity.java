@@ -199,17 +199,9 @@ abstract class SyncActivity extends AppCompatActivity {
                         if(!doc.getId().equalsIgnoreCase("_design/_auth")) {
                             JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                             Object value = jsonDoc.get("_id");
-                            if (value == JSONObject.NULL) {
-                                // Handle NULL
-                                Log.e("Realm", " Null "+jsonDoc.get("_id"));
-                            } else if (value instanceof JSONObject) {
-                                // Handle JSONObject
-                                Log.e("Realm", " JSON OBJECT "+jsonDoc.get("_id"));
-                            } else {
-                                // Handle String
-                                populateUsersTable(jsonDoc);
-                                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-                            }
+                            mRealm.beginTransaction();
+                            populateUsersTable(jsonDoc);
+                            Log.e("Realm", " STRING " + jsonDoc.get("_id"));
                         }
                     } catch (Exception e) {
                         Log.e("Realm", "it isn't a json object: = " + e.toString());
@@ -222,7 +214,6 @@ abstract class SyncActivity extends AppCompatActivity {
     }
     public void populateUsersTable(JsonObject jsonDoc){
         try {
-            mRealm.beginTransaction();
             realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
             user.set_rev(jsonDoc.get("_rev").getAsString());
             user.setName(jsonDoc.get("name").getAsString());
