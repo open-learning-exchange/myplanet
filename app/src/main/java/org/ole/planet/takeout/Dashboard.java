@@ -141,12 +141,13 @@ public class Dashboard extends AppCompatActivity {
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
+        PrimaryDrawerItem mHome, mLibrary, mCourses, mMeetups, mSurveys;
         return new IDrawerItem[]{
-                new PrimaryDrawerItem().withName(R.string.menu_home).withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.home_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_library).withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.library_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_courses).withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.courses_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_meetups).withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.meetups_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_surveys).withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.survey_blue),
+               mHome = new PrimaryDrawerItem().withName(R.string.menu_home).withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.home_blue),
+               mLibrary = new PrimaryDrawerItem().withName(R.string.menu_library).withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.library_blue),
+               mCourses = new PrimaryDrawerItem().withName(R.string.menu_courses).withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.courses_blue),
+               mMeetups = new PrimaryDrawerItem().withName(R.string.menu_meetups).withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.meetups_blue),
+               mSurveys =  new PrimaryDrawerItem().withName(R.string.menu_surveys).withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.survey_blue),
         };
     }
     @Override
