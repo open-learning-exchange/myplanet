@@ -167,10 +167,8 @@ abstract class SyncActivity extends AppCompatActivity {
         syncDatabase("_users");
     }
     public void syncDatabase(final String databaseName){
-        /// mRealm = Realm.getDefaultInstance();
         Thread td = new Thread(new Runnable() {
             public void run() {
-
                 Realm.init(context);
                 RealmConfiguration config = new RealmConfiguration.Builder()
                         .name(Realm.DEFAULT_REALM_NAME)
@@ -195,23 +193,27 @@ abstract class SyncActivity extends AppCompatActivity {
                 List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
                 for (int i = 0; i < allDocs.size(); i++){
                     Document doc = allDocs.get(i);
-                    try {
-                        if(!doc.getId().equalsIgnoreCase("_design/_auth")) {
-                            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                            Object value = jsonDoc.get("_id");
-                            mRealm.beginTransaction();
-                            populateUsersTable(jsonDoc);
-                            Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-                        }
-                    } catch (Exception e) {
-                        Log.e("Realm", "it isn't a json object: = " + e.toString());
-                        e.printStackTrace();
-                    }
+                    processUserDoc(dbClient, doc);
                 }
             }
         });
         td.start();
     }
+
+    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
+        try {
+            if(!doc.getId().equalsIgnoreCase("_design/_auth")) {
+                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                mRealm.beginTransaction();
+                populateUsersTable(jsonDoc);
+                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
+            }
+        } catch (Exception e) {
+            Log.e("Realm", "it isn't a json object: = " + e.toString());
+            e.printStackTrace();
+        }
+    }
+
     public void populateUsersTable(JsonObject jsonDoc){
         try {
             realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
