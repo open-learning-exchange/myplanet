@@ -226,11 +226,10 @@ abstract class SyncActivity extends AppCompatActivity {
             realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
             user.set_rev(jsonDoc.get("_rev").getAsString());
             user.setName(jsonDoc.get("name").getAsString());
-            JsonElement userRoles = jsonDoc.get("roles");
-            JsonArray userRolesAsJsonArray = userRoles.getAsJsonArray();
+            //JsonElement userRoles = jsonDoc.get("roles");
             //user.setRoles(userRolesAsJsonArray.getAsString());
             user.setRoles("");
-            if (jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true")) {
+            if ((jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true"))) {
                 user.setUserAdmin(true);
             } else {
                 user.setUserAdmin(false);
