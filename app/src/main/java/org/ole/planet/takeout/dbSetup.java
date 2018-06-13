@@ -9,13 +9,14 @@ public class dbSetup {
     Context context;
     List<String> databaseList = new ArrayList<>();
 
-    public void Setup_db(Context context){
+    public void Setup_db(Context context) {
         this.context = context;
         initDatabases();
 
 
     }
-    public void initDatabases(){
+
+    public void initDatabases() {
         /*populateDatabaseList();
         DatabaseConfiguration config = new DatabaseConfiguration(context);
         try {
@@ -28,7 +29,8 @@ public class dbSetup {
             e.printStackTrace();
         }*/
     }
-    public void populateDatabaseList(){
+
+    public void populateDatabaseList() {
         databaseList.add("communityregistrationrequests");
         databaseList.add("courses");
         databaseList.add("feedback");

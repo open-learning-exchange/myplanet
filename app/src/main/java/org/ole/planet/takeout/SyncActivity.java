@@ -59,7 +59,7 @@ abstract class SyncActivity extends AppCompatActivity {
     Context context;
 
     // Server feedback dialog
-    public void  feedbackDialog(){
+    public void feedbackDialog() {
         MaterialDialog dialog = new MaterialDialog.Builder(this).title(R.string.title_sync_settings)
                 .customView(R.layout.dialog_sync_feedback, true)
                 .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
@@ -110,11 +110,10 @@ abstract class SyncActivity extends AppCompatActivity {
     private void dateCheck(MaterialDialog dialog) {
         convertedDate = convertDate();
         // Check if the user never synced
-        if (convertedDate == 0){
+        if (convertedDate == 0) {
             syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
             syncDate.setText("Last Sync Date: Never");
-        }
-        else {
+        } else {
             syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
             syncDate.setText("Last Sync Date: " + convertedDate);
         }
@@ -125,24 +124,25 @@ abstract class SyncActivity extends AppCompatActivity {
     }
 
     // Converts OS date to human date
-    private int convertDate(){
+    private int convertDate() {
         // Context goes here
         return 0; // <=== modify this when implementing this method
     }
 
     // Create items in the spinner
-    public void syncDropdownAdd(){
+    public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
         list.add("15 Minutes");
         list.add("30 Minutes");
         list.add("1 Hour");
         list.add("3 Hours");
-        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(this,R.layout.spinner_item,list);
+        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item, list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
     }
-    public void setUrlParts(String url, String password, Context context){
-        this.context  = context;
+
+    public void setUrlParts(String url, String password, Context context) {
+        this.context = context;
         URI uri = URI.create(url);
         String url_Scheme = uri.getScheme();
         String url_Host = uri.getHost();
@@ -152,8 +152,8 @@ abstract class SyncActivity extends AppCompatActivity {
             String[] userinfo = uri.getUserInfo().split(":");
             url_user = userinfo[0];
             url_pwd = userinfo[1];
-        }else{
-            url_user="";
+        } else {
+            url_user = "";
             url_pwd = password;
         }
         SharedPreferences.Editor editor = settings.edit();
@@ -166,7 +166,8 @@ abstract class SyncActivity extends AppCompatActivity {
         editor.commit();
         syncDatabase("_users");
     }
-    public void syncDatabase(final String databaseName){
+
+    public void syncDatabase(final String databaseName) {
         Thread td = new Thread(new Runnable() {
             public void run() {
                 Realm.init(context);
@@ -181,17 +182,17 @@ abstract class SyncActivity extends AppCompatActivity {
                 CouchDbProperties properties = new CouchDbProperties()
                         .setDbName(databaseName)
                         .setCreateDbIfNotExist(false)
-                        .setProtocol(settings.getString("url_Scheme","http"))
-                        .setHost(settings.getString("url_Host","192.168.2.1"))
-                        .setPort(settings.getInt("url_Port",3000))
-                        .setUsername(settings.getString("url_user",""))
-                        .setPassword(settings.getString("url_pwd",""))
+                        .setProtocol(settings.getString("url_Scheme", "http"))
+                        .setHost(settings.getString("url_Host", "192.168.2.1"))
+                        .setPort(settings.getInt("url_Port", 3000))
+                        .setUsername(settings.getString("url_user", ""))
+                        .setPassword(settings.getString("url_pwd", ""))
                         .setMaxConnections(100)
                         .setConnectionTimeout(0);
 
                 CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++){
+                for (int i = 0; i < allDocs.size(); i++) {
                     Document doc = allDocs.get(i);
                     processUserDoc(dbClient, doc);
                 }
@@ -202,7 +203,7 @@ abstract class SyncActivity extends AppCompatActivity {
 
     private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
         try {
-            if(!doc.getId().equalsIgnoreCase("_design/_auth")) {
+            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 mRealm.beginTransaction();
                 populateUsersTable(jsonDoc);
@@ -214,7 +215,7 @@ abstract class SyncActivity extends AppCompatActivity {
         }
     }
 
-    public void populateUsersTable(JsonObject jsonDoc){
+    public void populateUsersTable(JsonObject jsonDoc) {
         try {
             realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
             user.set_rev(jsonDoc.get("_rev").getAsString());
@@ -247,7 +248,7 @@ abstract class SyncActivity extends AppCompatActivity {
             Log.e("RealmDB", " DB result " + result);
             */
             mRealm.commitTransaction();
-        }catch(Exception err){
+        } catch (Exception err) {
             err.printStackTrace();
         }
     }
