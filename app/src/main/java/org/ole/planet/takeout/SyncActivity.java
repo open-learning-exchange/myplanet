@@ -265,7 +265,7 @@ abstract class SyncActivity extends AppCompatActivity {
             Log.d("RealmDB", "Got here ");
             try {
                 RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
-                        .equalTo("name", username)
+                        //.equalTo("name", username)
                         .findAll();
                 mRealm.beginTransaction();
                 for (realm_UserModel user : db_users) {
