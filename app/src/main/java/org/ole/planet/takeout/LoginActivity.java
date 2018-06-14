@@ -35,9 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import io.realm.Realm;
-import io.realm.RealmConfiguration;
-
 
 public class LoginActivity extends SyncActivity {
     private EditText inputName, inputPassword;
@@ -48,8 +45,7 @@ public class LoginActivity extends SyncActivity {
     Context context;
     private View positiveAction;
     boolean connectionResult;
-    public Realm dbRealm;
-    dbSetup dbsetup = new dbSetup();
+    dbSetup dbsetup =  new dbSetup();
     EditText serverUrl;
 
     @Override
@@ -73,10 +69,9 @@ public class LoginActivity extends SyncActivity {
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         dbsetup.Setup_db(this.context);
-
     }
-
-    public void changeLogoColor() {
+    
+    public void changeLogoColor(){
         ImageView logo = findViewById(R.id.logoImageView);
         final int newColor = getResources().getColor(android.R.color.white);
         int alpha = Math.round(Color.alpha(newColor) * 10);
@@ -87,7 +82,7 @@ public class LoginActivity extends SyncActivity {
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
     }
 
-    public void declareElements() {
+    public void declareElements(){
         //editText
         inputName = findViewById(R.id.input_name);
         inputPassword = findViewById(R.id.input_password);
@@ -118,24 +113,20 @@ public class LoginActivity extends SyncActivity {
             }
         });
     }
-
-    /**
-     * Form  Validation
-     */
+    /** Form  Validation  */
     private void submitForm() {
-        if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
+        if (!validateEditText(inputName,inputLayoutName,getString(R.string.err_msg_name))) {
             return;
         }
-        if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
+        if (!validateEditText(inputPassword,inputLayoutPassword,getString(R.string.err_msg_password))) {
             return;
         }
         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-        Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
+        Intent dashboard = new Intent(getApplicationContext(),Dashboard.class);
         startActivity(dashboard);
 
     }
-
-    private boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
+    private boolean validateEditText(EditText textField,TextInputLayout textLayout,String err_message ){
         if (textField.getText().toString().trim().isEmpty()) {
             textLayout.setError(err_message);
             requestFocus(textField);
@@ -154,53 +145,47 @@ public class LoginActivity extends SyncActivity {
 
     private class MyTextWatcher implements TextWatcher {
         private View view;
-
         private MyTextWatcher(View view) {
             this.view = view;
         }
-
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
             //action before text change
         }
-
         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
             //action on or during text change
         }
-
         public void afterTextChanged(Editable editable) {
             switch (view.getId()) {
                 case R.id.input_name:
-                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
+                    validateEditText(inputName,inputLayoutName,getString(R.string.err_msg_name));
                     break;
                 case R.id.input_password:
-                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
+                    validateEditText(inputPassword,inputLayoutPassword,getString(R.string.err_msg_password));
                     break;
-                default:
-                    break;
+                    default:
+                        break;
             }
         }
     }
 
-    public void settingDialog(MaterialDialog.Builder builder) {
+    public void  settingDialog(MaterialDialog.Builder builder){
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-        serverUrl.setText(settings.getString("serverURL", ""));
+        serverUrl.setText(settings.getString("serverURL",""));
         serverUrl.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                //action before text change
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                //action after text change
-            }
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        //action before text change
+                    }
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                       positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
+                    }
+                    @Override
+                    public void afterTextChanged(Editable s) {
+                        //action after text change
+                    }
         });
         positiveAction.setEnabled(false);
         dialog.show();
@@ -221,12 +206,10 @@ public class LoginActivity extends SyncActivity {
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
-                        setUrlParts(url, "", context);
+                        setUrlParts(url, "");
 
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                } catch (Exception e) {e.printStackTrace();}
             }
 
             @Override

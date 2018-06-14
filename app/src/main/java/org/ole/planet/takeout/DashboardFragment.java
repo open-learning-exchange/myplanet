@@ -14,6 +14,9 @@ import android.widget.ImageButton;
  */
 public class DashboardFragment extends Fragment {
     private ImageButton myLibraryImage;
+    private ImageButton myCoursesImage;
+    private ImageButton myMeetUpsImage;
+    private ImageButton myTeamsImage;
 
     public DashboardFragment() {
         //init dashboard
@@ -35,11 +38,40 @@ public class DashboardFragment extends Fragment {
             }
         });
 
+        myCoursesImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e("DF: ", "Clicked myLibrary");
+                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        myMeetUpsImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e("DF: ", "Clicked myLibrary");
+                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        myTeamsImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e("DF: ", "Clicked myLibrary");
+                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
+                startActivity(intent);
+            }
+        });
         return view;
     }
 
     private void declareElements(View view) {
         // Imagebuttons
         myLibraryImage = (ImageButton) view.findViewById(R.id.myLibrary);
+        myCoursesImage = (ImageButton) view.findViewById(R.id.myCourses);
+        myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUps);
+        myTeamsImage = (ImageButton) view.findViewById(R.id.myTeams);
     }
 }
