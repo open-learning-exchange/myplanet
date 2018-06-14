@@ -1,6 +1,7 @@
 package org.ole.planet.takeout;
 
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -22,6 +23,8 @@ import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+
+import java.util.ArrayList;
 
 
 public class Dashboard extends AppCompatActivity {
@@ -143,13 +146,31 @@ public class Dashboard extends AppCompatActivity {
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
+        ArrayList<Drawable> menuImageList = new ArrayList<>();
+        menuImageList.add(getResources().getDrawable(R.drawable.home));
+        menuImageList.add(getResources().getDrawable(R.drawable.library));
+        menuImageList.add(getResources().getDrawable(R.drawable.courses));
+        menuImageList.add(getResources().getDrawable(R.drawable.meetups));
+        menuImageList.add(getResources().getDrawable(R.drawable.survey));
+
+        ArrayList<Integer> menuBlueImageList = new ArrayList<>();
+        menuBlueImageList.add(R.drawable.home_blue);
+        menuBlueImageList.add(R.drawable.library_blue);
+        menuBlueImageList.add(R.drawable.courses_blue);
+        menuBlueImageList.add(R.drawable.meetups_blue);
+        menuBlueImageList.add(R.drawable.survey_blue);
+
         return new IDrawerItem[]{
-                new PrimaryDrawerItem().withName(R.string.menu_home).withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.home_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_library).withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.library_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_courses).withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.courses_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_meetups).withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.meetups_blue),
-                new PrimaryDrawerItem().withName(R.string.menu_surveys).withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(R.drawable.survey_blue),
+                changeUX(R.string.menu_home,menuImageList.get(0),menuBlueImageList.get(0)),
+                changeUX(R.string.menu_library,menuImageList.get(1),menuBlueImageList.get(1)),
+                changeUX(R.string.menu_courses,menuImageList.get(2),menuBlueImageList.get(2)),
+                changeUX(R.string.menu_meetups,menuImageList.get(3),menuBlueImageList.get(3)),
+                changeUX(R.string.menu_surveys,menuImageList.get(4),menuBlueImageList.get(4)),
         };
+    }
+
+    public PrimaryDrawerItem changeUX(int iconText,Drawable drawable,int blueDrawable ){
+        return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(blueDrawable);
     }
 
     @Override
