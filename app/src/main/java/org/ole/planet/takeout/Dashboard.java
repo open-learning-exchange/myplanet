@@ -161,15 +161,15 @@ public class Dashboard extends AppCompatActivity {
         menuBlueImageList.add(R.drawable.survey_blue);
 
         return new IDrawerItem[]{
-                changeUX(R.string.menu_home,menuImageList.get(0),menuBlueImageList.get(0)),
-                changeUX(R.string.menu_library,menuImageList.get(1),menuBlueImageList.get(1)),
-                changeUX(R.string.menu_courses,menuImageList.get(2),menuBlueImageList.get(2)),
-                changeUX(R.string.menu_meetups,menuImageList.get(3),menuBlueImageList.get(3)),
-                changeUX(R.string.menu_surveys,menuImageList.get(4),menuBlueImageList.get(4)),
+                changeUX(R.string.menu_home, menuImageList.get(0), menuBlueImageList.get(0)),
+                changeUX(R.string.menu_library, menuImageList.get(1), menuBlueImageList.get(1)),
+                changeUX(R.string.menu_courses, menuImageList.get(2), menuBlueImageList.get(2)),
+                changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
+                changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
         };
     }
 
-    public PrimaryDrawerItem changeUX(int iconText,Drawable drawable,int blueDrawable ){
+    public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {
         return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(blueDrawable);
     }
 
