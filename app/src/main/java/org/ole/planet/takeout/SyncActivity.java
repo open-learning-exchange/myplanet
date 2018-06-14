@@ -1,11 +1,13 @@
 package org.ole.planet.takeout;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -46,6 +48,7 @@ import java.util.Map;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
+import io.realm.Sort;
 
 abstract class SyncActivity extends AppCompatActivity {
     private TextView syncDate;
@@ -57,6 +60,7 @@ abstract class SyncActivity extends AppCompatActivity {
     SharedPreferences settings;
     Realm mRealm;
     Context context;
+    CouchDbProperties properties;
 
     // Server feedback dialog
     public void feedbackDialog() {
@@ -170,26 +174,7 @@ abstract class SyncActivity extends AppCompatActivity {
     public void syncDatabase(final String databaseName) {
         Thread td = new Thread(new Runnable() {
             public void run() {
-                Realm.init(context);
-                RealmConfiguration config = new RealmConfiguration.Builder()
-                        .name(Realm.DEFAULT_REALM_NAME)
-                        .deleteRealmIfMigrationNeeded()
-                        .schemaVersion(4)
-                        .build();
-                Realm.setDefaultConfiguration(config);
-                mRealm = Realm.getInstance(config);
-
-                CouchDbProperties properties = new CouchDbProperties()
-                        .setDbName(databaseName)
-                        .setCreateDbIfNotExist(false)
-                        .setProtocol(settings.getString("url_Scheme", "http"))
-                        .setHost(settings.getString("url_Host", "192.168.2.1"))
-                        .setPort(settings.getInt("url_Port", 3000))
-                        .setUsername(settings.getString("url_user", ""))
-                        .setPassword(settings.getString("url_pwd", ""))
-                        .setMaxConnections(100)
-                        .setConnectionTimeout(0);
-
+                realmConfig(databaseName);
                 CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
                 for (int i = 0; i < allDocs.size(); i++) {
@@ -208,6 +193,7 @@ abstract class SyncActivity extends AppCompatActivity {
                 mRealm.beginTransaction();
                 populateUsersTable(jsonDoc);
                 Log.e("Realm", " STRING " + jsonDoc.get("_id"));
+                mRealm.close();
             }
         } catch (Exception e) {
             Log.e("Realm", "it isn't a json object: = " + e.toString());
@@ -251,6 +237,73 @@ abstract class SyncActivity extends AppCompatActivity {
         } catch (Exception err) {
             err.printStackTrace();
         }
+    }
+
+
+    public void alertDialogOkay(String Message) {
+        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
+        builder1.setMessage(Message);
+        builder1.setCancelable(true);
+        builder1.setNegativeButton("Okay",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+        AlertDialog alert11 = builder1.create();
+        alert11.show();
+    }
+
+    public boolean authenticateUser(String username,String password,Context context){
+        this.context = context;
+        AndroidDecrypter decrypt = new AndroidDecrypter();
+        realmConfig("_users");
+        if(mRealm.isEmpty()){
+            alertDialogOkay("Server not configured properly. Connect this device with Planet server");
+            return false;
+        }else {
+            Log.d("RealmDB", "Got here ");
+            try {
+                RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
+                        .equalTo("name", username)
+                        .findAll();
+                mRealm.beginTransaction();
+                for (realm_UserModel user : db_users) {
+                    Log.d("RealmDB", "User "+user.getId()+" derived_key "+user.getDerived_key());
+                    if (decrypt.AndroidDecrypter(username, password, "dbSalt")) {
+                        return true;
+                    }
+                }
+            }catch (Exception err){
+                Log.d("RealmDB", "Realm DB Error "+err.getMessage());
+                err.printStackTrace();
+                return  false;
+            }
+        }
+        return false;
+
+    }
+    public void realmConfig(String dbName){
+        Realm.init(context);
+        RealmConfiguration config = new RealmConfiguration.Builder()
+                .name(Realm.DEFAULT_REALM_NAME)
+                .deleteRealmIfMigrationNeeded()
+                .schemaVersion(4)
+                .build();
+        Realm.setDefaultConfiguration(config);
+        mRealm = Realm.getInstance(config);
+
+        properties = new CouchDbProperties()
+                .setDbName(dbName)
+                .setCreateDbIfNotExist(false)
+                .setProtocol(settings.getString("url_Scheme", "http"))
+                .setHost(settings.getString("url_Host", "192.168.2.1"))
+                .setPort(settings.getInt("url_Port", 3000))
+                .setUsername(settings.getString("url_user", ""))
+                .setPassword(settings.getString("url_pwd", ""))
+                .setMaxConnections(100)
+                .setConnectionTimeout(0);
+
     }
 
 }

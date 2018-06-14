@@ -129,9 +129,13 @@ public class LoginActivity extends SyncActivity {
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-        Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
-        startActivity(dashboard);
+        if(authenticateUser(inputName.getText().toString(),inputPassword.getText().toString(),context)){
+            Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+            Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
+            startActivity(dashboard);
+        }else{
+
+        }
 
     }
 
@@ -217,7 +221,7 @@ public class LoginActivity extends SyncActivity {
                     myList.clear();
                     myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
@@ -238,19 +242,6 @@ public class LoginActivity extends SyncActivity {
         return connectionResult;
     }
 
-    public void alertDialogOkay(String Message) {
-        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-        builder1.setMessage(Message);
-        builder1.setCancelable(true);
-        builder1.setNegativeButton("Okay",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                });
-        AlertDialog alert11 = builder1.create();
-        alert11.show();
-    }
 
 
 }
