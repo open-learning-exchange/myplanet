@@ -31,6 +31,7 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -241,6 +242,33 @@ public class LoginActivity extends SyncActivity {
         });
         return connectionResult;
     }
+
+    public void setUrlParts(String url, String password, Context context) {
+        this.context = context;
+        URI uri = URI.create(url);
+        String url_Scheme = uri.getScheme();
+        String url_Host = uri.getHost();
+        int url_Port = uri.getPort();
+        String url_user = null, url_pwd = null;
+        if (url.contains("@")) {
+            String[] userinfo = uri.getUserInfo().split(":");
+            url_user = userinfo[0];
+            url_pwd = userinfo[1];
+        } else {
+            url_user = "";
+            url_pwd = password;
+        }
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("serverURL", url);
+        editor.putString("url_Scheme", url_Scheme);
+        editor.putString("url_Host", url_Host);
+        editor.putInt("url_Port", url_Port);
+        editor.putString("url_user", url_user);
+        editor.putString("url_pwd", url_pwd);
+        editor.commit();
+        syncDatabase("_users");
+    }
+
 
 
 
