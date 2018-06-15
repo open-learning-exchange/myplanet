@@ -130,30 +130,12 @@ public class LoginActivity extends SyncActivity {
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        if(authenticateUser(inputName.getText().toString(),inputPassword.getText().toString(),context)){
+        if (authenticateUser(inputName.getText().toString(), inputPassword.getText().toString(), context)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
             startActivity(dashboard);
-        }else{
-            alertDialogOkay(getString(R.string.err_msg_login));
-        }
-
-    }
-
-    private boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
-        if (textField.getText().toString().trim().isEmpty()) {
-            textLayout.setError(err_message);
-            requestFocus(textField);
-            return false;
         } else {
-            textLayout.setErrorEnabled(false);
-        }
-        return true;
-    }
-
-    private void requestFocus(View view) {
-        if (view.requestFocus()) {
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            alertDialogOkay(getString(R.string.err_msg_login));
         }
     }
 
@@ -270,9 +252,6 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
         dialog.show();
     }
-
-
-
 
 
 }

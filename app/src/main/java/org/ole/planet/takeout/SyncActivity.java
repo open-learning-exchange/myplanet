@@ -140,7 +140,7 @@ abstract class SyncActivity extends ProcessUserData {
             if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 mRealm.beginTransaction();
-                populateUsersTable(jsonDoc,mRealm);
+                populateUsersTable(jsonDoc, mRealm);
                 Log.e("Realm", " STRING " + jsonDoc.get("_id"));
                 mRealm.close();
             }
@@ -148,7 +148,6 @@ abstract class SyncActivity extends ProcessUserData {
             e.printStackTrace();
         }
     }
-
 
 
     public void alertDialogOkay(String Message) {
@@ -199,9 +198,8 @@ abstract class SyncActivity extends ProcessUserData {
             return false;
         }
         mRealm.close();
-        return  false;
+        return false;
     }
-
 
 
     public void realmConfig(String dbName) {
