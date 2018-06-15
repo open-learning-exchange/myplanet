@@ -31,6 +31,7 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -129,9 +130,13 @@ public class LoginActivity extends SyncActivity {
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-        Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
-        startActivity(dashboard);
+        if(authenticateUser(inputName.getText().toString(),inputPassword.getText().toString(),context)){
+            Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+            Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
+            startActivity(dashboard);
+        }else{
+
+        }
 
     }
 
@@ -217,7 +222,7 @@ public class LoginActivity extends SyncActivity {
                     myList.clear();
                     myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
@@ -238,19 +243,33 @@ public class LoginActivity extends SyncActivity {
         return connectionResult;
     }
 
-    public void alertDialogOkay(String Message) {
-        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-        builder1.setMessage(Message);
-        builder1.setCancelable(true);
-        builder1.setNegativeButton("Okay",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                });
-        AlertDialog alert11 = builder1.create();
-        alert11.show();
+    public void setUrlParts(String url, String password, Context context) {
+        this.context = context;
+        URI uri = URI.create(url);
+        String url_Scheme = uri.getScheme();
+        String url_Host = uri.getHost();
+        int url_Port = uri.getPort();
+        String url_user = null, url_pwd = null;
+        if (url.contains("@")) {
+            String[] userinfo = uri.getUserInfo().split(":");
+            url_user = userinfo[0];
+            url_pwd = userinfo[1];
+        } else {
+            url_user = "";
+            url_pwd = password;
+        }
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("serverURL", url);
+        editor.putString("url_Scheme", url_Scheme);
+        editor.putString("url_Host", url_Host);
+        editor.putInt("url_Port", url_Port);
+        editor.putString("url_user", url_user);
+        editor.putString("url_pwd", url_pwd);
+        editor.commit();
+        syncDatabase("_users");
     }
+
+
 
 
 }
