@@ -63,35 +63,8 @@ abstract class SyncActivity extends AppCompatActivity {
     Context context;
     CouchDbProperties properties;
 
-    // Server feedback dialog
-    public void feedbackDialog() {
-        MaterialDialog dialog = new MaterialDialog.Builder(this).title(R.string.title_sync_settings)
-                .customView(R.layout.dialog_sync_feedback, true)
-                .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
-                .onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(MaterialDialog dialog, DialogAction which) {
-                        Toast.makeText(SyncActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .onNegative(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(MaterialDialog dialog, DialogAction which) {
-                        Log.e("MD: ", "Clicked Negative (Cancel)");
-                    }
-                })
-                .onNeutral(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        Toast.makeText(SyncActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .build();
-        sync(dialog);
-        dialog.show();
-    }
 
-    private void sync(MaterialDialog dialog) {
+    public void sync(MaterialDialog dialog) {
         // Check Autosync switch (Toggler)
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
@@ -242,6 +215,15 @@ abstract class SyncActivity extends AppCompatActivity {
             mRealm.beginTransaction();
             for (realm_UserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
+                    SharedPreferences.Editor editor = settings.edit();
+                    editor.putString("name", user.getName());
+                    editor.putString("password", password);
+                    editor.putString("firstName", user.getFirstName());
+                    editor.putString("lastName", user.getLastName());
+                    editor.putString("middleName", user.getMiddleName());
+                    editor.putBoolean("isUserAdmin", user.getUserAdmin());
+                    editor.commit();
+                    syncDatabase("_users");
                     mRealm.close();
                     return true;
                 }
@@ -276,5 +258,33 @@ abstract class SyncActivity extends AppCompatActivity {
                 .setConnectionTimeout(0);
 
     }
+
+
+    public void setUrlParts(String url, String password, Context context) {
+        this.context = context;
+        URI uri = URI.create(url);
+        String url_Scheme = uri.getScheme();
+        String url_Host = uri.getHost();
+        int url_Port = uri.getPort();
+        String url_user = null, url_pwd = null;
+        if (url.contains("@")) {
+            String[] userinfo = uri.getUserInfo().split(":");
+            url_user = userinfo[0];
+            url_pwd = userinfo[1];
+        } else {
+            url_user = "";
+            url_pwd = password;
+        }
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("serverURL", url);
+        editor.putString("url_Scheme", url_Scheme);
+        editor.putString("url_Host", url_Host);
+        editor.putInt("url_Port", url_Port);
+        editor.putString("url_user", url_user);
+        editor.putString("url_pwd", url_pwd);
+        editor.commit();
+        syncDatabase("_users");
+    }
+
 
 }
