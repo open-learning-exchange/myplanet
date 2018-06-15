@@ -215,14 +215,7 @@ abstract class SyncActivity extends AppCompatActivity {
             mRealm.beginTransaction();
             for (realm_UserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
-                    SharedPreferences.Editor editor = settings.edit();
-                    editor.putString("name", user.getName());
-                    editor.putString("password", password);
-                    editor.putString("firstName", user.getFirstName());
-                    editor.putString("lastName", user.getLastName());
-                    editor.putString("middleName", user.getMiddleName());
-                    editor.putBoolean("isUserAdmin", user.getUserAdmin());
-                    editor.commit();
+                    saveUserInfoPref(password, user);
                     syncDatabase("_users");
                     mRealm.close();
                     return true;
@@ -235,6 +228,17 @@ abstract class SyncActivity extends AppCompatActivity {
         }
         mRealm.close();
         return  false;
+    }
+
+    private void saveUserInfoPref(String password, realm_UserModel user) {
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("name", user.getName());
+        editor.putString("password", password);
+        editor.putString("firstName", user.getFirstName());
+        editor.putString("lastName", user.getLastName());
+        editor.putString("middleName", user.getMiddleName());
+        editor.putBoolean("isUserAdmin", user.getUserAdmin());
+        editor.commit();
     }
 
     public void realmConfig(String dbName) {
