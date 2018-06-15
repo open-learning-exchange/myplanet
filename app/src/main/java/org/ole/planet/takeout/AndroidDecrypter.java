@@ -9,27 +9,18 @@ import de.rtner.security.auth.spi.PBKDF2Parameters;
 
 public class AndroidDecrypter {
 
-    Boolean AndroidDecrypter(String usr_ID,String usr_rawPswd, String db_PswdkeyValue){
-        ///"56942958ed379a8c7d4a03a701814561"
-
-        ///////////// Library 1 //////
-        byte[] salt = null;
-        try {
-            ///String md5Val = md5("leomaxi");
-            salt = md5(usr_ID).getBytes();
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
-
+    Boolean AndroidDecrypter(String usr_ID,String usr_rawPswd, String db_PswdkeyValue,String db_Salt){
         try {
 
                 //SecureRandom.getInstance("HmacSHA1").nextBytes(salt);
-                PBKDF2Parameters p = new PBKDF2Parameters("HmacSHA1", "utf-8", salt, 10);
+                PBKDF2Parameters p = new PBKDF2Parameters("HmacSHA1", "utf-8", db_Salt.getBytes(), 10);
                 ///byte[] dk = new PBKDF2Engine(p).deriveKey("password", 20);
                 byte[] dk = new PBKDF2Engine(p).deriveKey(usr_rawPswd, 20);
                 System.out.println( usr_ID +" Value "+BinTools.bin2hex(dk).toLowerCase());
                 if(db_PswdkeyValue.equals(BinTools.bin2hex(dk).toLowerCase())){
                     return true;
+                }else{
+                    return false;
                 }
 
         } catch (Exception e) {
@@ -37,7 +28,6 @@ public class AndroidDecrypter {
         }
         return false;
     }
-
 
     public static final String md5(final String s) {
         final String MD5 = "MD5";
@@ -52,7 +42,7 @@ public class AndroidDecrypter {
             StringBuilder hexString = new StringBuilder();
             for (byte aMessageDigest : messageDigest) {
                 String h = Integer.toHexString(0xFF & aMessageDigest);
-                while (h.length() < 2)
+                while (h.length() < 1)
                     h = "0" + h;
                 hexString.append(h);
             }

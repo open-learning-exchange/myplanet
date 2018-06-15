@@ -270,14 +270,16 @@ abstract class SyncActivity extends AppCompatActivity {
                 mRealm.beginTransaction();
                 for (realm_UserModel user : db_users) {
                     Log.d("RealmDB", "User "+user.getId()+" derived_key "+user.getDerived_key());
-                    if (decrypt.AndroidDecrypter(username, password, "dbSalt")) {
+                    if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(),user.getSalt())) {
                         return true;
                     }
                 }
+                mRealm.close();
             }catch (Exception err){
                 Log.d("RealmDB", "Realm DB Error "+err.getMessage());
                 err.printStackTrace();
-                return  false;
+                mRealm.close();
+                return false;
             }
         }
         return false;
