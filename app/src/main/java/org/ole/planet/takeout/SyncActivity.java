@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.SyncStateContract;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -196,7 +197,6 @@ abstract class SyncActivity extends AppCompatActivity {
                 mRealm.close();
             }
         } catch (Exception e) {
-            Log.e("Realm", "it isn't a json object: = " + e.toString());
             e.printStackTrace();
         }
     }
@@ -224,15 +224,6 @@ abstract class SyncActivity extends AppCompatActivity {
             user.setIterations(jsonDoc.get("iterations").getAsString());
             user.setDerived_key(jsonDoc.get("derived_key").getAsString());
             user.setSalt(jsonDoc.get("salt").getAsString());
-            Log.e("RealmDB", " item id " + jsonDoc.get("_id"));
-            /*RealmResults<realm_UserModel> result = mRealm.where(realm_UserModel.class)
-                    .beginGroup()
-                    .contains("_id", "leomaxi")
-                    .endGroup()
-                    .findAll();
-
-            Log.e("RealmDB", " DB result " + result);
-            */
             mRealm.commitTransaction();
         } catch (Exception err) {
             err.printStackTrace();
@@ -254,38 +245,42 @@ abstract class SyncActivity extends AppCompatActivity {
         alert11.show();
     }
 
-    public boolean authenticateUser(String username,String password,Context context){
+    public boolean authenticateUser(String username, String password, Context context) {
         this.context = context;
         AndroidDecrypter decrypt = new AndroidDecrypter();
         realmConfig("_users");
-        if(mRealm.isEmpty()){
+        if (mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");
+            mRealm.close();
             return false;
-        }else {
-            Log.d("RealmDB", "Got here ");
-            try {
-                RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
-                        //.equalTo("name", username)
-                        .findAll();
-                mRealm.beginTransaction();
-                for (realm_UserModel user : db_users) {
-                    Log.d("RealmDB", "User "+user.getId()+" derived_key "+user.getDerived_key());
-                    if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(),user.getSalt())) {
-                        return true;
-                    }
-                }
-                mRealm.close();
-            }catch (Exception err){
-                Log.d("RealmDB", "Realm DB Error "+err.getMessage());
-                err.printStackTrace();
-                mRealm.close();
-                return false;
-            }
+        } else {
+            return checkName(username, password, decrypt);
         }
-        return false;
-
     }
-    public void realmConfig(String dbName){
+
+    @Nullable
+    private Boolean checkName(String username, String password, AndroidDecrypter decrypt) {
+        try {
+            RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
+                    .equalTo("name", username)
+                    .findAll();
+            mRealm.beginTransaction();
+            for (realm_UserModel user : db_users) {
+                if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
+                    mRealm.close();
+                    return true;
+                }
+            }
+        } catch (Exception err) {
+            err.printStackTrace();
+            mRealm.close();
+            return false;
+        }
+        mRealm.close();
+        return  false;
+    }
+
+    public void realmConfig(String dbName) {
         Realm.init(context);
         RealmConfiguration config = new RealmConfiguration.Builder()
                 .name(Realm.DEFAULT_REALM_NAME)
@@ -294,7 +289,6 @@ abstract class SyncActivity extends AppCompatActivity {
                 .build();
         Realm.setDefaultConfiguration(config);
         mRealm = Realm.getInstance(config);
-
         properties = new CouchDbProperties()
                 .setDbName(dbName)
                 .setCreateDbIfNotExist(false)
