@@ -51,7 +51,7 @@ import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 import io.realm.Sort;
 
-abstract class SyncActivity extends AppCompatActivity {
+abstract class SyncActivity extends ProcessUserData {
     private TextView syncDate;
     private TextView intervalLabel;
     private Spinner spinner;
@@ -114,7 +114,7 @@ abstract class SyncActivity extends AppCompatActivity {
         list.add("30 Minutes");
         list.add("1 Hour");
         list.add("3 Hours");
-        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(this, R.layout.spinner_item, list);
+        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
     }
@@ -140,7 +140,7 @@ abstract class SyncActivity extends AppCompatActivity {
             if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 mRealm.beginTransaction();
-                populateUsersTable(jsonDoc);
+                populateUsersTable(jsonDoc,mRealm);
                 Log.e("Realm", " STRING " + jsonDoc.get("_id"));
                 mRealm.close();
             }
@@ -149,34 +149,6 @@ abstract class SyncActivity extends AppCompatActivity {
         }
     }
 
-    public void populateUsersTable(JsonObject jsonDoc) {
-        try {
-            realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
-            user.set_rev(jsonDoc.get("_rev").getAsString());
-            user.setName(jsonDoc.get("name").getAsString());
-            //JsonElement userRoles = jsonDoc.get("roles");
-            //user.setRoles(userRolesAsJsonArray.getAsString());
-            user.setRoles("");
-            if ((jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true"))) {
-                user.setUserAdmin(true);
-            } else {
-                user.setUserAdmin(false);
-            }
-            user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
-            user.setFirstName(jsonDoc.get("firstName").getAsString());
-            user.setLastName(jsonDoc.get("lastName").getAsString());
-            user.setMiddleName(jsonDoc.get("middleName").getAsString());
-            user.setEmail(jsonDoc.get("email").getAsString());
-            user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
-            user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
-            user.setIterations(jsonDoc.get("iterations").getAsString());
-            user.setDerived_key(jsonDoc.get("derived_key").getAsString());
-            user.setSalt(jsonDoc.get("salt").getAsString());
-            mRealm.commitTransaction();
-        } catch (Exception err) {
-            err.printStackTrace();
-        }
-    }
 
 
     public void alertDialogOkay(String Message) {
@@ -215,7 +187,7 @@ abstract class SyncActivity extends AppCompatActivity {
             mRealm.beginTransaction();
             for (realm_UserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
-                    saveUserInfoPref(password, user);
+                    saveUserInfoPref(settings, password, user);
                     syncDatabase("_users");
                     mRealm.close();
                     return true;
@@ -230,16 +202,7 @@ abstract class SyncActivity extends AppCompatActivity {
         return  false;
     }
 
-    private void saveUserInfoPref(String password, realm_UserModel user) {
-        SharedPreferences.Editor editor = settings.edit();
-        editor.putString("name", user.getName());
-        editor.putString("password", password);
-        editor.putString("firstName", user.getFirstName());
-        editor.putString("lastName", user.getLastName());
-        editor.putString("middleName", user.getMiddleName());
-        editor.putBoolean("isUserAdmin", user.getUserAdmin());
-        editor.commit();
-    }
+
 
     public void realmConfig(String dbName) {
         Realm.init(context);
