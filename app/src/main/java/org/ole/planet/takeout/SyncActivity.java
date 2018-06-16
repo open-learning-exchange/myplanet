@@ -124,7 +124,7 @@ abstract class SyncActivity extends ProcessUserData {
     public void syncDatabase(final String databaseName) {
         Thread td = new Thread(new Runnable() {
             public void run() {
-                try{
+                try {
                     realmConfig(databaseName);
                     mRealm.executeTransaction(new Realm.Transaction() {
                         @Override
@@ -133,13 +133,12 @@ abstract class SyncActivity extends ProcessUserData {
                             final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
                             for (int i = 0; i < allDocs.size(); i++) {
                                 Document doc = allDocs.get(i);
-                                processUserDoc(dbClient, doc,realm);
+                                processUserDoc(dbClient, doc, realm);
                             }
                         }
                     });
-                }
-                finally {
-                    if (mRealm!= null) {
+                } finally {
+                    if (mRealm != null) {
                         mRealm.close();
                     }
                 }
@@ -148,7 +147,7 @@ abstract class SyncActivity extends ProcessUserData {
         td.start();
     }
 
-    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc,Realm realm) {
+    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc, Realm realm) {
         this.mRealm = realm;
         try {
             if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
