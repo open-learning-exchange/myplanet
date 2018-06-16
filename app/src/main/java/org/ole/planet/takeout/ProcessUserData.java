@@ -10,6 +10,7 @@ import android.widget.EditText;
 import com.google.gson.JsonObject;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 
 public abstract class ProcessUserData extends AppCompatActivity {
     SharedPreferences settings;
@@ -46,28 +47,36 @@ public abstract class ProcessUserData extends AppCompatActivity {
 
     public void populateUsersTable(JsonObject jsonDoc, Realm mRealm) {
         try {
-            realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
-            user.set_rev(jsonDoc.get("_rev").getAsString());
-            user.setName(jsonDoc.get("name").getAsString());
-            //JsonElement userRoles = jsonDoc.get("roles");
-            //user.setRoles(userRolesAsJsonArray.getAsString());
-            user.setRoles("");
-            if ((jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true"))) {
-                user.setUserAdmin(true);
-            } else {
-                user.setUserAdmin(false);
+            RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
+                    .equalTo("id", jsonDoc.get("_id").getAsString())
+                    .findAll();
+            if(db_users.isEmpty()){
+                realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
+                user.set_rev(jsonDoc.get("_rev").getAsString());
+                user.setName(jsonDoc.get("name").getAsString());
+                //JsonElement userRoles = jsonDoc.get("roles");
+                //user.setRoles(userRolesAsJsonArray.getAsString());
+                user.setRoles("");
+                if ((jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true"))) {
+                    user.setUserAdmin(true);
+                } else {
+                    user.setUserAdmin(false);
+                }
+                user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
+                user.setFirstName(jsonDoc.get("firstName").getAsString());
+                user.setLastName(jsonDoc.get("lastName").getAsString());
+                user.setMiddleName(jsonDoc.get("middleName").getAsString());
+                user.setEmail(jsonDoc.get("email").getAsString());
+                user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
+                user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
+                user.setIterations(jsonDoc.get("iterations").getAsString());
+                user.setDerived_key(jsonDoc.get("derived_key").getAsString());
+                user.setSalt(jsonDoc.get("salt").getAsString());
+            }else{
+
             }
-            user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
-            user.setFirstName(jsonDoc.get("firstName").getAsString());
-            user.setLastName(jsonDoc.get("lastName").getAsString());
-            user.setMiddleName(jsonDoc.get("middleName").getAsString());
-            user.setEmail(jsonDoc.get("email").getAsString());
-            user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
-            user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
-            user.setIterations(jsonDoc.get("iterations").getAsString());
-            user.setDerived_key(jsonDoc.get("derived_key").getAsString());
-            user.setSalt(jsonDoc.get("salt").getAsString());
-            mRealm.commitTransaction();
+
+
         } catch (Exception err) {
             err.printStackTrace();
         }

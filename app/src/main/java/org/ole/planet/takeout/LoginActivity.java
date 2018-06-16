@@ -130,7 +130,7 @@ public class LoginActivity extends SyncActivity {
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        if (authenticateUser(inputName.getText().toString(), inputPassword.getText().toString(), context)) {
+        if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
             startActivity(dashboard);

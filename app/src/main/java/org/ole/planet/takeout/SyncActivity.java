@@ -47,6 +47,7 @@ import java.util.ListIterator;
 import java.util.Map;
 
 import io.realm.Realm;
+import io.realm.RealmAsyncTask;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 import io.realm.Sort;
@@ -123,26 +124,37 @@ abstract class SyncActivity extends ProcessUserData {
     public void syncDatabase(final String databaseName) {
         Thread td = new Thread(new Runnable() {
             public void run() {
-                realmConfig(databaseName);
-                CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    processUserDoc(dbClient, doc);
+                try{
+                    realmConfig(databaseName);
+                    mRealm.executeTransaction(new Realm.Transaction() {
+                        @Override
+                        public void execute(Realm realm) {
+                            final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                            final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+                            for (int i = 0; i < allDocs.size(); i++) {
+                                Document doc = allDocs.get(i);
+                                processUserDoc(dbClient, doc,realm);
+                            }
+                        }
+                    });
+                }
+                finally {
+                    if (mRealm!= null) {
+                        mRealm.close();
+                    }
                 }
             }
         });
         td.start();
     }
 
-    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
+    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc,Realm realm) {
+        this.mRealm = realm;
         try {
             if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                mRealm.beginTransaction();
                 populateUsersTable(jsonDoc, mRealm);
                 Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-                mRealm.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -164,7 +176,8 @@ abstract class SyncActivity extends ProcessUserData {
         alert11.show();
     }
 
-    public boolean authenticateUser(String username, String password, Context context) {
+    public boolean authenticateUser(SharedPreferences settings, String username, String password, Context context) {
+        this.settings = settings;
         this.context = context;
         AndroidDecrypter decrypt = new AndroidDecrypter();
         realmConfig("_users");
@@ -187,7 +200,6 @@ abstract class SyncActivity extends ProcessUserData {
             for (realm_UserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
                     saveUserInfoPref(settings, password, user);
-                    syncDatabase("_users");
                     mRealm.close();
                     return true;
                 }
