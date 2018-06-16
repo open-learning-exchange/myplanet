@@ -72,8 +72,6 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 user.setIterations(jsonDoc.get("iterations").getAsString());
                 user.setDerived_key(jsonDoc.get("derived_key").getAsString());
                 user.setSalt(jsonDoc.get("salt").getAsString());
-            }else{
-
             }
 
 
