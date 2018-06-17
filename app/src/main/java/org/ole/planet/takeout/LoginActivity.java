@@ -43,8 +43,7 @@ public class LoginActivity extends SyncActivity {
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
-    private ImageButton imgBtnSetting;
-    private TextView syncOption;
+    private ImageButton imgBtnSetting, syncOption;
     Context context;
     private View positiveAction;
     boolean connectionResult;
