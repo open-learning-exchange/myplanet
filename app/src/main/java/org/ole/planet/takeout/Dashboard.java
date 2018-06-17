@@ -64,7 +64,6 @@ public class Dashboard extends AppCompatActivity {
             Toast.makeText(Dashboard.this, "Action clicked", Toast.LENGTH_LONG).show();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
