@@ -1,6 +1,7 @@
 package org.ole.planet.takeout;
 
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -23,11 +24,14 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+import java.util.ArrayList;
+
 
 public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
     private Toolbar mTopToolbar;
     AccountHeader headerResult;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,7 +46,8 @@ public class Dashboard extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
@@ -50,6 +55,7 @@ public class Dashboard extends AppCompatActivity {
         openCallFragment(new DashboardFragment());
 
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -80,6 +86,7 @@ public class Dashboard extends AppCompatActivity {
 
     }
 
+
     private void createDrawer() {
         com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);
         result = new DrawerBuilder()
@@ -109,7 +116,7 @@ public class Dashboard extends AppCompatActivity {
     }
 
     private void menuAction(int selectedMenuId) {
-        switch (selectedMenuId){
+        switch (selectedMenuId) {
             case R.string.menu_home:
                 openCallFragment(new DashboardFragment());
                 break;
@@ -122,13 +129,13 @@ public class Dashboard extends AppCompatActivity {
             case R.string.menu_courses:
                 break;
             default:
-                 openCallFragment(new DashboardFragment());
-                 break;
+                openCallFragment(new DashboardFragment());
+                break;
 
         }
     }
 
-    public void openCallFragment(Fragment newfragment){
+    public void openCallFragment(Fragment newfragment) {
         newfragment = new DashboardFragment();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
@@ -136,16 +143,36 @@ public class Dashboard extends AppCompatActivity {
         fragmentTransaction.commit();
     }
 
+
     @NonNull
     private IDrawerItem[] getDrawerItems() {
+        ArrayList<Drawable> menuImageList = new ArrayList<>();
+        menuImageList.add(getResources().getDrawable(R.drawable.home));
+        menuImageList.add(getResources().getDrawable(R.drawable.library));
+        menuImageList.add(getResources().getDrawable(R.drawable.courses));
+        menuImageList.add(getResources().getDrawable(R.drawable.meetups));
+        menuImageList.add(getResources().getDrawable(R.drawable.survey));
+
+        ArrayList<Integer> menuBlueImageList = new ArrayList<>();
+        menuBlueImageList.add(R.drawable.home_blue);
+        menuBlueImageList.add(R.drawable.library_blue);
+        menuBlueImageList.add(R.drawable.courses_blue);
+        menuBlueImageList.add(R.drawable.meetups_blue);
+        menuBlueImageList.add(R.drawable.survey_blue);
+
         return new IDrawerItem[]{
-                new PrimaryDrawerItem().withName(R.string.menu_home).withIcon(getResources().getDrawable(R.drawable.home)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_library).withIcon(getResources().getDrawable(R.drawable.library)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_courses).withIcon(getResources().getDrawable(R.drawable.courses)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_meetups).withIcon(getResources().getDrawable(R.drawable.meetups)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
-                new PrimaryDrawerItem().withName(R.string.menu_surveys).withIcon(getResources().getDrawable(R.drawable.survey)).withTextColor(getResources().getColor(R.color.textColorPrimary)),
+                changeUX(R.string.menu_home, menuImageList.get(0), menuBlueImageList.get(0)),
+                changeUX(R.string.menu_library, menuImageList.get(1), menuBlueImageList.get(1)),
+                changeUX(R.string.menu_courses, menuImageList.get(2), menuBlueImageList.get(2)),
+                changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
+                changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
         };
     }
+
+    public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {
+        return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(blueDrawable);
+    }
+
     @Override
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {

@@ -30,7 +30,4 @@
         android:icon="@drawable/en"
         app:showAsAction="ifRoom"/>
 
-
-
-
 </menu>
