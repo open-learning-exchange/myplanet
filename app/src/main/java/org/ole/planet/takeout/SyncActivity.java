@@ -146,11 +146,14 @@ abstract class SyncActivity extends ProcessUserData {
                             List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
                             for (int i = 0; i < allShelfDocs.size(); i++) {
                                 Document doc = allShelfDocs.get(i);
-                                populateShelfItems(settings, doc, realm,properties);
+                                populateShelfItems(settings, doc, realm, properties);
                             }
                         }
                     });
-                } finally { if (mRealm != null) { mRealm.close();}
+                } finally {
+                    if (mRealm != null) {
+                        mRealm.close();
+                    }
                 }
             }
         });
