@@ -9,7 +9,10 @@ import android.widget.EditText;
 
 import com.google.gson.JsonObject;
 
+import org.lightcouch.CouchDbClientAndroid;
+import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -85,6 +88,26 @@ public abstract class ProcessUserData extends AppCompatActivity {
         user.setDerived_key(jsonDoc.get("derived_key").getAsString());
         user.setSalt(jsonDoc.get("salt").getAsString());
     }
+
+
+    public void populateShelfItems(CouchDbClientAndroid dbClient, Document doc, Realm mRealm) {
+
+        try {
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            RealmResults<realm_myLibrary> db_users = mRealm.where(realm_myLibrary.class)
+                    .equalTo("id", jsonDoc.get("_id").getAsString())
+                    .findAll();
+            if (db_users.isEmpty()) {
+                realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
+                insertIntoUsers(jsonDoc, user);
+            }
+
+
+        } catch (Exception err) {
+            err.printStackTrace();
+        }
+    }
+
 
 
 }
