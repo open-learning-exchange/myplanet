@@ -60,6 +60,53 @@ public abstract class ProcessUserData extends AppCompatActivity {
         editor.commit();
     }
 
+    public void userTransactionSync(SharedPreferences sett, Realm realm, CouchDbProperties propts) {
+        properties = propts;
+        settings = sett;
+        mRealm = realm;
+        mRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+                for (int i = 0; i < allDocs.size(); i++) {
+                    Document doc = allDocs.get(i);
+                    processUserDoc(dbClient, doc);
+                }
+            }
+        });
+    }
+
+    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
+        try {
+            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
+                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                populateUsersTable(jsonDoc, mRealm);
+                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void myLybraryTransactionSync() {
+        properties.setDbName("shelf");
+        properties.setUsername(settings.getString("url_user", ""));
+        properties.setPassword(settings.getString("url_pwd", ""));
+        mRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
+                List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
+                for (int i = 0; i < allShelfDocs.size(); i++) {
+                    Document doc = allShelfDocs.get(i);
+                    populateShelfItems(settings, doc, realm, properties);
+                }
+            }
+        });
+    }
+
+
     public void populateUsersTable(JsonObject jsonDoc, Realm mRealm) {
         try {
             RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
@@ -101,8 +148,6 @@ public abstract class ProcessUserData extends AppCompatActivity {
 
 
     public void populateShelfItems(SharedPreferences settings, Document doc, Realm mRealm, CouchDbProperties properties) {
-        this.properties = properties;
-        this.settings = settings;
         CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
         try {
             this.mRealm = mRealm;

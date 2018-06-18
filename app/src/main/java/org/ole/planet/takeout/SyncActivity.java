@@ -127,29 +127,8 @@ abstract class SyncActivity extends ProcessUserData {
             public void run() {
                 try {
                     realmConfig("_users");
-                    mRealm.executeTransaction(new Realm.Transaction() {
-                        @Override
-                        public void execute(Realm realm) {
-                            final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                            final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                            for (int i = 0; i < allDocs.size(); i++) {
-                                Document doc = allDocs.get(i);
-                                processUserDoc(dbClient, doc, realm);
-                            }
-                        }
-                    });
-                    realmConfig("shelf");
-                    mRealm.executeTransaction(new Realm.Transaction() {
-                        @Override
-                        public void execute(Realm realm) {
-                            CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
-                            List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
-                            for (int i = 0; i < allShelfDocs.size(); i++) {
-                                Document doc = allShelfDocs.get(i);
-                                populateShelfItems(settings, doc, realm, properties);
-                            }
-                        }
-                    });
+                    userTransactionSync(settings, mRealm, properties);
+                    myLybraryTransactionSync();
                 } finally {
                     if (mRealm != null) {
                         mRealm.close();
@@ -158,19 +137,6 @@ abstract class SyncActivity extends ProcessUserData {
             }
         });
         td.start();
-    }
-
-    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc, Realm realm) {
-        this.mRealm = realm;
-        try {
-            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                populateUsersTable(jsonDoc, mRealm);
-                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public void alertDialogOkay(String Message) {
