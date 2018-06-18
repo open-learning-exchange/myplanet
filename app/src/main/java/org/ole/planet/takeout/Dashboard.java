@@ -74,7 +74,7 @@ public class Dashboard extends AppCompatActivity {
         return new AccountHeaderBuilder()
                 .withActivity(Dashboard.this)
                 .withTextColor(getResources().getColor(R.color.bg_white))
-                .withHeaderBackground(R.drawable.ole_logo_1)
+                .withHeaderBackground(R.drawable.header)
                 .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .build();
 
