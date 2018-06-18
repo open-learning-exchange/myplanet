@@ -156,7 +156,9 @@ public abstract class ProcessUserData extends AppCompatActivity {
             JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
             JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
             JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
-            checkMyLibrary(doc.getId(), array_resourceIds);
+            if(array_resourceIds!=null){
+                checkMyLibrary(doc.getId(), array_resourceIds);
+            }
         } catch (Exception err) {
             err.printStackTrace();
         }
