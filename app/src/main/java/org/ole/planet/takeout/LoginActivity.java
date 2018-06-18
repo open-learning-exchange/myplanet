@@ -31,6 +31,7 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -128,26 +129,12 @@ public class LoginActivity extends SyncActivity {
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-        Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
-        startActivity(dashboard);
-
-    }
-
-    private boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
-        if (textField.getText().toString().trim().isEmpty()) {
-            textLayout.setError(err_message);
-            requestFocus(textField);
-            return false;
+        if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
+            Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+            Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
+            startActivity(dashboard);
         } else {
-            textLayout.setErrorEnabled(false);
-        }
-        return true;
-    }
-
-    private void requestFocus(View view) {
-        if (view.requestFocus()) {
-            getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            alertDialogOkay(getString(R.string.err_msg_login));
         }
     }
 
@@ -216,7 +203,7 @@ public class LoginActivity extends SyncActivity {
                     myList.clear();
                     myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the BeLL Server");
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
@@ -237,18 +224,32 @@ public class LoginActivity extends SyncActivity {
         return connectionResult;
     }
 
-    public void alertDialogOkay(String Message) {
-        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-        builder1.setMessage(Message);
-        builder1.setCancelable(true);
-        builder1.setNegativeButton("Okay",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
+    // Server feedback dialog
+    public void feedbackDialog() {
+        MaterialDialog dialog = new MaterialDialog.Builder(this).title(R.string.title_sync_settings)
+                .customView(R.layout.dialog_sync_feedback, true)
+                .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(MaterialDialog dialog, DialogAction which) {
+                        Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
                     }
-                });
-        AlertDialog alert11 = builder1.create();
-        alert11.show();
+                })
+                .onNegative(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(MaterialDialog dialog, DialogAction which) {
+                        Log.e("MD: ", "Clicked Negative (Cancel)");
+                    }
+                })
+                .onNeutral(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .build();
+        sync(dialog);
+        dialog.show();
     }
 
 
