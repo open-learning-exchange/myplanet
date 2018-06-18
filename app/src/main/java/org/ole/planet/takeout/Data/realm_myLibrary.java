@@ -7,6 +7,7 @@ public class realm_myLibrary extends RealmObject {
     @PrimaryKey
     private String id;
     private String userId;
+    private String resourceId;
     private String resource_rev;
     private String title;
     private String author;
@@ -43,6 +44,14 @@ public class realm_myLibrary extends RealmObject {
 
     public void setResource_rev(String resource_rev) {
         this.resource_rev = resource_rev;
+    }
+
+    public String getResourceId() {
+        return resourceId;
+    }
+
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
     }
 
     public String getTitle() {

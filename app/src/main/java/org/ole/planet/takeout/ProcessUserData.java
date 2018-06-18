@@ -3,22 +3,32 @@ package org.ole.planet.takeout;
 import android.content.SharedPreferences;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
+import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 public abstract class ProcessUserData extends AppCompatActivity {
     SharedPreferences settings;
+    Realm mRealm;
+    CouchDbProperties properties;
+    CouchDbClientAndroid dbResources;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -90,22 +100,47 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
 
 
-    public void populateShelfItems(CouchDbClientAndroid dbClient, Document doc, Realm mRealm) {
-
+    public void populateShelfItems(SharedPreferences settings,CouchDbClientAndroid dbClient, Document doc, Realm mRealm, CouchDbProperties properties) {
+        this.properties = properties;
+        this.settings = settings;
         try {
+            this.mRealm = mRealm;
             JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-            RealmResults<realm_myLibrary> db_users = mRealm.where(realm_myLibrary.class)
-                    .equalTo("id", jsonDoc.get("_id").getAsString())
-                    .findAll();
-            if (db_users.isEmpty()) {
-                realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
-                insertIntoUsers(jsonDoc, user);
-            }
-
-
+            JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
+            JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
+            JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
+            JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
+            checkMyLibrary(doc.getId(), array_resourceIds);
         } catch (Exception err) {
             err.printStackTrace();
         }
+    }
+    public void checkMyLibrary(String userId, JsonArray array_resourceIds){
+        for(int x=0;x<array_resourceIds.size();x++){
+            RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
+                    .equalTo("id", userId)
+                    .equalTo("resourceId", array_resourceIds.get(x).getAsString())
+                    .findAll();
+            if (db_myLibrary.isEmpty()) {
+                realm_myLibrary myLibrary = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
+                properties.setDbName("resources");
+                properties.setUsername(settings.getString("url_user", ""));
+                properties.setPassword(settings.getString("url_pwd", ""));
+                dbResources = new CouchDbClientAndroid(properties);
+                JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
+                insertMyLibrary(userId,array_resourceIds.get(x).getAsString(),resourceDoc);
+            }
+
+        }
+    }
+    public void checkMyMeetups(JsonArray array_resourceIds){
+    }
+    public void checkMyCourses(JsonArray array_resourceIds){
+    }
+    public void checkMyTeams(JsonArray array_resourceIds){
+    }
+    public void insertMyLibrary(String userId, String asString, JsonObject resourceDoc){
+        Log.e("myLibrary",resourceDoc.toString());
     }
 
 
