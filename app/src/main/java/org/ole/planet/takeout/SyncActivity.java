@@ -36,6 +36,7 @@ import org.lightcouch.CouchDbClient;
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
+import org.ole.planet.takeout.Data.realm_UserModel;
 
 import java.net.URI;
 import java.util.ArrayList;
