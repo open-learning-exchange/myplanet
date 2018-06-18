@@ -122,13 +122,13 @@ public abstract class ProcessUserData extends AppCompatActivity {
                     .equalTo("resourceId", array_resourceIds.get(x).getAsString())
                     .findAll();
             if (db_myLibrary.isEmpty()) {
-                realm_myLibrary myLibrary = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
+                realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
                 properties.setDbName("resources");
                 properties.setUsername(settings.getString("url_user", ""));
                 properties.setPassword(settings.getString("url_pwd", ""));
                 dbResources = new CouchDbClientAndroid(properties);
                 JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
-                insertMyLibrary(userId,array_resourceIds.get(x).getAsString(),resourceDoc);
+                insertMyLibrary(myLibraryDB,userId, array_resourceIds.get(x).getAsString(),resourceDoc);
             }
 
         }
@@ -139,8 +139,23 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
     public void checkMyTeams(JsonArray array_resourceIds){
     }
-    public void insertMyLibrary(String userId, String asString, JsonObject resourceDoc){
+    public void insertMyLibrary(realm_myLibrary myLibraryDB, String userId,  String resourceID, JsonObject resourceDoc){
         Log.e("myLibrary",resourceDoc.toString());
+        myLibraryDB.setUserId(userId);
+        myLibraryDB.setResourceId(resourceID);
+        myLibraryDB.setResource_rev(resourceDoc.get("_rev").getAsString());
+        myLibraryDB.setTitle(resourceDoc.get("title").getAsString());
+        myLibraryDB.setAuthor(resourceDoc.get("author").getAsString());
+        myLibraryDB.setPublisher(resourceDoc.get("Publisher").getAsString());
+        myLibraryDB.setMedium(resourceDoc.get("medium").getAsString());
+        myLibraryDB.setLanguage(resourceDoc.get("language").getAsString()); //array
+        myLibraryDB.setSubject(resourceDoc.get("subject").getAsString()); // array
+        myLibraryDB.setLinkToLicense(resourceDoc.get("linkToLicense").getAsString());
+        myLibraryDB.setResourceFor(resourceDoc.get("resourceFor").getAsString());
+        myLibraryDB.setMediaType(resourceDoc.get("mediaType").getAsString());
+        myLibraryDB.setAverageRating(resourceDoc.get("averageRating").getAsString());
+        myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
+
     }
 
 
