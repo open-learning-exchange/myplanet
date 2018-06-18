@@ -50,7 +50,7 @@ public class LoginActivity extends SyncActivity {
     boolean connectionResult;
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
-    Fuel ful;
+    Fuel ful = new Fuel();;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,7 +105,6 @@ public class LoginActivity extends SyncActivity {
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         dialog.dismiss();
                         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-                        ful = new Fuel();
                         isServerReachable(serverUrl.getText().toString());
                     }
                 });
