@@ -142,11 +142,11 @@ abstract class SyncActivity extends ProcessUserData {
                     mRealm.executeTransaction(new Realm.Transaction() {
                         @Override
                         public void execute(Realm realm) {
-                            final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                            final List<Document> allShelfDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+                            CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
+                            List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
                             for (int i = 0; i < allShelfDocs.size(); i++) {
                                 Document doc = allShelfDocs.get(i);
-                                populateShelfItems(dbClient, doc, realm);
+                                populateShelfItems(dbShelfClient, doc, realm);
                             }
                         }
                     });
@@ -172,19 +172,6 @@ abstract class SyncActivity extends ProcessUserData {
             e.printStackTrace();
         }
     }
-
-
-    private void processShelfDoc(CouchDbClientAndroid dbClient, Document doc, Realm realm) {
-        this.mRealm = realm;
-        try {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                populateUsersTable(jsonDoc, mRealm);
-                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     public void alertDialogOkay(String Message) {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
