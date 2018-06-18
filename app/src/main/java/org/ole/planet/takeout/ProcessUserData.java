@@ -116,8 +116,9 @@ public abstract class ProcessUserData extends AppCompatActivity {
             err.printStackTrace();
         }
     }
-    public void checkMyLibrary(String userId, JsonArray array_resourceIds){
-        for(int x=0;x<array_resourceIds.size();x++){
+
+    public void checkMyLibrary(String userId, JsonArray array_resourceIds) {
+        for (int x = 0; x < array_resourceIds.size(); x++) {
             RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
                     .equalTo("id", userId)
                     .equalTo("resourceId", array_resourceIds.get(x).getAsString())
@@ -129,19 +130,23 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 properties.setPassword(settings.getString("url_pwd", ""));
                 dbResources = new CouchDbClientAndroid(properties);
                 JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
-                insertMyLibrary(myLibraryDB,userId, array_resourceIds.get(x).getAsString(),resourceDoc);
+                insertMyLibrary(myLibraryDB, userId, array_resourceIds.get(x).getAsString(), resourceDoc);
             }
 
         }
     }
-    public void checkMyMeetups(JsonArray array_resourceIds){
+
+    public void checkMyMeetups(JsonArray array_resourceIds) {
     }
-    public void checkMyCourses(JsonArray array_resourceIds){
+
+    public void checkMyCourses(JsonArray array_resourceIds) {
     }
-    public void checkMyTeams(JsonArray array_resourceIds){
+
+    public void checkMyTeams(JsonArray array_resourceIds) {
     }
-    public void insertMyLibrary(realm_myLibrary myLibraryDB, String userId,  String resourceID, JsonObject resourceDoc){
-        Log.e("myLibrary",resourceDoc.toString());
+
+    public void insertMyLibrary(realm_myLibrary myLibraryDB, String userId, String resourceID, JsonObject resourceDoc) {
+        Log.e("myLibrary", resourceDoc.toString());
         myLibraryDB.setUserId(userId);
         myLibraryDB.setResourceId(resourceID);
         myLibraryDB.setResource_rev(resourceDoc.get("_rev").getAsString());
@@ -158,7 +163,6 @@ public abstract class ProcessUserData extends AppCompatActivity {
         myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
 
     }
-
 
 
 }

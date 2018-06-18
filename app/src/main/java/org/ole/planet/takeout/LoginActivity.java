@@ -208,7 +208,6 @@ public class LoginActivity extends SyncActivity {
                         alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
                         setUrlParts(url, "", context);
-
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -217,8 +216,11 @@ public class LoginActivity extends SyncActivity {
 
             @Override
             public void failure(Request request, Response response, FuelError fuelError) {
-                Log.d("error", fuelError.toString());
+                ///Log.d("error", fuelError.toString());
                 alertDialogOkay("Device couldn't reach server. Check and try again");
+                if(mRealm !=null){
+                    mRealm.close();
+                }
             }
         });
         return connectionResult;
