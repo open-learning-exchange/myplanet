@@ -122,11 +122,11 @@ abstract class SyncActivity extends ProcessUserData {
     }
 
 
-    public void syncDatabase(final String databaseName) {
+    public void syncDatabase() {
         Thread td = new Thread(new Runnable() {
             public void run() {
                 try {
-                    realmConfig(databaseName);
+                    realmConfig("_users");
                     mRealm.executeTransaction(new Realm.Transaction() {
                         @Override
                         public void execute(Realm realm) {
@@ -146,14 +146,11 @@ abstract class SyncActivity extends ProcessUserData {
                             List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
                             for (int i = 0; i < allShelfDocs.size(); i++) {
                                 Document doc = allShelfDocs.get(i);
-                                populateShelfItems(settings,dbShelfClient, doc, realm,properties);
+                                populateShelfItems(settings, doc, realm,properties);
                             }
                         }
                     });
-                } finally {
-                    if (mRealm != null) {
-                        mRealm.close();
-                    }
+                } finally { if (mRealm != null) { mRealm.close();}
                 }
             }
         });
@@ -271,7 +268,7 @@ abstract class SyncActivity extends ProcessUserData {
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
-        syncDatabase("_users");
+        syncDatabase();
     }
 
 

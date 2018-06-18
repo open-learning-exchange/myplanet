@@ -100,12 +100,13 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
 
 
-    public void populateShelfItems(SharedPreferences settings,CouchDbClientAndroid dbClient, Document doc, Realm mRealm, CouchDbProperties properties) {
+    public void populateShelfItems(SharedPreferences settings, Document doc, Realm mRealm, CouchDbProperties properties) {
         this.properties = properties;
         this.settings = settings;
+        CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
         try {
             this.mRealm = mRealm;
-            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, doc.getId());
             JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
             JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
             JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
