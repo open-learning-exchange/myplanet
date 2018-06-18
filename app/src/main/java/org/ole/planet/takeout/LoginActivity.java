@@ -48,9 +48,9 @@ public class LoginActivity extends SyncActivity {
     Context context;
     private View positiveAction;
     boolean connectionResult;
-    public Realm dbRealm;
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
+    Fuel ful;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,6 +105,7 @@ public class LoginActivity extends SyncActivity {
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         dialog.dismiss();
                         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+                        ful = new Fuel();
                         isServerReachable(serverUrl.getText().toString());
                     }
                 });
@@ -194,7 +195,6 @@ public class LoginActivity extends SyncActivity {
 
 
     public boolean isServerReachable(final String url) {
-        final Fuel ful = new Fuel();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
