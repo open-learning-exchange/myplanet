@@ -15,6 +15,7 @@ import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
     Realm mRealm;
     CouchDbProperties properties;
     CouchDbClientAndroid dbResources;
+    CouchDbClientAndroid dbMeetup;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -159,6 +161,15 @@ public abstract class ProcessUserData extends AppCompatActivity {
             if(array_resourceIds!=null){
                 checkMyLibrary(doc.getId(), array_resourceIds);
             }
+            if(array_meetupIds!=null){
+                checkMyMeetups(doc.getId(), array_meetupIds);
+            }
+            if(array_courseIds!=null){
+                checkMyCourses(doc.getId(), array_courseIds);
+            }
+            if(array_myTeamIds!=null){
+                checkMyTeams(doc.getId(), array_myTeamIds);
+            }
         } catch (Exception err) {
             err.printStackTrace();
         }
@@ -183,13 +194,29 @@ public abstract class ProcessUserData extends AppCompatActivity {
         }
     }
 
-    public void checkMyMeetups(JsonArray array_resourceIds) {
+    public void checkMyMeetups(String userId,JsonArray array_meetupIds) {
+        for (int x = 0; x < array_meetupIds.size(); x++) {
+            RealmResults<realm_meetups> db_myMeetups = mRealm.where(realm_meetups.class)
+                    .equalTo("id", userId)
+                    .equalTo("resourceId", array_meetupIds.get(x).getAsString())
+                    .findAll();
+            if (db_myMeetups.isEmpty()) {
+                realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
+                properties.setDbName("meetups");
+                properties.setUsername(settings.getString("url_user", ""));
+                properties.setPassword(settings.getString("url_pwd", ""));
+                dbMeetup = new CouchDbClientAndroid(properties);
+                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_meetupIds.get(x).getAsString());
+                insertMyMeetups(myMeetupsDB, userId, array_meetupIds.get(x).getAsString(), meetupDoc);
+            }
+
+        }
     }
 
-    public void checkMyCourses(JsonArray array_resourceIds) {
+    public void checkMyCourses(String userId,JsonArray array_courseIds) {
     }
 
-    public void checkMyTeams(JsonArray array_resourceIds) {
+    public void checkMyTeams(String userId,JsonArray array_myTeamIds) {
     }
 
     public void insertMyLibrary(realm_myLibrary myLibraryDB, String userId, String resourceID, JsonObject resourceDoc) {
@@ -208,8 +235,18 @@ public abstract class ProcessUserData extends AppCompatActivity {
         myLibraryDB.setMediaType(resourceDoc.get("mediaType").getAsString());
         myLibraryDB.setAverageRating(resourceDoc.get("averageRating").getAsString());
         myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
+    }
+
+    public void insertMyMeetups(realm_meetups myMeetupsDB, String userId, String meetupID, JsonObject meetupDoc) {
 
     }
+    public void insertMyCourses(realm_meetups myMyCoursesDB, String userId, String myCoursesID, JsonObject myCousesDoc) {
+
+    }
+    public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
+
+    }
+
 
 
 }
