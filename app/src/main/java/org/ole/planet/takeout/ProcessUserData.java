@@ -18,11 +18,11 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.RealmModel;
 import io.realm.RealmResults;
 
 public abstract class ProcessUserData extends AppCompatActivity {
@@ -198,7 +198,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
         for (int x = 0; x < array_meetupIds.size(); x++) {
             RealmResults<realm_meetups> db_myMeetups = mRealm.where(realm_meetups.class)
                     .equalTo("id", userId)
-                    .equalTo("resourceId", array_meetupIds.get(x).getAsString())
+                    .equalTo("meetupId", array_meetupIds.get(x).getAsString())
                     .findAll();
             if (db_myMeetups.isEmpty()) {
                 realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
@@ -212,6 +212,25 @@ public abstract class ProcessUserData extends AppCompatActivity {
 
         }
     }
+/*
+//Todo merge the above similar code into one method
+    public void checkCategory(String userId, String categoryId, Class<RealmModel> categoryClass){
+        RealmResults<RealmModel> db_categoryId = mRealm.where(categoryClass)
+                    .equalTo("id", userId)
+                    .equalTo("meetupId", categoryId)
+                    .findAll();
+            if (db_categoryId.isEmpty()) {
+                RealmModel myMeetupsDB = mRealm.createObject(categoryClass, UUID.randomUUID().toString());
+                properties.setDbName("meetups");
+                properties.setUsername(settings.getString("url_user", ""));
+                properties.setPassword(settings.getString("url_pwd", ""));
+                dbMeetup = new CouchDbClientAndroid(properties);
+                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, categoryId);
+                insertMyMeetups(myMeetupsDB, userId, categoryId, meetupDoc);
+            }
+
+    }
+    */
 
     public void checkMyCourses(String userId,JsonArray array_courseIds) {
     }
@@ -238,7 +257,19 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
 
     public void insertMyMeetups(realm_meetups myMeetupsDB, String userId, String meetupID, JsonObject meetupDoc) {
-
+        myMeetupsDB.setUserId(userId);
+        myMeetupsDB.setMeetupId(meetupID);
+        myMeetupsDB.setMeetupId_rev(meetupDoc.get("meetupId_rev").getAsString());
+        myMeetupsDB.setTitle(meetupDoc.get("title").getAsString());
+        myMeetupsDB.setDescription(meetupDoc.get("description").getAsString());
+        myMeetupsDB.setStartDate(meetupDoc.get("startDate").getAsString());
+        myMeetupsDB.setEndDate(meetupDoc.get("endDate").getAsString());
+        myMeetupsDB.setRecurring(meetupDoc.get("recurring").getAsString());
+        myMeetupsDB.setDay(meetupDoc.get("Day").getAsString());
+        myMeetupsDB.setStartTime(meetupDoc.get("startTime").getAsString());
+        myMeetupsDB.setCategory(meetupDoc.get("category").getAsString());
+        myMeetupsDB.setMeetupLocation(meetupDoc.get("meetupLocation").getAsString());
+        myMeetupsDB.setCreator(meetupDoc.get("creator").getAsString());
     }
     public void insertMyCourses(realm_meetups myMyCoursesDB, String userId, String myCoursesID, JsonObject myCousesDoc) {
 
