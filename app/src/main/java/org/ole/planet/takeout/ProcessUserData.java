@@ -163,7 +163,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, doc.getId());
-            if(jsonDoc.getAsJsonArray("resourceIds")!=null) {
+            if (jsonDoc.getAsJsonArray("resourceIds") != null) {
                 JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
                 JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
                 JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
@@ -185,8 +185,8 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 if (array_myTeamIds.size() < 0) {
                     checkMyTeams(doc.getId(), array_myTeamIds);
                 }
-            }else {
-                Log.e("DB", " BAD Metadata -- Self Doc ID " +  doc.getId());
+            } else {
+                Log.e("DB", " BAD Metadata -- Self Doc ID " + doc.getId());
             }
         } catch (Exception err) {
             err.printStackTrace();
@@ -207,8 +207,8 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 dbResources = new CouchDbClientAndroid(properties);
                 JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
                 insertMyLibrary(myLibraryDB, userId, array_resourceIds.get(x).getAsString(), resourceDoc);
-            }else{
-                Log.e("DB", " Resource data already saved for -- " +  userId + " "+array_resourceIds.get(x).getAsString());
+            } else {
+                Log.e("DB", " Resource data already saved for -- " + userId + " " + array_resourceIds.get(x).getAsString());
             }
 
         }
