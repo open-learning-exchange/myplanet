@@ -9,7 +9,8 @@ public class realm_courseSteps extends RealmObject {
     private String courseId;
     private String stepTitle;
     private String description;
-    private String noOfResources;
+    private Integer noOfResources;
+    private Integer noOfExams;
 
     public String getId() {
         return id;
@@ -43,11 +44,19 @@ public class realm_courseSteps extends RealmObject {
         this.description = description;
     }
 
-    public String getNoOfResources() {
+    public Integer getNoOfResources() {
         return noOfResources;
     }
 
-    public void setNoOfResources(String noOfResources) {
+    public void setNoOfResources(int noOfResources) {
         this.noOfResources = noOfResources;
+    }
+
+    public Integer getNoOfExams() {
+        return noOfExams;
+    }
+
+    public void setNoOfExams(int noOfExams) {
+        this.noOfExams = noOfExams;
     }
 }

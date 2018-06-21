@@ -1,6 +1,7 @@
 package org.ole.planet.takeout;
 
 import android.content.SharedPreferences;
+import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -8,6 +9,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -15,7 +17,9 @@ import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_meetups;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 
 import java.util.List;
@@ -29,8 +33,8 @@ public abstract class ProcessUserData extends AppCompatActivity {
     SharedPreferences settings;
     Realm mRealm;
     CouchDbProperties properties;
-    CouchDbClientAndroid dbResources;
-    CouchDbClientAndroid dbMeetup;
+    CouchDbClientAndroid dbResources, dbMeetup, dbMyCourses;
+    MaterialDialog progress_dialog;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -62,7 +66,8 @@ public abstract class ProcessUserData extends AppCompatActivity {
         editor.commit();
     }
 
-    public void userTransactionSync(SharedPreferences sett, Realm realm, CouchDbProperties propts) {
+    public void userTransactionSync(SharedPreferences sett, Realm realm, CouchDbProperties propts, MaterialDialog progress_dialog) {
+        this.progress_dialog = progress_dialog;
         properties = propts;
         settings = sett;
         mRealm = realm;
@@ -91,7 +96,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
         }
     }
 
-    public void myLybraryTransactionSync() {
+    public void myLibraryTransactionSync() {
         properties.setDbName("shelf");
         properties.setUsername(settings.getString("url_user", ""));
         properties.setPassword(settings.getString("url_pwd", ""));
@@ -102,8 +107,9 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
                 for (int i = 0; i < allShelfDocs.size(); i++) {
                     Document doc = allShelfDocs.get(i);
-                    populateShelfItems(settings, doc, realm, properties);
+                    populateShelfItems(settings, doc, realm);
                 }
+                progress_dialog.dismiss();
             }
         });
     }
@@ -149,26 +155,38 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
 
 
-    public void populateShelfItems(SharedPreferences settings, Document doc, Realm mRealm, CouchDbProperties properties) {
+    public void populateShelfItems(SharedPreferences settings, Document doc, Realm mRealm) {
+        properties.setDbName("shelf");
+        properties.setUsername(settings.getString("url_user", ""));
+        properties.setPassword(settings.getString("url_pwd", ""));
         CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, doc.getId());
-            JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
-            JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
-            JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
-            JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
-            if(array_resourceIds!=null){
-                checkMyLibrary(doc.getId(), array_resourceIds);
-            }
-            if(array_meetupIds!=null){
-                checkMyMeetups(doc.getId(), array_meetupIds);
-            }
-            if(array_courseIds!=null){
-                checkMyCourses(doc.getId(), array_courseIds);
-            }
-            if(array_myTeamIds!=null){
-                checkMyTeams(doc.getId(), array_myTeamIds);
+            if(jsonDoc.getAsJsonArray("resourceIds")!=null) {
+                JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
+                JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
+                JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
+                JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
+                /*
+                Log.e("DB", " array_resourceIds " + array_resourceIds);
+                Log.e("DB", " array_meetupIds " + array_meetupIds);
+                Log.e("DB", " array_courseIds " + array_courseIds);
+                Log.e("DB", " array_myTeamIds " + array_myTeamIds); */
+                if (array_resourceIds.size() < 0) {
+                    checkMyLibrary(doc.getId(), array_resourceIds);
+                }
+                if (array_meetupIds.size() < 0) {
+                    checkMyMeetups(doc.getId(), array_meetupIds);
+                }
+                if (array_courseIds.size() < 0) {
+                    checkMyCourses(doc.getId(), array_courseIds);
+                }
+                if (array_myTeamIds.size() < 0) {
+                    checkMyTeams(doc.getId(), array_myTeamIds);
+                }
+            }else {
+                Log.e("DB", " BAD Metadata -- Self Doc ID " +  doc.getId());
             }
         } catch (Exception err) {
             err.printStackTrace();
@@ -178,7 +196,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
     public void checkMyLibrary(String userId, JsonArray array_resourceIds) {
         for (int x = 0; x < array_resourceIds.size(); x++) {
             RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
-                    .equalTo("id", userId)
+                    .equalTo("userId", userId)
                     .equalTo("resourceId", array_resourceIds.get(x).getAsString())
                     .findAll();
             if (db_myLibrary.isEmpty()) {
@@ -189,15 +207,17 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 dbResources = new CouchDbClientAndroid(properties);
                 JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
                 insertMyLibrary(myLibraryDB, userId, array_resourceIds.get(x).getAsString(), resourceDoc);
+            }else{
+                Log.e("DB", " Resource data already saved for -- " +  userId + " "+array_resourceIds.get(x).getAsString());
             }
 
         }
     }
 
-    public void checkMyMeetups(String userId,JsonArray array_meetupIds) {
+    public void checkMyMeetups(String userId, JsonArray array_meetupIds) {
         for (int x = 0; x < array_meetupIds.size(); x++) {
             RealmResults<realm_meetups> db_myMeetups = mRealm.where(realm_meetups.class)
-                    .equalTo("id", userId)
+                    .equalTo("userId", userId)
                     .equalTo("meetupId", array_meetupIds.get(x).getAsString())
                     .findAll();
             if (db_myMeetups.isEmpty()) {
@@ -212,40 +232,27 @@ public abstract class ProcessUserData extends AppCompatActivity {
 
         }
     }
-/*
-//Todo merge the above similar code into one method
-    public void checkCategory(String userId, String categoryId, Class<RealmModel> categoryClass){
-        RealmResults<RealmModel> db_categoryId = mRealm.where(categoryClass)
-                    .equalTo("id", userId)
-                    .equalTo("meetupId", categoryId)
-                    .findAll();
-            if (db_categoryId.isEmpty()) {
-                RealmModel myMeetupsDB = mRealm.createObject(categoryClass, UUID.randomUUID().toString());
-                properties.setDbName("meetups");
-                properties.setUsername(settings.getString("url_user", ""));
-                properties.setPassword(settings.getString("url_pwd", ""));
-                dbMeetup = new CouchDbClientAndroid(properties);
-                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, categoryId);
-                insertMyMeetups(myMeetupsDB, userId, categoryId, meetupDoc);
-            }
 
-    }
-    */
-
-    public void checkMyCourses(String userId,JsonArray array_courseIds) {
+    public void checkMyCourses(String userId, JsonArray array_courseIds) {
         for (int x = 0; x < array_courseIds.size(); x++) {
             RealmResults<realm_meetups> db_myCourses = mRealm.where(realm_meetups.class)
                     .equalTo("userId", userId)
                     .equalTo("courseId", array_courseIds.get(x).getAsString())
                     .findAll();
             if (db_myCourses.isEmpty()) {
-
+                realm_myCourses myCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
+                properties.setDbName("courses");
+                properties.setUsername(settings.getString("url_user", ""));
+                properties.setPassword(settings.getString("url_pwd", ""));
+                dbMyCourses = new CouchDbClientAndroid(properties);
+                JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(x).getAsString());
+                insertMyCourses(myCoursesDB, userId, array_courseIds.get(x).getAsString(), myCoursesDoc);
             }
 
         }
     }
 
-    public void checkMyTeams(String userId,JsonArray array_myTeamIds) {
+    public void checkMyTeams(String userId, JsonArray array_myTeamIds) {
     }
 
     public void insertMyLibrary(realm_myLibrary myLibraryDB, String userId, String resourceID, JsonObject resourceDoc) {
@@ -255,14 +262,14 @@ public abstract class ProcessUserData extends AppCompatActivity {
         myLibraryDB.setResource_rev(resourceDoc.get("_rev").getAsString());
         myLibraryDB.setTitle(resourceDoc.get("title").getAsString());
         myLibraryDB.setAuthor(resourceDoc.get("author").getAsString());
-        myLibraryDB.setPublisher(resourceDoc.get("Publisher").getAsString());
-        myLibraryDB.setMedium(resourceDoc.get("medium").getAsString());
+//        myLibraryDB.setPublisher(resourceDoc.get("Publisher").getAsString());
+//        myLibraryDB.setMedium(resourceDoc.get("medium").getAsString());
         myLibraryDB.setLanguage(resourceDoc.get("language").getAsString()); //array
         myLibraryDB.setSubject(resourceDoc.get("subject").getAsString()); // array
-        myLibraryDB.setLinkToLicense(resourceDoc.get("linkToLicense").getAsString());
-        myLibraryDB.setResourceFor(resourceDoc.get("resourceFor").getAsString());
+//        myLibraryDB.setLinkToLicense(resourceDoc.get("linkToLicense").getAsString());
+//        myLibraryDB.setResourceFor(resourceDoc.get("resourceFor")!= null ? resourceDoc.get("resourceFor").getAsString() : "");
         myLibraryDB.setMediaType(resourceDoc.get("mediaType").getAsString());
-        myLibraryDB.setAverageRating(resourceDoc.get("averageRating").getAsString());
+//        myLibraryDB.setAverageRating(resourceDoc.get("averageRating").getAsString());
         myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
     }
 
@@ -281,13 +288,49 @@ public abstract class ProcessUserData extends AppCompatActivity {
         myMeetupsDB.setMeetupLocation(meetupDoc.get("meetupLocation").getAsString());
         myMeetupsDB.setCreator(meetupDoc.get("creator").getAsString());
     }
-    public void insertMyCourses(realm_meetups myMyCoursesDB, String userId, String myCoursesID, JsonObject myCousesDoc) {
+
+    public void insertMyCourses(realm_myCourses myMyCoursesDB, String userId, String myCoursesID, JsonObject myCousesDoc) {
+        myMyCoursesDB.setUserId(userId);
+        myMyCoursesDB.setCourseId(myCoursesID);
+        myMyCoursesDB.setCourse_rev(myCousesDoc.get("_rev").getAsString());
+        myMyCoursesDB.setLanguageOfInstruction(myCousesDoc.get("languageOfInstruction").getAsString());
+        myMyCoursesDB.setCourse_rev(myCousesDoc.get("courseTitle").getAsString());
+        myMyCoursesDB.setMemberLimit(myCousesDoc.get("memberLimit").getAsInt());
+        myMyCoursesDB.setDescription(myCousesDoc.get("description").getAsString());
+        myMyCoursesDB.setMethod(myCousesDoc.get("method").getAsString());
+        myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
+        myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
+        myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
+        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
+        insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
+    }
+
+    public void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps) {
+        for (int step = 0; step < numberOfSteps; step++) {
+            String step_id = UUID.randomUUID().toString();
+            realm_courseSteps myCourseStepDB = mRealm.createObject(realm_courseSteps.class, step_id);
+            myCourseStepDB.setCourseId(myCoursesID);
+            JsonObject stepContainer = steps.get(step).getAsJsonObject();
+            myCourseStepDB.setStepTitle(stepContainer.get("stepTitle").getAsString());
+            myCourseStepDB.setDescription(stepContainer.get("description").getAsString());
+            myCourseStepDB.setNoOfResources(stepContainer.get("attachment").getAsJsonArray().size());
+            myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
+            insertCourseStepsAttachments();
+            insertCourseStepsExams();
+        }
+    }
+
+    public void insertCourseStepsExams() {
 
     }
+
+    public void insertCourseStepsAttachments() {
+
+    }
+
     public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
 
     }
-
 
 
 }

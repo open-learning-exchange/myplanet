@@ -120,6 +120,6 @@ public class realm_myCourses extends RealmObject {
     }
 
     public void setnumberOfSteps(Integer numberOfSteps) {
-        numberOfSteps = numberOfSteps;
+        this.numberOfSteps = numberOfSteps;
     }
 }
