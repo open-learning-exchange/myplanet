@@ -20,6 +20,8 @@ public class realm_myLibrary extends RealmObject {
     private String mediaType;
     private String averageRating;
     private String description;
+    private String resourceRemoteAddress;
+    private String resourceLocalAddress;
 
 
     public String getId() {
@@ -140,5 +142,21 @@ public class realm_myLibrary extends RealmObject {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getResourceRemoteAddress() {
+        return resourceRemoteAddress;
+    }
+
+    public void setResourceRemoteAddress(String resourceRemoteAddress) {
+        this.resourceRemoteAddress = resourceRemoteAddress;
+    }
+
+    public String getResourceLocalAddress() {
+        return resourceLocalAddress;
+    }
+
+    public void setResourceLocalAddress(String resourceLocalAddress) {
+        this.resourceLocalAddress = resourceLocalAddress;
     }
 }
