@@ -33,7 +33,7 @@ public class DashboardFragment extends Fragment {
     private ImageButton myLibraryImage;
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
-    TextView txtFullName,txtCurDate,txtVisits;
+    TextView txtFullName, txtCurDate, txtVisits;
     String fullName;
     Realm mRealm;
     CouchDbProperties properties;
@@ -73,13 +73,15 @@ public class DashboardFragment extends Fragment {
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
     }
-    private String currentDate(){
+
+    private String currentDate() {
         Calendar c = Calendar.getInstance();
         SimpleDateFormat dateformat = new SimpleDateFormat("dd-MMM-yyyy");
         String datetime = dateformat.format(c.getTime());
         return datetime;
     }
-    public int offlineVisits(){
+
+    public int offlineVisits() {
         realmConfig("offlineActivities");
         realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
         offlineActivities.setUserId(settings.getString("name", ""));
@@ -88,14 +90,15 @@ public class DashboardFragment extends Fragment {
         offlineActivities.setUserFullName(fullName);
         RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
                 .equalTo("userId", settings.getString("name", ""))
-                .equalTo("type", "Visits" )
+                .equalTo("type", "Visits")
                 .findAll();
-        if(!db_users.isEmpty()){
+        if (!db_users.isEmpty()) {
             return db_users.size();
-        }else{
+        } else {
             return 0;
         }
     }
+
     public void realmConfig(String dbName) {
         Realm.init(getContext());
         RealmConfiguration config = new RealmConfiguration.Builder()
