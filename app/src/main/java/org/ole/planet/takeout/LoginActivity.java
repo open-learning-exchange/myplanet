@@ -204,7 +204,7 @@ public class LoginActivity extends SyncActivity {
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
-                        alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                        //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
                         setUrlParts(url, "", context);
                     }
