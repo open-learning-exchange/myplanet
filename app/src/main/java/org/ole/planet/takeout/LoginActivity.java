@@ -50,7 +50,8 @@ public class LoginActivity extends SyncActivity {
     boolean connectionResult;
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
-    Fuel ful = new Fuel();;
+    Fuel ful = new Fuel();
+    ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

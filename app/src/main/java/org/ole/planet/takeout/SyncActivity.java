@@ -101,7 +101,7 @@ abstract class SyncActivity extends ProcessUserData {
             public void run() {
                 try {
                     realmConfig("_users");
-                    userTransactionSync(settings, mRealm, properties,progress_dialog);
+                    userTransactionSync(settings, mRealm, properties, progress_dialog);
                     myLibraryTransactionSync();
                 } finally {
                     if (mRealm != null) {
