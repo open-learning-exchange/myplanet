@@ -76,6 +76,7 @@ public class Dashboard extends AppCompatActivity {
                 .withTextColor(getResources().getColor(R.color.bg_white))
                 .withHeaderBackground(R.drawable.header_image)
                 .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
+                .withDividerBelowHeader(false)
                 .build();
 
     }
