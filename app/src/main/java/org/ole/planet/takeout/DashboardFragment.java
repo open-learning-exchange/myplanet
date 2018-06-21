@@ -9,7 +9,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.google.android.flexbox.FlexDirection;
+import com.google.android.flexbox.FlexboxLayout;
 
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Data.realm_UserModel;
@@ -72,6 +76,7 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+        myLibraryDiv(view);
     }
 
     private String currentDate() {
@@ -118,7 +123,33 @@ public class DashboardFragment extends Fragment {
                 .setPassword(settings.getString("url_pwd", ""))
                 .setMaxConnections(100)
                 .setConnectionTimeout(0);
+    }
+    public void myLibraryDiv(View view){
+        FlexboxLayout flexboxLayout =  view.findViewById(R.id.flexboxLayout);
+        flexboxLayout.setFlexDirection(FlexDirection.ROW);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                200,
+                100
+        );
+        //params.setMargins(0, 0, 50, 50);
 
+        TextView txtView = new TextView(getContext());
+        txtView.setBackgroundResource(R.drawable.circle_red);
+        txtView.setText("Leonard Maximus Irenous Mensah");
+        flexboxLayout.addView(txtView, params);
+
+
+        TextView txtView1 = new TextView(getContext());
+        txtView1.setBackgroundResource(R.drawable.darkblue_gradient);
+        txtView1.setText("Leonard Maximus Irenous Mensah");
+        flexboxLayout.addView(txtView1, params);
+
+        //View flxView = flexboxLayout.getChildAt(0);
+        //FlexboxLayout.LayoutParams lp = (FlexboxLayout.LayoutParams) flxView.getLayoutParams();
+        //lp.setOrder(-1);
+        //lp.order = -1;
+        //lp.flexGrow = 2;
+        //view.setLayoutParams(lp);
     }
 
 }
