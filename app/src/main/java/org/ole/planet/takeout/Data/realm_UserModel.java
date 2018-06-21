@@ -1,4 +1,4 @@
-package org.ole.planet.takeout;
+package org.ole.planet.takeout.Data;
 
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;

@@ -3,13 +3,8 @@ package org.ole.planet.takeout;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.os.Handler;
-import android.os.Message;
-import android.provider.SyncStateContract;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -17,40 +12,19 @@ import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.github.kittinunf.fuel.android.core.Json;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ArrayNode;
-import org.json.JSONObject;
-import org.json.JSONStringer;
-import org.lightcouch.CouchDbClient;
-import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
-import org.lightcouch.Document;
+import org.ole.planet.takeout.Data.realm_UserModel;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
 
 import io.realm.Realm;
-import io.realm.RealmAsyncTask;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
-import io.realm.Sort;
 
 abstract class SyncActivity extends ProcessUserData {
     private TextView syncDate;
@@ -63,6 +37,7 @@ abstract class SyncActivity extends ProcessUserData {
     Realm mRealm;
     Context context;
     CouchDbProperties properties;
+    MaterialDialog progress_dialog;
 
 
     public void sync(MaterialDialog dialog) {
@@ -121,22 +96,13 @@ abstract class SyncActivity extends ProcessUserData {
     }
 
 
-    public void syncDatabase(final String databaseName) {
+    public void syncDatabase() {
         Thread td = new Thread(new Runnable() {
             public void run() {
                 try {
-                    realmConfig(databaseName);
-                    mRealm.executeTransaction(new Realm.Transaction() {
-                        @Override
-                        public void execute(Realm realm) {
-                            final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                            final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                            for (int i = 0; i < allDocs.size(); i++) {
-                                Document doc = allDocs.get(i);
-                                processUserDoc(dbClient, doc, realm);
-                            }
-                        }
-                    });
+                    realmConfig("_users");
+                    userTransactionSync(settings, mRealm, properties, progress_dialog);
+                    myLibraryTransactionSync();
                 } finally {
                     if (mRealm != null) {
                         mRealm.close();
@@ -146,20 +112,6 @@ abstract class SyncActivity extends ProcessUserData {
         });
         td.start();
     }
-
-    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc, Realm realm) {
-        this.mRealm = realm;
-        try {
-            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                populateUsersTable(jsonDoc, mRealm);
-                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     public void alertDialogOkay(String Message) {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
@@ -259,7 +211,13 @@ abstract class SyncActivity extends ProcessUserData {
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
-        syncDatabase("_users");
+
+        progress_dialog = new MaterialDialog.Builder(this)
+                .title("Syncing")
+                .content("Please wait")
+                .progress(true, 0)
+                .show();
+        syncDatabase();
     }
 
 
