@@ -233,6 +233,16 @@ public abstract class ProcessUserData extends AppCompatActivity {
     */
 
     public void checkMyCourses(String userId,JsonArray array_courseIds) {
+        for (int x = 0; x < array_courseIds.size(); x++) {
+            RealmResults<realm_meetups> db_myCourses = mRealm.where(realm_meetups.class)
+                    .equalTo("userId", userId)
+                    .equalTo("courseId", array_courseIds.get(x).getAsString())
+                    .findAll();
+            if (db_myCourses.isEmpty()) {
+
+            }
+
+        }
     }
 
     public void checkMyTeams(String userId,JsonArray array_myTeamIds) {
