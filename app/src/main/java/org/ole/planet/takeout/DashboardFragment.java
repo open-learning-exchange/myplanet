@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -21,6 +22,11 @@ public class DashboardFragment extends Fragment {
     private ImageButton myTeamsImage;
 
     //TextViews
+    private TextView myLibraryTextView;
+    private TextView myCoursesTextView;
+    private TextView myMeetUpsTextView;
+    private TextView myTeamsTextView;
+
 
     public DashboardFragment() {
         //init dashboard
@@ -68,6 +74,44 @@ public class DashboardFragment extends Fragment {
                 startActivity(intent);
             }
         });
+
+        //TextView Clickable
+        myLibraryTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e("DF: ", "Clicked myLibrary");
+                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        myCoursesTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e("DF: ", "Clicked myLibrary");
+                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        myMeetUpsTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e("DF: ", "Clicked myLibrary");
+                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        myTeamsTextView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.e("DF: ", "Clicked myLibrary");
+                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
+                startActivity(intent);
+            }
+        });
+
         return view;
     }
 
@@ -80,5 +124,10 @@ public class DashboardFragment extends Fragment {
         myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
 
         //TextViews
+        myLibraryTextView = (TextView) view.findViewById(R.id.myLibraryTextView);
+        myCoursesTextView = (TextView) view.findViewById(R.id.myCoursesTextView);
+        myMeetUpsTextView = (TextView) view.findViewById(R.id.myMeetUpsTextView);
+        myTeamsTextView = (TextView) view.findViewById(R.id.myTeamsTextView);
+
     }
 }

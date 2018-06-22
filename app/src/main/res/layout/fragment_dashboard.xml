@@ -131,7 +131,7 @@
                         app:srcCompat="@drawable/library" />
 
                     <TextView
-                        android:id="@+id/textView3"
+                        android:id="@+id/myLibraryTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -176,7 +176,7 @@
                         app:srcCompat="@drawable/courses" />
 
                     <TextView
-                        android:id="@+id/textView4"
+                        android:id="@+id/myCoursesTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -221,7 +221,7 @@
                         app:srcCompat="@drawable/meetups" />
 
                     <TextView
-                        android:id="@+id/textView5"
+                        android:id="@+id/myMeetUpsTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -266,7 +266,7 @@
                         app:srcCompat="@drawable/team" />
 
                     <TextView
-                        android:id="@+id/textView6"
+                        android:id="@+id/myTeamsTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
