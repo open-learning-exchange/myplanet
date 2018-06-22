@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import com.google.android.flexbox.FlexboxLayout;
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 
 import java.text.SimpleDateFormat;
@@ -128,21 +130,30 @@ public class DashboardFragment extends Fragment {
         FlexboxLayout flexboxLayout =  view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                200,
+                250,
                 100
         );
-        //params.setMargins(0, 0, 50, 50);
-
-        TextView txtView = new TextView(getContext());
-        txtView.setBackgroundResource(R.drawable.circle_red);
-        txtView.setText("Leonard Maximus Irenous Mensah");
-        flexboxLayout.addView(txtView, params);
-
-
-        TextView txtView1 = new TextView(getContext());
-        txtView1.setBackgroundResource(R.drawable.darkblue_gradient);
-        txtView1.setText("Leonard Maximus Irenous Mensah");
-        flexboxLayout.addView(txtView1, params);
+        realmConfig("resources");
+        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
+                .findAll();
+        Log.e("Library",db_myLibrary.toString());
+        int textViewCount = db_myLibrary.size();
+        TextView[] textViewArray = new TextView[textViewCount];
+        int itemCnt =0;
+        for (realm_myLibrary items : db_myLibrary) {
+            textViewArray[itemCnt] = new TextView(getContext());
+            textViewArray[itemCnt].setPadding(20,10,20,10);
+            textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
+            textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
+            textViewArray[itemCnt].setText(items.getTitle());
+            textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+            if((itemCnt%2)==0) {
+                textViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+            }
+            flexboxLayout.addView(textViewArray[itemCnt], params);
+            itemCnt++;
+        }
 
         //View flxView = flexboxLayout.getChildAt(0);
         //FlexboxLayout.LayoutParams lp = (FlexboxLayout.LayoutParams) flxView.getLayoutParams();

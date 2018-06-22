@@ -164,29 +164,25 @@ public abstract class ProcessUserData extends AppCompatActivity {
             this.mRealm = mRealm;
             JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, doc.getId());
             if (jsonDoc.getAsJsonArray("resourceIds") != null) {
+                Log.e("DB", " GOOD Metadata -- Shelf Doc ID " + doc.getId());
                 JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
                 JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
                 JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
                 JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
-                /*
-                Log.e("DB", " array_resourceIds " + array_resourceIds);
-                Log.e("DB", " array_meetupIds " + array_meetupIds);
-                Log.e("DB", " array_courseIds " + array_courseIds);
-                Log.e("DB", " array_myTeamIds " + array_myTeamIds); */
-                if (array_resourceIds.size() < 0) {
+                if (array_resourceIds.size() > 0) {
                     checkMyLibrary(doc.getId(), array_resourceIds);
                 }
-                if (array_meetupIds.size() < 0) {
+                if (array_meetupIds.size() > 0) {
                     checkMyMeetups(doc.getId(), array_meetupIds);
                 }
-                if (array_courseIds.size() < 0) {
+                if (array_courseIds.size() > 0) {
                     checkMyCourses(doc.getId(), array_courseIds);
                 }
-                if (array_myTeamIds.size() < 0) {
+                if (array_myTeamIds.size() > 0) {
                     checkMyTeams(doc.getId(), array_myTeamIds);
                 }
             } else {
-                Log.e("DB", " BAD Metadata -- Self Doc ID " + doc.getId());
+                Log.e("DB", " BAD Metadata -- Shelf Doc ID " + doc.getId());
             }
         } catch (Exception err) {
             err.printStackTrace();
@@ -199,6 +195,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
                     .equalTo("userId", userId)
                     .equalTo("resourceId", array_resourceIds.get(x).getAsString())
                     .findAll();
+            Log.e("DATA",  db_myLibrary.toString());
             if (db_myLibrary.isEmpty()) {
                 realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
                 properties.setDbName("resources");
@@ -208,7 +205,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
                 insertMyLibrary(myLibraryDB, userId, array_resourceIds.get(x).getAsString(), resourceDoc);
             } else {
-                Log.e("DB", " Resource data already saved for -- " + userId + " " + array_resourceIds.get(x).getAsString());
+                Log.e("DATA", " Resource data already saved for -- " + userId + " " + array_resourceIds.get(x).getAsString());
             }
 
         }
@@ -256,7 +253,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
 
     public void insertMyLibrary(realm_myLibrary myLibraryDB, String userId, String resourceID, JsonObject resourceDoc) {
-        Log.e("myLibrary", resourceDoc.toString());
+        Log.e("Inserting", resourceDoc.toString());
         myLibraryDB.setUserId(userId);
         myLibraryDB.setResourceId(resourceID);
         myLibraryDB.setResource_rev(resourceDoc.get("_rev").getAsString());
