@@ -100,9 +100,7 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog
-                        .Builder(LoginActivity.this)
-                        .title(R.string.action_settings)
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings)
                         .customView(R.layout.dialog_server_url_1, true)
                         .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
@@ -112,14 +110,12 @@ public class LoginActivity extends SyncActivity {
                                 serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
                                 isServerReachable(serverUrl.getText().toString());
                             }
-                        })
-                        .onNegative(new MaterialDialog.SingleButtonCallback() {
+                        }).onNegative(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(MaterialDialog dialog, DialogAction which) {
                                 Log.e("MD: ", "Clicked Negative (Cancel)");
                             }
-                        })
-                        .onNeutral(new MaterialDialog.SingleButtonCallback() {
+                        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
@@ -127,14 +123,11 @@ public class LoginActivity extends SyncActivity {
                         });
                 settingDialog(builder);
             }
-
         });
-
-        //FIXME: Change to rotating icon
         syncOption.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                feedbackDialog();
+                //TODO
             }
         });
     }
@@ -242,35 +235,4 @@ public class LoginActivity extends SyncActivity {
         });
         return connectionResult;
     }
-
-    //TODO: Sync options now moved to settings bar. Delete function
-    // Server feedback dialog
-    public void feedbackDialog() {
-        MaterialDialog dialog = new MaterialDialog.Builder(this).title(R.string.title_sync_settings)
-                .customView(R.layout.dialog_sync_feedback, true)
-                .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
-                .onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(MaterialDialog dialog, DialogAction which) {
-                        Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .onNegative(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(MaterialDialog dialog, DialogAction which) {
-                        Log.e("MD: ", "Clicked Negative (Cancel)");
-                    }
-                })
-                .onNeutral(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .build();
-        sync(dialog);
-        dialog.show();
-    }
-
-
 }
