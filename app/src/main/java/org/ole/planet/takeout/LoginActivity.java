@@ -1,26 +1,21 @@
 package org.ole.planet.takeout;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
-import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
-import android.view.WindowManager;
 import android.webkit.URLUtil;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -31,13 +26,11 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import io.realm.Realm;
-import io.realm.RealmConfiguration;
 
 
 public class LoginActivity extends SyncActivity {
@@ -88,21 +81,24 @@ public class LoginActivity extends SyncActivity {
     }
 
     public void declareElements() {
-        //editText
-        inputName = findViewById(R.id.input_name);
+        inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
-        //buttons
-        btnSignIn = findViewById(R.id.btn_signin);
+        btnSignIn = findViewById(R.id.btn_signin); //buttons
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
-        // textviews
-        syncOption = findViewById(R.id.syncOption);
+        syncOption = findViewById(R.id.syncOption); // textviews
+
+        syncOption.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         imgBtnSetting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings)
-                        .customView(R.layout.dialog_server_url_1, true)
-                        .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                        .customView(R.layout.dialog_server_url_, true).positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
@@ -122,12 +118,6 @@ public class LoginActivity extends SyncActivity {
                             }
                         });
                 settingDialog(builder);
-            }
-        });
-        syncOption.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //TODO
             }
         });
     }
