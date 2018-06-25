@@ -35,6 +35,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
     CouchDbProperties properties;
     CouchDbClientAndroid dbResources, dbMeetup, dbMyCourses;
     MaterialDialog progress_dialog;
+    Document shelfDoc;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -106,8 +107,8 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
                 List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
                 for (int i = 0; i < allShelfDocs.size(); i++) {
-                    Document doc = allShelfDocs.get(i);
-                    populateShelfItems(settings, doc, realm);
+                    shelfDoc = allShelfDocs.get(i);
+                    populateShelfItems(settings, realm);
                 }
                 progress_dialog.dismiss();
             }
@@ -155,7 +156,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
 
 
-    public void populateShelfItems(SharedPreferences settings, Document doc, Realm mRealm) {
+    public void populateShelfItems(SharedPreferences settings, Realm mRealm) {
         properties.setDbName("shelf");
         properties.setUsername(settings.getString("url_user", ""));
         properties.setPassword(settings.getString("url_pwd", ""));
@@ -168,27 +169,27 @@ public abstract class ProcessUserData extends AppCompatActivity {
                 JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
                 JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
                 JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
-                memberShelfData(doc, array_resourceIds, array_meetupIds, array_courseIds, array_myTeamIds);
+                memberShelfData(array_resourceIds, array_meetupIds, array_courseIds, array_myTeamIds);
             } else {
-                Log.e("DB", " BAD Metadata -- Shelf Doc ID " + doc.getId());
+                Log.e("DB", " BAD Metadata -- Shelf Doc ID " + shelfDoc.getId());
             }
         } catch (Exception err) {
             err.printStackTrace();
         }
     }
 
-    public void memberShelfData(Document doc, JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
+    public void memberShelfData(JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
         if (array_resourceIds.size() > 0) {
-            checkMyLibrary(doc.getId(), array_resourceIds);
+            checkMyLibrary(shelfDoc.getId(), array_resourceIds);
         }
         if (array_meetupIds.size() > 0) {
-            checkMyMeetups(doc.getId(), array_meetupIds);
+            checkMyMeetups(shelfDoc.getId(), array_meetupIds);
         }
         if (array_courseIds.size() > 0) {
-            checkMyCourses(doc.getId(), array_courseIds);
+            checkMyCourses(shelfDoc.getId(), array_courseIds);
         }
         if (array_myTeamIds.size() > 0) {
-            checkMyTeams(doc.getId(), array_myTeamIds);
+            checkMyTeams(shelfDoc.getId(), array_myTeamIds);
         }
     }
 
