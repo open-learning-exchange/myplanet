@@ -164,28 +164,31 @@ public abstract class ProcessUserData extends AppCompatActivity {
             this.mRealm = mRealm;
             JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, doc.getId());
             if (jsonDoc.getAsJsonArray("resourceIds") != null) {
-                Log.e("DB", " GOOD Metadata -- Shelf Doc ID " + doc.getId());
                 JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
                 JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
                 JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
                 JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
-                if (array_resourceIds.size() > 0) {
-                    checkMyLibrary(doc.getId(), array_resourceIds);
-                }
-                if (array_meetupIds.size() > 0) {
-                    checkMyMeetups(doc.getId(), array_meetupIds);
-                }
-                if (array_courseIds.size() > 0) {
-                    checkMyCourses(doc.getId(), array_courseIds);
-                }
-                if (array_myTeamIds.size() > 0) {
-                    checkMyTeams(doc.getId(), array_myTeamIds);
-                }
+                memberShelfData(doc, array_resourceIds, array_meetupIds, array_courseIds, array_myTeamIds);
             } else {
                 Log.e("DB", " BAD Metadata -- Shelf Doc ID " + doc.getId());
             }
         } catch (Exception err) {
             err.printStackTrace();
+        }
+    }
+
+    public void memberShelfData(Document doc, JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
+        if (array_resourceIds.size() > 0) {
+            checkMyLibrary(doc.getId(), array_resourceIds);
+        }
+        if (array_meetupIds.size() > 0) {
+            checkMyMeetups(doc.getId(), array_meetupIds);
+        }
+        if (array_courseIds.size() > 0) {
+            checkMyCourses(doc.getId(), array_courseIds);
+        }
+        if (array_myTeamIds.size() > 0) {
+            checkMyTeams(doc.getId(), array_myTeamIds);
         }
     }
 

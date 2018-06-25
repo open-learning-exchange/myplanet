@@ -191,9 +191,6 @@ abstract class SyncActivity extends ProcessUserData {
     public void setUrlParts(String url, String password, Context context) {
         this.context = context;
         URI uri = URI.create(url);
-        String url_Scheme = uri.getScheme();
-        String url_Host = uri.getHost();
-        int url_Port = uri.getPort();
         String url_user = null, url_pwd = null;
         if (url.contains("@")) {
             String[] userinfo = uri.getUserInfo().split(":");
@@ -205,13 +202,12 @@ abstract class SyncActivity extends ProcessUserData {
         }
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
-        editor.putString("url_Scheme", url_Scheme);
-        editor.putString("url_Host", url_Host);
-        editor.putInt("url_Port", url_Port);
+        editor.putString("url_Scheme", uri.getScheme());
+        editor.putString("url_Host", uri.getHost());
+        editor.putInt("url_Port", uri.getPort());
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
-
         progress_dialog = new MaterialDialog.Builder(this)
                 .title("Syncing")
                 .content("Please wait")

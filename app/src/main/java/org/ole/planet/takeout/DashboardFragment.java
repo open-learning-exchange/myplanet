@@ -78,6 +78,7 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+        realmConfig("resources");
         myLibraryDiv(view);
     }
 
@@ -133,12 +134,9 @@ public class DashboardFragment extends Fragment {
                 250,
                 100
         );
-        realmConfig("resources");
-        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
-                .findAll();
-        Log.e("Library",db_myLibrary.toString());
-        int textViewCount = db_myLibrary.size();
-        TextView[] textViewArray = new TextView[textViewCount];
+
+        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
+        TextView[] textViewArray = new TextView[db_myLibrary.size()];
         int itemCnt =0;
         for (realm_myLibrary items : db_myLibrary) {
             textViewArray[itemCnt] = new TextView(getContext());
@@ -154,13 +152,6 @@ public class DashboardFragment extends Fragment {
             flexboxLayout.addView(textViewArray[itemCnt], params);
             itemCnt++;
         }
-
-        //View flxView = flexboxLayout.getChildAt(0);
-        //FlexboxLayout.LayoutParams lp = (FlexboxLayout.LayoutParams) flxView.getLayoutParams();
-        //lp.setOrder(-1);
-        //lp.order = -1;
-        //lp.flexGrow = 2;
-        //view.setLayoutParams(lp);
     }
 
 }
