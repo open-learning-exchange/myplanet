@@ -97,21 +97,25 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                 setRealmProperties(stringArray[2]);
                 generaldb = new CouchDbClientAndroid(properties);
                 JsonObject resourceDoc = generaldb.find(JsonObject.class, array_categoryIds.get(x).getAsString());
-                switch (stringArray[2]) {
-                    case "resources":
-                        insertMyLibrary(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc);
-                        break;
-                    case "meetups":
-                        insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc);
-                        break;
-                    case "courses":
-                        insertMyCourses(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc);
-                        break;
-                }
+                triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
             } else {
                 Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
             }
 
+        }
+    }
+
+    public void triggerInsert(String[] stringArray, JsonArray array_categoryIds, int x, JsonObject resourceDoc) {
+        switch (stringArray[2]) {
+            case "resources":
+                insertMyLibrary(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc);
+                break;
+            case "meetups":
+                insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc);
+                break;
+            case "courses":
+                insertMyCourses(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc);
+                break;
         }
     }
 

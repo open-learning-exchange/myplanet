@@ -39,6 +39,7 @@ public abstract class ProcessUserData extends CustomDataProcessing {
     CouchDbClientAndroid dbResources, dbMeetup, dbMyCourses;
     MaterialDialog progress_dialog;
     Document shelfDoc;
+    String[] stringArray = new String[3];
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -183,31 +184,30 @@ public abstract class ProcessUserData extends CustomDataProcessing {
 
     public void memberShelfData(JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
         setVariables(settings, mRealm, properties);
-        String[] stringArray = new String[3];
         if (array_resourceIds.size() > 0) {
             RealmResults<realm_myLibrary> category = null;
-            stringArray[0] = shelfDoc.getId();
-            stringArray[1] = "resourceId";
-            stringArray[2] = "resources";
+            triggerInsert("resourceId", "resources");
             check(stringArray, array_resourceIds, realm_myLibrary.class, category);
         }
         if (array_meetupIds.size() > 0) {
             RealmResults<realm_meetups> category = null;
-            stringArray[0] = shelfDoc.getId();
-            stringArray[1] = "meetupId";
-            stringArray[2] = "meetups";
+            triggerInsert("meetupId", "meetups");
             check(stringArray, array_resourceIds, realm_meetups.class, category);
         }
         if (array_courseIds.size() > 0) {
             RealmResults<realm_myCourses> category = null;
-            stringArray[0] = shelfDoc.getId();
-            stringArray[1] = "courseId";
-            stringArray[2] = "courses";
+            triggerInsert("courseId", "courses");
             check(stringArray, array_resourceIds, realm_myCourses.class, category);
         }
         if (array_myTeamIds.size() > 0) {
             checkMyTeams(shelfDoc.getId(), array_myTeamIds);
         }
+    }
+
+    public void triggerInsert(String resourceId, String resources) {
+        stringArray[0] = shelfDoc.getId();
+        stringArray[1] = resourceId;
+        stringArray[2] = resources;
     }
 /*
     public void checkMy(String userId, JsonArray array_categoryIds,String catClass) {
