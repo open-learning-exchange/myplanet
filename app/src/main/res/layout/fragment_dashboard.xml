@@ -27,7 +27,7 @@
             android:paddingTop="10dp"
             android:weightSum="10">
 
-            <LinearLayout
+            <LinearLayoutq
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="left"
@@ -81,7 +81,7 @@
                     android:textAlignment="center"
                     android:textColor="@color/textColorPrimary"
                     android:textSize="12sp" />
-            </LinearLayout>
+            </LinearLayoutq>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -121,7 +121,7 @@
                     android:weightSum="4">
 
                     <ImageButton
-                        android:id="@+id/myLibrary"
+                        android:id="@+id/myLibraryImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"
@@ -131,7 +131,7 @@
                         app:srcCompat="@drawable/library" />
 
                     <TextView
-                        android:id="@+id/textView3"
+                        android:id="@+id/myLibraryTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -166,7 +166,7 @@
                     android:orientation="vertical">
 
                     <ImageButton
-                        android:id="@+id/imageButton2"
+                        android:id="@+id/myCoursesImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"
@@ -176,7 +176,7 @@
                         app:srcCompat="@drawable/courses" />
 
                     <TextView
-                        android:id="@+id/textView4"
+                        android:id="@+id/myCoursesTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -211,7 +211,7 @@
                     android:orientation="vertical">
 
                     <ImageButton
-                        android:id="@+id/imageButton4"
+                        android:id="@+id/myMeetUpsImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"
@@ -221,7 +221,7 @@
                         app:srcCompat="@drawable/meetups" />
 
                     <TextView
-                        android:id="@+id/textView5"
+                        android:id="@+id/myMeetUpsTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
@@ -256,7 +256,7 @@
                     android:orientation="vertical">
 
                     <ImageButton
-                        android:id="@+id/imageButton5"
+                        android:id="@+id/myTeamsImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"
@@ -266,7 +266,7 @@
                         app:srcCompat="@drawable/team" />
 
                     <TextView
-                        android:id="@+id/textView6"
+                        android:id="@+id/myTeamsTextView"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="1"
