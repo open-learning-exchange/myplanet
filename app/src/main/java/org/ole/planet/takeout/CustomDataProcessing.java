@@ -32,70 +32,71 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
     }
 
     public void checkMyLibrary(String userId, JsonArray array_resourceIds) {
-        for (int x = 0; x < array_resourceIds.size(); x++) {
+        for (int rs = 0; rs < array_resourceIds.size(); rs++) {
             RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
                     .equalTo("userId", userId)
-                    .equalTo("resourceId", array_resourceIds.get(x).getAsString())
+                    .equalTo("resourceId", array_resourceIds.get(rs).getAsString())
                     .findAll();
             Log.e("DATA", db_myLibrary.toString());
             if (db_myLibrary.isEmpty()) {
                 realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
                 setRealmProperties("resources");
                 dbResources = new CouchDbClientAndroid(properties);
-                JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
-                insertMyLibrary(myLibraryDB, userId, array_resourceIds.get(x).getAsString(), resourceDoc);
+                JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(rs).getAsString());
+                insertMyLibrary(myLibraryDB, userId, array_resourceIds.get(rs).getAsString(), resourceDoc);
             } else {
-                Log.e("DATA", " Resource data already saved for -- " + userId + " " + array_resourceIds.get(x).getAsString());
+                Log.e("DATA", " Resource data already saved for -- " + userId + " " + array_resourceIds.get(rs).getAsString());
             }
 
         }
     }
 
     public void checkMyMeetups(String userId, JsonArray array_meetupIds) {
-        for (int x = 0; x < array_meetupIds.size(); x++) {
+        for (int mt = 0; mt < array_meetupIds.size(); mt++) {
             RealmResults<realm_meetups> db_myMeetups = mRealm.where(realm_meetups.class)
-                    .equalTo("meetupId", array_meetupIds.get(x).getAsString())
+                    .equalTo("meetupId", array_meetupIds.get(mt).getAsString())
                     .equalTo("userId", userId)
                     .findAll();
             if (db_myMeetups.isEmpty()) {
                 realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
                 setRealmProperties("meetups");
                 dbMeetup = new CouchDbClientAndroid(properties);
-                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_meetupIds.get(x).getAsString());
-                insertMyMeetups(myMeetupsDB, userId, array_meetupIds.get(x).getAsString(), meetupDoc);
+                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_meetupIds.get(mt).getAsString());
+                insertMyMeetups(myMeetupsDB, userId, array_meetupIds.get(mt).getAsString(), meetupDoc);
             }
 
         }
     }
 
     public void checkMyCourses(String userId, JsonArray array_courseIds) {
-        for (int x = 0; x < array_courseIds.size(); x++) {
+        for (int cs = 0; cs < array_courseIds.size(); cs++) {
             RealmResults<realm_meetups> db_myCourses = mRealm.where(realm_meetups.class)
                     .equalTo("userId", userId)
-                    .equalTo("courseId", array_courseIds.get(x).getAsString())
+                    .equalTo("courseId", array_courseIds.get(cs).getAsString())
                     .findAll();
             if (db_myCourses.isEmpty()) {
                 realm_myCourses myCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
                 setRealmProperties("courses");
                 dbMyCourses = new CouchDbClientAndroid(properties);
-                JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(x).getAsString());
-                insertMyCourses(myCoursesDB, userId, array_courseIds.get(x).getAsString(), myCoursesDoc);
+                JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(cs).getAsString());
+                insertMyCourses(myCoursesDB, userId, array_courseIds.get(cs).getAsString(), myCoursesDoc);
             }
 
         }
     }
 
+    public void checkMyTeams(String userId, JsonArray array_myTeamIds) {
+        for (int tms = 0; tms < array_myTeamIds.size(); tms++) {
+
+        }
+    }
+
+
     public void setRealmProperties(String dbName) {
-        properties.setDbName("courses");
         properties.setDbName(dbName);
         properties.setUsername(settings.getString("url_user", ""));
         properties.setPassword(settings.getString("url_pwd", ""));
     }
-
-    public void checkMyTeams(String userId, JsonArray array_myTeamIds) {
-    }
-
-
 
     public void insertMyLibrary(realm_myLibrary myLibraryDB, String userId, String resourceID, JsonObject resourceDoc) {
         Log.e("Inserting", resourceDoc.toString());
