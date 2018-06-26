@@ -42,7 +42,6 @@ public class DashboardFragment extends Fragment {
     TextView txtFullName, txtCurDate, txtVisits;
     String fullName;
     Realm mRealm;
-    CouchDbProperties properties;
 
     public DashboardFragment() {
         //init dashboard
@@ -78,7 +77,7 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
-        realmConfig("resources");
+        realmConfig();
         myLibraryDiv(view);
     }
 
@@ -90,7 +89,7 @@ public class DashboardFragment extends Fragment {
     }
 
     public int offlineVisits() {
-        realmConfig("offlineActivities");
+        //realmConfig("offlineActivities");
         realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
         offlineActivities.setUserId(settings.getString("name", ""));
         offlineActivities.setType("Login");
@@ -107,7 +106,7 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public void realmConfig(String dbName) {
+    public void realmConfig() {
         Realm.init(getContext());
         RealmConfiguration config = new RealmConfiguration.Builder()
                 .name(Realm.DEFAULT_REALM_NAME)
@@ -116,17 +115,8 @@ public class DashboardFragment extends Fragment {
                 .build();
         Realm.setDefaultConfiguration(config);
         mRealm = Realm.getInstance(config);
-        properties = new CouchDbProperties()
-                .setDbName(dbName)
-                .setCreateDbIfNotExist(false)
-                .setProtocol(settings.getString("url_Scheme", "http"))
-                .setHost(settings.getString("url_Host", "192.168.2.1"))
-                .setPort(settings.getInt("url_Port", 3000))
-                .setUsername(settings.getString("url_user", ""))
-                .setPassword(settings.getString("url_pwd", ""))
-                .setMaxConnections(100)
-                .setConnectionTimeout(0);
     }
+
     public void myLibraryDiv(View view){
         FlexboxLayout flexboxLayout =  view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
