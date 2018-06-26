@@ -190,11 +190,11 @@ public abstract class ProcessUserData extends CustomDataProcessing {
             check(stringArray, array_resourceIds, realm_myLibrary.class, category);
         }
         if (array_meetupIds.size() > 0) {
-            RealmResults<realm_meetups> category = null;
             triggerInsert("meetupId", "meetups");
+            RealmResults<realm_meetups> category = null;
             check(stringArray, array_resourceIds, realm_meetups.class, category);
         }
-        if (array_courseIds.size() > 0) {
+        if (0 < array_courseIds.size()) {
             RealmResults<realm_myCourses> category = null;
             triggerInsert("courseId", "courses");
             check(stringArray, array_resourceIds, realm_myCourses.class, category);
