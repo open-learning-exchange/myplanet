@@ -22,7 +22,9 @@ import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -180,15 +182,28 @@ public abstract class ProcessUserData extends CustomDataProcessing {
     }
 
     public void memberShelfData(JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
-        setVariables(settings,mRealm,properties);
+        setVariables(settings, mRealm, properties);
+        String[] stringArray = new String[3];
         if (array_resourceIds.size() > 0) {
-            checkMyLibrary(shelfDoc.getId(), array_resourceIds);
+            RealmResults<realm_myLibrary> category = null;
+            stringArray[0] = shelfDoc.getId();
+            stringArray[1] = "resourceId";
+            stringArray[2] = "resources";
+            check(stringArray, array_resourceIds, realm_myLibrary.class, category);
         }
         if (array_meetupIds.size() > 0) {
-            checkMyMeetups(shelfDoc.getId(), array_meetupIds);
+            RealmResults<realm_meetups> category = null;
+            stringArray[0] = shelfDoc.getId();
+            stringArray[1] = "meetupId";
+            stringArray[2] = "meetups";
+            check(stringArray, array_resourceIds, realm_meetups.class, category);
         }
         if (array_courseIds.size() > 0) {
-            checkMyCourses(shelfDoc.getId(), array_courseIds);
+            RealmResults<realm_myCourses> category = null;
+            stringArray[0] = shelfDoc.getId();
+            stringArray[1] = "courseId";
+            stringArray[2] = "courses";
+            check(stringArray, array_resourceIds, realm_myCourses.class, category);
         }
         if (array_myTeamIds.size() > 0) {
             checkMyTeams(shelfDoc.getId(), array_myTeamIds);
