@@ -61,15 +61,19 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                     .findAll();
             if (db_myMeetups.isEmpty()) {
                 realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
-                properties.setDbName("meetups");
-                properties.setUsername(settings.getString("url_user", ""));
-                properties.setPassword(settings.getString("url_pwd", ""));
-                dbMeetup = new CouchDbClientAndroid(properties);
-                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_meetupIds.get(x).getAsString());
-                insertMyMeetups(myMeetupsDB, userId, array_meetupIds.get(x).getAsString(), meetupDoc);
+                triggerInsertMeetup(userId, array_meetupIds, x, myMeetupsDB);
             }
 
         }
+    }
+
+    public void triggerInsertMeetup(String userId, JsonArray array_meetupIds, int x, realm_meetups myMeetupsDB) {
+        properties.setDbName("meetups");
+        properties.setUsername(settings.getString("url_user", ""));
+        properties.setPassword(settings.getString("url_pwd", ""));
+        dbMeetup = new CouchDbClientAndroid(properties);
+        JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_meetupIds.get(x).getAsString());
+        insertMyMeetups(myMeetupsDB, userId, array_meetupIds.get(x).getAsString(), meetupDoc);
     }
 
     public void checkMyCourses(String userId, JsonArray array_courseIds) {
@@ -80,13 +84,13 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                     .findAll();
             if (db_myCourses.isEmpty()) {
                 realm_myCourses myCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
-                triggerInsert(userId, array_courseIds, x, myCoursesDB);
+                triggerInsertCourses(userId, array_courseIds, x, myCoursesDB);
             }
 
         }
     }
 
-    public void triggerInsert(String userId, JsonArray array_courseIds, int x, realm_myCourses myCoursesDB) {
+    public void triggerInsertCourses(String userId, JsonArray array_courseIds, int x, realm_myCourses myCoursesDB) {
         properties.setDbName("courses");
         properties.setPassword(settings.getString("url_pwd", ""));
         properties.setUsername(settings.getString("url_user", ""));
