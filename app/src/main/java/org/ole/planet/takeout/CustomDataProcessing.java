@@ -56,8 +56,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
     public void checkMyMeetups(String userId, JsonArray array_meetupIds) {
         for (int x = 0; x < array_meetupIds.size(); x++) {
             RealmResults<realm_meetups> db_myMeetups = mRealm.where(realm_meetups.class)
-                    .equalTo("userId", userId)
                     .equalTo("meetupId", array_meetupIds.get(x).getAsString())
+                    .equalTo("userId", userId)
                     .findAll();
             if (db_myMeetups.isEmpty()) {
                 realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
@@ -81,8 +81,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             if (db_myCourses.isEmpty()) {
                 realm_myCourses myCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
                 properties.setDbName("courses");
-                properties.setUsername(settings.getString("url_user", ""));
                 properties.setPassword(settings.getString("url_pwd", ""));
+                properties.setUsername(settings.getString("url_user", ""));
                 dbMyCourses = new CouchDbClientAndroid(properties);
                 JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(x).getAsString());
                 insertMyCourses(myCoursesDB, userId, array_courseIds.get(x).getAsString(), myCoursesDoc);
