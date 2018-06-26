@@ -80,15 +80,19 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                     .findAll();
             if (db_myCourses.isEmpty()) {
                 realm_myCourses myCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
-                properties.setDbName("courses");
-                properties.setPassword(settings.getString("url_pwd", ""));
-                properties.setUsername(settings.getString("url_user", ""));
-                dbMyCourses = new CouchDbClientAndroid(properties);
-                JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(x).getAsString());
-                insertMyCourses(myCoursesDB, userId, array_courseIds.get(x).getAsString(), myCoursesDoc);
+                triggerInsert(userId, array_courseIds, x, myCoursesDB);
             }
 
         }
+    }
+
+    public void triggerInsert(String userId, JsonArray array_courseIds, int x, realm_myCourses myCoursesDB) {
+        properties.setDbName("courses");
+        properties.setPassword(settings.getString("url_pwd", ""));
+        properties.setUsername(settings.getString("url_user", ""));
+        dbMyCourses = new CouchDbClientAndroid(properties);
+        JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(x).getAsString());
+        insertMyCourses(myCoursesDB, userId, array_courseIds.get(x).getAsString(), myCoursesDoc);
     }
 
     public void checkMyTeams(String userId, JsonArray array_myTeamIds) {
