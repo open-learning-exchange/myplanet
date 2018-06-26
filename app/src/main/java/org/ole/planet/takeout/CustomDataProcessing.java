@@ -40,9 +40,7 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             Log.e("DATA", db_myLibrary.toString());
             if (db_myLibrary.isEmpty()) {
                 realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
-                properties.setDbName("resources");
-                properties.setUsername(settings.getString("url_user", ""));
-                properties.setPassword(settings.getString("url_pwd", ""));
+                setRealmProperties("resources");
                 dbResources = new CouchDbClientAndroid(properties);
                 JsonObject resourceDoc = dbResources.find(JsonObject.class, array_resourceIds.get(x).getAsString());
                 insertMyLibrary(myLibraryDB, userId, array_resourceIds.get(x).getAsString(), resourceDoc);
@@ -61,19 +59,13 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                     .findAll();
             if (db_myMeetups.isEmpty()) {
                 realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
-                triggerInsertMeetup(userId, array_meetupIds, x, myMeetupsDB);
+                setRealmProperties("meetups");
+                dbMeetup = new CouchDbClientAndroid(properties);
+                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_meetupIds.get(x).getAsString());
+                insertMyMeetups(myMeetupsDB, userId, array_meetupIds.get(x).getAsString(), meetupDoc);
             }
 
         }
-    }
-
-    public void triggerInsertMeetup(String userId, JsonArray array_meetupIds, int x, realm_meetups myMeetupsDB) {
-        properties.setDbName("meetups");
-        properties.setUsername(settings.getString("url_user", ""));
-        properties.setPassword(settings.getString("url_pwd", ""));
-        dbMeetup = new CouchDbClientAndroid(properties);
-        JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_meetupIds.get(x).getAsString());
-        insertMyMeetups(myMeetupsDB, userId, array_meetupIds.get(x).getAsString(), meetupDoc);
     }
 
     public void checkMyCourses(String userId, JsonArray array_courseIds) {
@@ -84,19 +76,20 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                     .findAll();
             if (db_myCourses.isEmpty()) {
                 realm_myCourses myCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
-                triggerInsertCourses(userId, array_courseIds, x, myCoursesDB);
+                setRealmProperties("courses");
+                dbMyCourses = new CouchDbClientAndroid(properties);
+                JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(x).getAsString());
+                insertMyCourses(myCoursesDB, userId, array_courseIds.get(x).getAsString(), myCoursesDoc);
             }
 
         }
     }
 
-    public void triggerInsertCourses(String userId, JsonArray array_courseIds, int x, realm_myCourses myCoursesDB) {
+    public void setRealmProperties(String dbName) {
         properties.setDbName("courses");
-        properties.setPassword(settings.getString("url_pwd", ""));
+        properties.setDbName(dbName);
         properties.setUsername(settings.getString("url_user", ""));
-        dbMyCourses = new CouchDbClientAndroid(properties);
-        JsonObject myCoursesDoc = dbMyCourses.find(JsonObject.class, array_courseIds.get(x).getAsString());
-        insertMyCourses(myCoursesDB, userId, array_courseIds.get(x).getAsString(), myCoursesDoc);
+        properties.setPassword(settings.getString("url_pwd", ""));
     }
 
     public void checkMyTeams(String userId, JsonArray array_myTeamIds) {
