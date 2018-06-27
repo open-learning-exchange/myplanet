@@ -32,7 +32,11 @@ public class DashboardFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
         declareElements(view);
+        imageButtonOnClickListeners();
+        return view;
+    }
 
+    public void imageButtonOnClickListeners() {
         myLibraryImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -60,7 +64,6 @@ public class DashboardFragment extends Fragment {
                 imageButtonAction("Clicked myTeams");
             }
         });
-        return view;
     }
 
     public void imageButtonAction(String btnmessage) {
