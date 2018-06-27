@@ -27,7 +27,7 @@
             android:paddingTop="10dp"
             android:weightSum="10">
 
-            <LinearLayoutq
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="left"
@@ -81,7 +81,7 @@
                     android:textAlignment="center"
                     android:textColor="@color/textColorPrimary"
                     android:textSize="12sp" />
-            </LinearLayoutq>
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
