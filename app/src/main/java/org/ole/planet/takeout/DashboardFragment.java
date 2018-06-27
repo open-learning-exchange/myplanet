@@ -36,43 +36,40 @@ public class DashboardFragment extends Fragment {
         myLibraryImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e("DF: ", "Clicked myLibrary");
-                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
-                startActivity(intent);
+                imageButtonAction("Clicked myLibrary");
             }
         });
 
         myCourseImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e("DF: ", "Clicked myLibrary");
-                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
-                startActivity(intent);
+                imageButtonAction("Clicked myLibrary");
             }
         });
 
         myMeetUpsImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e("DF: ", "Clicked myLibrary");
-                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
-                startActivity(intent);
+                imageButtonAction("Clicked myLibrary");
             }
         });
 
         myTeamsImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e("DF: ", "Clicked myLibrary");
-                Intent intent = new Intent(getActivity() , PDFReaderActivity.class);
-                startActivity(intent);
+                imageButtonAction("Clicked myTeams");
             }
         });
         return view;
     }
 
-    private void declareElements(View view) {
+    public void imageButtonAction(String btnmessage) {
+        Log.e("DF: ", btnmessage);
+        Intent intent = new Intent(getActivity(), PDFReaderActivity.class);
+        startActivity(intent);
+    }
 
+    private void declareElements(View view) {
         // Imagebuttons
         myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
