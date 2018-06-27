@@ -209,23 +209,4 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         stringArray[1] = resourceId;
         stringArray[2] = resources;
     }
-/*
-    public void checkMy(String userId, JsonArray array_categoryIds,String catClass) {
-        for (int x = 0; x < array_categoryIds.size(); x++) {
-            RealmResults<realm_meetups> db_myCategrory = mRealm.where(realm_meetups.class)
-                    .equalTo("userId", userId)
-                    .equalTo("meetupId", array_categoryIds.get(x).getAsString())
-                    .findAll();
-            if (db_myCategrory.isEmpty()) {
-                realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
-                properties.setDbName("meetups");
-                properties.setUsername(settings.getString("url_user", ""));
-                properties.setPassword(settings.getString("url_pwd", ""));
-                dbMeetup = new CouchDbClientAndroid(properties);
-                JsonObject meetupDoc = dbMeetup.find(JsonObject.class, array_categoryIds.get(x).getAsString());
-                insertMyMeetups(myMeetupsDB, userId, array_categoryIds.get(x).getAsString(), meetupDoc);
-            }
-
-        }
-    }*/
 }
