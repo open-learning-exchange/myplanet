@@ -63,8 +63,11 @@ public class LoginActivity extends SyncActivity {
         //layouts
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
+
         declareElements();
         declareMoreElements();
+
+        btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -73,6 +76,8 @@ public class LoginActivity extends SyncActivity {
         });
 
         //listeners / actions
+        inputName = findViewById(R.id.input_name);//editText
+        inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         dbsetup.Setup_db(this.context);
@@ -91,12 +96,8 @@ public class LoginActivity extends SyncActivity {
     }
 
     public void declareElements() {
-        inputName = findViewById(R.id.input_name);//editText
-        inputPassword = findViewById(R.id.input_password);
-        btnSignIn = findViewById(R.id.btn_signin); //buttons
-        imgBtnSetting = findViewById(R.id.imgBtnSetting);
-
         //Settings button
+        imgBtnSetting = findViewById(R.id.imgBtnSetting);
         imgBtnSetting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
