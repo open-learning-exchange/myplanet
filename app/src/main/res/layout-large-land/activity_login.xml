@@ -86,15 +86,14 @@
                 android:layout_height="6dp"
                 android:layout_weight="0.6">
 
-                <ImageButton
-                    android:id="@+id/syncOption"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="10dp"
+                <pl.droidsonroids.gif.GifImageButton
+                    android:id="@+id/syncIcon"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginTop="15dp"
                     android:background="@null"
-                    app:srcCompat="@drawable/ic_sync_black_36dp" />
+                    android:scaleType="fitCenter" />
 
                 <ImageButton
                     android:id="@+id/imgBtnSetting"

@@ -96,7 +96,7 @@
                     android:layout_marginLeft="10dp"
                     android:layout_marginTop="6dp"
                     android:background="@null"
-                    android:scaleType="fitCenter"/>
+                    android:scaleType="fitCenter" />
 
                 <ImageButton
                     android:id="@+id/imgBtnSetting"
