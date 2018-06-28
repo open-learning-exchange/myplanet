@@ -5,7 +5,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
@@ -14,7 +16,9 @@ import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -78,7 +82,6 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
 
     public void insertMyLibrary(String userId, String resourceID, JsonObject resourceDoc) {
         realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
-        Log.e("Inserting", resourceDoc.toString());
         myLibraryDB.setUserId(userId);
         myLibraryDB.setResourceId(resourceID);
         myLibraryDB.setResource_rev(resourceDoc.get("_rev").getAsString());
@@ -92,6 +95,17 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
 //        myLibraryDB.setResourceFor(resourceDoc.get("resourceFor")!= null ? resourceDoc.get("resourceFor").getAsString() : "");
         myLibraryDB.setMediaType(resourceDoc.get("mediaType").getAsString());
 //        myLibraryDB.setAverageRating(resourceDoc.get("averageRating").getAsString());
+        JsonObject attachments = resourceDoc.get("_attachments").getAsJsonObject();
+        JsonParser parser = new JsonParser();
+        JsonElement element = parser.parse(String.valueOf(attachments));
+        JsonObject obj = element.getAsJsonObject();
+        Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
+        for (Map.Entry<String, JsonElement> entry: entries) {
+            if(entry.getKey().indexOf("/")<0){
+                myLibraryDB.setResourceRemoteAddress(settings.getString("serverURL", "http://")+"/"+resourceID+"/"+entry.getKey());
+                myLibraryDB.setResourceLocalAddress(entry.getKey());
+            }
+        }
         myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
     }
 
