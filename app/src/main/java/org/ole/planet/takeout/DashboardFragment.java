@@ -36,7 +36,14 @@ import static android.content.Context.MODE_PRIVATE;
  * A placeholder fragment containing a simple view.
  */
 public class DashboardFragment extends Fragment {
+
+    //ImageButtons
     private ImageButton myLibraryImage;
+    private ImageButton myCourseImage;
+    private ImageButton myMeetUpsImage;
+    private ImageButton myTeamsImage;
+
+    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
@@ -54,26 +61,55 @@ public class DashboardFragment extends Fragment {
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         declareElements(view);
+        imageButtonOnClickListeners();
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(currentDate());
-        //txtVisits.setText(offlineVisits());
-
+        return view;
+    }
+  
+    public void imageButtonOnClickListeners() {
         myLibraryImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.e("DF: ", "Clicked myLibrary");
-                Intent intent = new Intent(getActivity(), PDFReaderActivity.class);
-                startActivity(intent);
+                imageButtonAction("Clicked myLibrary");
             }
         });
 
-        return view;
+        myCourseImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                imageButtonAction("Clicked myLibrary");
+            }
+        });
+
+        myMeetUpsImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                imageButtonAction("Clicked myLibrary");
+            }
+        });
+
+        myTeamsImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                imageButtonAction("Clicked myTeams");
+            }
+        });
+    }
+
+    public void imageButtonAction(String btnmessage) {
+        Log.e("DF: ", btnmessage);
+        Intent intent = new Intent(getActivity(), PDFReaderActivity.class);
+        startActivity(intent);
     }
 
     private void declareElements(View view) {
         // Imagebuttons
-        myLibraryImage = view.findViewById(R.id.myLibrary);
+        myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
+        myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
+        myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
+        myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
