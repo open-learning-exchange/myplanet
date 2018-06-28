@@ -31,9 +31,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.realm.Realm;
+import pl.droidsonroids.gif.AnimationListener;
+import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.GifImageButton;
 
 
-public class LoginActivity extends SyncActivity {
+public class LoginActivity extends SyncActivity implements AnimationListener {
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
@@ -45,6 +48,13 @@ public class LoginActivity extends SyncActivity {
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
 
+    private GifDrawable gifDrawable;
+    private GifImageButton syncIcon;
+
+    @Override
+    public void onAnimationCompleted(final int loopNumber) {
+
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -85,11 +95,22 @@ public class LoginActivity extends SyncActivity {
         inputPassword = findViewById(R.id.input_password);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
-        syncOption = findViewById(R.id.syncOption); // textviews
 
-        syncOption.setOnClickListener(new View.OnClickListener() {
+        //Gif button
+        syncIcon = findViewById(R.id.syncIcon);
+        gifDrawable = (GifDrawable) syncIcon.getDrawable();
+
+        syncIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                /** FIXME: Error - attempt to invoke a virtual method on a null pointer reference
+                gifDrawable.addAnimationListener(new AnimationListener() {
+                    @Override
+                    public void onAnimationCompleted(int loopNumber) {
+                        gifDrawable.start();
+                    }
+                }); */
                 Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
             }
         });
