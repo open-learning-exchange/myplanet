@@ -110,7 +110,6 @@ public class DashboardFragment extends Fragment {
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
         myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
-        myLibraryImage = view.findViewById(R.id.myLibrary);
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
