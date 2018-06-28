@@ -18,7 +18,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.MediaController;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -34,12 +33,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import io.realm.Realm;
-import pl.droidsonroids.gif.AnimationListener;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
 
-public class LoginActivity extends SyncActivity  {
+public class LoginActivity extends SyncActivity {
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
@@ -66,6 +64,7 @@ public class LoginActivity extends SyncActivity  {
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         declareElements();
+        declareMoreElements();
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -79,7 +78,6 @@ public class LoginActivity extends SyncActivity  {
         dbsetup.Setup_db(this.context);
 
     }
-
 
     public void changeLogoColor() {
         ImageView logo = findViewById(R.id.logoImageView);
@@ -97,23 +95,6 @@ public class LoginActivity extends SyncActivity  {
         inputPassword = findViewById(R.id.input_password);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
-
-
-        //Sync Gif-Button
-        syncIcon = findViewById(R.id.syncIcon);
-        syncIcon.setImageResource(R.drawable.sync_icon);
-        syncIcon.getScaleType();
-        gifDrawable = (GifDrawable) syncIcon.getDrawable();
-        gifDrawable.setSpeed(3.0f);
-        gifDrawable.stop();
-
-        syncIcon.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                gifDrawable.reset();
-                Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
-            }
-        });
 
         //Settings button
         imgBtnSetting.setOnClickListener(new View.OnClickListener() {
@@ -140,6 +121,24 @@ public class LoginActivity extends SyncActivity  {
                             }
                         });
                 settingDialog(builder);
+            }
+        });
+    }
+
+    public void declareMoreElements() {
+        //Sync Gif-Button
+        syncIcon = findViewById(R.id.syncIcon);
+        syncIcon.setImageResource(R.drawable.sync_icon);
+        syncIcon.getScaleType();
+        gifDrawable = (GifDrawable) syncIcon.getDrawable();
+        gifDrawable.setSpeed(3.0f);
+        gifDrawable.stop();
+
+        syncIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                gifDrawable.reset();
+                Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
             }
         });
     }
