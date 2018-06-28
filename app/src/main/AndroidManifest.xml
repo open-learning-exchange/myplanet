@@ -17,12 +17,12 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:label="@string/app_project_name"
         android:theme="@style/MyMaterialTheme">
         <activity
             android:name=".LoginActivity"
-            android:label="@string/title_activity_login"
             android:configChanges="orientation|keyboardHidden|screenSize">
-            <intent-filter android:label="@string/app_project_name" >
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
