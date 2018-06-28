@@ -84,7 +84,6 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
     // Saves the current page
     private void saveCurrentPage(int currentPage, String sourceName) {
         Map<String, List<SourceFile>> wordkey = new HashMap<>();
-
         // (source name, page number)
         // TODO SourceFile currentPDF = new SourceFile(fileName,); <---- pass the values the class requires)
 
