@@ -18,4 +18,5 @@
 
     <color name="material_drawer_selected_text">#3F51B5</color>
     <color name="material_drawer_dark_selected_text">#3F51B5</color>
+    <color name="offwhite">#fafafa</color>
 </resources>

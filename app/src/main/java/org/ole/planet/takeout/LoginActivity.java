@@ -48,9 +48,9 @@ public class LoginActivity extends SyncActivity {
     Context context;
     private View positiveAction;
     boolean connectionResult;
-    public Realm dbRealm;
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
+    Fuel ful = new Fuel();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -194,21 +194,19 @@ public class LoginActivity extends SyncActivity {
 
 
     public boolean isServerReachable(final String url) {
-        final Fuel ful = new Fuel();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
-                    List<String> myList = new ArrayList<String>();
+                    List<String> myList = new ArrayList<>();
                     myList.clear();
                     myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
-                        alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                        //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         //Todo get password from EditText
                         setUrlParts(url, "", context);
-
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -217,8 +215,10 @@ public class LoginActivity extends SyncActivity {
 
             @Override
             public void failure(Request request, Response response, FuelError fuelError) {
-                Log.d("error", fuelError.toString());
+                ///Log.d("error", fuelError.toString());
                 alertDialogOkay("Device couldn't reach server. Check and try again");
+                if (mRealm != null)
+                    mRealm.close();
             }
         });
         return connectionResult;
