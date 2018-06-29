@@ -65,4 +65,3 @@ dependencies {
 realm {
     syncEnabled = true;
 }
-

@@ -8,12 +8,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.ole.planet.takeaway.R;
+import org.ole.planet.takeout.R;
 
 /**
  * A simple {@link Fragment} subclass.
  * Activities that contain this fragment must implement the
- * {@link MySurveyFragment.OnFragmentInteractionListener} interface
+ * {@link MySurveyFragment.MySurveyFragmentOnFragmentInteractionListener} interface
  * to handle interaction events.
  * Use the {@link MySurveyFragment#newInstance} factory method to
  * create an instance of this fragment.
@@ -28,7 +28,7 @@ public class MySurveyFragment extends Fragment {
     private String mParam1;
     private String mParam2;
 
-    private OnFragmentInteractionListener mListener;
+    private MySurveyFragmentOnFragmentInteractionListener mListener;
 
     public MySurveyFragment() {
         // Required empty public constructor
@@ -71,15 +71,15 @@ public class MySurveyFragment extends Fragment {
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
+            mListener.MySurveyFragmentOnFragmentInteractionListener(uri);
         }
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
+        if (context instanceof MySurveyFragmentOnFragmentInteractionListener) {
+            mListener = (MySurveyFragmentOnFragmentInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -102,8 +102,8 @@ public class MySurveyFragment extends Fragment {
      * "http://developer.android.com/training/basics/fragments/communicating.html"
      * >Communicating with Other Fragments</a> for more information.
      */
-    public interface OnFragmentInteractionListener {
+    public interface MySurveyFragmentOnFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+        void MySurveyFragmentOnFragmentInteractionListener(Uri uri);
     }
 }

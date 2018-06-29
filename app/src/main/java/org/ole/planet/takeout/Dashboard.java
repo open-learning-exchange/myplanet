@@ -2,6 +2,7 @@ package org.ole.planet.takeout;
 
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -27,7 +28,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import java.util.ArrayList;
 
 
-public class Dashboard extends AppCompatActivity {
+public class Dashboard extends AppCompatActivity implements MySurveyFragment.MySurveyFragmentOnFragmentInteractionListener,MyMeetUpsFragment.MyMeetUpsFragmentOnFragmentInteractionListener,MyCourseFragment.MyCourseFragmentOnFragmentInteraction,MyLibraryFragment.MyLibraryFragmentOnFragmentInteractionListener{
     private Drawer result = null;
     private Toolbar mTopToolbar;
     AccountHeader headerResult;
@@ -116,21 +117,58 @@ public class Dashboard extends AppCompatActivity {
 
     }
 
+    Fragment newFragment;
+    FragmentTransaction fragmentTransaction;
+
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_home:
-                openCallFragment(new DashboardFragment());
+                //openCallFragment(new DashboardFragment());
+                newFragment = new DashboardFragment();
+                fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.replace(R.id.fragment_container, newFragment);
+                //fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
                 break;
             case R.string.menu_library:
+                //openCallFragment1(new MyLibraryFragment());
+                newFragment = new MyLibraryFragment();
+                fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.replace(R.id.fragment_container, newFragment);
+                //fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
                 break;
             case R.string.menu_meetups:
+                //openCallFragment1(new MyMeetUpsFragment());
+                newFragment = new MyMeetUpsFragment();
+                fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.replace(R.id.fragment_container, newFragment);
+                //fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
                 break;
             case R.string.menu_surveys:
+                //openCallFragment1(new MySurveysFragment());
+                newFragment = new MySurveyFragment();
+                fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.replace(R.id.fragment_container, newFragment);
+                //fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
                 break;
             case R.string.menu_courses:
+                //openCallFragment1(new MyCourseFragment());
+                newFragment = new MyCourseFragment();
+                fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.replace(R.id.fragment_container, newFragment);
+                //fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
                 break;
             default:
-                openCallFragment(new DashboardFragment());
+                //openCallFragment(new DashboardFragment());
+                newFragment = new DashboardFragment();
+                fragmentTransaction = getSupportFragmentManager().beginTransaction();
+                fragmentTransaction.replace(R.id.fragment_container, newFragment);
+                //fragmentTransaction.addToBackStack(null);
+                fragmentTransaction.commit();
                 break;
 
         }
@@ -140,7 +178,7 @@ public class Dashboard extends AppCompatActivity {
         newfragment = new DashboardFragment();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        fragmentTransaction.addToBackStack(null);
+        //fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
 
@@ -183,4 +221,23 @@ public class Dashboard extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void MyCourseFragmentOnFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void MyLibraryFragmentOnFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void MyMeetUpsOnFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void MySurveyFragmentOnFragmentInteractionListener(Uri uri) {
+
+    }
 }
