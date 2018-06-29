@@ -100,10 +100,11 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
         JsonElement element = parser.parse(String.valueOf(attachments));
         JsonObject obj = element.getAsJsonObject();
         Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
-        for (Map.Entry<String, JsonElement> entry: entries) {
-            if(entry.getKey().indexOf("/")<0){
-                myLibraryDB.setResourceRemoteAddress(settings.getString("serverURL", "http://")+"/"+resourceID+"/"+entry.getKey());
+        for (Map.Entry<String, JsonElement> entry : entries) {
+            if (entry.getKey().indexOf("/") < 0) {
+                myLibraryDB.setResourceRemoteAddress(settings.getString("serverURL", "http://") + "/resources/" + resourceID + "/" + entry.getKey());
                 myLibraryDB.setResourceLocalAddress(entry.getKey());
+                myLibraryDB.setResourceOffline(false);
             }
         }
         myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
