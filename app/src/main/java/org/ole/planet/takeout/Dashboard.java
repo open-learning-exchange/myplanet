@@ -93,7 +93,7 @@ public class Dashboard extends AppCompatActivity {
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimaryDark))
+                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
