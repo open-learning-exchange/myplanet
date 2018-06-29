@@ -79,6 +79,7 @@ public class LoginActivity extends SyncActivity {
         dbsetup.Setup_db(this.context);
 
     }
+
     public void changeLogoColor() {
         ImageView logo = findViewById(R.id.logoImageView);
         final int newColor = getResources().getColor(android.R.color.white);
@@ -91,12 +92,11 @@ public class LoginActivity extends SyncActivity {
     }
 
     public void declareElements() {
-         //Settings button
-        imgBtnSetting.setOnClickListener(new View.OnClickListener() {
+        imgBtnSetting.setOnClickListener(new View.OnClickListener() { //Settings button
             @Override
             public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings)
-                        .customView(R.layout.dialog_server_url_, true).positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
+                        .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
