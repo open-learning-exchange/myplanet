@@ -107,7 +107,6 @@ public class LoginActivity extends SyncActivity {
                         }).onNegative(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(MaterialDialog dialog, DialogAction which) {
-                                Log.e("MD: ", "Clicked Negative (Cancel)");
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                             @Override
