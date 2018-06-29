@@ -153,6 +153,8 @@ public class Dashboard extends AppCompatActivity {
         menuImageList.add(getResources().getDrawable(R.drawable.courses));
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
+        menuImageList.add(getResources().getDrawable(R.drawable.logout));
+
 
         ArrayList<Integer> menuBlueImageList = new ArrayList<>();
         menuBlueImageList.add(R.drawable.home_blue);
@@ -160,6 +162,8 @@ public class Dashboard extends AppCompatActivity {
         menuBlueImageList.add(R.drawable.courses_blue);
         menuBlueImageList.add(R.drawable.meetups_blue);
         menuBlueImageList.add(R.drawable.survey_blue);
+        menuBlueImageList.add(R.drawable.logout_blue);
+
 
         return new IDrawerItem[]{
                 changeUX(R.string.menu_home, menuImageList.get(0), menuBlueImageList.get(0)),
@@ -167,6 +171,7 @@ public class Dashboard extends AppCompatActivity {
                 changeUX(R.string.menu_courses, menuImageList.get(2), menuBlueImageList.get(2)),
                 changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
                 changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
+                changeUX(R.string.menu_logout, menuImageList.get(5), menuBlueImageList.get(5)),
         };
     }
 
