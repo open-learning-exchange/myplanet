@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.accounts.Account;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -14,6 +15,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
@@ -21,6 +23,7 @@ import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
+import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
@@ -93,12 +96,15 @@ public class Dashboard extends AppCompatActivity {
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimaryDark))
+                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
                 .addDrawerItems(
                         getDrawerItems()
+                )
+                .addStickyDrawerItems(
+                        getDrawerItemsFooter()
                 )
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
@@ -154,12 +160,14 @@ public class Dashboard extends AppCompatActivity {
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
 
+
         ArrayList<Integer> menuBlueImageList = new ArrayList<>();
         menuBlueImageList.add(R.drawable.home_blue);
         menuBlueImageList.add(R.drawable.library_blue);
         menuBlueImageList.add(R.drawable.courses_blue);
         menuBlueImageList.add(R.drawable.meetups_blue);
         menuBlueImageList.add(R.drawable.survey_blue);
+
 
         return new IDrawerItem[]{
                 changeUX(R.string.menu_home, menuImageList.get(0), menuBlueImageList.get(0)),
@@ -168,6 +176,23 @@ public class Dashboard extends AppCompatActivity {
                 changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
                 changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
         };
+    }
+
+    // for "Logout" button
+    private IDrawerItem[] getDrawerItemsFooter()
+    {
+        ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
+        menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
+
+
+        ArrayList<Integer> menuBlueImageListFooter = new ArrayList<>();
+        menuBlueImageListFooter.add(R.drawable.logout_blue);
+
+
+        return new IDrawerItem[]{
+                changeUX(R.string.menu_logout, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
+        };
+
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {
