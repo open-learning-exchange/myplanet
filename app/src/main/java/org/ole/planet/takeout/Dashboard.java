@@ -43,6 +43,7 @@ public class Dashboard extends AppCompatActivity {
 
         headerResult = getAccountHeader();
         createDrawer();
+        result.getStickyFooter().setPadding(0,0,0,0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -53,7 +54,6 @@ public class Dashboard extends AppCompatActivity {
         }
 
         openCallFragment(new DashboardFragment());
-
     }
 
     @Override
@@ -93,12 +93,15 @@ public class Dashboard extends AppCompatActivity {
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimaryDark))
+                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
                 .addDrawerItems(
                         getDrawerItems()
+                )
+                .addStickyDrawerItems(
+                        getDrawerItemsFooter()
                 )
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
@@ -153,7 +156,6 @@ public class Dashboard extends AppCompatActivity {
         menuImageList.add(getResources().getDrawable(R.drawable.courses));
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
-        menuImageList.add(getResources().getDrawable(R.drawable.logout));
 
 
         ArrayList<Integer> menuBlueImageList = new ArrayList<>();
@@ -162,7 +164,6 @@ public class Dashboard extends AppCompatActivity {
         menuBlueImageList.add(R.drawable.courses_blue);
         menuBlueImageList.add(R.drawable.meetups_blue);
         menuBlueImageList.add(R.drawable.survey_blue);
-        menuBlueImageList.add(R.drawable.logout_blue);
 
 
         return new IDrawerItem[]{
@@ -171,7 +172,21 @@ public class Dashboard extends AppCompatActivity {
                 changeUX(R.string.menu_courses, menuImageList.get(2), menuBlueImageList.get(2)),
                 changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
                 changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
-                changeUX(R.string.menu_logout, menuImageList.get(5), menuBlueImageList.get(5)),
+        };
+    }
+
+    @NonNull
+    private IDrawerItem[] getDrawerItemsFooter() {
+        ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
+        menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
+
+
+        ArrayList<Integer> menuBlueImageListFooter = new ArrayList<>();
+        menuBlueImageListFooter.add(R.drawable.logout_blue);
+
+
+        return new IDrawerItem[]{
+                changeUX(R.string.menu_logout, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
         };
     }
 
