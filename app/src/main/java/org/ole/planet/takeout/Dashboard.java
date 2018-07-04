@@ -97,12 +97,8 @@ public class Dashboard extends AppCompatActivity {
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
-                .addDrawerItems(
-                        getDrawerItems()
-                )
-                .addStickyDrawerItems(
-                        getDrawerItemsFooter()
-                )
+                .addDrawerItems(getDrawerItems())
+                .addStickyDrawerItems(getDrawerItemsFooter())
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
@@ -116,7 +112,6 @@ public class Dashboard extends AppCompatActivity {
                 })
                 .withDrawerWidthDp(200)
                 .build();
-
     }
 
     private void menuAction(int selectedMenuId) {
