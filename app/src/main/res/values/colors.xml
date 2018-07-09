@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3f51b5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorPrimaryLight">#5C6BC0</color>
+    <color name="colorPrimary">#2196f3</color>
+    <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorPrimaryLight">#42A5F5</color>
     <color name="colorAccent">#FF4081</color>
     <color name="textColorPrimary">#ffffff</color>
     <color name="windowBackground">#FFFFFF</color>
@@ -11,11 +11,15 @@
 
     <color name="black_overlay">#66000000</color>
     <color name="bg_white">#ffffff</color>
-    <color name="ole_blue">#2196f3</color>
     <color name="red">#66ff0000</color>
 
     <color name="dialog_sync_labels">#000000</color>
 
-    <color name="material_drawer_selected_text">#3F51B5</color>
-    <color name="material_drawer_dark_selected_text">#3F51B5</color>
+    <color name="material_drawer_selected_text">@color/colorPrimary</color>
+    <color name="material_drawer_dark_selected_text">@color/colorPrimary</color>
+    <color name="offwhite">#fafafa</color>
+
+    <!-- changes logout button area background from white to whatever the background color for the drawer is.
+    Without it, the drawer and logout button area are different colors -->
+    <color name="material_drawer_background">@color/colorPrimary</color>
 </resources>

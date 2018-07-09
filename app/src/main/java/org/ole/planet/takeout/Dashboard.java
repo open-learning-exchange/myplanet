@@ -44,6 +44,7 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
 
         headerResult = getAccountHeader();
         createDrawer();
+        result.getStickyFooter().setPadding(0,0,0,0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -54,7 +55,6 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         }
 
         openCallFragment(new DashboardFragment());
-
     }
 
     @Override
@@ -94,13 +94,12 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimaryDark))
+                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
-                .addDrawerItems(
-                        getDrawerItems()
-                )
+                .addDrawerItems(getDrawerItems())
+                .addStickyDrawerItems(getDrawerItemsFooter())
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
@@ -114,7 +113,6 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
                 })
                 .withDrawerWidthDp(200)
                 .build();
-
     }
 
     Fragment newFragment;
@@ -192,6 +190,7 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
 
+
         ArrayList<Integer> menuBlueImageList = new ArrayList<>();
         menuBlueImageList.add(R.drawable.home_blue);
         menuBlueImageList.add(R.drawable.library_blue);
@@ -199,12 +198,28 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         menuBlueImageList.add(R.drawable.meetups_blue);
         menuBlueImageList.add(R.drawable.survey_blue);
 
+
         return new IDrawerItem[]{
                 changeUX(R.string.menu_home, menuImageList.get(0), menuBlueImageList.get(0)),
                 changeUX(R.string.menu_library, menuImageList.get(1), menuBlueImageList.get(1)),
                 changeUX(R.string.menu_courses, menuImageList.get(2), menuBlueImageList.get(2)),
                 changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
                 changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
+        };
+    }
+
+    @NonNull
+    private IDrawerItem[] getDrawerItemsFooter() {
+        ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
+        menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
+
+
+        ArrayList<Integer> menuBlueImageListFooter = new ArrayList<>();
+        menuBlueImageListFooter.add(R.drawable.logout_blue);
+
+
+        return new IDrawerItem[]{
+                changeUX(R.string.menu_logout, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
         };
     }
 
