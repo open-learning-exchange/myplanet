@@ -16,6 +16,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
@@ -127,12 +128,18 @@ public class Dashboard extends AppCompatActivity {
                 break;
             case R.string.menu_courses:
                 break;
+            case R.string.menu_feedback:
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(Dashboard.this).title("Feedback").customView(R.layout.dialog_feedback, true);
+                builder.build();
             default:
                 openCallFragment(new DashboardFragment());
                 break;
 
         }
     }
+
+
+
 
     public void openCallFragment(Fragment newfragment) {
         newfragment = new DashboardFragment();
