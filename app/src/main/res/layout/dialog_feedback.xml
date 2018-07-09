@@ -2,7 +2,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
 
     <LinearLayout
@@ -13,26 +12,21 @@
 
 
         <TextView
-            android:id="@+id/dialog_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="FEEDBACK" />
-
-        <TextView
             android:id="@+id/feedback_qs_1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text=" Is your Feedback urgent?" />
+            android:text="Is your Feedback urgent?" />
 
-        <RadioGroup
-            android:id="@+id/qs_1_answers"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
 
             <RadioButton
                 android:id="@+id/qs_yes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="Yes" />
 
             <RadioButton
@@ -41,7 +35,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="No" />
-        </RadioGroup>
+        </LinearLayout>
+
     </LinearLayout>
 
     <TextView
@@ -50,10 +45,10 @@
         android:layout_height="wrap_content"
         android:text="What type of Feedback is it?" />
 
-    <RadioGroup
-        android:id="@+id/qs_2_answers"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
 
         <RadioButton
             android:id="@+id/qs_2_question"
@@ -70,12 +65,12 @@
             android:text="Bug" />
 
         <RadioButton
-            android:id="@+id/qs_2_question"
+            android:id="@+id/qs_2_suggestion"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Suggestion" />
-    </RadioGroup>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/feedback_prompt"
@@ -88,7 +83,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:inputType="textPersonName"
-        android:text="Enter Here" />
+        android:inputType="textShortMessage" />
 
 </LinearLayout>

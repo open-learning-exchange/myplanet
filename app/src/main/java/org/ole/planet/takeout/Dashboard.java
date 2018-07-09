@@ -6,16 +6,21 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.URLUtil;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -44,7 +49,7 @@ public class Dashboard extends AppCompatActivity {
 
         headerResult = getAccountHeader();
         createDrawer();
-        result.getStickyFooter().setPadding(0,0,0,0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
+        result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -129,8 +134,7 @@ public class Dashboard extends AppCompatActivity {
             case R.string.menu_courses:
                 break;
             case R.string.menu_feedback:
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(Dashboard.this).title("Feedback").customView(R.layout.dialog_feedback, true);
-                builder.build();
+                feedbackDialog();
             default:
                 openCallFragment(new DashboardFragment());
                 break;
@@ -138,7 +142,29 @@ public class Dashboard extends AppCompatActivity {
         }
     }
 
+    /**
+     * TODO: Save selected response for radio-buttons
+     * TODO: Disable Submit button before the question is added
+     */
 
+    public void feedbackDialog() {
+        MaterialDialog.Builder builder = new MaterialDialog.Builder(Dashboard.this).title(R.string.menu_feedback).customView(R.layout.dialog_feedback, true)
+                .positiveText(R.string.button_submit).negativeText(R.string.button_cancel)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        Toast.makeText(Dashboard.this, "Your response has been submitted!", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    }
+                }).onNegative(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(MaterialDialog dialog, DialogAction which) {
+                        dialog.dismiss();
+                    }
+                });
+        MaterialDialog dialog = builder.build();
+        dialog.show();
+    }
 
 
     public void openCallFragment(Fragment newfragment) {

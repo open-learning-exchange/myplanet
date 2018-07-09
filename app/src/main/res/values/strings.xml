@@ -35,4 +35,6 @@
     <string name="txt_myMeetups">myMeetups</string>
     <string name="txt_myTeams">myTeams</string>
     <string name="title_activity_pdfreader">PDFReaderActivity</string>
+    <string name="button_submit">Submit</string>
+    <string name="button_cancel">Cancel</string>
 </resources>
