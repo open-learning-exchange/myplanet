@@ -128,6 +128,10 @@ public class DashboardFragment extends Fragment {
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] textViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
+        myLibraryItems(flexboxLayout, params, db_myLibrary, textViewArray, itemCnt);
+    }
+
+    public void myLibraryItems(FlexboxLayout flexboxLayout, LinearLayout.LayoutParams params, RealmResults<realm_myLibrary> db_myLibrary, TextView[] textViewArray, int itemCnt) {
         for (final realm_myLibrary items : db_myLibrary) {
             setTextViewProperties(textViewArray, itemCnt, items);
             textViewArray[itemCnt].setOnClickListener(new View.OnClickListener() {
