@@ -173,15 +173,18 @@ public class Dashboard extends AppCompatActivity {
     @NonNull
     private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
+        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
 
         ArrayList<Integer> menuBlueImageListFooter = new ArrayList<>();
+        menuBlueImageListFooter.add(R.drawable.feedback_blue);
         menuBlueImageListFooter.add(R.drawable.logout_blue);
 
 
         return new IDrawerItem[]{
-                changeUX(R.string.menu_logout, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
+                changeUX(R.string.menu_feedback, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
+                changeUX(R.string.menu_logout, menuImageListFooter.get(1), menuBlueImageListFooter.get(1)),
         };
     }
 
