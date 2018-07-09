@@ -28,7 +28,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import java.util.ArrayList;
 
 
-public class Dashboard extends AppCompatActivity implements MySurveyFragment.MySurveyFragmentOnFragmentInteractionListener,MyMeetUpsFragment.MyMeetUpsFragmentOnFragmentInteractionListener,MyCourseFragment.MyCourseFragmentOnFragmentInteraction,MyLibraryFragment.MyLibraryFragmentOnFragmentInteractionListener{
+public class Dashboard extends AppCompatActivity{
     private Drawer result = null;
     private Toolbar mTopToolbar;
     AccountHeader headerResult;
@@ -44,7 +44,6 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
 
         headerResult = getAccountHeader();
         createDrawer();
-        result.getStickyFooter().setPadding(0,0,0,0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -53,8 +52,9 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
+            LoadFragment("DashboardFragment");
+        //openCallFragment(new DashboardFragment());
 
-        openCallFragment(new DashboardFragment());
     }
 
     @Override
@@ -80,7 +80,7 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         //Create User profile header
         return new AccountHeaderBuilder()
                 .withActivity(Dashboard.this)
-                .withTextColor(getResources().getColor(R.color.bg_white))
+                .withTextColor(getApplicationContext().getResources().getColor(R.color.bg_white))
                 .withHeaderBackground(R.drawable.header_image)
                 .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
@@ -94,12 +94,13 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
+                .withSliderBackgroundColor(getApplicationContext().getResources().getColor(R.color.colorPrimaryDark))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
-                .addDrawerItems(getDrawerItems())
-                .addStickyDrawerItems(getDrawerItemsFooter())
+                .addDrawerItems(
+                        getDrawerItems()
+                )
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
@@ -113,7 +114,9 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
                 })
                 .withDrawerWidthDp(200)
                 .build();
+
     }
+
 
     Fragment newFragment;
     FragmentTransaction fragmentTransaction;
@@ -121,75 +124,54 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_home:
-                //openCallFragment(new DashboardFragment());
-                newFragment = new DashboardFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("DashboardFragment");
                 break;
             case R.string.menu_library:
-                //openCallFragment1(new MyLibraryFragment());
-                newFragment = new MyLibraryFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MyLibraryFragment");
                 break;
             case R.string.menu_meetups:
-                //openCallFragment1(new MyMeetUpsFragment());
-                newFragment = new MyMeetUpsFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MyMeetUpsFragment");
                 break;
             case R.string.menu_surveys:
-                //openCallFragment1(new MySurveysFragment());
-                newFragment = new MySurveyFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MySurveyFragment");
                 break;
             case R.string.menu_courses:
-                //openCallFragment1(new MyCourseFragment());
-                newFragment = new MyCourseFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MyCourseFragment");
                 break;
             default:
-                //openCallFragment(new DashboardFragment());
-                newFragment = new DashboardFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("DashboardFragment");
                 break;
 
         }
     }
 
-    public void openCallFragment(Fragment newfragment) {
-        newfragment = new DashboardFragment();
+    private void LoadFragment(String fragmentName) {
+        Fragment newfragment=new DashboardFragment();
+        if (fragmentName.matches("DashboardFragment")) {
+            newfragment = new DashboardFragment();
+        }else if (fragmentName.matches("MyLibraryFragment")) {
+            newfragment = new MyLibraryFragment();
+        }else if (fragmentName.matches("MyCourseFragment")) {
+            newfragment = new MyCourseFragment();
+        }else if (fragmentName.matches("MyMeetUpsFragment")) {
+            newfragment = new MyMeetUpsFragment();
+        }else if (fragmentName.matches("MySurveyFragment")) {
+            newfragment = new MySurveyFragment();
+        }
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        //fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
-
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         ArrayList<Drawable> menuImageList = new ArrayList<>();
-        menuImageList.add(getResources().getDrawable(R.drawable.home));
-        menuImageList.add(getResources().getDrawable(R.drawable.library));
-        menuImageList.add(getResources().getDrawable(R.drawable.courses));
-        menuImageList.add(getResources().getDrawable(R.drawable.meetups));
-        menuImageList.add(getResources().getDrawable(R.drawable.survey));
-
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.home));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.library));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.courses));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.meetups));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.survey));
 
         ArrayList<Integer> menuBlueImageList = new ArrayList<>();
         menuBlueImageList.add(R.drawable.home_blue);
@@ -197,7 +179,6 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         menuBlueImageList.add(R.drawable.courses_blue);
         menuBlueImageList.add(R.drawable.meetups_blue);
         menuBlueImageList.add(R.drawable.survey_blue);
-
 
         return new IDrawerItem[]{
                 changeUX(R.string.menu_home, menuImageList.get(0), menuBlueImageList.get(0)),
@@ -208,51 +189,18 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         };
     }
 
-    @NonNull
-    private IDrawerItem[] getDrawerItemsFooter() {
-        ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
-        menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
-
-
-        ArrayList<Integer> menuBlueImageListFooter = new ArrayList<>();
-        menuBlueImageListFooter.add(R.drawable.logout_blue);
-
-
-        return new IDrawerItem[]{
-                changeUX(R.string.menu_logout, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
-        };
-    }
-
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {
         return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(blueDrawable);
     }
+
 
     @Override
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
+
         } else {
             super.onBackPressed();
         }
-    }
-
-    @Override
-    public void MyCourseFragmentOnFragmentInteraction(Uri uri) {
-
-    }
-
-    @Override
-    public void MyLibraryFragmentOnFragmentInteraction(Uri uri) {
-
-    }
-
-    @Override
-    public void MyMeetUpsOnFragmentInteraction(Uri uri) {
-
-    }
-
-    @Override
-    public void MySurveyFragmentOnFragmentInteractionListener(Uri uri) {
-
     }
 }
