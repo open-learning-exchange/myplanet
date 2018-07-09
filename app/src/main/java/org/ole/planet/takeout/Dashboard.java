@@ -53,8 +53,7 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-
-        openCallFragment(new DashboardFragment());
+        LoadFragment("DashboardFragment");
     }
 
     @Override
@@ -118,68 +117,46 @@ public class Dashboard extends AppCompatActivity implements MySurveyFragment.MyS
     Fragment newFragment;
     FragmentTransaction fragmentTransaction;
 
-    private void menuAction(int selectedMenuId) {
+   private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_home:
-                //openCallFragment(new DashboardFragment());
-                newFragment = new DashboardFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("DashboardFragment");
                 break;
             case R.string.menu_library:
-                //openCallFragment1(new MyLibraryFragment());
-                newFragment = new MyLibraryFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MyLibraryFragment");
                 break;
             case R.string.menu_meetups:
-                //openCallFragment1(new MyMeetUpsFragment());
-                newFragment = new MyMeetUpsFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MyMeetUpsFragment");
                 break;
             case R.string.menu_surveys:
-                //openCallFragment1(new MySurveysFragment());
-                newFragment = new MySurveyFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MySurveysFragment");
                 break;
             case R.string.menu_courses:
-                //openCallFragment1(new MyCourseFragment());
-                newFragment = new MyCourseFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("MyCoursesFragment");
+
                 break;
             default:
-                //openCallFragment(new DashboardFragment());
-                newFragment = new DashboardFragment();
-                fragmentTransaction = getSupportFragmentManager().beginTransaction();
-                fragmentTransaction.replace(R.id.fragment_container, newFragment);
-                //fragmentTransaction.addToBackStack(null);
-                fragmentTransaction.commit();
+                LoadFragment("DashboardFragment");
                 break;
 
         }
     }
 
-    public void openCallFragment(Fragment newfragment) {
-        newfragment = new DashboardFragment();
+    private void LoadFragment(String fragmentName) {
+        Fragment newfragment=new DashboardFragment();
+        if (fragmentName.matches("DashboardFragment")) {
+            newfragment = new DashboardFragment();
+        }else if (fragmentName.matches("MyCourseFragment")) {
+            newfragment = new MyCourseFragment();
+        }else if (fragmentName.matches("MyMeetUpsFragment")) {
+            newfragment = new MyMeetUpsFragment();
+        }else if (fragmentName.matches("MySurveyFragment")) {
+            newfragment = new MySurveyFragment();
+        }
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        //fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
-
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
