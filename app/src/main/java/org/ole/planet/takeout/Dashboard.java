@@ -1,6 +1,5 @@
 package org.ole.planet.takeout;
 
-import android.accounts.Account;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -15,7 +14,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
@@ -23,7 +21,6 @@ import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
-import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
@@ -46,6 +43,7 @@ public class Dashboard extends AppCompatActivity {
 
         headerResult = getAccountHeader();
         createDrawer();
+        result.getStickyFooter().setPadding(0,0,0,0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -56,7 +54,6 @@ public class Dashboard extends AppCompatActivity {
         }
 
         openCallFragment(new DashboardFragment());
-
     }
 
     @Override
@@ -100,12 +97,8 @@ public class Dashboard extends AppCompatActivity {
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
-                .addDrawerItems(
-                        getDrawerItems()
-                )
-                .addStickyDrawerItems(
-                        getDrawerItemsFooter()
-                )
+                .addDrawerItems(getDrawerItems())
+                .addStickyDrawerItems(getDrawerItemsFooter())
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
@@ -119,7 +112,6 @@ public class Dashboard extends AppCompatActivity {
                 })
                 .withDrawerWidthDp(200)
                 .build();
-
     }
 
     private void menuAction(int selectedMenuId) {
@@ -178,9 +170,8 @@ public class Dashboard extends AppCompatActivity {
         };
     }
 
-    // for "Logout" button
-    private IDrawerItem[] getDrawerItemsFooter()
-    {
+    @NonNull
+    private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
@@ -192,7 +183,6 @@ public class Dashboard extends AppCompatActivity {
         return new IDrawerItem[]{
                 changeUX(R.string.menu_logout, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
         };
-
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {

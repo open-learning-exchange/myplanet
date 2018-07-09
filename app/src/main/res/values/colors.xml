@@ -20,7 +20,7 @@
     <color name="material_drawer_dark_selected_text">#3F51B5</color>
     <color name="offwhite">#fafafa</color>
 
-    <!-- Logout Button section is white without this -->
+    <!-- changes logout button area background from white to whatever the background color for the drawer is.
+    Without it, the drawer and logout button area are different colors -->
     <color name="material_drawer_background">@color/colorPrimary</color>
-
 </resources>
