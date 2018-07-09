@@ -148,7 +148,7 @@ public class Dashboard extends AppCompatActivity {
      */
 
     public void feedbackDialog() {
-        MaterialDialog.Builder builder = new MaterialDialog.Builder(Dashboard.this).title(R.string.menu_feedback).customView(R.layout.dialog_feedback, true)
+        MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).title(R.string.menu_feedback).customView(R.layout.dialog_feedback, true)
                 .positiveText(R.string.button_submit).negativeText(R.string.button_cancel)
                 .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -162,7 +162,7 @@ public class Dashboard extends AppCompatActivity {
                         dialog.dismiss();
                     }
                 });
-        MaterialDialog dialog = builder.build();
+        MaterialDialog dialog = feedback_dialog.build();
         dialog.show();
     }
 
