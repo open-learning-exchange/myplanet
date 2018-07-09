@@ -16,9 +16,6 @@ import android.widget.TextView;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
-import org.lightcouch.CouchDbProperties;
-import org.ole.planet.takeout.Data.realm_UserModel;
-import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 
@@ -162,22 +159,40 @@ public class DashboardFragment extends Fragment {
         );
 
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
-        TextView[] textViewArray = new TextView[db_myLibrary.size()];
+        TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
-        for (realm_myLibrary items : db_myLibrary) {
-            textViewArray[itemCnt] = new TextView(getContext());
-            textViewArray[itemCnt].setPadding(20, 10, 20, 10);
-            textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
-            textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-            textViewArray[itemCnt].setText(items.getTitle());
-            textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+        for (final realm_myLibrary items : db_myLibrary) {
+            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
+            myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
-                textViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+                myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
-            flexboxLayout.addView(textViewArray[itemCnt], params);
+            flexboxLayout.addView(myLibraryTextViewArray[itemCnt], params);
             itemCnt++;
         }
+    }
+
+    public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
+        textView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (items.getResourceOffline()) {
+                    Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
+                } else {
+                    Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
+                }
+            }
+        });
+    }
+
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items) {
+        textViewArray[itemCnt] = new TextView(getContext());
+        textViewArray[itemCnt].setPadding(20, 10, 20, 10);
+        textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
+        textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
+        textViewArray[itemCnt].setText(items.getTitle());
+        textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
     }
 
 }

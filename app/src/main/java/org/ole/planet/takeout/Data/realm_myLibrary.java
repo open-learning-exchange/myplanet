@@ -22,6 +22,7 @@ public class realm_myLibrary extends RealmObject {
     private String description;
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
+    private Boolean resourceOffline;
 
 
     public String getId() {
@@ -158,5 +159,13 @@ public class realm_myLibrary extends RealmObject {
 
     public void setResourceLocalAddress(String resourceLocalAddress) {
         this.resourceLocalAddress = resourceLocalAddress;
+    }
+
+    public Boolean getResourceOffline() {
+        return resourceOffline;
+    }
+
+    public void setResourceOffline(Boolean resourceOffline) {
+        this.resourceOffline = resourceOffline;
     }
 }
