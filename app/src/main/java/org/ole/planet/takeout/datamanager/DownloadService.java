@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -34,6 +35,7 @@ public class DownloadService {
 
     public interface DownloadCallback {
         void onSuccess(String s);
+
         void onFailure(String e);
     }
 
@@ -65,44 +67,43 @@ public class DownloadService {
 
     private boolean writeResponseBodyToDisk(ResponseBody body, String url) {
         try {
-            File futureStudioIconFile = Utilities.getSDPathFromUrl(url);
+            File file = Utilities.getSDPathFromUrl(url);
             InputStream inputStream = null;
             OutputStream outputStream = null;
-
             try {
-                byte[] fileReader = new byte[4096];
-                long fileSize = body.contentLength();
-                long fileSizeDownloaded = 0;
-                inputStream = body.byteStream();
-                outputStream = new FileOutputStream(futureStudioIconFile);
-                while (true) {
-                    int read = inputStream.read(fileReader);
-                    if (read == -1) {
-                        break;
-                    }
-                    outputStream.write(fileReader, 0, read);
-                    fileSizeDownloaded += read;
-                    }
-
-                outputStream.flush();
-
+              readStream(body, file, inputStream, outputStream);
                 return true;
             } catch (IOException e) {
                 return false;
             } finally {
-               closeStream(inputStream, outputStream);
+                closeStream(inputStream, outputStream);
             }
-
         } catch (IOException e) {
             return false;
         }
+    }
+
+    private void readStream(ResponseBody body, File file, InputStream inputStream, OutputStream outputStream) throws IOException {
+        byte[] fileReader = new byte[4096];
+        long fileSize = body.contentLength();
+        long fileSizeDownloaded = 0;
+        inputStream = body.byteStream();
+        outputStream = new FileOutputStream(file);
+        while (true) {
+            int read = inputStream.read(fileReader);
+            if (read == -1) {
+                break;
+            }
+            outputStream.write(fileReader, 0, read);
+            fileSizeDownloaded += read;
+        }
+        outputStream.flush();
     }
 
     private void closeStream(InputStream inputStream, OutputStream outputStream) throws IOException {
         if (inputStream != null) {
             inputStream.close();
         }
-
         if (outputStream != null) {
             outputStream.close();
         }
