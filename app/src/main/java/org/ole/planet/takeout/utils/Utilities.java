@@ -1,8 +1,13 @@
 package org.ole.planet.takeout.utils;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 import android.widget.Toast;
+
+import org.ole.planet.takeout.R;
 
 import java.io.File;
 
@@ -48,5 +53,29 @@ public class Utilities {
             return;
         }
         Toast.makeText(context,s, Toast.LENGTH_LONG ).show();
+    }
+
+
+    public static void showAlert(Context context, String link) {
+        File file = Utilities.getSDPathFromUrl(link);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        if (link.contains("pdf")) {
+            intent.setDataAndType(Uri.fromFile(file), "application/pdf");
+        } else if (link.contains("mp3")) {
+            intent.setDataAndType(Uri.fromFile(file), "audio/*");
+        } else if (link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png")) {
+            intent.setDataAndType(Uri.fromFile(file), "image/*");
+        } else if (link.contains(".3gp") || link.contains(".mpg") || link.contains(".mpeg") || link.contains(".mpe") || link.contains(".mp4") || link.contains(".avi")) {
+            intent.setDataAndType(Uri.fromFile(file), "video*/*");
+        }
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Download Complete, Open With ..");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        Intent openInent = Intent.createChooser(intent, context.getString(R.string.app_name));
+        try {
+            context.startActivity(openInent);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
+        }
+//        return null;
     }
 }

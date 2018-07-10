@@ -60,14 +60,16 @@ public class AdapterResources extends RecyclerView.Adapter<RecyclerView.ViewHold
             ((ViewHolderLibraryList) holder).title.setText(libraryList.get(position).getTitle());
 
             String url = LibraryDatamanager.getAttachmentUrl(libraryList.get(position));
+            ((ViewHolderLibraryList)holder).btnDownload.setImageResource(Utilities.checkFileExist(url) ? R.drawable.ic_view : R.drawable.ic_download_icon);
+
             if (!TextUtils.isEmpty(url)) {
                 ((ViewHolderLibraryList) holder).btnDownload.setOnClickListener(view -> {
                     if (!Utilities.checkFileExist(url)) {
                         Utilities.toast(context,"Downloading file please wait...");
-
                         new DownloadService(context, new DownloadService.DownloadCallback() {
                             @Override
                             public void onSuccess(String s) {
+                                notifyDataSetChanged();
                                 Utilities.toast(context,s);
                             }
 
@@ -76,6 +78,8 @@ public class AdapterResources extends RecyclerView.Adapter<RecyclerView.ViewHold
                                 Utilities.toast(context,e);
                             }
                         }).downloadFile(url);
+                    }else{
+                    Utilities.showAlert(context, url);
                     }
 
 
