@@ -24,6 +24,8 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+import org.ole.planet.takeout.library.LibraryFragment;
+
 import java.util.ArrayList;
 
 
@@ -62,6 +64,7 @@ public class Dashboard extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -120,6 +123,7 @@ public class Dashboard extends AppCompatActivity {
                 openCallFragment(new DashboardFragment());
                 break;
             case R.string.menu_library:
+                openCallFragment(new LibraryFragment());
                 break;
             case R.string.menu_meetups:
                 break;

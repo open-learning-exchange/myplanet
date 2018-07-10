@@ -153,6 +153,8 @@ public class DashboardFragment extends Fragment {
         mRealm = Realm.getInstance(config);
     }
 
+
+
     public void myLibraryDiv(View view) {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
@@ -179,5 +181,7 @@ public class DashboardFragment extends Fragment {
             itemCnt++;
         }
     }
+
+
 
 }
