@@ -13,6 +13,7 @@ import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.utils.Utilities;
 
 import java.util.Map;
 import java.util.UUID;
@@ -87,6 +88,7 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
 //        myLibraryDB.setPublisher(resourceDoc.get("Publisher").getAsString());
 //        myLibraryDB.setMedium(resourceDoc.get("medium").getAsString());
         myLibraryDB.setLanguage(resourceDoc.get("language").getAsString()); //array
+        myLibraryDB.set_attachments(resourceDoc.get("_attachments").getAsJsonObject().toString()); //array
         myLibraryDB.setSubject(resourceDoc.get("subject").getAsString()); // array
 //        myLibraryDB.setLinkToLicense(resourceDoc.get("linkToLicense").getAsString());
 //        myLibraryDB.setResourceFor(resourceDoc.get("resourceFor")!= null ? resourceDoc.get("resourceFor").getAsString() : "");

@@ -2,8 +2,10 @@ package org.ole.planet.takeout;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -12,7 +14,10 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
@@ -21,9 +26,12 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
+import org.ole.planet.takeout.library.LibraryDatamanager;
+import org.ole.planet.takeout.utils.Utilities;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -65,9 +73,11 @@ public class DashboardFragment extends Fragment {
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(currentDate());
+      //  showDownloadDialog();
         return view;
     }
-  
+
+
     public void imageButtonOnClickListeners() {
         myLibraryImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -153,7 +163,12 @@ public class DashboardFragment extends Fragment {
         mRealm = Realm.getInstance(config);
     }
 
-
+//
+//    public void showDownloadDialog() {
+//        LibraryDatamanager libraryDatamanager = new LibraryDatamanager(getActivity(), settings);
+//        List<realm_myLibrary> list = libraryDatamanager.getNotDownloadedLibraryList();
+//        Utilities.log("List size " + list.size());
+//    }
 
     public void myLibraryDiv(View view) {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
@@ -181,7 +196,6 @@ public class DashboardFragment extends Fragment {
             itemCnt++;
         }
     }
-
 
 
 }

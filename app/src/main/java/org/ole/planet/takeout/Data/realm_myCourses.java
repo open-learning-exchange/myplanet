@@ -19,6 +19,8 @@ public class realm_myCourses extends RealmObject {
     private String createdDate;
     private Integer numberOfSteps;
 
+
+
     public String getId() {
         return id;
     }

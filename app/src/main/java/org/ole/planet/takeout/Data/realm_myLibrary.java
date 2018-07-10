@@ -1,6 +1,7 @@
 package org.ole.planet.takeout.Data;
 
 import io.realm.RealmObject;
+import io.realm.annotations.Ignore;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_myLibrary extends RealmObject {
@@ -16,6 +17,7 @@ public class realm_myLibrary extends RealmObject {
     private String language;
     private String subject;
     private String linkToLicense;
+    private String _attachments;
     private String resourceFor;
     private String mediaType;
     private String averageRating;
@@ -23,6 +25,16 @@ public class realm_myLibrary extends RealmObject {
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
 
+    @Ignore
+    private String url;
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
 
     public String getId() {
         return id;
@@ -158,5 +170,18 @@ public class realm_myLibrary extends RealmObject {
 
     public void setResourceLocalAddress(String resourceLocalAddress) {
         this.resourceLocalAddress = resourceLocalAddress;
+    }
+
+    public String get_attachments() {
+        return _attachments;
+    }
+
+    public void set_attachments(String _attachments) {
+        this._attachments = _attachments;
+    }
+
+    @Override
+    public String toString() {
+        return resource_rev + " " + resourceId + " " + resource_rev + " " + mediaType + " " + medium;
     }
 }
