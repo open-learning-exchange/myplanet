@@ -61,27 +61,26 @@ public class LibraryDatamanager {
         }
         return "";
     }
-
-    public List<realm_myLibrary> getNotDownloadedLibraryList() {
-        List<realm_myLibrary> list = getLibraryList();
-        List<realm_myLibrary> filteredList = new ArrayList<>();
-
-        for (int i = 0; i < list.size(); i++) {
-            final realm_myLibrary lib = list.get(i);
-            JsonObject jsonObject = new Gson().fromJson(lib.get_attachments(), JsonObject.class);
-            if (jsonObject != null) {
-                for (String key : jsonObject.keySet()) {
-                    lib.setUrl(getUrl(lib.getResourceId(), key));
-                    Utilities.log("URL " + lib.getUrl());
-                    if (!checkFileExist(key)) {
-                        filteredList.add(lib);
-                    }
-                }
-            }
-        }
-        return list;
-    }
-
+//
+//    public List<realm_myLibrary> getNotDownloadedLibraryList() {
+//        List<realm_myLibrary> list = getLibraryList();
+//        List<realm_myLibrary> filteredList = new ArrayList<>();
+//
+//        for (int i = 0; i < list.size(); i++) {
+//            final realm_myLibrary lib = list.get(i);
+//            JsonObject jsonObject = new Gson().fromJson(lib.get_attachments(), JsonObject.class);
+//            if (jsonObject != null) {
+//                for (String key : jsonObject.keySet()) {
+//                    lib.setUrl(getUrl(lib.getResourceId(), key));
+//                    if (!checkFileExist(key)) {
+//                        filteredList.add(lib);
+//                    }
+//                }
+//            }
+//        }
+//        return list;
+//    }
+//
 
     public static File getSDPathFromUrl(String fileName) {
         return createFilePath(SD_PATH, fileName);

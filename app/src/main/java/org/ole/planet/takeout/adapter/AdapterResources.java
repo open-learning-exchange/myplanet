@@ -37,7 +37,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class AdapterResources extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterResources extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements DownloadService.DownloadCallback {
     private Context context;
     private List<realm_myLibrary> libraryList;
 
@@ -58,43 +58,46 @@ public class AdapterResources extends RecyclerView.Adapter<RecyclerView.ViewHold
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderLibraryList) {
             ((ViewHolderLibraryList) holder).title.setText(libraryList.get(position).getTitle());
-
             String url = LibraryDatamanager.getAttachmentUrl(libraryList.get(position));
-            ((ViewHolderLibraryList)holder).btnDownload.setImageResource(Utilities.checkFileExist(url) ? R.drawable.ic_view : R.drawable.ic_download_icon);
-
-            if (!TextUtils.isEmpty(url)) {
-                ((ViewHolderLibraryList) holder).btnDownload.setOnClickListener(view -> {
-                    if (!Utilities.checkFileExist(url)) {
-                        Utilities.toast(context,"Downloading file please wait...");
-                        new DownloadService(context, new DownloadService.DownloadCallback() {
-                            @Override
-                            public void onSuccess(String s) {
-                                notifyDataSetChanged();
-                                Utilities.toast(context,s);
-                            }
-
-                            @Override
-                            public void onFailure(String e) {
-                                Utilities.toast(context,e);
-                            }
-                        }).downloadFile(url);
-                    }else{
-                    Utilities.showAlert(context, url);
-                    }
-
-
-
-                });
-            } else {
-                Utilities.toast(context, "url not available");
-            }
+            ((ViewHolderLibraryList) holder).btnDownload.setImageResource(Utilities.checkFileExist(url) ? R.drawable.ic_view : R.drawable.ic_download_icon);
+            openOrDownload(url, (ViewHolderLibraryList) holder);
         }
+    }
+
+    private void openOrDownload(String url, ViewHolderLibraryList holderLibraryList) {
+        if (!TextUtils.isEmpty(url)) {
+            holderLibraryList.btnDownload.setOnClickListener(view -> {
+                if (!Utilities.checkFileExist(url)) {
+                    downloadFile(url);
+                } else {
+                    Utilities.showAlert(context, url);
+                }
+            });
+        } else {
+            Utilities.toast(context, "url not available");
+        }
+    }
+
+    private void downloadFile(String url) {
+        Utilities.toast(context, "Downloading file please wait...");
+        new DownloadService(context, this).downloadFile(url);
     }
 
 
     @Override
     public int getItemCount() {
         return libraryList.size();
+    }
+
+    @Override
+    public void onSuccess(String s) {
+        notifyDataSetChanged();
+        Utilities.toast(context, s);
+    }
+
+    @Override
+    public void onFailure(String e) {
+        Utilities.toast(context, e);
     }
 
     class ViewHolderLibraryList extends RecyclerView.ViewHolder {

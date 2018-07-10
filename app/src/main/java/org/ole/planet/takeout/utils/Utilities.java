@@ -15,7 +15,7 @@ import static org.ole.planet.takeout.library.LibraryDatamanager.SD_PATH;
 
 public class Utilities {
 
-    public static void log(String message){
+    public static void log(String message) {
         Log.d("OLE ", "log: " + message);
     }
 
@@ -44,15 +44,15 @@ public class Utilities {
         File f = new File(folder);
         if (!f.exists())
             f.mkdirs();
-        Utilities.log("Return file "+ folder + "/" + filename);
+        Utilities.log("Return file " + folder + "/" + filename);
         return new File(f, filename);
     }
 
     public static void toast(Context context, String s) {
-        if (context == null){
+        if (context == null) {
             return;
         }
-        Toast.makeText(context,s, Toast.LENGTH_LONG ).show();
+        Toast.makeText(context, s, Toast.LENGTH_LONG).show();
     }
 
 
@@ -63,12 +63,25 @@ public class Utilities {
             intent.setDataAndType(Uri.fromFile(file), "application/pdf");
         } else if (link.contains("mp3")) {
             intent.setDataAndType(Uri.fromFile(file), "audio/*");
-        } else if (link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png")) {
+        } else if (isImage(link)) {
             intent.setDataAndType(Uri.fromFile(file), "image/*");
-        } else if (link.contains(".3gp") || link.contains(".mpg") || link.contains(".mpeg") || link.contains(".mpe") || link.contains(".mp4") || link.contains(".avi")) {
+        } else if (isVideo(link)) {
             intent.setDataAndType(Uri.fromFile(file), "video*/*");
         }
-        intent.putExtra(Intent.EXTRA_SUBJECT, "Download Complete, Open With ..");
+        openIntent(context, intent);
+//        return null;
+    }
+
+    private static boolean isVideo(String link) {
+        return link.contains(".mp4") || link.contains(".avi");
+    }
+
+    private static boolean isImage(String link) {
+        return link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png");
+    }
+
+    private static void openIntent(Context context, Intent intent) {
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Open With ..");
         intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         Intent openInent = Intent.createChooser(intent, context.getString(R.string.app_name));
         try {
@@ -76,6 +89,5 @@ public class Utilities {
         } catch (ActivityNotFoundException e) {
             Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
         }
-//        return null;
     }
 }

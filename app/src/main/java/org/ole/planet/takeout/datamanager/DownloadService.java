@@ -66,32 +66,23 @@ public class DownloadService {
     private boolean writeResponseBodyToDisk(ResponseBody body, String url) {
         try {
             File futureStudioIconFile = Utilities.getSDPathFromUrl(url);
-
             InputStream inputStream = null;
             OutputStream outputStream = null;
 
             try {
                 byte[] fileReader = new byte[4096];
-
                 long fileSize = body.contentLength();
                 long fileSizeDownloaded = 0;
-
                 inputStream = body.byteStream();
                 outputStream = new FileOutputStream(futureStudioIconFile);
-
                 while (true) {
                     int read = inputStream.read(fileReader);
-
                     if (read == -1) {
                         break;
                     }
-
                     outputStream.write(fileReader, 0, read);
-
                     fileSizeDownloaded += read;
-
-                    Log.d("aaa", "file download: " + fileSizeDownloaded + " of " + fileSize);
-                }
+                    }
 
                 outputStream.flush();
 
@@ -99,17 +90,21 @@ public class DownloadService {
             } catch (IOException e) {
                 return false;
             } finally {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-
-                if (outputStream != null) {
-                    outputStream.close();
-                }
+               closeStream(inputStream, outputStream);
             }
 
         } catch (IOException e) {
             return false;
+        }
+    }
+
+    private void closeStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+        if (inputStream != null) {
+            inputStream.close();
+        }
+
+        if (outputStream != null) {
+            outputStream.close();
         }
     }
 
