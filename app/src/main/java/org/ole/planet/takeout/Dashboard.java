@@ -9,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,7 +25,12 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+import org.ole.planet.takeout.library.LibraryFragment;
+import org.ole.planet.takeout.utils.Utilities;
+
 import java.util.ArrayList;
+
+import okhttp3.internal.Util;
 
 
 public class Dashboard extends AppCompatActivity {
@@ -62,6 +68,7 @@ public class Dashboard extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -107,6 +114,7 @@ public class Dashboard extends AppCompatActivity {
                                 menuAction(((Nameable) drawerItem).getName().getTextRes());
                             }
                         }
+
                         return false;
                     }
                 })
@@ -115,11 +123,14 @@ public class Dashboard extends AppCompatActivity {
     }
 
     private void menuAction(int selectedMenuId) {
+
         switch (selectedMenuId) {
             case R.string.menu_home:
                 openCallFragment(new DashboardFragment());
                 break;
             case R.string.menu_library:
+                Utilities.log("Open library");
+                openCallFragment(new LibraryFragment());
                 break;
             case R.string.menu_meetups:
                 break;
@@ -135,10 +146,10 @@ public class Dashboard extends AppCompatActivity {
     }
 
     public void openCallFragment(Fragment newfragment) {
-        newfragment = new DashboardFragment();
+      //  newfragment = new DashboardFragment();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        fragmentTransaction.addToBackStack(null);
+       // fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
 

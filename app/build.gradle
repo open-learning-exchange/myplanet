@@ -31,6 +31,10 @@ android {
     lintOptions {
         abortOnError false
     }
+    compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }
 }
 
 dependencies {
@@ -57,14 +61,17 @@ dependencies {
     implementation 'com.mikepenz:crossfader:1.5.1@aar'
     implementation 'com.mikepenz:crossfadedrawerlayout:1.0.1@aar'
     implementation 'com.github.barteksc:android-pdf-viewer:3.0.0-beta.5'
-    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.14'
     implementation 'com.google.android:flexbox:1.0.0'
+
+    implementation 'com.squareup.retrofit2:retrofit:2.3.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
+
     implementation 'de.rtner:PBKDF2:1.1.2'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 }
 realm {
-    syncEnabled = true;
+    syncEnabled = true
 }
-

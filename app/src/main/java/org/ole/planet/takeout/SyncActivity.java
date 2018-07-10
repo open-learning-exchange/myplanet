@@ -26,7 +26,7 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
-abstract class SyncActivity extends ProcessUserData {
+public abstract class SyncActivity extends ProcessUserData {
     private TextView syncDate;
     private TextView intervalLabel;
     private Spinner spinner;
@@ -118,11 +118,7 @@ abstract class SyncActivity extends ProcessUserData {
         builder1.setMessage(Message);
         builder1.setCancelable(true);
         builder1.setNegativeButton("Okay",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                });
+                (dialog, id) -> dialog.cancel());
         AlertDialog alert11 = builder1.create();
         alert11.show();
     }

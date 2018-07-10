@@ -34,4 +34,9 @@
     <string name="txt_myMeetups">myMeetups</string>
     <string name="txt_myTeams">myTeams</string>
     <string name="title_activity_pdfreader">PDFReaderActivity</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="download_hint">Following files are not downloaded. Do you want to download?</string>
+    <string name="download">Download</string>
 </resources>
