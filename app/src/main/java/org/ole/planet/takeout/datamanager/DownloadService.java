@@ -34,7 +34,6 @@ public class DownloadService {
 
     public interface DownloadCallback {
         void onSuccess(String s);
-
         void onFailure(String e);
     }
 

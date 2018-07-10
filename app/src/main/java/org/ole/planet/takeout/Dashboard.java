@@ -139,7 +139,7 @@ public class Dashboard extends AppCompatActivity {
             case R.string.menu_courses:
                 break;
             default:
-                openCallFragment(new LibraryFragment());
+                openCallFragment(new DashboardFragment());
                 break;
 
         }
