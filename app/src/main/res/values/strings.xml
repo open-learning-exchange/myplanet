@@ -34,4 +34,8 @@
     <string name="txt_myMeetups">myMeetups</string>
     <string name="txt_myTeams">myTeams</string>
     <string name="title_activity_pdfreader">PDFReaderActivity</string>
+    <string name="download_suggestion">Following Files are not downloaded. Do you want to download them?</string>
+    <string name="download_selected">Download Selected</string>
+    <string name="txt_cancel">Cancel</string>
+    <string name="download_all">Download All</string>
 </resources>

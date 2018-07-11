@@ -1,9 +1,13 @@
 package org.ole.planet.takeout;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -13,17 +17,19 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
-import org.lightcouch.CouchDbProperties;
-import org.ole.planet.takeout.Data.realm_UserModel;
-import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -115,6 +121,7 @@ public class DashboardFragment extends Fragment {
         txtVisits = view.findViewById(R.id.txtVisits);
         realmConfig();
         myLibraryDiv(view);
+        showDownloadDialog();
     }
 
     private String currentDate() {
@@ -153,6 +160,7 @@ public class DashboardFragment extends Fragment {
         mRealm = Realm.getInstance(config);
     }
 
+
     public void myLibraryDiv(View view) {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
@@ -162,22 +170,79 @@ public class DashboardFragment extends Fragment {
         );
 
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
-        TextView[] textViewArray = new TextView[db_myLibrary.size()];
+        TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
-        for (realm_myLibrary items : db_myLibrary) {
-            textViewArray[itemCnt] = new TextView(getContext());
-            textViewArray[itemCnt].setPadding(20, 10, 20, 10);
-            textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
-            textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-            textViewArray[itemCnt].setText(items.getTitle());
-            textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+        for (final realm_myLibrary items : db_myLibrary) {
+            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
+            myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
-                textViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+                myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
-            flexboxLayout.addView(textViewArray[itemCnt], params);
+            flexboxLayout.addView(myLibraryTextViewArray[itemCnt], params);
             itemCnt++;
         }
+    }
+
+
+    private void showDownloadDialog() {
+        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
+
+        MaterialDialog.Builder builder = new MaterialDialog.Builder(getActivity())
+                .title(R.string.download_suggestion)
+                .positiveText(R.string.download_selected)
+                .negativeText(R.string.txt_cancel)
+                .neutralText(R.string.download_all)
+                .items(getListAsArray(db_myLibrary))
+                .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
+                    @Override
+                    public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
+                        Log.d("Dashboardfragment", "onSelection: " + text.length);
+                        return true;
+                    }
+                });
+        builder.show();
+
+
+    }
+
+    private CharSequence[] getListAsArray(RealmResults<realm_myLibrary> db_myLibrary) {
+        CharSequence[] array = new CharSequence[db_myLibrary.size()];
+        for (int i = 0; i < db_myLibrary.size(); i++) {
+            array[i] = db_myLibrary.get(i).getTitle();
+        }
+        return array;
+    }
+
+
+    static class ViewHolderResource extends RecyclerView.ViewHolder {
+
+        public ViewHolderResource(View itemView) {
+            super(itemView);
+        }
+    }
+
+
+    public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
+        textView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (items.getResourceOffline()) {
+                    Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
+                } else {
+                    Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
+                }
+            }
+        });
+    }
+
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items) {
+        textViewArray[itemCnt] = new TextView(getContext());
+        textViewArray[itemCnt].setPadding(20, 10, 20, 10);
+        textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
+        textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
+        textViewArray[itemCnt].setText(items.getTitle());
+        textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
     }
 
 }
