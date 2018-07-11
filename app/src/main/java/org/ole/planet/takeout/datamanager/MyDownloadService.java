@@ -79,27 +79,18 @@ public class MyDownloadService extends IntentService {
     }
 
     private void initDownload() {
-
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         Utilities.log("Url " + url);
         Utilities.log("Header " + getHeader());
         Call<ResponseBody> request = retrofitInterface.downloadFile(getHeader(), url);
         try {
-
-
-            //  if (request.execute().body()!=null){
             Response r = request.execute();
             if (r.code() == 200) {
                 downloadFile((ResponseBody) r.body());
             } else {
                 Utilities.log("Error " + r.code() + " " + r.message());
             }
-//            }else{
-//                Utilities.toast(this, "Invalid url or not authorized to download file.");
-//            }
-
         } catch (IOException e) {
-
             e.printStackTrace();
             Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
         }
@@ -110,10 +101,12 @@ public class MyDownloadService extends IntentService {
                 preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
 
-    private void downloadFile(ResponseBody body) throws IOException {
 
-        int count;
-        byte data[] = new byte[1024 * 4];
+
+
+    int count;
+    byte data[] = new byte[1024 * 4];
+    private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
         File outputFile = Utilities.getSDPathFromUrl(url);
@@ -122,13 +115,10 @@ public class MyDownloadService extends IntentService {
         long startTime = System.currentTimeMillis();
         int timeCount = 1;
         while ((count = bis.read(data)) != -1) {
-
             total += count;
             totalFileSize = (int) (fileSize / (Math.pow(1024, 1)));
             double current = Math.round(total / (Math.pow(1024, 1)));
-
             int progress = (int) ((total * 100) / fileSize);
-
             long currentTime = System.currentTimeMillis() - startTime;
 
             Download download = new Download();
@@ -140,14 +130,17 @@ public class MyDownloadService extends IntentService {
                 sendNotification(download);
                 timeCount++;
             }
-
             output.write(data, 0, count);
         }
+        closeStreams(output, bis);
+
+    }
+
+    private void closeStreams(OutputStream output, InputStream bis) throws IOException {
         onDownloadComplete();
         output.flush();
         output.close();
         bis.close();
-
     }
 
     private void sendNotification(Download download) {

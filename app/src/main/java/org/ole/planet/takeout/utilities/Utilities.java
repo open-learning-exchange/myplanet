@@ -3,14 +3,18 @@ package org.ole.planet.takeout.utilities;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
+import org.ole.planet.takeout.datamanager.MyDownloadService;
 
 import java.io.File;
+import java.util.ArrayList;
 
 
 public class Utilities {
@@ -26,6 +30,20 @@ public class Utilities {
         }
         return "";
 
+    }
+
+    public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
+        return settings.getString("url_Scheme", "") + "://" +
+                settings.getString("url_Host", "") + ":" +
+                settings.getInt("url_Port", 0)
+                + "/resources/" + library.getResourceId() + "/" + library.getResourceLocalAddress();
+
+    }
+
+    public static void openDownloadService(Context context, ArrayList urls) {
+        Intent intent = new Intent(context, MyDownloadService.class);
+        intent.putStringArrayListExtra("urls", urls);
+        context.startService(intent);
     }
 
     public static File getSDPathFromUrl(String url) {

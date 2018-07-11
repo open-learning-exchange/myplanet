@@ -30,6 +30,7 @@ import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.datamanager.MyDownloadService;
+import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.text.SimpleDateFormat;
@@ -75,48 +76,15 @@ public class DashboardFragment extends Fragment {
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         declareElements(view);
-        imageButtonOnClickListeners();
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(currentDate());
         registerReceiver();
         return view;
     }
-  
-    public void imageButtonOnClickListeners() {
-        myLibraryImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imageButtonAction("Clicked myLibrary");
-            }
-        });
 
-        myCourseImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imageButtonAction("Clicked myLibrary");
-            }
-        });
 
-        myMeetUpsImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imageButtonAction("Clicked myLibrary");
-            }
-        });
 
-        myTeamsImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                imageButtonAction("Clicked myTeams");
-            }
-        });
-    }
-    public void imageButtonAction(String btnmessage) {
-        Log.e("DF: ", btnmessage);
-        Intent intent = new Intent(getActivity(), PDFReaderActivity.class);
-        startActivity(intent);
-    }
 
     private void declareElements(View view) {
         // Imagebuttons
@@ -191,79 +159,48 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    Integer[] selectedItems;
-
     private void showDownloadDialog() {
-
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
-        final MaterialDialog.Builder builder = new MaterialDialog.Builder(getActivity())
-                .title(R.string.download_suggestion)
-                .positiveText(R.string.download_selected)
-                .negativeText(R.string.txt_cancel)
-                .neutralText(R.string.download_all)
-                .items(getListAsArray(db_myLibrary))
-                .alwaysCallMultiChoiceCallback()
+        DialogUtils.getDowloadDialog(getActivity()).items(getListAsArray(db_myLibrary))
                 .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
                     @Override
                     public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
-                        // selectedItems = which;
                         dialog.setSelectedIndices(which);
                         return true;
                     }
                 }).onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-
-                        downloadFiles(db_myLibrary, dialog.getSelectedIndices());
-                    }
-                }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        downloadAllFiles(db_myLibrary);
-
-                    }
-                });
-        builder.show();
-
-
+            @Override
+            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                downloadFiles(db_myLibrary, dialog.getSelectedIndices());
+            }
+        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
+            @Override
+            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                downloadAllFiles(db_myLibrary);
+            }
+        });
+        DialogUtils.getDowloadDialog(getActivity()).show();
     }
 
     private void downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < db_myLibrary.size(); i++) {
-            urls.add(getUrl(db_myLibrary.get(i)));
+            urls.add(Utilities.getUrl(db_myLibrary.get(i), settings));
         }
-        openDownloadService(urls);
+        Utilities.openDownloadService(getActivity(), urls);
 
     }
 
     private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, Integer[] selectedItems) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.length; i++) {
-            urls.add(getUrl(db_myLibrary.get(selectedItems[i])));
+            urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems[i]), settings));
         }
-        openDownloadService(urls);
-
-
+        Utilities.openDownloadService(getActivity(), urls);
     }
 
-    private void openDownloadService(ArrayList urls) {
-        Intent intent = new Intent(getActivity(), MyDownloadService.class);
-        intent.putStringArrayListExtra("urls", urls);
-        getActivity().startService(intent);
-    }
-
-    private String getUrl(realm_myLibrary library) {
-        return settings.getString("url_Scheme", "") + "://" +
-                settings.getString("url_Host", "") + ":" +
-                settings.getInt("url_Port", 0)
-                + "/resources/" + library.getResourceId() + "/" + library.getResourceLocalAddress()
-                ;
-
-    }
 
     private void registerReceiver() {
-
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MESSAGE_PROGRESS);
@@ -292,7 +229,6 @@ public class DashboardFragment extends Fragment {
         }
         return array;
     }
-
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
         textView.setOnClickListener(new View.OnClickListener() {
