@@ -66,7 +66,7 @@ public class MyDownloadService extends IntentService {
 
         Notification noti = notificationBuilder
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("Download")
+                .setContentTitle("OLE Download")
                 .setContentText("Downloading File...")
                 .setAutoCancel(true).build();
         notificationManager.notify(0, noti);
@@ -124,8 +124,8 @@ public class MyDownloadService extends IntentService {
         while ((count = bis.read(data)) != -1) {
 
             total += count;
-            totalFileSize = (int) (fileSize / (Math.pow(1024, 2)));
-            double current = Math.round(total / (Math.pow(1024, 2)));
+            totalFileSize = (int) (fileSize / (Math.pow(1024, 1)));
+            double current = Math.round(total / (Math.pow(1024, 1)));
 
             int progress = (int) ((total * 100) / fileSize);
 
@@ -154,7 +154,7 @@ public class MyDownloadService extends IntentService {
 
         sendIntent(download);
         notificationBuilder.setProgress(100, download.getProgress(), false);
-        notificationBuilder.setContentText("Downloading file " + download.getCurrentFileSize() + "/" + totalFileSize + " MB");
+        notificationBuilder.setContentText("Downloading file " + download.getCurrentFileSize() + "/" + totalFileSize + " KB");
         notificationManager.notify(0, notificationBuilder.build());
     }
 

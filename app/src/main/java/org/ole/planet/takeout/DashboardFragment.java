@@ -186,7 +186,7 @@ public class DashboardFragment extends Fragment {
                 }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        downloadFiles(db_myLibrary, selectedItems);
+                        downloadAllFiles(db_myLibrary);
 
                     }
                 });
@@ -195,17 +195,29 @@ public class DashboardFragment extends Fragment {
 
     }
 
-    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, Integer[] selectedItems) {
+    private void downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary) {
+        ArrayList urls = new ArrayList();
+        for (int i = 0; i < db_myLibrary.size(); i++) {
+            urls.add(getUrl(db_myLibrary.get(i)));
+        }
+        openDownloadService(urls);
 
+    }
+
+    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, Integer[] selectedItems) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.length; i++) {
             urls.add(getUrl(db_myLibrary.get(selectedItems[i])));
         }
+        openDownloadService(urls);
+
+
+    }
+
+    private void openDownloadService(ArrayList urls) {
         Intent intent = new Intent(getActivity(), MyDownloadService.class);
         intent.putStringArrayListExtra("urls", urls);
         getActivity().startService(intent);
-
-
     }
 
     private String getUrl(realm_myLibrary library) {
@@ -247,7 +259,6 @@ public class DashboardFragment extends Fragment {
         }
         return array;
     }
-
 
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
