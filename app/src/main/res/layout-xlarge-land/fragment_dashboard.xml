@@ -121,7 +121,7 @@
                     android:weightSum="4">
 
                     <ImageButton
-                        android:id="@+id/myLibrary"
+                        android:id="@+id/myLibraryImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"
@@ -181,7 +181,7 @@
                     android:orientation="vertical">
 
                     <ImageButton
-                        android:id="@+id/imageButton2"
+                        android:id="@+id/myCoursesImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"
@@ -226,7 +226,7 @@
                     android:orientation="vertical">
 
                     <ImageButton
-                        android:id="@+id/imageButton4"
+                        android:id="@+id/myMeetUpsImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"
@@ -271,7 +271,7 @@
                     android:orientation="vertical">
 
                     <ImageButton
-                        android:id="@+id/imageButton5"
+                        android:id="@+id/myTeamsImageButton"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         android:layout_weight="2.5"

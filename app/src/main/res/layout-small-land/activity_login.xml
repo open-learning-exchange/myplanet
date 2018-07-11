@@ -28,7 +28,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="4"
-            android:background="@color/ole_blue"
+            android:background="@color/colorPrimary"
             android:gravity="center"
             android:orientation="vertical"
             android:weightSum="5">
@@ -87,17 +87,12 @@
                 android:layout_height="0dp"
                 android:layout_weight="0.5">
 
-                <ImageButton
-                    android:id="@+id/syncOption"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
+                <pl.droidsonroids.gif.GifImageButton
+                    android:id="@+id/syncIcon"
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
                     android:background="@null"
-                    android:maxHeight="16dp"
-                    android:maxWidth="16dp"
-                    android:scaleType="fitCenter"
-                    android:layout_alignParentLeft="true"
-                    app:srcCompat="@drawable/ic_sync_black_16dp" />
+                    android:scaleType="fitCenter" />
 
                 <ImageButton
                     android:id="@+id/imgBtnSetting"

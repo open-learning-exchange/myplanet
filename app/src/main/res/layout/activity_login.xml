@@ -29,7 +29,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="4"
-            android:background="@color/ole_blue"
+            android:background="@color/colorPrimary"
             android:gravity="center"
             android:orientation="vertical"
             android:weightSum="5">
@@ -86,26 +86,26 @@
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_weight="0.1">
 
-                <ImageButton
-                    android:id="@+id/syncOption"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
-                    android:paddingLeft="10dp"
-                    android:paddingTop="6dp"
+                <pl.droidsonroids.gif.GifImageButton
+                    android:id="@+id/syncIcon"
+                    android:layout_width="25dp"
+                    android:layout_height="25dp"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginTop="6dp"
                     android:background="@null"
-                    app:srcCompat="@drawable/ic_sync_black_24dp" />
+                    android:scaleType="fitCenter" />
 
                 <ImageButton
                     android:id="@+id/imgBtnSetting"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
+                    android:background="@null"
                     android:paddingRight="10dp"
                     android:paddingTop="6dp"
-                    android:background="@null"
                     app:srcCompat="@drawable/ic_settings_black_24dp" />
 
             </RelativeLayout>
@@ -121,9 +121,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:gravity="center"
+                    android:orientation="vertical"
                     android:paddingLeft="40dp"
-                    android:paddingRight="40dp"
-                    android:orientation="vertical">
+                    android:paddingRight="40dp">
 
                     <android.support.design.widget.TextInputLayout
                         android:id="@+id/input_layout_name"
