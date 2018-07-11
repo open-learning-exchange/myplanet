@@ -147,11 +147,12 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    Integer[] selectedItems;
 
     private void showDownloadDialog() {
-        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
 
-        MaterialDialog.Builder builder = new MaterialDialog.Builder(getActivity())
+        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
+        final MaterialDialog.Builder builder = new MaterialDialog.Builder(getActivity())
                 .title(R.string.download_suggestion)
                 .positiveText(R.string.download_selected)
                 .negativeText(R.string.txt_cancel)
@@ -160,12 +161,27 @@ public class DashboardFragment extends Fragment {
                 .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
                     @Override
                     public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
-                        Log.d("Dashboardfragment", "onSelection: " + text.length);
+                        selectedItems = which;
                         return true;
+                    }
+                }).onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        downloadFiles(db_myLibrary, selectedItems);
+                    }
+                }).onNeutral(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        downloadFiles(db_myLibrary, selectedItems);
+
                     }
                 });
         builder.show();
 
+
+    }
+
+    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, Integer[] selectedItems) {
 
     }
 
