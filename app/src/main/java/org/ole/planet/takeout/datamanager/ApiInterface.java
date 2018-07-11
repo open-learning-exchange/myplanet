@@ -13,15 +13,14 @@ import retrofit2.http.POST;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import retrofit2.http.Streaming;
 import retrofit2.http.Url;
 
-/**
- * Created by rowsun on 5/9/17.
- */
 
 public interface ApiInterface {
     //@Headers("Authorization:Basic dmk6aXY=")
     @GET
+    @Streaming
     Call<ResponseBody> downloadFile(@Header("Authorization") String header, @Url String fileUrl);
 
 }
