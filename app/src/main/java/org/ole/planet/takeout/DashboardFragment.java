@@ -84,8 +84,6 @@ public class DashboardFragment extends Fragment {
     }
 
 
-
-
     private void declareElements(View view) {
         // Imagebuttons
         myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
@@ -161,25 +159,29 @@ public class DashboardFragment extends Fragment {
 
     private void showDownloadDialog() {
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
-        DialogUtils.getDowloadDialog(getActivity()).items(getListAsArray(db_myLibrary))
-                .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
-                    @Override
-                    public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
-                        dialog.setSelectedIndices(which);
-                        return true;
-                    }
-                }).onPositive(new MaterialDialog.SingleButtonCallback() {
-            @Override
-            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                downloadFiles(db_myLibrary, dialog.getSelectedIndices());
-            }
-        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-            @Override
-            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                downloadAllFiles(db_myLibrary);
-            }
-        });
-        DialogUtils.getDowloadDialog(getActivity()).show();
+        Utilities.log("List size " + db_myLibrary.size());
+        if (!db_myLibrary.isEmpty()) {
+            MaterialDialog.Builder di = DialogUtils.getDowloadDialog(getActivity());
+            di.items(getListAsArray(db_myLibrary))
+                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
+                        @Override
+                        public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
+                            dialog.setSelectedIndices(which);
+                            return true;
+                        }
+                    }).onPositive(new MaterialDialog.SingleButtonCallback() {
+                @Override
+                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                    downloadFiles(db_myLibrary, dialog.getSelectedIndices());
+                }
+            }).onNeutral(new MaterialDialog.SingleButtonCallback() {
+                @Override
+                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                    downloadAllFiles(db_myLibrary);
+                }
+            });
+            di.show();
+        }
     }
 
     private void downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary) {
