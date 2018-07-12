@@ -95,7 +95,8 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting.setOnClickListener(new View.OnClickListener() { //Settings button
             @Override
             public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+                builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
                         .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
@@ -105,15 +106,15 @@ public class LoginActivity extends SyncActivity {
                                 isServerReachable(serverUrl.getText().toString());
                             }
                         }).onNegative(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(MaterialDialog dialog, DialogAction which) {
-                            }
-                        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                    @Override
+                    public void onClick(MaterialDialog dialog, DialogAction which) {
+                    }
+                }).onNeutral(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
+                    }
+                });
                 settingDialog(builder);
             }
         });
