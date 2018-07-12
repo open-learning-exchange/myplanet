@@ -104,13 +104,7 @@ public class LoginActivity extends SyncActivity {
                                 dialog.dismiss();
                                 isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url));
                             }
-                        })
-                        .onNegative(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(MaterialDialog dialog, DialogAction which) {
-                            }
-                        })
-                        .onNeutral(new MaterialDialog.SingleButtonCallback() {
+                        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
