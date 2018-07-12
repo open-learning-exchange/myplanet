@@ -191,12 +191,6 @@ public class Dashboard extends AppCompatActivity {
 
         }
     }
-
-    /**
-     * TODO: Save selected response for radio-buttons
-     * TODO: Disable Submit button before the question is added
-     */
-
     public void feedbackDialog() {
         MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).title(R.string.menu_feedback).customView(R.layout.dialog_feedback, true)
                 .positiveText(R.string.button_submit).negativeText(R.string.button_cancel)
