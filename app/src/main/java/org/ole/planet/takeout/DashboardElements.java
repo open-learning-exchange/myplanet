@@ -35,18 +35,25 @@ public class DashboardElements extends AppCompatActivity {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (choice1.getCheckedRadioButtonId() == -1 || choice2.getCheckedRadioButtonId() == -1 || s.toString().length() == 0) {
-                    submitButton.setEnabled(false);
-                } else {
-                    submitButton.setEnabled(true);
+                if (s.toString().length() != 0) {
+                    if (choice1.getCheckedRadioButtonId() == -1 || choice2.getCheckedRadioButtonId() == -1) {
+                        submitButton.setEnabled(false);
+                    } else {
+                        submitButton.setEnabled(true);
+                    }
                 }
             }
 
             @Override
             public void afterTextChanged(Editable s) {
                 if (s.toString().length() != 0) {
-                    submitButton.setEnabled(true);
+                    if (choice1.getCheckedRadioButtonId() == -1 || choice2.getCheckedRadioButtonId() == -1) {
+                        submitButton.setEnabled(false);
+                    } else {
+                        submitButton.setEnabled(true);
+                    }
                 }
+
             }
         });
     }

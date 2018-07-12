@@ -102,8 +102,7 @@ public class LoginActivity extends SyncActivity {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 dialog.dismiss();
-                                serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-                                isServerReachable(serverUrl.getText().toString());
+                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url));
                             }
                         }).onNegative(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -219,7 +218,9 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
     }
 
-    public boolean isServerReachable(final String url) {
+    public boolean isServerReachable(EditText textUrl) {
+        serverUrl = textUrl;
+        final String url = serverUrl.getText().toString();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
