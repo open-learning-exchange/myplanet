@@ -4,40 +4,33 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/feedback_qs_1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical">
+        android:text="Is your Feedback urgent?" />
 
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:layout_weight="1">
 
-        <TextView
-            android:id="@+id/feedback_qs_1"
-            android:layout_width="match_parent"
+        <RadioButton
+            android:id="@+id/qs_yes"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Is your Feedback urgent?" />
+            android:layout_weight="0.5"
+            android:text="Yes" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/qs_no"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            android:text="No" />
 
-            <RadioButton
-                android:id="@+id/qs_yes"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Yes" />
-
-            <RadioButton
-                android:id="@+id/qs_no"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="No" />
-        </LinearLayout>
-
-    </LinearLayout>
+    </RadioGroup>
 
     <TextView
         android:id="@+id/feedback_qs_2"
@@ -45,7 +38,7 @@
         android:layout_height="wrap_content"
         android:text="What type of Feedback is it?" />
 
-    <LinearLayout
+    <RadioGroup
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal">
@@ -70,7 +63,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Suggestion" />
-    </LinearLayout>
+
+    </RadioGroup>
 
     <TextView
         android:id="@+id/feedback_prompt"
