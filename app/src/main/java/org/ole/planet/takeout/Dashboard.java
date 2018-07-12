@@ -1,14 +1,19 @@
 package org.ole.planet.takeout;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,6 +29,8 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+import org.ole.planet.takeout.utilities.Utilities;
+
 import java.util.ArrayList;
 
 
@@ -31,6 +38,8 @@ public class Dashboard extends AppCompatActivity {
     private Drawer result = null;
     private Toolbar mTopToolbar;
     AccountHeader headerResult;
+    public static final String MESSAGE_PROGRESS = "message_progress";
+    private static final int PERMISSION_REQUEST_CODE = 111;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,8 +62,44 @@ public class Dashboard extends AppCompatActivity {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
 
+        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
+        }
         openCallFragment(new DashboardFragment());
     }
+
+
+    public void requestPermission(String strPermission, int perCode) {
+        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
+    }
+
+
+    public boolean checkPermission(String strPermission) {
+        int result = ContextCompat.checkSelfPermission(this, strPermission);
+        if (result == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 111:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
+                } else {
+                    Utilities.toast(this, "Download Function will not work, please grant the permission.");
+                    requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
