@@ -204,9 +204,9 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         }
     }
 
-    public void triggerInsert(String resourceId, String resources) {
+    public void triggerInsert(String categroryId, String categoryDBName) {
         stringArray[0] = shelfDoc.getId();
-        stringArray[1] = resourceId;
-        stringArray[2] = resources;
+        stringArray[1] = categroryId;
+        stringArray[2] = categoryDBName;
     }
 }

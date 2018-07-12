@@ -116,7 +116,17 @@
                     android:background="@android:color/holo_red_light"
                     android:gravity="center"
                     android:orientation="vertical">
-
+                    <ImageButton
+                        android:id="@+id/myLibrary"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="2.5"
+                        android:background="@null"
+                        android:cropToPadding="false"
+                        android:padding="20dp"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone"
+                        app:srcCompat="@drawable/library" />
                     <TextView
                         android:id="@+id/textView3"
                         android:layout_width="wrap_content"
@@ -166,6 +176,16 @@
                     android:gravity="center"
                     android:orientation="vertical">
 
+                    <ImageButton
+                        android:id="@+id/imageButton2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="0dp"
+                        android:layout_weight="2.5"
+                        android:background="@null"
+                        android:padding="20dp"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone"
+                        app:srcCompat="@drawable/courses" />
                     <TextView
                         android:id="@+id/textView4"
                         android:layout_width="wrap_content"
@@ -199,7 +219,15 @@
                     android:background="@android:color/holo_purple"
                     android:gravity="center"
                     android:orientation="vertical">
-
+                    <ImageButton
+                        android:id="@+id/imageButton4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="0dp"
+                        android:layout_weight="2.5"
+                        android:background="@null"
+                        android:padding="20dp"
+                        android:scaleType="fitCenter"
+                        app:srcCompat="@drawable/meetups" />
                     <TextView
                         android:id="@+id/textView5"
                         android:layout_width="wrap_content"
@@ -234,6 +262,16 @@
                     android:gravity="center"
                     android:orientation="vertical">
 
+                    <ImageButton
+                        android:id="@+id/imageButton5"
+                        android:layout_width="wrap_content"
+                        android:layout_height="0dp"
+                        android:layout_weight="2.5"
+                        android:background="@null"
+                        android:padding="20dp"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone"
+                        app:srcCompat="@drawable/team" />
                     <TextView
                         android:id="@+id/textView6"
                         android:layout_width="wrap_content"
