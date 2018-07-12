@@ -104,16 +104,18 @@ public class LoginActivity extends SyncActivity {
                                 dialog.dismiss();
                                 isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url));
                             }
-                        }).onNegative(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(MaterialDialog dialog, DialogAction which) {
-                    }
-                }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                        })
+                        .onNegative(new MaterialDialog.SingleButtonCallback() {
+                            @Override
+                            public void onClick(MaterialDialog dialog, DialogAction which) {
+                            }
+                        })
+                        .onNeutral(new MaterialDialog.SingleButtonCallback() {
+                            @Override
+                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                                Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
+                            }
+                        });
                 settingDialog(builder);
             }
         });
@@ -219,8 +221,8 @@ public class LoginActivity extends SyncActivity {
     }
 
     public boolean isServerReachable(EditText textUrl) {
-        serverUrl = textUrl;
-        final String url = serverUrl.getText().toString();
+        //serverUrl = textUrl;
+        final String url = textUrl.getText().toString();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
