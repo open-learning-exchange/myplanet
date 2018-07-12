@@ -26,7 +26,7 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
-abstract class SyncActivity extends ProcessUserData {
+public abstract class SyncActivity extends ProcessUserData {
     private TextView syncDate;
     private TextView intervalLabel;
     private Spinner spinner;

@@ -33,6 +33,8 @@
             android:label="@string/title_activity_dashboard"
             android:theme="@style/FullscreenTheme" />
         <activity android:name=".PDFReaderActivity"></activity>
+
+        <service android:name=".datamanager.MyDownloadService" />
     </application>
 
 </manifest>
