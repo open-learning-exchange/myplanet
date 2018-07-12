@@ -11,23 +11,24 @@
         android:text="Is your Feedback urgent?" />
 
     <RadioGroup
+        android:id="@+id/choice1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="horizontal"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
         <RadioButton
             android:id="@+id/qs_yes"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="0.5"
+            android:layout_weight="1"
             android:text="Yes" />
 
         <RadioButton
             android:id="@+id/qs_no"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="0.5"
+            android:layout_weight="1"
             android:text="No" />
 
     </RadioGroup>
@@ -39,6 +40,7 @@
         android:text="What type of Feedback is it?" />
 
     <RadioGroup
+        android:id="@+id/choice2"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal">

@@ -22,7 +22,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.URLUtil;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -46,6 +48,9 @@ public class Dashboard extends AppCompatActivity {
     AccountHeader headerResult;
     public static final String MESSAGE_PROGRESS = "message_progress";
     private static final int PERMISSION_REQUEST_CODE = 111;
+
+    private EditText feedbackText;
+    private RadioGroup choice1, choice2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -208,7 +213,34 @@ public class Dashboard extends AppCompatActivity {
                     }
                 });
         MaterialDialog dialog = feedback_dialog.build();
+        disableSubmit(dialog);
         dialog.show();
+    }
+
+    public void disableSubmit(MaterialDialog dialog) {
+        final View submitButton = dialog.getActionButton(DialogAction.POSITIVE);
+        submitButton.setEnabled(false);
+        feedbackText = dialog.getCustomView().findViewById(R.id.user_feedback);
+        choice1 = dialog.getCustomView().findViewById(R.id.choice1);
+        choice2 = dialog.getCustomView().findViewById(R.id.choice2);
+        feedbackText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (choice1.getCheckedRadioButtonId() == -1 || choice2.getCheckedRadioButtonId() == -1 || s.toString().trim().length() == 0) {
+                    submitButton.setEnabled(false);
+                } else {
+                    submitButton.setEnabled(true);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
     }
 
 
