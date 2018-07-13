@@ -81,7 +81,7 @@ public class DashboardFragment extends Fragment {
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
-        txtCurDate.setText(currentDate());
+        txtCurDate.setText(Utilities.currentDate());
         setUpProgressDialog();
         registerReceiver();
         return view;
@@ -115,12 +115,6 @@ public class DashboardFragment extends Fragment {
         showDownloadDialog();
     }
 
-    private String currentDate() {
-        Calendar c = Calendar.getInstance();
-        SimpleDateFormat dateformat = new SimpleDateFormat("dd-MMM-yyyy");
-        String datetime = dateformat.format(c.getTime());
-        return datetime;
-    }
 
     public int offlineVisits() {
         //realmConfig("offlineActivities");
@@ -179,7 +173,7 @@ public class DashboardFragment extends Fragment {
         Utilities.log("List size " + db_myLibrary.size());
         if (!db_myLibrary.isEmpty()) {
             MaterialDialog.Builder di = DialogUtils.getDowloadDialog(getActivity());
-            di.items(getListAsArray(db_myLibrary))
+            di.items(realm_myLibrary.getListAsArray(db_myLibrary))
                     .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
                         @Override
                         public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
@@ -226,38 +220,25 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-
     private void registerReceiver() {
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MESSAGE_PROGRESS);
         bManager.registerReceiver(broadcastReceiver, intentFilter);
-
     }
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-
             if (intent.getAction().equals(MESSAGE_PROGRESS)) {
-
                 Download download = intent.getParcelableExtra("download");
                 if (prgDialog != null) {
                     setProgress(download);
                 }
-
             }
         }
     };
 
-
-    private CharSequence[] getListAsArray(RealmResults<realm_myLibrary> db_myLibrary) {
-        CharSequence[] array = new CharSequence[db_myLibrary.size()];
-        for (int i = 0; i < db_myLibrary.size(); i++) {
-            array[i] = db_myLibrary.get(i).getTitle();
-        }
-        return array;
-    }
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
         textView.setOnClickListener(new View.OnClickListener() {
