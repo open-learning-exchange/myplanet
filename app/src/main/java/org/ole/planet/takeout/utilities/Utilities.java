@@ -23,7 +23,7 @@ public class Utilities {
         Log.d("OLE ", "log: " + message);
     }
 
-    private static String getFileNameFromUrl(String url) {
+    public static String getFileNameFromUrl(String url) {
         try {
             return url.substring(url.lastIndexOf("/") + 1);
         } catch (Exception e) {

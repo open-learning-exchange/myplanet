@@ -47,6 +47,7 @@ public class MyDownloadService extends IntentService {
     private SharedPreferences preferences;
     private String url;
     private ArrayList<String> urls;
+    private int currentIndex = 0;
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -73,6 +74,7 @@ public class MyDownloadService extends IntentService {
         urls = intent.getStringArrayListExtra("urls");
         for (int i = 0; i < urls.size(); i++) {
             url = urls.get(i);
+            currentIndex = i;
             initDownload();
         }
 
@@ -102,10 +104,9 @@ public class MyDownloadService extends IntentService {
     }
 
 
-
-
     int count;
     byte data[] = new byte[1024 * 4];
+
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
@@ -122,6 +123,7 @@ public class MyDownloadService extends IntentService {
             long currentTime = System.currentTimeMillis() - startTime;
 
             Download download = new Download();
+            download.setFileName(Utilities.getFileNameFromUrl(url));
             download.setTotalFileSize(totalFileSize);
 
             if (currentTime > 1000 * timeCount) {
@@ -144,7 +146,7 @@ public class MyDownloadService extends IntentService {
     }
 
     private void sendNotification(Download download) {
-
+        download.setFileName("Downloading : " + Utilities.getFileNameFromUrl(url));
         sendIntent(download);
         notificationBuilder.setProgress(100, download.getProgress(), false);
         notificationBuilder.setContentText("Downloading file " + download.getCurrentFileSize() + "/" + totalFileSize + " KB");
@@ -152,7 +154,6 @@ public class MyDownloadService extends IntentService {
     }
 
     private void sendIntent(Download download) {
-
         Intent intent = new Intent(Dashboard.MESSAGE_PROGRESS);
         intent.putExtra("download", download);
         LocalBroadcastManager.getInstance(MyDownloadService.this).sendBroadcast(intent);
@@ -163,6 +164,9 @@ public class MyDownloadService extends IntentService {
         Download download = new Download();
         download.setProgress(100);
         sendIntent(download);
+        if (currentIndex == urls.size() - 1) {
+            download.setCompleteAll(true);
+        }
         notificationManager.cancel(0);
         notificationBuilder.setProgress(0, 0, false);
         notificationBuilder.setContentText("File Downloaded");

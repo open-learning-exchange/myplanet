@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -12,6 +13,7 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -64,6 +66,7 @@ public class DashboardFragment extends Fragment {
     TextView txtFullName, txtCurDate, txtVisits;
     String fullName;
     Realm mRealm;
+    ProgressDialog prgDialog;
 
     public DashboardFragment() {
         //init dashboard
@@ -79,8 +82,22 @@ public class DashboardFragment extends Fragment {
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(currentDate());
+        setUpProgressDialog();
         registerReceiver();
         return view;
+    }
+
+    private void setUpProgressDialog() {
+        prgDialog = new ProgressDialog(getActivity());
+        prgDialog.setTitle("Downloading file...");
+        prgDialog.setMax(100);
+        prgDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Dismiss", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                prgDialog.dismiss();
+            }
+        });
     }
 
 
@@ -189,16 +206,24 @@ public class DashboardFragment extends Fragment {
         for (int i = 0; i < db_myLibrary.size(); i++) {
             urls.add(Utilities.getUrl(db_myLibrary.get(i), settings));
         }
-        Utilities.openDownloadService(getActivity(), urls);
+        startDownload(urls);
 
     }
+
 
     private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, Integer[] selectedItems) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.length; i++) {
             urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems[i]), settings));
         }
-        Utilities.openDownloadService(getActivity(), urls);
+        startDownload(urls);
+    }
+
+    private void startDownload(ArrayList urls) {
+        if (!urls.isEmpty()) {
+            prgDialog.show();
+            Utilities.openDownloadService(getActivity(), urls);
+        }
     }
 
 
@@ -217,8 +242,10 @@ public class DashboardFragment extends Fragment {
             if (intent.getAction().equals(MESSAGE_PROGRESS)) {
 
                 Download download = intent.getParcelableExtra("download");
-                Utilities.log("Progress " + download.getProgress());
-                // TODO: 7/11/18 Show Progress in UI
+                if (prgDialog != null) {
+                    setProgress(download);
+                }
+
             }
         }
     };
@@ -255,4 +282,13 @@ public class DashboardFragment extends Fragment {
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
     }
 
+    public void setProgress(Download download) {
+        prgDialog.setProgress(download.getProgress());
+        if (!TextUtils.isEmpty(download.getFileName())) {
+            prgDialog.setTitle(download.getFileName());
+        }
+        if (download.isCompleteAll()) {
+            prgDialog.setTitle("All files downloaded successfully");
+        }
+    }
 }
