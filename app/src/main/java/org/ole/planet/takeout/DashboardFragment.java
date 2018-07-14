@@ -68,6 +68,9 @@ public class DashboardFragment extends Fragment {
     Realm mRealm;
     ProgressDialog prgDialog;
 
+    ArrayList<Integer> selectedItemsList = new ArrayList<>();
+
+
     public DashboardFragment() {
         //init dashboard
     }
@@ -169,58 +172,25 @@ public class DashboardFragment extends Fragment {
     }
 
     private void showDownloadDialog() {
-        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
-        Utilities.log("List size " + db_myLibrary.size());
-        final ArrayList<Integer> selectedItemsList = new ArrayList<>();
+       final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
         if (!db_myLibrary.isEmpty()) {
-          new AlertDialog.Builder(getActivity())
-                  .setTitle(R.string.download_suggestion)
-                    .setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
+            new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i, boolean b) {
-                            if (b) {
-                                selectedItemsList.add(i);
-                            } else if (selectedItemsList.contains(i)) {
-                                selectedItemsList.remove(i);
-                            }
-
+                            DialogUtils.handleCheck(selectedItemsList, b, i);
                         }
-                    })
-                    .setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
+                    }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             downloadFiles(db_myLibrary, selectedItemsList);
 
                         }
-                    })
-                    .setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
+                    }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             downloadAllFiles(db_myLibrary);
                         }
-                    })
-                    .setNegativeButton(R.string.txt_cancel, null).show();
-
-//            MaterialDialog.Builder di = DialogUtils.getDowloadDialog(getActivity());
-//            di.items(realm_myLibrary.getListAsArray(db_myLibrary))
-//                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
-//                        @Override
-//                        public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
-//                            dialog.setSelectedIndices(which);
-//                            return true;
-//                        }
-//                    }).onPositive(new MaterialDialog.SingleButtonCallback() {
-//                @Override
-//                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-//                    downloadFiles(db_myLibrary, dialog.getSelectedIndices());
-//                }
-//            }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-//                @Override
-//                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-//                    downloadAllFiles(db_myLibrary);
-//                }
-//            });
-//            di.show();
+                    }).setNegativeButton(R.string.txt_cancel, null).show();
         }
     }
 
