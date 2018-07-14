@@ -171,29 +171,85 @@ public class DashboardFragment extends Fragment {
     private void showDownloadDialog() {
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
         Utilities.log("List size " + db_myLibrary.size());
+        final ArrayList<Integer> selectedItemsList = new ArrayList<>();
         if (!db_myLibrary.isEmpty()) {
-            MaterialDialog.Builder di = DialogUtils.getDowloadDialog(getActivity());
-            di.items(realm_myLibrary.getListAsArray(db_myLibrary))
-                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
+          new AlertDialog.Builder(getActivity())
+                  .setTitle(R.string.download_suggestion)
+                    .setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
                         @Override
-                        public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
-                            dialog.setSelectedIndices(which);
-                            return true;
+                        public void onClick(DialogInterface dialogInterface, int i, boolean b) {
+                            if (b) {
+                                selectedItemsList.add(i);
+                            } else if (selectedItemsList.contains(i)) {
+                                selectedItemsList.remove(i);
+                            }
+
                         }
-                    }).onPositive(new MaterialDialog.SingleButtonCallback() {
-                @Override
-                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                    downloadFiles(db_myLibrary, dialog.getSelectedIndices());
-                }
-            }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                @Override
-                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                    downloadAllFiles(db_myLibrary);
-                }
-            });
-            di.show();
+                    })
+                    .setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            downloadFiles(db_myLibrary, selectedItemsList);
+
+                        }
+                    })
+                    .setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            downloadAllFiles(db_myLibrary);
+                        }
+                    })
+                    .setNegativeButton(R.string.txt_cancel, null).show();
+
+//            MaterialDialog.Builder di = DialogUtils.getDowloadDialog(getActivity());
+//            di.items(realm_myLibrary.getListAsArray(db_myLibrary))
+//                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
+//                        @Override
+//                        public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
+//                            dialog.setSelectedIndices(which);
+//                            return true;
+//                        }
+//                    }).onPositive(new MaterialDialog.SingleButtonCallback() {
+//                @Override
+//                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+//                    downloadFiles(db_myLibrary, dialog.getSelectedIndices());
+//                }
+//            }).onNeutral(new MaterialDialog.SingleButtonCallback() {
+//                @Override
+//                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+//                    downloadAllFiles(db_myLibrary);
+//                }
+//            });
+//            di.show();
         }
     }
+
+//    private void showDownloadDialog() {
+//        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
+//        Utilities.log("List size " + db_myLibrary.size());
+//        if (!db_myLibrary.isEmpty()) {
+//            MaterialDialog.Builder di = DialogUtils.getDowloadDialog(getActivity());
+//            di.items(realm_myLibrary.getListAsArray(db_myLibrary))
+//                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
+//                        @Override
+//                        public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
+//                            dialog.setSelectedIndices(which);
+//                            return true;
+//                        }
+//                    }).onPositive(new MaterialDialog.SingleButtonCallback() {
+//                @Override
+//                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+//                    downloadFiles(db_myLibrary, dialog.getSelectedIndices());
+//                }
+//            }).onNeutral(new MaterialDialog.SingleButtonCallback() {
+//                @Override
+//                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+//                    downloadAllFiles(db_myLibrary);
+//                }
+//            });
+//            di.show();
+//        }
+//    }
 
     private void downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary) {
         ArrayList urls = new ArrayList();
@@ -205,10 +261,10 @@ public class DashboardFragment extends Fragment {
     }
 
 
-    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, Integer[] selectedItems) {
+    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, ArrayList<Integer> selectedItems) {
         ArrayList urls = new ArrayList();
-        for (int i = 0; i < selectedItems.length; i++) {
-            urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems[i]), settings));
+        for (int i = 0; i < selectedItems.size(); i++) {
+            urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems.get(i)), settings));
         }
         startDownload(urls);
     }
