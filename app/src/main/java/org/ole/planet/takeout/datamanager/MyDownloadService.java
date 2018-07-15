@@ -9,14 +9,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Environment;
+import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Base64;
 import android.widget.Toast;
 
 
+import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Dashboard;
 import org.ole.planet.takeout.Data.Download;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -29,6 +32,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+import io.realm.Realm;
+import io.realm.RealmConfiguration;
 import okhttp3.ResponseBody;
 
 import retrofit2.Call;
@@ -48,6 +53,7 @@ public class MyDownloadService extends IntentService {
     private String url;
     private ArrayList<String> urls;
     private int currentIndex = 0;
+    private Realm mRealm;
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -72,6 +78,7 @@ public class MyDownloadService extends IntentService {
                 .setAutoCancel(true).build();
         notificationManager.notify(0, noti);
         urls = intent.getStringArrayListExtra("urls");
+        realmConfig();
         for (int i = 0; i < urls.size(); i++) {
             url = urls.get(i);
             currentIndex = i;
@@ -160,7 +167,7 @@ public class MyDownloadService extends IntentService {
     }
 
     private void onDownloadComplete() {
-
+        changeOfflineStatus();
         Download download = new Download();
         download.setProgress(100);
         sendIntent(download);
@@ -172,6 +179,31 @@ public class MyDownloadService extends IntentService {
         notificationBuilder.setContentText("File Downloaded");
         notificationManager.notify(0, notificationBuilder.build());
 
+    }
+
+    private void changeOfflineStatus() {
+        final String currentFileName = Utilities.getFileNameFromUrl(url);
+        mRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(@NonNull Realm realm) {
+                realm_myLibrary obj = realm.where(realm_myLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
+                if (obj != null) {
+                    obj.setResourceOffline(true);
+                }
+                Utilities.log("Status Changed");
+            }
+        });
+    }
+
+    public void realmConfig() {
+        Realm.init(this);
+        RealmConfiguration config = new RealmConfiguration.Builder()
+                .name(Realm.DEFAULT_REALM_NAME)
+                .deleteRealmIfMigrationNeeded()
+                .schemaVersion(4)
+                .build();
+        Realm.setDefaultConfiguration(config);
+        mRealm = Realm.getInstance(config);
     }
 
     @Override
