@@ -52,9 +52,7 @@ public class Dashboard extends AppCompatActivity{
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-            LoadFragment("DashboardFragment");
-        //openCallFragment(new DashboardFragment());
-
+        LoadFragment("DashboardFragment");
     }
 
     @Override
@@ -121,7 +119,7 @@ public class Dashboard extends AppCompatActivity{
     Fragment newFragment;
     FragmentTransaction fragmentTransaction;
 
-    private void menuAction(int selectedMenuId) {
+   private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_home:
                 LoadFragment("DashboardFragment");
@@ -133,10 +131,10 @@ public class Dashboard extends AppCompatActivity{
                 LoadFragment("MyMeetUpsFragment");
                 break;
             case R.string.menu_surveys:
-                LoadFragment("MySurveyFragment");
+                LoadFragment("MySurveysFragment");
                 break;
             case R.string.menu_courses:
-                LoadFragment("MyCourseFragment");
+                LoadFragment("MyCoursesFragment");
                 break;
             default:
                 LoadFragment("DashboardFragment");
