@@ -52,7 +52,7 @@ public class Dashboard extends AppCompatActivity {
 
         headerResult = getAccountHeader();
         createDrawer();
-        result.getStickyFooter().setPadding(0,0,0,0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
+        result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -231,7 +231,13 @@ public class Dashboard extends AppCompatActivity {
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {
-        return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(blueDrawable);
+        return new PrimaryDrawerItem().withName(iconText)
+                .withIcon(drawable)
+                .withIconColor(getResources().getColor(R.color.textColorPrimary))
+                .withTextColor(getResources().getColor(R.color.textColorPrimary))
+                .withSelectedIconColor(getResources().getColor(R.color.primary))
+                .withIconTintingEnabled(true);
+        //.withSelectedIcon(blueDrawable) .withIconTintingEnabled(true)
     }
 
     @Override
