@@ -14,6 +14,7 @@ public class Download implements Parcelable {
     private int currentFileSize;
     private int totalFileSize;
     private boolean completeAll;
+    private boolean failed;
 
     public boolean isCompleteAll() {
         return completeAll;
@@ -61,6 +62,14 @@ public class Download implements Parcelable {
         return 0;
     }
 
+    public boolean isFailed() {
+        return failed;
+    }
+
+    public void setFailed(boolean failed) {
+        this.failed = failed;
+    }
+
     @Override
     public void writeToParcel(Parcel dest, int flags) {
 
@@ -69,6 +78,7 @@ public class Download implements Parcelable {
         dest.writeInt(currentFileSize);
         dest.writeInt(totalFileSize);
         dest.writeByte((byte) (completeAll ? 1 : 0));
+        dest.writeByte((byte) (failed ? 1 : 0));
     }
 
 
@@ -78,6 +88,7 @@ public class Download implements Parcelable {
         currentFileSize = in.readInt();
         totalFileSize = in.readInt();
         completeAll = in.readByte() != 0;
+        failed = in.readByte() != 0;
     }
 
     public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {

@@ -1,5 +1,6 @@
 package org.ole.planet.takeout.utilities;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.support.v7.app.AlertDialog;
 
@@ -18,7 +19,6 @@ public class DialogUtils {
                 .negativeText(R.string.txt_cancel)
                 .neutralText(R.string.download_all)
                 .alwaysCallMultiChoiceCallback();
-
     }
 
     public static void handleCheck(ArrayList<Integer> selectedItemsList, boolean b, int i) {
@@ -27,6 +27,11 @@ public class DialogUtils {
         } else if (selectedItemsList.contains(i)) {
             selectedItemsList.remove(i);
         }
+    }
 
+    public static void showError(ProgressDialog prgDialog, String message) {
+        prgDialog.setTitle(message);
+        if (prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE) != null)
+            prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE).setEnabled(false);
     }
 }

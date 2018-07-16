@@ -41,7 +41,6 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 
 public class MyDownloadService extends IntentService {
-
     public MyDownloadService() {
         super("Download Service");
     }
@@ -54,23 +53,22 @@ public class MyDownloadService extends IntentService {
     private ArrayList<String> urls;
     private int currentIndex = 0;
     private Realm mRealm;
+    private Call<ResponseBody> request;
+    private boolean completeAll;
 
     @Override
     protected void onHandleIntent(Intent intent) {
-
         preferences = getApplicationContext().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (urls == null) {
             stopSelf();
         }
         notificationBuilder = new NotificationCompat.Builder(this, "11");
-
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             int importance = NotificationManager.IMPORTANCE_LOW;
             NotificationChannel notificationChannel = new NotificationChannel("11", "ole", importance);
             notificationManager.createNotificationChannel(notificationChannel);
         }
-
         Notification noti = notificationBuilder
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("OLE Download")
@@ -84,25 +82,30 @@ public class MyDownloadService extends IntentService {
             currentIndex = i;
             initDownload();
         }
-
     }
 
     private void initDownload() {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-        Utilities.log("Url " + url);
-        Utilities.log("Header " + getHeader());
-        Call<ResponseBody> request = retrofitInterface.downloadFile(getHeader(), url);
+        request = retrofitInterface.downloadFile(getHeader(), url);
         try {
             Response r = request.execute();
             if (r.code() == 200) {
                 downloadFile((ResponseBody) r.body());
             } else {
-                Utilities.log("Error " + r.code() + " " + r.message());
+                downloadFiled();
             }
         } catch (IOException e) {
+            downloadFiled();
             e.printStackTrace();
-            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void downloadFiled() {
+        Download d = new Download();
+        completeAll = false;
+        stopSelf();
+        d.setFailed(true);
+        sendIntent(d);
     }
 
     public String getHeader() {
@@ -113,11 +116,12 @@ public class MyDownloadService extends IntentService {
 
     int count;
     byte data[] = new byte[1024 * 4];
+    File outputFile;
 
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
-        File outputFile = Utilities.getSDPathFromUrl(url);
+        outputFile = Utilities.getSDPathFromUrl(url);
         OutputStream output = new FileOutputStream(outputFile);
         long total = 0;
         long startTime = System.currentTimeMillis();
@@ -128,11 +132,9 @@ public class MyDownloadService extends IntentService {
             double current = Math.round(total / (Math.pow(1024, 1)));
             int progress = (int) ((total * 100) / fileSize);
             long currentTime = System.currentTimeMillis() - startTime;
-
             Download download = new Download();
             download.setFileName(Utilities.getFileNameFromUrl(url));
             download.setTotalFileSize(totalFileSize);
-
             if (currentTime > 1000 * timeCount) {
                 download.setCurrentFileSize((int) current);
                 download.setProgress(progress);
@@ -142,7 +144,6 @@ public class MyDownloadService extends IntentService {
             output.write(data, 0, count);
         }
         closeStreams(output, bis);
-
     }
 
     private void closeStreams(OutputStream output, InputStream bis) throws IOException {
@@ -172,13 +173,29 @@ public class MyDownloadService extends IntentService {
         download.setProgress(100);
         sendIntent(download);
         if (currentIndex == urls.size() - 1) {
+            completeAll = true;
             download.setCompleteAll(true);
         }
         notificationManager.cancel(0);
         notificationBuilder.setProgress(0, 0, false);
         notificationBuilder.setContentText("File Downloaded");
         notificationManager.notify(0, notificationBuilder.build());
+    }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (!completeAll) {
+            stopDownload();
+        }
+    }
+
+    private void stopDownload() {
+        if (request != null && outputFile != null) {
+            request.cancel();
+            outputFile.delete();
+            notificationManager.cancelAll();
+        }
     }
 
     private void changeOfflineStatus() {
@@ -190,7 +207,6 @@ public class MyDownloadService extends IntentService {
                 if (obj != null) {
                     obj.setResourceOffline(true);
                 }
-                Utilities.log("Status Changed");
             }
         });
     }
