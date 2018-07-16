@@ -10,18 +10,26 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.URLUtil;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
@@ -35,7 +43,7 @@ import org.ole.planet.takeout.utilities.Utilities;
 import java.util.ArrayList;
 
 
-public class Dashboard extends AppCompatActivity{
+public class Dashboard extends DashboardElements {
     private Drawer result = null;
     private Toolbar mTopToolbar;
     AccountHeader headerResult;
@@ -53,6 +61,7 @@ public class Dashboard extends AppCompatActivity{
 
         headerResult = getAccountHeader();
         createDrawer();
+        result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -157,10 +166,6 @@ public class Dashboard extends AppCompatActivity{
 
     }
 
-
-    Fragment newFragment;
-    FragmentTransaction fragmentTransaction;
-
    private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_home:
@@ -178,10 +183,11 @@ public class Dashboard extends AppCompatActivity{
             case R.string.menu_courses:
                 LoadFragment("MyCoursesFragment");
                 break;
+            case R.string.menu_feedback:
+                feedbackDialog();
             default:
                 LoadFragment("DashboardFragment");
                 break;
-
         }
     }
 
@@ -202,6 +208,26 @@ public class Dashboard extends AppCompatActivity{
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
         fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
+    }
+  
+    public void feedbackDialog() {
+        MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).customView(R.layout.dialog_feedback, true).title(R.string.menu_feedback)
+                .positiveText(R.string.button_submit).negativeText(R.string.button_cancel)
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        Toast.makeText(Dashboard.this, "Your response has been submitted!", Toast.LENGTH_SHORT).show();
+                        dialog.dismiss();
+                    }
+                }).onNegative(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(MaterialDialog dialog, DialogAction which) {
+                        dialog.dismiss();
+                    }
+                });
+        MaterialDialog dialog = feedback_dialog.build();
+        disableSubmit(dialog);
+        dialog.show();
     }
 
     @NonNull
@@ -226,6 +252,24 @@ public class Dashboard extends AppCompatActivity{
                 changeUX(R.string.menu_courses, menuImageList.get(2), menuBlueImageList.get(2)),
                 changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
                 changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
+        };
+    }
+
+    @NonNull
+    private IDrawerItem[] getDrawerItemsFooter() {
+        ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
+        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
+        menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
+
+
+        ArrayList<Integer> menuBlueImageListFooter = new ArrayList<>();
+        menuBlueImageListFooter.add(R.drawable.feedback_blue);
+        menuBlueImageListFooter.add(R.drawable.logout_blue);
+
+
+        return new IDrawerItem[]{
+                changeUX(R.string.menu_feedback, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
+                changeUX(R.string.menu_logout, menuImageListFooter.get(1), menuBlueImageListFooter.get(1)),
         };
     }
 
