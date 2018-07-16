@@ -266,7 +266,11 @@ public class Dashboard extends DashboardElements {
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {
-        return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(blueDrawable);
+        return new PrimaryDrawerItem().withName(iconText)
+                .withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary))
+                .withIconColor(getResources().getColor(R.color.textColorPrimary))
+                .withSelectedIconColor(getResources().getColor(R.color.primary_dark))
+                .withIconTintingEnabled(true);
     }
 
     @Override
