@@ -62,14 +62,12 @@ public class DashboardFragment extends Fragment {
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS)) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
                 Download download = intent.getParcelableExtra("download");
-                if (prgDialog != null) {
-                    if (!download.isFailed()) {
-                        setProgress(download);
-                    } else {
-                        DialogUtils.showError(prgDialog, "Download Failed");
-                    }
+                if (!download.isFailed()) {
+                    setProgress(download);
+                } else {
+                    DialogUtils.showError(prgDialog, "Download Failed");
                 }
             }
         }
@@ -87,29 +85,9 @@ public class DashboardFragment extends Fragment {
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
-        setUpProgressDialog();
+        prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;
-    }
-
-    private void setUpProgressDialog() {
-        prgDialog = new ProgressDialog(getActivity());
-        prgDialog.setTitle("Downloading file...");
-        prgDialog.setMax(100);
-        prgDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        prgDialog.setCancelable(false);
-        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Dismiss", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                prgDialog.dismiss();
-            }
-        });
-        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Stop Download", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                getActivity().stopService(new Intent(getActivity(), MyDownloadService.class));
-            }
-        });
     }
 
     private void declareElements(View view) {
