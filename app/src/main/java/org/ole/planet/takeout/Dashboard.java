@@ -210,7 +210,6 @@ public class Dashboard extends DashboardElements {
     }
 
 
-
     public void openCallFragment(Fragment newfragment) {
         newfragment = new DashboardFragment();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -229,21 +228,12 @@ public class Dashboard extends DashboardElements {
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
 
-
-        ArrayList<Integer> menuBlueImageList = new ArrayList<>();
-        menuBlueImageList.add(R.drawable.home_blue);
-        menuBlueImageList.add(R.drawable.library_blue);
-        menuBlueImageList.add(R.drawable.courses_blue);
-        menuBlueImageList.add(R.drawable.meetups_blue);
-        menuBlueImageList.add(R.drawable.survey_blue);
-
-
         return new IDrawerItem[]{
-                changeUX(R.string.menu_home, menuImageList.get(0), menuBlueImageList.get(0)),
-                changeUX(R.string.menu_library, menuImageList.get(1), menuBlueImageList.get(1)),
-                changeUX(R.string.menu_courses, menuImageList.get(2), menuBlueImageList.get(2)),
-                changeUX(R.string.menu_meetups, menuImageList.get(3), menuBlueImageList.get(3)),
-                changeUX(R.string.menu_surveys, menuImageList.get(4), menuBlueImageList.get(4)),
+                changeUX(R.string.menu_home, menuImageList.get(0)),
+                changeUX(R.string.menu_library, menuImageList.get(1)),
+                changeUX(R.string.menu_courses, menuImageList.get(2)),
+                changeUX(R.string.menu_meetups, menuImageList.get(3)),
+                changeUX(R.string.menu_surveys, menuImageList.get(4)),
         };
     }
 
@@ -253,20 +243,18 @@ public class Dashboard extends DashboardElements {
         menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
-
-        ArrayList<Integer> menuBlueImageListFooter = new ArrayList<>();
-        menuBlueImageListFooter.add(R.drawable.feedback_blue);
-        menuBlueImageListFooter.add(R.drawable.logout_blue);
-
-
         return new IDrawerItem[]{
-                changeUX(R.string.menu_feedback, menuImageListFooter.get(0), menuBlueImageListFooter.get(0)),
-                changeUX(R.string.menu_logout, menuImageListFooter.get(1), menuBlueImageListFooter.get(1)),
+                changeUX(R.string.menu_feedback, menuImageListFooter.get(0)),
+                changeUX(R.string.menu_logout, menuImageListFooter.get(1)),
         };
     }
 
-    public PrimaryDrawerItem changeUX(int iconText, Drawable drawable, int blueDrawable) {
-        return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIcon(blueDrawable);
+    public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {
+        return new PrimaryDrawerItem().withName(iconText)
+                .withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary))
+                .withIconColor(getResources().getColor(R.color.textColorPrimary))
+                .withSelectedIconColor(getResources().getColor(R.color.primary_dark))
+                .withIconTintingEnabled(true);
     }
 
     @Override
