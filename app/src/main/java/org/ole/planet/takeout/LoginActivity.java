@@ -95,18 +95,14 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting.setOnClickListener(new View.OnClickListener() { //Settings button
             @Override
             public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this).title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
+                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+                builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
                         .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 dialog.dismiss();
-                                serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-                                isServerReachable(serverUrl.getText().toString());
-                            }
-                        }).onNegative(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(MaterialDialog dialog, DialogAction which) {
+                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url));
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                             @Override
@@ -218,7 +214,9 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
     }
 
-    public boolean isServerReachable(final String url) {
+    public boolean isServerReachable(EditText textUrl) {
+        //serverUrl = textUrl;
+        final String url = textUrl.getText().toString();
         ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
