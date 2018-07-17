@@ -297,6 +297,7 @@
                     android:background="@color/material_drawer_header_selection_text"
                     android:orientation="horizontal"></LinearLayout>
             </LinearLayout>
+
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

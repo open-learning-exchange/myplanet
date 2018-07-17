@@ -14,7 +14,9 @@ import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.datamanager.MyDownloadService;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 
 public class Utilities {
@@ -23,7 +25,7 @@ public class Utilities {
         Log.d("OLE ", "log: " + message);
     }
 
-    private static String getFileNameFromUrl(String url) {
+    public static String getFileNameFromUrl(String url) {
         try {
             return url.substring(url.lastIndexOf("/") + 1);
         } catch (Exception e) {
@@ -38,6 +40,13 @@ public class Utilities {
                 settings.getInt("url_Port", 0)
                 + "/resources/" + library.getResourceId() + "/" + library.getResourceLocalAddress();
 
+    }
+
+    public static String currentDate() {
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat dateformat = new SimpleDateFormat("dd-MMM-yyyy");
+        String datetime = dateformat.format(c.getTime());
+        return datetime;
     }
 
     public static void openDownloadService(Context context, ArrayList urls) {
