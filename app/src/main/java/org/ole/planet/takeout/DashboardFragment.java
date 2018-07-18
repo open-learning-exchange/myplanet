@@ -47,6 +47,7 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 public class DashboardFragment extends Fragment {
 
     //TextViews
+
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
@@ -91,6 +92,7 @@ public class DashboardFragment extends Fragment {
     }
 
     private void declareElements(View view) {
+
         // Imagebuttons
         myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);

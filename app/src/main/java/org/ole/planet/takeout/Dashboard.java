@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -69,11 +70,7 @@ public class Dashboard extends DashboardElements {
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
-        }
-        openCallFragment(new DashboardFragment());
+        LoadFragment("DashboardFragment");
     }
 
 
@@ -132,7 +129,7 @@ public class Dashboard extends DashboardElements {
         //Create User profile header
         return new AccountHeaderBuilder()
                 .withActivity(Dashboard.this)
-                .withTextColor(getResources().getColor(R.color.bg_white))
+                .withTextColor(getApplicationContext().getResources().getColor(R.color.bg_white))
                 .withHeaderBackground(R.drawable.header_image)
                 .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
@@ -146,12 +143,13 @@ public class Dashboard extends DashboardElements {
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
+                .withSliderBackgroundColor(getApplicationContext().getResources().getColor(R.color.colorPrimaryDark))
                 .withToolbar(mTopToolbar)
                 .withAccountHeader(headerResult)
                 .withHeaderHeight(dimenHolder)
-                .addDrawerItems(getDrawerItems())
-                .addStickyDrawerItems(getDrawerItemsFooter())
+                .addDrawerItems(
+                        getDrawerItems()
+                )
                 .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
                     @Override
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
@@ -165,30 +163,53 @@ public class Dashboard extends DashboardElements {
                 })
                 .withDrawerWidthDp(200)
                 .build();
+
     }
 
-    private void menuAction(int selectedMenuId) {
+   private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_home:
-                openCallFragment(new DashboardFragment());
+                LoadFragment("DashboardFragment");
                 break;
             case R.string.menu_library:
+                LoadFragment("MyLibraryFragment");
                 break;
             case R.string.menu_meetups:
+                LoadFragment("MyMeetUpsFragment");
                 break;
             case R.string.menu_surveys:
+                LoadFragment("MySurveysFragment");
                 break;
             case R.string.menu_courses:
+                LoadFragment("MyCoursesFragment");
                 break;
             case R.string.menu_feedback:
                 feedbackDialog();
             default:
-                openCallFragment(new DashboardFragment());
+                LoadFragment("DashboardFragment");
                 break;
-
         }
     }
 
+    private void LoadFragment(String fragmentName) {
+        Fragment newfragment=new DashboardFragment();
+        if (fragmentName.matches("DashboardFragment")) {
+            newfragment = new DashboardFragment();
+        }else if (fragmentName.matches("MyLibraryFragment")) {
+            newfragment = new MyLibraryFragment();
+        }else if (fragmentName.matches("MyCourseFragment")) {
+            newfragment = new MyCourseFragment();
+        }else if (fragmentName.matches("MyMeetUpsFragment")) {
+            newfragment = new MyMeetUpsFragment();
+        }else if (fragmentName.matches("MySurveyFragment")) {
+            newfragment = new MySurveyFragment();
+        }
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+  
     public void feedbackDialog() {
         MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).customView(R.layout.dialog_feedback, true).title(R.string.menu_feedback)
                 .positiveText(R.string.button_submit).negativeText(R.string.button_cancel)
@@ -210,6 +231,23 @@ public class Dashboard extends DashboardElements {
     }
 
 
+    @NonNull
+    private IDrawerItem[] getDrawerItems() {
+        ArrayList<Drawable> menuImageList = new ArrayList<>();
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.home));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.library));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.courses));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.meetups));
+        menuImageList.add(getApplicationContext().getResources().getDrawable(R.drawable.survey));
+
+        ArrayList<Integer> menuBlueImageList = new ArrayList<>();
+        menuBlueImageList.add(R.drawable.home_blue);
+        menuBlueImageList.add(R.drawable.library_blue);
+        menuBlueImageList.add(R.drawable.courses_blue);
+        menuBlueImageList.add(R.drawable.meetups_blue);
+        menuBlueImageList.add(R.drawable.survey_blue);
+
+
     public void openCallFragment(Fragment newfragment) {
         newfragment = new DashboardFragment();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -227,6 +265,7 @@ public class Dashboard extends DashboardElements {
         menuImageList.add(getResources().getDrawable(R.drawable.courses));
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
+
 
         return new IDrawerItem[]{
                 changeUX(R.string.menu_home, menuImageList.get(0)),
@@ -257,13 +296,14 @@ public class Dashboard extends DashboardElements {
                 .withIconTintingEnabled(true);
     }
 
+
     @Override
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
+
         } else {
             super.onBackPressed();
         }
     }
-
 }
