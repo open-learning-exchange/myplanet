@@ -73,7 +73,8 @@ public class Dashboard extends DashboardElements {
         if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
         }
-        openCallFragment(new DashboardFragment());
+        //openCallFragment(new DashboardFragment());
+        LoadFragment("DashboardFragment");
     }
 
 
@@ -170,23 +171,45 @@ public class Dashboard extends DashboardElements {
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_home:
-                openCallFragment(new DashboardFragment());
+                LoadFragment("DashboardFragment");
                 break;
             case R.string.menu_library:
+                LoadFragment("MyLibraryFragment");
                 break;
             case R.string.menu_meetups:
+                LoadFragment("MyMeetUpsFragment");
                 break;
             case R.string.menu_surveys:
+                LoadFragment("MySurveyFragment");
                 break;
             case R.string.menu_courses:
+                LoadFragment("MyCourseFragment");
                 break;
             case R.string.menu_feedback:
                 feedbackDialog();
             default:
-                openCallFragment(new DashboardFragment());
+                LoadFragment("DashboardFragment");
                 break;
-
         }
+     }
+
+    private void LoadFragment(String fragmentName) {
+        Fragment newfragment=new DashboardFragment();
+        if (fragmentName.matches("DashboardFragment")) {
+            newfragment = new DashboardFragment();
+        }else if (fragmentName.matches("MyLibraryFragment")) {
+            newfragment = new MyLibraryFragment();
+        }else if (fragmentName.matches("MyCourseFragment")) {
+            newfragment = new MyCourseFragment();
+        }else if (fragmentName.matches("MyMeetUpsFragment")) {
+            newfragment = new MyMeetUpsFragment();
+        }else if (fragmentName.matches("MySurveyFragment")) {
+            newfragment = new MySurveyFragment();
+        }
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
     }
 
     public void feedbackDialog() {
@@ -211,14 +234,14 @@ public class Dashboard extends DashboardElements {
 
 
 
-    public void openCallFragment(Fragment newfragment) {
+  /*  public void openCallFragment(Fragment newfragment) {
         newfragment = new DashboardFragment();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
         fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
-
+*/
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
