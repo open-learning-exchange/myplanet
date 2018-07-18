@@ -1,17 +1,17 @@
 package org.ole.planet.takeout;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -21,8 +21,6 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.afollestad.materialdialogs.DialogAction;
-import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
@@ -33,11 +31,7 @@ import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -52,21 +46,34 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
  */
 public class DashboardFragment extends Fragment {
 
-    //ImageButtons
-    private ImageButton myLibraryImage;
-    private ImageButton myCourseImage;
-    private ImageButton myMeetUpsImage;
-    private ImageButton myTeamsImage;
-
     //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
     String fullName;
     Realm mRealm;
+    ProgressDialog prgDialog;
+    ArrayList<Integer> selectedItemsList = new ArrayList<>();
+    //ImageButtons
+    private ImageButton myLibraryImage;
+    private ImageButton myCourseImage;
+    private ImageButton myMeetUpsImage;
+    private ImageButton myTeamsImage;
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                if (!download.isFailed()) {
+                    setProgress(download);
+                } else {
+                    DialogUtils.showError(prgDialog, "Download Failed");
+                }
+            }
+        }
+    };
 
     public DashboardFragment() {
-        //init dashboard
     }
 
     @Override
@@ -74,15 +81,14 @@ public class DashboardFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
-        txtCurDate.setText(currentDate());
+        txtCurDate.setText(Utilities.currentDate());
+        prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;
     }
-
 
     private void declareElements(View view) {
         // Imagebuttons
@@ -96,13 +102,6 @@ public class DashboardFragment extends Fragment {
         realmConfig();
         myLibraryDiv(view);
         showDownloadDialog();
-    }
-
-    private String currentDate() {
-        Calendar c = Calendar.getInstance();
-        SimpleDateFormat dateformat = new SimpleDateFormat("dd-MMM-yyyy");
-        String datetime = dateformat.format(c.getTime());
-        return datetime;
     }
 
     public int offlineVisits() {
@@ -134,7 +133,6 @@ public class DashboardFragment extends Fragment {
         mRealm = Realm.getInstance(config);
     }
 
-
     public void myLibraryDiv(View view) {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
@@ -142,7 +140,6 @@ public class DashboardFragment extends Fragment {
                 250,
                 100
         );
-
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
@@ -159,28 +156,24 @@ public class DashboardFragment extends Fragment {
 
     private void showDownloadDialog() {
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
-        Utilities.log("List size " + db_myLibrary.size());
         if (!db_myLibrary.isEmpty()) {
-            MaterialDialog.Builder di = DialogUtils.getDowloadDialog(getActivity());
-            di.items(getListAsArray(db_myLibrary))
-                    .itemsCallbackMultiChoice(null, new MaterialDialog.ListCallbackMultiChoice() {
-                        @Override
-                        public boolean onSelection(MaterialDialog dialog, Integer[] which, CharSequence[] text) {
-                            dialog.setSelectedIndices(which);
-                            return true;
-                        }
-                    }).onPositive(new MaterialDialog.SingleButtonCallback() {
+            new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
                 @Override
-                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                    downloadFiles(db_myLibrary, dialog.getSelectedIndices());
+                public void onClick(DialogInterface dialogInterface, int i, boolean b) {
+                    DialogUtils.handleCheck(selectedItemsList, b, i);
                 }
-            }).onNeutral(new MaterialDialog.SingleButtonCallback() {
+            }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                 @Override
-                public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    downloadFiles(db_myLibrary, selectedItemsList);
+
+                }
+            }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
                     downloadAllFiles(db_myLibrary);
                 }
-            });
-            di.show();
+            }).setNegativeButton(R.string.txt_cancel, null).show();
         }
     }
 
@@ -189,47 +182,29 @@ public class DashboardFragment extends Fragment {
         for (int i = 0; i < db_myLibrary.size(); i++) {
             urls.add(Utilities.getUrl(db_myLibrary.get(i), settings));
         }
-        Utilities.openDownloadService(getActivity(), urls);
-
+        startDownload(urls);
     }
 
-    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, Integer[] selectedItems) {
+    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, ArrayList<Integer> selectedItems) {
         ArrayList urls = new ArrayList();
-        for (int i = 0; i < selectedItems.length; i++) {
-            urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems[i]), settings));
+        for (int i = 0; i < selectedItems.size(); i++) {
+            urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems.get(i)), settings));
         }
-        Utilities.openDownloadService(getActivity(), urls);
+        startDownload(urls);
     }
 
+    private void startDownload(ArrayList urls) {
+        if (!urls.isEmpty()) {
+            prgDialog.show();
+            Utilities.openDownloadService(getActivity(), urls);
+        }
+    }
 
     private void registerReceiver() {
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MESSAGE_PROGRESS);
         bManager.registerReceiver(broadcastReceiver, intentFilter);
-
-    }
-
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            if (intent.getAction().equals(MESSAGE_PROGRESS)) {
-
-                Download download = intent.getParcelableExtra("download");
-                Utilities.log("Progress " + download.getProgress());
-                // TODO: 7/11/18 Show Progress in UI
-            }
-        }
-    };
-
-
-    private CharSequence[] getListAsArray(RealmResults<realm_myLibrary> db_myLibrary) {
-        CharSequence[] array = new CharSequence[db_myLibrary.size()];
-        for (int i = 0; i < db_myLibrary.size(); i++) {
-            array[i] = db_myLibrary.get(i).getTitle();
-        }
-        return array;
     }
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
@@ -255,4 +230,13 @@ public class DashboardFragment extends Fragment {
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
     }
 
+    public void setProgress(Download download) {
+        prgDialog.setProgress(download.getProgress());
+        if (!TextUtils.isEmpty(download.getFileName())) {
+            prgDialog.setTitle(download.getFileName());
+        }
+        if (download.isCompleteAll()) {
+            DialogUtils.showError(prgDialog, "All files downloaded successfully");
+        }
+    }
 }

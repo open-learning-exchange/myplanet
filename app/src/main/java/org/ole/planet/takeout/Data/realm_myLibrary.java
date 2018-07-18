@@ -1,6 +1,7 @@
 package org.ole.planet.takeout.Data;
 
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_myLibrary extends RealmObject {
@@ -23,6 +24,16 @@ public class realm_myLibrary extends RealmObject {
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
     private Boolean resourceOffline;
+
+
+
+    public static CharSequence[] getListAsArray(RealmResults<realm_myLibrary> db_myLibrary) {
+        CharSequence[] array = new CharSequence[db_myLibrary.size()];
+        for (int i = 0; i < db_myLibrary.size(); i++) {
+            array[i] = db_myLibrary.get(i).getTitle();
+        }
+        return array;
+    }
 
 
     public String getId() {
