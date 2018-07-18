@@ -31,6 +31,7 @@
         <activity
             android:name=".Dashboard"
             android:label="@string/title_activity_dashboard"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:theme="@style/FullscreenTheme" />
         <activity android:name=".PDFReaderActivity" />
         <service android:name=".datamanager.MyDownloadService" />

@@ -18,7 +18,6 @@ import retrofit2.http.Url;
 
 
 public interface ApiInterface {
-    //@Headers("Authorization:Basic dmk6aXY=")
     @GET
     @Streaming
     Call<ResponseBody> downloadFile(@Header("Authorization") String header, @Url String fileUrl);
