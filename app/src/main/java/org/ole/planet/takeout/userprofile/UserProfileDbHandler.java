@@ -25,7 +25,7 @@ public class UserProfileDbHandler {
     private Realm mRealm;
     private CouchDbProperties properties;
     private RealmService realmService;
-    private String name;
+    private String fullName;
     private static final String KEY_LOGIN = "Login";
     private static final String KEY_LOGOUT = "Logout";
     private static final String KEY_RESOURCE_OPEN = "Resource Open";
@@ -34,7 +34,7 @@ public class UserProfileDbHandler {
     public UserProfileDbHandler(Context context) {
         realmService = new RealmService(context);
         settings = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        name = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+        fullName = Utilities.getFullName(settings);
         mRealm = realmService.getInstance();
     }
 
@@ -55,7 +55,7 @@ public class UserProfileDbHandler {
     private realm_offlineActivities createUser() {
         realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
         offlineActivities.setUserId(settings.getString("userId", ""));
-        offlineActivities.setUserFullName(name);
+        offlineActivities.setUserFullName(fullName);
         return offlineActivities;
     }
 

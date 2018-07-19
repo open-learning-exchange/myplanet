@@ -96,7 +96,7 @@ public class DashboardFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         declareElements(view);
-        fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+        fullName = Utilities.getFullName(settings);
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
         profileDbHandler = new UserProfileDbHandler(getActivity());
