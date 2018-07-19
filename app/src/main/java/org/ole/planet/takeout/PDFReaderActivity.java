@@ -1,11 +1,14 @@
 package org.ole.planet.takeout;
 
+import android.content.Intent;
+import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.github.barteksc.pdfviewer.PDFView;
 import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener;
@@ -18,6 +21,7 @@ import com.shockwave.pdfium.PdfDocument;
 
 import org.ole.planet.takeout.Data.SourceFile;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -29,12 +33,13 @@ import static android.view.View.GONE;
 public class PDFReaderActivity extends AppCompatActivity implements OnPageChangeListener, OnLoadCompleteListener,
         OnPageErrorListener {
 
-    private TextView mFileNameTitle;
+    private TextView mPdfFileNameTitle;
     private String fileName;
     private PDFView pdfView;
     private int currentPageNumber, totalPages;
     private static final String TAG = "PDF Reader Log";
     private String currentUsername = "admin";
+    private String filePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,28 +51,41 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
     }
 
     private void declareElements() {
-        mFileNameTitle = (TextView) findViewById(R.id.pdfFileName);
+        mPdfFileNameTitle = (TextView) findViewById(R.id.pdfFileName);
         pdfView = (PDFView) findViewById(R.id.pdfView);
+        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     }
 
     private void renderPdfFile() {
         // File name to be viewed
-        fileName = "136.pdf";
+
+        Intent pdfOpenIntent = getIntent();
+        fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE");
+        Log.i("THE_FILE", filePath);
+
         if (fileName != null || fileName != "") {
-            mFileNameTitle.setText(fileName);
-            mFileNameTitle.setVisibility(View.VISIBLE);
+            mPdfFileNameTitle.setText(fileName);
+            mPdfFileNameTitle.setVisibility(View.VISIBLE);
         }
 
         else {
-            mFileNameTitle.setVisibility(View.INVISIBLE);
+            mPdfFileNameTitle.setVisibility(View.INVISIBLE);
         }
-        pdfView.fromAsset(fileName)
-                .defaultPage(0)
-                .enableAnnotationRendering(true)
-                .onLoad(this)
-                .onPageChange(this)
-                .scrollHandle(new DefaultScrollHandle(this))
-                .load();
+
+        try {
+            pdfView.fromFile(new File(filePath, fileName))
+                    .defaultPage(0)
+                    .enableAnnotationRendering(true)
+                    .onLoad(this)
+                    .onPageChange(this)
+                    .scrollHandle(new DefaultScrollHandle(this))
+                    .load();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(getApplicationContext(), "Unable to load " + fileName, Toast.LENGTH_LONG).show();
+        }
+
+
     }
 
     @Override

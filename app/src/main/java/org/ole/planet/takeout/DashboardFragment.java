@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
@@ -20,7 +21,9 @@ import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
@@ -31,6 +34,7 @@ import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -59,6 +63,8 @@ public class DashboardFragment extends Fragment {
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+    private String filePath;
+
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -99,6 +105,7 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
         realmConfig();
         myLibraryDiv(view);
         showDownloadDialog();
@@ -213,8 +220,10 @@ public class DashboardFragment extends Fragment {
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
+                    checkFileExtension(items);
                 } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
+                    checkFileExtension(items);
                 }
             }
         });
@@ -238,5 +247,60 @@ public class DashboardFragment extends Fragment {
         if (download.isCompleteAll()) {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
         }
+    }
+
+    public void checkFileExtension(realm_myLibrary items)
+    {
+        String filenameArray[] = items.getResourceLocalAddress().split("\\.");
+        String extension = filenameArray[filenameArray.length-1];
+        Log.i("FILE_EXTENSION", extension);
+
+        //Intent fileOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
+        //fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+
+        if (extension.equals("pdf"))
+        {
+            Intent pdfOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
+            pdfOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+            startActivity(pdfOpenIntent);
+        }
+
+        // all image formats currently supported by Android
+        else if (extension.equals("bmp") || extension.equals("gif") || extension.equals("jpg") || extension.equals("png") || extension.equals("webp"))
+        {
+            Intent imageOpenIntent = new Intent(DashboardFragment.this.getActivity(), ImageViewerActivity.class);
+            imageOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+            startActivity(imageOpenIntent);
+        }
+
+        else if (extension.equals("txt"))
+        {
+            Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
+            textFileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+            startActivity(textFileOpenIntent);
+        }
+
+        else if (extension.equals("md"))
+        {
+            Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
+            markdownOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+            startActivity(markdownOpenIntent);
+        }
+
+        else if (extension.equals("csv"))
+        {
+            Intent CSVOpenIntent = new Intent(DashboardFragment.this.getActivity(), CSVViewerActivity.class);
+            CSVOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+            startActivity(CSVOpenIntent);
+        }
+
+        else
+        {
+            //Toast.makeText(getContext(), extension, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
+
+        }
+
+
     }
 }
