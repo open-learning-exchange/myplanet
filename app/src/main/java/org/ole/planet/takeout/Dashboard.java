@@ -173,21 +173,25 @@ public class Dashboard extends DashboardElements {
                 openCallFragment(new DashboardFragment());
                 break;
             case R.string.menu_library:
+                openCallFragment(new MyLibraryFragment());
                 break;
             case R.string.menu_meetups:
+                openCallFragment(new MyMeetUpsFragment());
                 break;
             case R.string.menu_surveys:
+                openCallFragment(new MySurveyFragment());
                 break;
             case R.string.menu_courses:
+                openCallFragment(new MyCourseFragment());
                 break;
             case R.string.menu_feedback:
                 feedbackDialog();
             default:
                 openCallFragment(new DashboardFragment());
                 break;
-
         }
     }
+
 
     public void feedbackDialog() {
         MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).customView(R.layout.dialog_feedback, true).title(R.string.menu_feedback)
@@ -211,7 +215,6 @@ public class Dashboard extends DashboardElements {
 
 
     public void openCallFragment(Fragment newfragment) {
-        newfragment = new DashboardFragment();
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
         fragmentTransaction.addToBackStack(null);
