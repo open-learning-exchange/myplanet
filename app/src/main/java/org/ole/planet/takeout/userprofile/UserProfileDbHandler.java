@@ -25,7 +25,7 @@ public class UserProfileDbHandler {
     private Realm mRealm;
     private CouchDbProperties properties;
     private RealmService realmService;
-    private String fullName;
+    private String name;
     private static final String KEY_LOGIN = "Login";
     private static final String KEY_LOGOUT = "Logout";
     private static final String KEY_RESOURCE_OPEN = "Resource Open";
@@ -34,7 +34,7 @@ public class UserProfileDbHandler {
     public UserProfileDbHandler(Context context) {
         realmService = new RealmService(context);
         settings = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+        name = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         mRealm = realmService.getInstance();
     }
 
@@ -55,19 +55,19 @@ public class UserProfileDbHandler {
     private realm_offlineActivities createUser() {
         realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
         offlineActivities.setUserId(settings.getString("userId", ""));
-        offlineActivities.setUserFullName(fullName);
+        offlineActivities.setUserFullName(name);
         return offlineActivities;
     }
 
 
-    public void onLogout() {
-        mRealm.beginTransaction();
-        realm_offlineActivities offlineActivities = mRealm.copyToRealm(createUser());
-        offlineActivities.setType(KEY_LOGOUT);
-        offlineActivities.setDescription("Member logout from offline application");
-        offlineActivities.setLogoutTime(new Date().getTime());
-        mRealm.commitTransaction();
-    }
+//    public void onLogout() {
+//        mRealm.beginTransaction();
+//        realm_offlineActivities offlineActivities = mRealm.copyToRealm(createUser());
+//        offlineActivities.setType(KEY_LOGOUT);
+//        offlineActivities.setDescription("Member logout from offline application");
+//        offlineActivities.setLogoutTime(new Date().getTime());
+//        mRealm.commitTransaction();
+//    }
 
     public Long getLastVisit() {
         return (Long) mRealm.where(realm_offlineActivities.class).max("loginTime");

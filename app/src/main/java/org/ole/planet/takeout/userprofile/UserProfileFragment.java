@@ -33,7 +33,7 @@ public class UserProfileFragment extends Fragment {
     UserProfileDbHandler handler;
     RealmService realmService;
     Realm mRealm;
-
+    RecyclerView rvStat;
     public UserProfileFragment() {
     }
 
@@ -45,6 +45,9 @@ public class UserProfileFragment extends Fragment {
         handler = new UserProfileDbHandler(getActivity());
         realmService = new RealmService(getActivity());
         mRealm = realmService.getInstance();
+        rvStat = v.findViewById(R.id.rv_stat);
+        rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rvStat.setNestedScrollingEnabled(false);
         populateUserData(v);
         return v;
     }
@@ -71,10 +74,7 @@ public class UserProfileFragment extends Fragment {
     }
 
     public void setUpRecyclerView(final HashMap<String, String> map, View v) {
-        RecyclerView rvStat = v.findViewById(R.id.rv_stat);
         final LinkedList<String> keys = new LinkedList<>(map.keySet());
-        rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
-        rvStat.setNestedScrollingEnabled(false);
         rvStat.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
@@ -82,19 +82,17 @@ public class UserProfileFragment extends Fragment {
                 View v = getLayoutInflater().inflate(R.layout.row_stat, parent, false);
                 return new ViewHolderStat(v);
             }
-
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 if (holder instanceof ViewHolderStat) {
                     ((ViewHolderStat) holder).key.setText(keys.get(position));
                     ((ViewHolderStat) holder).value.setText(map.get(keys.get(position)));
-                    if (position %2 ==0){
+                    if (position % 2 == 0) {
                         holder.itemView.setBackgroundColor(getResources().getColor(R.color.bg_white));
                         holder.itemView.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
                     }
                 }
             }
-
             @Override
             public int getItemCount() {
                 return keys.size();
