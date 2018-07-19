@@ -10,8 +10,8 @@ public class realm_offlineActivities extends RealmObject {
     private String userId;
     private String type;
     private String description;
-    private Integer loginTime;
-    private Integer logoutTime;
+    private Long loginTime;
+    private Long logoutTime;
 
     public String getId() {
         return id;
@@ -53,19 +53,19 @@ public class realm_offlineActivities extends RealmObject {
         this.description = description;
     }
 
-    public Integer getLoginTime() {
+    public Long getLoginTime() {
         return loginTime;
     }
 
-    public void setLoginTime(Integer loginTime) {
+    public void setLoginTime(Long loginTime) {
         this.loginTime = loginTime;
     }
 
-    public Integer getLogoutTime() {
+    public Long getLogoutTime() {
         return logoutTime;
     }
 
-    public void setLogoutTime(Integer logoutTime) {
+    public void setLogoutTime(Long logoutTime) {
         this.logoutTime = logoutTime;
     }
 }
