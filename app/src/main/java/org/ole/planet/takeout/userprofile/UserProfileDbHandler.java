@@ -44,12 +44,18 @@ public class UserProfileDbHandler {
     }
 
     public void onLogin() {
-        mRealm.beginTransaction();
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
         realm_offlineActivities offlineActivities = mRealm.copyToRealm(createUser());
         offlineActivities.setType(KEY_LOGIN);
         offlineActivities.setDescription("Member login on offline application");
         offlineActivities.setLoginTime(new Date().getTime());
         mRealm.commitTransaction();
+    }
+
+    public void onDestory() {
+        if (mRealm != null)
+            mRealm.close();
     }
 
     private realm_offlineActivities createUser() {
@@ -59,31 +65,9 @@ public class UserProfileDbHandler {
         return offlineActivities;
     }
 
-
-//    public void onLogout() {
-//        mRealm.beginTransaction();
-//        realm_offlineActivities offlineActivities = mRealm.copyToRealm(createUser());
-//        offlineActivities.setType(KEY_LOGOUT);
-//        offlineActivities.setDescription("Member logout from offline application");
-//        offlineActivities.setLogoutTime(new Date().getTime());
-//        mRealm.commitTransaction();
-//    }
-
     public Long getLastVisit() {
         return (Long) mRealm.where(realm_offlineActivities.class).max("loginTime");
     }
-//
-//    public int getLoginCount() {
-//        RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
-//                .equalTo("userId", settings.getString("userId", ""))
-//                .equalTo("type", KEY_LOGIN)
-//                .findAll();
-//        if (!db_users.isEmpty()) {
-//            return db_users.size();
-//        } else {
-//            return 0;
-//        }
-//    }
 
 
     public int getOfflineVisits() {
@@ -106,20 +90,13 @@ public class UserProfileDbHandler {
         mRealm.commitTransaction();
     }
 
-    public String  getNumberOfResourceOpen() {
-        Long count =  mRealm.where(realm_offlineActivities.class).equalTo("type", KEY_RESOURCE_OPEN)
+    public String getNumberOfResourceOpen() {
+        Long count = mRealm.where(realm_offlineActivities.class).equalTo("type", KEY_RESOURCE_OPEN)
                 .equalTo("userId", settings.getString("userId", ""))
                 .equalTo("type", KEY_RESOURCE_OPEN)
                 .count();
         return count == 0 ? "" : "Resource opened " + count + " times.";
     }
-//
-//    public Long getResourceOpenCount(String id) {
-//        return mRealm.where(realm_offlineActivities.class).equalTo("type", KEY_RESOURCE_OPEN)
-//                .equalTo("userId", settings.getString("userId", ""))
-//                .equalTo("description", id)
-//                .count();
-//    }
 
     public String getMaxOpenedResource() {
         RealmResults<realm_offlineActivities> result = mRealm.where(realm_offlineActivities.class)

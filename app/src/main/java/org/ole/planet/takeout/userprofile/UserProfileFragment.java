@@ -34,9 +34,16 @@ public class UserProfileFragment extends Fragment {
     RealmService realmService;
     Realm mRealm;
     RecyclerView rvStat;
+
     public UserProfileFragment() {
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mRealm != null)
+            mRealm.close();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -82,6 +89,7 @@ public class UserProfileFragment extends Fragment {
                 View v = getLayoutInflater().inflate(R.layout.row_stat, parent, false);
                 return new ViewHolderStat(v);
             }
+
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 if (holder instanceof ViewHolderStat) {
@@ -93,6 +101,7 @@ public class UserProfileFragment extends Fragment {
                     }
                 }
             }
+
             @Override
             public int getItemCount() {
                 return keys.size();

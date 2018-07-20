@@ -154,7 +154,9 @@ public class LoginActivity extends SyncActivity {
         }
         if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-            new UserProfileDbHandler(this).onLogin();
+            UserProfileDbHandler handler = new UserProfileDbHandler(this);
+             handler.onLogin();
+             handler.onDestory();
             Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
             startActivity(dashboard);
         } else {
