@@ -134,24 +134,6 @@ public class DashboardFragment extends Fragment {
         showDownloadDialog();
     }
 
-    public int offlineVisits() {
-        //realmConfig("offlineActivities");
-        realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
-        offlineActivities.setUserId(settings.getString("name", ""));
-        offlineActivities.setType("Login");
-        offlineActivities.setDescription("Member login on offline application");
-        offlineActivities.setUserFullName(fullName);
-        RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
-                .equalTo("userId", settings.getString("name", ""))
-                .equalTo("type", "Visits")
-                .findAll();
-        if (!db_users.isEmpty()) {
-            return db_users.size();
-        } else {
-            return 0;
-        }
-    }
-
     public void realmConfig() {
         Realm.init(getContext());
         RealmConfiguration config = new RealmConfiguration.Builder()
