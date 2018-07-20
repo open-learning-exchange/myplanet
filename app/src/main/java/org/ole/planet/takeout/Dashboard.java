@@ -182,6 +182,8 @@ public class Dashboard extends DashboardElements {
                 break;
             case R.string.menu_feedback:
                 feedbackDialog();
+            case R.string.menu_logout:
+                break;
             default:
                 openCallFragment(new DashboardFragment());
                 break;

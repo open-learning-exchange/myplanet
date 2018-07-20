@@ -185,6 +185,7 @@ public class DashboardFragment extends Fragment {
         startDownload(urls);
     }
 
+
     private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, ArrayList<Integer> selectedItems) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.size(); i++) {
