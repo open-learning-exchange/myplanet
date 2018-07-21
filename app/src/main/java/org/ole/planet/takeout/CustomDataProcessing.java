@@ -189,10 +189,6 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             myQuestion.setType(question.get("type").getAsString());
             myQuestion.setHeader(question.get("header").getAsString());
             myQuestion.setChoice(question.get("choices").getAsJsonArray());
-
-
-            Utilities.log("Exam Inserted  " + question.get("header").getAsString());
-
         }
     }
 
@@ -217,14 +213,11 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             myResource.setArticleDate(res.get("articleDate").getAsString());
             myResource.setResourceType(res.get("resourceType").getAsString());
             myResource.setAddedBy(res.get("addedBy").getAsString());
-//            myResource.setOpenUrl(res.get("openUrl").getAsString());
             myResource.setOpenWhichFile(res.get("openWhichFile").getAsString());
             myResource.setIsDownloadable(res.get("isDownloadable").getAsString());
             myResource.setFilename(res.get("filename").getAsString());
             myResource.setResourceLocalAddress(res.get("filename").getAsString());
             myResource.setResourceRemoteAddress(Utilities.getUrl(res.get("_id").getAsString(), res.get("filename").getAsString(), settings));
-
-            Utilities.log("Resource Inserted  " + res.get("filename").getAsString());
         }
     }
 

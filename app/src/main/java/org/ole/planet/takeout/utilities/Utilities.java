@@ -35,10 +35,7 @@ public class Utilities {
     }
 
     public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
-        return settings.getString("url_Scheme", "") + "://" +
-                settings.getString("url_Host", "") + ":" +
-                settings.getInt("url_Port", 0)
-                + "/resources/" + library.getResourceId() + "/" + library.getResourceLocalAddress();
+        return getUrl(library.getResourceId(), library.getResourceLocalAddress(),settings);
 
     }
 
