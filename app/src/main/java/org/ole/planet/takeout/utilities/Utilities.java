@@ -42,6 +42,14 @@ public class Utilities {
 
     }
 
+    public static String getUrl(String id, String  file, SharedPreferences settings) {
+        return settings.getString("url_Scheme", "") + "://" +
+                settings.getString("url_Host", "") + ":" +
+                settings.getInt("url_Port", 0)
+                + "/resources/" + id + "/" + file;
+
+    }
+
     public static String currentDate() {
         Calendar c = Calendar.getInstance();
         SimpleDateFormat dateformat = new SimpleDateFormat("dd-MMM-yyyy");

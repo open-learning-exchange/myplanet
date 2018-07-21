@@ -29,6 +29,24 @@ public class realm_stepResources extends RealmObject {
     private String filenmediaTypeame;
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
+    private String courseId;
+    private String stepId;
+
+    public String getCourseId() {
+        return courseId;
+    }
+
+    public void setCourseId(String courseId) {
+        this.courseId = courseId;
+    }
+
+    public String getStepId() {
+        return stepId;
+    }
+
+    public void setStepId(String stepId) {
+        this.stepId = stepId;
+    }
 
     public String getId() {
         return id;

@@ -25,6 +25,7 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.takeout.Data.Download;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.datamanager.MyDownloadService;
@@ -101,6 +102,7 @@ public class DashboardFragment extends Fragment {
         txtVisits = view.findViewById(R.id.txtVisits);
         realmConfig();
         myLibraryDiv(view);
+
         showDownloadDialog();
     }
 

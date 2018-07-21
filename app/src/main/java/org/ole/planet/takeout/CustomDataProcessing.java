@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -12,9 +13,13 @@ import com.google.gson.JsonParser;
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Data.realm_courseSteps;
+import org.ole.planet.takeout.Data.realm_examQuestion;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_stepExam;
+import org.ole.planet.takeout.Data.realm_stepResources;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -50,7 +55,6 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             } else {
                 Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
             }
-
         }
     }
 
@@ -140,8 +144,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
         myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
         myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
         myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
-        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
-        insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
+        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
+        insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size());
     }
 
     public void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps) {
@@ -152,19 +156,76 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             JsonObject stepContainer = steps.get(step).getAsJsonObject();
             myCourseStepDB.setStepTitle(stepContainer.get("stepTitle").getAsString());
             myCourseStepDB.setDescription(stepContainer.get("description").getAsString());
-            myCourseStepDB.setNoOfResources(stepContainer.get("attachment").getAsJsonArray().size());
-            myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
-            insertCourseStepsAttachments();
-            insertCourseStepsExams();
+            if (stepContainer.has("resources")) {
+                myCourseStepDB.setNoOfResources(stepContainer.get("resources").getAsJsonArray().size());
+                insertCourseStepsAttachments(myCoursesID, step_id, stepContainer.getAsJsonArray("resources"));
+            }
+            // myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
+            if (stepContainer.has("exam"))
+                insertCourseStepsExams(myCoursesID, step_id, stepContainer.getAsJsonObject("exam"));
         }
     }
 
-    public void insertCourseStepsExams() {
-
+    public void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam) {
+        realm_stepExam myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
+        myExam.setStepId(step_id);
+        myExam.setCourseId(myCoursesID);
+        myExam.setName(exam.get("name").getAsString());
+        if (exam.has("passingPercentage"))
+            myExam.setPassingPercentage(exam.get("passingPercentage").getAsString());
+        if (exam.has("totalMarks"))
+            myExam.setPassingPercentage(exam.get("totalMarks").getAsString());
+        if (exam.has("questions"))
+            insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString());
     }
 
-    public void insertCourseStepsAttachments() {
+    private void insertExamQuestions(JsonArray questions, String examId) {
+        for (int i = 0; i < questions.size(); i++) {
+            String questionId = UUID.randomUUID().toString();
+            JsonObject question = questions.get(i).getAsJsonObject();
+            realm_examQuestion myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
+            myQuestion.setExamId(examId);
+            myQuestion.setBody(question.get("body").getAsString());
+            myQuestion.setType(question.get("type").getAsString());
+            myQuestion.setHeader(question.get("header").getAsString());
+            myQuestion.setChoice(question.get("choices").getAsJsonArray());
 
+
+            Utilities.log("Exam Inserted  " + question.get("header").getAsString());
+
+        }
+    }
+
+    public void insertCourseStepsAttachments(String myCoursesID, String stepId, JsonArray resources) {
+        for (int i = 0; i < resources.size(); i++) {
+            JsonObject res = resources.get(i).getAsJsonObject();
+            realm_stepResources myResource = mRealm.createObject(realm_stepResources.class, res.get("_id").getAsString());
+            myResource.setCourseId(myCoursesID);
+            myResource.setStepId(stepId);
+            myResource.setResource_rev(res.get("_rev").getAsString());
+            myResource.setTitle(res.get("title").getAsString());
+            myResource.setAuthor(res.get("author").getAsString());
+            myResource.setDescription(res.get("description").getAsString());
+            myResource.setYear(res.get("year").getAsString());
+            myResource.setLanguage(res.get("language").getAsString());
+            myResource.setPublisher(res.get("publisher").getAsString());
+            myResource.setLinkToLicense(res.get("linkToLicense").getAsString());
+            myResource.setSubject(res.get("subject").getAsString());
+            myResource.setLevel(res.get("level").getAsString());
+            myResource.setOpenWith(res.get("openWith").getAsString());
+            myResource.setMedium(res.get("medium").getAsString());
+            myResource.setArticleDate(res.get("articleDate").getAsString());
+            myResource.setResourceType(res.get("resourceType").getAsString());
+            myResource.setAddedBy(res.get("addedBy").getAsString());
+//            myResource.setOpenUrl(res.get("openUrl").getAsString());
+            myResource.setOpenWhichFile(res.get("openWhichFile").getAsString());
+            myResource.setIsDownloadable(res.get("isDownloadable").getAsString());
+            myResource.setFilename(res.get("filename").getAsString());
+            myResource.setResourceLocalAddress(res.get("filename").getAsString());
+            myResource.setResourceRemoteAddress(Utilities.getUrl(res.get("_id").getAsString(), res.get("filename").getAsString(), settings));
+
+            Utilities.log("Resource Inserted  " + res.get("filename").getAsString());
+        }
     }
 
     public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
