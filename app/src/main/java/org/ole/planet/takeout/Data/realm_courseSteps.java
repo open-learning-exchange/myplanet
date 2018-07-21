@@ -1,9 +1,7 @@
 package org.ole.planet.takeout.Data;
 
-import io.realm.annotations.PrimaryKey;
-
 public class realm_courseSteps extends io.realm.RealmObject {
-    @PrimaryKey
+    @io.realm.annotations.PrimaryKey
     private String id;
     private String courseId;
     private String stepTitle;
