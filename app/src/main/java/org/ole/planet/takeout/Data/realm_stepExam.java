@@ -1,8 +1,6 @@
 package org.ole.planet.takeout.Data;
-
-
-import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
+import io.realm.RealmObject;
 
 public class realm_stepExam extends RealmObject {
     @PrimaryKey

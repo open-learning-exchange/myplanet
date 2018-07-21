@@ -195,30 +195,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
     public void insertCourseStepsAttachments(String myCoursesID, String stepId, JsonArray resources) {
         for (int i = 0; i < resources.size(); i++) {
             JsonObject res = resources.get(i).getAsJsonObject();
-            realm_stepResources myResource = mRealm.createObject(realm_stepResources.class, res.get("_id").getAsString());
-            myResource.setCourseId(myCoursesID);
-            myResource.setStepId(stepId);
-            myResource.setResource_rev(res.get("_rev").getAsString());
-            myResource.setTitle(res.get("title").getAsString());
-            myResource.setAuthor(res.get("author").getAsString());
-            myResource.setDescription(res.get("description").getAsString());
-            myResource.setYear(res.get("year").getAsString());
-            myResource.setLanguage(res.get("language").getAsString());
-            myResource.setPublisher(res.get("publisher").getAsString());
-            myResource.setLinkToLicense(res.get("linkToLicense").getAsString());
-            myResource.setSubject(res.get("subject").getAsString());
-            myResource.setLevel(res.get("level").getAsString());
-            myResource.setOpenWith(res.get("openWith").getAsString());
-            myResource.setMedium(res.get("medium").getAsString());
-            myResource.setArticleDate(res.get("articleDate").getAsString());
-            myResource.setResourceType(res.get("resourceType").getAsString());
-            myResource.setAddedBy(res.get("addedBy").getAsString());
-            myResource.setOpenWhichFile(res.get("openWhichFile").getAsString());
-            myResource.setIsDownloadable(res.get("isDownloadable").getAsString());
-            myResource.setFilename(res.get("filename").getAsString());
-            myResource.setResourceLocalAddress(res.get("filename").getAsString());
-            myResource.setResourceRemoteAddress(Utilities.getUrl(res.get("_id").getAsString(), res.get("filename").getAsString(), settings));
-        }
+                realm_stepResources.create(mRealm,res, myCoursesID, stepId, settings);
+            }
     }
 
     public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
