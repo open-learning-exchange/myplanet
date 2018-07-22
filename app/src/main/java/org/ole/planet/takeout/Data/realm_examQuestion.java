@@ -2,6 +2,7 @@ package org.ole.planet.takeout.Data;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -13,8 +14,16 @@ public class realm_examQuestion extends RealmObject {
     private String body;
     private String type;
     private String examId;
-
+    private String correctChoice;
     private RealmList<String> choices;
+
+    public void setCorrectChoice(String correctChoice) {
+        this.correctChoice = correctChoice;
+    }
+
+    public String getCorrectChoice() {
+        return correctChoice;
+    }
 
     public String getId() {
         return id;
@@ -63,7 +72,6 @@ public class realm_examQuestion extends RealmObject {
     public void setChoices(RealmList<String> choices) {
         this.choices = choices;
     }
-
 
 
     public void setChoice(JsonArray array) {
