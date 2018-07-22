@@ -3,4 +3,8 @@
     <dimen name="menu_item_icon_size">24dp</dimen>
     <dimen name="menu_item_size">48dp</dimen>
     <dimen name="header_height">48dp</dimen>
+    <dimen name="user_image_size">150dp</dimen>
+    <dimen name="padding_normal">8dp</dimen>
+    <dimen name="text_size_large">24sp</dimen>
+    <dimen name="text_size_mid">18sp</dimen>
 </resources>

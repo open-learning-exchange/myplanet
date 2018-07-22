@@ -27,7 +27,10 @@ import com.google.android.flexbox.FlexboxLayout;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
+import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.datamanager.MyDownloadService;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -53,6 +56,7 @@ public class DashboardFragment extends Fragment {
     String fullName;
     Realm mRealm;
     ProgressDialog prgDialog;
+    UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     //ImageButtons
     private ImageButton myLibraryImage;
@@ -73,7 +77,23 @@ public class DashboardFragment extends Fragment {
         }
     };
 
+    OnHomeItemClickListener listener;
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof OnHomeItemClickListener) {
+            listener = (OnHomeItemClickListener) context;
+        }
+    }
+
     public DashboardFragment() {
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        profileDbHandler.onDestory();
     }
 
     @Override
@@ -82,9 +102,11 @@ public class DashboardFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         declareElements(view);
-        fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+        fullName = Utilities.getFullName(settings);
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
+        profileDbHandler = new UserProfileDbHandler(getActivity());
+        Utilities.log("Max opened Resource " + profileDbHandler.getMaxOpenedResource());
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;
@@ -99,27 +121,17 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+        view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (listener != null)
+                    listener.openCallFragment(new UserProfileFragment());
+            }
+        });
+
         realmConfig();
         myLibraryDiv(view);
         showDownloadDialog();
-    }
-
-    public int offlineVisits() {
-        //realmConfig("offlineActivities");
-        realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
-        offlineActivities.setUserId(settings.getString("name", ""));
-        offlineActivities.setType("Login");
-        offlineActivities.setDescription("Member login on offline application");
-        offlineActivities.setUserFullName(fullName);
-        RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
-                .equalTo("userId", settings.getString("name", ""))
-                .equalTo("type", "Visits")
-                .findAll();
-        if (!db_users.isEmpty()) {
-            return db_users.size();
-        } else {
-            return 0;
-        }
     }
 
     public void realmConfig() {
@@ -185,6 +197,7 @@ public class DashboardFragment extends Fragment {
         startDownload(urls);
     }
 
+
     private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, ArrayList<Integer> selectedItems) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.size(); i++) {
@@ -208,11 +221,13 @@ public class DashboardFragment extends Fragment {
     }
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
+
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
+                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
                 } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
                 }

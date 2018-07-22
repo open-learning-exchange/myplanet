@@ -20,6 +20,24 @@ public class realm_UserModel extends RealmObject {
     private String iterations;
     private String derived_key;
     private String salt;
+    private String  dob;
+    private String communityName;
+
+    public String getDob() {
+        return dob;
+    }
+
+    public void setDob(String dob) {
+        this.dob = dob;
+    }
+
+    public String getCommunityName() {
+        return communityName;
+    }
+
+    public void setCommunityName(String communityName) {
+        this.communityName = communityName;
+    }
 
     public String getId() {
         return id;
