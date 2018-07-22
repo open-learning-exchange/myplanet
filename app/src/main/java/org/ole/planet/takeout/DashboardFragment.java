@@ -112,10 +112,8 @@ public class DashboardFragment extends Fragment {
         profileDbHandler = new UserProfileDbHandler(getActivity());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         Utilities.log(model.getUserImage() + " image");
-        ImageView image = view.findViewById(R.id.imageView);
-        if (!TextUtils.isEmpty(model.getUserImage())) {
-            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).error(R.drawable.profile).into(image);
-        }
+        ImageView imageView = view.findViewById(R.id.imageView);
+        Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();

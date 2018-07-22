@@ -9,7 +9,10 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.squareup.picasso.Picasso;
 
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
@@ -50,7 +53,7 @@ public class Utilities {
     }
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
-        return getServerUrl(settings) +"_users/" +userId + "/" + imageName;
+        return getServerUrl(settings) + "_users/" + userId + "/" + imageName;
     }
 
     public static String currentDate() {
@@ -144,5 +147,11 @@ public class Utilities {
 
     public static String getFullName(SharedPreferences settings) {
         return settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+    }
+
+    public static void loadImage(String userImage, ImageView imageView) {
+        if (!TextUtils.isEmpty(userImage)) {
+            Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+        }
     }
 }

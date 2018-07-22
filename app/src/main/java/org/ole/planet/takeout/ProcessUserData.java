@@ -144,14 +144,8 @@ public abstract class ProcessUserData extends CustomDataProcessing {
     public void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user) {
         user.set_rev(jsonDoc.get("_rev").getAsString());
         user.setName(jsonDoc.get("name").getAsString());
-        //JsonElement userRoles = jsonDoc.get("roles");
-        //user.setRoles(userRolesAsJsonArray.getAsString());
         user.setRoles("");
-        if ((jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true"))) {
-            user.setUserAdmin(true);
-        } else {
-            user.setUserAdmin(false);
-        }
+        user.setUserAdmin(jsonDoc.get("isUserAdmin").getAsBoolean());
         user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
         user.setFirstName(jsonDoc.get("firstName").getAsString());
         user.setLastName(jsonDoc.get("lastName").getAsString());
@@ -169,9 +163,8 @@ public abstract class ProcessUserData extends CustomDataProcessing {
             JsonObject obj = element.getAsJsonObject();
             Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
             for (Map.Entry<String, JsonElement> entry : entries) {
-                if (!entry.getKey().contains("/")) {
-                    user.setUserImage(Utilities.getUserImageUrl(user.getId(), entry.getKey(), settings));
-                }
+                user.setUserImage(Utilities.getUserImageUrl(user.getId(), entry.getKey(), settings));
+                break;
             }
         }
         user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());

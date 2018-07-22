@@ -2,6 +2,7 @@ package org.ole.planet.takeout.userprofile;
 
 
 import android.content.Intent;
+import android.media.Image;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -73,17 +74,13 @@ public class UserProfileFragment extends Fragment {
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
         ((TextView) v.findViewById(R.id.txt_dob)).setText(Utilities.checkNA(model.getDob()));
-        ImageView image = v.findViewById(R.id.image);
-        if (!TextUtils.isEmpty(model.getUserImage())) {
-            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).error(R.drawable.profile).into(image);
-        }
+        Utilities.loadImage(model.getUserImage(), (ImageView) v.findViewById(R.id.image));
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
         map.put("Community Name", Utilities.checkNA(model.getCommunityName()));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
         map.put("Maximum opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
         map.put("Number of Resource open : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
-
         setUpRecyclerView(map, v);
     }
 
