@@ -31,6 +31,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="left"
+                android:id="@+id/ll_user"
                 android:layout_weight="2.7"
                 android:background="@color/material_drawer_primary"
                 android:orientation="vertical"

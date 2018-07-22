@@ -35,6 +35,7 @@
                 android:background="@color/material_drawer_primary"
                 android:orientation="vertical"
                 android:paddingLeft="10dp"
+                android:id="@+id/ll_user"
                 android:paddingTop="10dp"
                 android:weightSum="5">
 

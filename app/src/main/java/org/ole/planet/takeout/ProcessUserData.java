@@ -63,6 +63,7 @@ public abstract class ProcessUserData extends CustomDataProcessing {
     public void saveUserInfoPref(SharedPreferences settings, String password, realm_UserModel user) {
         this.settings = settings;
         SharedPreferences.Editor editor = settings.edit();
+        editor.putString("userId", user.getId());
         editor.putString("name", user.getName());
         editor.putString("password", password);
         editor.putString("firstName", user.getFirstName());
@@ -158,6 +159,8 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         user.setIterations(jsonDoc.get("iterations").getAsString());
         user.setDerived_key(jsonDoc.get("derived_key").getAsString());
         user.setSalt(jsonDoc.get("salt").getAsString());
+        user.setDob(jsonDoc.get("dob") == null ? "" : jsonDoc.get("dob").getAsString());
+        user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
     }
 
 

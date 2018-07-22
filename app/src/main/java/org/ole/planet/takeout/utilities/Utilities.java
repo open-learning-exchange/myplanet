@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Environment;
+import android.text.TextUtils;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -121,5 +123,22 @@ public class Utilities {
         } catch (ActivityNotFoundException e) {
             Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public static String checkNA(String s){
+        return TextUtils.isEmpty(s) ? "N/A" : s;
+    }
+
+
+    public static String getRelativeTime(long timestamp) {
+        long nowtime = System.currentTimeMillis();
+        if (timestamp < nowtime) {
+            return (String) DateUtils.getRelativeTimeSpanString(timestamp, nowtime, 0);
+        }
+        return "Just now";
+    }
+
+    public static String getFullName(SharedPreferences settings) {
+      return   settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
     }
 }
