@@ -48,7 +48,7 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends Fragment {
+public class DashboardFragment extends Fragment implements View.OnClickListener {
 
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
@@ -112,29 +112,28 @@ public class DashboardFragment extends Fragment {
         Utilities.log("Max opened Resource " + profileDbHandler.getMaxOpenedResource());
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
-
-        myLibraryImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                openCallFragment(new MyLibraryFragment());
-            }
-        });
-
-        myMeetUpsImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                openCallFragment(new MyMeetUpsFragment());
-            }
-        });
-
-        myCourseImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                openCallFragment(new MyCourseFragment());
-            }
-        });
-
+        myLibraryImage.setOnClickListener(this);
+        myCourseImage.setOnClickListener(this);
+        myMeetUpsImage.setOnClickListener(this);
         return view;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.myLibraryImageButton:
+                openCallFragment(new MyLibraryFragment());
+                break;
+            case R.id.myCoursesImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            case R.id.myMeetUpsImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            default:
+                openCallFragment(new DashboardFragment());
+                break;
+        }
     }
 
     private void declareElements(View view) {
@@ -155,7 +154,6 @@ public class DashboardFragment extends Fragment {
                     listener.openCallFragment(new UserProfileFragment());
             }
         });
-
         realmConfig();
         myLibraryDiv(view);
         showDownloadDialog();
@@ -289,4 +287,6 @@ public class DashboardFragment extends Fragment {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
         }
     }
+
+
 }
