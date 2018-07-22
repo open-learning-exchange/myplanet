@@ -22,6 +22,15 @@ public class realm_UserModel extends RealmObject {
     private String salt;
     private String  dob;
     private String communityName;
+    private String userImage;
+
+    public String getUserImage() {
+        return userImage;
+    }
+
+    public void setUserImage(String userImage) {
+        this.userImage = userImage;
+    }
 
     public String getDob() {
         return dob;

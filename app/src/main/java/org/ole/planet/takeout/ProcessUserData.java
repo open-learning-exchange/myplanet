@@ -11,7 +11,9 @@ import android.widget.EditText;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
@@ -21,10 +23,12 @@ import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -158,7 +162,18 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         user.setIterations(jsonDoc.get("iterations").getAsString());
         user.setDerived_key(jsonDoc.get("derived_key").getAsString());
         user.setSalt(jsonDoc.get("salt").getAsString());
-        user.setDob(jsonDoc.get("dob") == null ? "" : jsonDoc.get("dob").getAsString());
+        user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
+        if (jsonDoc.has("_attachments")) {
+            JsonParser parser = new JsonParser();
+            JsonElement element = parser.parse(String.valueOf(jsonDoc.get("_attachments").getAsJsonObject()));
+            JsonObject obj = element.getAsJsonObject();
+            Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
+            for (Map.Entry<String, JsonElement> entry : entries) {
+                if (!entry.getKey().contains("/")) {
+                    user.setUserImage(Utilities.getUserImageUrl(user.getId(), entry.getKey(), settings));
+                }
+            }
+        }
         user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
     }
 

@@ -18,13 +18,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
+import com.squareup.picasso.Picasso;
 
 import org.ole.planet.takeout.Data.Download;
+import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
@@ -53,6 +56,7 @@ public class DashboardFragment extends Fragment {
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
+    ImageView userImage;
     String fullName;
     Realm mRealm;
     ProgressDialog prgDialog;
@@ -106,7 +110,13 @@ public class DashboardFragment extends Fragment {
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        Utilities.log("Max opened Resource " + profileDbHandler.getMaxOpenedResource());
+        realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        Utilities.log(model.getUserImage() + " image");
+        ImageView image = view.findViewById(R.id.imageView);
+        if (!TextUtils.isEmpty(model.getUserImage())) {
+            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).error(R.drawable.profile).into(image);
+        }
+        txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;

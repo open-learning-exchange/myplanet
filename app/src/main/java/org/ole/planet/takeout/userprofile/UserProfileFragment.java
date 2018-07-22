@@ -9,12 +9,16 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.squareup.picasso.Picasso;
 
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.R;
@@ -69,7 +73,10 @@ public class UserProfileFragment extends Fragment {
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
         ((TextView) v.findViewById(R.id.txt_dob)).setText(Utilities.checkNA(model.getDob()));
-
+        ImageView image = v.findViewById(R.id.image);
+        if (!TextUtils.isEmpty(model.getUserImage())) {
+            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).error(R.drawable.profile).into(image);
+        }
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
         map.put("Community Name", Utilities.checkNA(model.getCommunityName()));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
