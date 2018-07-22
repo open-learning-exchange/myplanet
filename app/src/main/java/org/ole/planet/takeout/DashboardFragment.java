@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
@@ -49,7 +50,6 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
  */
 public class DashboardFragment extends Fragment {
 
-    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
@@ -58,11 +58,14 @@ public class DashboardFragment extends Fragment {
     ProgressDialog prgDialog;
     UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
+
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+
+
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -109,6 +112,28 @@ public class DashboardFragment extends Fragment {
         Utilities.log("Max opened Resource " + profileDbHandler.getMaxOpenedResource());
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
+
+        myLibraryImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                openCallFragment(new MyLibraryFragment());
+            }
+        });
+
+        myMeetUpsImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                openCallFragment(new MyMeetUpsFragment());
+            }
+        });
+
+        myCourseImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                openCallFragment(new MyCourseFragment());
+            }
+        });
+
         return view;
     }
 
@@ -118,9 +143,11 @@ public class DashboardFragment extends Fragment {
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
         myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
+
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+
         view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -133,6 +160,14 @@ public class DashboardFragment extends Fragment {
         myLibraryDiv(view);
         showDownloadDialog();
     }
+
+    public void openCallFragment(Fragment newfragment) {
+        FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+
 
     public void realmConfig() {
         Realm.init(getContext());
