@@ -157,18 +157,10 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         user.setDerived_key(jsonDoc.get("derived_key").getAsString());
         user.setSalt(jsonDoc.get("salt").getAsString());
         user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
-        if (jsonDoc.has("_attachments")) {
-            JsonParser parser = new JsonParser();
-            JsonElement element = parser.parse(String.valueOf(jsonDoc.get("_attachments").getAsJsonObject()));
-            JsonObject obj = element.getAsJsonObject();
-            Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
-            for (Map.Entry<String, JsonElement> entry : entries) {
-                user.setUserImage(Utilities.getUserImageUrl(user.getId(), entry.getKey(), settings));
-                break;
-            }
-        }
         user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
+        user.addImageUrl(jsonDoc, settings);
     }
+
 
 
     public void populateShelfItems(SharedPreferences settings, Realm mRealm) {
