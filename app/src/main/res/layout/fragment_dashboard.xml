@@ -129,6 +129,7 @@
                         android:background="@null"
                         android:padding="20dp"
                         android:scaleType="fitCenter"
+
                         app:srcCompat="@drawable/library" />
 
                     <TextView

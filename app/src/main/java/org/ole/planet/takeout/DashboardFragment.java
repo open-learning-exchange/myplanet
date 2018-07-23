@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
@@ -54,9 +55,8 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends Fragment {
+public class DashboardFragment extends Fragment implements View.OnClickListener {
 
-    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
@@ -66,6 +66,7 @@ public class DashboardFragment extends Fragment {
     ProgressDialog prgDialog;
     UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
+
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
@@ -123,7 +124,28 @@ public class DashboardFragment extends Fragment {
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
+        myLibraryImage.setOnClickListener(this);
+        myCourseImage.setOnClickListener(this);
+        myMeetUpsImage.setOnClickListener(this);
         return view;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.myLibraryImageButton:
+                openCallFragment(new MyLibraryFragment());
+                break;
+            case R.id.myCoursesImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            case R.id.myMeetUpsImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            default:
+                openCallFragment(new DashboardFragment());
+                break;
+        }
     }
 
     private void declareElements(View view) {
@@ -132,6 +154,7 @@ public class DashboardFragment extends Fragment {
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
         myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
+
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
@@ -147,6 +170,14 @@ public class DashboardFragment extends Fragment {
         myLibraryDiv(view);
         showDownloadDialog();
     }
+
+    public void openCallFragment(Fragment newfragment) {
+        FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+
 
     public void realmConfig() {
         Realm.init(getContext());
@@ -270,7 +301,6 @@ public class DashboardFragment extends Fragment {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
         }
     }
-
     public void checkFileExtension(realm_myLibrary items)
     {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
