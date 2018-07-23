@@ -11,7 +11,9 @@ import android.widget.EditText;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
@@ -21,10 +23,12 @@ import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -140,14 +144,8 @@ public abstract class ProcessUserData extends CustomDataProcessing {
     public void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user) {
         user.set_rev(jsonDoc.get("_rev").getAsString());
         user.setName(jsonDoc.get("name").getAsString());
-        //JsonElement userRoles = jsonDoc.get("roles");
-        //user.setRoles(userRolesAsJsonArray.getAsString());
         user.setRoles("");
-        if ((jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true"))) {
-            user.setUserAdmin(true);
-        } else {
-            user.setUserAdmin(false);
-        }
+        user.setUserAdmin(jsonDoc.get("isUserAdmin").getAsBoolean());
         user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
         user.setFirstName(jsonDoc.get("firstName").getAsString());
         user.setLastName(jsonDoc.get("lastName").getAsString());
@@ -158,9 +156,11 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         user.setIterations(jsonDoc.get("iterations").getAsString());
         user.setDerived_key(jsonDoc.get("derived_key").getAsString());
         user.setSalt(jsonDoc.get("salt").getAsString());
-        user.setDob(jsonDoc.get("dob") == null ? "" : jsonDoc.get("dob").getAsString());
+        user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
         user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
+        user.addImageUrl(jsonDoc, settings);
     }
+
 
 
     public void populateShelfItems(SharedPreferences settings, Realm mRealm) {

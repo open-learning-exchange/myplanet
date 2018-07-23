@@ -9,7 +9,10 @@ import android.os.Environment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.squareup.picasso.Picasso;
 
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
@@ -23,6 +26,7 @@ import java.util.Calendar;
 
 public class Utilities {
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
+
     public static void log(String message) {
         Log.d("OLE ", "log: " + message);
     }
@@ -37,11 +41,19 @@ public class Utilities {
     }
 
     public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
+        return getServerUrl(settings)
+                + "resources/" + library.getResourceId() + "/" + library.getResourceLocalAddress();
+
+    }
+
+    private static String getServerUrl(SharedPreferences settings) {
         return settings.getString("url_Scheme", "") + "://" +
                 settings.getString("url_Host", "") + ":" +
-                settings.getInt("url_Port", 0)
-                + "/resources/" + library.getResourceId() + "/" + library.getResourceLocalAddress();
+                settings.getInt("url_Port", 0) + "/";
+    }
 
+    public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
+        return getServerUrl(settings) + "_users/" + userId + "/" + imageName;
     }
 
     public static String currentDate() {
@@ -120,7 +132,7 @@ public class Utilities {
         }
     }
 
-    public static String checkNA(String s){
+    public static String checkNA(String s) {
         return TextUtils.isEmpty(s) ? "N/A" : s;
     }
 
@@ -134,6 +146,12 @@ public class Utilities {
     }
 
     public static String getFullName(SharedPreferences settings) {
-      return   settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+        return settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+    }
+
+    public static void loadImage(String userImage, ImageView imageView) {
+        if (!TextUtils.isEmpty(userImage)) {
+            Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+        }
     }
 }
