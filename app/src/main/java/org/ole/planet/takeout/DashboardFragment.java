@@ -25,22 +25,16 @@ import android.widget.TextView;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-import com.squareup.picasso.Picasso;
-
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
-import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
