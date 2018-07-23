@@ -26,6 +26,7 @@ import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.datamanager.MyDownloadService;
@@ -131,6 +132,7 @@ public class DashboardFragment extends Fragment {
 
         realmConfig();
         myLibraryDiv(view);
+        myCoursesDiv(view);
         showDownloadDialog();
     }
 
@@ -162,6 +164,26 @@ public class DashboardFragment extends Fragment {
                 myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
             flexboxLayout.addView(myLibraryTextViewArray[itemCnt], params);
+            itemCnt++;
+        }
+    }
+
+    public void myCoursesDiv(View view) {
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
+        flexboxLayout.setFlexDirection(FlexDirection.ROW);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                300,
+                100
+        );
+        RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
+        TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
+        int itemCnt = 0;
+        for (final realm_myCourses items: db_myCourses) {
+            setTextViewPropertiesCourse(myCoursesTextViewArray, itemCnt, items);
+            if ((itemCnt % 2) == 0) {
+                myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+            }
+            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
         }
     }
@@ -242,6 +264,16 @@ public class DashboardFragment extends Fragment {
         textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
         textViewArray[itemCnt].setText(items.getTitle());
+        textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+    }
+
+    public void setTextViewPropertiesCourse(TextView[] textViewArray, int itemCnt, realm_myCourses items) {
+        textViewArray[itemCnt] = new TextView(getContext());
+        textViewArray[itemCnt].setPadding(20, 10, 20, 10);
+        textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
+        textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
+        textViewArray[itemCnt].setText(items.getCourse_rev());
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
     }
 

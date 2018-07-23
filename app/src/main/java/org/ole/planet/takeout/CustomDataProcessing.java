@@ -43,6 +43,7 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                     .equalTo("userId", stringArray[0])
                     .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
                     .findAll();
+            System.out.println("DB_Category: "+db_Categrory);
             if (db_Categrory.isEmpty()) {
                 setRealmProperties(stringArray[2]);
                 generaldb = new CouchDbClientAndroid(properties);
@@ -141,8 +142,13 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
         myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
         myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
         myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
-        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
-        insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
+        if((myCousesDoc.get("numberOfSteps").getAsJsonArray().size()) == -1){
+            myMyCoursesDB.setnumberOfSteps(null);
+            insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), 0);
+        } else{
+            myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
+            insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
+        }
     }
 
     public void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps) {
