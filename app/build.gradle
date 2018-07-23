@@ -59,6 +59,7 @@ dependencies {
     implementation 'com.github.barteksc:android-pdf-viewer:3.0.0-beta.5'
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
     implementation 'com.google.android:flexbox:1.0.0'
+    implementation 'com.squareup.picasso:picasso:2.71828'
 
 
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
@@ -78,4 +79,3 @@ dependencies {
 realm {
     syncEnabled = true;
 }
-

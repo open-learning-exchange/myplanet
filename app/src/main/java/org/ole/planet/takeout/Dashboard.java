@@ -12,6 +12,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.GravityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
@@ -37,12 +38,13 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
 
 
-public class Dashboard extends DashboardElements {
+public class Dashboard extends DashboardElements implements OnHomeItemClickListener {
     private Drawer result = null;
     private Toolbar mTopToolbar;
     AccountHeader headerResult;
@@ -173,21 +175,27 @@ public class Dashboard extends DashboardElements {
                 openCallFragment(new DashboardFragment());
                 break;
             case R.string.menu_library:
+                openCallFragment(new MyLibraryFragment());
                 break;
             case R.string.menu_meetups:
+                openCallFragment(new MyMeetUpsFragment());
                 break;
             case R.string.menu_surveys:
+                openCallFragment(new MySurveyFragment());
                 break;
             case R.string.menu_courses:
+                openCallFragment(new MyCourseFragment());
                 break;
             case R.string.menu_feedback:
                 feedbackDialog();
+            case R.string.menu_logout:
+                break;
             default:
                 openCallFragment(new DashboardFragment());
                 break;
-
         }
     }
+
 
     public void feedbackDialog() {
         MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).customView(R.layout.dialog_feedback, true).title(R.string.menu_feedback)
@@ -210,11 +218,12 @@ public class Dashboard extends DashboardElements {
     }
 
 
+    @Override
     public void openCallFragment(Fragment newfragment) {
-        newfragment = new DashboardFragment();
+        isDashBoard = newfragment instanceof DashboardFragment;
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        fragmentTransaction.addToBackStack(null);
+        //  fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
 
@@ -257,13 +266,19 @@ public class Dashboard extends DashboardElements {
                 .withIconTintingEnabled(true);
     }
 
+
+    private boolean isDashBoard = false;
+
     @Override
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
+        } else if (!isDashBoard) {
+            openCallFragment(new DashboardFragment());
         } else {
             super.onBackPressed();
         }
     }
+
 
 }
