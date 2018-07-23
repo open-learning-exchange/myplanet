@@ -1,5 +1,16 @@
 package org.ole.planet.takeout.Data;
 
+import android.content.SharedPreferences;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import org.ole.planet.takeout.utilities.Utilities;
+
+import java.util.Map;
+import java.util.Set;
+
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -22,6 +33,15 @@ public class realm_UserModel extends RealmObject {
     private String salt;
     private String  dob;
     private String communityName;
+    private String userImage;
+
+    public String getUserImage() {
+        return userImage;
+    }
+
+    public void setUserImage(String userImage) {
+        this.userImage = userImage;
+    }
 
     public String getDob() {
         return dob;
@@ -157,5 +177,19 @@ public class realm_UserModel extends RealmObject {
 
     public void setSalt(String salt) {
         this.salt = salt;
+    }
+
+
+    public void addImageUrl(JsonObject jsonDoc, SharedPreferences settings) {
+        if (jsonDoc.has("_attachments")) {
+            JsonParser parser = new JsonParser();
+            JsonElement element = parser.parse(String.valueOf(jsonDoc.get("_attachments").getAsJsonObject()));
+            JsonObject obj = element.getAsJsonObject();
+            Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
+            for (Map.Entry<String, JsonElement> entry : entries) {
+                this.setUserImage(Utilities.getUserImageUrl(this.getId(), entry.getKey(), settings));
+                break;
+            }
+        }
     }
 }

@@ -18,26 +18,22 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-
 import org.ole.planet.takeout.Data.Download;
-import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
-import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -54,6 +50,7 @@ public class DashboardFragment extends Fragment {
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
+    ImageView userImage;
     String fullName;
     Realm mRealm;
     ProgressDialog prgDialog;
@@ -107,7 +104,11 @@ public class DashboardFragment extends Fragment {
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        Utilities.log("Max opened Resource " + profileDbHandler.getMaxOpenedResource());
+        realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        Utilities.log(model.getUserImage() + " image");
+        ImageView imageView = view.findViewById(R.id.imageView);
+        Utilities.loadImage(model.getUserImage(), imageView);
+        txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;
@@ -132,7 +133,6 @@ public class DashboardFragment extends Fragment {
 
         realmConfig();
         myLibraryDiv(view);
-
         showDownloadDialog();
     }
 
