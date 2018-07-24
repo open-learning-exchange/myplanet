@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
@@ -18,26 +19,24 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-
 import org.ole.planet.takeout.Data.Download;
+import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
-import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -48,22 +47,25 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends Fragment {
+public class DashboardFragment extends Fragment implements View.OnClickListener {
 
-    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
+    ImageView userImage;
     String fullName;
     Realm mRealm;
     ProgressDialog prgDialog;
     UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
+
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+
+
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -107,10 +109,35 @@ public class DashboardFragment extends Fragment {
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        Utilities.log("Max opened Resource " + profileDbHandler.getMaxOpenedResource());
+        realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        Utilities.log(model.getUserImage() + " image");
+        ImageView imageView = view.findViewById(R.id.imageView);
+        Utilities.loadImage(model.getUserImage(), imageView);
+        txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
+        myLibraryImage.setOnClickListener(this);
+        myCourseImage.setOnClickListener(this);
+        myMeetUpsImage.setOnClickListener(this);
         return view;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.myLibraryImageButton:
+                openCallFragment(new MyLibraryFragment());
+                break;
+            case R.id.myCoursesImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            case R.id.myMeetUpsImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            default:
+                openCallFragment(new DashboardFragment());
+                break;
+        }
     }
 
     private void declareElements(View view) {
@@ -119,9 +146,11 @@ public class DashboardFragment extends Fragment {
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
         myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
+
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+
         view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -129,12 +158,19 @@ public class DashboardFragment extends Fragment {
                     listener.openCallFragment(new UserProfileFragment());
             }
         });
-
         realmConfig();
         myLibraryDiv(view);
         myCoursesDiv(view);
         showDownloadDialog();
     }
+
+    public void openCallFragment(Fragment newfragment) {
+        FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+
 
     public void realmConfig() {
         Realm.init(getContext());
@@ -281,4 +317,6 @@ public class DashboardFragment extends Fragment {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
         }
     }
+
+
 }
