@@ -43,7 +43,6 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                     .equalTo("userId", stringArray[0])
                     .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
                     .findAll();
-            System.out.println("DB_Category: "+db_Categrory);
             if (db_Categrory.isEmpty()) {
                 setRealmProperties(stringArray[2]);
                 generaldb = new CouchDbClientAndroid(properties);
@@ -142,13 +141,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
         myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
         myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
         myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
-        if((myCousesDoc.get("numberOfSteps").getAsJsonArray().size()) == -1){
-            myMyCoursesDB.setnumberOfSteps(null);
-            insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), 0);
-        } else{
-            myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
-            insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
-        }
+        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
+        insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size());
     }
 
     public void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps) {
@@ -159,8 +153,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             JsonObject stepContainer = steps.get(step).getAsJsonObject();
             myCourseStepDB.setStepTitle(stepContainer.get("stepTitle").getAsString());
             myCourseStepDB.setDescription(stepContainer.get("description").getAsString());
-            myCourseStepDB.setNoOfResources(stepContainer.get("attachment").getAsJsonArray().size());
-            myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
+//            myCourseStepDB.setNoOfResources(stepContainer.get("attachment").getAsJsonArray().size());  // CAUSING NULL-EXCEPTION AND PREVENTING FILLING OG COURSE-LIST
+//            myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());   // CAUSING NULL-EXCEPTION AND PREVENTING FILLING OG COURSE-LIST
             insertCourseStepsAttachments();
             insertCourseStepsExams();
         }

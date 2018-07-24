@@ -21,6 +21,7 @@ import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
@@ -171,7 +172,7 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, shelfDoc.getId());
-            System.out.println("JSON DOC: "+jsonDoc);
+            Utilities.log("Json Doc " + jsonDoc.toString());
             if (jsonDoc.getAsJsonArray("resourceIds") != null) {
                 JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
                 JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
@@ -188,23 +189,25 @@ public abstract class ProcessUserData extends CustomDataProcessing {
 
     public void memberShelfData(JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
         setVariables(settings, mRealm, properties);
-        if (array_resourceIds.size() > 0) {
-            RealmResults<realm_myLibrary> category = null;
-            triggerInsert("resourceId", "resources");
-            check(stringArray, array_resourceIds, realm_myLibrary.class, category);
+        Log.e("CourseIds", ""+array_courseIds+" SIZE: "+array_courseIds.size());
+        if (array_courseIds.size() > 0) {
+            Log.e("CourseIds", ""+array_courseIds);
+            RealmResults<realm_myCourses> category = null;
+            triggerInsert("courseId", "courses");
+            check(stringArray, array_courseIds, realm_myCourses.class, category);
         }
         if (array_meetupIds.size() > 0) {
             triggerInsert("meetupId", "meetups");
             RealmResults<realm_meetups> category = null;
             check(stringArray, array_resourceIds, realm_meetups.class, category);
         }
-        if (array_courseIds.size() > 0) {
-            RealmResults<realm_myCourses> category = null;
-            triggerInsert("courseId", "courses");
-            check(stringArray, array_courseIds, realm_myCourses.class, category);
-        }
         if (array_myTeamIds.size() > 0) {
             checkMyTeams(shelfDoc.getId(), array_myTeamIds);
+        }
+        if (array_resourceIds.size() > 0) {
+            RealmResults<realm_myLibrary> category = null;
+            triggerInsert("resourceId", "resources");
+            check(stringArray, array_resourceIds, realm_myLibrary.class, category);
         }
     }
 
