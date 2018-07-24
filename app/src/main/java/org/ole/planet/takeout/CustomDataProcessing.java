@@ -161,9 +161,9 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
                 myCourseStepDB.setNoOfResources(stepContainer.get("resources").getAsJsonArray().size());
                 insertCourseStepsAttachments(myCoursesID, step_id, stepContainer.getAsJsonArray("resources"));
             }
-            // myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
             if (stepContainer.has("exam"))
                 insertCourseStepsExams(myCoursesID, step_id, stepContainer.getAsJsonObject("exam"));
+
         }
     }
 
