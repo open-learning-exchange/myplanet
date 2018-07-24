@@ -16,6 +16,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_project_name"
+        android:name=".MainApplication"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/MyMaterialTheme">
@@ -36,6 +37,15 @@
         <activity android:name=".PDFReaderActivity"></activity>
 
         <service android:name=".datamanager.MyDownloadService" />
+
+        <service
+            android:exported="false"
+            android:name=".service.AutoSyncService">
+            <intent-filter>
+                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

@@ -27,10 +27,10 @@ import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public abstract class SyncActivity extends ProcessUserData {
-    private TextView syncDate;
-    private TextView intervalLabel;
-    private Spinner spinner;
-    private Switch syncSwitch;
+    public TextView syncDate;
+    public TextView intervalLabel;
+    public Spinner spinner;
+    public Switch syncSwitch;
     int convertedDate;
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
@@ -42,23 +42,27 @@ public abstract class SyncActivity extends ProcessUserData {
 
     public void sync(MaterialDialog dialog) {
         // Check Autosync switch (Toggler)
+        spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
         syncSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    Log.e("MD: ", "Autosync is On");
-                    intervalLabel.setVisibility(View.VISIBLE);
-                    spinner.setVisibility(View.VISIBLE);
-                } else {
-                    Log.e("MD: ", "Autosync is Off");
-                    spinner.setVisibility(View.GONE);
-                    intervalLabel.setVisibility(View.GONE);
-                }
+                setSpinnerVisibility(isChecked);
             }
         });
+        syncSwitch.setChecked(settings.getBoolean("autoSync", false));
         dateCheck(dialog);
+    }
+
+    private void setSpinnerVisibility(boolean isChecked) {
+        if (isChecked) {
+            intervalLabel.setVisibility(View.VISIBLE);
+            spinner.setVisibility(View.VISIBLE);
+        } else {
+            spinner.setVisibility(View.GONE);
+            intervalLabel.setVisibility(View.GONE);
+        }
     }
 
     private void dateCheck(MaterialDialog dialog) {
@@ -73,7 +77,6 @@ public abstract class SyncActivity extends ProcessUserData {
         }
 
         // Init spinner dropdown items
-        spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
         syncDropdownAdd();
     }
 
@@ -184,7 +187,6 @@ public abstract class SyncActivity extends ProcessUserData {
                 .setPassword(settings.getString("url_pwd", ""))
                 .setMaxConnections(100)
                 .setConnectionTimeout(0);
-
     }
 
 
@@ -215,6 +217,4 @@ public abstract class SyncActivity extends ProcessUserData {
                 .show();
         syncDatabase();
     }
-
-
 }
