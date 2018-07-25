@@ -1,5 +1,10 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonObject;
+
+import java.util.UUID;
+
+import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -122,4 +127,22 @@ public class realm_myCourses extends RealmObject {
     public void setnumberOfSteps(Integer numberOfSteps) {
         this.numberOfSteps = numberOfSteps;
     }
+
+    public static void insertMyCourses(String userId, String myCoursesID, JsonObject myCousesDoc, Realm mRealm) {
+        realm_myCourses myMyCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
+        myMyCoursesDB.setUserId(userId);
+        myMyCoursesDB.setCourseId(myCoursesID);
+        myMyCoursesDB.setCourse_rev(myCousesDoc.get("_rev").getAsString());
+        myMyCoursesDB.setLanguageOfInstruction(myCousesDoc.get("languageOfInstruction").getAsString());
+        myMyCoursesDB.setCourse_rev(myCousesDoc.get("courseTitle").getAsString());
+        myMyCoursesDB.setMemberLimit(myCousesDoc.get("memberLimit").getAsInt());
+        myMyCoursesDB.setDescription(myCousesDoc.get("description").getAsString());
+        myMyCoursesDB.setMethod(myCousesDoc.get("method").getAsString());
+        myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
+        myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
+        myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
+        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
+        realm_courseSteps.insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
+    }
+
 }

@@ -1,5 +1,16 @@
 package org.ole.planet.takeout.Data;
 
+import android.content.SharedPreferences;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
@@ -178,5 +189,35 @@ public class realm_myLibrary extends RealmObject {
 
     public void setResourceOffline(Boolean resourceOffline) {
         this.resourceOffline = resourceOffline;
+    }
+
+    public static void insertMyLibrary(String userId, String resourceID, JsonObject resourceDoc, Realm mRealm, SharedPreferences settings) {
+        realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
+        myLibraryDB.setUserId(userId);
+        myLibraryDB.setResourceId(resourceID);
+        myLibraryDB.setResource_rev(resourceDoc.get("_rev").getAsString());
+        myLibraryDB.setTitle(resourceDoc.get("title").getAsString());
+        myLibraryDB.setAuthor(resourceDoc.get("author").getAsString());
+//        myLibraryDB.setPublisher(resourceDoc.get("Publisher").getAsString());
+//        myLibraryDB.setMedium(resourceDoc.get("medium").getAsString());
+        myLibraryDB.setLanguage(resourceDoc.get("language").isJsonArray() ? resourceDoc.get("language").getAsJsonArray().toString() : resourceDoc.get("language").getAsString()); //array
+        myLibraryDB.setSubject(resourceDoc.get("subject").isJsonArray() ? resourceDoc.get("subject").getAsJsonArray().toString() : resourceDoc.get("subject").getAsString()); // array
+//        myLibraryDB.setLinkToLicense(resourceDoc.get("linkToLicense").getAsString());
+//        myLibraryDB.setResourceFor(resourceDoc.get("resourceFor")!= null ? resourceDoc.get("resourceFor").getAsString() : "");
+        myLibraryDB.setMediaType(resourceDoc.get("mediaType").getAsString());
+//        myLibraryDB.setAverageRating(resourceDoc.get("averageRating").getAsString());
+        JsonObject attachments = resourceDoc.get("_attachments").getAsJsonObject();
+        JsonParser parser = new JsonParser();
+        JsonElement element = parser.parse(String.valueOf(attachments));
+        JsonObject obj = element.getAsJsonObject();
+        Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
+        for (Map.Entry<String, JsonElement> entry : entries) {
+            if (entry.getKey().indexOf("/") < 0) {
+                myLibraryDB.setResourceRemoteAddress(settings.getString("serverURL", "http://") + "/resources/" + resourceID + "/" + entry.getKey());
+                myLibraryDB.setResourceLocalAddress(entry.getKey());
+                myLibraryDB.setResourceOffline(false);
+            }
+        }
+        myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
     }
 }

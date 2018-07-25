@@ -5,7 +5,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
@@ -18,7 +17,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.callback.SyncListener;
-import org.ole.planet.takeout.datamanager.RealmService;
+import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.utilities.NotificationUtil;
 
@@ -27,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
-import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public abstract class SyncActivity extends ProcessUserData implements SyncListener {
@@ -120,7 +118,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         this.settings = settings;
         this.context = context;
         AndroidDecrypter decrypt = new AndroidDecrypter();
-        mRealm = new RealmService(context).getInstance();
+        mRealm = new DatabaseService(context).getRealmInstance();
         ;
         if (mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");
