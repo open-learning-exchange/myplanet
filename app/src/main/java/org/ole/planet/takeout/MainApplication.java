@@ -1,8 +1,10 @@
 package org.ole.planet.takeout;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 
 import com.firebase.jobdispatcher.Constraint;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
@@ -13,9 +15,10 @@ import com.firebase.jobdispatcher.RetryStrategy;
 import com.firebase.jobdispatcher.Trigger;
 
 import org.ole.planet.takeout.service.AutoSyncService;
+import org.ole.planet.takeout.utilities.NotificationUtil;
 import org.ole.planet.takeout.utilities.Utilities;
 
-public class MainApplication extends Application {
+public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
     public static FirebaseJobDispatcher dispatcher;
     public static Context context;
     SharedPreferences preferences;
@@ -32,12 +35,11 @@ public class MainApplication extends Application {
         } else {
             dispatcher.cancelAll();
         }
-
+        registerActivityLifecycleCallbacks(this);
     }
 
     public void createJob(int sec) {
         Utilities.log("Create job");
-
         Job myJob = dispatcher.newJobBuilder()
                 .setService(AutoSyncService.class)
                 .setTag("ole")
@@ -47,5 +49,40 @@ public class MainApplication extends Application {
                 .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
                 .build();
         dispatcher.mustSchedule(myJob);
+    }
+
+    @Override
+    public void onActivityCreated(Activity activity, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onActivityStarted(Activity activity) {
+
+    }
+
+    @Override
+    public void onActivityResumed(Activity activity) {
+
+    }
+
+    @Override
+    public void onActivityPaused(Activity activity) {
+
+    }
+
+    @Override
+    public void onActivityStopped(Activity activity) {
+    }
+
+    @Override
+    public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onActivityDestroyed(Activity activity) {
+        Utilities.log("Destroyed ");
+        NotificationUtil.cancellAll(this);
     }
 }

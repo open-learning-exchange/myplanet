@@ -17,6 +17,10 @@ import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.callback.SyncListener;
+import org.ole.planet.takeout.datamanager.RealmService;
+import org.ole.planet.takeout.service.SyncManager;
+import org.ole.planet.takeout.utilities.NotificationUtil;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -26,7 +30,7 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
-public abstract class SyncActivity extends ProcessUserData {
+public abstract class SyncActivity extends ProcessUserData implements SyncListener {
     public TextView syncDate;
     public TextView intervalLabel;
     public Spinner spinner;
@@ -98,24 +102,6 @@ public abstract class SyncActivity extends ProcessUserData {
         spinner.setAdapter(spinnerArrayAdapter);
     }
 
-
-    public void syncDatabase() {
-        Thread td = new Thread(new Runnable() {
-            public void run() {
-                try {
-                    realmConfig("_users");
-                    userTransactionSync(settings, mRealm, properties, progress_dialog);
-                    myLibraryTransactionSync();
-                } finally {
-                    if (mRealm != null) {
-                        mRealm.close();
-                    }
-                }
-            }
-        });
-        td.start();
-    }
-
     public void alertDialogOkay(String Message) {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
         builder1.setMessage(Message);
@@ -134,7 +120,8 @@ public abstract class SyncActivity extends ProcessUserData {
         this.settings = settings;
         this.context = context;
         AndroidDecrypter decrypt = new AndroidDecrypter();
-        realmConfig("_users");
+        mRealm = new RealmService(context).getInstance();
+        ;
         if (mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");
             mRealm.close();
@@ -167,29 +154,6 @@ public abstract class SyncActivity extends ProcessUserData {
         return false;
     }
 
-
-    public void realmConfig(String dbName) {
-        Realm.init(context);
-        RealmConfiguration config = new RealmConfiguration.Builder()
-                .name(Realm.DEFAULT_REALM_NAME)
-                .deleteRealmIfMigrationNeeded()
-                .schemaVersion(4)
-                .build();
-        Realm.setDefaultConfiguration(config);
-        mRealm = Realm.getInstance(config);
-        properties = new CouchDbProperties()
-                .setDbName(dbName)
-                .setCreateDbIfNotExist(false)
-                .setProtocol(settings.getString("url_Scheme", "http"))
-                .setHost(settings.getString("url_Host", "192.168.2.1"))
-                .setPort(settings.getInt("url_Port", 3000))
-                .setUsername(settings.getString("url_user", ""))
-                .setPassword(settings.getString("url_pwd", ""))
-                .setMaxConnections(100)
-                .setConnectionTimeout(0);
-    }
-
-
     public void setUrlParts(String url, String password, Context context) {
         this.context = context;
         URI uri = URI.create(url);
@@ -210,11 +174,21 @@ public abstract class SyncActivity extends ProcessUserData {
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        SyncManager.getInstance().start(this);
+    }
+
+    @Override
+    public void onSyncStarted() {
         progress_dialog = new MaterialDialog.Builder(this)
                 .title("Syncing")
                 .content("Please wait")
                 .progress(true, 0)
                 .show();
-        syncDatabase();
+    }
+
+    @Override
+    public void onSyncComplete() {
+        progress_dialog.dismiss();
+        NotificationUtil.cancellAll(this);
     }
 }

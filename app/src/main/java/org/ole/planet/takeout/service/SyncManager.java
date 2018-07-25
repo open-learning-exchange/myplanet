@@ -23,8 +23,12 @@ import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.Data.realm_stepResources;
 import org.ole.planet.takeout.MainApplication;
+import org.ole.planet.takeout.R;
+import org.ole.planet.takeout.callback.SyncListener;
+import org.ole.planet.takeout.utilities.NotificationUtil;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,12 +43,12 @@ public class SyncManager {
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
-    private CouchDbClientAndroid generaldb;
     private Context context;
     private boolean isSyncing = false;
-     static final String PREFS_NAME = "OLE_PLANET";
+    static final String PREFS_NAME = "OLE_PLANET";
     private String[] stringArray = new String[3];
     private Document shelfDoc;
+    private SyncListener listener;
 
     public static SyncManager getInstance() {
         if (ourInstance == null) {
@@ -56,7 +60,7 @@ public class SyncManager {
 
     private SyncManager(Context context) {
         this.context = context;
-        settings  = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     public void realmConfig(String dbName) {
@@ -80,29 +84,38 @@ public class SyncManager {
                 .setConnectionTimeout(0);
     }
 
-    public void start() {
+    public void start(SyncListener listener) {
+        this.listener = listener;
         if (!isSyncing) {
             syncDatabase();
-        }else{
+        } else {
             Utilities.log("Already Syncing...");
         }
     }
 
-    public void destroy(){
+    public void destroy() {
         isSyncing = false;
         ourInstance = null;
-
+        settings.edit().putLong("LastSync", new Date().getTime()).commit();
+        if (listener != null) {
+            listener.onSyncComplete();
+        }
     }
 
     private void syncDatabase() {
+        if (listener != null) {
+            listener.onSyncStarted();
+        }
         Thread td = new Thread(new Runnable() {
             public void run() {
                 try {
                     isSyncing = true;
+                    NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                     realmConfig("_users");
                     userTransactionSync(settings, mRealm, properties);
                     myLibraryTransactionSync();
                 } finally {
+                    NotificationUtil.cancell(context, 111);
                     isSyncing = false;
                     if (mRealm != null) {
                         mRealm.close();
@@ -176,8 +189,6 @@ public class SyncManager {
                 realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
                 insertIntoUsers(jsonDoc, user);
             }
-
-
         } catch (Exception err) {
             err.printStackTrace();
         }
@@ -264,7 +275,7 @@ public class SyncManager {
                     .findAll();
             if (db_Categrory.isEmpty()) {
                 setRealmProperties(stringArray[2]);
-                generaldb = new CouchDbClientAndroid(properties);
+                CouchDbClientAndroid generaldb = new CouchDbClientAndroid(properties);
                 JsonObject resourceDoc = generaldb.find(JsonObject.class, array_categoryIds.get(x).getAsString());
                 triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
             } else {
