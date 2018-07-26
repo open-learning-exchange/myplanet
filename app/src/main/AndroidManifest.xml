@@ -41,7 +41,7 @@
         <activity android:name=".ImageViewerActivity" />
         <activity android:name=".TextFileViewerActivity" />
         <activity android:name=".MarkdownViewerActivity" />
-        <activity android:name=".CSVViewerActivity"></activity>
+        <activity android:name=".CSVViewerActivity" />
     </application>
 
 </manifest>

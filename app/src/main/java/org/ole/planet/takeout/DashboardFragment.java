@@ -23,7 +23,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
@@ -63,7 +62,7 @@ public class DashboardFragment extends Fragment {
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
-    private String filePath;
+    public String globalFilePath;
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -105,7 +104,7 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
-        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
+        globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
         realmConfig();
         myLibraryDiv(view);
         showDownloadDialog();
@@ -249,58 +248,52 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public void checkFileExtension(realm_myLibrary items)
-    {
+    public void checkFileExtension(realm_myLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
-        String extension = filenameArray[filenameArray.length-1];
-        Log.i("FILE_EXTENSION", extension);
+        String extension = filenameArray[filenameArray.length - 1];
 
-        //Intent fileOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
-        //fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-
-        if (extension.equals("pdf"))
-        {
-            Intent pdfOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
-            pdfOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-            startActivity(pdfOpenIntent);
+        switch (extension) {
+            case "pdf":
+                Intent pdfOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
+                pdfOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+                startActivity(pdfOpenIntent);
+                break;
+            case "bmp":
+            case "gif":
+            case "jpg":
+            case "png":
+            case "webp":
+                Intent imageOpenIntent = new Intent(DashboardFragment.this.getActivity(), ImageViewerActivity.class);
+                imageOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+                startActivity(imageOpenIntent);
+                break;
+            case "txt":
+                Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
+                textFileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+                startActivity(textFileOpenIntent);
+                break;
+            default:
+                checkMoreFileExtensions(extension, items);
+                break;
         }
+    }
 
-        // all image formats currently supported by Android
-        else if (extension.equals("bmp") || extension.equals("gif") || extension.equals("jpg") || extension.equals("png") || extension.equals("webp"))
-        {
-            Intent imageOpenIntent = new Intent(DashboardFragment.this.getActivity(), ImageViewerActivity.class);
-            imageOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-            startActivity(imageOpenIntent);
+    public void checkMoreFileExtensions(String extension, realm_myLibrary items)
+    {
+        switch (extension) {
+            case "md":
+                Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
+                markdownOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+                startActivity(markdownOpenIntent);
+                break;
+            case "csv":
+                Intent CSVOpenIntent = new Intent(DashboardFragment.this.getActivity(), CSVViewerActivity.class);
+                CSVOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+                startActivity(CSVOpenIntent);
+                break;
+            default:
+                Toast.makeText(getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
+                break;
         }
-
-        else if (extension.equals("txt"))
-        {
-            Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
-            textFileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-            startActivity(textFileOpenIntent);
-        }
-
-        else if (extension.equals("md"))
-        {
-            Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
-            markdownOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-            startActivity(markdownOpenIntent);
-        }
-
-        else if (extension.equals("csv"))
-        {
-            Intent CSVOpenIntent = new Intent(DashboardFragment.this.getActivity(), CSVViewerActivity.class);
-            CSVOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-            startActivity(CSVOpenIntent);
-        }
-
-        else
-        {
-            //Toast.makeText(getContext(), extension, Toast.LENGTH_SHORT).show();
-            Toast.makeText(getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
-
-        }
-
-
     }
 }

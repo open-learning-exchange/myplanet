@@ -41,8 +41,6 @@ public class TextFileViewerActivity extends AppCompatActivity {
     }
 
     private void renderTextFile() {
-        // File name to be viewed
-
         Intent textFileOpenIntent = getIntent();
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE");
         Log.i("THE_FILE", filePath);
@@ -51,11 +49,15 @@ public class TextFileViewerActivity extends AppCompatActivity {
             mTextFileNameTitle.setText(fileName);
             mTextFileNameTitle.setVisibility(View.VISIBLE);
         }
-
         else {
             mTextFileNameTitle.setVisibility(View.INVISIBLE);
         }
 
+        renderTextFileThread();
+    }
+
+    private void renderTextFileThread()
+    {
         Thread openTextFileThread = new Thread() {
             @Override
             public void run() {
@@ -74,9 +76,8 @@ public class TextFileViewerActivity extends AppCompatActivity {
                         br.close();
                     }
                     catch (IOException e) {
-                        //You'll need to add proper error handling here
+                        e.printStackTrace();
                     }
-
                     mTextFileContent.setText(text.toString());
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -84,7 +85,5 @@ public class TextFileViewerActivity extends AppCompatActivity {
             }
         };
         openTextFileThread.start();
-
-
     }
 }

@@ -142,16 +142,7 @@ public class LoginActivity extends SyncActivity {
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
 
         // allows the user to touch anywhere else on the screen to dismiss the keyboard
-        constraintLayout = findViewById(R.id.constraintLayout);
-        constraintLayout.setOnTouchListener(new View.OnTouchListener()
-        {
-            @Override
-            public boolean onTouch(View view, MotionEvent ev)
-            {
-                hideKeyboard(view);
-                return false;
-            }
-        });
+        declareHideKeyboardElements();
     }
 
     /**
@@ -266,5 +257,17 @@ public class LoginActivity extends SyncActivity {
     {
         InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+    }
+
+    public void declareHideKeyboardElements()
+    {
+        constraintLayout = findViewById(R.id.constraintLayout);
+        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent ev) {
+                hideKeyboard(view);
+                return false;
+            }
+        });
     }
 }
