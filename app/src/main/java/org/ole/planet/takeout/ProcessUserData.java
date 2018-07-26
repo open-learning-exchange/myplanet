@@ -11,7 +11,9 @@ import android.widget.EditText;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
@@ -21,10 +23,12 @@ import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -62,6 +66,7 @@ public abstract class ProcessUserData extends CustomDataProcessing {
     public void saveUserInfoPref(SharedPreferences settings, String password, realm_UserModel user) {
         this.settings = settings;
         SharedPreferences.Editor editor = settings.edit();
+        editor.putString("userId", user.getId());
         editor.putString("name", user.getName());
         editor.putString("password", password);
         editor.putString("firstName", user.getFirstName());
@@ -139,14 +144,8 @@ public abstract class ProcessUserData extends CustomDataProcessing {
     public void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user) {
         user.set_rev(jsonDoc.get("_rev").getAsString());
         user.setName(jsonDoc.get("name").getAsString());
-        //JsonElement userRoles = jsonDoc.get("roles");
-        //user.setRoles(userRolesAsJsonArray.getAsString());
         user.setRoles("");
-        if ((jsonDoc.get("isUserAdmin").getAsString().equalsIgnoreCase("true"))) {
-            user.setUserAdmin(true);
-        } else {
-            user.setUserAdmin(false);
-        }
+        user.setUserAdmin(jsonDoc.get("isUserAdmin").getAsBoolean());
         user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
         user.setFirstName(jsonDoc.get("firstName").getAsString());
         user.setLastName(jsonDoc.get("lastName").getAsString());
@@ -157,7 +156,11 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         user.setIterations(jsonDoc.get("iterations").getAsString());
         user.setDerived_key(jsonDoc.get("derived_key").getAsString());
         user.setSalt(jsonDoc.get("salt").getAsString());
+        user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
+        user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
+        user.addImageUrl(jsonDoc, settings);
     }
+
 
 
     public void populateShelfItems(SharedPreferences settings, Realm mRealm) {
@@ -168,6 +171,7 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, shelfDoc.getId());
+            Utilities.log("Json Doc " + jsonDoc.toString());
             if (jsonDoc.getAsJsonArray("resourceIds") != null) {
                 JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
                 JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
@@ -184,23 +188,25 @@ public abstract class ProcessUserData extends CustomDataProcessing {
 
     public void memberShelfData(JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
         setVariables(settings, mRealm, properties);
-        if (array_resourceIds.size() > 0) {
-            RealmResults<realm_myLibrary> category = null;
-            triggerInsert("resourceId", "resources");
-            check(stringArray, array_resourceIds, realm_myLibrary.class, category);
+        Log.e("CourseIds", ""+array_courseIds+" SIZE: "+array_courseIds.size());
+        if (array_courseIds.size() > 0) {
+            Log.e("CourseIds", ""+array_courseIds);
+            RealmResults<realm_myCourses> category = null;
+            triggerInsert("courseId", "courses");
+            check(stringArray, array_courseIds, realm_myCourses.class, category);
         }
         if (array_meetupIds.size() > 0) {
             triggerInsert("meetupId", "meetups");
             RealmResults<realm_meetups> category = null;
-            check(stringArray, array_resourceIds, realm_meetups.class, category);
-        }
-        if (0 < array_courseIds.size()) {
-            RealmResults<realm_myCourses> category = null;
-            triggerInsert("courseId", "courses");
-            check(stringArray, array_resourceIds, realm_myCourses.class, category);
+            check(stringArray, array_meetupIds, realm_meetups.class, category);
         }
         if (array_myTeamIds.size() > 0) {
             checkMyTeams(shelfDoc.getId(), array_myTeamIds);
+        }
+        if (array_resourceIds.size() > 0) {
+            RealmResults<realm_myLibrary> category = null;
+            triggerInsert("resourceId", "resources");
+            check(stringArray, array_resourceIds, realm_myLibrary.class, category);
         }
     }
 

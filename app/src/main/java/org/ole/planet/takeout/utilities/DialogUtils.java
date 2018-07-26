@@ -4,17 +4,12 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.support.v7.app.AlertDialog;
-
-import com.afollestad.materialdialogs.MaterialDialog;
-import com.afollestad.materialdialogs.StackingBehavior;
-
-import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.datamanager.MyDownloadService;
-
 import java.util.ArrayList;
 
+
 public class DialogUtils {
+
     public static ProgressDialog getProgressDialog(final Context context) {
         final ProgressDialog prgDialog = new ProgressDialog(context);
         prgDialog.setTitle("Downloading file...");
@@ -36,7 +31,7 @@ public class DialogUtils {
         return prgDialog;
     }
 
-    public static void handleCheck(ArrayList<Integer> selectedItemsList, boolean b, int i) {
+    public static void handleCheck(ArrayList<Integer> selectedItemsList, boolean b, Integer i) {
         if (b) {
             selectedItemsList.add(i);
         } else if (selectedItemsList.contains(i)) {

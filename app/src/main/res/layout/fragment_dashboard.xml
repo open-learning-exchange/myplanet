@@ -31,6 +31,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="left"
+                android:id="@+id/ll_user"
                 android:layout_weight="2.7"
                 android:background="@color/material_drawer_primary"
                 android:orientation="vertical"
@@ -128,6 +129,7 @@
                         android:background="@null"
                         android:padding="20dp"
                         android:scaleType="fitCenter"
+
                         app:srcCompat="@drawable/library" />
 
                     <TextView
@@ -205,7 +207,21 @@
                     android:layout_height="match_parent"
                     android:layout_weight="4.4"
                     android:background="@color/material_drawer_header_selection_text"
-                    android:orientation="horizontal"></LinearLayout>
+                    android:orientation="horizontal">
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <com.google.android.flexbox.FlexboxLayout
+                            android:id="@+id/flexboxLayoutCourse"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            app:alignContent="stretch"
+                            app:alignItems="stretch"
+                            app:flexWrap="wrap"></com.google.android.flexbox.FlexboxLayout>
+                    </HorizontalScrollView>
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout

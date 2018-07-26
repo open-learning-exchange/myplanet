@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -11,10 +12,15 @@ import com.google.gson.JsonParser;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
+import org.ole.planet.takeout.Data.realm_answerChoices;
 import org.ole.planet.takeout.Data.realm_courseSteps;
+import org.ole.planet.takeout.Data.realm_examQuestion;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_stepExam;
+import org.ole.planet.takeout.Data.realm_stepResources;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -50,7 +56,6 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             } else {
                 Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
             }
-
         }
     }
 
@@ -89,8 +94,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
         myLibraryDB.setAuthor(resourceDoc.get("author").getAsString());
 //        myLibraryDB.setPublisher(resourceDoc.get("Publisher").getAsString());
 //        myLibraryDB.setMedium(resourceDoc.get("medium").getAsString());
-        myLibraryDB.setLanguage(resourceDoc.get("language").getAsString()); //array
-        myLibraryDB.setSubject(resourceDoc.get("subject").getAsString()); // array
+        myLibraryDB.setLanguage(resourceDoc.get("language").isJsonArray() ? resourceDoc.get("language").getAsJsonArray().toString() : resourceDoc.get("language").getAsString()); //array
+        myLibraryDB.setSubject(resourceDoc.get("subject").isJsonArray() ? resourceDoc.get("subject").getAsJsonArray().toString() : resourceDoc.get("subject").getAsString()); // array
 //        myLibraryDB.setLinkToLicense(resourceDoc.get("linkToLicense").getAsString());
 //        myLibraryDB.setResourceFor(resourceDoc.get("resourceFor")!= null ? resourceDoc.get("resourceFor").getAsString() : "");
         myLibraryDB.setMediaType(resourceDoc.get("mediaType").getAsString());
@@ -140,8 +145,8 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
         myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
         myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
         myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
-        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
-        insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("numberOfSteps").getAsJsonArray().size());
+        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
+        insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size());
     }
 
     public void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps) {
@@ -152,19 +157,59 @@ public abstract class CustomDataProcessing extends AppCompatActivity {
             JsonObject stepContainer = steps.get(step).getAsJsonObject();
             myCourseStepDB.setStepTitle(stepContainer.get("stepTitle").getAsString());
             myCourseStepDB.setDescription(stepContainer.get("description").getAsString());
-            myCourseStepDB.setNoOfResources(stepContainer.get("attachment").getAsJsonArray().size());
-            myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
-            insertCourseStepsAttachments();
-            insertCourseStepsExams();
+            if (stepContainer.has("resources")) {
+                myCourseStepDB.setNoOfResources(stepContainer.get("resources").getAsJsonArray().size());
+                insertCourseStepsAttachments(myCoursesID, step_id, stepContainer.getAsJsonArray("resources"));
+            }
+            if (stepContainer.has("exam"))
+                insertCourseStepsExams(myCoursesID, step_id, stepContainer.getAsJsonObject("exam"));
+
         }
     }
 
-    public void insertCourseStepsExams() {
-
+    public void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam) {
+        realm_stepExam myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
+        myExam.setStepId(step_id);
+        myExam.setCourseId(myCoursesID);
+        myExam.setName(exam.get("name").getAsString());
+        if (exam.has("passingPercentage"))
+            myExam.setPassingPercentage(exam.get("passingPercentage").getAsString());
+        if (exam.has("totalMarks"))
+            myExam.setPassingPercentage(exam.get("totalMarks").getAsString());
+        if (exam.has("questions"))
+            insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString());
     }
 
-    public void insertCourseStepsAttachments() {
+    private void insertExamQuestions(JsonArray questions, String examId) {
+        for (int i = 0; i < questions.size(); i++) {
+            String questionId = UUID.randomUUID().toString();
+            JsonObject question = questions.get(i).getAsJsonObject();
+            realm_examQuestion myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
+            myQuestion.setExamId(examId);
+            myQuestion.setBody(question.get("body").getAsString());
+            myQuestion.setType(question.get("type").getAsString());
+            myQuestion.setHeader(question.get("header").getAsString());
+            if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
+                insertChoices(questionId, question.get("choices").getAsJsonArray());
+            } else {
+                myQuestion.setChoice(question.get("choices").getAsJsonArray());
+            }
+        }
+    }
 
+    private void insertChoices(String questionId, JsonArray choices) {
+        for (int i = 0; i < choices.size(); i++) {
+            JsonObject res = choices.get(i).getAsJsonObject();
+            realm_answerChoices.create(mRealm, questionId, res, settings);
+            Utilities.log("Insert choice " + res);
+        }
+    }
+
+    public void insertCourseStepsAttachments(String myCoursesID, String stepId, JsonArray resources) {
+        for (int i = 0; i < resources.size(); i++) {
+            JsonObject res = resources.get(i).getAsJsonObject();
+            realm_stepResources.create(mRealm, res, myCoursesID, stepId, settings);
+        }
     }
 
     public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {

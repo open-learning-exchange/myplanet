@@ -171,11 +171,11 @@ public class MyDownloadService extends IntentService {
         changeOfflineStatus();
         Download download = new Download();
         download.setProgress(100);
-        sendIntent(download);
         if (currentIndex == urls.size() - 1) {
             completeAll = true;
             download.setCompleteAll(true);
         }
+        sendIntent(download);
         notificationManager.cancel(0);
         notificationBuilder.setProgress(0, 0, false);
         notificationBuilder.setContentText("File Downloaded");

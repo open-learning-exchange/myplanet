@@ -30,6 +30,8 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -108,11 +110,11 @@ public class LoginActivity extends SyncActivity {
                                 isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url));
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
-                            }
-                        });
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
+                    }
+                });
                 settingDialog(builder);
             }
         });
@@ -158,6 +160,9 @@ public class LoginActivity extends SyncActivity {
         }
         if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+            UserProfileDbHandler handler = new UserProfileDbHandler(this);
+             handler.onLogin();
+             handler.onDestory();
             Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
             startActivity(dashboard);
         } else {
