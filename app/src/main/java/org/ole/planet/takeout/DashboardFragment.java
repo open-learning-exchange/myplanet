@@ -28,14 +28,13 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-import com.squareup.picasso.Picasso;
-
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
-import org.ole.planet.takeout.datamanager.MyDownloadService;
+import org.ole.planet.takeout.library.MyLibraryFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
@@ -43,8 +42,6 @@ import org.ole.planet.takeout.utilities.Utilities;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -168,6 +165,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         });
         realmConfig();
         myLibraryDiv(view);
+        myCoursesDiv(view);
         showDownloadDialog();
     }
 
@@ -200,13 +198,33 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
-        for (final realm_myLibrary items : db_myLibrary) {
-            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
+        for (final realm_myLibrary items : db_myLibrary){
+            setTextViewProperties(myLibraryTextViewArray, itemCnt, items, null);
             myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
                 myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
             flexboxLayout.addView(myLibraryTextViewArray[itemCnt], params);
+            itemCnt++;
+        }
+    }
+
+    public void myCoursesDiv(View view) {
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
+        flexboxLayout.setFlexDirection(FlexDirection.ROW);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                300,
+                100
+        );
+        RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
+        TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
+        int itemCnt = 0;
+        for (final realm_myCourses items: db_myCourses) {
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, null ,items);
+            if ((itemCnt % 2) == 0) {
+                myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+            }
+            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
         }
     }
@@ -282,14 +300,19 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         });
     }
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items) {
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items, realm_myCourses itemsCourse) {
+
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
         textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
         textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-        textViewArray[itemCnt].setText(items.getTitle());
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+        if(items != null){
+            textViewArray[itemCnt].setText(items.getTitle());
+        }else if(itemsCourse != null){
+            textViewArray[itemCnt].setText(itemsCourse.getCourse_rev());
+        }
     }
 
     public void setProgress(Download download) {

@@ -41,9 +41,13 @@ public class Utilities {
     }
 
     public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
-        return getServerUrl(settings)
-                + "resources/" + library.getResourceId() + "/" + library.getResourceLocalAddress();
+        return getUrl(library.getResourceId(), library.getResourceLocalAddress(), settings);
 
+    }
+
+    public static String getUrl(String id, String file, SharedPreferences settings) {
+        return getServerUrl(settings)
+                + "resources/" + id + "/" + file;
     }
 
     private static String getServerUrl(SharedPreferences settings) {
@@ -51,6 +55,7 @@ public class Utilities {
                 settings.getString("url_Host", "") + ":" +
                 settings.getInt("url_Port", 0) + "/";
     }
+
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
         return getServerUrl(settings) + "_users/" + userId + "/" + imageName;

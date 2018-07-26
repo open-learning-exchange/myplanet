@@ -12,7 +12,7 @@ import org.ole.planet.takeout.R;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyCourseFragment extends Fragment {
+public class  MyCourseFragment extends Fragment {
 
 
     public MyCourseFragment() {
