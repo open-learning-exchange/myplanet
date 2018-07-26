@@ -21,7 +21,7 @@ As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to r
 1. If you have completed the First Steps, then you have already enabled virtualization on your device.
 2. After opening and syncing the takeout project in Android Studio, click on `Run`. 
 3. At the bottom of the dialog, click on `Add New Virtual Device`.
-4. Choose `Tablet` and then choose the `10.1'' WXGA Tablet` (1280 x 800 mdpi).
+4. Choose `Tablet` and then choose the `10.1" WXGA Tablet` (1280 x 800 mdpi).
 5. (API and Android)
 6. Verify the configuration and click finish.
 
