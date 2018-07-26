@@ -8,7 +8,6 @@ import io.realm.RealmConfiguration;
 public class RealmService {
 
     private Context context;
-
     public RealmService(Context context) {
         this.context = context;
     }
