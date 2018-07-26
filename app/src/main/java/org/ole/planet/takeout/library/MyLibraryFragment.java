@@ -45,8 +45,7 @@ public class MyLibraryFragment extends Fragment {
     }
 
     public List<realm_myLibrary> getLibraryList(){
-        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
-        return db_myLibrary;
+        return mRealm.where(realm_myLibrary.class).findAll();
 
     }
 

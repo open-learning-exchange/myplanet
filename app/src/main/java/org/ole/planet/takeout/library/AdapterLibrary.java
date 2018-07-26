@@ -3,6 +3,7 @@ package org.ole.planet.takeout.library;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,7 +36,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHolderLibrary) {
             ((ViewHolderLibrary) holder).title.setText(libraryList.get(position).getTitle());
             ((ViewHolderLibrary) holder).desc.setText(libraryList.get(position).getDescription());
-            ((ViewHolderLibrary) holder).rating.setText(libraryList.get(position).getAverageRating());
+            ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "N/A" : libraryList.get(position).getAverageRating());
         }
     }
 
