@@ -267,11 +267,6 @@ public class DashboardFragment extends Fragment {
                 imageOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
                 startActivity(imageOpenIntent);
                 break;
-            case "txt":
-                Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
-                textFileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-                startActivity(textFileOpenIntent);
-                break;
             default:
                 checkMoreFileExtensions(extension, items);
                 break;
@@ -281,6 +276,11 @@ public class DashboardFragment extends Fragment {
     public void checkMoreFileExtensions(String extension, realm_myLibrary items)
     {
         switch (extension) {
+            case "txt":
+                Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
+                textFileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+                startActivity(textFileOpenIntent);
+                break;
             case "md":
                 Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
                 markdownOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());

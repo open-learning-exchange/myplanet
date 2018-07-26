@@ -48,16 +48,14 @@ public class TextFileViewerActivity extends AppCompatActivity {
         if (fileName != null || fileName != "") {
             mTextFileNameTitle.setText(fileName);
             mTextFileNameTitle.setVisibility(View.VISIBLE);
-        }
-        else {
+        } else {
             mTextFileNameTitle.setVisibility(View.INVISIBLE);
         }
 
         renderTextFileThread();
     }
 
-    private void renderTextFileThread()
-    {
+    private void renderTextFileThread() {
         Thread openTextFileThread = new Thread() {
             @Override
             public void run() {
@@ -65,20 +63,16 @@ public class TextFileViewerActivity extends AppCompatActivity {
                     File file = new File(filePath, fileName);
                     StringBuilder text = new StringBuilder();
 
-                    try {
-                        BufferedReader br = new BufferedReader(new FileReader(file));
-                        String line;
+                    BufferedReader reader = new BufferedReader(new FileReader(file));
+                    String line;
 
-                        while ((line = br.readLine()) != null) {
-                            text.append(line);
-                            text.append('\n');
-                        }
-                        br.close();
+                    while ((line = reader.readLine()) != null) {
+                        text.append(line);
+                        text.append('\n');
                     }
-                    catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    reader.close();
                     mTextFileContent.setText(text.toString());
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
