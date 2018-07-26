@@ -3,7 +3,7 @@
 Takeout is the Android port of the Planet web application. It will work with Planet like Take Home works with BeLL.
 
 ### Current Features
-(Current features with linked screenshots)
+
 
 ### Getting started for Users
  
@@ -17,11 +17,9 @@ Open the takeout repository on Android Studio. Click on `Build` to sync and buil
 
 > We also encourage you add the solutions to any syncing or compiling issues to this README document in the Troubleshooting section as a guidance to the future virtual interns.
 
-#### Setting up the Android device
+#### Setting up the Android device for Testing
 
-##### Virtual Device
-
-As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to run and test the application will be on the 10-inch tablet emulator (unless you have an actual 10-inch tablet).
+As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to run and test the application will be on the 10-inch tablet emulator (unless you have an actual 10-inch tablet):
 
 1. If you have completed the First Steps, then you have already enabled virtualization on your device.
 2. After opening and syncing the takeout project in Android Studio, click on `Run`. 
@@ -32,10 +30,14 @@ As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to r
 
 Your device should configure and the application will run on the virtual device.
 
-##### Other Devices and Tools
+##### Tools
 
 Along with the 10-inch tablet, you can also use an actual device to run and test the application - it is always good to know how the App functions on different screen-sizes and densities. 
 
 [Vysor](https://www.vysor.io/) is software that helps display your Android screen into your computer. It helps you explain the issue more in detail. Plus, everybody in the team can see what is happening on your screen, therefore we can help each other in debugging.
+
+##### Creating Issues and Pull Requests
+
+The process for creating issues and pull requests is very similar to First Steps. Remember to branch off of the master branch before working on and creating a pull request.
 
 ### Troubleshooting [WIP]
