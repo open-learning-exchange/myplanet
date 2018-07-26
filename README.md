@@ -2,7 +2,7 @@
 
 Takeout is the Android port of the Planet web application. It will work with Planet like Take Home works with BeLL.
 
-### Current Features
+
 
 
 ### Getting started for Users
@@ -38,6 +38,6 @@ Along with the 10-inch tablet, you can also use an actual device to run and test
 
 ##### Creating Issues and Pull Requests
 
-The process for creating issues and pull requests is very similar to First Steps. Remember to branch off of the master branch before working on and creating a pull request.
+The process for creating issues and pull requests is very similar to First Steps. Remember to branch off of the master branch before working on and creating a new pull request.
 
 ### Troubleshooting [WIP]
