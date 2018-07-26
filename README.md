@@ -2,8 +2,7 @@
 
 Takeout is the Android port of the Planet web application. It will work with Planet like Take Home works with BeLL.
 
-
-
+![Login](file:///C:/Users/anuya/Desktop/OLE/Readme-takeout/Screenshot_1532629699.png)
 
 ### Getting started for Users
  
