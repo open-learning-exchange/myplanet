@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
@@ -24,22 +25,19 @@ import android.widget.TextView;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-import com.squareup.picasso.Picasso;
-
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
-import org.ole.planet.takeout.datamanager.MyDownloadService;
+import org.ole.planet.takeout.library.MyLibraryFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -50,9 +48,8 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends Fragment {
+public class DashboardFragment extends Fragment implements View.OnClickListener {
 
-    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
@@ -62,11 +59,14 @@ public class DashboardFragment extends Fragment {
     ProgressDialog prgDialog;
     UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
+
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+
+
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -117,7 +117,28 @@ public class DashboardFragment extends Fragment {
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
+        myLibraryImage.setOnClickListener(this);
+        myCourseImage.setOnClickListener(this);
+        myMeetUpsImage.setOnClickListener(this);
         return view;
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.myLibraryImageButton:
+                openCallFragment(new MyLibraryFragment());
+                break;
+            case R.id.myCoursesImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            case R.id.myMeetUpsImageButton:
+                openCallFragment(new MyCourseFragment());
+                break;
+            default:
+                openCallFragment(new DashboardFragment());
+                break;
+        }
     }
 
     private void declareElements(View view) {
@@ -126,9 +147,11 @@ public class DashboardFragment extends Fragment {
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
         myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
+
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+
         view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -136,11 +159,19 @@ public class DashboardFragment extends Fragment {
                     listener.openCallFragment(new UserProfileFragment());
             }
         });
-
         realmConfig();
         myLibraryDiv(view);
+        myCoursesDiv(view);
         showDownloadDialog();
     }
+
+    public void openCallFragment(Fragment newfragment) {
+        FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.commit();
+    }
+
 
     public void realmConfig() {
         Realm.init(getContext());
@@ -163,13 +194,33 @@ public class DashboardFragment extends Fragment {
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
-        for (final realm_myLibrary items : db_myLibrary) {
-            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
+        for (final realm_myLibrary items : db_myLibrary){
+            setTextViewProperties(myLibraryTextViewArray, itemCnt, items, null);
             myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
                 myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
             flexboxLayout.addView(myLibraryTextViewArray[itemCnt], params);
+            itemCnt++;
+        }
+    }
+
+    public void myCoursesDiv(View view) {
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
+        flexboxLayout.setFlexDirection(FlexDirection.ROW);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                300,
+                100
+        );
+        RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
+        TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
+        int itemCnt = 0;
+        for (final realm_myCourses items: db_myCourses) {
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, null ,items);
+            if ((itemCnt % 2) == 0) {
+                myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+            }
+            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
         }
     }
@@ -243,14 +294,19 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items) {
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items, realm_myCourses itemsCourse) {
+
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
         textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
         textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-        textViewArray[itemCnt].setText(items.getTitle());
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+        if(items != null){
+            textViewArray[itemCnt].setText(items.getTitle());
+        }else if(itemsCourse != null){
+            textViewArray[itemCnt].setText(itemsCourse.getCourse_rev());
+        }
     }
 
     public void setProgress(Download download) {
@@ -262,4 +318,6 @@ public class DashboardFragment extends Fragment {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
         }
     }
+
+
 }
