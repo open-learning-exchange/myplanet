@@ -11,6 +11,7 @@ android {
         versionName "0.0.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -37,6 +38,7 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     implementation 'com.android.support:support-v4:27.0.1'
+    implementation 'com.android.support:multidex:1.0.3'
     implementation 'com.github.kittinunf.fuel:fuel-android:1.12.1'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'org.lightcouch:lightcouch:0.2.0'
