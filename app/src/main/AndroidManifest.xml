@@ -30,12 +30,14 @@
         </activity>
         <activity
             android:name=".Dashboard"
-            android:label="@string/title_activity_dashboard"
             android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/title_activity_dashboard"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".PDFReaderActivity"></activity>
+        <activity android:name=".PDFReaderActivity" />
 
         <service android:name=".datamanager.MyDownloadService" />
+
+        <activity android:name=".ExoPlayerVideo"></activity>
     </application>
 
 </manifest>

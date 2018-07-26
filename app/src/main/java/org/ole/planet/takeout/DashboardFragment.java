@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
@@ -37,6 +38,7 @@ import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.io.File;
 import java.util.ArrayList;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -287,8 +289,25 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
                     profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
+                    if(items.getMediaType().equals("video")){
+                        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
+                        Bundle bundle = new Bundle();
+                        bundle.putString("videoType","offline");
+                        bundle.putString("videoURL",""+ Uri.fromFile(new File("/storage/emulated/0/ole/"+items.getResourceLocalAddress())));
+                        intent.putExtras(bundle);
+                        startActivity(intent);
+                    }
                 } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
+                    if(items.getMediaType().equals("video")){
+                        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
+                        Bundle bundle = new Bundle();
+                        bundle.putString("videoType","online");
+                        bundle.putString("videoURL","https://firebasestorage.googleapis.com/v0/b/fir-learn-4991c.appspot.com/o/videos%2Fbig-buck-bunny.mp4?alt=media&token=6becc7f1-0296-4c69-bb04-d2bd62a30422");
+//                        bundle.putString("videoURL", ""+items.getResourceRemoteAddress());
+                        intent.putExtras(bundle);
+                        startActivity(intent);
+                    }
                 }
             }
         });
