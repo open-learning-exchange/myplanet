@@ -2,6 +2,15 @@
 
 Takeout is the Android port of the Planet web application. It will work with Planet like Take Home works with BeLL.
 
+App Screenshots:
+
+<p align="middle">
+<img src="https://user-images.githubusercontent.com/37878201/43286563-67eaf1f0-90f0-11e8-9bb6-bec370bca3c9.png" width="267" height="427">
+<img src="https://user-images.githubusercontent.com/37878201/43286561-67c05706-90f0-11e8-9f52-f9de73f94df1.png" width="267" height="427"> 
+<img src="https://user-images.githubusercontent.com/37878201/43286562-67d32638-90f0-11e8-98f6-a10ca2c5650b.png" width="267" height="427"> 
+</p>
+
+
 ### Getting started for Users
  
 On your Android device, go to [Releases](https://github.com/ole-vi/takeout/releases/tag/latest) and download the latest version of the APK of the Application. Click on the downloaded APK and choose `install`.
