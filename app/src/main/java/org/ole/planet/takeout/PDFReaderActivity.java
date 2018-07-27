@@ -67,13 +67,9 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE");
         Log.i("THE_FILE", filePath);
 
-        if (fileName != null || fileName != "") {
+        if (fileName != null && !fileName.isEmpty()) {
             mPdfFileNameTitle.setText(fileName);
             mPdfFileNameTitle.setVisibility(View.VISIBLE);
-        }
-
-        else {
-            mPdfFileNameTitle.setVisibility(View.INVISIBLE);
         }
 
         try {

@@ -48,11 +48,9 @@ public class ImageViewerActivity extends AppCompatActivity {
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
         Log.i("THE_FILE", filePath);
 
-        if (fileName != null || fileName != "") {
+        if (fileName != null && !fileName.isEmpty()) {
             mImageFileNameTitle.setText(fileName);
             mImageFileNameTitle.setVisibility(View.VISIBLE);
-        } else {
-            mImageFileNameTitle.setVisibility(View.INVISIBLE);
         }
 
         try{

@@ -53,11 +53,9 @@ public class MarkdownViewerActivity extends AppCompatActivity {
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE");
         Log.i("THE_FILE", filePath);
 
-        if (fileName != null || fileName != "") {
+        if (fileName != null && !fileName.isEmpty()) {
             mMarkdownNameTitle.setText(fileName);
             mMarkdownNameTitle.setVisibility(View.VISIBLE);
-        } else {
-            mMarkdownNameTitle.setVisibility(View.INVISIBLE);
         }
 
         mMarkdownContent.loadMarkdownFromFile(new File(filePath, fileName));

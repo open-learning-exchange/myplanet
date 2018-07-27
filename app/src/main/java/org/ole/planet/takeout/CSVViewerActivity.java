@@ -32,7 +32,6 @@ public class CSVViewerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_csvviewer);
         declareElements();
         renderCSVFile();
-
     }
 
     private void declareElements() {
@@ -48,39 +47,23 @@ public class CSVViewerActivity extends AppCompatActivity {
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
         Log.i("THE_FILE", filePath);
 
-        if (fileName != null || fileName != "") {
+        if (fileName != null && !fileName.isEmpty()) {
             mCSVNameTitle.setText(fileName);
             mCSVNameTitle.setVisibility(View.VISIBLE);
-        } else {
-            mCSVNameTitle.setVisibility(View.INVISIBLE);
         }
 
         try{
-
             CSVReader reader = new CSVReader(new FileReader(new File(filePath, fileName)), ',' , '"');
 
-            //Read all rows at once
+            //Get all lines from CSV file
             List<String[]> allRows = reader.readAll();
 
-
-
-            //Read CSV line by line and use the string array as you want
+            //Read List "allRows" into textview line by line
             for(String[] row : allRows){
                 Log.i("CSV_CONTENT", Arrays.toString(row));
                 mCSVContent.append(Arrays.toString(row));
                 mCSVContent.append("\n");
             }
-
-            /*
-            String[] nextLine;
-            while ((nextLine = reader.readNext()) != null) {
-                if (nextLine != null) {
-                    //Verifying the read data here
-                    mCSVContent.setText(Arrays.toString(nextLine));
-                    Log.i("CSV_CONTENT", Arrays.toString(nextLine));
-                }
-            }
-            */
 
         } catch (Exception e) {
             e.printStackTrace();

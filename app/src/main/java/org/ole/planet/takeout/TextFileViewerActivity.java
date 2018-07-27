@@ -48,11 +48,9 @@ public class TextFileViewerActivity extends AppCompatActivity {
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE");
         Log.i("THE_FILE", filePath);
 
-        if (fileName != null || fileName != "") {
+        if (fileName != null && !fileName.isEmpty()) {
             mTextFileNameTitle.setText(fileName);
             mTextFileNameTitle.setVisibility(View.VISIBLE);
-        } else {
-            mTextFileNameTitle.setVisibility(View.INVISIBLE);
         }
 
         renderTextFileThread();
