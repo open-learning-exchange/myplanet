@@ -13,7 +13,7 @@ import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
-import org.ole.planet.takeout.datamanager.RealmService;
+import org.ole.planet.takeout.datamanager.DatabaseService;
 
 import java.util.List;
 
@@ -27,7 +27,7 @@ public class MyLibraryFragment extends Fragment {
 
     RecyclerView rvLibrary;
     TextView tvMessage;
-    RealmService realmService;
+    DatabaseService realmService;
     Realm mRealm;
     public MyLibraryFragment() {
     }
@@ -39,8 +39,8 @@ public class MyLibraryFragment extends Fragment {
         View v =  inflater.inflate(R.layout.fragment_my_library, container, false);
         rvLibrary = v.findViewById(R.id.rv_library);
         tvMessage = v.findViewById(R.id.tv_message);
-        realmService = new RealmService(getActivity());
-        mRealm = realmService.getInstance();
+        realmService = new DatabaseService(getActivity());
+        mRealm = realmService.getRealmInstance();
         return v;
     }
 

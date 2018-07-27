@@ -62,9 +62,8 @@ dependencies {
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
     implementation 'com.google.android:flexbox:1.0.0'
     implementation 'com.squareup.picasso:picasso:2.71828'
+    implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
     implementation "com.android.support:cardview-v7:${versions.supportLib}"
-
-
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
     implementation 'de.rtner:PBKDF2:1.1.2'
