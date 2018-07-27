@@ -37,7 +37,7 @@ public class CSVViewerActivity extends AppCompatActivity {
     private void declareElements() {
         mCSVNameTitle = (TextView) findViewById(R.id.csvFileName);
         mCSVContent = (TextView) findViewById(R.id.csvFileContent);
-        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
+        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void renderCSVFile() {
@@ -45,7 +45,6 @@ public class CSVViewerActivity extends AppCompatActivity {
 
         Intent imageOpenIntent = getIntent();
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
-        Log.i("THE_FILE", filePath);
 
         if (fileName != null && !fileName.isEmpty()) {
             mCSVNameTitle.setText(fileName);

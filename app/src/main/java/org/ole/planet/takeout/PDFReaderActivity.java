@@ -50,14 +50,10 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         renderPdfFile();
     }
 
-    public PDFReaderActivity()
-    {
-        filePath = new DashboardFragment().globalFilePath;
-    }
-
     private void declareElements() {
         mPdfFileNameTitle = (TextView) findViewById(R.id.pdfFileName);
         pdfView = (PDFView) findViewById(R.id.pdfView);
+        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void renderPdfFile() {
@@ -65,7 +61,6 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
 
         Intent pdfOpenIntent = getIntent();
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE");
-        Log.i("THE_FILE", filePath);
 
         if (fileName != null && !fileName.isEmpty()) {
             mPdfFileNameTitle.setText(fileName);

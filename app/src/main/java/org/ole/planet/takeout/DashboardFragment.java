@@ -62,7 +62,8 @@ public class DashboardFragment extends Fragment {
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
-    public String globalFilePath;
+    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
+
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -104,7 +105,6 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
-        globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
         realmConfig();
         myLibraryDiv(view);
         showDownloadDialog();
