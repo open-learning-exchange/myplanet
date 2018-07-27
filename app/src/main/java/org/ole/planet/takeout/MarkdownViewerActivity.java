@@ -33,13 +33,16 @@ public class MarkdownViewerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_markdown_viewer);
         declareElements();
         renderMarkdownFile();
+    }
 
+    public MarkdownViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void declareElements() {
         mMarkdownNameTitle = (TextView) findViewById(R.id.markdownFileName);
         mMarkdownContent = (MarkdownView) findViewById(R.id.markdown_view);
-        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void renderMarkdownFile() {

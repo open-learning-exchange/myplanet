@@ -31,10 +31,14 @@ public class ImageViewerActivity extends AppCompatActivity {
         renderImageFile();
     }
 
+    public ImageViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
+    }
+
     private void declareElements() {
         mImageFileNameTitle = (TextView) findViewById(R.id.imageFileName);
         mImageViewer = (ImageView) findViewById(R.id.imageViewer);
-        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void renderImageFile() {

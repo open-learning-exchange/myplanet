@@ -33,10 +33,14 @@ public class TextFileViewerActivity extends AppCompatActivity {
         renderTextFile();
     }
 
+    public TextFileViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
+    }
+
     private void declareElements() {
         mTextFileNameTitle = (TextView) findViewById(R.id.textFileName);
         mTextFileContent = (TextView) findViewById(R.id.textFileContent);
-        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void renderTextFile() {

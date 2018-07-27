@@ -34,10 +34,14 @@ public class CSVViewerActivity extends AppCompatActivity {
         renderCSVFile();
     }
 
+    public CSVViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
+    }
+
     private void declareElements() {
         mCSVNameTitle = (TextView) findViewById(R.id.csvFileName);
         mCSVContent = (TextView) findViewById(R.id.csvFileContent);
-        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void renderCSVFile() {
