@@ -92,8 +92,6 @@ public class DashboardFragment extends Fragment {
         txtCurDate.setText(Utilities.currentDate());
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
-        Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
-        startActivity(markdownOpenIntent);
         return view;
     }
 
@@ -257,8 +255,7 @@ public class DashboardFragment extends Fragment {
         switch (extension) {
             case "pdf":
                 Intent pdfOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
-                pdfOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-                startActivity(pdfOpenIntent);
+                openIntent(items, pdfOpenIntent);
                 break;
             case "bmp":
             case "gif":
@@ -266,8 +263,7 @@ public class DashboardFragment extends Fragment {
             case "png":
             case "webp":
                 Intent imageOpenIntent = new Intent(DashboardFragment.this.getActivity(), ImageViewerActivity.class);
-                imageOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-                startActivity(imageOpenIntent);
+                openIntent(items, imageOpenIntent);
                 break;
             default:
                 checkMoreFileExtensions(extension, items);
@@ -275,23 +271,25 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    private void openIntent(realm_myLibrary items, Intent fileOpenIntent) {
+        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        startActivity(fileOpenIntent);
+    }
+
     public void checkMoreFileExtensions(String extension, realm_myLibrary items)
     {
         switch (extension) {
             case "txt":
                 Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
-                textFileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-                startActivity(textFileOpenIntent);
+                openIntent(items, textFileOpenIntent);
                 break;
             case "md":
                 Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
-                markdownOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-                startActivity(markdownOpenIntent);
+                openIntent(items, markdownOpenIntent);
                 break;
             case "csv":
                 Intent CSVOpenIntent = new Intent(DashboardFragment.this.getActivity(), CSVViewerActivity.class);
-                CSVOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-                startActivity(CSVOpenIntent);
+                openIntent(items, CSVOpenIntent);
                 break;
             default:
                 Toast.makeText(getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
