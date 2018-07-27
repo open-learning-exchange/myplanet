@@ -20,7 +20,7 @@ import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
-public class UserProfileDbHandler {
+public class  UserProfileDbHandler {
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;

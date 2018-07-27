@@ -13,6 +13,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Base64;
+import android.util.Log;
 import android.widget.Toast;
 
 
@@ -90,6 +91,7 @@ public class MyDownloadService extends IntentService {
         try {
             Response r = request.execute();
             if (r.code() == 200) {
+                Log.e("Download File Response", ""+(ResponseBody) r.body()+" ;;Get Header: "+getHeader()+" ;; URL: "+url);
                 downloadFile((ResponseBody) r.body());
             } else {
                 downloadFiled();

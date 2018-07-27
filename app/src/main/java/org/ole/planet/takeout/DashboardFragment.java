@@ -293,7 +293,9 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
                         Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
                         Bundle bundle = new Bundle();
                         bundle.putString("videoType","offline");
-                        bundle.putString("videoURL",""+ Uri.fromFile(new File("/storage/emulated/0/ole/"+items.getResourceLocalAddress())));
+                        System.out.println("FILE PATH: "+Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()));
+//                        bundle.putString("videoURL",""+ Uri.fromFile(new File("/storage/emulated/0/ole/"+items.getResourceLocalAddress())));
+                        bundle.putString("videoURL",""+ Uri.fromFile(new File(""+Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
                         intent.putExtras(bundle);
                         startActivity(intent);
                     }
