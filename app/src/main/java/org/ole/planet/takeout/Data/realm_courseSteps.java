@@ -1,5 +1,18 @@
 package org.ole.planet.takeout.Data;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import org.ole.planet.takeout.MainApplication;
+import org.ole.planet.takeout.SyncActivity;
+
+import java.util.UUID;
+
+import io.realm.Realm;
+
 public class realm_courseSteps extends io.realm.RealmObject {
     @io.realm.annotations.PrimaryKey
     private String id;
@@ -56,4 +69,31 @@ public class realm_courseSteps extends io.realm.RealmObject {
     public void setNoOfExams(int noOfExams) {
         this.noOfExams = noOfExams;
     }
+
+    public static void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps, Realm mRealm) {
+        for (int step = 0; step < numberOfSteps; step++) {
+            String step_id = UUID.randomUUID().toString();
+            realm_courseSteps myCourseStepDB = mRealm.createObject(realm_courseSteps.class, step_id);
+            myCourseStepDB.setCourseId(myCoursesID);
+            JsonObject stepContainer = steps.get(step).getAsJsonObject();
+            myCourseStepDB.setStepTitle(stepContainer.get("stepTitle").getAsString());
+            myCourseStepDB.setDescription(stepContainer.get("description").getAsString());
+            if (stepContainer.has("resources")) {
+                myCourseStepDB.setNoOfResources(stepContainer.get("resources").getAsJsonArray().size());
+                insertCourseStepsAttachments(myCoursesID, step_id, stepContainer.getAsJsonArray("resources"), mRealm);
+            }
+            // myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
+            if (stepContainer.has("exam"))
+                realm_stepExam.insertCourseStepsExams(myCoursesID, step_id, stepContainer.getAsJsonObject("exam"), mRealm);
+        }
+    }
+
+    public static void insertCourseStepsAttachments(String myCoursesID, String stepId, JsonArray resources, Realm mRealm) {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        for (int i = 0; i < resources.size(); i++) {
+            JsonObject res = resources.get(i).getAsJsonObject();
+            realm_stepResources.create(mRealm, res, myCoursesID, stepId, settings);
+        }
+    }
+
 }

@@ -1,5 +1,10 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonObject;
+
+import java.util.UUID;
+
+import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -130,5 +135,22 @@ public class realm_meetups extends RealmObject {
 
     public void setCreator(String creator) {
         this.creator = creator;
+    }
+
+    public static void insertMyMeetups(String userId, String meetupID, JsonObject meetupDoc, Realm mRealm) {
+        realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
+        myMeetupsDB.setUserId(userId);
+        myMeetupsDB.setMeetupId(meetupID);
+        myMeetupsDB.setMeetupId_rev(meetupDoc.get("meetupId_rev").getAsString());
+        myMeetupsDB.setTitle(meetupDoc.get("title").getAsString());
+        myMeetupsDB.setDescription(meetupDoc.get("description").getAsString());
+        myMeetupsDB.setStartDate(meetupDoc.get("startDate").getAsString());
+        myMeetupsDB.setEndDate(meetupDoc.get("endDate").getAsString());
+        myMeetupsDB.setRecurring(meetupDoc.get("recurring").getAsString());
+        myMeetupsDB.setDay(meetupDoc.get("Day").getAsString());
+        myMeetupsDB.setStartTime(meetupDoc.get("startTime").getAsString());
+        myMeetupsDB.setCategory(meetupDoc.get("category").getAsString());
+        myMeetupsDB.setMeetupLocation(meetupDoc.get("meetupLocation").getAsString());
+        myMeetupsDB.setCreator(meetupDoc.get("creator").getAsString());
     }
 }

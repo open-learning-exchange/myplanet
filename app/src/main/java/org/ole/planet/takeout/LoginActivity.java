@@ -2,6 +2,7 @@ package org.ole.planet.takeout;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -52,6 +53,7 @@ public class LoginActivity extends SyncActivity {
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
     Fuel ful = new Fuel();
+    int[] syncTimeInteval = {15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
 
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
@@ -80,7 +82,6 @@ public class LoginActivity extends SyncActivity {
                 submitForm();
             }
         });
-
         dbsetup.Setup_db(this.context);
 
     }
@@ -112,6 +113,10 @@ public class LoginActivity extends SyncActivity {
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putBoolean("autoSync", syncSwitch.isChecked());
+                        editor.putInt("autoSyncInterval", syncTimeInteval[spinner.getSelectedItemPosition()]);
+                        editor.commit();
                         Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -161,8 +166,8 @@ public class LoginActivity extends SyncActivity {
         if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             UserProfileDbHandler handler = new UserProfileDbHandler(this);
-             handler.onLogin();
-             handler.onDestory();
+            handler.onLogin();
+            handler.onDestory();
             Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
             startActivity(dashboard);
         } else {

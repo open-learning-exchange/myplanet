@@ -36,15 +36,8 @@ import io.realm.RealmModel;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 
-public abstract class ProcessUserData extends CustomDataProcessing {
+public abstract class ProcessUserData extends AppCompatActivity {
     SharedPreferences settings;
-    Realm mRealm;
-    CouchDbProperties properties;
-    CouchDbClientAndroid dbResources, dbMeetup, dbMyCourses;
-    MaterialDialog progress_dialog;
-    Document shelfDoc;
-    String[] stringArray = new String[3];
-
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
             textLayout.setError(err_message);
@@ -76,143 +69,7 @@ public abstract class ProcessUserData extends CustomDataProcessing {
         editor.commit();
     }
 
-    public void userTransactionSync(SharedPreferences sett, Realm realm, CouchDbProperties propts, MaterialDialog progress_dialog) {
-        this.progress_dialog = progress_dialog;
-        properties = propts;
-        settings = sett;
-        mRealm = realm;
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    processUserDoc(dbClient, doc);
-                }
-            }
-        });
-    }
-
-    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
-        try {
-            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                populateUsersTable(jsonDoc, mRealm);
-                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void myLibraryTransactionSync() {
-        properties.setDbName("shelf");
-        properties.setUsername(settings.getString("url_user", ""));
-        properties.setPassword(settings.getString("url_pwd", ""));
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
-                List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allShelfDocs.size(); i++) {
-                    shelfDoc = allShelfDocs.get(i);
-                    populateShelfItems(settings, realm);
-                }
-                progress_dialog.dismiss();
-            }
-        });
-    }
-
-
-    public void populateUsersTable(JsonObject jsonDoc, Realm mRealm) {
-        try {
-            RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
-                    .equalTo("id", jsonDoc.get("_id").getAsString())
-                    .findAll();
-            if (db_users.isEmpty()) {
-                realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
-                insertIntoUsers(jsonDoc, user);
-            }
-
-
-        } catch (Exception err) {
-            err.printStackTrace();
-        }
-    }
-
-    public void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user) {
-        user.set_rev(jsonDoc.get("_rev").getAsString());
-        user.setName(jsonDoc.get("name").getAsString());
-        user.setRoles("");
-        user.setUserAdmin(jsonDoc.get("isUserAdmin").getAsBoolean());
-        user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
-        user.setFirstName(jsonDoc.get("firstName").getAsString());
-        user.setLastName(jsonDoc.get("lastName").getAsString());
-        user.setMiddleName(jsonDoc.get("middleName").getAsString());
-        user.setEmail(jsonDoc.get("email").getAsString());
-        user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
-        user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
-        user.setIterations(jsonDoc.get("iterations").getAsString());
-        user.setDerived_key(jsonDoc.get("derived_key").getAsString());
-        user.setSalt(jsonDoc.get("salt").getAsString());
-        user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
-        user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
-        user.addImageUrl(jsonDoc, settings);
-    }
 
 
 
-    public void populateShelfItems(SharedPreferences settings, Realm mRealm) {
-        properties.setDbName("shelf");
-        properties.setUsername(settings.getString("url_user", ""));
-        properties.setPassword(settings.getString("url_pwd", ""));
-        CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
-        try {
-            this.mRealm = mRealm;
-            JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, shelfDoc.getId());
-            Utilities.log("Json Doc " + jsonDoc.toString());
-            if (jsonDoc.getAsJsonArray("resourceIds") != null) {
-                JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
-                JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
-                JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
-                JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
-                memberShelfData(array_resourceIds, array_meetupIds, array_courseIds, array_myTeamIds);
-            } else {
-                Log.e("DB", " BAD Metadata -- Shelf Doc ID " + shelfDoc.getId());
-            }
-        } catch (Exception err) {
-            err.printStackTrace();
-        }
-    }
-
-    public void memberShelfData(JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
-        setVariables(settings, mRealm, properties);
-        Log.e("CourseIds", ""+array_courseIds+" SIZE: "+array_courseIds.size());
-        if (array_courseIds.size() > 0) {
-            Log.e("CourseIds", ""+array_courseIds);
-            RealmResults<realm_myCourses> category = null;
-            triggerInsert("courseId", "courses");
-            check(stringArray, array_courseIds, realm_myCourses.class, category);
-        }
-        if (array_meetupIds.size() > 0) {
-            triggerInsert("meetupId", "meetups");
-            RealmResults<realm_meetups> category = null;
-            check(stringArray, array_meetupIds, realm_meetups.class, category);
-        }
-        if (array_myTeamIds.size() > 0) {
-            checkMyTeams(shelfDoc.getId(), array_myTeamIds);
-        }
-        if (array_resourceIds.size() > 0) {
-            RealmResults<realm_myLibrary> category = null;
-            triggerInsert("resourceId", "resources");
-            check(stringArray, array_resourceIds, realm_myLibrary.class, category);
-        }
-    }
-
-    public void triggerInsert(String categroryId, String categoryDBName) {
-        stringArray[0] = shelfDoc.getId();
-        stringArray[1] = categroryId;
-        stringArray[2] = categoryDBName;
-    }
 }
