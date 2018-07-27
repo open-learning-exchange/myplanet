@@ -1,10 +1,21 @@
 package org.ole.planet.takeout.Data;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
+import org.ole.planet.takeout.MainApplication;
+import org.ole.planet.takeout.SyncActivity;
+
+import java.util.UUID;
+
+import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.SyncManager;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_examQuestion extends RealmObject {
@@ -78,6 +89,24 @@ public class realm_examQuestion extends RealmObject {
         for (JsonElement s :
                 array) {
             this.choices.add(s.getAsString());
+        }
+    }
+
+    public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        for (int i = 0; i < questions.size(); i++) {
+            String questionId = UUID.randomUUID().toString();
+            JsonObject question = questions.get(i).getAsJsonObject();
+            realm_examQuestion myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
+            myQuestion.setExamId(examId);
+            myQuestion.setBody(question.get("body").getAsString());
+            myQuestion.setType(question.get("type").getAsString());
+            myQuestion.setHeader(question.get("header").getAsString());
+            if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
+                realm_answerChoices.insertChoices(questionId, question.get("choices").getAsJsonArray(), mRealm, settings);
+            } else {
+                myQuestion.setChoice(question.get("choices").getAsJsonArray());
+            }
         }
     }
 }
