@@ -209,7 +209,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                300,
+                250,
                 100
         );
         RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
