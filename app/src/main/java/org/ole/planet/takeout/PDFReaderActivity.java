@@ -58,7 +58,6 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
     private void declareElements() {
         mPdfFileNameTitle = (TextView) findViewById(R.id.pdfFileName);
         pdfView = (PDFView) findViewById(R.id.pdfView);
-        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     }
 
     private void renderPdfFile() {
