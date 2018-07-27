@@ -29,13 +29,16 @@ public class ImageViewerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_image_viewer);
         declareElements();
         renderImageFile();
+    }
 
+    public ImageViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void declareElements() {
         mImageFileNameTitle = (TextView) findViewById(R.id.imageFileName);
         mImageViewer = (ImageView) findViewById(R.id.imageViewer);
-        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     }
 
     private void renderImageFile() {

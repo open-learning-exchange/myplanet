@@ -92,6 +92,8 @@ public class DashboardFragment extends Fragment {
         txtCurDate.setText(Utilities.currentDate());
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
+        Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
+        startActivity(markdownOpenIntent);
         return view;
     }
 

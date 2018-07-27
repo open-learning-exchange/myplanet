@@ -31,13 +31,16 @@ public class TextFileViewerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_textfile_viewer);
         declareElements();
         renderTextFile();
+    }
 
+    public TextFileViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void declareElements() {
         mTextFileNameTitle = (TextView) findViewById(R.id.textFileName);
         mTextFileContent = (TextView) findViewById(R.id.textFileContent);
-        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     }
 
     private void renderTextFile() {

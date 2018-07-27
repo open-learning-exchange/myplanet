@@ -27,6 +27,11 @@ public class MarkdownViewerActivity extends AppCompatActivity {
     private String filePath;
     private String fileName;
 
+    public MarkdownViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,7 +44,6 @@ public class MarkdownViewerActivity extends AppCompatActivity {
     private void declareElements() {
         mMarkdownNameTitle = (TextView) findViewById(R.id.markdownFileName);
         mMarkdownContent = (MarkdownView) findViewById(R.id.markdown_view);
-        filePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     }
 
     private void renderMarkdownFile() {

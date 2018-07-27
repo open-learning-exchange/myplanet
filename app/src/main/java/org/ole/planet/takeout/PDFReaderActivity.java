@@ -50,6 +50,11 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         renderPdfFile();
     }
 
+    public PDFReaderActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
+    }
+
     private void declareElements() {
         mPdfFileNameTitle = (TextView) findViewById(R.id.pdfFileName);
         pdfView = (PDFView) findViewById(R.id.pdfView);
