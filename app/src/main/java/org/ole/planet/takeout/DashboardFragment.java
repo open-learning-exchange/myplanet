@@ -206,7 +206,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
     }
 
     public void myCoursesDiv(View view) {
-        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 300,
