@@ -17,9 +17,6 @@ public class realm_resources extends RealmObject {
     private String id;
     private String resource_id;
     private String _rev;
-    private boolean need_optimization;
-    private String Publisher;
-    private String linkToLicense;
     private String addedBy;
     private String uploadDate;
     private String openWith;
@@ -33,7 +30,6 @@ public class realm_resources extends RealmObject {
     private String filename;
     private String mediaType;
     private String description;
-    private String sendOnAccept;
     private int sum;
     private int timesRated;
     private RealmList<String> resourceFor;
@@ -49,24 +45,17 @@ public class realm_resources extends RealmObject {
         resource.setResource_id(doc.get("_id").getAsString());
         resource.setTitle(doc.get("title").getAsString());
         resource.setDescription(doc.get("description").getAsString());
-        if (doc.has("need_optimization")) {
-            resource.setNeed_optimization(doc.get("need_optimization").getAsBoolean());
-        }
         resource.setYear(doc.get("year").getAsString());
         resource.setAverageRating(doc.has("averageRating") ? doc.get("averageRating").getAsString() : "");
         resource.setFilename(doc.get("filename").getAsString());
         resource.setUploadDate(doc.get("uploadDate").getAsString());
         resource.setAddedBy(doc.get("addedBy").getAsString());
-        resource.setPublisher(doc.get("Publisher").getAsString());
-        resource.setLinkToLicense(doc.get("linkToLicense").getAsString());
         resource.setOpenWith(doc.get("openWith").getAsString());
         resource.setArticleDate(doc.get("articleDate").getAsString());
         resource.setKind(doc.get("kind").getAsString());
         resource.setLanguage(doc.get("language").getAsString());
         resource.setAuthor(doc.get("author").getAsString());
         resource.setMediaType(doc.get("mediaType").getAsString());
-        resource.setSendOnAccept(doc.get("sendOnAccept").getAsString());
-        resource.setSum(doc.get("sum").getAsInt());
         resource.setTimesRated(doc.get("timesRated").getAsInt());
         resource.setResourceFor(doc.get("resourceFor").getAsJsonArray(), resource);
         resource.setSubject(doc.get("subject").getAsJsonArray(), resource);
@@ -83,9 +72,6 @@ public class realm_resources extends RealmObject {
         this.resource_id = resource_id;
     }
 
-    public RealmList<String> getResourceFor() {
-        return resourceFor;
-    }
 
 
     public void setResourceFor(JsonArray array, realm_resources resource) {
@@ -124,41 +110,12 @@ public class realm_resources extends RealmObject {
     }
 
 
-    public void setResourceFor(RealmList<String> resourceFor) {
-        this.resourceFor = resourceFor;
-    }
 
     public RealmList<String> getSubject() {
         return subject;
     }
 
-    public void setSubject(RealmList<String> subject) {
-        this.subject = subject;
-    }
 
-    public RealmList<String> getLevel() {
-        return level;
-    }
-
-    public void setLevel(RealmList<String> level) {
-        this.level = level;
-    }
-
-    public RealmList<String> getTag() {
-        return tag;
-    }
-
-    public void setTag(RealmList<String> tag) {
-        this.tag = tag;
-    }
-
-    public RealmList<String> getLanguages() {
-        return languages;
-    }
-
-    public void setLanguages(RealmList<String> languages) {
-        this.languages = languages;
-    }
 
     public String getId() {
         return id;
@@ -176,65 +133,28 @@ public class realm_resources extends RealmObject {
         this._rev = _rev;
     }
 
-    public boolean isNeed_optimization() {
-        return need_optimization;
-    }
 
-    public void setNeed_optimization(boolean need_optimization) {
-        this.need_optimization = need_optimization;
-    }
 
-    public String getPublisher() {
-        return Publisher;
-    }
-
-    public void setPublisher(String publisher) {
-        Publisher = publisher;
-    }
-
-    public String getLinkToLicense() {
-        return linkToLicense;
-    }
-
-    public void setLinkToLicense(String linkToLicense) {
-        this.linkToLicense = linkToLicense;
-    }
-
-    public String getAddedBy() {
-        return addedBy;
-    }
 
     public void setAddedBy(String addedBy) {
         this.addedBy = addedBy;
     }
 
-    public String getUploadDate() {
-        return uploadDate;
-    }
 
     public void setUploadDate(String uploadDate) {
         this.uploadDate = uploadDate;
     }
 
-    public String getOpenWith() {
-        return openWith;
-    }
 
     public void setOpenWith(String openWith) {
         this.openWith = openWith;
     }
 
-    public String getArticleDate() {
-        return articleDate;
-    }
 
     public void setArticleDate(String articleDate) {
         this.articleDate = articleDate;
     }
 
-    public String getKind() {
-        return kind;
-    }
 
     public void setKind(String kind) {
         this.kind = kind;
@@ -304,21 +224,6 @@ public class realm_resources extends RealmObject {
         this.description = description;
     }
 
-    public String getSendOnAccept() {
-        return sendOnAccept;
-    }
-
-    public void setSendOnAccept(String sendOnAccept) {
-        this.sendOnAccept = sendOnAccept;
-    }
-
-    public int getSum() {
-        return sum;
-    }
-
-    public void setSum(int sum) {
-        this.sum = sum;
-    }
 
     public int getTimesRated() {
         return timesRated;
