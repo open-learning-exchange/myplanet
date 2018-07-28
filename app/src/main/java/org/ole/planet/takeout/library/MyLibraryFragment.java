@@ -87,13 +87,13 @@ public class MyLibraryFragment extends Fragment implements OnLibraryItemSelected
         final realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         for (int i = 0; i < selectedItems.size(); i++) {
             realm_resources resource = selectedItems.get(i);
-            Utilities.log("Add to library " + resource.getTitle());
+            Utilities.log("Add to library " + resource.title);
             realm_myLibrary myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceId", resource.getResource_id()).findFirst();
             if (myLibrary == null) {
                 realm_myLibrary.createFromResource(resource, mRealm, model.getId());
-                Utilities.toast(getActivity(), "Resource Added to my library " + resource.getTitle());
+                Utilities.toast(getActivity(), "Resource Added to my library " + resource.title);
             } else {
-                Utilities.toast(getActivity(), "Resource Already Exists in my library : " + resource.getTitle());
+                Utilities.toast(getActivity(), "Resource Already Exists in my library : " + resource.title);
             }
         }
     }

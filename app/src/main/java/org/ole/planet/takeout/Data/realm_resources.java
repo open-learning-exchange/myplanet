@@ -14,49 +14,49 @@ import io.realm.annotations.PrimaryKey;
 
 public class realm_resources extends RealmObject {
     @PrimaryKey
-    private String id;
-    private String resource_id;
-    private String _rev;
-    private String addedBy;
-    private String uploadDate;
-    private String openWith;
-    private String articleDate;
-    private String kind;
-    private String language;
-    private String author;
-    private String year;
-    private String title;
-    private String averageRating;
-    private String filename;
-    private String mediaType;
-    private String description;
-    private int sum;
-    private int timesRated;
-    private RealmList<String> resourceFor;
-    private RealmList<String> subject;
-    private RealmList<String> level;
-    private RealmList<String> tag;
-    private RealmList<String> languages;
+    public String id;
+    public String resource_id;
+    public String _rev;
+    public String addedBy;
+    public String uploadDate;
+    public String openWith;
+    public String articleDate;
+    public String kind;
+    public String language;
+    public String author;
+    public String year;
+    public String title;
+    public String averageRating;
+    public String filename;
+    public String mediaType;
+    public String description;
+    public int sum;
+    public int timesRated;
+    public RealmList<String> resourceFor;
+    public RealmList<String> subject;
+    public RealmList<String> level;
+    public RealmList<String> tag;
+    public RealmList<String> languages;
 
 
     public static void insertResources(JsonObject doc, Realm mRealm) {
         realm_resources resource = mRealm.createObject(realm_resources.class, UUID.randomUUID().toString());
-        resource.set_rev(doc.get("_rev").getAsString());
-        resource.setResource_id(doc.get("_id").getAsString());
-        resource.setTitle(doc.get("title").getAsString());
-        resource.setDescription(doc.get("description").getAsString());
-        resource.setYear(doc.get("year").getAsString());
-        resource.setAverageRating(doc.has("averageRating") ? doc.get("averageRating").getAsString() : "");
-        resource.setFilename(doc.get("filename").getAsString());
-        resource.setUploadDate(doc.get("uploadDate").getAsString());
-        resource.setAddedBy(doc.get("addedBy").getAsString());
-        resource.setOpenWith(doc.get("openWith").getAsString());
-        resource.setArticleDate(doc.get("articleDate").getAsString());
-        resource.setKind(doc.get("kind").getAsString());
-        resource.setLanguage(doc.get("language").getAsString());
-        resource.setAuthor(doc.get("author").getAsString());
-        resource.setMediaType(doc.get("mediaType").getAsString());
-        resource.setTimesRated(doc.get("timesRated").getAsInt());
+        resource._rev = doc.get("_rev").getAsString();
+        resource.resource_id = doc.get("_id").getAsString() ;
+        resource.title = doc.get("title").getAsString();
+        resource.description = doc.get("description").getAsString();
+        resource.year = (doc.get("year").getAsString());
+        resource.averageRating = (doc.has("averageRating") ? doc.get("averageRating").getAsString() : "");
+        resource.filename = (doc.get("filename").getAsString());
+        resource.uploadDate = (doc.get("uploadDate").getAsString());
+        resource.addedBy = (doc.get("addedBy").getAsString());
+        resource.openWith = (doc.get("openWith").getAsString());
+        resource.articleDate = (doc.get("articleDate").getAsString());
+        resource.kind = (doc.get("kind").getAsString());
+        resource.language = (doc.get("language").getAsString());
+        resource.author = (doc.get("author").getAsString());
+        resource.mediaType = (doc.get("mediaType").getAsString());
+        resource.timesRated = (doc.get("timesRated").getAsInt());
         resource.setResourceFor(doc.get("resourceFor").getAsJsonArray(), resource);
         resource.setSubject(doc.get("subject").getAsJsonArray(), resource);
         resource.setLevel(doc.get("level").getAsJsonArray(), resource);
@@ -117,121 +117,7 @@ public class realm_resources extends RealmObject {
 
 
 
-    public String getId() {
-        return id;
-    }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String get_rev() {
-        return _rev;
-    }
-
-    public void set_rev(String _rev) {
-        this._rev = _rev;
-    }
-
-
-
-
-    public void setAddedBy(String addedBy) {
-        this.addedBy = addedBy;
-    }
-
-
-    public void setUploadDate(String uploadDate) {
-        this.uploadDate = uploadDate;
-    }
-
-
-    public void setOpenWith(String openWith) {
-        this.openWith = openWith;
-    }
-
-
-    public void setArticleDate(String articleDate) {
-        this.articleDate = articleDate;
-    }
-
-
-    public void setKind(String kind) {
-        this.kind = kind;
-    }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    public void setAuthor(String author) {
-        this.author = author;
-    }
-
-    public String getYear() {
-        return year;
-    }
-
-    public void setYear(String year) {
-        this.year = year;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getAverageRating() {
-        return averageRating;
-    }
-
-    public void setAverageRating(String averageRating) {
-        this.averageRating = averageRating;
-    }
-
-    public String getFilename() {
-        return filename;
-    }
-
-    public void setFilename(String filename) {
-        this.filename = filename;
-    }
-
-    public String getMediaType() {
-        return mediaType;
-    }
-
-    public void setMediaType(String mediaType) {
-        this.mediaType = mediaType;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-
-    public int getTimesRated() {
-        return timesRated;
-    }
-
-    public void setTimesRated(int timesRated) {
-        this.timesRated = timesRated;
-    }
 
 
 }

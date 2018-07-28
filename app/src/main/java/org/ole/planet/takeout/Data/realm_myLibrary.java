@@ -232,15 +232,15 @@ public class realm_myLibrary extends RealmObject {
         realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
         myLibraryDB.setUserId(userId);
         myLibraryDB.setResourceId(resource.getResource_id());
-        myLibraryDB.setResource_rev(resource.get_rev());
-        myLibraryDB.setTitle(resource.getTitle());
-        myLibraryDB.setAuthor(resource.getAuthor());
-        myLibraryDB.setLanguage(resource.getLanguage());
+        myLibraryDB.setResource_rev(resource._rev);
+        myLibraryDB.setTitle(resource.title);
+        myLibraryDB.setAuthor(resource.author);
+        myLibraryDB.setLanguage(resource.language);
         myLibraryDB.setSubject(resource.getSubject().isEmpty() ? "" : resource.getSubject().first()); // array
-        myLibraryDB.setMediaType(resource.getMediaType());
-        myLibraryDB.setResourceRemoteAddress(Utilities.getUrl(resource.getResource_id(), resource.getFilename(), preferences));
-        myLibraryDB.setResourceLocalAddress(resource.getFilename());
-        myLibraryDB.setDescription(resource.getDescription());
+        myLibraryDB.setMediaType(resource.mediaType);
+        myLibraryDB.setResourceRemoteAddress(Utilities.getUrl(resource.getResource_id(), resource.filename, preferences));
+        myLibraryDB.setResourceLocalAddress(resource.filename);
+        myLibraryDB.setDescription(resource.description);
         myLibraryDB.setResourceOffline(false);
         mRealm.commitTransaction();
     }

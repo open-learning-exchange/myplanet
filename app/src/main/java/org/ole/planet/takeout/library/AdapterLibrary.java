@@ -47,11 +47,11 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof ViewHolderLibrary) {
-            ((ViewHolderLibrary) holder).title.setText(libraryList.get(position).getTitle());
-            ((ViewHolderLibrary) holder).desc.setText(libraryList.get(position).getDescription());
-            ((ViewHolderLibrary) holder).times_rated.setText(libraryList.get(position).getTimesRated() + " Total");
+            ((ViewHolderLibrary) holder).title.setText(libraryList.get(position).title);
+            ((ViewHolderLibrary) holder).desc.setText(libraryList.get(position).description);
+            ((ViewHolderLibrary) holder).times_rated.setText(libraryList.get(position).timesRated + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
-            ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
+            ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).averageRating) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).averageRating)));
             ((ViewHolderLibrary) holder).checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
