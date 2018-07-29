@@ -83,6 +83,7 @@ public class SyncManager {
                     mRealm = dbService.getRealmInstance();
                     properties = dbService.getClouchDbProperties("_users", settings);
                     userTransactionSync(settings, mRealm, properties);
+                    new CoursesSyncManager(mRealm, dbService, settings).coursesTransactionSync();
                     myLibraryTransactionSync();
                 } finally {
                     NotificationUtil.cancel(context, 111);
