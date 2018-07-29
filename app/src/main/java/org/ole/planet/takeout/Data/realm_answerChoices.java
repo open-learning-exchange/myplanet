@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.takeout.utilities.Utilities;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
 
@@ -41,5 +43,13 @@ public class realm_answerChoices extends RealmObject {
     public static void create(Realm mRealm, String questionId, JsonObject res, SharedPreferences settings) {
         realm_answerChoices choice = mRealm.createObject(realm_answerChoices.class, res.get("_id").getAsString());
         choice.setQuestionId(questionId);
+    }
+
+    public static void insertChoices(String questionId, JsonArray choices, Realm mRealm, SharedPreferences settings) {
+        for (int i = 0; i < choices.size(); i++) {
+            JsonObject res = choices.get(i).getAsJsonObject();
+            realm_answerChoices.create(mRealm, questionId, res, settings);
+            Utilities.log("Insert choices");
+        }
     }
 }

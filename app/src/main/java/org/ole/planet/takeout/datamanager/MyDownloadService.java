@@ -23,6 +23,7 @@ import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.SyncActivity;
+import org.ole.planet.takeout.utilities.NotificationUtil;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.io.BufferedInputStream;
@@ -65,11 +66,7 @@ public class MyDownloadService extends IntentService {
             stopSelf();
         }
         notificationBuilder = new NotificationCompat.Builder(this, "11");
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            int importance = NotificationManager.IMPORTANCE_LOW;
-            NotificationChannel notificationChannel = new NotificationChannel("11", "ole", importance);
-            notificationManager.createNotificationChannel(notificationChannel);
-        }
+        NotificationUtil.setChannel(notificationManager);
         Notification noti = notificationBuilder
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle("OLE Download")

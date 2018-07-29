@@ -2,31 +2,22 @@ package org.ole.planet.takeout.userprofile;
 
 
 import android.content.Intent;
-import android.media.Image;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
-
-import com.squareup.picasso.Picasso;
 
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.R;
-import org.ole.planet.takeout.datamanager.RealmService;
+import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -36,7 +27,7 @@ import io.realm.Realm;
 public class UserProfileFragment extends Fragment {
 
     UserProfileDbHandler handler;
-    RealmService realmService;
+    DatabaseService realmService;
     Realm mRealm;
     RecyclerView rvStat;
 
@@ -55,8 +46,8 @@ public class UserProfileFragment extends Fragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_profile, container, false);
         handler = new UserProfileDbHandler(getActivity());
-        realmService = new RealmService(getActivity());
-        mRealm = realmService.getInstance();
+        realmService = new DatabaseService(getActivity());
+        mRealm = realmService.getRealmInstance();
         rvStat = v.findViewById(R.id.rv_stat);
         rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvStat.setNestedScrollingEnabled(false);
