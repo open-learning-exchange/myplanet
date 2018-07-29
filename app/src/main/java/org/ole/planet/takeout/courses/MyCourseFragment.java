@@ -89,12 +89,12 @@ public class MyCourseFragment extends Fragment implements OnCourseItemSelected {
         final realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         for (int i = 0; i < selectedItems.size(); i++) {
             realm_courses course = selectedItems.get(i);
-            realm_myCourses myLibrary = mRealm.where(realm_myCourses.class).equalTo("courseId", course.getCourseId()).findFirst();
+            realm_myCourses myLibrary = mRealm.where(realm_myCourses.class).equalTo("courseId", course.courseId).findFirst();
             if (myLibrary == null) {
                 realm_myCourses.createFromCourse(course, mRealm, model.getId());
-                Utilities.toast(getActivity(), "Course Added to my courses " + course.getCourseTitle());
+                Utilities.toast(getActivity(), "Course Added to my courses " + course.courseTitle);
             } else {
-                Utilities.toast(getActivity(), "Course Already Exists in my courses : " + course.getCourseTitle());
+                Utilities.toast(getActivity(), "Course Already Exists in my courses : " + course.courseTitle);
             }
         }
     }

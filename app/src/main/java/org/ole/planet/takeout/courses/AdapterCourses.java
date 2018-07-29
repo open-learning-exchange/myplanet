@@ -49,12 +49,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof ViewHoldercourse) {
-            ((ViewHoldercourse) holder).title.setText(courseList.get(position).getCourseTitle());
-            ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
-            ((ViewHoldercourse) holder).grad_level.setText("Grad Level  : " +courseList.get(position).getGradeLevel());
-            ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " +  courseList.get(position).getSubjectLevel());
+            ((ViewHoldercourse) holder).title.setText(courseList.get(position).courseTitle);
+            ((ViewHoldercourse) holder).desc.setText(courseList.get(position).description);
+            ((ViewHoldercourse) holder).grad_level.setText("Grad Level  : " +courseList.get(position).gradeLevel);
+            ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " +  courseList.get(position).subjectLevel);
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
-            ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
+            ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).numberOfSteps);
             ((ViewHoldercourse) holder).checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {

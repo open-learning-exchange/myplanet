@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
@@ -22,6 +23,7 @@ import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;
+
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -108,30 +110,31 @@ public class SyncManager {
         properties = propts;
         settings = sett;
         mRealm = realm;
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    processUserDoc(dbClient, doc);
-                }
-            }
-        });
+        DatabaseService.syncDB(mRealm, properties, "user");
+//        mRealm.executeTransaction(new Realm.Transaction() {
+//            @Override
+//            public void execute(Realm realm) {
+//                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+//                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+//                for (int i = 0; i < allDocs.size(); i++) {
+//                    Document doc = allDocs.get(i);
+//                    processUserDoc(dbClient, doc);
+//                }
+//            }
+//        });
     }
-
-    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
-        try {
-            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                realm_UserModel.populateUsersTable(jsonDoc, mRealm, settings);
-                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//
+//    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
+//        try {
+//            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
+//                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+//                realm_UserModel.populateUsersTable(jsonDoc, mRealm, settings);
+//                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void myLibraryTransactionSync() {
         properties.setDbName("shelf");
@@ -245,7 +248,6 @@ public class SyncManager {
         properties.setUsername(settings.getString("url_user", ""));
         properties.setPassword(settings.getString("url_pwd", ""));
     }
-
 
 
     public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {

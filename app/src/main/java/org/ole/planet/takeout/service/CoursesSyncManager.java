@@ -30,28 +30,19 @@ public class CoursesSyncManager {
 
     public void coursesTransactionSync() {
         final CouchDbProperties properties = dbService.getClouchDbProperties("courses", settings);
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    processCourseDoc(dbClient, doc);
-                }
-            }
-        });
+        DatabaseService.syncDB(mRealm, properties, "course");
+//        mRealm.executeTransaction(new Realm.Transaction() {
+//            @Override
+//            public void execute(Realm realm) {
+//                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+//                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+//                for (int i = 0; i < allDocs.size(); i++) {
+//                    Document doc = allDocs.get(i);
+//                    processCourseDoc(dbClient, doc);
+//                }
+//            }
+//        });
     }
 
-    private void processCourseDoc(CouchDbClientAndroid dbClient, Document doc) {
-        try {
-            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-            realm_courses.insertMyCourses(jsonDoc, mRealm);
-            Log.e("Realm", " Course " + jsonDoc.toString());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
 }

@@ -150,17 +150,17 @@ public class realm_myCourses extends RealmObject {
             mRealm.beginTransaction();
         realm_myCourses myMyCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
         myMyCoursesDB.setUserId(id);
-        myMyCoursesDB.setCourseId(course.getCourseId());
-        myMyCoursesDB.setCourse_rev(course.getCourse_rev());
-        myMyCoursesDB.setLanguageOfInstruction(course.getLanguageOfInstruction());
-        myMyCoursesDB.setCourseTitle(course.getCourseTitle());
-        myMyCoursesDB.setMemberLimit(course.getMemberLimit());
-        myMyCoursesDB.setDescription(course.getDescription());
-        myMyCoursesDB.setMethod(course.getMethod());
-        myMyCoursesDB.setGradeLevel(course.getGradeLevel());
-        myMyCoursesDB.setSubjectLevel(course.getSubjectLevel());
-        myMyCoursesDB.setCreatedDate(course.getCreatedDate());
-        myMyCoursesDB.setnumberOfSteps(course.getnumberOfSteps());
+        myMyCoursesDB.setCourseId(course.courseId);
+        myMyCoursesDB.setCourse_rev(course.course_rev);
+        myMyCoursesDB.setLanguageOfInstruction(course.languageOfInstruction);
+        myMyCoursesDB.setCourseTitle(course.courseTitle);
+        myMyCoursesDB.setMemberLimit(course.memberLimit);
+        myMyCoursesDB.setDescription(course.description);
+        myMyCoursesDB.setMethod(course.method);
+        myMyCoursesDB.setGradeLevel(course.gradeLevel);
+        myMyCoursesDB.setSubjectLevel(course.subjectLevel);
+        myMyCoursesDB.setCreatedDate(course.createdDate);
+        myMyCoursesDB.setnumberOfSteps(course.numberOfSteps);
         mRealm.commitTransaction();
     }
 }
