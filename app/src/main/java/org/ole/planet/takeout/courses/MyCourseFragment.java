@@ -24,6 +24,7 @@ import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
 
 import io.realm.Realm;
 
@@ -64,9 +65,17 @@ public class MyCourseFragment extends Fragment implements OnCourseItemSelected {
         return v;
     }
 
+
+
     public List<realm_courses> getLibraryList() {
-        return mRealm.where(realm_courses.class).findAll();
+        List<realm_myCourses> myCourses = mRealm.where(realm_myCourses.class).findAll();
+        String[] myIds = new String[myCourses.size()];
+        for (int i = 0 ; i < myCourses.size() ; i ++){
+            myIds[i] = myCourses.get(i).getCourseId();
+        }
+        return mRealm.where(realm_courses.class).not().in("courseId", myIds).findAll();
     }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
