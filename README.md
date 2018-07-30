@@ -46,4 +46,6 @@ Along with the 10-inch tablet, you can also use an actual device to run and test
 
 The process for creating issues and pull requests is very similar to First Steps. Remember to branch off of the master branch before working on and creating a new pull request.
 
-### Troubleshooting [WIP]
+### Troubleshooting
+
+Some of the issues that you can come across may be related to the obsolete commands, gradle building, the version of Android Studio your are using, etc. Add your problem and the solution to your problem in this section to help future interns. 
