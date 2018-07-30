@@ -27,6 +27,7 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.takeout.Data.Download;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.datamanager.MyDownloadService;
@@ -171,7 +172,7 @@ public class DashboardFragment extends Fragment {
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
         for (final realm_myCourses items: db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, null ,items);
+            //setTextViewProperties(myCoursesTextViewArray, itemCnt,items);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
