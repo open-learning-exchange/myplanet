@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.app.IntentService;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -14,6 +15,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -32,6 +34,9 @@ import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
+import org.ole.planet.takeout.datamanager.ApiClient;
+import org.ole.planet.takeout.datamanager.ApiInterface;
+import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.library.MyLibraryFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
@@ -39,10 +44,14 @@ import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Response;
 
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
@@ -67,6 +76,9 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+
+    private Call<ResponseBody> request;
+
 
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -263,6 +275,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.size(); i++) {
             urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems.get(i)), settings));
+            Log.e("URLS",""+urls);
         }
         startDownload(urls);
     }
@@ -290,25 +303,13 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
                     profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
                     if(items.getMediaType().equals("video")){
-                        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
-                        Bundle bundle = new Bundle();
-                        bundle.putString("videoType","offline");
-                        System.out.println("FILE PATH: "+Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()));
-//                        bundle.putString("videoURL",""+ Uri.fromFile(new File("/storage/emulated/0/ole/"+items.getResourceLocalAddress())));
-                        bundle.putString("videoURL",""+ Uri.fromFile(new File(""+Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
-                        intent.putExtras(bundle);
-                        startActivity(intent);
+                        playVideo("offline", items);
                     }
                 } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
                     if(items.getMediaType().equals("video")){
-                        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
-                        Bundle bundle = new Bundle();
-                        bundle.putString("videoType","online");
-                        bundle.putString("videoURL","https://firebasestorage.googleapis.com/v0/b/fir-learn-4991c.appspot.com/o/videos%2Fbig-buck-bunny.mp4?alt=media&token=6becc7f1-0296-4c69-bb04-d2bd62a30422");
-//                        bundle.putString("videoURL", ""+items.getResourceRemoteAddress());
-                        intent.putExtras(bundle);
-                        startActivity(intent);
+//                        streamLogin(items);
+                        playVideo("online", items);
                     }
                 }
             }
@@ -338,6 +339,39 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         if (download.isCompleteAll()) {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
         }
+    }
+
+//    private void streamLogin(final realm_myLibrary items) {
+//        SharedPreferences preferences = getContext().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
+//        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+//        request = retrofitInterface.downloadFile("Basic " + Base64.encodeToString((preferences.getString("url_user", "") + ":" + preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP), items.getResourceRemoteAddress());
+//        try {
+//            Response r = request.execute();
+//            Log.e("ERROR",""+r.code()+" ;; URL: "+request);
+//            if (r.code() == 200) {
+//                playVideo("online", items);
+//            } else {
+//                Utilities.toast(getContext(), "Oops, Looks This File Has To Be Downloaded");
+//            }
+//        } catch (IOException e) {
+//            Utilities.toast(getContext(), "Oops, Looks This File Has To Be Downloaded");
+//            e.printStackTrace();
+//        }
+//    }
+
+    private void playVideo(String videoType, final realm_myLibrary items){
+
+        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
+        Bundle bundle = new Bundle();
+        bundle.putString("videoType", videoType);
+        if(videoType.equals("online")){
+            bundle.putString("videoURL","https://firebasestorage.googleapis.com/v0/b/fir-learn-4991c.appspot.com/o/videos%2Fbig-buck-bunny.mp4?alt=media&token=6becc7f1-0296-4c69-bb04-d2bd62a30422");
+//            bundle.putString("videoURL",""+items.getResourceRemoteAddress());
+        }else if(videoType.equals("offline")){
+            bundle.putString("videoURL",""+ Uri.fromFile(new File(""+Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+        }
+        intent.putExtras(bundle);
+        startActivity(intent);
     }
 
 

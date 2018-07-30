@@ -88,7 +88,7 @@ public class MyDownloadService extends IntentService {
         try {
             Response r = request.execute();
             if (r.code() == 200) {
-                Log.e("Download File Response", ""+(ResponseBody) r.body()+" ;;Get Header: "+getHeader()+" ;; URL: "+url);
+                Log.e("Download File Response", ""+(ResponseBody) r.body()+" ;;Get Header: "+getHeader()+" ;; URL: "+url+" :;; Original Request: "+request) ;
                 downloadFile((ResponseBody) r.body());
             } else {
                 downloadFiled();
