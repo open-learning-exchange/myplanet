@@ -8,8 +8,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
@@ -19,25 +19,30 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
+
 import org.ole.planet.takeout.Data.Download;
-import org.ole.planet.takeout.Data.realm_UserModel;
-import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
+import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_offlineActivities;
+import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.UUID;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -48,23 +53,22 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends Fragment implements View.OnClickListener {
+public class DashboardFragment extends Fragment {
 
+    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
-    ImageView userImage;
     String fullName;
     Realm mRealm;
     ProgressDialog prgDialog;
-    UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
-
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -81,23 +85,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         }
     };
 
-    OnHomeItemClickListener listener;
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnHomeItemClickListener) {
-            listener = (OnHomeItemClickListener) context;
-        }
-    }
-
     public DashboardFragment() {
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        profileDbHandler.onDestory();
     }
 
     @Override
@@ -106,39 +94,12 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         declareElements(view);
-        fullName = Utilities.getFullName(settings);
+        fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
-        profileDbHandler = new UserProfileDbHandler(getActivity());
-        realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
-        Utilities.log(model.getUserImage() + " image");
-        ImageView imageView = view.findViewById(R.id.imageView);
-        Utilities.loadImage(model.getUserImage(), imageView);
-        txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
-        myLibraryImage.setOnClickListener(this);
-        myCourseImage.setOnClickListener(this);
-        myMeetUpsImage.setOnClickListener(this);
         return view;
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.myLibraryImageButton:
-                openCallFragment(new MyLibraryFragment());
-                break;
-            case R.id.myCoursesImageButton:
-                openCallFragment(new MyCourseFragment());
-                break;
-            case R.id.myMeetUpsImageButton:
-                openCallFragment(new MyCourseFragment());
-                break;
-            default:
-                openCallFragment(new DashboardFragment());
-                break;
-        }
     }
 
     private void declareElements(View view) {
@@ -147,31 +108,32 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
         myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
-
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
-
-        view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (listener != null)
-                    listener.openCallFragment(new UserProfileFragment());
-            }
-        });
         realmConfig();
         myLibraryDiv(view);
         myCoursesDiv(view);
         showDownloadDialog();
     }
 
-    public void openCallFragment(Fragment newfragment) {
-        FragmentTransaction fragmentTransaction = getActivity().getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        fragmentTransaction.addToBackStack(null);
-        fragmentTransaction.commit();
+    public int offlineVisits() {
+        //realmConfig("offlineActivities");
+        realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
+        offlineActivities.setUserId(settings.getString("name", ""));
+        offlineActivities.setType("Login");
+        offlineActivities.setDescription("Member login on offline application");
+        offlineActivities.setUserFullName(fullName);
+        RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
+                .equalTo("userId", settings.getString("name", ""))
+                .equalTo("type", "Visits")
+                .findAll();
+        if (!db_users.isEmpty()) {
+            return db_users.size();
+        } else {
+            return 0;
+        }
     }
-
 
     public void realmConfig() {
         Realm.init(getContext());
@@ -194,7 +156,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
-        for (final realm_myLibrary items : db_myLibrary){
+        for (final realm_myLibrary items : db_myLibrary) {
             setTextViewProperties(myLibraryTextViewArray, itemCnt, items, null);
             myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
@@ -256,7 +218,6 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         startDownload(urls);
     }
 
-
     private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, ArrayList<Integer> selectedItems) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.size(); i++) {
@@ -280,22 +241,21 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
     }
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
-
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
-                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
+                    checkFileExtension(items);
                 } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
+                    checkFileExtension(items);
                 }
             }
         });
     }
 
     public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items, realm_myCourses itemsCourse) {
-
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
         textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
@@ -319,5 +279,52 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         }
     }
 
+    public void checkFileExtension(realm_myLibrary items) {
+        String filenameArray[] = items.getResourceLocalAddress().split("\\.");
+        String extension = filenameArray[filenameArray.length - 1];
 
+        switch (extension) {
+            case "pdf":
+                Intent pdfOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
+                openIntent(items, pdfOpenIntent);
+                break;
+            case "bmp":
+            case "gif":
+            case "jpg":
+            case "png":
+            case "webp":
+                Intent imageOpenIntent = new Intent(DashboardFragment.this.getActivity(), ImageViewerActivity.class);
+                openIntent(items, imageOpenIntent);
+                break;
+            default:
+                checkMoreFileExtensions(extension, items);
+                break;
+        }
+    }
+
+    private void openIntent(realm_myLibrary items, Intent fileOpenIntent) {
+        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        startActivity(fileOpenIntent);
+    }
+
+    public void checkMoreFileExtensions(String extension, realm_myLibrary items)
+    {
+        switch (extension) {
+            case "txt":
+                Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
+                openIntent(items, textFileOpenIntent);
+                break;
+            case "md":
+                Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
+                openIntent(items, markdownOpenIntent);
+                break;
+            case "csv":
+                Intent CSVOpenIntent = new Intent(DashboardFragment.this.getActivity(), CSVViewerActivity.class);
+                openIntent(items, CSVOpenIntent);
+                break;
+            default:
+                Toast.makeText(getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
+                break;
+        }
+    }
 }
