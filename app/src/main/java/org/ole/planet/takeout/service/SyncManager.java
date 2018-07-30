@@ -279,8 +279,8 @@ public class SyncManager {
     }
 
 
-    public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
-
-    }
+//    public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
+//
+//    }
 
 }
