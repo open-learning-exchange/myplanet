@@ -108,6 +108,7 @@ public class DashboardFragment extends Fragment {
         txtVisits = view.findViewById(R.id.txtVisits);
         realmConfig();
         myLibraryDiv(view);
+        myCoursesDiv(view);
         showDownloadDialog();
     }
 
@@ -151,7 +152,7 @@ public class DashboardFragment extends Fragment {
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {
-            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
+            setTextViewProperties(myLibraryTextViewArray, itemCnt, items, null);
             myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
                 myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
@@ -172,7 +173,7 @@ public class DashboardFragment extends Fragment {
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
         for (final realm_myCourses items: db_myCourses) {
-            //setTextViewProperties(myCoursesTextViewArray, itemCnt,items);
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, null ,items);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
@@ -249,14 +250,18 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items) {
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items, realm_myCourses itemsCourse) {
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
         textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
         textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-        textViewArray[itemCnt].setText(items.getTitle());
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+        if(items != null){
+            textViewArray[itemCnt].setText(items.getTitle());
+        }else if(itemsCourse != null){
+            textViewArray[itemCnt].setText(itemsCourse.getCourse_rev());
+        }
     }
 
     public void setProgress(Download download) {
