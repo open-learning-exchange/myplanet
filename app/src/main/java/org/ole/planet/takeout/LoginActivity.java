@@ -29,6 +29,8 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.datamanager.DatabaseService;
+import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 
 import java.util.ArrayList;
@@ -80,7 +82,6 @@ public class LoginActivity extends SyncActivity {
             }
         });
         dbsetup.Setup_db(this.context);
-
     }
 
     public void changeLogoColor() {
