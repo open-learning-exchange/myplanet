@@ -160,6 +160,26 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    public void myCoursesDiv(View view) {
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
+        flexboxLayout.setFlexDirection(FlexDirection.ROW);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                250,
+                100
+        );
+        RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
+        TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
+        int itemCnt = 0;
+        for (final realm_myCourses items: db_myCourses) {
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, null ,items);
+            if ((itemCnt % 2) == 0) {
+                myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+            }
+            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
+            itemCnt++;
+        }
+    }
+
     private void showDownloadDialog() {
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
         if (!db_myLibrary.isEmpty()) {
