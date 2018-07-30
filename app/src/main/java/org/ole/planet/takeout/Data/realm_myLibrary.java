@@ -1,10 +1,15 @@
 package org.ole.planet.takeout.Data;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import org.ole.planet.takeout.MainApplication;
+import org.ole.planet.takeout.SyncActivity;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Map;
 import java.util.Set;
@@ -35,7 +40,6 @@ public class realm_myLibrary extends RealmObject {
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
     private Boolean resourceOffline;
-
 
 
     public static CharSequence[] getListAsArray(RealmResults<realm_myLibrary> db_myLibrary) {
@@ -219,5 +223,25 @@ public class realm_myLibrary extends RealmObject {
             }
         }
         myLibraryDB.setDescription(resourceDoc.get("description").getAsString());
+    }
+
+    public static void createFromResource(realm_resources resource, Realm mRealm, String userId) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        SharedPreferences preferences = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        realm_myLibrary myLibraryDB = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
+        myLibraryDB.setUserId(userId);
+        myLibraryDB.setResourceId(resource.getResource_id());
+        myLibraryDB.setResource_rev(resource._rev);
+        myLibraryDB.setTitle(resource.title);
+        myLibraryDB.setAuthor(resource.author);
+        myLibraryDB.setLanguage(resource.language);
+        myLibraryDB.setSubject(resource.getSubject().isEmpty() ? "" : resource.getSubject().first()); // array
+        myLibraryDB.setMediaType(resource.mediaType);
+        myLibraryDB.setResourceRemoteAddress(Utilities.getUrl(resource.getResource_id(), resource.filename, preferences));
+        myLibraryDB.setResourceLocalAddress(resource.filename);
+        myLibraryDB.setDescription(resource.description);
+        myLibraryDB.setResourceOffline(false);
+        mRealm.commitTransaction();
     }
 }
