@@ -144,7 +144,6 @@ public class realm_myCourses extends RealmObject {
         myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
         realm_courseSteps.insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
     }
-
     public static void createFromCourse(realm_courses course, Realm mRealm, String id) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();

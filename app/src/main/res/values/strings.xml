@@ -47,4 +47,5 @@
     <string name="delete">Delete</string>
     <string name="add_to_mycourse">Add to my courses</string>
     <string name="send_courses">Send Courses</string>
+    <string name="add_to_mylib">Add To myLibrary</string>
 </resources>
