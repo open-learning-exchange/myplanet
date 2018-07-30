@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -20,8 +21,10 @@ import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSource;
+import com.google.android.exoplayer2.upstream.HttpDataSource;
 
 public class ExoPlayerVideo extends AppCompatActivity {
 
@@ -41,16 +44,19 @@ public class ExoPlayerVideo extends AppCompatActivity {
 
         String videoType = extras.getString("videoType");
         String videoURL = extras.getString("videoURL");
+        String auth = extras.getString("Auth");
+
+        Log.e("AUTH",""+auth);
 
         if(videoType.equals("offline")){
             prepareExoPlayerFromFileUri(videoURL);
         }else if(videoType.equals("online")){
-            streamVideoFromUrl(videoURL);
+            streamVideoFromUrl(videoURL, auth);
         }
 
     }
 
-    public void streamVideoFromUrl(String videoUrl){
+    public void streamVideoFromUrl(String videoUrl, String auth){
 
 
         BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
@@ -59,7 +65,8 @@ public class ExoPlayerVideo extends AppCompatActivity {
 
         Uri videoUri = Uri.parse(videoUrl);
 
-        DefaultHttpDataSourceFactory defaultHttpDataSourceFactory = new DefaultHttpDataSourceFactory("ExoPlayer");
+        HttpDataSource.Factory defaultHttpDataSourceFactory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
+        defaultHttpDataSourceFactory.setDefaultRequestProperty("Cookie",auth);
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
         MediaSource mediaSource = new ExtractorMediaSource(videoUri, defaultHttpDataSourceFactory, extractorsFactory, null, null);
 

@@ -28,6 +28,8 @@ import android.widget.TextView;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
+
+import org.json.JSONObject;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -43,9 +45,16 @@ import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -79,6 +88,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
 
     private Call<ResponseBody> request;
 
+    private String auth = "";
 
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -177,6 +187,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         myLibraryDiv(view);
         myCoursesDiv(view);
         showDownloadDialog();
+        sendPost();
     }
 
     public void openCallFragment(Fragment newfragment) {
@@ -223,7 +234,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                300,
+                250,
                 100
         );
         RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
@@ -308,7 +319,6 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
                 } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
                     if(items.getMediaType().equals("video")){
-//                        streamLogin(items);
                         playVideo("online", items);
                     }
                 }
@@ -341,37 +351,64 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         }
     }
 
-//    private void streamLogin(final realm_myLibrary items) {
-//        SharedPreferences preferences = getContext().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
-//        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-//        request = retrofitInterface.downloadFile("Basic " + Base64.encodeToString((preferences.getString("url_user", "") + ":" + preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP), items.getResourceRemoteAddress());
-//        try {
-//            Response r = request.execute();
-//            Log.e("ERROR",""+r.code()+" ;; URL: "+request);
-//            if (r.code() == 200) {
-//                playVideo("online", items);
-//            } else {
-//                Utilities.toast(getContext(), "Oops, Looks This File Has To Be Downloaded");
-//            }
-//        } catch (IOException e) {
-//            Utilities.toast(getContext(), "Oops, Looks This File Has To Be Downloaded");
-//            e.printStackTrace();
-//        }
-//    }
-
     private void playVideo(String videoType, final realm_myLibrary items){
 
         Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
         Bundle bundle = new Bundle();
         bundle.putString("videoType", videoType);
         if(videoType.equals("online")){
-            bundle.putString("videoURL","https://firebasestorage.googleapis.com/v0/b/fir-learn-4991c.appspot.com/o/videos%2Fbig-buck-bunny.mp4?alt=media&token=6becc7f1-0296-4c69-bb04-d2bd62a30422");
-//            bundle.putString("videoURL",""+items.getResourceRemoteAddress());
+            bundle.putString("videoURL",""+items.getResourceRemoteAddress());
+            bundle.putString("Auth", auth);
         }else if(videoType.equals("offline")){
             bundle.putString("videoURL",""+ Uri.fromFile(new File(""+Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+            bundle.putString("Auth", "");
         }
         intent.putExtras(bundle);
         startActivity(intent);
+    }
+
+    public void sendPost() {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    URL url = new URL("https://dev.media.mit.edu:2200/_session");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("Accept","application/json");
+                    conn.setDoOutput(true);
+                    conn.setDoInput(true);
+
+                    JSONObject jsonParam = new JSONObject();
+                    jsonParam.put("name",  "dev");
+                    jsonParam.put("password", "ved");
+
+                    Log.i("JSON", jsonParam.toString());
+                    DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+                    os.writeBytes(jsonParam.toString());
+
+                    os.flush();
+                    os.close();
+
+                    Log.i("STATUS", String.valueOf(conn.getResponseCode()));
+                    Map<String, List<String>> responseHeader = new HashMap<>();
+                    responseHeader = conn.getHeaderFields();
+                    Log.i("FULL HEADER",""+responseHeader);
+                    Log.i("MSG" , conn.getResponseMessage());
+                    String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+                    Log.i("HEADER", ""+ headerauth[0]);
+
+                    auth = headerauth[0];
+
+                    conn.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        thread.start();
     }
 
 
