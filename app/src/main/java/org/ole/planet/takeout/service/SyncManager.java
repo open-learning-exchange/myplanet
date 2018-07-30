@@ -14,6 +14,7 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_resources;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.SyncListener;
@@ -86,6 +87,7 @@ public class SyncManager {
                     properties = dbService.getClouchDbProperties("_users", settings);
                     userTransactionSync(settings, mRealm, properties);
                     new CoursesSyncManager(mRealm, dbService, settings).coursesTransactionSync();
+                    resourceTransactionSync();
                     myLibraryTransactionSync();
                 } finally {
                     NotificationUtil.cancel(context, 111);
@@ -99,7 +101,7 @@ public class SyncManager {
         });
         td.start();
     }
-//
+
 //    private void setVariables(SharedPreferences settings, Realm mRealm, CouchDbProperties properties) {
 //        this.settings = settings;
 //        this.mRealm = mRealm;
@@ -135,6 +137,35 @@ public class SyncManager {
 //            e.printStackTrace();
 //        }
 //    }
+
+
+    public void resourceTransactionSync() {
+        final CouchDbProperties properties = dbService.getClouchDbProperties("resources", settings);
+        mRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+                for (int i = 0; i < allDocs.size(); i++) {
+                    Document doc = allDocs.get(i);
+                    Utilities.log("Document " + doc);
+                    processResourceDoc(dbClient, doc);
+                }
+            }
+        });
+    }
+
+    private void processResourceDoc(CouchDbClientAndroid dbClient, Document doc) {
+        try {
+
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            realm_resources.insertResources(jsonDoc, mRealm);
+            Log.e("Realm", " STRING " + jsonDoc.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private void myLibraryTransactionSync() {
         properties.setDbName("shelf");
