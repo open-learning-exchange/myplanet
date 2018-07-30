@@ -163,7 +163,7 @@ public class DashboardFragment extends Fragment {
     }
 
     public void myCoursesDiv(View view) {
-        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 250,
