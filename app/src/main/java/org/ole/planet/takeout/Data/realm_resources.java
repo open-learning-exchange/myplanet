@@ -40,19 +40,24 @@ public class realm_resources extends RealmObject {
 
 
     public static void insertResources(JsonObject doc, Realm mRealm) {
+        if (!mRealm.isInTransaction()) {
+            mRealm.beginTransaction();
+        }
         realm_resources resource = mRealm.createObject(realm_resources.class, UUID.randomUUID().toString());
         resource._rev = doc.get("_rev").getAsString();
-        resource.resource_id = doc.get("_id").getAsString() ;
+        resource.resource_id = doc.get("_id").getAsString();
         resource.title = doc.get("title").getAsString();
         resource.description = doc.get("description").getAsString();
         resource.year = (doc.get("year").getAsString());
         resource.averageRating = (doc.has("averageRating") ? doc.get("averageRating").getAsString() : "");
         resource.filename = (doc.get("filename").getAsString());
-        resource.uploadDate = (doc.get("uploadDate").getAsString());
+        if (doc.has("uploadDate") && doc.get("uploadDate") != null)
+            resource.uploadDate = (doc.get("uploadDate").getAsString());
         resource.addedBy = (doc.get("addedBy").getAsString());
         resource.openWith = (doc.get("openWith").getAsString());
         resource.articleDate = (doc.get("articleDate").getAsString());
-        resource.kind = (doc.get("kind").getAsString());
+        if (doc.has("kind") && doc.get("kind") != null)
+            resource.kind = (doc.get("kind").getAsString());
         resource.language = (doc.get("language").getAsString());
         resource.author = (doc.get("author").getAsString());
         resource.mediaType = (doc.get("mediaType").getAsString());
@@ -62,6 +67,7 @@ public class realm_resources extends RealmObject {
         resource.setLevel(doc.get("level").getAsJsonArray(), resource);
         resource.setTag(doc.get("tag").getAsJsonArray(), resource);
         resource.setLanguages(doc.get("languages").getAsJsonArray(), resource);
+        mRealm.commitTransaction();
     }
 
     public String getResource_id() {
@@ -71,7 +77,6 @@ public class realm_resources extends RealmObject {
     public void setResource_id(String resource_id) {
         this.resource_id = resource_id;
     }
-
 
 
     public void setResourceFor(JsonArray array, realm_resources resource) {
@@ -110,14 +115,9 @@ public class realm_resources extends RealmObject {
     }
 
 
-
     public RealmList<String> getSubject() {
         return subject;
     }
-
-
-
-
 
 
 }
