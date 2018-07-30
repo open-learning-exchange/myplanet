@@ -62,14 +62,22 @@ public class MyLibraryFragment extends Fragment implements OnLibraryItemSelected
     }
 
     public List<realm_resources> getLibraryList() {
-        return mRealm.where(realm_resources.class).findAll();
+        List<realm_myLibrary> myLibrary = mRealm.where(realm_myLibrary.class).findAll();
+        String[] ids = new String[myLibrary.size()];
+        for (int i = 0; i < myLibrary.size(); i++) {
+            String id = myLibrary.get(i).getResourceId();
+            ids[i] = (id);
+        }
+        return mRealm.where(realm_resources.class).not().in("resource_id", ids).findAll();
     }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         rvLibrary.setLayoutManager(new LinearLayoutManager(getActivity()));
         this.libraryList = getLibraryList();
+
         AdapterLibrary mAdapter = new AdapterLibrary(getActivity(), this.libraryList);
         mAdapter.setListener(this);
         rvLibrary.setAdapter(mAdapter);
