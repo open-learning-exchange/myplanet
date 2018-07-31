@@ -32,6 +32,7 @@ public class ExoPlayerVideo extends AppCompatActivity {
     SimpleExoPlayerView exoPlayerView;
 
     String auth = "";
+    String videoURL = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +45,7 @@ public class ExoPlayerVideo extends AppCompatActivity {
         Bundle extras = intentExtras.getExtras();
 
         String videoType = extras.getString("videoType");
-        String videoURL = extras.getString("videoURL");
+        videoURL = extras.getString("videoURL");
         String auth = extras.getString("Auth");
 
         if(videoType.equals("offline")){
@@ -57,6 +58,9 @@ public class ExoPlayerVideo extends AppCompatActivity {
 
     public void setAuth(String authvar){
         auth = authvar;
+        if(!videoURL.equals("")){
+            streamVideoFromUrl(videoURL,auth);
+        }
     }
     public void streamVideoFromUrl(String videoUrl, String auth){
 

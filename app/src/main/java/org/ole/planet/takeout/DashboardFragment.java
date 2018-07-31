@@ -82,7 +82,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
     UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
 
-    private String SERVER_URL = "https://dev.media.mit.edu:2200/_session";
+//    private URL SERVER_URL ;
 
     //ImageButtons
     private ImageButton myLibraryImage;
@@ -191,6 +191,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         myLibraryDiv(view);
         myCoursesDiv(view);
         showDownloadDialog();
+//        URL url = new URL("https://dev.media.mit.edu:2200/_session");
         sendPost();
         timerSendPostNewAuthSessionID();
     }
@@ -377,26 +378,21 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
             @Override
             public void run() {
                 try {
-                    URL url = new URL(SERVER_URL);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    URL SERVER_URL = new URL("https://dev.media.mit.edu:2200/_session");
+                    HttpURLConnection conn = (HttpURLConnection) SERVER_URL.openConnection();
                     conn.setRequestMethod("POST");
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("Accept","application/json");
                     conn.setDoOutput(true);
                     conn.setDoInput(true);
 
-                    JSONObject jsonParam = new JSONObject();
-                    jsonParam.put("name",  "dev");
-                    jsonParam.put("password", "ved");
-
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
-                    os.writeBytes(jsonParam.toString());
+                    os.writeBytes(getJsonObject().toString());
 
                     os.flush();
                     os.close();
 
                     setAuthSession(conn.getHeaderFields());
-                    timerSendPostNewAuthSessionID();
                     conn.disconnect();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -413,6 +409,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         System.out.println(headerauth[0]);
         ExoPlayerVideo exoPlayerVideo = new ExoPlayerVideo();
         exoPlayerVideo.setAuth(headerauth[0]);
+        timerSendPostNewAuthSessionID();
     }
 
     public void timerSendPostNewAuthSessionID() {
@@ -424,5 +421,16 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
             }
         };
         timer.schedule (hourlyTask, 0, 1000*60*5);
+    }
+    public JSONObject getJsonObject(){
+        try {
+            JSONObject jsonParam = new JSONObject();
+            jsonParam.put("name", "dev");
+            jsonParam.put("password", "ved");
+            return jsonParam;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 }
