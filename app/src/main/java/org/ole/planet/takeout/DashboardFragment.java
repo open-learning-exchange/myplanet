@@ -34,6 +34,7 @@ import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.ExoPlayerVideo;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.datamanager.ApiClient;
@@ -82,8 +83,6 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
     UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
 
-//    private URL SERVER_URL ;
-
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
@@ -92,7 +91,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
 
     private Call<ResponseBody> request;
 
-    private String auth = "";
+    private String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -191,8 +190,6 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         myLibraryDiv(view);
         myCoursesDiv(view);
         showDownloadDialog();
-//        URL url = new URL("https://dev.media.mit.edu:2200/_session");
-        sendPost();
         timerSendPostNewAuthSessionID();
     }
 
@@ -357,6 +354,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         }
     }
 
+    // Plays Video Using ExoPlayerVideo.java
     private void playVideo(String videoType, final realm_myLibrary items){
 
         Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
@@ -381,8 +379,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
             @Override
             public void run() {
                 try {
-                    URL SERVER_URL = new URL("https://dev.media.mit.edu:2200/_session");
-                    HttpURLConnection conn = (HttpURLConnection) SERVER_URL.openConnection();
+                    HttpURLConnection conn = (HttpURLConnection) getSessionUrl().openConnection();
                     conn.setRequestMethod("POST");
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("Accept","application/json");
@@ -409,12 +406,9 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
     public void setAuthSession(Map<String, List<String>> responseHeader){
         String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
         auth = headerauth[0];
-        System.out.println(headerauth[0]);
-        ExoPlayerVideo exoPlayerVideo = new ExoPlayerVideo();
-        exoPlayerVideo.setAuth(headerauth[0]);
-        timerSendPostNewAuthSessionID();
     }
 
+    // Updates Auth Session Token every 15 mins to prevent Timing Out
     public void timerSendPostNewAuthSessionID() {
         Timer timer = new Timer ();
         TimerTask hourlyTask = new TimerTask () {
@@ -423,14 +417,27 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
                 sendPost();
             }
         };
-        timer.schedule (hourlyTask, 0, 1000*60*5);
+        timer.schedule(hourlyTask, 0, 1000*60*15);
     }
+
     public JSONObject getJsonObject(){
         try {
             JSONObject jsonParam = new JSONObject();
-            jsonParam.put("name", "dev");
-            jsonParam.put("password", "ved");
+            jsonParam.put("name", settings.getString("url_user",""));
+            jsonParam.put("password", settings.getString("url_pwd",""));
             return jsonParam;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public URL getSessionUrl(){
+        try {
+            String pref = settings.getString("serverURL", "");
+            pref += "/_session";
+            URL SERVER_URL = new URL(pref);
+            return SERVER_URL;
         }catch (Exception e){
             e.printStackTrace();
         }

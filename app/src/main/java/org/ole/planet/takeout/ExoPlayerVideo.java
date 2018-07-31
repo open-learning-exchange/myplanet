@@ -46,7 +46,7 @@ public class ExoPlayerVideo extends AppCompatActivity {
 
         String videoType = extras.getString("videoType");
         videoURL = extras.getString("videoURL");
-        String auth = extras.getString("Auth");
+        auth = extras.getString("Auth");
 
         if(videoType.equals("offline")){
             prepareExoPlayerFromFileUri(videoURL);
@@ -56,14 +56,7 @@ public class ExoPlayerVideo extends AppCompatActivity {
 
     }
 
-    public void setAuth(String authvar){
-        auth = authvar;
-        if(!videoURL.equals("")){
-            streamVideoFromUrl(videoURL,auth);
-        }
-    }
     public void streamVideoFromUrl(String videoUrl, String auth){
-
 
         BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         TrackSelector trackSelector = new DefaultTrackSelector(new AdaptiveTrackSelection.Factory(bandwidthMeter));
