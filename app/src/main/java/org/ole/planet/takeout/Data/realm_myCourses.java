@@ -145,4 +145,6 @@ public class realm_myCourses extends RealmObject {
         realm_courseSteps.insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
     }
 
+
+
 }
