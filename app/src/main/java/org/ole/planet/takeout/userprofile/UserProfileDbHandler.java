@@ -3,28 +3,24 @@ package org.ole.planet.takeout.userprofile;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.jboss.security.annotation.Module;
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.SyncActivity;
-import org.ole.planet.takeout.datamanager.RealmService;
+import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
-import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 
 public class UserProfileDbHandler {
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
-    private RealmService realmService;
+    private DatabaseService realmService;
     private String fullName;
     private static final String KEY_LOGIN = "Login";
     private static final String KEY_LOGOUT = "Logout";
@@ -32,10 +28,10 @@ public class UserProfileDbHandler {
 
 
     public UserProfileDbHandler(Context context) {
-        realmService = new RealmService(context);
+        realmService = new DatabaseService(context);
         settings = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         fullName = Utilities.getFullName(settings);
-        mRealm = realmService.getInstance();
+        mRealm = realmService.getRealmInstance();
     }
 
     public realm_UserModel getUserModel() {

@@ -12,8 +12,6 @@ public class dbSetup {
     public void Setup_db(Context context) {
         this.context = context;
         initDatabases();
-
-
     }
 
     public void initDatabases() {

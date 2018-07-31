@@ -1,4 +1,4 @@
-package org.ole.planet.takeout.receiver;
+package org.ole.planet.takeout.callback;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

@@ -2,6 +2,7 @@ package org.ole.planet.takeout;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
@@ -11,8 +12,10 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,6 +31,8 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.datamanager.DatabaseService;
+import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 
 import java.util.ArrayList;
@@ -50,10 +55,12 @@ public class LoginActivity extends SyncActivity {
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
     Fuel ful = new Fuel();
+    int[] syncTimeInteval = {15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
 
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
 
+    private View constraintLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,9 +84,7 @@ public class LoginActivity extends SyncActivity {
                 submitForm();
             }
         });
-
         dbsetup.Setup_db(this.context);
-
     }
 
     public void changeLogoColor() {
@@ -109,6 +114,10 @@ public class LoginActivity extends SyncActivity {
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        SharedPreferences.Editor editor = settings.edit();
+                        editor.putBoolean("autoSync", syncSwitch.isChecked());
+                        editor.putInt("autoSyncInterval", syncTimeInteval[spinner.getSelectedItemPosition()]);
+                        editor.commit();
                         Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -139,6 +148,9 @@ public class LoginActivity extends SyncActivity {
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
+
+        // allows the user to touch anywhere else on the screen to dismiss the keyboard
+        declareHideKeyboardElements();
     }
 
     /**
@@ -155,8 +167,8 @@ public class LoginActivity extends SyncActivity {
         if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             UserProfileDbHandler handler = new UserProfileDbHandler(this);
-             handler.onLogin();
-             handler.onDestory();
+            handler.onLogin();
+            handler.onDestory();
             Intent dashboard = new Intent(getApplicationContext(), Dashboard.class);
             startActivity(dashboard);
         } else {
@@ -250,5 +262,23 @@ public class LoginActivity extends SyncActivity {
             }
         });
         return connectionResult;
+    }
+
+    protected void hideKeyboard(View view)
+    {
+        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+    }
+
+    public void declareHideKeyboardElements()
+    {
+        constraintLayout = findViewById(R.id.constraintLayout);
+        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent ev) {
+                hideKeyboard(view);
+                return false;
+            }
+        });
     }
 }
