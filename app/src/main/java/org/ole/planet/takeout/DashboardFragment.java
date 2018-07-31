@@ -373,6 +373,9 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         startActivity(intent);
     }
 
+    // sendPost() - Meant to get New AuthSession Token for viewing Online resources such as Video, and basically any file.
+    // It creates a session of about 20mins after which a new AuthSession Token will be needed.
+    // During these 20mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
     public void sendPost() {
         Thread thread = new Thread(new Runnable() {
             @Override
