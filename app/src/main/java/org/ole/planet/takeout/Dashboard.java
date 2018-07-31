@@ -183,15 +183,19 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             case R.string.menu_feedback:
                 feedbackDialog();
             case R.string.menu_logout:
-                Intent loginscreen=new Intent(this,LoginActivity.class);
-                loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(loginscreen);
-                this.finish();
+                logout();
                 break;
             default:
                 openCallFragment(new DashboardFragment());
                 break;
         }
+    }
+    
+     private void logout() {
+        Intent loginscreen=new Intent(this,LoginActivity.class);
+        loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(loginscreen);
+        this.finish();
     }
 
 
