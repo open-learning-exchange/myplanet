@@ -54,6 +54,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -79,6 +81,8 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
     ProgressDialog prgDialog;
     UserProfileDbHandler profileDbHandler;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
+
+    private String SERVER_URL = "https://dev.media.mit.edu:2200/_session";
 
     //ImageButtons
     private ImageButton myLibraryImage;
@@ -188,6 +192,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         myCoursesDiv(view);
         showDownloadDialog();
         sendPost();
+        timerSendPostNewAuthSessionID();
     }
 
     public void openCallFragment(Fragment newfragment) {
@@ -372,7 +377,7 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
             @Override
             public void run() {
                 try {
-                    URL url = new URL("https://dev.media.mit.edu:2200/_session");
+                    URL url = new URL(SERVER_URL);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
                     conn.setRequestProperty("Content-Type", "application/json");
@@ -384,23 +389,14 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
                     jsonParam.put("name",  "dev");
                     jsonParam.put("password", "ved");
 
-                    Log.i("JSON", jsonParam.toString());
                     DataOutputStream os = new DataOutputStream(conn.getOutputStream());
                     os.writeBytes(jsonParam.toString());
 
                     os.flush();
                     os.close();
 
-                    Log.i("STATUS", String.valueOf(conn.getResponseCode()));
-                    Map<String, List<String>> responseHeader = new HashMap<>();
-                    responseHeader = conn.getHeaderFields();
-                    Log.i("FULL HEADER",""+responseHeader);
-                    Log.i("MSG" , conn.getResponseMessage());
-                    String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
-                    Log.i("HEADER", ""+ headerauth[0]);
-
-                    auth = headerauth[0];
-
+                    setAuthSession(conn.getHeaderFields());
+                    timerSendPostNewAuthSessionID();
                     conn.disconnect();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -411,5 +407,22 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         thread.start();
     }
 
+    public void setAuthSession(Map<String, List<String>> responseHeader){
+        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+        auth = headerauth[0];
+        System.out.println(headerauth[0]);
+        ExoPlayerVideo exoPlayerVideo = new ExoPlayerVideo();
+        exoPlayerVideo.setAuth(headerauth[0]);
+    }
 
+    public void timerSendPostNewAuthSessionID() {
+        Timer timer = new Timer ();
+        TimerTask hourlyTask = new TimerTask () {
+            @Override
+            public void run () {
+                sendPost();
+            }
+        };
+        timer.schedule (hourlyTask, 0, 1000*60*5);
+    }
 }
