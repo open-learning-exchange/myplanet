@@ -431,7 +431,6 @@ public class DashboardFragment extends Fragment implements View.OnClickListener 
         }
         return null;
     }
-
     public URL getSessionUrl(){
         try {
             String pref = settings.getString("serverURL", "");
