@@ -276,7 +276,6 @@ public class DashboardFragment extends Fragment {
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
-                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
                     if(items.getMediaType().equals("video")){
                         playVideo("offline", items);
                     }else{
