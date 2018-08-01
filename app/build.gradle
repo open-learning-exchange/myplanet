@@ -71,6 +71,11 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 
+    implementation 'com.github.bumptech.glide:glide:4.7.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.7.1'
+    implementation 'com.github.tiagohm.MarkdownView:library:0.19.0'
+    implementation 'com.github.tiagohm.MarkdownView:emoji:0.19.0'
+    implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
 }
 realm {

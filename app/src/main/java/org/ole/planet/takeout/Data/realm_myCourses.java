@@ -163,4 +163,5 @@ public class realm_myCourses extends RealmObject {
         myMyCoursesDB.setnumberOfSteps(course.getnumberOfSteps());
         mRealm.commitTransaction();
     }
+
 }

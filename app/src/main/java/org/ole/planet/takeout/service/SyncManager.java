@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
@@ -13,6 +14,7 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_resources;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.SyncListener;
@@ -22,6 +24,7 @@ import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;
+
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -84,6 +87,7 @@ public class SyncManager {
                     properties = dbService.getClouchDbProperties("_users", settings);
                     userTransactionSync(settings, mRealm, properties);
                     new CoursesSyncManager(mRealm, dbService, settings).coursesTransactionSync();
+                    resourceTransactionSync();
                     myLibraryTransactionSync();
                 } finally {
                     NotificationUtil.cancel(context, 111);
@@ -97,12 +101,7 @@ public class SyncManager {
         });
         td.start();
     }
-//
-//    private void setVariables(SharedPreferences settings, Realm mRealm, CouchDbProperties properties) {
-//        this.settings = settings;
-//        this.mRealm = mRealm;
-//        this.properties = properties;
-//    }
+
 
     private void userTransactionSync(SharedPreferences sett, Realm realm, CouchDbProperties propts) {
         properties = propts;
@@ -128,6 +127,35 @@ public class SyncManager {
                 realm_UserModel.populateUsersTable(jsonDoc, mRealm, settings);
                 Log.e("Realm", " STRING " + jsonDoc.get("_id"));
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void resourceTransactionSync() {
+        final CouchDbProperties properties = dbService.getClouchDbProperties("resources", settings);
+        mRealm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+                for (int i = 0; i < allDocs.size(); i++) {
+                    Document doc = allDocs.get(i);
+                    Utilities.log("Document " + doc);
+                    processResourceDoc(dbClient, doc);
+                }
+            }
+        });
+    }
+
+    private void processResourceDoc(CouchDbClientAndroid dbClient, Document doc) {
+        try {
+
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            realm_resources.insertResources(jsonDoc, mRealm);
+            Log.e("Realm", " STRING " + jsonDoc.toString());
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -247,9 +275,8 @@ public class SyncManager {
     }
 
 
-
-    public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
-
-    }
+//    public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
+//
+//    }
 
 }

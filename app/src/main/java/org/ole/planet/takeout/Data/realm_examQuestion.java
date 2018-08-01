@@ -85,10 +85,10 @@ public class realm_examQuestion extends RealmObject {
     }
 
 
-    public void setChoice(JsonArray array) {
+    public void setChoice(JsonArray array, realm_examQuestion myQuestion) {
         for (JsonElement s :
                 array) {
-            this.choices.add(s.getAsString());
+            myQuestion.choices.add(s.getAsString());
         }
     }
 
@@ -105,7 +105,7 @@ public class realm_examQuestion extends RealmObject {
             if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
                 realm_answerChoices.insertChoices(questionId, question.get("choices").getAsJsonArray(), mRealm, settings);
             } else {
-                myQuestion.setChoice(question.get("choices").getAsJsonArray());
+                myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
             }
         }
     }
