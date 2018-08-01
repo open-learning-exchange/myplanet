@@ -197,7 +197,7 @@ public class DashboardFragment extends Fragment {
     }
 
     public void myCoursesDiv(View view) {
-        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 250,
@@ -276,18 +276,10 @@ public class DashboardFragment extends Fragment {
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
-                    if(items.getMediaType().equals("video")){
-                        playVideo("offline", items);
-                    }else{
-                      checkFileExtension(items);
-                    }
-                } else {
+                    openFileType(items, "offline");
+                }else{
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
-                    if(items.getMediaType().equals("video")){
-                        playVideo("online", items);
-                    }else{
-                      checkFileExtension(items);
-                    }
+                    openFileType(items, "online");
                 }
             }
         });
@@ -317,9 +309,16 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    private void openFileType(final realm_myLibrary items, String videotype){
+        if(items.getMediaType().equals("video")) {
+            playVideo(videotype, items);
+        }else{
+            checkFileExtension(items);
+        }
+    }
+
     // Plays Video Using ExoPlayerVideo.java
     private void playVideo(String videoType, final realm_myLibrary items){
-
         Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
         Bundle bundle = new Bundle();
         bundle.putString("videoType", videoType);
