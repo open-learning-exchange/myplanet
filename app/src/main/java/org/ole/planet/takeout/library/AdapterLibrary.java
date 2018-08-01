@@ -52,17 +52,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).times_rated.setText(libraryList.get(position).getTimesRated() + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
-            ((ViewHolderLibrary) holder).checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    if (listener != null){
 
-                        Utilities.handleCheck(b, position, (ArrayList) selectedItems, libraryList);
-                        listener.onSelectedListChange(selectedItems);
-
-                    }
-                }
-            });
         }
     }
 //
@@ -92,6 +82,15 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             rating = itemView.findViewById(R.id.rating);
             times_rated = itemView.findViewById(R.id.times_rated);
             checkBox = itemView.findViewById(R.id.checkbox);
+            checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                    if (listener != null){
+                        Utilities.handleCheck(b, getAdapterPosition(), (ArrayList) selectedItems, libraryList);
+                        listener.onSelectedListChange(selectedItems);
+                    }
+                }
+            });
         }
     }
 }

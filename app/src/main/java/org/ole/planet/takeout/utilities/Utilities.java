@@ -102,22 +102,22 @@ public class Utilities {
         Toast.makeText(context, s, Toast.LENGTH_LONG).show();
     }
 
-
-    public static void showAlert(Context context, String link) {
-        File file = Utilities.getSDPathFromUrl(link);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        if (link.contains("pdf")) {
-            intent.setDataAndType(Uri.fromFile(file), "application/pdf");
-        } else if (link.contains("mp3")) {
-            intent.setDataAndType(Uri.fromFile(file), "audio/*");
-        } else if (isImage(link)) {
-            intent.setDataAndType(Uri.fromFile(file), "image/*");
-        } else if (isVideo(link)) {
-            intent.setDataAndType(Uri.fromFile(file), "video*/*");
-        }
-        openIntent(context, intent);
-//        return null;
-    }
+//
+//    public static void showAlert(Context context, String link) {
+//        File file = Utilities.getSDPathFromUrl(link);
+//        Intent intent = new Intent(Intent.ACTION_VIEW);
+//        if (link.contains("pdf")) {
+//            intent.setDataAndType(Uri.fromFile(file), "application/pdf");
+//        } else if (link.contains("mp3")) {
+//            intent.setDataAndType(Uri.fromFile(file), "audio/*");
+//        } else if (isImage(link)) {
+//            intent.setDataAndType(Uri.fromFile(file), "image/*");
+//        } else if (isVideo(link)) {
+//            intent.setDataAndType(Uri.fromFile(file), "video*/*");
+//        }
+//        openIntent(context, intent);
+////        return null;
+//    }
 
     private static boolean isVideo(String link) {
         return link.contains(".mp4") || link.contains(".avi");
