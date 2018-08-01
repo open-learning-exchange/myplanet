@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="org.ole.planet.takeout">
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -25,7 +26,6 @@
             android:configChanges="orientation|keyboardHidden|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -35,9 +35,12 @@
             android:label="@string/title_activity_dashboard"
             android:theme="@style/FullscreenTheme" />
         <activity android:name=".PDFReaderActivity" />
-
         <service android:name=".datamanager.MyDownloadService" />
         <activity android:name=".ExoPlayerVideo"></activity>
+        <activity android:name=".ImageViewerActivity" />
+        <activity android:name=".TextFileViewerActivity" />
+        <activity android:name=".MarkdownViewerActivity" />
+        <activity android:name=".CSVViewerActivity" />
         <service
             android:exported="false"
             android:name=".service.AutoSyncService">
