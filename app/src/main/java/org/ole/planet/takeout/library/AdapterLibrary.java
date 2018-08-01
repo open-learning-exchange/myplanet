@@ -55,21 +55,25 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    if (listener != null)
-                        handleCheck(b, position);
+                    if (listener != null){
+
+                        Utilities.handleCheck(b, position, (ArrayList) selectedItems, libraryList);
+                        listener.onSelectedListChange(selectedItems);
+
+                    }
                 }
             });
         }
     }
-
-    private void handleCheck(boolean b, int i) {
-        if (b) {
-            selectedItems.add(libraryList.get(i));
-        } else if (selectedItems.contains(libraryList.get(i))) {
-            selectedItems.remove(libraryList.get(i));
-        }
-        listener.onSelectedListChange(selectedItems);
-    }
+//
+//    private void handleCheck(boolean b, int i) {
+//        if (b) {
+//            selectedItems.add(libraryList.get(i));
+//        } else if (selectedItems.contains(libraryList.get(i))) {
+//            selectedItems.remove(libraryList.get(i));
+//        }
+//        listener.onSelectedListChange(selectedItems);
+//    }
 
 
     @Override

@@ -16,11 +16,15 @@ import android.widget.TextView;
 import org.ole.planet.takeout.Data.realm_courses;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.OnCourseItemSelected;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Progress;
+import io.realm.Realm;
+import io.realm.RealmObject;
+import io.realm.RealmResults;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -60,21 +64,24 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    if (listener != null)
-                        handleCheck(b, position);
+                    if (listener != null) {
+                        Utilities.handleCheck(b, position, (ArrayList) selectedItems, courseList);
+                        listener.onSelectedListChange(selectedItems);
+                    }
+
                 }
             });
         }
     }
-
-    private void handleCheck(boolean b, int i) {
-        if (b) {
-            selectedItems.add(courseList.get(i));
-        } else if (selectedItems.contains(courseList.get(i))) {
-            selectedItems.remove(courseList.get(i));
-        }
-        listener.onSelectedListChange(selectedItems);
-    }
+//
+//    private void handleCheck(boolean b, int i) {
+//        if (b) {
+//            selectedItems.add(courseList.get(i));
+//        } else if (selectedItems.contains(courseList.get(i))) {
+//            selectedItems.remove(courseList.get(i));
+//        }
+//        listener.onSelectedListChange(selectedItems);
+//    }
 
 
     @Override

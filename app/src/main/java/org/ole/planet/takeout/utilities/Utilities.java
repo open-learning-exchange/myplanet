@@ -22,6 +22,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 
 public class Utilities {
@@ -159,4 +160,13 @@ public class Utilities {
             Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
         }
     }
+
+    public static void handleCheck(boolean b, int i, List<Object> selectedItems, List<?> list ) {
+        if (b) {
+            selectedItems.add(list.get(i));
+        } else if (selectedItems.contains(list.get(i))) {
+            selectedItems.remove(list.get(i));
+        }
+    }
+
 }
