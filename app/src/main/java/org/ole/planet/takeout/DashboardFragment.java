@@ -66,6 +66,8 @@ public class DashboardFragment extends Fragment {
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+    ArrayList<String> names = new ArrayList<>();
+
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
 
@@ -210,29 +212,21 @@ public class DashboardFragment extends Fragment {
     }*/
 
     private void showDownloadDialog() {
-
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
         if (!db_myLibrary.isEmpty()) {
-
             final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
             LayoutInflater inflater = getLayoutInflater();
             View convertView = (View) inflater.inflate(R.layout.my_library_alertdialog, null);
-            alertDialogBuilder.setView(convertView);
-            alertDialogBuilder.setTitle("List");
+            alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
             ListView lv = (ListView) convertView.findViewById(R.id.alertDialog_listView);
-
-            ArrayList<String> names = new ArrayList<>();
             for (int i = 0; i < db_myLibrary.size(); i++) {
-                names.add(db_myLibrary.get(i).getTitle().toString());
-            }
+                names.add(db_myLibrary.get(i).getTitle().toString());            }
             ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(),android.R.layout.simple_list_item_1,names);
             lv.setAdapter(adapter);
-
             alertDialogBuilder.setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     downloadFiles(db_myLibrary, selectedItemsList);
-
                 }
             }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
                 @Override
@@ -242,6 +236,7 @@ public class DashboardFragment extends Fragment {
             }).setNegativeButton(R.string.txt_cancel, null).show();
         }
     }
+
     private void downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < db_myLibrary.size(); i++) {
