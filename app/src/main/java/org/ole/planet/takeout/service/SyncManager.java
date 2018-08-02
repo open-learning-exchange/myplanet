@@ -85,10 +85,12 @@ public class SyncManager {
                     NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                     mRealm = dbService.getRealmInstance();
                     properties = dbService.getClouchDbProperties("_users", settings);
-                    userTransactionSync(settings, mRealm, properties);
-                    new CoursesSyncManager(mRealm, dbService, settings).coursesTransactionSync();
-                    resourceTransactionSync();
+                    //userTransactionSync(settings, mRealm, properties);
+                    TransactionSyncManager.syncDb(mRealm, properties, "users");
                     myLibraryTransactionSync();
+                    //new TransactionSyncManager(mRealm, dbService, settings).coursesTransactionSync();
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                    resourceTransactionSync();
                 } finally {
                     NotificationUtil.cancel(context, 111);
                     isSyncing = false;
@@ -107,17 +109,19 @@ public class SyncManager {
         properties = propts;
         settings = sett;
         mRealm = realm;
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    processUserDoc(dbClient, doc);
-                }
-            }
-        });
+
+//        mRealm.executeTransaction(new Realm.Transaction() {
+//            @Override
+//            public void execute(Realm realm) {
+//                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+//                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+//                for (int i = 0; i < allDocs.size(); i++) {
+//                    Document doc = allDocs.get(i);
+//                    processUserDoc(dbClient, doc);
+//                }
+//
+//            }
+//        });
     }
 
     private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
