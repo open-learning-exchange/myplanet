@@ -19,26 +19,10 @@
             android:padding="@dimen/padding_large">
 
             <TextView
-                android:id="@+id/tv_send_courses"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="1"
-                android:background="?attr/selectableItemBackground"
-                android:drawableLeft="@drawable/ic_send"
-                android:drawablePadding="4dp"
-                android:gravity="center"
-                android:layout_marginRight="@dimen/padding_normal"
-                android:text="@string/send_courses"
-                android:textColor="@drawable/tv_color"
-                android:textSize="@dimen/text_size_mid" />
-
-            <TextView
                 android:id="@+id/tv_add_to_course"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:drawableLeft="@drawable/ic_add_library"
                 android:drawablePadding="4dp"
@@ -47,20 +31,6 @@
                 android:textColor="@drawable/tv_color"
                 android:textSize="@dimen/text_size_mid" />
 
-            <TextView
-                android:id="@+id/tv_delete"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginStart="@dimen/padding_normal"
-                android:layout_weight="1"
-                android:background="?attr/selectableItemBackground"
-                android:drawablePadding="4dp"
-                android:drawableStart="@drawable/ic_delete"
-                android:gravity="center"
-                android:text="@string/delete"
-                android:textColor="@drawable/tv_color"
-                android:textSize="@dimen/text_size_mid" />
         </LinearLayout>
 
         <FrameLayout
