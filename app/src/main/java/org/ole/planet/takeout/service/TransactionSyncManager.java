@@ -21,32 +21,6 @@ import java.util.List;
 import io.realm.Realm;
 
 public class TransactionSyncManager {
-//
-//    Realm mRealm;
-//    DatabaseService dbService;
-//    SharedPreferences settings;
-//
-//    public TransactionSyncManager(Realm mRealm, DatabaseService dbService, SharedPreferences settings) {
-//        this.mRealm = mRealm;
-//        this.dbService = dbService;
-//        this.settings = settings;
-//    }
-//
-//    public void coursesTransactionSync() {
-//        final CouchDbProperties properties = dbService.getClouchDbProperties("courses", settings);
-////        mRealm.executeTransaction(new Realm.Transaction() {
-////            @Override
-////            public void execute(Realm realm) {
-////                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-////                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-////                for (int i = 0; i < allDocs.size(); i++) {
-////                    Document doc = allDocs.get(i);
-////                    processCourseDoc(dbClient, doc);
-////                }
-////            }
-////        });
-//    }
-
     public static void syncDb(final Realm mRealm, final CouchDbProperties properties, final String type) {
         mRealm.executeTransaction(new Realm.Transaction() {
             @Override
@@ -79,16 +53,5 @@ public class TransactionSyncManager {
             e.printStackTrace();
         }
     }
-
-//
-//    private void processCourseDoc(CouchDbClientAndroid dbClient, Document doc) {
-//        try {
-//            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-//            realm_courses.insertMyCourses(jsonDoc, mRealm);
-//            Log.e("Realm", " Course " + jsonDoc.toString());
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
 
 }
