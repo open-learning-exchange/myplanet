@@ -191,13 +191,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         }
     }
 
-    private void logout() {
-        Intent loginscreen=new Intent(this,LoginActivity.class);
-        loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(loginscreen);
-        this.finish();
-    }
-
     public void feedbackDialog() {
         MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).customView(R.layout.dialog_feedback, true).title(R.string.menu_feedback)
                 .positiveText(R.string.button_submit).negativeText(R.string.button_cancel)
