@@ -23,7 +23,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:drawableLeft="@drawable/ic_add_library"
                 android:drawablePadding="4dp"
