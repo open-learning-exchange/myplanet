@@ -295,7 +295,7 @@ public class DashboardFragment extends Fragment {
         if(items != null){
             textViewArray[itemCnt].setText(items.getTitle());
         }else if(itemsCourse != null){
-            textViewArray[itemCnt].setText(itemsCourse.getCourse_rev());
+            textViewArray[itemCnt].setText(itemsCourse.getCourseTitle());
         }
     }
 

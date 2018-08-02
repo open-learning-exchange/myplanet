@@ -4,6 +4,13 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import org.lightcouch.CouchDbProperties;
+import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.Data.realm_courses;
+import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.utilities.Utilities;
+
+import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -28,8 +35,8 @@ public class DatabaseService {
         return Realm.getInstance(config);
     }
 
-    public CouchDbProperties getClouchDbProperties(String dbName, SharedPreferences settings){
-      return   new CouchDbProperties()
+    public CouchDbProperties getClouchDbProperties(String dbName, SharedPreferences settings) {
+        return new CouchDbProperties()
                 .setDbName(dbName)
                 .setCreateDbIfNotExist(false)
                 .setProtocol(settings.getString("url_Scheme", "http"))
@@ -40,4 +47,6 @@ public class DatabaseService {
                 .setMaxConnections(100)
                 .setConnectionTimeout(0);
     }
+
+
 }

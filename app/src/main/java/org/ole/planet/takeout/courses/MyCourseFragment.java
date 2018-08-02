@@ -1,61 +1,49 @@
-package org.ole.planet.takeout.library;
+package org.ole.planet.takeout.courses;
 
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TextView;
 
-import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_courses;
-import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_resources;
 import org.ole.planet.takeout.R;
-import org.ole.planet.takeout.callback.OnLibraryItemSelected;
 import org.ole.planet.takeout.base.BaseRecyclerFragment;
-import org.ole.planet.takeout.courses.AdapterCourses;
-import org.ole.planet.takeout.datamanager.DatabaseService;
-import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
-import org.ole.planet.takeout.utilities.Utilities;
+import org.ole.planet.takeout.callback.OnCourseItemSelected;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import io.realm.Realm;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyLibraryFragment extends BaseRecyclerFragment<realm_resources> implements OnLibraryItemSelected {
 
-    TextView tvAddToLib, tvDelete;
+public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implements OnCourseItemSelected {
 
+    TextView tvAddToLib, tvDelete, tvSendCourse;
 
     @Override
     public int getLayout() {
-        return R.layout.fragment_my_library;
+        return R.layout.fragment_my_course;
     }
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        AdapterLibrary mAdapter = new AdapterLibrary(getActivity(), getList(realm_resources.class));
+        AdapterCourses mAdapter = new AdapterCourses(getActivity(), getList(realm_courses.class));
         mAdapter.setListener(this);
         return mAdapter;
     }
 
-    public MyLibraryFragment() {
+    public MyCourseFragment() {
     }
 
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        tvAddToLib = getView().findViewById(R.id.tv_add_to_lib);
+        tvAddToLib = getView().findViewById(R.id.tv_add_to_course);
+        tvSendCourse = getView().findViewById(R.id.tv_send_courses);
         tvDelete = getView().findViewById(R.id.tv_delete);
         tvAddToLib.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -65,9 +53,8 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_resources> imp
         });
     }
 
-
     @Override
-    public void onSelectedListChange(List<realm_resources> list) {
+    public void onSelectedListChange(List<realm_courses> list) {
         this.selectedItems = list;
         changeButtonStatus();
     }
@@ -75,6 +62,6 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_resources> imp
     private void changeButtonStatus() {
         tvDelete.setEnabled(selectedItems.size() > 0);
         tvAddToLib.setEnabled(selectedItems.size() > 0);
-
+        tvSendCourse.setEnabled(selectedItems.size() > 0);
     }
 }

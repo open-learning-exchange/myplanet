@@ -85,9 +85,10 @@ public class SyncManager {
                     NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                     mRealm = dbService.getRealmInstance();
                     properties = dbService.getClouchDbProperties("_users", settings);
-                    userTransactionSync(settings, mRealm, properties);
-                    resourceTransactionSync();
+                    TransactionSyncManager.syncDb(mRealm, properties, "users");
                     myLibraryTransactionSync();
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                    resourceTransactionSync();
                 } finally {
                     NotificationUtil.cancel(context, 111);
                     isSyncing = false;
@@ -101,40 +102,7 @@ public class SyncManager {
         td.start();
     }
 
-//    private void setVariables(SharedPreferences settings, Realm mRealm, CouchDbProperties properties) {
-//        this.settings = settings;
-//        this.mRealm = mRealm;
-//        this.properties = properties;
-//    }
 
-    private void userTransactionSync(SharedPreferences sett, Realm realm, CouchDbProperties propts) {
-        properties = propts;
-        settings = sett;
-        mRealm = realm;
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    processUserDoc(dbClient, doc);
-                }
-            }
-        });
-    }
-
-    private void processUserDoc(CouchDbClientAndroid dbClient, Document doc) {
-        try {
-            if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                realm_UserModel.populateUsersTable(jsonDoc, mRealm, settings);
-                Log.e("Realm", " STRING " + jsonDoc.get("_id"));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
 
     public void resourceTransactionSync() {
