@@ -1,6 +1,7 @@
 package org.ole.planet.takeout;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -183,13 +184,27 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             case R.string.menu_feedback:
                 feedbackDialog();
             case R.string.menu_logout:
+                logout();
                 break;
             default:
                 openCallFragment(new DashboardFragment());
                 break;
         }
     }
+    
+     private void logout() {
+        Intent loginscreen=new Intent(this,LoginActivity.class);
+        loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(loginscreen);
+        this.finish();
+    }
 
+    private void logout() {
+        Intent loginscreen=new Intent(this,LoginActivity.class);
+        loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(loginscreen);
+        this.finish();
+    }
 
     public void feedbackDialog() {
         MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).customView(R.layout.dialog_feedback, true).title(R.string.menu_feedback)
