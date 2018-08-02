@@ -21,7 +21,7 @@ import java.util.List;
 
 public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implements OnCourseItemSelected {
 
-    TextView tvAddToLib, tvDelete, tvSendCourse;
+    TextView tvAddToLib;
 
     @Override
     public int getLayout() {
@@ -43,8 +43,6 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implem
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         tvAddToLib = getView().findViewById(R.id.tv_add_to_course);
-        tvSendCourse = getView().findViewById(R.id.tv_send_courses);
-        tvDelete = getView().findViewById(R.id.tv_delete);
         tvAddToLib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -60,8 +58,6 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implem
     }
 
     private void changeButtonStatus() {
-        tvDelete.setEnabled(selectedItems.size() > 0);
         tvAddToLib.setEnabled(selectedItems.size() > 0);
-        tvSendCourse.setEnabled(selectedItems.size() > 0);
     }
 }
