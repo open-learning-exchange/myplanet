@@ -1,5 +1,6 @@
 package org.ole.planet.takeout;
 
+import android.app.IntentService;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,12 +8,14 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -26,21 +29,47 @@ import android.widget.Toast;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
+
+import org.json.JSONObject;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myCourses;
-import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_offlineActivities;
 
+import org.ole.planet.takeout.ExoPlayerVideo;
+import org.ole.planet.takeout.Data.realm_offlineActivities;
+import org.ole.planet.takeout.callback.OnHomeItemClickListener;
+import org.ole.planet.takeout.datamanager.ApiClient;
+import org.ole.planet.takeout.datamanager.ApiInterface;
+import org.ole.planet.takeout.datamanager.MyDownloadService;
+import org.ole.planet.takeout.library.MyLibraryFragment;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.datamanager.MyDownloadService;
+
 import java.util.UUID;
+
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Response;
 
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
@@ -64,6 +93,10 @@ public class DashboardFragment extends Fragment {
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
+
+    private Call<ResponseBody> request;
+
+    private String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -110,6 +143,7 @@ public class DashboardFragment extends Fragment {
         myLibraryDiv(view);
         myCoursesDiv(view);
         showDownloadDialog();
+        timerSendPostNewAuthSessionID();
     }
 
     public int offlineVisits() {
@@ -217,6 +251,7 @@ public class DashboardFragment extends Fragment {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < selectedItems.size(); i++) {
             urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems.get(i)), settings));
+            Log.e("URLS",""+urls);
         }
         startDownload(urls);
     }
@@ -241,10 +276,10 @@ public class DashboardFragment extends Fragment {
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
-                    checkFileExtension(items);
-                } else {
+                    openFileType(items, "offline");
+                }else{
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
-                    checkFileExtension(items);
+                    openFileType(items, "online");
                 }
             }
         });
@@ -274,6 +309,101 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    private void openFileType(final realm_myLibrary items, String videotype){
+        if(items.getMediaType().equals("video")) {
+            playVideo(videotype, items);
+        }else{
+            checkFileExtension(items);
+        }
+    }
+
+    // Plays Video Using ExoPlayerVideo.java
+    private void playVideo(String videoType, final realm_myLibrary items){
+        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
+        Bundle bundle = new Bundle();
+        bundle.putString("videoType", videoType);
+        if(videoType.equals("online")){
+            bundle.putString("videoURL",""+items.getResourceRemoteAddress());
+            bundle.putString("Auth", auth);
+        }else if(videoType.equals("offline")){
+            bundle.putString("videoURL",""+ Uri.fromFile(new File(""+Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+            bundle.putString("Auth", "");
+        }
+        intent.putExtras(bundle);
+        startActivity(intent);
+    }
+
+    // sendPost() - Meant to get New AuthSession Token for viewing Online resources such as Video, and basically any file.
+    // It creates a session of about 20mins after which a new AuthSession Token will be needed.
+    // During these 20mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
+    public void sendPost() {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    HttpURLConnection conn = (HttpURLConnection) getSessionUrl().openConnection();
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Content-Type", "application/json");
+                    conn.setRequestProperty("Accept","application/json");
+                    conn.setDoOutput(true);
+                    conn.setDoInput(true);
+
+                    DataOutputStream os = new DataOutputStream(conn.getOutputStream());
+                    os.writeBytes(getJsonObject().toString());
+
+                    os.flush();
+                    os.close();
+
+                    setAuthSession(conn.getHeaderFields());
+                    conn.disconnect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        thread.start();
+    }
+
+    public void setAuthSession(Map<String, List<String>> responseHeader){
+        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+        auth = headerauth[0];
+    }
+
+    // Updates Auth Session Token every 15 mins to prevent Timing Out
+    public void timerSendPostNewAuthSessionID() {
+        Timer timer = new Timer ();
+        TimerTask hourlyTask = new TimerTask () {
+            @Override
+            public void run () {
+                sendPost();
+            }
+        };
+        timer.schedule(hourlyTask, 0, 1000*60*15);
+    }
+
+    public JSONObject getJsonObject(){
+        try {
+            JSONObject jsonParam = new JSONObject();
+            jsonParam.put("name", settings.getString("url_user",""));
+            jsonParam.put("password", settings.getString("url_pwd",""));
+            return jsonParam;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+    public URL getSessionUrl(){
+        try {
+            String pref = settings.getString("serverURL", "");
+            pref += "/_session";
+            URL SERVER_URL = new URL(pref);
+            return SERVER_URL;
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
     public void checkFileExtension(realm_myLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
         String extension = filenameArray[filenameArray.length - 1];
@@ -321,5 +451,6 @@ public class DashboardFragment extends Fragment {
                 Toast.makeText(getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
                 break;
         }
+
     }
 }
