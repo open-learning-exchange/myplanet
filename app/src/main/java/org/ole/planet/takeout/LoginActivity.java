@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -61,6 +62,7 @@ public class LoginActivity extends SyncActivity {
     private GifImageButton syncIcon;
 
     private View constraintLayout;
+    private CheckBox save;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +75,9 @@ public class LoginActivity extends SyncActivity {
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        save = findViewById(R.id.save);
 
+        declareEditTextElements();
         declareElements();
         declareMoreElements();
 
@@ -143,21 +147,31 @@ public class LoginActivity extends SyncActivity {
             }
         });
 
+    }
+    public void declareEditTextElements(){
+        // allows the user to touch anywhere else on the screen to dismiss the keyboard
+        declareHideKeyboardElements();
+
         //listeners / actions
         inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
 
-        // allows the user to touch anywhere else on the screen to dismiss the keyboard
-        declareHideKeyboardElements();
+        if(settings.getBoolean("saveUsernameAndPassword",false)){
+            inputName.setText(settings.getString("url_user",""));
+            inputPassword.setText(settings.getString("url_pwd", ""));
+            save.setChecked(true);
+        }
     }
 
     /**
      * Form  Validation
      */
     private void submitForm() {
-
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putBoolean("saveUsernameAndPassword",save.isChecked());
+        editor.commit();
         if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
             return;
         }
