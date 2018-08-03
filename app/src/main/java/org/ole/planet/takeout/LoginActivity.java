@@ -77,7 +77,6 @@ public class LoginActivity extends SyncActivity {
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         save = findViewById(R.id.save);
 
-        declareEditTextElements();
         declareElements();
         declareMoreElements();
 
@@ -147,8 +146,6 @@ public class LoginActivity extends SyncActivity {
             }
         });
 
-    }
-    public void declareEditTextElements(){
         // allows the user to touch anywhere else on the screen to dismiss the keyboard
         declareHideKeyboardElements();
 
@@ -163,6 +160,7 @@ public class LoginActivity extends SyncActivity {
             inputPassword.setText(settings.getString("url_pwd", ""));
             save.setChecked(true);
         }
+
     }
 
     /**
