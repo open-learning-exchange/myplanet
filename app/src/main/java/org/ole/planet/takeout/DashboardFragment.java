@@ -27,7 +27,6 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myCourses;
-import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 import java.io.File;
@@ -35,13 +34,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.ole.planet.takeout.Data.realm_myLibrary;
-import java.util.UUID;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
-import org.ole.planet.takeout.AuthSessionUpdater;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -54,7 +51,7 @@ public class DashboardFragment extends Fragment {
     TextView txtFullName, txtCurDate, txtVisits;
     String fullName;
     Realm mRealm;
-    ProgressDialog prgDialog;
+    static ProgressDialog prgDialog;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     //ImageButtons
     private ImageButton myLibraryImage;
@@ -110,24 +107,6 @@ public class DashboardFragment extends Fragment {
         myCoursesDiv(view);
         showDownloadDialog();
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
-    }
-
-    public int offlineVisits() {
-        //realmConfig("offlineActivities");
-        realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
-        offlineActivities.setUserId(settings.getString("name", ""));
-        offlineActivities.setType("Login");
-        offlineActivities.setDescription("Member login on offline application");
-        offlineActivities.setUserFullName(fullName);
-        RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
-                .equalTo("userId", settings.getString("name", ""))
-                .equalTo("type", "Visits")
-                .findAll();
-        if (!db_users.isEmpty()) {
-            return db_users.size();
-        } else {
-            return 0;
-        }
     }
 
     public void realmConfig() {
@@ -196,6 +175,13 @@ public class DashboardFragment extends Fragment {
         }
     }
 
+    public void startDownload(ArrayList urls) {
+        if (!urls.isEmpty()) {
+            prgDialog.show();
+            Utilities.openDownloadService(getActivity(), urls);
+        }
+    }
+
     private void showDownloadDialog() {
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
         if (!db_myLibrary.isEmpty()) {
@@ -207,38 +193,14 @@ public class DashboardFragment extends Fragment {
             }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    downloadFiles(db_myLibrary, selectedItemsList);
-
+                    startDownload(DownloadFiles.downloadFiles(db_myLibrary,selectedItemsList,settings));
                 }
             }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    downloadAllFiles(db_myLibrary);
+                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary,settings));
                 }
             }).setNegativeButton(R.string.txt_cancel, null).show();
-        }
-    }
-
-    private void downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary) {
-        ArrayList urls = new ArrayList();
-        for (int i = 0; i < db_myLibrary.size(); i++) {
-            urls.add(Utilities.getUrl(db_myLibrary.get(i), settings));
-        }
-        startDownload(urls);
-    }
-
-    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, ArrayList<Integer> selectedItems) {
-        ArrayList urls = new ArrayList();
-        for (int i = 0; i < selectedItems.size(); i++) {
-            urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems.get(i)), settings));
-        }
-        startDownload(urls);
-    }
-
-    private void startDownload(ArrayList urls) {
-        if (!urls.isEmpty()) {
-            prgDialog.show();
-            Utilities.openDownloadService(getActivity(), urls);
         }
     }
 
