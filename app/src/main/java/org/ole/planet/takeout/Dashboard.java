@@ -166,7 +166,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
 
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
-            case R.string.menu_home:
+            case R.string.menu_myplanet:
                 openCallFragment(new DashboardFragment());
                 break;
             case R.string.menu_library:
@@ -233,14 +233,14 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         ArrayList<Drawable> menuImageList = new ArrayList<>();
-        menuImageList.add(getResources().getDrawable(R.drawable.home));
+        menuImageList.add(getResources().getDrawable(R.drawable.myplanet));
         menuImageList.add(getResources().getDrawable(R.drawable.library));
         menuImageList.add(getResources().getDrawable(R.drawable.courses));
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
 
         return new IDrawerItem[]{
-                changeUX(R.string.menu_home, menuImageList.get(0)),
+                changeUX(R.string.menu_myplanet, menuImageList.get(0)),
                 changeUX(R.string.menu_library, menuImageList.get(1)),
                 changeUX(R.string.menu_courses, menuImageList.get(2)),
                 changeUX(R.string.menu_meetups, menuImageList.get(3)),
