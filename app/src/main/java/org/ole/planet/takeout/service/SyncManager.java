@@ -190,7 +190,7 @@ public class SyncManager {
             triggerInsert("courseId", "courses");
             check(stringArray, array_courseIds, realm_myCourses.class, category);
         }
-        if (0 < array_myTeamIds.size()) {
+        if (1 <= array_myTeamIds.size()) {
             RealmResults<realm_myTeams> category = null;
             triggerInsert("teamId", "teams");
             check(stringArray, array_myTeamIds, realm_myTeams.class, category);

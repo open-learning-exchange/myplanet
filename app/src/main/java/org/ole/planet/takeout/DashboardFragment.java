@@ -44,6 +44,7 @@ import org.ole.planet.takeout.Data.realm_myLibrary;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmObject;
 import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
@@ -142,7 +143,7 @@ public class DashboardFragment extends Fragment {
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {
-            setTextViewProperties(myLibraryTextViewArray, itemCnt, items, null, null);
+            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
             myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
                 myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
@@ -163,7 +164,7 @@ public class DashboardFragment extends Fragment {
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
         for (final realm_myTeams items : db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, null, null, items);
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, items);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
@@ -183,7 +184,7 @@ public class DashboardFragment extends Fragment {
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
         for (final realm_myCourses items : db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, null, items, null);
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, items);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
@@ -192,19 +193,19 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items, realm_myCourses itemsCourse, realm_myTeams teams) {
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, RealmObject obj) {
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
         textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
         textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
-        if (items != null) {
-            textViewArray[itemCnt].setText(items.getTitle());
-        } else if (itemsCourse != null) {
-            textViewArray[itemCnt].setText(itemsCourse.getCourseTitle());
-        } else if (teams != null) {
-            textViewArray[itemCnt].setText(teams.getName());
+        if (obj instanceof realm_myLibrary) {
+            textViewArray[itemCnt].setText(((realm_myLibrary) obj).getTitle());
+        } else if (obj instanceof realm_myCourses) {
+            textViewArray[itemCnt].setText(((realm_myCourses) obj).getCourseTitle());
+        } else if (obj instanceof realm_myTeams) {
+            textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
 
         }
     }
