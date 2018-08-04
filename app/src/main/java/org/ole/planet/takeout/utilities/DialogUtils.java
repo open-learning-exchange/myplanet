@@ -4,7 +4,9 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+
 import org.ole.planet.takeout.datamanager.MyDownloadService;
+
 import java.util.ArrayList;
 
 
@@ -40,7 +42,7 @@ public class DialogUtils {
     }
 
     public static void showError(ProgressDialog prgDialog, String message) {
-        prgDialog.setTitle(message);
+        prgDialog.setTitle("Download Failed : " + message);
         if (prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE) != null)
             prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE).setEnabled(false);
     }

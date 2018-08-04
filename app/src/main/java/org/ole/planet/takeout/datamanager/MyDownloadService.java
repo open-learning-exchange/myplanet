@@ -3,26 +3,23 @@ package org.ole.planet.takeout.datamanager;
 
 import android.app.IntentService;
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.Toast;
 
 
-import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Dashboard;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.SyncActivity;
+import org.ole.planet.takeout.utilities.FileUtils;
 import org.ole.planet.takeout.utilities.NotificationUtil;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -40,7 +37,6 @@ import okhttp3.ResponseBody;
 
 import retrofit2.Call;
 import retrofit2.Response;
-import retrofit2.Retrofit;
 
 public class MyDownloadService extends IntentService {
     public MyDownloadService() {
@@ -88,23 +84,26 @@ public class MyDownloadService extends IntentService {
         try {
             Response r = request.execute();
             if (r.code() == 200) {
-                Log.e("Download File Response", ""+(ResponseBody) r.body()+" ;;Get Header: "+getHeader()+" ;; URL: "+url+" :;; Original Request: "+request) ;
+                Log.e("Download File Response", "" + (ResponseBody) r.body() + " ;;Get Header: " + getHeader() + " ;; URL: " + url + " :;; Original Request: " + request);
                 downloadFile((ResponseBody) r.body());
             } else {
-                downloadFiled();
+
+                downloadFiled("Connection failed");
             }
         } catch (IOException e) {
-            downloadFiled();
+            e.printStackTrace();
+            downloadFiled(e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
 
-    private void downloadFiled() {
+    private void downloadFiled(String message) {
         Download d = new Download();
         completeAll = false;
-        stopSelf();
         d.setFailed(true);
+        d.setMessage(message);
         sendIntent(d);
+        stopSelf();
     }
 
     public String getHeader() {
@@ -118,7 +117,13 @@ public class MyDownloadService extends IntentService {
     File outputFile;
 
     private void downloadFile(ResponseBody body) throws IOException {
+
         long fileSize = body.contentLength();
+
+        if (checkStorage(fileSize)) {
+            return;
+        }
+
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
         outputFile = Utilities.getSDPathFromUrl(url);
         OutputStream output = new FileOutputStream(outputFile);
@@ -143,6 +148,17 @@ public class MyDownloadService extends IntentService {
             output.write(data, 0, count);
         }
         closeStreams(output, bis);
+    }
+
+    private boolean checkStorage(long fileSize) {
+        if (!FileUtils.externalMemoryAvailable()) {
+            downloadFiled("SD card Not available");
+            return true;
+        } else if (fileSize > FileUtils.getAvailableExternalMemorySize()) {
+            downloadFiled("Not enough storage in SD");
+            return true;
+        }
+        return false;
     }
 
     private void closeStreams(OutputStream output, InputStream bis) throws IOException {
