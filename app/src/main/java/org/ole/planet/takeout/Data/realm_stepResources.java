@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.UUID;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -13,6 +15,7 @@ import io.realm.annotations.PrimaryKey;
 public class realm_stepResources extends RealmObject {
     @PrimaryKey
     private String id;
+    private String resource_id;
     private String resource_rev;
     private String title;
     private String author;
@@ -38,6 +41,14 @@ public class realm_stepResources extends RealmObject {
     private String resourceLocalAddress;
     private String courseId;
     private String stepId;
+
+    public String getResource_id() {
+        return resource_id;
+    }
+
+    public void setResource_id(String resource_id) {
+        this.resource_id = resource_id;
+    }
 
     public String getCourseId() {
         return courseId;
@@ -248,9 +259,10 @@ public class realm_stepResources extends RealmObject {
     }
 
     public static void create(Realm mRealm, JsonObject res, String myCoursesID, String stepId, SharedPreferences settings) {
-        realm_stepResources myResource = mRealm.createObject(realm_stepResources.class, res.get("_id").getAsString());
+        realm_stepResources myResource = mRealm.createObject(realm_stepResources.class, UUID.randomUUID().toString());
         myResource.setCourseId(myCoursesID);
         myResource.setStepId(stepId);
+        myResource.setResource_id(res.get("_id").getAsString());
         myResource.setResource_rev(res.get("_rev").getAsString());
         myResource.setTitle(res.get("title").getAsString());
         myResource.setAuthor(res.get("author").getAsString());
