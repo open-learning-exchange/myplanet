@@ -55,17 +55,17 @@
             <TextView
                 android:id="@+id/times_rated"
                 android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:layout_height="wrap_content"
-                android:textColor="@color/md_black_1000"
-                android:padding="4dp" />
+                android:padding="4dp"
+                android:textColor="@color/md_black_1000" />
 
             <android.support.v7.widget.AppCompatRatingBar
                 style="@style/Base.Widget.AppCompat.RatingBar.Small"
                 android:layout_width="wrap_content"
-                android:isIndicator="false"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:isIndicator="false" />
 
 
         </LinearLayout>
