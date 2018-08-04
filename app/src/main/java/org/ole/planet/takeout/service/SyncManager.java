@@ -14,6 +14,7 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.Data.realm_resources;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.R;
@@ -36,7 +37,7 @@ public class SyncManager {
     private Context context;
     private boolean isSyncing = false;
     static final String PREFS_NAME = "OLE_PLANET";
-    private String[] stringArray = new String[3];
+    private String[] stringArray = new String[4];
     private Document shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
@@ -101,8 +102,6 @@ public class SyncManager {
         });
         td.start();
     }
-
-
 
 
     public void resourceTransactionSync() {
@@ -191,9 +190,14 @@ public class SyncManager {
             triggerInsert("courseId", "courses");
             check(stringArray, array_courseIds, realm_myCourses.class, category);
         }
-        if (array_myTeamIds.size() > 0) {
-            checkMyTeams(shelfDoc.getId(), array_myTeamIds);
+        if (0 < array_courseIds.size()) {
+            RealmResults<realm_myCourses> category = null;
+            triggerInsert("teamId", "teams");
+            check(stringArray, array_courseIds, realm_myCourses.class, category);
         }
+//        if (array_myTeamIds.size() > 0) {
+//            checkMyTeams(shelfDoc.getId(), array_myTeamIds);
+//        }
     }
 
     private void triggerInsert(String categroryId, String categoryDBName) {
@@ -231,13 +235,16 @@ public class SyncManager {
             case "courses":
                 realm_myCourses.insertMyCourses(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
                 break;
+            case "teams":
+                realm_myTeams.insertMyTeams(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                break;
         }
     }
-
-    private void checkMyTeams(String userId, JsonArray array_myTeamIds) {
-        for (int tms = 0; tms < array_myTeamIds.size(); tms++) {
-        }
-    }
+//
+//    private void checkMyTeams(String userId, JsonArray array_myTeamIds) {
+//        for (int tms = 0; tms < array_myTeamIds.size(); tms++) {
+//        }
+//    }
 
 
     private void setRealmProperties(String dbName) {
