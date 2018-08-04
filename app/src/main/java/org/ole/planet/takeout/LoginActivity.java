@@ -35,6 +35,8 @@ import com.github.kittinunf.fuel.core.Response;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.utilities.FileUtils;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;

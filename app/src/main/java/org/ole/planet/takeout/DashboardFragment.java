@@ -79,7 +79,7 @@ public class DashboardFragment extends Fragment {
                 if (!download.isFailed()) {
                     setProgress(download);
                 } else {
-                    DialogUtils.showError(prgDialog, "Download Failed");
+                    DialogUtils.showError(prgDialog, download.getMessage());
                 }
             }
         }
