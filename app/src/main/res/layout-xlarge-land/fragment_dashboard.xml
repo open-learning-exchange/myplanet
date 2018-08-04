@@ -28,6 +28,7 @@
             android:weightSum="10">
 
             <LinearLayout
+                android:id="@+id/ll_user"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="left"
@@ -35,7 +36,6 @@
                 android:background="@color/material_drawer_primary"
                 android:orientation="vertical"
                 android:paddingLeft="10dp"
-                android:id="@+id/ll_user"
                 android:paddingTop="10dp"
                 android:weightSum="5">
 

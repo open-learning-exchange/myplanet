@@ -5,29 +5,29 @@
 
     <item
         android:id="@+id/menu_email"
+        android:icon="@drawable/email"
         android:orderInCategory="200"
         android:title="User"
-        android:icon="@drawable/email"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/menu_profile"
-        android:orderInCategory="300"
         android:icon="@drawable/usersettings"
+        android:orderInCategory="300"
         android:title="Profile"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/menu_notifications"
         android:orderInCategory="400"
-        app:actionLayout="@layout/view_notification"
         android:title="Alerts"
-        app:showAsAction="ifRoom"/>
+        app:actionLayout="@layout/view_notification"
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/menu_language"
+        android:icon="@drawable/en"
         android:orderInCategory="500"
         android:title="User"
-        android:icon="@drawable/en"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="ifRoom" />
 
 </menu>
