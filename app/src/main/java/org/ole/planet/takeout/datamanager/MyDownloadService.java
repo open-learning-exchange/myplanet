@@ -85,9 +85,11 @@ public class MyDownloadService extends IntentService {
             Response r = request.execute();
             if (r.code() == 200) {
                 Log.e("Download File Response", "" + (ResponseBody) r.body() + " ;;Get Header: " + getHeader() + " ;; URL: " + url + " :;; Original Request: " + request);
-                downloadFile((ResponseBody) r.body());
+                ResponseBody responseBody = (ResponseBody) r.body();
+                if (!checkStorage(responseBody.contentLength())) {
+                    downloadFile(responseBody);
+                }
             } else {
-
                 downloadFiled("Connection failed");
             }
         } catch (IOException e) {
@@ -117,13 +119,7 @@ public class MyDownloadService extends IntentService {
     File outputFile;
 
     private void downloadFile(ResponseBody body) throws IOException {
-
         long fileSize = body.contentLength();
-
-        if (checkStorage(fileSize)) {
-            return;
-        }
-
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
         outputFile = Utilities.getSDPathFromUrl(url);
         OutputStream output = new FileOutputStream(outputFile);
