@@ -36,6 +36,7 @@
             android:theme="@style/FullscreenTheme" />
         <activity android:name=".PDFReaderActivity" />
         <service android:name=".datamanager.MyDownloadService" />
+        <activity android:name=".ExoPlayerVideo"></activity>
         <activity android:name=".ImageViewerActivity" />
         <activity android:name=".TextFileViewerActivity" />
         <activity android:name=".MarkdownViewerActivity" />

@@ -22,7 +22,7 @@
     <string name="err_msg_server_url">Enter valid server url</string>
     <string name="btn_connect">Connect</string>
     <string name="title_activity_dashboard">Dashboard</string>
-    <string name="menu_home">Home</string>
+    <string name="menu_myplanet">My Planet</string>
     <string name="menu_library">Library</string>
     <string name="menu_courses">Courses</string>
     <string name="menu_meetups">Meetups</string>
@@ -41,9 +41,9 @@
     <string name="download_selected">Download Selected</string>
     <string name="txt_cancel">Cancel</string>
     <string name="download_all">Download All</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="add_to_mylib">Add To myLibrary</string>
     <string name="delete">Delete</string>
+    <string name="add_to_mycourse">Add to my courses</string>
+    <string name="send_courses">Send Courses</string>
+    <string name="add_to_mylib">Add To myLibrary</string>
 </resources>

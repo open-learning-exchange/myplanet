@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
@@ -25,26 +26,20 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myCourses;
-import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_offlineActivities;
-import org.ole.planet.takeout.datamanager.MyDownloadService;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
-
 import java.io.File;
 import java.util.ArrayList;
-import java.util.UUID;
-
+import java.util.List;
+import java.util.Map;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
-
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 
@@ -55,11 +50,11 @@ public class DashboardFragment extends Fragment {
 
     //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
-    SharedPreferences settings;
+    public static SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
     String fullName;
     Realm mRealm;
-    ProgressDialog prgDialog;
+    static ProgressDialog prgDialog;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     //ImageButtons
     private ImageButton myLibraryImage;
@@ -70,6 +65,7 @@ public class DashboardFragment extends Fragment {
 
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
+    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -115,24 +111,7 @@ public class DashboardFragment extends Fragment {
         myLibraryDiv(view);
         myCoursesDiv(view);
         showDownloadDialog();
-    }
-
-    public int offlineVisits() {
-        //realmConfig("offlineActivities");
-        realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
-        offlineActivities.setUserId(settings.getString("name", ""));
-        offlineActivities.setType("Login");
-        offlineActivities.setDescription("Member login on offline application");
-        offlineActivities.setUserFullName(fullName);
-        RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
-                .equalTo("userId", settings.getString("name", ""))
-                .equalTo("type", "Visits")
-                .findAll();
-        if (!db_users.isEmpty()) {
-            return db_users.size();
-        } else {
-            return 0;
-        }
+        AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
     }
 
     public void realmConfig() {
@@ -187,30 +166,6 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    /*private void showDownloadDialog() {
-        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
-        if (!db_myLibrary.isEmpty()) {
-            final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
-            alertDialogBuilder.setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i, boolean b) {
-                    DialogUtils.handleCheck(selectedItemsList, b, i);
-                }
-            }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    downloadFiles(db_myLibrary, selectedItemsList);
-
-                }
-            }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    downloadAllFiles(db_myLibrary);
-                }
-            }).setNegativeButton(R.string.txt_cancel, null).show().getWindow().setLayout(1000,1800);
-        }
-    }*/
-
     private void showDownloadDialog() {
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
         if (!db_myLibrary.isEmpty()) {
@@ -237,26 +192,13 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    private void downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary) {
-        ArrayList urls = new ArrayList();
-        for (int i = 0; i < db_myLibrary.size(); i++) {
-            urls.add(Utilities.getUrl(db_myLibrary.get(i), settings));
+    public void setProgress(Download download) {
+        prgDialog.setProgress(download.getProgress());
+        if (!TextUtils.isEmpty(download.getFileName())) {
+            prgDialog.setTitle(download.getFileName());
         }
-        startDownload(urls);
-    }
-
-    private void downloadFiles(RealmResults<realm_myLibrary> db_myLibrary, ArrayList<Integer> selectedItems) {
-        ArrayList urls = new ArrayList();
-        for (int i = 0; i < selectedItems.size(); i++) {
-            urls.add(Utilities.getUrl(db_myLibrary.get(selectedItems.get(i)), settings));
-        }
-        startDownload(urls);
-    }
-
-    private void startDownload(ArrayList urls) {
-        if (!urls.isEmpty()) {
-            prgDialog.show();
-            Utilities.openDownloadService(getActivity(), urls);
+        if (download.isCompleteAll()) {
+            DialogUtils.showError(prgDialog, "All files downloaded successfully");
         }
     }
 
@@ -273,37 +215,50 @@ public class DashboardFragment extends Fragment {
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
-                    checkFileExtension(items);
-                } else {
+                    openFileType(items, "offline");
+                }else{
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
-                    checkFileExtension(items);
+                    openFileType(items, "online");
                 }
             }
         });
     }
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, realm_myLibrary items, realm_myCourses itemsCourse) {
-        textViewArray[itemCnt] = new TextView(getContext());
-        textViewArray[itemCnt].setPadding(20, 10, 20, 10);
-        textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
-        textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-        textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
-        if(items != null){
-            textViewArray[itemCnt].setText(items.getTitle());
-        }else if(itemsCourse != null){
-            textViewArray[itemCnt].setText(itemsCourse.getCourse_rev());
+    public void openFileType(final realm_myLibrary items, String videotype){
+        if(items.getMediaType().equals("video")) {
+            playVideo(videotype, items);
+        }else{
+            checkFileExtension(items);
         }
     }
 
-    public void setProgress(Download download) {
-        prgDialog.setProgress(download.getProgress());
-        if (!TextUtils.isEmpty(download.getFileName())) {
-            prgDialog.setTitle(download.getFileName());
+    //Sets Auth Session Variable every 15 mins
+    public void setAuthSession(Map<String, List<String>> responseHeader){
+        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+        auth = headerauth[0];
+    }
+
+    // Plays Video Using ExoPlayerVideo.java
+    public void playVideo(String videoType, final realm_myLibrary items){
+        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
+        Bundle bundle = new Bundle();
+        bundle.putString("videoType", videoType);
+        if(videoType.equals("online")){
+            bundle.putString("videoURL",""+items.getResourceRemoteAddress());
+            Log.e("AUTH",""+auth);
+            bundle.putString("Auth", ""+auth);
+        }else if(videoType.equals("offline")){
+            bundle.putString("videoURL",""+ Uri.fromFile(new File(""+ Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+            bundle.putString("Auth", "");
         }
-        if (download.isCompleteAll()) {
-            DialogUtils.showError(prgDialog, "All files downloaded successfully");
-        }
+        intent.putExtras(bundle);
+        startActivity(intent);
+    }
+
+    public void openIntent(realm_myLibrary items, Class typeClass) {
+        Intent fileOpenIntent = new Intent(DashboardFragment.this.getActivity(), typeClass);
+        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        startActivity(fileOpenIntent);
     }
 
     public void checkFileExtension(realm_myLibrary items) {
@@ -312,16 +267,14 @@ public class DashboardFragment extends Fragment {
 
         switch (extension) {
             case "pdf":
-                Intent pdfOpenIntent = new Intent(DashboardFragment.this.getActivity(), PDFReaderActivity.class);
-                openIntent(items, pdfOpenIntent);
+                openIntent(items,PDFReaderActivity.class);
                 break;
             case "bmp":
             case "gif":
             case "jpg":
             case "png":
             case "webp":
-                Intent imageOpenIntent = new Intent(DashboardFragment.this.getActivity(), ImageViewerActivity.class);
-                openIntent(items, imageOpenIntent);
+                openIntent(items,ImageViewerActivity.class);
                 break;
             default:
                 checkMoreFileExtensions(extension, items);
@@ -329,29 +282,22 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    private void openIntent(realm_myLibrary items, Intent fileOpenIntent) {
-        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-        startActivity(fileOpenIntent);
-    }
-
     public void checkMoreFileExtensions(String extension, realm_myLibrary items)
     {
         switch (extension) {
             case "txt":
-                Intent textFileOpenIntent = new Intent(DashboardFragment.this.getActivity(), TextFileViewerActivity.class);
-                openIntent(items, textFileOpenIntent);
+                openIntent(items,TextFileViewerActivity.class);
                 break;
             case "md":
-                Intent markdownOpenIntent = new Intent(DashboardFragment.this.getActivity(), MarkdownViewerActivity.class);
-                openIntent(items, markdownOpenIntent);
+                openIntent(items,MarkdownViewerActivity.class);
                 break;
             case "csv":
-                Intent CSVOpenIntent = new Intent(DashboardFragment.this.getActivity(), CSVViewerActivity.class);
-                openIntent(items, CSVOpenIntent);
+                openIntent(items,CSVViewerActivity.class);
                 break;
             default:
-                Toast.makeText(getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
+                Toast.makeText(DashboardFragment.this.getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
                 break;
         }
+
     }
 }
