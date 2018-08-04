@@ -10,7 +10,6 @@ import com.google.gson.JsonObject;
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
-import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -29,25 +28,17 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class SyncManager {
+    static final String PREFS_NAME = "OLE_PLANET";
     private static SyncManager ourInstance;
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
     private Context context;
     private boolean isSyncing = false;
-    static final String PREFS_NAME = "OLE_PLANET";
     private String[] stringArray = new String[3];
     private Document shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
-
-    public static SyncManager getInstance() {
-        if (ourInstance == null) {
-            ourInstance = new SyncManager(MainApplication.context);
-        }
-        return ourInstance;
-    }
-
 
     private SyncManager(Context context) {
         this.context = context;
@@ -55,6 +46,12 @@ public class SyncManager {
         dbService = new DatabaseService(context);
     }
 
+    public static SyncManager getInstance() {
+        if (ourInstance == null) {
+            ourInstance = new SyncManager(MainApplication.context);
+        }
+        return ourInstance;
+    }
 
     public void start(SyncListener listener) {
         this.listener = listener;
@@ -101,8 +98,6 @@ public class SyncManager {
         });
         td.start();
     }
-
-
 
 
     public void resourceTransactionSync() {

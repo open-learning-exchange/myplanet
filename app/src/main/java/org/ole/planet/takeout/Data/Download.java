@@ -5,16 +5,34 @@ import android.os.Parcelable;
 
 public class Download implements Parcelable {
 
-    public Download() {
+    public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {
+        public Download createFromParcel(Parcel in) {
+            return new Download(in);
+        }
 
-    }
-
+        public Download[] newArray(int size) {
+            return new Download[size];
+        }
+    };
     private String fileName;
     private int progress;
     private int currentFileSize;
     private int totalFileSize;
     private boolean completeAll;
     private boolean failed;
+
+    public Download() {
+
+    }
+
+    private Download(Parcel in) {
+        fileName = in.readString();
+        progress = in.readInt();
+        currentFileSize = in.readInt();
+        totalFileSize = in.readInt();
+        completeAll = in.readByte() != 0;
+        failed = in.readByte() != 0;
+    }
 
     public boolean isCompleteAll() {
         return completeAll;
@@ -48,7 +66,6 @@ public class Download implements Parcelable {
         this.totalFileSize = totalFileSize;
     }
 
-
     public String getFileName() {
         return fileName;
     }
@@ -80,24 +97,4 @@ public class Download implements Parcelable {
         dest.writeByte((byte) (completeAll ? 1 : 0));
         dest.writeByte((byte) (failed ? 1 : 0));
     }
-
-
-    private Download(Parcel in) {
-        fileName = in.readString();
-        progress = in.readInt();
-        currentFileSize = in.readInt();
-        totalFileSize = in.readInt();
-        completeAll = in.readByte() != 0;
-        failed = in.readByte() != 0;
-    }
-
-    public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {
-        public Download createFromParcel(Parcel in) {
-            return new Download(in);
-        }
-
-        public Download[] newArray(int size) {
-            return new Download[size];
-        }
-    };
 }

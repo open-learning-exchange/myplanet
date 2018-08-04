@@ -40,11 +40,12 @@ import java.util.ArrayList;
 
 
 public class Dashboard extends DashboardElements implements OnHomeItemClickListener {
-    private Drawer result = null;
-    private Toolbar mTopToolbar;
-    AccountHeader headerResult;
     public static final String MESSAGE_PROGRESS = "message_progress";
     private static final int PERMISSION_REQUEST_CODE = 111;
+    AccountHeader headerResult;
+    private Drawer result = null;
+    private Toolbar mTopToolbar;
+    private boolean isDashBoard = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,11 +74,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         openCallFragment(new DashboardFragment());
     }
 
-
     public void requestPermission(String strPermission, int perCode) {
         ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
     }
-
 
     public boolean checkPermission(String strPermission) {
         int result = ContextCompat.checkSelfPermission(this, strPermission);
@@ -87,7 +86,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             return false;
         }
     }
-
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
@@ -104,7 +102,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 break;
         }
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -124,7 +121,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         return super.onOptionsItemSelected(item);
     }
 
-
     private AccountHeader getAccountHeader() {
         //Create User profile header
         return new AccountHeaderBuilder()
@@ -136,7 +132,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 .build();
 
     }
-
 
     private void createDrawer() {
         com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);
@@ -193,7 +188,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     }
 
     private void logout() {
-        Intent loginscreen=new Intent(this,LoginActivity.class);
+        Intent loginscreen = new Intent(this, LoginActivity.class);
         loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(loginscreen);
         this.finish();
@@ -219,7 +214,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         dialog.show();
     }
 
-
     @Override
     public void openCallFragment(Fragment newfragment) {
         isDashBoard = newfragment instanceof DashboardFragment;
@@ -228,7 +222,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         //  fragmentTransaction.addToBackStack(null);
         fragmentTransaction.commit();
     }
-
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
@@ -267,9 +260,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 .withSelectedIconColor(getResources().getColor(R.color.primary_dark))
                 .withIconTintingEnabled(true);
     }
-
-
-    private boolean isDashBoard = false;
 
     @Override
     public void onBackPressed() {

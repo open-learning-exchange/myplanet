@@ -23,20 +23,25 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
+
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.ole.planet.takeout.Data.realm_myLibrary;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
+
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 
@@ -48,20 +53,18 @@ public class DashboardFragment extends Fragment {
     //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
+    static ProgressDialog prgDialog;
+    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
+    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     TextView txtFullName, txtCurDate, txtVisits;
     String fullName;
     Realm mRealm;
-    static ProgressDialog prgDialog;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
-    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
-
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -151,8 +154,8 @@ public class DashboardFragment extends Fragment {
         RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
-        for (final realm_myCourses items: db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, null ,items);
+        for (final realm_myCourses items : db_myCourses) {
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, null, items);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
@@ -168,9 +171,9 @@ public class DashboardFragment extends Fragment {
         textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
         textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
-        if(items != null){
+        if (items != null) {
             textViewArray[itemCnt].setText(items.getTitle());
-        }else if(itemsCourse != null){
+        } else if (itemsCourse != null) {
             textViewArray[itemCnt].setText(itemsCourse.getCourseTitle());
         }
     }
@@ -193,12 +196,12 @@ public class DashboardFragment extends Fragment {
             }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadFiles(db_myLibrary,selectedItemsList,settings));
+                    startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
                 }
             }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary,settings));
+                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings));
                 }
             }).setNegativeButton(R.string.txt_cancel, null).show();
         }
@@ -228,7 +231,7 @@ public class DashboardFragment extends Fragment {
                 if (items.getResourceOffline()) {
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
                     openFileType(items, "offline");
-                }else{
+                } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
                     openFileType(items, "online");
                 }
@@ -236,31 +239,31 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    public void openFileType(final realm_myLibrary items, String videotype){
-        if(items.getMediaType().equals("video")) {
+    public void openFileType(final realm_myLibrary items, String videotype) {
+        if (items.getMediaType().equals("video")) {
             playVideo(videotype, items);
-        }else{
+        } else {
             checkFileExtension(items);
         }
     }
 
     //Sets Auth Session Variable every 15 mins
-    public void setAuthSession(Map<String, List<String>> responseHeader){
+    public void setAuthSession(Map<String, List<String>> responseHeader) {
         String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
         auth = headerauth[0];
     }
 
     // Plays Video Using ExoPlayerVideo.java
-    public void playVideo(String videoType, final realm_myLibrary items){
+    public void playVideo(String videoType, final realm_myLibrary items) {
         Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
         Bundle bundle = new Bundle();
         bundle.putString("videoType", videoType);
-        if(videoType.equals("online")){
-            bundle.putString("videoURL",""+items.getResourceRemoteAddress());
-            Log.e("AUTH",""+auth);
-            bundle.putString("Auth", ""+auth);
-        }else if(videoType.equals("offline")){
-            bundle.putString("videoURL",""+ Uri.fromFile(new File(""+ Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+        if (videoType.equals("online")) {
+            bundle.putString("videoURL", "" + items.getResourceRemoteAddress());
+            Log.e("AUTH", "" + auth);
+            bundle.putString("Auth", "" + auth);
+        } else if (videoType.equals("offline")) {
+            bundle.putString("videoURL", "" + Uri.fromFile(new File("" + Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
             bundle.putString("Auth", "");
         }
         intent.putExtras(bundle);
@@ -279,14 +282,14 @@ public class DashboardFragment extends Fragment {
 
         switch (extension) {
             case "pdf":
-                openIntent(items,PDFReaderActivity.class);
+                openIntent(items, PDFReaderActivity.class);
                 break;
             case "bmp":
             case "gif":
             case "jpg":
             case "png":
             case "webp":
-                openIntent(items,ImageViewerActivity.class);
+                openIntent(items, ImageViewerActivity.class);
                 break;
             default:
                 checkMoreFileExtensions(extension, items);
@@ -294,17 +297,16 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public void checkMoreFileExtensions(String extension, realm_myLibrary items)
-    {
+    public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
         switch (extension) {
             case "txt":
-                openIntent(items,TextFileViewerActivity.class);
+                openIntent(items, TextFileViewerActivity.class);
                 break;
             case "md":
-                openIntent(items,MarkdownViewerActivity.class);
+                openIntent(items, MarkdownViewerActivity.class);
                 break;
             case "csv":
-                openIntent(items,CSVViewerActivity.class);
+                openIntent(items, CSVViewerActivity.class);
                 break;
             default:
                 Toast.makeText(DashboardFragment.this.getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();

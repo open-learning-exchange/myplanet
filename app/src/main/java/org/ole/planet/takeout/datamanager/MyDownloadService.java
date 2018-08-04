@@ -3,21 +3,16 @@ package org.ole.planet.takeout.datamanager;
 
 import android.app.IntentService;
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.Toast;
 
-
-import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Dashboard;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -37,16 +32,13 @@ import java.util.ArrayList;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import okhttp3.ResponseBody;
-
 import retrofit2.Call;
 import retrofit2.Response;
-import retrofit2.Retrofit;
 
 public class MyDownloadService extends IntentService {
-    public MyDownloadService() {
-        super("Download Service");
-    }
-
+    int count;
+    byte data[] = new byte[1024 * 4];
+    File outputFile;
     private NotificationCompat.Builder notificationBuilder;
     private NotificationManager notificationManager;
     private int totalFileSize;
@@ -57,6 +49,10 @@ public class MyDownloadService extends IntentService {
     private Realm mRealm;
     private Call<ResponseBody> request;
     private boolean completeAll;
+
+    public MyDownloadService() {
+        super("Download Service");
+    }
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -88,7 +84,7 @@ public class MyDownloadService extends IntentService {
         try {
             Response r = request.execute();
             if (r.code() == 200) {
-                Log.e("Download File Response", ""+(ResponseBody) r.body()+" ;;Get Header: "+getHeader()+" ;; URL: "+url+" :;; Original Request: "+request) ;
+                Log.e("Download File Response", "" + (ResponseBody) r.body() + " ;;Get Header: " + getHeader() + " ;; URL: " + url + " :;; Original Request: " + request);
                 downloadFile((ResponseBody) r.body());
             } else {
                 downloadFiled();
@@ -111,11 +107,6 @@ public class MyDownloadService extends IntentService {
         return "Basic " + Base64.encodeToString((preferences.getString("url_user", "") + ":" +
                 preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
-
-
-    int count;
-    byte data[] = new byte[1024 * 4];
-    File outputFile;
 
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();

@@ -1,43 +1,17 @@
 package org.ole.planet.takeout;
 
 import android.content.SharedPreferences;
-import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
 
-import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import org.lightcouch.CouchDbClientAndroid;
-import org.lightcouch.CouchDbProperties;
-import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
-import org.ole.planet.takeout.Data.realm_courseSteps;
-import org.ole.planet.takeout.Data.realm_meetups;
-import org.ole.planet.takeout.Data.realm_myCourses;
-import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.utilities.Utilities;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import io.realm.Realm;
-import io.realm.RealmModel;
-import io.realm.RealmObject;
-import io.realm.RealmResults;
 
 public abstract class ProcessUserData extends AppCompatActivity {
     SharedPreferences settings;
+
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
             textLayout.setError(err_message);
@@ -68,8 +42,6 @@ public abstract class ProcessUserData extends AppCompatActivity {
         editor.putBoolean("isUserAdmin", user.getUserAdmin());
         editor.commit();
     }
-
-
 
 
 }

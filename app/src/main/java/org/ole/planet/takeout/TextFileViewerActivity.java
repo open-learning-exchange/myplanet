@@ -1,21 +1,14 @@
 package org.ole.planet.takeout;
 
 import android.content.Intent;
-import android.os.Environment;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.github.barteksc.pdfviewer.PDFView;
-import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 
 public class TextFileViewerActivity extends AppCompatActivity {
 
@@ -25,17 +18,16 @@ public class TextFileViewerActivity extends AppCompatActivity {
     private String fileName;
 
 
+    public TextFileViewerActivity() {
+        filePath = new DashboardFragment().globalFilePath;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_textfile_viewer);
         declareElements();
         renderTextFile();
-    }
-
-    public TextFileViewerActivity()
-    {
-        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void declareElements() {

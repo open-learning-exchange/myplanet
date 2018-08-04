@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
@@ -161,7 +160,7 @@ public class Utilities {
         }
     }
 
-    public static void handleCheck(boolean b, int i, List<Object> selectedItems, List<?> list ) {
+    public static void handleCheck(boolean b, int i, List<Object> selectedItems, List<?> list) {
         if (b) {
             selectedItems.add(list.get(i));
         } else if (selectedItems.contains(list.get(i))) {
