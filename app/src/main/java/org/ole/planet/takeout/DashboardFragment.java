@@ -120,14 +120,15 @@ public class DashboardFragment extends Fragment {
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         myLibraryDiv(view);
-        myCoursesDiv(view);
-        myTeamsDiv(view);
+        initializeFlexBoxView(view, R.id.flexboxLayoutCourse, realm_myCourses.class);
+        initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
         showDownloadDialog();
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
     }
 
     public void myLibraryDiv(View view) {
-        FlexboxLayout flexboxLayout = initializeView(view, R.id.flexboxLayout);
+        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
+        flexboxLayout.setFlexDirection(FlexDirection.ROW);
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
@@ -142,18 +143,17 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public FlexboxLayout initializeView(View v, int id) {
+    public void initializeFlexBoxView(View v, int id, Class c) {
         FlexboxLayout flexboxLayout = v.findViewById(id);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        return flexboxLayout;
+        setUpMyList(c, flexboxLayout);
     }
 
-    private void myTeamsDiv(View view) {
-        FlexboxLayout flexboxLayout = initializeView(view, R.id.flexboxLayoutTeams);
-        RealmResults<realm_myTeams> db_myCourses = mRealm.where(realm_myTeams.class).findAll();
+    public void setUpMyList(Class c, FlexboxLayout flexboxLayout) {
+        RealmResults<RealmObject> db_myCourses = mRealm.where(c).findAll();
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
-        for (final realm_myTeams items : db_myCourses) {
+        for (final RealmObject items : db_myCourses) {
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
@@ -163,20 +163,6 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public void myCoursesDiv(View view) {
-        FlexboxLayout flexboxLayout = initializeView(view, R.id.flexboxLayoutCourse);
-        RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
-        TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
-        int itemCnt = 0;
-        for (final realm_myCourses items : db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, items);
-            if ((itemCnt % 2) == 0) {
-                myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
-            }
-            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
-            itemCnt++;
-        }
-    }
 
     public void setTextViewProperties(TextView[] textViewArray, int itemCnt, RealmObject obj) {
         textViewArray[itemCnt] = new TextView(getContext());
