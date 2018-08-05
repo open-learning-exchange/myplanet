@@ -32,6 +32,7 @@ import com.google.android.flexbox.FlexboxLayout;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myTeams;
+import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -68,6 +69,11 @@ public class DashboardFragment extends Fragment {
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+    DatabaseService dbService;
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            250,
+            100
+    );
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
@@ -104,7 +110,6 @@ public class DashboardFragment extends Fragment {
     }
 
     private void declareElements(View view) {
-        // Imagebuttons
         myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
@@ -112,7 +117,8 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
-        realmConfig();
+        dbService = new DatabaseService(getActivity());
+        mRealm = dbService.getRealmInstance();
         myLibraryDiv(view);
         myCoursesDiv(view);
         myTeamsDiv(view);
@@ -120,25 +126,8 @@ public class DashboardFragment extends Fragment {
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
     }
 
-
-    public void realmConfig() {
-        Realm.init(getContext());
-        RealmConfiguration config = new RealmConfiguration.Builder()
-                .name(Realm.DEFAULT_REALM_NAME)
-                .deleteRealmIfMigrationNeeded()
-                .schemaVersion(4)
-                .build();
-        Realm.setDefaultConfiguration(config);
-        mRealm = Realm.getInstance(config);
-    }
-
     public void myLibraryDiv(View view) {
-        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
-        flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                250,
-                100
-        );
+        FlexboxLayout flexboxLayout = initializeView(view, R.id.flexboxLayout);
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
@@ -153,13 +142,14 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    private void myTeamsDiv(View view) {
-        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutTeams);
+    public FlexboxLayout initializeView(View v, int id) {
+        FlexboxLayout flexboxLayout = v.findViewById(id);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                250,
-                100
-        );
+        return flexboxLayout;
+    }
+
+    private void myTeamsDiv(View view) {
+        FlexboxLayout flexboxLayout = initializeView(view, R.id.flexboxLayoutTeams);
         RealmResults<realm_myTeams> db_myCourses = mRealm.where(realm_myTeams.class).findAll();
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
@@ -174,12 +164,7 @@ public class DashboardFragment extends Fragment {
     }
 
     public void myCoursesDiv(View view) {
-        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
-        flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                250,
-                100
-        );
+        FlexboxLayout flexboxLayout = initializeView(view, R.id.flexboxLayoutCourse);
         RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
