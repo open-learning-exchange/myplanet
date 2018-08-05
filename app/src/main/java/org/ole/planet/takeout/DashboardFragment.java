@@ -27,10 +27,12 @@ import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
+import com.squareup.picasso.Picasso;
 
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -58,6 +60,7 @@ public class DashboardFragment extends Fragment {
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
+    ImageView userImage;
     String fullName;
     Realm mRealm;
     static ProgressDialog prgDialog;
@@ -101,7 +104,9 @@ public class DashboardFragment extends Fragment {
         profileDbHandler = new UserProfileDbHandler(getActivity());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
+        Utilities.log("User image " + model.getUserImage() );
         Utilities.loadImage(model.getUserImage(), imageView);
+        txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;

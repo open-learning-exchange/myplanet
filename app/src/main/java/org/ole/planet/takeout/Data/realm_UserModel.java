@@ -33,7 +33,7 @@ public class realm_UserModel extends RealmObject {
     private String iterations;
     private String derived_key;
     private String salt;
-    private String  dob;
+    private String dob;
     private String communityName;
     private String userImage;
 
@@ -229,6 +229,4 @@ public class realm_UserModel extends RealmObject {
         user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
         user.addImageUrl(jsonDoc, settings);
     }
-
-
 }
