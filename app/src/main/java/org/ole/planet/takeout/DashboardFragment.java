@@ -20,6 +20,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,7 +29,9 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.takeout.Data.Download;
+import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -64,6 +67,7 @@ public class DashboardFragment extends Fragment {
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+    private UserProfileDbHandler profileDbHandler;
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
@@ -94,6 +98,10 @@ public class DashboardFragment extends Fragment {
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
+        profileDbHandler = new UserProfileDbHandler(getActivity());
+        realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        ImageView imageView = view.findViewById(R.id.imageView);
+        Utilities.loadImage(model.getUserImage(), imageView);
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;
@@ -232,6 +240,7 @@ public class DashboardFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
+                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
                     openFileType(items, "offline");
                 } else {
@@ -240,6 +249,12 @@ public class DashboardFragment extends Fragment {
                 }
             }
         });
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        profileDbHandler.onDestory();
     }
 
     public void openFileType(final realm_myLibrary items, String videotype) {
