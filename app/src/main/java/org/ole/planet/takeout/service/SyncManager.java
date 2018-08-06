@@ -4,12 +4,14 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
+import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -30,23 +32,17 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class SyncManager {
-    static final String PREFS_NAME = "OLE_PLANET";
     private static SyncManager ourInstance;
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
     private Context context;
     private boolean isSyncing = false;
+    static final String PREFS_NAME = "OLE_PLANET";
     private String[] stringArray = new String[4];
     private Document shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
-
-    private SyncManager(Context context) {
-        this.context = context;
-        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        dbService = new DatabaseService(context);
-    }
 
     public static SyncManager getInstance() {
         if (ourInstance == null) {
@@ -54,6 +50,14 @@ public class SyncManager {
         }
         return ourInstance;
     }
+
+
+    private SyncManager(Context context) {
+        this.context = context;
+        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        dbService = new DatabaseService(context);
+    }
+
 
     public void start(SyncListener listener) {
         this.listener = listener;
@@ -217,7 +221,6 @@ public class SyncManager {
                 break;
         }
     }
-
     private void setRealmProperties(String dbName) {
         properties.setDbName(dbName);
         properties.setUsername(settings.getString("url_user", ""));

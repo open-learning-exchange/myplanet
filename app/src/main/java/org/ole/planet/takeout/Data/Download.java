@@ -5,15 +5,10 @@ import android.os.Parcelable;
 
 public class Download implements Parcelable {
 
-    public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {
-        public Download createFromParcel(Parcel in) {
-            return new Download(in);
-        }
+    public Download() {
 
-        public Download[] newArray(int size) {
-            return new Download[size];
-        }
-    };
+    }
+
     private String fileName;
     private int progress;
     private int currentFileSize;
@@ -21,20 +16,6 @@ public class Download implements Parcelable {
     private boolean completeAll;
     private boolean failed;
     private String message;
-
-    public Download() {
-
-    }
-
-    private Download(Parcel in) {
-        fileName = in.readString();
-        progress = in.readInt();
-        currentFileSize = in.readInt();
-        totalFileSize = in.readInt();
-        completeAll = in.readByte() != 0;
-        failed = in.readByte() != 0;
-        message = in.readString();
-    }
 
     public String getMessage() {
         return message;
@@ -76,6 +57,7 @@ public class Download implements Parcelable {
         this.totalFileSize = totalFileSize;
     }
 
+
     public String getFileName() {
         return fileName;
     }
@@ -108,4 +90,25 @@ public class Download implements Parcelable {
         dest.writeByte((byte) (failed ? 1 : 0));
         dest.writeString(message);
     }
+
+
+    private Download(Parcel in) {
+        fileName = in.readString();
+        progress = in.readInt();
+        currentFileSize = in.readInt();
+        totalFileSize = in.readInt();
+        completeAll = in.readByte() != 0;
+        failed = in.readByte() != 0;
+        message = in.readString();
+    }
+
+    public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {
+        public Download createFromParcel(Parcel in) {
+            return new Download(in);
+        }
+
+        public Download[] newArray(int size) {
+            return new Download[size];
+        }
+    };
 }

@@ -23,9 +23,6 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implem
 
     TextView tvAddToLib;
 
-    public MyCourseFragment() {
-    }
-
     @Override
     public int getLayout() {
         return R.layout.fragment_my_course;
@@ -37,6 +34,10 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implem
         mAdapter.setListener(this);
         return mAdapter;
     }
+
+    public MyCourseFragment() {
+    }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {

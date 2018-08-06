@@ -1,12 +1,21 @@
 package org.ole.planet.takeout;
 
 import android.content.Intent;
-import android.os.Bundle;
+import android.os.AsyncTask;
+import android.os.Environment;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 import br.tiagohm.markdownview.MarkdownView;
 
@@ -18,16 +27,17 @@ public class MarkdownViewerActivity extends AppCompatActivity {
     private String filePath;
     private String fileName;
 
-    public MarkdownViewerActivity() {
-        filePath = new DashboardFragment().globalFilePath;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_markdown_viewer);
         declareElements();
         renderMarkdownFile();
+    }
+
+    public MarkdownViewerActivity()
+    {
+        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void declareElements() {

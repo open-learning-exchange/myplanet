@@ -2,8 +2,9 @@ package org.ole.planet.takeout;
 
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlayerFactory;
@@ -20,6 +21,7 @@ import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
@@ -46,15 +48,15 @@ public class ExoPlayerVideo extends AppCompatActivity {
         videoURL = extras.getString("videoURL");
         auth = extras.getString("Auth");
 
-        if (videoType.equals("offline")) {
+        if(videoType.equals("offline")){
             prepareExoPlayerFromFileUri(videoURL);
-        } else if (videoType.equals("online")) {
+        }else if(videoType.equals("online")){
             streamVideoFromUrl(videoURL, auth);
         }
 
     }
 
-    public void streamVideoFromUrl(String videoUrl, String auth) {
+    public void streamVideoFromUrl(String videoUrl, String auth){
 
         BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         TrackSelector trackSelector = new DefaultTrackSelector(new AdaptiveTrackSelection.Factory(bandwidthMeter));
@@ -63,7 +65,7 @@ public class ExoPlayerVideo extends AppCompatActivity {
         Uri videoUri = Uri.parse(videoUrl);
 
         HttpDataSource.Factory defaultHttpDataSourceFactory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
-        defaultHttpDataSourceFactory.setDefaultRequestProperty("Cookie", auth);
+        defaultHttpDataSourceFactory.setDefaultRequestProperty("Cookie",auth);
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
         MediaSource mediaSource = new ExtractorMediaSource(videoUri, defaultHttpDataSourceFactory, extractorsFactory, null, null);
 
@@ -72,8 +74,7 @@ public class ExoPlayerVideo extends AppCompatActivity {
         exoPlayer.setPlayWhenReady(true);
 
     }
-
-    public void prepareExoPlayerFromFileUri(String uristring) {
+    public void prepareExoPlayerFromFileUri(String uristring){
         Uri uri = Uri.parse(uristring);
         exoPlayer = ExoPlayerFactory.newSimpleInstance(this, new DefaultTrackSelector(), new DefaultLoadControl());
 

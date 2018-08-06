@@ -9,16 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Constants {
-    public static List<ShelfData> shelfDataList;
-
-    static {
-        shelfDataList = new ArrayList<>();
-        shelfDataList.add(new ShelfData("resourceIds", "resources", "resourceId", realm_myLibrary.class));
-        shelfDataList.add(new ShelfData("meetupIds", "meetups", "meetupId", realm_meetups.class));
-        shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", realm_myCourses.class));
-        shelfDataList.add(new ShelfData("myTeamIds", "teams", "teamId", realm_myTeams.class));
-    }
-
     public static class ShelfData {
         public String key;
         public String type;
@@ -31,5 +21,15 @@ public class Constants {
             this.categoryKey = categoryKey;
             this.aClass = aClass;
         }
+    }
+
+    public static List<ShelfData> shelfDataList;
+
+    static {
+        shelfDataList = new ArrayList<>();
+        shelfDataList.add(new ShelfData("resourceIds", "resources", "resourceId", realm_myLibrary.class));
+        shelfDataList.add(new ShelfData("meetupIds", "meetups", "meetupId", realm_meetups.class));
+        shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", realm_myCourses.class));
+        shelfDataList.add(new ShelfData("myTeamIds", "teams", "teamId", realm_myTeams.class));
     }
 }

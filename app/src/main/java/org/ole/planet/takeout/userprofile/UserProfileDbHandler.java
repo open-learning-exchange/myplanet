@@ -16,15 +16,15 @@ import java.util.UUID;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public class UserProfileDbHandler {
-    private static final String KEY_LOGIN = "Login";
-    private static final String KEY_LOGOUT = "Logout";
-    private static final String KEY_RESOURCE_OPEN = "Resource Open";
+public class  UserProfileDbHandler {
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
     private DatabaseService realmService;
     private String fullName;
+    private static final String KEY_LOGIN = "Login";
+    private static final String KEY_LOGOUT = "Logout";
+    private static final String KEY_RESOURCE_OPEN = "Resource Open";
 
 
     public UserProfileDbHandler(Context context) {
