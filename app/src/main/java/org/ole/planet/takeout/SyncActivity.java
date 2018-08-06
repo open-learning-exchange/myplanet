@@ -29,12 +29,12 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 public abstract class SyncActivity extends ProcessUserData implements SyncListener {
+    public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
     public TextView intervalLabel;
     public Spinner spinner;
     public Switch syncSwitch;
     int convertedDate;
-    public static final String PREFS_NAME = "OLE_PLANET";
     SharedPreferences settings;
     Realm mRealm;
     Context context;
