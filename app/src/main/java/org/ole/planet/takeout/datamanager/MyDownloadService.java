@@ -144,10 +144,10 @@ public class MyDownloadService extends IntentService {
 
     private boolean checkStorage(long fileSize) {
         if (!FileUtils.externalMemoryAvailable()) {
-            downloadFiled("SD card Not available");
+            downloadFiled("Download Failed : SD card Not available");
             return true;
         } else if (fileSize > FileUtils.getAvailableExternalMemorySize()) {
-            downloadFiled("Not enough storage in SD card");
+            downloadFiled("Download Failed : Not enough storage in SD card");
             return true;
         }
         return false;

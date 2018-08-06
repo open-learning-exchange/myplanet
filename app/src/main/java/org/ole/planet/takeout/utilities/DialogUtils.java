@@ -42,7 +42,7 @@ public class DialogUtils {
     }
 
     public static void showError(ProgressDialog prgDialog, String message) {
-        prgDialog.setTitle("Download Failed : " + message);
+        prgDialog.setTitle(message);
         if (prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE) != null)
             prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE).setEnabled(false);
     }

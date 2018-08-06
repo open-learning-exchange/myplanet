@@ -8,7 +8,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.TextView;
 
-import org.ole.planet.takeout.Data.realm_resources;
+import org.ole.planet.takeout.Data.realm_myLibrary;
+
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.base.BaseRecyclerFragment;
 import org.ole.planet.takeout.callback.OnLibraryItemSelected;
@@ -18,7 +19,7 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyLibraryFragment extends BaseRecyclerFragment<realm_resources> implements OnLibraryItemSelected {
+public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> implements OnLibraryItemSelected {
 
     TextView tvAddToLib, tvDelete;
 
@@ -33,7 +34,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_resources> imp
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        AdapterLibrary mAdapter = new AdapterLibrary(getActivity(), getList(realm_resources.class));
+        AdapterLibrary mAdapter = new AdapterLibrary(getActivity(), getList(realm_myLibrary.class));
         mAdapter.setListener(this);
         return mAdapter;
     }
@@ -53,7 +54,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_resources> imp
 
 
     @Override
-    public void onSelectedListChange(List<realm_resources> list) {
+    public void onSelectedListChange(List<realm_myLibrary> list) {
         this.selectedItems = list;
         changeButtonStatus();
     }
