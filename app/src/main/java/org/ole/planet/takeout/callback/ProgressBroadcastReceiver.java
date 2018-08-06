@@ -10,6 +10,11 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 
 public class ProgressBroadcastReceiver extends BroadcastReceiver {
 
+    public interface OnProgressChange {
+        void onProgressChange(String s);
+
+    }
+
     private OnProgressChange onProgressChange;
 
     public void setOnProgressChange(OnProgressChange onProgressChange) {
@@ -24,10 +29,5 @@ public class ProgressBroadcastReceiver extends BroadcastReceiver {
                 onProgressChange.onProgressChange(String.format("Downloading file %d/%d KB\n%d%% Completed.", download.getCurrentFileSize(), download.getTotalFileSize(), download.getProgress()));
             }
         }
-    }
-
-    public interface OnProgressChange {
-        void onProgressChange(String s);
-
     }
 }

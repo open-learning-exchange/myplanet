@@ -16,19 +16,6 @@ public class realm_answerChoices extends RealmObject {
     private String text;
     private String questionId;
 
-    public static void create(Realm mRealm, String questionId, JsonObject res, SharedPreferences settings) {
-        realm_answerChoices choice = mRealm.createObject(realm_answerChoices.class, res.get("_id").getAsString());
-        choice.setQuestionId(questionId);
-    }
-
-    public static void insertChoices(String questionId, JsonArray choices, Realm mRealm, SharedPreferences settings) {
-        for (int i = 0; i < choices.size(); i++) {
-            JsonObject res = choices.get(i).getAsJsonObject();
-            realm_answerChoices.create(mRealm, questionId, res, settings);
-            Utilities.log("Insert choices");
-        }
-    }
-
     public String getId() {
         return id;
     }
@@ -51,5 +38,18 @@ public class realm_answerChoices extends RealmObject {
 
     public void setQuestionId(String questionId) {
         this.questionId = questionId;
+    }
+
+    public static void create(Realm mRealm, String questionId, JsonObject res, SharedPreferences settings) {
+        realm_answerChoices choice = mRealm.createObject(realm_answerChoices.class, res.get("_id").getAsString());
+        choice.setQuestionId(questionId);
+    }
+
+    public static void insertChoices(String questionId, JsonArray choices, Realm mRealm, SharedPreferences settings) {
+        for (int i = 0; i < choices.size(); i++) {
+            JsonObject res = choices.get(i).getAsJsonObject();
+            realm_answerChoices.create(mRealm, questionId, res, settings);
+            Utilities.log("Insert choices");
+        }
     }
 }

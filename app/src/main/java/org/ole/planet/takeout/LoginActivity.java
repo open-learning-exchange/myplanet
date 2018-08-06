@@ -10,8 +10,11 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
 import android.widget.Button;
@@ -29,28 +32,34 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.datamanager.DatabaseService;
+import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.utilities.FileUtils;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.realm.Realm;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
 
 public class LoginActivity extends SyncActivity {
+    private EditText inputName, inputPassword;
+    private TextInputLayout inputLayoutName, inputLayoutPassword;
+    private Button btnSignIn;
+    private ImageButton imgBtnSetting;
     Context context;
+    private View positiveAction;
     boolean connectionResult;
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
     Fuel ful = new Fuel();
     int[] syncTimeInteval = {15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
-    private EditText inputName, inputPassword;
-    private TextInputLayout inputLayoutName, inputLayoutPassword;
-    private Button btnSignIn;
-    private ImageButton imgBtnSetting;
-    private View positiveAction;
+
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
 
@@ -148,8 +157,8 @@ public class LoginActivity extends SyncActivity {
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
 
-        if (settings.getBoolean("saveUsernameAndPassword", false)) {
-            inputName.setText(settings.getString("url_user", ""));
+        if(settings.getBoolean("saveUsernameAndPassword",false)){
+            inputName.setText(settings.getString("url_user",""));
             inputPassword.setText(settings.getString("url_pwd", ""));
             save.setChecked(true);
         }
@@ -161,7 +170,7 @@ public class LoginActivity extends SyncActivity {
      */
     private void submitForm() {
         SharedPreferences.Editor editor = settings.edit();
-        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
+        editor.putBoolean("saveUsernameAndPassword",save.isChecked());
         editor.commit();
         if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
             return;
@@ -180,6 +189,35 @@ public class LoginActivity extends SyncActivity {
             alertDialogOkay(getString(R.string.err_msg_login));
         }
 
+    }
+
+    private class MyTextWatcher implements TextWatcher {
+        private View view;
+
+        private MyTextWatcher(View view) {
+            this.view = view;
+        }
+
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            //action before text change
+        }
+
+        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            //action on or during text change
+        }
+
+        public void afterTextChanged(Editable editable) {
+            switch (view.getId()) {
+                case R.id.input_name:
+                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
+                    break;
+                case R.id.input_password:
+                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     public void settingDialog(MaterialDialog.Builder builder) {
@@ -240,12 +278,14 @@ public class LoginActivity extends SyncActivity {
         return connectionResult;
     }
 
-    protected void hideKeyboard(View view) {
+    protected void hideKeyboard(View view)
+    {
         InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
     }
 
-    public void declareHideKeyboardElements() {
+    public void declareHideKeyboardElements()
+    {
         constraintLayout = findViewById(R.id.constraintLayout);
         constraintLayout.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -254,34 +294,5 @@ public class LoginActivity extends SyncActivity {
                 return false;
             }
         });
-    }
-
-    private class MyTextWatcher implements TextWatcher {
-        private View view;
-
-        private MyTextWatcher(View view) {
-            this.view = view;
-        }
-
-        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            //action before text change
-        }
-
-        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            //action on or during text change
-        }
-
-        public void afterTextChanged(Editable editable) {
-            switch (view.getId()) {
-                case R.id.input_name:
-                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
-                    break;
-                case R.id.input_password:
-                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
-                    break;
-                default:
-                    break;
-            }
-        }
     }
 }

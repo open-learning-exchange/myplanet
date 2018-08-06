@@ -1,10 +1,9 @@
 package org.ole.planet.takeout.Data;
-
 import com.google.gson.JsonObject;
 
 import io.realm.Realm;
-import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
+import io.realm.RealmObject;
 
 public class realm_stepExam extends RealmObject {
     @PrimaryKey
@@ -14,19 +13,6 @@ public class realm_stepExam extends RealmObject {
     private String courseId;
     private String passingPercentage;
     private String totalMarks;
-
-    public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
-        realm_stepExam myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
-        myExam.setStepId(step_id);
-        myExam.setCourseId(myCoursesID);
-        myExam.setName(exam.get("name").getAsString());
-        if (exam.has("passingPercentage"))
-            myExam.setPassingPercentage(exam.get("passingPercentage").getAsString());
-        if (exam.has("totalMarks"))
-            myExam.setPassingPercentage(exam.get("totalMarks").getAsString());
-        if (exam.has("questions"))
-            realm_examQuestion.insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString(), mRealm);
-    }
 
     public String getPassingPercentage() {
         return passingPercentage;
@@ -74,6 +60,19 @@ public class realm_stepExam extends RealmObject {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
+        realm_stepExam myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
+        myExam.setStepId(step_id);
+        myExam.setCourseId(myCoursesID);
+        myExam.setName(exam.get("name").getAsString());
+        if (exam.has("passingPercentage"))
+            myExam.setPassingPercentage(exam.get("passingPercentage").getAsString());
+        if (exam.has("totalMarks"))
+            myExam.setPassingPercentage(exam.get("totalMarks").getAsString());
+        if (exam.has("questions"))
+          realm_examQuestion.insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString(), mRealm);
     }
 
 }

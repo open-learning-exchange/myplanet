@@ -1,15 +1,12 @@
 package org.ole.planet.takeout;
 
 import android.content.SharedPreferences;
-
 import org.ole.planet.takeout.Data.realm_offlineActivities;
-
 import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public class OfflineVisits {
+public class OfflineVisits{
 
     public int offlineVisits(SharedPreferences settings, Realm mRealm, String fullName) {
         //realmConfig("offlineActivities");

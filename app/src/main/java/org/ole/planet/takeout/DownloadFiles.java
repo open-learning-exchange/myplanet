@@ -4,12 +4,10 @@ import android.content.SharedPreferences;
 
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.utilities.Utilities;
-
 import java.util.ArrayList;
-
 import io.realm.RealmResults;
 
-public class DownloadFiles {
+public class DownloadFiles{
 
     public static ArrayList downloadAllFiles(RealmResults<realm_myLibrary> db_myLibrary, SharedPreferences settings) {
         ArrayList urls = new ArrayList();
