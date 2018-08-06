@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="org.ole.planet.takeout.Dashboard">
+    tools:context="org.ole.pl Fanet.takeout.Dashboard">
 
     <item
         android:id="@+id/menu_email"
@@ -9,7 +9,6 @@
         android:title="User"
         android:icon="@drawable/email"
         app:showAsAction="ifRoom"/>
-
     <item
         android:id="@+id/menu_profile"
         android:orderInCategory="300"
@@ -18,16 +17,38 @@
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/menu_notifications"
-        android:orderInCategory="400"
+        android:orderInCategory="300"
+        android:icon="@drawable/notifications"
         app:actionLayout="@layout/view_notification"
         android:title="Alerts"
         app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/menu_prpfile"
+        android:icon="@drawable/en"
+        android:orderInCategory="400"
+        android:title="View Profile" />
+    <item
+        android:id="@+id/edit_profile"
+        android:icon="@drawable/en"
+        android:orderInCategory="401"
+        android:title="Edit Profile" />
 
     <item
-        android:id="@+id/menu_language"
-        android:orderInCategory="500"
-        android:title="User"
+        android:id="@+id/change_password"
         android:icon="@drawable/en"
-        app:showAsAction="ifRoom"/>
+        android:orderInCategory="401"
+        android:title="Change Password" />
+    <item
+        android:id="@+id/menu_logout"
+        android:icon="@drawable/en"
+        android:orderInCategory="401"
+        android:title="Logout" />
+
+
+    <!--<item-->
+        <!--android:id="@+id/menu_language"-->
+        <!--android:icon="@drawable/en"-->
+        <!--android:orderInCategory="401"-->
+        <!--android:title="User" />-->
 
 </menu>
