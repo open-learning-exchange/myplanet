@@ -46,6 +46,15 @@ Along with the 10-inch tablet, you can also use an actual device to run and test
 
 The process for creating issues and pull requests is very similar to First Steps. Remember to branch off of the master branch before working on and creating a new pull request.
 
+##### Including the correct format for the code
+
+To maintain uniform formatting of the code, use the following keys combinations in .java, .xml, or any other files in Android Studio before committing and pushing the code to the takeout repository:
+- Windows: `shift + ctrl + alt + L`
+- Linux: `ctrl + alt + super + L` (super is the Windows icon key next to the alt key)
+- Mac: `ctrl + command + shift + L`
+
+Remember, this is an important step to remember so that we are able to maintain a high standard of code.
+
 ### Troubleshooting
 
 Some of the issues that you can come across may be related to the obsolete commands, gradle building, the version of Android Studio your are using, etc. Add your problem and the solution to your problem in this section to help future interns. 
