@@ -33,6 +33,7 @@ import com.squareup.picasso.Picasso;
 
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -115,7 +116,7 @@ public class DashboardFragment extends Fragment {
         profileDbHandler = new UserProfileDbHandler(getActivity());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
-        Utilities.log("User image " + model.getUserImage() );
+        Utilities.log("User image " + model.getUserImage());
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
@@ -136,6 +137,8 @@ public class DashboardFragment extends Fragment {
         myLibraryDiv(view);
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, realm_myCourses.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
+        initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
+        initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, realm_meetups.class);
         showDownloadDialog();
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
     }
@@ -191,7 +194,8 @@ public class DashboardFragment extends Fragment {
             textViewArray[itemCnt].setText(((realm_myCourses) obj).getCourseTitle());
         } else if (obj instanceof realm_myTeams) {
             textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
-
+        } else if (obj instanceof realm_meetups) {
+            textViewArray[itemCnt].setText(((realm_meetups) obj).getTitle());
         }
     }
 

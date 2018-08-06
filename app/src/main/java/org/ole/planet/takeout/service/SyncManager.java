@@ -221,6 +221,7 @@ public class SyncManager {
                 break;
         }
     }
+
     private void setRealmProperties(String dbName) {
         properties.setDbName(dbName);
         properties.setUsername(settings.getString("url_user", ""));
