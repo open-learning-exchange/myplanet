@@ -75,9 +75,6 @@ public class DashboardFragment extends Fragment {
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
     private UserProfileDbHandler profileDbHandler;
-    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override

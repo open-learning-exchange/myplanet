@@ -22,14 +22,6 @@ public class Download implements Parcelable {
     private boolean failed;
     private String message;
 
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     public Download() {
 
     }
@@ -41,6 +33,15 @@ public class Download implements Parcelable {
         totalFileSize = in.readInt();
         completeAll = in.readByte() != 0;
         failed = in.readByte() != 0;
+        message = in.readString();
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public boolean isCompleteAll() {
@@ -108,23 +109,4 @@ public class Download implements Parcelable {
         dest.writeString(message);
     }
 
-    private Download(Parcel in) {
-        fileName = in.readString();
-        progress = in.readInt();
-        currentFileSize = in.readInt();
-        totalFileSize = in.readInt();
-        completeAll = in.readByte() != 0;
-        failed = in.readByte() != 0;
-        message = in.readString();
-    }
-
-    public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {
-        public Download createFromParcel(Parcel in) {
-            return new Download(in);
-        }
-
-        public Download[] newArray(int size) {
-            return new Download[size];
-        }
-    };
 }
