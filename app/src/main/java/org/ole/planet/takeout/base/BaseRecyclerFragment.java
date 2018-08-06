@@ -13,7 +13,7 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_courses;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_resources;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.OnCourseItemSelected;
 import org.ole.planet.takeout.datamanager.DatabaseService;
@@ -62,8 +62,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public void addToMyList() {
         for (int i = 0; i < selectedItems.size(); i++) {
             RealmObject object = (RealmObject) selectedItems.get(i);
-            if (object instanceof realm_resources) {
-                realm_myLibrary myObject = mRealm.where(realm_myLibrary.class).equalTo("resourceId", ((realm_resources) object).getResource_id()).findFirst();
+            if (object instanceof realm_myLibrary) {
+                realm_myLibrary myObject = mRealm.where(realm_myLibrary.class).equalTo("resourceId", ((realm_myLibrary) object).getResource_id()).findFirst();
                 checkNullAndAdd(myObject, object, "resource");
             } else {
                 realm_myCourses myObject = mRealm.where(realm_myCourses.class).equalTo("courseId", ((realm_courses) object).getCourseId()).findFirst();
@@ -84,23 +84,23 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         List<RealmObject> list = mRealm.where(c).findAll();
         String[] myIds = new String[list.size()];
         for (int i = 0; i < list.size(); i++) {
-            myIds[i] = c == realm_resources.class ? ((realm_resources) list.get(i)).getTitle() : ((realm_courses) list.get(i)).getCourseTitle();
+            myIds[i] = c == realm_myLibrary.class ? ((realm_myLibrary) list.get(i)).getTitle() : ((realm_courses) list.get(i)).getCourseTitle();
         }
-        return mRealm.where(c).not().in(c == realm_courses.class ? "courseId" : "resource_id", myIds).findAll();
+        return mRealm.where(c).not().in(c == realm_courses.class ? "courseId" : "resourceId", myIds).findAll();
     }
 
 
     public void checkNullAndAdd(RealmObject myObject, RealmObject object, String type) {
         UserProfileDbHandler profileDbHandler = new UserProfileDbHandler(getActivity());
         final realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
-        String title = object instanceof realm_courses ? ((realm_courses) object).getCourseTitle() : ((realm_resources) object).getTitle();
+        String title = object instanceof realm_courses ? ((realm_courses) object).getCourseTitle() : ((realm_myLibrary) object).getTitle();
         if (myObject != null) {
             Utilities.toast(getActivity(), type + " Already Exists in my " + type + " : " + title);
             return;
         } else if (object instanceof realm_courses) {
             realm_myCourses.createFromCourse((realm_courses) object, mRealm, model.getId());
         } else {
-            realm_myLibrary.createFromResource((realm_resources) object, mRealm, model.getId());
+            realm_myLibrary.createFromResource((realm_myLibrary) object, mRealm, model.getId());
         }
         Utilities.toast(getActivity(), type + "Added to my " + type);
     }

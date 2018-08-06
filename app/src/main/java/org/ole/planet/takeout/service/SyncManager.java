@@ -16,7 +16,6 @@ import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myTeams;
-import org.ole.planet.takeout.Data.realm_resources;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.SyncListener;
@@ -126,7 +125,7 @@ public class SyncManager {
         try {
 
             JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-            realm_resources.insertResources(jsonDoc, mRealm);
+            realm_myLibrary.insertResources(jsonDoc, mRealm);
             Log.e("Realm", " STRING " + jsonDoc.toString());
 
         } catch (Exception e) {
@@ -208,7 +207,7 @@ public class SyncManager {
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds, int x, JsonObject resourceDoc) {
         switch (stringArray[2]) {
             case "resources":
-                realm_myLibrary.insertMyLibrary(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm, settings);
+                realm_myLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":
                 realm_meetups.insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
@@ -221,6 +220,7 @@ public class SyncManager {
                 break;
         }
     }
+
     private void setRealmProperties(String dbName) {
         properties.setDbName(dbName);
         properties.setUsername(settings.getString("url_user", ""));
