@@ -322,7 +322,7 @@
                             android:layout_height="match_parent"
                             app:alignContent="stretch"
                             app:alignItems="stretch"
-                            app:flexWrap="wrap"/>
+                            app:flexWrap="wrap" />
                     </HorizontalScrollView>
                 </LinearLayout>
             </LinearLayout>

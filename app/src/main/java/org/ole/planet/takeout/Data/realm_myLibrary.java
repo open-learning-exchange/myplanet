@@ -64,8 +64,10 @@ public class realm_myLibrary extends RealmObject {
         insertMyLibrary("", doc, mRealm);
     }
 
+
     public static void createStepResource(Realm mRealm, JsonObject res, String myCoursesID, String stepId) {
         insertMyLibrary("", stepId, myCoursesID, res, mRealm);
+
     }
 
     public static void insertMyLibrary(String userId, JsonObject doc, Realm mRealm) {
@@ -123,10 +125,10 @@ public class realm_myLibrary extends RealmObject {
         if (doc.has("resourceFor") && doc.get("resourceFor").isJsonArray()) {
             resource.setResourceFor(doc.get("resourceFor").getAsJsonArray(), resource);
         }
-        if (doc.has("subject") && doc.get("subject").isJsonArray() ) {
+        if (doc.has("subject") && doc.get("subject").isJsonArray()) {
             resource.setSubject(doc.get("subject").getAsJsonArray(), resource);
         }
-        if (doc.has("level") && doc.get("level").isJsonArray() ) {
+        if (doc.has("level") && doc.get("level").isJsonArray()) {
             resource.setLevel(doc.get("level").getAsJsonArray(), resource);
         }
         if (doc.has("tag") && doc.get("tag").isJsonArray()) {
@@ -448,6 +450,4 @@ public class realm_myLibrary extends RealmObject {
     public void setTimesRated(int timesRated) {
         this.timesRated = timesRated;
     }
-
-
 }

@@ -1,7 +1,6 @@
 package org.ole.planet.takeout.service;
 
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;

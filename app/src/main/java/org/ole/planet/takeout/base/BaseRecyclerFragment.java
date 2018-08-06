@@ -1,7 +1,6 @@
 package org.ole.planet.takeout.base;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -15,7 +14,6 @@ import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
-import org.ole.planet.takeout.callback.OnCourseItemSelected;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -29,20 +27,19 @@ import io.realm.RealmObject;
 public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fragment {
 
 
+    public List<LI> selectedItems;
     RecyclerView recyclerView;
     TextView tvMessage;
     Realm mRealm;
     DatabaseService realmService;
-    public List<LI> selectedItems;
     List<LI> list;
-
-   public  abstract int getLayout();
-
-    public abstract RecyclerView.Adapter getAdapter();
 
     public BaseRecyclerFragment() {
     }
 
+    public abstract int getLayout();
+
+    public abstract RecyclerView.Adapter getAdapter();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

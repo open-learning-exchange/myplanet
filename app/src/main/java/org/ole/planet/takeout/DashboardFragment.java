@@ -115,7 +115,7 @@ public class DashboardFragment extends Fragment {
         profileDbHandler = new UserProfileDbHandler(getActivity());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
-        Utilities.log("User image " + model.getUserImage() );
+        Utilities.log("User image " + model.getUserImage());
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());

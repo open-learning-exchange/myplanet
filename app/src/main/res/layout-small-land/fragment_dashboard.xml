@@ -26,11 +26,11 @@
             android:weightSum="10">
 
             <LinearLayout
+                android:id="@+id/ll_user"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="center"
                 android:layout_weight="7"
-                android:id="@+id/ll_user"
                 android:background="@color/material_drawer_primary"
                 android:clipToPadding="false"
                 android:orientation="vertical"
@@ -118,6 +118,7 @@
                     android:background="@android:color/holo_red_light"
                     android:gravity="center"
                     android:orientation="vertical">
+
                     <ImageButton
                         android:id="@+id/myLibrary"
                         android:layout_width="match_parent"
@@ -129,6 +130,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone"
                         app:srcCompat="@drawable/library" />
+
                     <TextView
                         android:id="@+id/textView3"
                         android:layout_width="wrap_content"
@@ -188,6 +190,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone"
                         app:srcCompat="@drawable/courses" />
+
                     <TextView
                         android:id="@+id/textView4"
                         android:layout_width="wrap_content"
@@ -235,6 +238,7 @@
                     android:background="@android:color/holo_purple"
                     android:gravity="center"
                     android:orientation="vertical">
+
                     <ImageButton
                         android:id="@+id/imageButton4"
                         android:layout_width="wrap_content"
@@ -244,6 +248,7 @@
                         android:padding="20dp"
                         android:scaleType="fitCenter"
                         app:srcCompat="@drawable/meetups" />
+
                     <TextView
                         android:id="@+id/textView5"
                         android:layout_width="wrap_content"
@@ -288,6 +293,7 @@
                         android:scaleType="centerCrop"
                         android:visibility="gone"
                         app:srcCompat="@drawable/team" />
+
                     <TextView
                         android:id="@+id/textView6"
                         android:layout_width="wrap_content"
@@ -315,7 +321,7 @@
                             android:layout_height="match_parent"
                             app:alignContent="stretch"
                             app:alignItems="stretch"
-                            app:flexWrap="wrap"/>
+                            app:flexWrap="wrap" />
                     </HorizontalScrollView>
 
                 </LinearLayout>
