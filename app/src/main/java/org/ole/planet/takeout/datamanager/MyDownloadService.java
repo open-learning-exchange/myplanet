@@ -13,7 +13,6 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Base64;
 import android.util.Log;
 
-
 import org.ole.planet.takeout.Dashboard;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -34,15 +33,13 @@ import java.util.ArrayList;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import okhttp3.ResponseBody;
-
 import retrofit2.Call;
 import retrofit2.Response;
 
 public class MyDownloadService extends IntentService {
-    public MyDownloadService() {
-        super("Download Service");
-    }
-
+    int count;
+    byte data[] = new byte[1024 * 4];
+    File outputFile;
     private NotificationCompat.Builder notificationBuilder;
     private NotificationManager notificationManager;
     private int totalFileSize;
@@ -53,6 +50,10 @@ public class MyDownloadService extends IntentService {
     private Realm mRealm;
     private Call<ResponseBody> request;
     private boolean completeAll;
+
+    public MyDownloadService() {
+        super("Download Service");
+    }
 
     @Override
     protected void onHandleIntent(Intent intent) {
@@ -113,11 +114,6 @@ public class MyDownloadService extends IntentService {
                 preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
 
-
-    int count;
-    byte data[] = new byte[1024 * 4];
-    File outputFile;
-
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
@@ -148,10 +144,10 @@ public class MyDownloadService extends IntentService {
 
     private boolean checkStorage(long fileSize) {
         if (!FileUtils.externalMemoryAvailable()) {
-            downloadFiled("SD card Not available");
+            downloadFiled("Download Failed : SD card Not available");
             return true;
         } else if (fileSize > FileUtils.getAvailableExternalMemorySize()) {
-            downloadFiled("Not enough storage in SD card");
+            downloadFiled("Download Failed : Not enough storage in SD card");
             return true;
         }
         return false;

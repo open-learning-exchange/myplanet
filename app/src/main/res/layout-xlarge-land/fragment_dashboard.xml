@@ -28,6 +28,7 @@
             android:weightSum="10">
 
             <LinearLayout
+                android:id="@+id/ll_user"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="left"
@@ -35,7 +36,6 @@
                 android:background="@color/material_drawer_primary"
                 android:orientation="vertical"
                 android:paddingLeft="10dp"
-                android:id="@+id/ll_user"
                 android:paddingTop="10dp"
                 android:weightSum="5">
 
@@ -266,7 +266,24 @@
                     android:layout_height="match_parent"
                     android:layout_weight="4.9"
                     android:background="@color/material_drawer_header_selection_text"
-                    android:orientation="horizontal"></LinearLayout>
+                    android:orientation="horizontal">
+
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <com.google.android.flexbox.FlexboxLayout
+                            android:id="@+id/flexboxLayoutMeetups"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            app:alignContent="stretch"
+                            app:alignItems="stretch"
+                            app:flexWrap="wrap"/>
+                    </HorizontalScrollView>
+
+
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -311,7 +328,22 @@
                     android:layout_height="match_parent"
                     android:layout_weight="4.9"
                     android:background="@color/material_drawer_header_selection_text"
-                    android:orientation="horizontal"></LinearLayout>
+                    android:orientation="horizontal">
+
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <com.google.android.flexbox.FlexboxLayout
+                            android:id="@+id/flexboxLayoutTeams"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            app:alignContent="stretch"
+                            app:alignItems="stretch"
+                            app:flexWrap="wrap" />
+                    </HorizontalScrollView>
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

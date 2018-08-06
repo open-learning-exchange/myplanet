@@ -4,9 +4,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Environment;
-import android.os.StatFs;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Log;
@@ -43,7 +41,7 @@ public class Utilities {
     }
 
     public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
-        return getUrl(library.getResourceId(), library.getResourceLocalAddress(), settings);
+        return getUrl(library.getResource_id(), library.getResourceLocalAddress(), settings);
 
     }
 
@@ -162,11 +160,12 @@ public class Utilities {
         }
     }
 
-    public static void handleCheck(boolean b, int i, List<Object> selectedItems, List<?> list ) {
+    public static void handleCheck(boolean b, int i, List<Object> selectedItems, List<?> list) {
         if (b) {
             selectedItems.add(list.get(i));
         } else if (selectedItems.contains(list.get(i))) {
             selectedItems.remove(list.get(i));
         }
+
     }
 }

@@ -89,10 +89,9 @@ public class realm_courseSteps extends io.realm.RealmObject {
     }
 
     public static void insertCourseStepsAttachments(String myCoursesID, String stepId, JsonArray resources, Realm mRealm) {
-        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         for (int i = 0; i < resources.size(); i++) {
             JsonObject res = resources.get(i).getAsJsonObject();
-            realm_stepResources.create(mRealm, res, myCoursesID, stepId, settings);
+            realm_myLibrary.createStepResource(mRealm, res, myCoursesID, stepId);
         }
     }
 

@@ -10,9 +10,9 @@
         android:id="@+id/markdownFileName"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="Markdown Filename"
         android:gravity="center_horizontal"
-        android:paddingTop="20dp"/>
+        android:paddingTop="20dp"
+        android:text="Markdown Filename" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,9 +22,9 @@
 
         <br.tiagohm.markdownview.MarkdownView
             android:id="@+id/markdown_view"
-            app:escapeHtml="false"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_height="match_parent"
+            app:escapeHtml="false" />
 
     </LinearLayout>
 

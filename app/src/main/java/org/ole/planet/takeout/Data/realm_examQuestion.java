@@ -15,7 +15,6 @@ import java.util.UUID;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.SyncManager;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_examQuestion extends RealmObject {
@@ -28,16 +27,38 @@ public class realm_examQuestion extends RealmObject {
     private String correctChoice;
     private RealmList<String> choices;
 
-    public void setCorrectChoice(String correctChoice) {
-        this.correctChoice = correctChoice;
+    public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        for (int i = 0; i < questions.size(); i++) {
+            String questionId = UUID.randomUUID().toString();
+            JsonObject question = questions.get(i).getAsJsonObject();
+            realm_examQuestion myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
+            myQuestion.setExamId(examId);
+            myQuestion.setBody(question.get("body").getAsString());
+            myQuestion.setType(question.get("type").getAsString());
+            myQuestion.setHeader(question.get("header").getAsString());
+            if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
+                realm_answerChoices.insertChoices(questionId, question.get("choices").getAsJsonArray(), mRealm, settings);
+            } else {
+                myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
+            }
+        }
     }
 
     public String getCorrectChoice() {
         return correctChoice;
     }
 
+    public void setCorrectChoice(String correctChoice) {
+        this.correctChoice = correctChoice;
+    }
+
     public String getId() {
         return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getExamId() {
@@ -46,10 +67,6 @@ public class realm_examQuestion extends RealmObject {
 
     public void setExamId(String examId) {
         this.examId = examId;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getHeader() {
@@ -84,29 +101,10 @@ public class realm_examQuestion extends RealmObject {
         this.choices = choices;
     }
 
-
     public void setChoice(JsonArray array, realm_examQuestion myQuestion) {
         for (JsonElement s :
                 array) {
             myQuestion.choices.add(s.getAsString());
-        }
-    }
-
-    public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
-        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        for (int i = 0; i < questions.size(); i++) {
-            String questionId = UUID.randomUUID().toString();
-            JsonObject question = questions.get(i).getAsJsonObject();
-            realm_examQuestion myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
-            myQuestion.setExamId(examId);
-            myQuestion.setBody(question.get("body").getAsString());
-            myQuestion.setType(question.get("type").getAsString());
-            myQuestion.setHeader(question.get("header").getAsString());
-            if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
-                realm_answerChoices.insertChoices(questionId, question.get("choices").getAsJsonArray(), mRealm, settings);
-            } else {
-                myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
-            }
         }
     }
 }

@@ -13,8 +13,6 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_courses;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
-import org.ole.planet.takeout.datamanager.DatabaseService;
-import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.List;
 

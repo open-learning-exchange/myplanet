@@ -25,6 +25,24 @@ public class realm_meetups extends RealmObject {
     private String meetupLocation;
     private String creator;
 
+    public static void insertMyMeetups(String userId, String meetupID, JsonObject meetupDoc, Realm mRealm) {
+        realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
+        myMeetupsDB.setUserId(userId);
+        myMeetupsDB.setMeetupId(meetupID);
+        myMeetupsDB.setMeetupId_rev(meetupDoc.get("_rev").getAsString());
+        myMeetupsDB.setTitle(meetupDoc.get("title").getAsString());
+        myMeetupsDB.setDescription(meetupDoc.get("description").getAsString());
+        myMeetupsDB.setStartDate(meetupDoc.get("startDate").getAsString());
+        myMeetupsDB.setEndDate(meetupDoc.get("endDate").getAsString());
+        myMeetupsDB.setRecurring(meetupDoc.get("recurring").getAsString());
+        if (meetupDoc.has("day"))
+            myMeetupsDB.setDay(meetupDoc.get("day").getAsJsonArray().toString());
+        myMeetupsDB.setStartTime(meetupDoc.get("startTime").getAsString());
+        myMeetupsDB.setCategory(meetupDoc.get("category").getAsString());
+        myMeetupsDB.setMeetupLocation(meetupDoc.get("meetupLocation").getAsString());
+        myMeetupsDB.setCreator(meetupDoc.get("creator").getAsString());
+    }
+
     public String getId() {
         return id;
     }
@@ -135,22 +153,5 @@ public class realm_meetups extends RealmObject {
 
     public void setCreator(String creator) {
         this.creator = creator;
-    }
-
-    public static void insertMyMeetups(String userId, String meetupID, JsonObject meetupDoc, Realm mRealm) {
-        realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
-        myMeetupsDB.setUserId(userId);
-        myMeetupsDB.setMeetupId(meetupID);
-        myMeetupsDB.setMeetupId_rev(meetupDoc.get("meetupId_rev").getAsString());
-        myMeetupsDB.setTitle(meetupDoc.get("title").getAsString());
-        myMeetupsDB.setDescription(meetupDoc.get("description").getAsString());
-        myMeetupsDB.setStartDate(meetupDoc.get("startDate").getAsString());
-        myMeetupsDB.setEndDate(meetupDoc.get("endDate").getAsString());
-        myMeetupsDB.setRecurring(meetupDoc.get("recurring").getAsString());
-        myMeetupsDB.setDay(meetupDoc.get("Day").getAsString());
-        myMeetupsDB.setStartTime(meetupDoc.get("startTime").getAsString());
-        myMeetupsDB.setCategory(meetupDoc.get("category").getAsString());
-        myMeetupsDB.setMeetupLocation(meetupDoc.get("meetupLocation").getAsString());
-        myMeetupsDB.setCreator(meetupDoc.get("creator").getAsString());
     }
 }

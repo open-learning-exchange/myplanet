@@ -12,7 +12,6 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_resources;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.OnLibraryItemSelected;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -23,11 +22,11 @@ import java.util.List;
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private Context context;
-    private List<realm_resources> libraryList;
-    private List<realm_resources> selectedItems;
+    private List<realm_myLibrary> libraryList;
+    private List<realm_myLibrary> selectedItems;
     private OnLibraryItemSelected listener;
 
-    public AdapterLibrary(Context context, List<realm_resources> libraryList) {
+    public AdapterLibrary(Context context, List<realm_myLibrary> libraryList) {
         this.context = context;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
@@ -85,7 +84,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                    if (listener != null){
+                    if (listener != null) {
                         Utilities.handleCheck(b, getAdapterPosition(), (ArrayList) selectedItems, libraryList);
                         listener.onSelectedListChange(selectedItems);
                     }
