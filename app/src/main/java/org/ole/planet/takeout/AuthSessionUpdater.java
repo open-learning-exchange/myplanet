@@ -1,25 +1,27 @@
 package org.ole.planet.takeout;
 
 import android.content.SharedPreferences;
+
 import org.json.JSONObject;
+
 import java.io.DataOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class AuthSessionUpdater extends  DashboardFragment{
+public class AuthSessionUpdater extends DashboardFragment {
 
     // Updates Auth Session Token every 15 mins to prevent Timing Out
     public static void timerSendPostNewAuthSessionID(final SharedPreferences settings) {
-        Timer timer = new Timer ();
-        TimerTask hourlyTask = new TimerTask () {
+        Timer timer = new Timer();
+        TimerTask hourlyTask = new TimerTask() {
             @Override
-            public void run () {
+            public void run() {
                 sendPost(settings);
             }
         };
-        timer.schedule(hourlyTask, 0, 1000*60*15);
+        timer.schedule(hourlyTask, 0, 1000 * 60 * 15);
     }
 
     // sendPost() - Meant to get New AuthSession Token for viewing Online resources such as Video, and basically any file.
@@ -33,7 +35,7 @@ public class AuthSessionUpdater extends  DashboardFragment{
                     HttpURLConnection conn = (HttpURLConnection) getSessionUrl(settings).openConnection();
                     conn.setRequestMethod("POST");
                     conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setRequestProperty("Accept","application/json");
+                    conn.setRequestProperty("Accept", "application/json");
                     conn.setDoOutput(true);
                     conn.setDoInput(true);
 
@@ -54,25 +56,25 @@ public class AuthSessionUpdater extends  DashboardFragment{
         thread.start();
     }
 
-    private static JSONObject getJsonObject(SharedPreferences settings){
+    private static JSONObject getJsonObject(SharedPreferences settings) {
         try {
             JSONObject jsonParam = new JSONObject();
-            jsonParam.put("name", settings.getString("url_user",""));
-            jsonParam.put("password", settings.getString("url_pwd",""));
+            jsonParam.put("name", settings.getString("url_user", ""));
+            jsonParam.put("password", settings.getString("url_pwd", ""));
             return jsonParam;
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    private static URL getSessionUrl(SharedPreferences settings){
+    private static URL getSessionUrl(SharedPreferences settings) {
         try {
             String pref = settings.getString("serverURL", "");
             pref += "/_session";
             URL SERVER_URL = new URL(pref);
             return SERVER_URL;
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;

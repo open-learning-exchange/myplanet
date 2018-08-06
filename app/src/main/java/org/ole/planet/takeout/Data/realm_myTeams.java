@@ -1,7 +1,9 @@
 package org.ole.planet.takeout.Data;
 
 import com.google.gson.JsonObject;
+
 import java.util.UUID;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -17,6 +19,18 @@ public class realm_myTeams extends RealmObject {
     private String limit;
     private String status;
 
+    public static void insertMyTeams(String userId, String teamId, JsonObject doc, Realm mRealm) {
+        realm_myTeams myTeams = mRealm.createObject(realm_myTeams.class, UUID.randomUUID().toString());
+        myTeams.setUserId(userId);
+        myTeams.setTeamId(teamId);
+        myTeams.setName(doc.get("name").getAsString());
+        myTeams.setDescription(doc.get("description").getAsString());
+        myTeams.setLimit(doc.get("limit").getAsString());
+        myTeams.setStatus(doc.get("status").getAsString());
+        myTeams.setRequests(doc.get("requests").getAsJsonArray().toString());
+
+    }
+
     public String getId() {
         return id;
     }
@@ -29,16 +43,16 @@ public class realm_myTeams extends RealmObject {
         return teamId;
     }
 
+    public void setTeamId(String teamId) {
+        this.teamId = teamId;
+    }
+
     public String getUserId() {
         return userId;
     }
 
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public void setTeamId(String teamId) {
-        this.teamId = teamId;
     }
 
     public String getName() {
@@ -79,19 +93,6 @@ public class realm_myTeams extends RealmObject {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-
-    public static void insertMyTeams(String userId, String teamId, JsonObject doc, Realm mRealm) {
-        realm_myTeams myTeams = mRealm.createObject(realm_myTeams.class, UUID.randomUUID().toString());
-        myTeams.setUserId(userId);
-        myTeams.setTeamId(teamId);
-        myTeams.setName(doc.get("name").getAsString());
-        myTeams.setDescription(doc.get("description").getAsString());
-        myTeams.setLimit(doc.get("limit").getAsString());
-        myTeams.setStatus(doc.get("status").getAsString());
-        myTeams.setRequests(doc.get("requests").getAsJsonArray().toString());
-
     }
 
 

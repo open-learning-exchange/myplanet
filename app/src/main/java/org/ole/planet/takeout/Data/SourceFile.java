@@ -13,7 +13,7 @@ public class SourceFile {
     private List mLevels = new ArrayList();
 
     // Default Constructor
-    public  SourceFile() {
+    public SourceFile() {
     }
 
     public SourceFile(String title, String resType, String URL, String date, List subjects, List levels) {

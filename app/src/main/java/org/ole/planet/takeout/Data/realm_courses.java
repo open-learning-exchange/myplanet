@@ -23,6 +23,22 @@ public class realm_courses extends RealmObject {
     private String createdDate;
     private Integer numberOfSteps;
 
+    public static void insertMyCourses(JsonObject myCousesDoc, Realm mRealm) {
+        realm_courses myMyCoursesDB = mRealm.createObject(realm_courses.class, UUID.randomUUID().toString());
+        myMyCoursesDB.setCourseId(myCousesDoc.get("_id").getAsString());
+        myMyCoursesDB.setCourse_rev(myCousesDoc.get("_rev").getAsString());
+        myMyCoursesDB.setLanguageOfInstruction(myCousesDoc.get("languageOfInstruction").getAsString());
+        myMyCoursesDB.setCourseTitle(myCousesDoc.get("courseTitle").getAsString());
+        myMyCoursesDB.setMemberLimit(myCousesDoc.get("memberLimit").getAsInt());
+        myMyCoursesDB.setDescription(myCousesDoc.get("description").getAsString());
+        myMyCoursesDB.setMethod(myCousesDoc.get("method").getAsString());
+        myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
+        myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
+        myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
+        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
+        realm_courseSteps.insertCourseSteps(myMyCoursesDB.getId(), myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
+    }
+
     public String getId() {
         return id;
     }
@@ -117,21 +133,5 @@ public class realm_courses extends RealmObject {
 
     public void setnumberOfSteps(Integer numberOfSteps) {
         this.numberOfSteps = numberOfSteps;
-    }
-
-    public static void insertMyCourses(JsonObject myCousesDoc, Realm mRealm) {
-        realm_courses myMyCoursesDB = mRealm.createObject(realm_courses.class, UUID.randomUUID().toString());
-        myMyCoursesDB.setCourseId(myCousesDoc.get("_id").getAsString());
-        myMyCoursesDB.setCourse_rev(myCousesDoc.get("_rev").getAsString());
-        myMyCoursesDB.setLanguageOfInstruction(myCousesDoc.get("languageOfInstruction").getAsString());
-        myMyCoursesDB.setCourseTitle(myCousesDoc.get("courseTitle").getAsString());
-        myMyCoursesDB.setMemberLimit(myCousesDoc.get("memberLimit").getAsInt());
-        myMyCoursesDB.setDescription(myCousesDoc.get("description").getAsString());
-        myMyCoursesDB.setMethod(myCousesDoc.get("method").getAsString());
-        myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
-        myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
-        myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
-        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
-        realm_courseSteps.insertCourseSteps(myMyCoursesDB.getId(), myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
     }
 }

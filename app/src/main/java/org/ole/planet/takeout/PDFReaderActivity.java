@@ -1,10 +1,8 @@
 package org.ole.planet.takeout;
 
 import android.content.Intent;
-import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -14,32 +12,29 @@ import com.github.barteksc.pdfviewer.PDFView;
 import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener;
 import com.github.barteksc.pdfviewer.listener.OnPageChangeListener;
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener;
-import com.github.barteksc.pdfviewer.listener.OnPageScrollListener;
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle;
-import com.github.barteksc.pdfviewer.util.FitPolicy;
-import com.shockwave.pdfium.PdfDocument;
 
 import org.ole.planet.takeout.Data.SourceFile;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static android.view.View.GONE;
-
 public class PDFReaderActivity extends AppCompatActivity implements OnPageChangeListener, OnLoadCompleteListener,
         OnPageErrorListener {
 
+    private static final String TAG = "PDF Reader Log";
     private TextView mPdfFileNameTitle;
     private String fileName;
     private PDFView pdfView;
     private int currentPageNumber, totalPages;
-    private static final String TAG = "PDF Reader Log";
     private String currentUsername = "admin";
     private String filePath;
+
+    public PDFReaderActivity() {
+        filePath = new DashboardFragment().globalFilePath;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,11 +43,6 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         // Declare variables
         declareElements();
         renderPdfFile();
-    }
-
-    public PDFReaderActivity()
-    {
-        filePath = new DashboardFragment().globalFilePath;
     }
 
     private void declareElements() {
