@@ -137,7 +137,6 @@ public class DashboardFragment extends Fragment {
         myLibraryDiv(view);
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, realm_myCourses.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
-        initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, realm_meetups.class);
         showDownloadDialog();
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
