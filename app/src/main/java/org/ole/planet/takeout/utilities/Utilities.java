@@ -167,5 +167,6 @@ public class Utilities {
         } else if (selectedItems.contains(list.get(i))) {
             selectedItems.remove(list.get(i));
         }
+
     }
 }

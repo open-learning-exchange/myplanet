@@ -43,5 +43,4 @@ public abstract class ProcessUserData extends AppCompatActivity {
         editor.commit();
     }
 
-
 }
