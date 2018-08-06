@@ -42,12 +42,30 @@ public class realm_stepResources extends RealmObject {
     private String courseId;
     private String stepId;
 
-    public String getResource_id() {
-        return resource_id;
-    }
-
-    public void setResource_id(String resource_id) {
-        this.resource_id = resource_id;
+    public static void create(Realm mRealm, JsonObject res, String myCoursesID, String stepId, SharedPreferences settings) {
+        realm_stepResources myResource = mRealm.createObject(realm_stepResources.class, res.get("_id").getAsString());
+        myResource.setCourseId(myCoursesID);
+        myResource.setStepId(stepId);
+        myResource.setResource_rev(res.get("_rev").getAsString());
+        myResource.setTitle(res.get("title").getAsString());
+        myResource.setAuthor(res.get("author").getAsString());
+        myResource.setDescription(res.get("description").getAsString());
+        myResource.setYear(res.get("year").getAsString());
+        myResource.setLanguage(res.get("language").getAsString());
+        myResource.setPublisher(res.get("publisher").getAsString());
+        myResource.setLinkToLicense(res.get("linkToLicense").getAsString());
+        myResource.setSubject(res.get("subject").getAsString());
+        myResource.setLevel(res.get("level").getAsString());
+        myResource.setOpenWith(res.get("openWith").getAsString());
+        myResource.setMedium(res.get("medium").getAsString());
+        myResource.setArticleDate(res.get("articleDate").getAsString());
+        myResource.setResourceType(res.get("resourceType").getAsString());
+        myResource.setAddedBy(res.get("addedBy").getAsString());
+        myResource.setOpenWhichFile(res.get("openWhichFile").getAsString());
+        myResource.setIsDownloadable(res.get("isDownloadable").getAsString());
+        myResource.setFilename(res.get("filename").getAsString());
+        myResource.setResourceLocalAddress(res.get("filename").getAsString());
+        myResource.setResourceRemoteAddress(Utilities.getUrl(res.get("_id").getAsString(), res.get("filename").getAsString(), settings));
     }
 
     public String getCourseId() {
@@ -256,33 +274,5 @@ public class realm_stepResources extends RealmObject {
 
     public void setResourceLocalAddress(String resourceLocalAddress) {
         this.resourceLocalAddress = resourceLocalAddress;
-    }
-
-    public static void create(Realm mRealm, JsonObject res, String myCoursesID, String stepId, SharedPreferences settings) {
-        realm_stepResources myResource = mRealm.createObject(realm_stepResources.class, UUID.randomUUID().toString());
-        myResource.setCourseId(myCoursesID);
-        myResource.setStepId(stepId);
-        myResource.setResource_id(res.get("_id").getAsString());
-        myResource.setResource_rev(res.get("_rev").getAsString());
-        myResource.setTitle(res.get("title").getAsString());
-        myResource.setAuthor(res.get("author").getAsString());
-        myResource.setDescription(res.get("description").getAsString());
-        myResource.setYear(res.get("year").getAsString());
-        myResource.setLanguage(res.get("language").getAsString());
-        myResource.setPublisher(res.get("publisher").getAsString());
-        myResource.setLinkToLicense(res.get("linkToLicense").getAsString());
-        myResource.setSubject(res.get("subject").getAsString());
-        myResource.setLevel(res.get("level").getAsString());
-        myResource.setOpenWith(res.get("openWith").getAsString());
-        myResource.setMedium(res.get("medium").getAsString());
-        myResource.setArticleDate(res.get("articleDate").getAsString());
-        myResource.setResourceType(res.get("resourceType").getAsString());
-        myResource.setAddedBy(res.get("addedBy").getAsString());
-        myResource.setOpenWhichFile(res.get("openWhichFile").getAsString());
-        myResource.setIsDownloadable(res.get("isDownloadable").getAsString());
-        myResource.setFilename(res.get("filename").getAsString());
-        myResource.setResourceLocalAddress(res.get("filename").getAsString());
-        myResource.setResourceRemoteAddress(Utilities.getUrl(res.get("_id").getAsString(), res.get("filename").getAsString(), settings));
-
     }
 }

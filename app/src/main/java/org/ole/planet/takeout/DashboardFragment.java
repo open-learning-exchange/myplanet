@@ -39,6 +39,7 @@ import org.ole.planet.takeout.Data.realm_myLibrary;
 
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -65,11 +66,13 @@ public class DashboardFragment extends Fragment {
     //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
+    static ProgressDialog prgDialog;
+    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
+    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     TextView txtFullName, txtCurDate, txtVisits;
     ImageView userImage;
     String fullName;
     Realm mRealm;
-    static ProgressDialog prgDialog;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     //ImageButtons
     private ImageButton myLibraryImage;
@@ -82,9 +85,6 @@ public class DashboardFragment extends Fragment {
             100
     );
     private UserProfileDbHandler profileDbHandler;
-    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override

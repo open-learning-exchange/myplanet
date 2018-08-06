@@ -1,17 +1,17 @@
 package org.ole.planet.takeout;
 
 import android.content.SharedPreferences;
-import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
+
 import org.ole.planet.takeout.Data.realm_UserModel;
 
 public abstract class ProcessUserData extends AppCompatActivity {
     SharedPreferences settings;
+
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
             textLayout.setError(err_message);
@@ -42,4 +42,5 @@ public abstract class ProcessUserData extends AppCompatActivity {
         editor.putBoolean("isUserAdmin", user.getUserAdmin());
         editor.commit();
     }
+
 }

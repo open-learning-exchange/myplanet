@@ -2,17 +2,10 @@ package org.ole.planet.takeout.datamanager;
 
 import com.google.gson.GsonBuilder;
 
-
-import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Cache;
-import okhttp3.CacheControl;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
-import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 

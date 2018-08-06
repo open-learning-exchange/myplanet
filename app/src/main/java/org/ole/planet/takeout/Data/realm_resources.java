@@ -87,6 +87,9 @@ public class realm_resources extends RealmObject {
         return resourceFor;
     }
 
+    public void setResourceFor(RealmList<String> resourceFor) {
+        this.resourceFor = resourceFor;
+    }
 
     public void setResourceFor(JsonArray array, realm_resources resource) {
         for (JsonElement s :
@@ -121,11 +124,6 @@ public class realm_resources extends RealmObject {
                 array) {
             resource.languages.add(s.getAsString());
         }
-    }
-
-
-    public void setResourceFor(RealmList<String> resourceFor) {
-        this.resourceFor = resourceFor;
     }
 
     public RealmList<String> getSubject() {
