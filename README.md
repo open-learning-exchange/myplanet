@@ -48,10 +48,15 @@ The process for creating issues and pull requests is very similar to First Steps
 
 ##### Including the correct format for the code
 
-To maintain uniform formatting of the code, use the following keys combinations in .java, .xml, or any other files in Android Studio before committing and pushing the code to the takeout repository:
-- Windows: `shift + ctrl + alt + L`
-- Linux: `ctrl + alt + super + L` (super is the Windows icon key next to the alt key)
-- Mac: `ctrl + command + shift + L`
+To maintain uniform formatting of the code, use the following keys combinations in .java, .xml, or any other project files you have changed in Android Studio before committing and pushing the code to the takeout repository:
+
+For Windows, use `ctrl + alt + L` to format few lines and `shift + ctrl + alt + L` to format an entire file.
+
+For Linux use `ctrl + alt + super + L`. (super is the Windows icon key next to the alt key)
+
+For Mac: `ctrl + command + shift + L`.
+
+![mac](https://user-images.githubusercontent.com/37878201/43735982-1d0cf1c2-998a-11e8-8edb-5bfea2522a35.png)
 
 Remember, this is an important step to remember so that we are able to maintain a high standard of code.
 
