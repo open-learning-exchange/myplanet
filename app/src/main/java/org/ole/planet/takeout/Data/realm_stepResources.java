@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.UUID;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -13,6 +15,7 @@ import io.realm.annotations.PrimaryKey;
 public class realm_stepResources extends RealmObject {
     @PrimaryKey
     private String id;
+    private String resource_id;
     private String resource_rev;
     private String title;
     private String author;
@@ -63,7 +66,6 @@ public class realm_stepResources extends RealmObject {
         myResource.setFilename(res.get("filename").getAsString());
         myResource.setResourceLocalAddress(res.get("filename").getAsString());
         myResource.setResourceRemoteAddress(Utilities.getUrl(res.get("_id").getAsString(), res.get("filename").getAsString(), settings));
-
     }
 
     public String getCourseId() {
