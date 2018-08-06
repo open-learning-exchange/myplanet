@@ -13,6 +13,8 @@ import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
@@ -22,24 +24,39 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
+import com.squareup.picasso.Picasso;
+
 import org.ole.planet.takeout.Data.Download;
+import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.Data.realm_myTeams;
+import org.ole.planet.takeout.Data.realm_myLibrary;
+
+import org.ole.planet.takeout.datamanager.DatabaseService;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.ole.planet.takeout.Data.realm_myLibrary;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.RealmObject;
 import io.realm.RealmResults;
+
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 
@@ -52,6 +69,7 @@ public class DashboardFragment extends Fragment {
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
+    ImageView userImage;
     String fullName;
     Realm mRealm;
     static ProgressDialog prgDialog;
@@ -62,7 +80,12 @@ public class DashboardFragment extends Fragment {
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
     ArrayList<String> names = new ArrayList<>();
-
+    DatabaseService dbService;
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            250,
+            100
+    );
+    private UserProfileDbHandler profileDbHandler;
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
@@ -75,7 +98,7 @@ public class DashboardFragment extends Fragment {
                 if (!download.isFailed()) {
                     setProgress(download);
                 } else {
-                    DialogUtils.showError(prgDialog, "Download Failed");
+                    DialogUtils.showError(prgDialog, download.getMessage());
                 }
             }
         }
@@ -93,13 +116,18 @@ public class DashboardFragment extends Fragment {
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
+        profileDbHandler = new UserProfileDbHandler(getActivity());
+        realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        ImageView imageView = view.findViewById(R.id.imageView);
+        Utilities.log("User image " + model.getUserImage() );
+        Utilities.loadImage(model.getUserImage(), imageView);
+        txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         registerReceiver();
         return view;
     }
 
     private void declareElements(View view) {
-        // Imagebuttons
         myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
         myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
         myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
@@ -107,36 +135,23 @@ public class DashboardFragment extends Fragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
-        realmConfig();
+        dbService = new DatabaseService(getActivity());
+        mRealm = dbService.getRealmInstance();
         myLibraryDiv(view);
-        myCoursesDiv(view);
+        initializeFlexBoxView(view, R.id.flexboxLayoutCourse, realm_myCourses.class);
+        initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
         showDownloadDialog();
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
-    }
-
-    public void realmConfig() {
-        Realm.init(getContext());
-        RealmConfiguration config = new RealmConfiguration.Builder()
-                .name(Realm.DEFAULT_REALM_NAME)
-                .deleteRealmIfMigrationNeeded()
-                .schemaVersion(4)
-                .build();
-        Realm.setDefaultConfiguration(config);
-        mRealm = Realm.getInstance(config);
     }
 
     public void myLibraryDiv(View view) {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                250,
-                100
-        );
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {
-            setTextViewProperties(myLibraryTextViewArray, itemCnt, items, null);
+            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
             myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
             if ((itemCnt % 2) == 0) {
                 myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
@@ -146,23 +161,48 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public void myCoursesDiv(View view) {
-        FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayoutCourse);
+    public void initializeFlexBoxView(View v, int id, Class c) {
+        FlexboxLayout flexboxLayout = v.findViewById(id);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                250,
-                100
-        );
-        RealmResults<realm_myCourses> db_myCourses = mRealm.where(realm_myCourses.class).findAll();
+        setUpMyList(c, flexboxLayout);
+    }
+
+    public void setUpMyList(Class c, FlexboxLayout flexboxLayout) {
+        RealmResults<RealmObject> db_myCourses = mRealm.where(c).findAll();
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
-        for (final realm_myCourses items: db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, null ,items);
+        for (final RealmObject items : db_myCourses) {
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, items);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
             }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
+        }
+    }
+
+
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, RealmObject obj) {
+        textViewArray[itemCnt] = new TextView(getContext());
+        textViewArray[itemCnt].setPadding(20, 10, 20, 10);
+        textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
+        textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
+        textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
+        if (obj instanceof realm_myLibrary) {
+            textViewArray[itemCnt].setText(((realm_myLibrary) obj).getTitle());
+        } else if (obj instanceof realm_myCourses) {
+            textViewArray[itemCnt].setText(((realm_myCourses) obj).getCourseTitle());
+        } else if (obj instanceof realm_myTeams) {
+            textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
+
+        }
+    }
+
+    public void startDownload(ArrayList urls) {
+        if (!urls.isEmpty()) {
+            prgDialog.show();
+            Utilities.openDownloadService(getActivity(), urls);
         }
     }
 
@@ -181,12 +221,12 @@ public class DashboardFragment extends Fragment {
             alertDialogBuilder.setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    downloadFiles(db_myLibrary, selectedItemsList);
+                    startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
                 }
             }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
-                    downloadAllFiles(db_myLibrary);
+                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings));
                 }
             }).setNegativeButton(R.string.txt_cancel, null).show();
         }
@@ -214,9 +254,10 @@ public class DashboardFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 if (items.getResourceOffline()) {
+                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
                     Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
                     openFileType(items, "offline");
-                }else{
+                } else {
                     Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
                     openFileType(items, "online");
                 }
@@ -224,31 +265,37 @@ public class DashboardFragment extends Fragment {
         });
     }
 
-    public void openFileType(final realm_myLibrary items, String videotype){
-        if(items.getMediaType().equals("video")) {
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        profileDbHandler.onDestory();
+    }
+
+    public void openFileType(final realm_myLibrary items, String videotype) {
+        if (items.getMediaType().equals("video")) {
             playVideo(videotype, items);
-        }else{
+        } else {
             checkFileExtension(items);
         }
     }
 
     //Sets Auth Session Variable every 15 mins
-    public void setAuthSession(Map<String, List<String>> responseHeader){
+    public void setAuthSession(Map<String, List<String>> responseHeader) {
         String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
         auth = headerauth[0];
     }
 
     // Plays Video Using ExoPlayerVideo.java
-    public void playVideo(String videoType, final realm_myLibrary items){
+    public void playVideo(String videoType, final realm_myLibrary items) {
         Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
         Bundle bundle = new Bundle();
         bundle.putString("videoType", videoType);
-        if(videoType.equals("online")){
-            bundle.putString("videoURL",""+items.getResourceRemoteAddress());
-            Log.e("AUTH",""+auth);
-            bundle.putString("Auth", ""+auth);
-        }else if(videoType.equals("offline")){
-            bundle.putString("videoURL",""+ Uri.fromFile(new File(""+ Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+        if (videoType.equals("online")) {
+            bundle.putString("videoURL", "" + items.getResourceRemoteAddress());
+            Log.e("AUTH", "" + auth);
+            bundle.putString("Auth", "" + auth);
+        } else if (videoType.equals("offline")) {
+            bundle.putString("videoURL", "" + Uri.fromFile(new File("" + Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
             bundle.putString("Auth", "");
         }
         intent.putExtras(bundle);
@@ -267,14 +314,14 @@ public class DashboardFragment extends Fragment {
 
         switch (extension) {
             case "pdf":
-                openIntent(items,PDFReaderActivity.class);
+                openIntent(items, PDFReaderActivity.class);
                 break;
             case "bmp":
             case "gif":
             case "jpg":
             case "png":
             case "webp":
-                openIntent(items,ImageViewerActivity.class);
+                openIntent(items, ImageViewerActivity.class);
                 break;
             default:
                 checkMoreFileExtensions(extension, items);
@@ -282,17 +329,16 @@ public class DashboardFragment extends Fragment {
         }
     }
 
-    public void checkMoreFileExtensions(String extension, realm_myLibrary items)
-    {
+    public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
         switch (extension) {
             case "txt":
-                openIntent(items,TextFileViewerActivity.class);
+                openIntent(items, TextFileViewerActivity.class);
                 break;
             case "md":
-                openIntent(items,MarkdownViewerActivity.class);
+                openIntent(items, MarkdownViewerActivity.class);
                 break;
             case "csv":
-                openIntent(items,CSVViewerActivity.class);
+                openIntent(items, CSVViewerActivity.class);
                 break;
             default:
                 Toast.makeText(DashboardFragment.this.getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();

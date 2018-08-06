@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -14,11 +15,13 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.Data.realm_resources;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
+import org.ole.planet.takeout.utilities.Constants;
 import org.ole.planet.takeout.utilities.NotificationUtil;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -36,7 +39,7 @@ public class SyncManager {
     private Context context;
     private boolean isSyncing = false;
     static final String PREFS_NAME = "OLE_PLANET";
-    private String[] stringArray = new String[3];
+    private String[] stringArray = new String[4];
     private Document shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
@@ -103,8 +106,6 @@ public class SyncManager {
     }
 
 
-
-
     public void resourceTransactionSync() {
         final CouchDbProperties properties = dbService.getClouchDbProperties("resources", settings);
         mRealm.executeTransaction(new Realm.Transaction() {
@@ -159,13 +160,12 @@ public class SyncManager {
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = dbShelfClient.find(JsonObject.class, shelfDoc.getId());
-            Utilities.log("Json Doc " + jsonDoc.toString());
             if (jsonDoc.getAsJsonArray("resourceIds") != null) {
-                JsonArray array_resourceIds = jsonDoc.getAsJsonArray("resourceIds");
-                JsonArray array_meetupIds = jsonDoc.getAsJsonArray("meetupIds");
-                JsonArray array_courseIds = jsonDoc.getAsJsonArray("courseIds");
-                JsonArray array_myTeamIds = jsonDoc.getAsJsonArray("myTeamIds");
-                memberShelfData(array_resourceIds, array_meetupIds, array_courseIds, array_myTeamIds);
+                for (int i = 0; i < Constants.shelfDataList.size(); i++) {
+                    Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
+                    JsonArray array = jsonDoc.getAsJsonArray(shelfData.key);
+                    memberShelfData(array, shelfData);
+                }
             } else {
                 Log.e("DB", " BAD Metadata -- Shelf Doc ID " + shelfDoc.getId());
             }
@@ -174,25 +174,10 @@ public class SyncManager {
         }
     }
 
-    private void memberShelfData(JsonArray array_resourceIds, JsonArray array_meetupIds, JsonArray array_courseIds, JsonArray array_myTeamIds) {
-        //    setVariables(settings, mRealm, properties);
-        if (array_resourceIds.size() > 0) {
-            RealmResults<realm_myLibrary> category = null;
-            triggerInsert("resourceId", "resources");
-            check(stringArray, array_resourceIds, realm_myLibrary.class, category);
-        }
-        if (array_meetupIds.size() > 0) {
-            triggerInsert("meetupId", "meetups");
-            RealmResults<realm_meetups> category = null;
-            check(stringArray, array_meetupIds, realm_meetups.class, category);
-        }
-        if (0 < array_courseIds.size()) {
-            RealmResults<realm_myCourses> category = null;
-            triggerInsert("courseId", "courses");
-            check(stringArray, array_courseIds, realm_myCourses.class, category);
-        }
-        if (array_myTeamIds.size() > 0) {
-            checkMyTeams(shelfDoc.getId(), array_myTeamIds);
+    private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
+        if (array.size() > 0) {
+            triggerInsert(shelfData.categoryKey, shelfData.type);
+            check(stringArray, array, shelfData.aClass);
         }
     }
 
@@ -203,9 +188,9 @@ public class SyncManager {
     }
 
 
-    private void check(String[] stringArray, JsonArray array_categoryIds, Class aClass, RealmResults<?> db_Categrory) {
+    private void check(String[] stringArray, JsonArray array_categoryIds, Class aClass) {
         for (int x = 0; x < array_categoryIds.size(); x++) {
-            db_Categrory = mRealm.where(aClass)
+            RealmResults db_Categrory = mRealm.where(aClass)
                     .equalTo("userId", stringArray[0])
                     .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
                     .findAll();
@@ -231,24 +216,14 @@ public class SyncManager {
             case "courses":
                 realm_myCourses.insertMyCourses(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
                 break;
+            case "teams":
+                realm_myTeams.insertMyTeams(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                break;
         }
     }
-
-    private void checkMyTeams(String userId, JsonArray array_myTeamIds) {
-        for (int tms = 0; tms < array_myTeamIds.size(); tms++) {
-        }
-    }
-
-
     private void setRealmProperties(String dbName) {
         properties.setDbName(dbName);
         properties.setUsername(settings.getString("url_user", ""));
         properties.setPassword(settings.getString("url_pwd", ""));
     }
-
-
-//    public void insertMyTeams(realm_meetups myMyTeamsDB, String userId, String myTeamsID, JsonObject myTeamsDoc) {
-//
-//    }
-
 }
