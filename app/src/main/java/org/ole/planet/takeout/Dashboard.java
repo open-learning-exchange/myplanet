@@ -34,6 +34,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
+import org.ole.planet.takeout.utilities.FileUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -55,7 +56,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         setSupportActionBar(mTopToolbar);
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
-
         headerResult = getAccountHeader();
         createDrawer();
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.

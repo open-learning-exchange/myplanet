@@ -18,6 +18,7 @@ import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.SyncActivity;
+import org.ole.planet.takeout.utilities.FileUtils;
 import org.ole.planet.takeout.utilities.NotificationUtil;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -85,22 +86,27 @@ public class MyDownloadService extends IntentService {
             Response r = request.execute();
             if (r.code() == 200) {
                 Log.e("Download File Response", "" + (ResponseBody) r.body() + " ;;Get Header: " + getHeader() + " ;; URL: " + url + " :;; Original Request: " + request);
-                downloadFile((ResponseBody) r.body());
+                ResponseBody responseBody = (ResponseBody) r.body();
+                if (!checkStorage(responseBody.contentLength())) {
+                    downloadFile(responseBody);
+                }
             } else {
-                downloadFiled();
+                downloadFiled("Connection failed");
             }
         } catch (IOException e) {
-            downloadFiled();
+            e.printStackTrace();
+            downloadFiled(e.getLocalizedMessage());
             e.printStackTrace();
         }
     }
 
-    private void downloadFiled() {
+    private void downloadFiled(String message) {
         Download d = new Download();
         completeAll = false;
-        stopSelf();
         d.setFailed(true);
+        d.setMessage(message);
         sendIntent(d);
+        stopSelf();
     }
 
     public String getHeader() {
@@ -134,6 +140,17 @@ public class MyDownloadService extends IntentService {
             output.write(data, 0, count);
         }
         closeStreams(output, bis);
+    }
+
+    private boolean checkStorage(long fileSize) {
+        if (!FileUtils.externalMemoryAvailable()) {
+            downloadFiled("SD card Not available");
+            return true;
+        } else if (fileSize > FileUtils.getAvailableExternalMemorySize()) {
+            downloadFiled("Not enough storage in SD card");
+            return true;
+        }
+        return false;
     }
 
     private void closeStreams(OutputStream output, InputStream bis) throws IOException {

@@ -40,7 +40,7 @@ public class realm_myLibrary extends RealmObject {
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
     private Boolean resourceOffline;
-
+    private int fileLength;
 
     public static CharSequence[] getListAsArray(RealmResults<realm_myLibrary> db_myLibrary) {
         CharSequence[] array = new CharSequence[db_myLibrary.size()];
@@ -178,6 +178,14 @@ public class realm_myLibrary extends RealmObject {
 
     public void setSubject(String subject) {
         this.subject = subject;
+    }
+
+    public int getFileLength() {
+        return fileLength;
+    }
+
+    public void setFileLength(int fileLength) {
+        this.fileLength = fileLength;
     }
 
     public String getLinkToLicense() {

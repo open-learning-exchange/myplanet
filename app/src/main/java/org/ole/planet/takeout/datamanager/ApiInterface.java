@@ -10,8 +10,8 @@ import retrofit2.http.Url;
 
 
 public interface ApiInterface {
-    @GET
     @Streaming
+    @GET
     Call<ResponseBody> downloadFile(@Header("Authorization") String header, @Url String fileUrl);
 
 }

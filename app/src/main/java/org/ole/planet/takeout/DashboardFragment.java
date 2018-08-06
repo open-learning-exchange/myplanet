@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.ole.planet.takeout.Data.realm_myLibrary;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 import io.realm.RealmResults;
@@ -73,7 +75,7 @@ public class DashboardFragment extends Fragment {
                 if (!download.isFailed()) {
                     setProgress(download);
                 } else {
-                    DialogUtils.showError(prgDialog, "Download Failed");
+                    DialogUtils.showError(prgDialog, download.getMessage());
                 }
             }
         }
