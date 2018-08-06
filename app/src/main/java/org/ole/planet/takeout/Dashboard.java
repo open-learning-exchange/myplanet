@@ -193,7 +193,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     }
 
     private void logout() {
-        Intent loginscreen=new Intent(this,LoginActivity.class);
+        Intent loginscreen = new Intent(this, LoginActivity.class);
         loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(loginscreen);
         this.finish();
