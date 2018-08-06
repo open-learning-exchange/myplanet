@@ -28,10 +28,10 @@
             android:weightSum="10">
 
             <LinearLayout
+                android:id="@+id/ll_user"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="left"
-                android:id="@+id/ll_user"
                 android:layout_weight="4"
                 android:background="@color/material_drawer_primary"
                 android:orientation="vertical"
@@ -327,7 +327,7 @@
                             android:layout_height="match_parent"
                             app:alignContent="stretch"
                             app:alignItems="stretch"
-                            app:flexWrap="wrap"/>
+                            app:flexWrap="wrap" />
                     </HorizontalScrollView>
                 </LinearLayout>
             </LinearLayout>

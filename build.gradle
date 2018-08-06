@@ -13,7 +13,7 @@ buildscript {
                 supportLib: "27.1.0"
         ]
     }
-    
+
     repositories {
         google()
         jcenter()
