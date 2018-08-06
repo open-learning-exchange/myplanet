@@ -37,6 +37,40 @@ public class realm_UserModel extends RealmObject {
     private String communityName;
     private String userImage;
 
+    public static void populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
+        try {
+            RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
+                    .equalTo("id", jsonDoc.get("_id").getAsString())
+                    .findAll();
+            if (db_users.isEmpty()) {
+                realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
+                insertIntoUsers(jsonDoc, user, settings);
+            }
+        } catch (Exception err) {
+            err.printStackTrace();
+        }
+    }
+
+    private static void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user, SharedPreferences settings) {
+        user.set_rev(jsonDoc.get("_rev").getAsString());
+        user.setName(jsonDoc.get("name").getAsString());
+        user.setRoles("");
+        user.setUserAdmin(jsonDoc.get("isUserAdmin").getAsBoolean());
+        user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
+        user.setFirstName(jsonDoc.get("firstName").getAsString());
+        user.setLastName(jsonDoc.get("lastName").getAsString());
+        user.setMiddleName(jsonDoc.get("middleName").getAsString());
+        user.setEmail(jsonDoc.get("email").getAsString());
+        user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
+        user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
+        user.setIterations(jsonDoc.get("iterations").getAsString());
+        user.setDerived_key(jsonDoc.get("derived_key").getAsString());
+        user.setSalt(jsonDoc.get("salt").getAsString());
+        user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
+        user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
+        user.addImageUrl(jsonDoc, settings);
+    }
+
     public String getUserImage() {
         return userImage;
     }
@@ -181,7 +215,6 @@ public class realm_UserModel extends RealmObject {
         this.salt = salt;
     }
 
-
     public void addImageUrl(JsonObject jsonDoc, SharedPreferences settings) {
         if (jsonDoc.has("_attachments")) {
             JsonParser parser = new JsonParser();
@@ -193,40 +226,5 @@ public class realm_UserModel extends RealmObject {
                 break;
             }
         }
-    }
-
-    public static void populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
-        try {
-            RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
-                    .equalTo("id", jsonDoc.get("_id").getAsString())
-                    .findAll();
-            if (db_users.isEmpty()) {
-                realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
-                insertIntoUsers(jsonDoc, user, settings);
-            }
-        } catch (Exception err) {
-            err.printStackTrace();
-        }
-    }
-
-
-    private static void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user, SharedPreferences settings) {
-        user.set_rev(jsonDoc.get("_rev").getAsString());
-        user.setName(jsonDoc.get("name").getAsString());
-        user.setRoles("");
-        user.setUserAdmin(jsonDoc.get("isUserAdmin").getAsBoolean());
-        user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
-        user.setFirstName(jsonDoc.get("firstName").getAsString());
-        user.setLastName(jsonDoc.get("lastName").getAsString());
-        user.setMiddleName(jsonDoc.get("middleName").getAsString());
-        user.setEmail(jsonDoc.get("email").getAsString());
-        user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
-        user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
-        user.setIterations(jsonDoc.get("iterations").getAsString());
-        user.setDerived_key(jsonDoc.get("derived_key").getAsString());
-        user.setSalt(jsonDoc.get("salt").getAsString());
-        user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
-        user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
-        user.addImageUrl(jsonDoc, settings);
     }
 }
