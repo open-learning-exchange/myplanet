@@ -162,11 +162,12 @@ public class Utilities {
         }
     }
 
-    public static void handleCheck(boolean b, int i, List<Object> selectedItems, List<?> list ) {
+    public static void handleCheck(boolean b, int i, List<Object> selectedItems, List<?> list) {
         if (b) {
             selectedItems.add(list.get(i));
         } else if (selectedItems.contains(list.get(i))) {
             selectedItems.remove(list.get(i));
         }
+
     }
 }
