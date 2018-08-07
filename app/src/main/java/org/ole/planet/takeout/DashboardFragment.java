@@ -144,10 +144,7 @@ public class DashboardFragment extends Fragment {
     public void myLibraryDiv(View view) {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        realm_UserModel model = profileDbHandler.getUserModel();
-        Utilities.log("id " + model.getId());
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).isNotEmpty("userId").findAll();
-        Utilities.log("size " + db_myLibrary.size());
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {

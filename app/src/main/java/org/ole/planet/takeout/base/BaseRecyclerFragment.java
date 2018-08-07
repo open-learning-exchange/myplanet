@@ -68,6 +68,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
                 realm_myLibrary myObject = mRealm.where(realm_myLibrary.class).equalTo("resourceId", ((realm_myLibrary) object).getResource_id()).findFirst();
                 Utilities.log("User id " + model.getId());
                 realm_myLibrary.createFromResource(myObject, mRealm, model.getId());
+                Utilities.toast(getActivity(), "Added to my library");
             } else {
                 realm_myCourses myObject = mRealm.where(realm_myCourses.class).equalTo("courseId", ((realm_courses) object).getCourseId()).findFirst();
                 checkNullAndAdd(myObject, object, "course");
