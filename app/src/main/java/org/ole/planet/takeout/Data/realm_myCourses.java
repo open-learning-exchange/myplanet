@@ -2,6 +2,7 @@ package org.ole.planet.takeout.Data;
 
 import com.google.gson.JsonObject;
 
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -58,6 +59,15 @@ public class realm_myCourses extends RealmObject {
         myMyCoursesDB.setCreatedDate(course.getCreatedDate());
         myMyCoursesDB.setnumberOfSteps(course.getnumberOfSteps());
         mRealm.commitTransaction();
+    }
+
+    public static String[] getMyCourseIds(Realm mRealm) {
+        List<realm_myCourses> list = mRealm.where(realm_myCourses.class).findAll();
+        String[] myIds = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            myIds[i] = list.get(i).getCourseId();
+        }
+        return myIds;
     }
 
     public String getId() {

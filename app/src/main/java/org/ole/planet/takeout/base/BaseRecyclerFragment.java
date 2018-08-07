@@ -33,6 +33,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     Realm mRealm;
     DatabaseService realmService;
     List<LI> list;
+    UserProfileDbHandler profileDbHandler;
+    realm_UserModel model;
 
     public BaseRecyclerFragment() {
     }
@@ -52,6 +54,9 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         list = new ArrayList<>();
         realmService = new DatabaseService(getActivity());
         mRealm = realmService.getRealmInstance();
+        profileDbHandler = new UserProfileDbHandler(getActivity());
+        model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+
         recyclerView.setAdapter(getAdapter());
         return v;
     }
@@ -61,7 +66,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
             RealmObject object = (RealmObject) selectedItems.get(i);
             if (object instanceof realm_myLibrary) {
                 realm_myLibrary myObject = mRealm.where(realm_myLibrary.class).equalTo("resourceId", ((realm_myLibrary) object).getResource_id()).findFirst();
-                checkNullAndAdd(myObject, object, "resource");
+                Utilities.log("User id " + model.getId());
+                realm_myLibrary.createFromResource(myObject, mRealm, model.getId());
             } else {
                 realm_myCourses myObject = mRealm.where(realm_myCourses.class).equalTo("courseId", ((realm_courses) object).getCourseId()).findFirst();
                 checkNullAndAdd(myObject, object, "course");
@@ -76,28 +82,23 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         mRealm.close();
     }
 
-
     public List<LI> getList(Class c) {
-        List<RealmObject> list = mRealm.where(c).findAll();
-        String[] myIds = new String[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            myIds[i] = c == realm_myLibrary.class ? ((realm_myLibrary) list.get(i)).getTitle() : ((realm_courses) list.get(i)).getCourseTitle();
+        String[] mycourseIds = realm_myCourses.getMyCourseIds(mRealm);
+        if (c == realm_myLibrary.class) {
+            return mRealm.where(c).isEmpty("userId").or().isNull("userId").findAll();
+        } else {
+            return mRealm.where(c).not().in("courseId", mycourseIds).findAll();
         }
-        return mRealm.where(c).not().in(c == realm_courses.class ? "courseId" : "resourceId", myIds).findAll();
     }
 
 
     public void checkNullAndAdd(RealmObject myObject, RealmObject object, String type) {
-        UserProfileDbHandler profileDbHandler = new UserProfileDbHandler(getActivity());
-        final realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         String title = object instanceof realm_courses ? ((realm_courses) object).getCourseTitle() : ((realm_myLibrary) object).getTitle();
         if (myObject != null) {
             Utilities.toast(getActivity(), type + " Already Exists in my " + type + " : " + title);
             return;
         } else if (object instanceof realm_courses) {
             realm_myCourses.createFromCourse((realm_courses) object, mRealm, model.getId());
-        } else {
-            realm_myLibrary.createFromResource((realm_myLibrary) object, mRealm, model.getId());
         }
         Utilities.toast(getActivity(), type + "Added to my " + type);
     }

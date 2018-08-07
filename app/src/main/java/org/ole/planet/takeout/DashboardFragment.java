@@ -109,14 +109,13 @@ public class DashboardFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        profileDbHandler = new UserProfileDbHandler(getActivity());
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
         txtCurDate.setText(Utilities.currentDate());
-        profileDbHandler = new UserProfileDbHandler(getActivity());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
-        Utilities.log("User image " + model.getUserImage());
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         prgDialog = DialogUtils.getProgressDialog(getActivity());
@@ -145,7 +144,10 @@ public class DashboardFragment extends Fragment {
     public void myLibraryDiv(View view) {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
+        realm_UserModel model = profileDbHandler.getUserModel();
+        Utilities.log("id " + model.getId());
+        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).isNotEmpty("userId").findAll();
+        Utilities.log("size " + db_myLibrary.size());
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {
@@ -206,7 +208,14 @@ public class DashboardFragment extends Fragment {
     }
 
     private void showDownloadDialog() {
-        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
+        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
+                .isNotEmpty("userId")
+                .or()
+                .isNotEmpty("courseId")
+                .equalTo("resourceOffline", false)
+                .findAll();
+
+        Utilities.log("Result size " + db_myLibrary.size());
         if (!db_myLibrary.isEmpty()) {
             new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
                 @Override
