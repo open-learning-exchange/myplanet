@@ -203,6 +203,7 @@ public class SyncManager {
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds, int x, JsonObject resourceDoc) {
         switch (stringArray[2]) {
             case "resources":
+                Utilities.log("Resource  " + stringArray[0]);
                 realm_myLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":

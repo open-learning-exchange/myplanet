@@ -26,6 +26,7 @@ public class realm_meetups extends RealmObject {
     private String creator;
 
     public static void insertMyMeetups(String userId, String meetupID, JsonObject meetupDoc, Realm mRealm) {
+
         realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
         myMeetupsDB.setUserId(userId);
         myMeetupsDB.setMeetupId(meetupID);

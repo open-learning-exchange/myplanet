@@ -207,12 +207,15 @@ public class MyDownloadService extends IntentService {
 
     private void changeOfflineStatus() {
         final String currentFileName = Utilities.getFileNameFromUrl(url);
+        Utilities.log("File Name " + currentFileName);
         mRealm.executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(@NonNull Realm realm) {
                 realm_myLibrary obj = realm.where(realm_myLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
                 if (obj != null) {
                     obj.setResourceOffline(true);
+                }else{
+                    Utilities.log("object Is null");
                 }
             }
         });
