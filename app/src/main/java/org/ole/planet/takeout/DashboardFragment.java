@@ -206,10 +206,11 @@ public class DashboardFragment extends Fragment {
 
     private void showDownloadDialog() {
         final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
+                .equalTo("resourceOffline", false)
                 .isNotEmpty("userId")
                 .or()
-                .isNotEmpty("courseId")
                 .equalTo("resourceOffline", false)
+                .isNotEmpty("courseId")
                 .findAll();
 
         Utilities.log("Result size " + db_myLibrary.size());
