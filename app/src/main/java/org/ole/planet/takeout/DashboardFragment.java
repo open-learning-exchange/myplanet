@@ -212,8 +212,6 @@ public class DashboardFragment extends Fragment {
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("courseId")
                 .findAll();
-
-        Utilities.log("Result size " + db_myLibrary.size());
         if (!db_myLibrary.isEmpty()) {
             new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
                 @Override
