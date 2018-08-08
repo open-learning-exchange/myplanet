@@ -21,9 +21,12 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -77,6 +80,7 @@ public class DashboardFragment extends Fragment {
     private ImageButton myCourseImage;
     private ImageButton myMeetUpsImage;
     private ImageButton myTeamsImage;
+    ArrayList<String> names = new ArrayList<>();
     DatabaseService dbService;
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
             250,
@@ -213,12 +217,16 @@ public class DashboardFragment extends Fragment {
                 .isNotEmpty("courseId")
                 .findAll();
         if (!db_myLibrary.isEmpty()) {
-            new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i, boolean b) {
-                    DialogUtils.handleCheck(selectedItemsList, b, i);
-                }
-            }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
+            final AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
+            LayoutInflater inflater = getLayoutInflater();
+            View convertView = (View) inflater.inflate(R.layout.my_library_alertdialog, null);
+            alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
+            ListView lv = (ListView) convertView.findViewById(R.id.alertDialog_listView);
+            for (int i = 0; i < db_myLibrary.size(); i++) {
+                names.add(db_myLibrary.get(i).getTitle().toString());            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(),android.R.layout.simple_list_item_1,names);
+            lv.setAdapter(adapter);
+            alertDialogBuilder.setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
