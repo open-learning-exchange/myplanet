@@ -67,13 +67,10 @@ public class DashboardFragment extends BaseContainerFragment {
 
     //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
-    public static SharedPreferences settings;
     TextView txtFullName, txtCurDate, txtVisits;
     ImageView userImage;
     String fullName;
     Realm mRealm;
-    static ProgressDialog prgDialog;
-    ArrayList<Integer> selectedItemsList = new ArrayList<>();
     //ImageButtons
     private ImageButton myLibraryImage;
     private ImageButton myCourseImage;
@@ -89,19 +86,6 @@ public class DashboardFragment extends BaseContainerFragment {
 
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed()) {
-                    setProgress(download);
-                } else {
-                    DialogUtils.showError(prgDialog, download.getMessage());
-                }
-            }
-        }
-    };
 
     public DashboardFragment() {
     }
@@ -110,8 +94,8 @@ public class DashboardFragment extends BaseContainerFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
-        settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         profileDbHandler = new UserProfileDbHandler(getActivity());
+      //  settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
@@ -120,8 +104,6 @@ public class DashboardFragment extends BaseContainerFragment {
         ImageView imageView = view.findViewById(R.id.imageView);
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
-        prgDialog = DialogUtils.getProgressDialog(getActivity());
-        registerReceiver();
         return view;
     }
 
@@ -139,7 +121,7 @@ public class DashboardFragment extends BaseContainerFragment {
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, realm_myCourses.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, realm_meetups.class);
-        showDownloadDialog();
+        showDownloadDialog(getLibraryList());
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
     }
 
@@ -211,57 +193,16 @@ public class DashboardFragment extends BaseContainerFragment {
         }
     }
 
-    public void startDownload(ArrayList urls) {
-        if (!urls.isEmpty()) {
-            prgDialog.show();
-            Utilities.openDownloadService(getActivity(), urls);
-        }
-    }
-
-    private void showDownloadDialog() {
-        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class)
+    private RealmResults<realm_myLibrary> getLibraryList() {
+        return mRealm.where(realm_myLibrary.class)
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("userId")
                 .or()
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("courseId")
                 .findAll();
-        if (!db_myLibrary.isEmpty()) {
-            new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i, boolean b) {
-                    DialogUtils.handleCheck(selectedItemsList, b, i);
-                }
-            }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
-                }
-            }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings));
-                }
-            }).setNegativeButton(R.string.txt_cancel, null).show();
-        }
     }
 
-    public void setProgress(Download download) {
-        prgDialog.setProgress(download.getProgress());
-        if (!TextUtils.isEmpty(download.getFileName())) {
-            prgDialog.setTitle(download.getFileName());
-        }
-        if (download.isCompleteAll()) {
-            DialogUtils.showError(prgDialog, "All files downloaded successfully");
-        }
-    }
-
-    private void registerReceiver() {
-        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(MESSAGE_PROGRESS);
-        bManager.registerReceiver(broadcastReceiver, intentFilter);
-    }
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
         textView.setOnClickListener(new View.OnClickListener() {

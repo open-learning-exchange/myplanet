@@ -56,10 +56,12 @@
 
                     <TextView
                         android:id="@+id/tv_step_title"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_marginLeft="@dimen/padding_normal"
+                        android:layout_weight="1"
+                        android:gravity="center"
                         android:padding="8dp"
                         android:textColor="@color/md_white_1000"
                         android:textSize="@dimen/text_size_small"
@@ -77,17 +79,24 @@
                         android:layout_width="@dimen/icon_size_mid"
                         android:layout_height="@dimen/icon_size_mid"
                         android:layout_gravity="center"
-                        android:rotation="180"
-                        android:src="@drawable/ic_left_arrow" />
+                        android:src="@drawable/ic_right_arrow" />
 
                 </LinearLayout>
 
-                <include
-                    layout="@layout/course_detail_content"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
+                <!--<include-->
+                <!--layout="@layout/course_detail_content"-->
+                <!--android:layout_height="0dp"-->
+                <!--android:layout_weight="1"-->
+                <!--android:layout_width="match_parent"-->
+                <!--/>-->
+
+
+                <android.support.v4.view.ViewPager
+                    android:id="@+id/view_pager_course"
                     android:layout_width="match_parent"
-                    />
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -98,13 +107,12 @@
                     <android.support.v7.widget.AppCompatSeekBar
                         android:id="@+id/course_progress"
                         android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_gravity="center"
                         android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_weight="1"
                         android:background="@color/bg_white"
-                        android:theme="@style/Seekbar"
                         android:padding="8dp"
-                        />
+                        android:theme="@style/Seekbar" />
 
                     <TextView
                         android:id="@+id/tv_percentage_complete"

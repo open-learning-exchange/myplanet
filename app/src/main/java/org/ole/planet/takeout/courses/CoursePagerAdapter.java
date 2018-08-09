@@ -7,24 +7,33 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 
 public class CoursePagerAdapter extends FragmentStatePagerAdapter {
 
-    String[] steps;
+   private String[] steps;
+  private   String courseId;
 
-    public CoursePagerAdapter(FragmentManager fm, String[] steps) {
+    public CoursePagerAdapter(FragmentManager fm, String courseId, String[] steps) {
         super(fm);
         this.steps = steps;
+        this.courseId = courseId;
     }
 
     @Override
     public Fragment getItem(int position) {
-        CourseStepFragment f = new CourseStepFragment();
         Bundle b = new Bundle();
-        b.putString("stepId", steps[position]);
+        Fragment f;
+        if (position == 0) {
+            f = new CourseDetailFragment();
+            b.putString("courseId", courseId);
+
+        } else {
+            f = new CourseStepFragment();
+            b.putString("stepId", steps[position - 1]);
+        }
         f.setArguments(b);
         return f;
     }
 
     @Override
     public int getCount() {
-        return steps.length;
+        return steps.length + 1;
     }
 }

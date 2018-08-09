@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 
@@ -30,7 +31,7 @@ import io.realm.RealmResults;
 public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChangeListener, View.OnClickListener {
 
     ViewPager mViewPager;
-    TextView tvCourseTitle, tvCompleted, tvStepTitle, tvSteps, description, subjectLevel, gradeLevel, method, timesRated, rating, language;
+    TextView tvCourseTitle, tvCompleted, tvStepTitle, tvSteps;
     SeekBar courseProgress;
     DatabaseService dbService;
     Realm mRealm;
@@ -67,13 +68,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         tvCourseTitle = v.findViewById(R.id.tv_course_title);
         tvStepTitle = v.findViewById(R.id.tv_step_title);
         tvCompleted = v.findViewById(R.id.tv_percentage_complete);
-        description = v.findViewById(R.id.description);
-        subjectLevel = v.findViewById(R.id.subject_level);
-        gradeLevel = v.findViewById(R.id.grade_level);
-        timesRated = v.findViewById(R.id.times_rated);
-        language = v.findViewById(R.id.language);
-        method = v.findViewById(R.id.method);
-        rating = v.findViewById(R.id.rating);
         tvSteps = v.findViewById(R.id.tv_step);
         next = v.findViewById(R.id.next_step);
         previous = v.findViewById(R.id.previous_step);
@@ -85,21 +79,16 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         super.onActivityCreated(savedInstanceState);
         tvCourseTitle.setText(currentCourse.getCourseTitle());
         steps = realm_courseSteps.getSteps(mRealm, courseId);
-        mViewPager.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), realm_courseSteps.getStepIds(mRealm, courseId)));
+        mViewPager.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), courseId, realm_courseSteps.getStepIds(mRealm, courseId)));
         mViewPager.addOnPageChangeListener(this);
-        tvStepTitle.setText(steps.get(mViewPager.getCurrentItem()).getStepTitle());
-        tvSteps.setText("Step 1/" + steps.size());
         setCourseData();
         next.setOnClickListener(this);
         previous.setOnClickListener(this);
     }
 
     private void setCourseData() {
-        subjectLevel.setText(currentCourse.getSubjectLevel());
-        method.setText(currentCourse.getMethod());
-        gradeLevel.setText(currentCourse.getGradeLevel());
-        language.setText(currentCourse.getLanguageOfInstruction());
-        description.setText(currentCourse.getDescription());
+        tvStepTitle.setText(currentCourse.getCourseTitle());
+        tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
     }
@@ -111,8 +100,10 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     @Override
     public void onPageSelected(int position) {
-        tvStepTitle.setText(steps.get(position).getStepTitle());
-        tvSteps.setText(String.format("Step %d/%d", position + 1, steps.size()));
+        if (position > 0) {
+            tvStepTitle.setText(steps.get(position - 1).getStepTitle());
+        }
+        tvSteps.setText(String.format("Step %d/%d", position, steps.size()));
 
     }
 

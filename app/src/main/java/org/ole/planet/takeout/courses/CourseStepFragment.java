@@ -15,16 +15,18 @@ import org.ole.planet.takeout.Data.realm_courseSteps;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
+import org.ole.planet.takeout.base.BaseContainerFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CourseStepFragment extends Fragment {
+public class CourseStepFragment extends BaseContainerFragment {
 
     TextView tvTitle;
     WebView wvDesc;
@@ -71,6 +73,10 @@ public class CourseStepFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         step = mRealm.where(realm_courseSteps.class).equalTo("id", stepId).findFirst();
         resources = mRealm.where(realm_myLibrary.class).equalTo("stepId", stepId).findAll();
+        final RealmResults offlineResources = mRealm.where(realm_myLibrary.class)
+                .equalTo("stepId", stepId)
+                .equalTo("resourceOffline", false)
+                .findAll();
         stepExams = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");
@@ -78,5 +84,13 @@ public class CourseStepFragment extends Fragment {
             btnExam.setText("Take Test [" + stepExams.size() + "]");
         tvTitle.setText(step.getStepTitle());
         wvDesc.loadDataWithBaseURL(null, step.getDescription(), "text/html", "utf-8", null);
+        btnResource.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (offlineResources.size() > 0) {
+                    showDownloadDialog(offlineResources);
+                }
+            }
+        });
     }
 }
