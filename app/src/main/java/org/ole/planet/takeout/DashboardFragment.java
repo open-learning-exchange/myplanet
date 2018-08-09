@@ -1,21 +1,9 @@
 package org.ole.planet.takeout;
 
-import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -29,36 +17,25 @@ import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-import com.squareup.picasso.Picasso;
 
-import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
-import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.Data.realm_myLibrary;
-
+import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.base.BaseContainerFragment;
 import org.ole.planet.takeout.courses.TakeCourseFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
-import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.ole.planet.takeout.Data.realm_myLibrary;
-
 import io.realm.Realm;
-import io.realm.RealmConfiguration;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
-
-import static android.content.Context.MODE_PRIVATE;
-import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -67,24 +44,23 @@ public class DashboardFragment extends BaseContainerFragment {
 
     //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
+    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
+    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     TextView txtFullName, txtCurDate, txtVisits;
     ImageView userImage;
     String fullName;
     Realm mRealm;
-    //ImageButtons
-    private ImageButton myLibraryImage;
-    private ImageButton myCourseImage;
-    private ImageButton myMeetUpsImage;
-    private ImageButton myTeamsImage;
     DatabaseService dbService;
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
             250,
             100
     );
+    //ImageButtons
+    private ImageButton myLibraryImage;
+    private ImageButton myCourseImage;
+    private ImageButton myMeetUpsImage;
+    private ImageButton myTeamsImage;
     private UserProfileDbHandler profileDbHandler;
-    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
 
     public DashboardFragment() {

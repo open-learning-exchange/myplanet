@@ -17,8 +17,6 @@ import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.base.BaseContainerFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 
-import java.util.List;
-
 import io.realm.Realm;
 import io.realm.RealmResults;
 

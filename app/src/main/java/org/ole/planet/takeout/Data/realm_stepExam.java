@@ -2,8 +2,6 @@ package org.ole.planet.takeout.Data;
 
 import com.google.gson.JsonObject;
 
-import java.util.List;
-
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
@@ -32,8 +30,8 @@ public class realm_stepExam extends RealmObject {
     }
 
     public static int getNoOfExam(Realm mRealm, String courseId) {
-        RealmResults res =  mRealm.where(realm_stepExam.class).equalTo("courseId", courseId).findAll();
-        if (res!=null){
+        RealmResults res = mRealm.where(realm_stepExam.class).equalTo("courseId", courseId).findAll();
+        if (res != null) {
             return res.size();
         }
         return 0;

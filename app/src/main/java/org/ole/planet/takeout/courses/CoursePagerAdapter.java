@@ -7,8 +7,8 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 
 public class CoursePagerAdapter extends FragmentStatePagerAdapter {
 
-   private String[] steps;
-  private   String courseId;
+    private String[] steps;
+    private String courseId;
 
     public CoursePagerAdapter(FragmentManager fm, String courseId, String[] steps) {
         super(fm);
