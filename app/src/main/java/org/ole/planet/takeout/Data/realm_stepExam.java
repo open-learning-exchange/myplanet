@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_stepExam extends RealmObject {
@@ -26,6 +27,14 @@ public class realm_stepExam extends RealmObject {
             myExam.setPassingPercentage(exam.get("totalMarks").getAsString());
         if (exam.has("questions"))
             realm_examQuestion.insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString(), mRealm);
+    }
+
+    public static int getNoOfExam(Realm mRealm, String courseId) {
+        RealmResults res = mRealm.where(realm_stepExam.class).equalTo("courseId", courseId).findAll();
+        if (res != null) {
+            return res.size();
+        }
+        return 0;
     }
 
     public String getPassingPercentage() {

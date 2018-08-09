@@ -1,0 +1,59 @@
+<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="org.ole.planet.takeout.courses.CourseStepFragment">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:gravity="right">
+
+            <Button
+                android:id="@+id/btn_resources"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resources"
+                android:theme="@style/PrimaryButton" />
+
+            <Button
+                android:id="@+id/btn_take_test"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Take Test"
+                android:theme="@style/PrimaryButton" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_large"
+                android:textStyle="bold" />
+
+            <WebView
+                android:id="@+id/wv_desc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+    </LinearLayout>
+
+
+</android.support.v4.widget.NestedScrollView>
