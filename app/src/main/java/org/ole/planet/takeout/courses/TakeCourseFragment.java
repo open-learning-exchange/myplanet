@@ -116,15 +116,23 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.next_step:
-                if (mViewPager.getAdapter() != null && mViewPager.getCurrentItem() < mViewPager.getAdapter().getCount()) {
+                if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
                 }
                 break;
             case R.id.previous_step:
-                if (mViewPager.getAdapter() != null && mViewPager.getCurrentItem() > 0) {
+                if (isValidClickLeft()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() - 1);
                 }
                 break;
         }
+    }
+
+    private boolean isValidClickRight() {
+        return mViewPager.getAdapter() != null && mViewPager.getCurrentItem() < mViewPager.getAdapter().getCount();
+    }
+
+    public boolean isValidClickLeft() {
+        return mViewPager.getAdapter() != null && mViewPager.getCurrentItem() > 0;
     }
 }

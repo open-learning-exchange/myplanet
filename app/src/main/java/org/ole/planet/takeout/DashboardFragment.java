@@ -95,7 +95,7 @@ public class DashboardFragment extends BaseContainerFragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
         profileDbHandler = new UserProfileDbHandler(getActivity());
-      //  settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
+        //  settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
@@ -177,19 +177,23 @@ public class DashboardFragment extends BaseContainerFragment {
             textViewArray[itemCnt].setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (homeItemClickListener != null) {
-                        TakeCourseFragment t = new TakeCourseFragment();
-                        Bundle b = new Bundle();
-                        b.putString("courseId", ((realm_myCourses) obj).getCourseId());
-                        t.setArguments(b);
-                        homeItemClickListener.openCallFragment(t);
-                    }
+                    handleCourseClick((realm_myCourses) obj);
                 }
             });
         } else if (obj instanceof realm_myTeams) {
             textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
         } else if (obj instanceof realm_meetups) {
             textViewArray[itemCnt].setText(((realm_meetups) obj).getTitle());
+        }
+    }
+
+    private void handleCourseClick(realm_myCourses obj) {
+        if (homeItemClickListener != null) {
+            TakeCourseFragment t = new TakeCourseFragment();
+            Bundle b = new Bundle();
+            b.putString("courseId", ((realm_myCourses) obj).getCourseId());
+            t.setArguments(b);
+            homeItemClickListener.openCallFragment(t);
         }
     }
 
