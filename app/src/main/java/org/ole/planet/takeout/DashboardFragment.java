@@ -9,9 +9,12 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,6 +53,18 @@ public class DashboardFragment extends BaseContainerFragment {
     ImageView userImage;
     String fullName;
     Realm mRealm;
+    static ProgressDialog prgDialog;
+    ArrayList<Integer> selectedItemsList = new ArrayList<>();
+    //ImageButtons
+    private ImageButton myLibraryImage;
+    private ImageButton myCourseImage;
+    private ImageButton myMeetUpsImage;
+    private ImageButton myTeamsImage;
+
+    ArrayList<String> names = new ArrayList<>();
+    RealmResults<realm_myLibrary> db_myLibrary;
+    ListView lv;
+    View convertView;
     DatabaseService dbService;
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
             250,
@@ -173,6 +188,50 @@ public class DashboardFragment extends BaseContainerFragment {
         }
     }
 
+
+    public void createListView() {
+        lv = (ListView) convertView.findViewById(R.id.alertDialog_listView);
+        for (int i = 0; i < db_myLibrary.size(); i++) {
+            names.add(db_myLibrary.get(i).getTitle().toString());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
+        lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                String itemSelected = ((TextView) view).getText().toString();
+                if (selectedItemsList.contains(itemSelected)) {
+                    selectedItemsList.remove(itemSelected);
+                } else {
+                    selectedItemsList.add(i);
+                }
+                Toast.makeText(getActivity().getBaseContext(), "Clicked on  : " + itemSelected + "Number " + i, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    private void showDownloadDialog() {
+        db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).isNotEmpty("userId").or().equalTo("resourceOffline", false)
+                .isNotEmpty("courseId").findAll();
+        if (!db_myLibrary.isEmpty()) {
+            LayoutInflater inflater = getLayoutInflater();
+            convertView = (View) inflater.inflate(R.layout.my_library_alertdialog, null);
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
+            alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
+            createListView();
+            alertDialogBuilder.setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
+                }
+            }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings));
+                }
+            }).setNegativeButton(R.string.txt_cancel, null).show();
+        }
+
     private RealmResults<realm_myLibrary> getLibraryList() {
         return mRealm.where(realm_myLibrary.class)
                 .equalTo("resourceOffline", false)
@@ -181,6 +240,7 @@ public class DashboardFragment extends BaseContainerFragment {
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("courseId")
                 .findAll();
+
     }
 
 
