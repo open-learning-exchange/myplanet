@@ -38,6 +38,8 @@ import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 
+import org.ole.planet.takeout.base.BaseContainerFragment;
+import org.ole.planet.takeout.courses.TakeCourseFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.DialogUtils;
@@ -61,7 +63,7 @@ import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends Fragment {
+public class DashboardFragment extends BaseContainerFragment {
 
     //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
@@ -179,7 +181,7 @@ public class DashboardFragment extends Fragment {
     }
 
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, RealmObject obj) {
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, final RealmObject obj) {
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
         textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
@@ -190,6 +192,18 @@ public class DashboardFragment extends Fragment {
             textViewArray[itemCnt].setText(((realm_myLibrary) obj).getTitle());
         } else if (obj instanceof realm_myCourses) {
             textViewArray[itemCnt].setText(((realm_myCourses) obj).getCourseTitle());
+            textViewArray[itemCnt].setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (homeItemClickListener != null) {
+                        TakeCourseFragment t = new TakeCourseFragment();
+                        Bundle b = new Bundle();
+                        b.putString("courseId", ((realm_myCourses) obj).getCourseId());
+                        t.setArguments(b);
+                        homeItemClickListener.openCallFragment(t);
+                    }
+                }
+            });
         } else if (obj instanceof realm_myTeams) {
             textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
         } else if (obj instanceof realm_meetups) {

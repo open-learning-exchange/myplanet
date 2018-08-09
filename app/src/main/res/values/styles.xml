@@ -69,5 +69,20 @@
         <item name="windowActionModeOverlay">false</item>
     </style>
 
+    <style name="HeaderText">
+        <item name="android:textStyle">bold</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:textColor">@color/md_black_1000</item>
+        <item name="android:textSize">@dimen/text_size_mid</item>
+    </style>
+    <style name="PrimaryButton" parent="Theme.AppCompat">
+        <item name="colorButtonNormal">@color/colorPrimary</item>
+        <item name="colorControlHighlight">@color/colorAccent</item>
+    </style>
+ <style name="Seekbar" parent="Base.Widget.AppCompat.SeekBar.Discrete" >
+        <item name="tickMark">@drawable/ic_tick</item>
+    </style>
+
+
 
 </resources>

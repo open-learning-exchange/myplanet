@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -87,6 +88,20 @@ public class realm_courseSteps extends io.realm.RealmObject {
                 realm_stepExam.insertCourseStepsExams(myCoursesID, step_id, stepContainer.getAsJsonObject("exam"), mRealm);
         }
     }
+
+    public static String[] getStepIds(Realm mRealm, String courseId) {
+        List<realm_courseSteps> list = mRealm.where(realm_courseSteps.class).equalTo("courseId", courseId).findAll();
+        String[] myIds = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            myIds[i] = list.get(i).getId();
+        }
+        return myIds;
+    }
+
+    public static List<realm_courseSteps> getSteps(Realm mRealm, String courseId) {
+        return mRealm.where(realm_courseSteps.class).equalTo("courseId", courseId).findAll();
+    }
+
 
     public static void insertCourseStepsAttachments(String myCoursesID, String stepId, JsonArray resources, Realm mRealm) {
         for (int i = 0; i < resources.size(); i++) {
