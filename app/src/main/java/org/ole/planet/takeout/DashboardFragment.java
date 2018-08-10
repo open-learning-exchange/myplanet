@@ -43,7 +43,6 @@ import io.realm.RealmResults;
  */
 public class DashboardFragment extends BaseContainerFragment {
 
-    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
@@ -237,50 +236,7 @@ public class DashboardFragment extends BaseContainerFragment {
         startActivity(intent);
     }
 
-    public void openIntent(realm_myLibrary items, Class typeClass) {
-        Intent fileOpenIntent = new Intent(DashboardFragment.this.getActivity(), typeClass);
-        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-        startActivity(fileOpenIntent);
-    }
 
-    public void checkFileExtension(realm_myLibrary items) {
-        String filenameArray[] = items.getResourceLocalAddress().split("\\.");
-        String extension = filenameArray[filenameArray.length - 1];
-
-        switch (extension) {
-            case "pdf":
-                openIntent(items, PDFReaderActivity.class);
-                break;
-            case "bmp":
-            case "gif":
-            case "jpg":
-            case "png":
-            case "webp":
-                openIntent(items, ImageViewerActivity.class);
-                break;
-            default:
-                checkMoreFileExtensions(extension, items);
-                break;
-        }
-    }
-
-    public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
-        switch (extension) {
-            case "txt":
-                openIntent(items, TextFileViewerActivity.class);
-                break;
-            case "md":
-                openIntent(items, MarkdownViewerActivity.class);
-                break;
-            case "csv":
-                openIntent(items, CSVViewerActivity.class);
-                break;
-            default:
-                Toast.makeText(DashboardFragment.this.getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
-                break;
-        }
-
-    }
 
     public void setCountText(int countText, Class c, View v) {
         if (c == realm_myCourses.class)
@@ -289,6 +245,5 @@ public class DashboardFragment extends BaseContainerFragment {
             ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
         else if (c == realm_myTeams.class)
             ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
-
     }
 }
