@@ -10,11 +10,9 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
@@ -72,7 +70,7 @@ public class DashboardFragment extends BaseContainerFragment {
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
-        ((AppCompatActivity)getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
         Utilities.loadImage(model.getUserImage(), imageView);
@@ -122,7 +120,7 @@ public class DashboardFragment extends BaseContainerFragment {
         setUpMyList(c, flexboxLayout, v);
     }
 
-    public void setUpMyList(Class c, FlexboxLayout flexboxLayout,View view) {
+    public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
         RealmResults<RealmObject> db_myCourses = mRealm.where(c).findAll();
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
@@ -235,7 +233,6 @@ public class DashboardFragment extends BaseContainerFragment {
         intent.putExtras(bundle);
         startActivity(intent);
     }
-
 
 
     public void setCountText(int countText, Class c, View v) {
