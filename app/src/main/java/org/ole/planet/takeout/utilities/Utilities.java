@@ -63,7 +63,7 @@ public class Utilities {
 
     public static String currentDate() {
         Calendar c = Calendar.getInstance();
-        SimpleDateFormat dateformat = new SimpleDateFormat("dd-MMM-yyyy");
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
         String datetime = dateformat.format(c.getTime());
         return datetime;
     }
