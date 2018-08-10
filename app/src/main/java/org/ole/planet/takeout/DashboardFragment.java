@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -72,6 +73,7 @@ public class DashboardFragment extends BaseContainerFragment {
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
+        ((AppCompatActivity)getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
         Utilities.loadImage(model.getUserImage(), imageView);
