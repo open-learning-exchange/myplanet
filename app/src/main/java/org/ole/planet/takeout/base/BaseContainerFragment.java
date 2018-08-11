@@ -13,6 +13,13 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -35,6 +42,9 @@ public abstract class BaseContainerFragment extends Fragment {
     static ProgressDialog prgDialog;
     public OnHomeItemClickListener homeItemClickListener;
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
+    ListView lv;
+    View convertView;
+    ArrayList<String> names = new ArrayList<>();
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -49,15 +59,37 @@ public abstract class BaseContainerFragment extends Fragment {
         }
     };
 
-    protected void showDownloadDialog(final RealmResults db_myLibrary) {
+    public void createListView(RealmResults<realm_myLibrary> db_myLibrary) {
+        lv = (ListView) convertView.findViewById(R.id.alertDialog_listView);
+        for (int i = 0; i < db_myLibrary.size(); i++) {
+            names.add(db_myLibrary.get(i).getTitle().toString());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
+        lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                String itemSelected = ((TextView) view).getText().toString();
+                if (selectedItemsList.contains(itemSelected)) {
+                    selectedItemsList.remove(itemSelected);
+                } else {
+                    selectedItemsList.add(i);
+                }
+                Toast.makeText(getContext(), "Clicked on  : " + itemSelected + "Number " + i, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    protected void showDownloadDialog(final RealmResults<realm_myLibrary> db_myLibrary) {
 
         if (!db_myLibrary.isEmpty()) {
-            new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i, boolean b) {
-                    DialogUtils.handleCheck(selectedItemsList, b, i);
-                }
-            }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
+            LayoutInflater inflater = getLayoutInflater();
+            convertView = (View) inflater.inflate(R.layout.my_library_alertdialog, null);
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
+            alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
+            createListView(db_myLibrary);
+            alertDialogBuilder.setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
                     startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
