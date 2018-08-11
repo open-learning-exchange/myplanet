@@ -4,16 +4,15 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
@@ -42,12 +41,10 @@ import io.realm.RealmResults;
  */
 public class DashboardFragment extends BaseContainerFragment {
 
-    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-    TextView txtFullName, txtCurDate, txtVisits;
-    ImageView userImage;
+    TextView txtFullName, txtVisits;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -55,11 +52,10 @@ public class DashboardFragment extends BaseContainerFragment {
             250,
             100
     );
-    //ImageButtons
-    private ImageButton myLibraryImage;
-    private ImageButton myCourseImage;
-    private ImageButton myMeetUpsImage;
-    private ImageButton myTeamsImage;
+    private ImageView myLibraryImage;
+    private ImageView myCourseImage;
+    private ImageView myMeetUpsImage;
+    private ImageView myTeamsImage;
     private UserProfileDbHandler profileDbHandler;
 
 
@@ -69,13 +65,12 @@ public class DashboardFragment extends BaseContainerFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
+        View view = inflater.inflate(R.layout.fragment_home, container, false);
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        //  settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
-        txtCurDate.setText(Utilities.currentDate());
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
         Utilities.loadImage(model.getUserImage(), imageView);
@@ -84,12 +79,11 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     private void declareElements(View view) {
-        myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
-        myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
-        myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
-        myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
+        myLibraryImage = view.findViewById(R.id.myLibraryImageButton);
+        myCourseImage = view.findViewById(R.id.myCoursesImageButton);
+        myMeetUpsImage = view.findViewById(R.id.myMeetUpsImageButton);
+        myTeamsImage = view.findViewById(R.id.myTeamsImageButton);
         txtFullName = view.findViewById(R.id.txtFullName);
-        txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
@@ -102,9 +96,11 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     public void myLibraryDiv(View view) {
+        TextView count = view.findViewById(R.id.count_library);
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).isNotEmpty("userId").findAll();
+        count.setText(db_myLibrary.size() + "");
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {
@@ -121,11 +117,12 @@ public class DashboardFragment extends BaseContainerFragment {
     public void initializeFlexBoxView(View v, int id, Class c) {
         FlexboxLayout flexboxLayout = v.findViewById(id);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        setUpMyList(c, flexboxLayout);
+        setUpMyList(c, flexboxLayout, v);
     }
 
-    public void setUpMyList(Class c, FlexboxLayout flexboxLayout) {
+    public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
         RealmResults<RealmObject> db_myCourses = mRealm.where(c).findAll();
+        setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
         for (final RealmObject items : db_myCourses) {
@@ -237,48 +234,13 @@ public class DashboardFragment extends BaseContainerFragment {
         startActivity(intent);
     }
 
-    public void openIntent(realm_myLibrary items, Class typeClass) {
-        Intent fileOpenIntent = new Intent(DashboardFragment.this.getActivity(), typeClass);
-        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-        startActivity(fileOpenIntent);
-    }
 
-    public void checkFileExtension(realm_myLibrary items) {
-        String filenameArray[] = items.getResourceLocalAddress().split("\\.");
-        String extension = filenameArray[filenameArray.length - 1];
-
-        switch (extension) {
-            case "pdf":
-                openIntent(items, PDFReaderActivity.class);
-                break;
-            case "bmp":
-            case "gif":
-            case "jpg":
-            case "png":
-            case "webp":
-                openIntent(items, ImageViewerActivity.class);
-                break;
-            default:
-                checkMoreFileExtensions(extension, items);
-                break;
-        }
-    }
-
-    public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
-        switch (extension) {
-            case "txt":
-                openIntent(items, TextFileViewerActivity.class);
-                break;
-            case "md":
-                openIntent(items, MarkdownViewerActivity.class);
-                break;
-            case "csv":
-                openIntent(items, CSVViewerActivity.class);
-                break;
-            default:
-                Toast.makeText(DashboardFragment.this.getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
-                break;
-        }
-
+    public void setCountText(int countText, Class c, View v) {
+        if (c == realm_myCourses.class)
+            ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
+        else if (c == realm_meetups.class)
+            ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
+        else if (c == realm_myTeams.class)
+            ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
     }
 }

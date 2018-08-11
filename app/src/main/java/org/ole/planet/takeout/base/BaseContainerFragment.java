@@ -13,19 +13,27 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+
 import android.widget.Toast;
 
+import org.ole.planet.takeout.CSVViewerActivity;
+import org.ole.planet.takeout.DashboardFragment;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.DownloadFiles;
+import org.ole.planet.takeout.ImageViewerActivity;
+import org.ole.planet.takeout.MarkdownViewerActivity;
+import org.ole.planet.takeout.PDFReaderActivity;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.SyncActivity;
+import org.ole.planet.takeout.TextFileViewerActivity;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -144,5 +152,50 @@ public abstract class BaseContainerFragment extends Fragment {
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
+    }
+
+    public void openIntent(realm_myLibrary items, Class typeClass) {
+        Intent fileOpenIntent = new Intent(getActivity(), typeClass);
+        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        startActivity(fileOpenIntent);
+    }
+
+    public void checkFileExtension(realm_myLibrary items) {
+        String filenameArray[] = items.getResourceLocalAddress().split("\\.");
+        String extension = filenameArray[filenameArray.length - 1];
+
+        switch (extension) {
+            case "pdf":
+                openIntent(items, PDFReaderActivity.class);
+                break;
+            case "bmp":
+            case "gif":
+            case "jpg":
+            case "png":
+            case "webp":
+                openIntent(items, ImageViewerActivity.class);
+                break;
+            default:
+                checkMoreFileExtensions(extension, items);
+                break;
+        }
+    }
+
+    public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
+        switch (extension) {
+            case "txt":
+                openIntent(items, TextFileViewerActivity.class);
+                break;
+            case "md":
+                openIntent(items, MarkdownViewerActivity.class);
+                break;
+            case "csv":
+                openIntent(items, CSVViewerActivity.class);
+                break;
+            default:
+                Toast.makeText(getActivity(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
+                break;
+        }
+
     }
 }
