@@ -59,7 +59,15 @@ public class realm_myLibrary extends RealmObject {
     private RealmList<String> languages;
     private String courseId;
     private String stepId;
+    private String downloaded;
 
+    public String getDownloaded() {
+        return downloaded;
+    }
+
+    public void setDownloaded(String downloaded) {
+        this.downloaded = downloaded;
+    }
 
     public static void insertResources(JsonObject doc, Realm mRealm) {
         insertMyLibrary("", doc, mRealm);
