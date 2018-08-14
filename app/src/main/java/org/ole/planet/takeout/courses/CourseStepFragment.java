@@ -16,6 +16,7 @@ import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.base.BaseContainerFragment;
+import org.ole.planet.takeout.courses.exam.TakeExamFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 
 import java.util.List;
@@ -77,6 +78,7 @@ public class CourseStepFragment extends BaseContainerFragment {
                 .equalTo("stepId", stepId)
                 .equalTo("resourceOffline", false)
                 .findAll();
+
         stepExams = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");
@@ -89,6 +91,18 @@ public class CourseStepFragment extends BaseContainerFragment {
             public void onClick(View view) {
                 if (offlineResources.size() > 0) {
                     showDownloadDialog(offlineResources);
+                }
+            }
+        });
+        btnExam.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (stepExams.size() > 0){
+                    Fragment takeExam  = new TakeExamFragment();
+                    Bundle b = new Bundle();
+                    b.putString("stepId", stepId);
+                    takeExam.setArguments(b);
+                    homeItemClickListener.openCallFragment(takeExam);
                 }
             }
         });

@@ -42,6 +42,7 @@ public class realm_examQuestion extends RealmObject {
             } else {
                 myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
             }
+            myQuestion.setCorrectChoice(question.get("correctChoice").getAsString());
         }
     }
 
