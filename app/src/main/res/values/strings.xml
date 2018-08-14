@@ -53,4 +53,5 @@
     <string name="documents">Documents</string>
     <string name="submit_new_entry">Submit New Entry</string>
     <string name="your_ans">Your Answer</string>
+    <string name="app_version">Version 0.2.9</string>
 </resources>
