@@ -118,6 +118,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
             etAnswer.setVisibility(View.VISIBLE);
             listChoices.setVisibility(View.GONE);
         }
+        etAnswer.setText("");
         header.setText(question.getHeader());
         body.setText(question.getBody());
         btnSubmit.setOnClickListener(this);
