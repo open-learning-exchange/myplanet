@@ -51,5 +51,7 @@
     <string name="calendar">Calendar</string>
     <string name="email">Email</string>
     <string name="documents">Documents</string>
+    <string name="submit_new_entry">Submit New Entry</string>
+    <string name="your_ans">Your Answer</string>
     <string name="app_version">Version 0.1.0</string>
 </resources>
