@@ -15,6 +15,8 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import com.google.gson.JsonObject;
+
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_answerChoices;
 import org.ole.planet.takeout.Data.realm_examQuestion;
@@ -126,16 +128,24 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
 
     private void multipleChoiceQuestion(realm_examQuestion question) {
         if (question.getChoices().size() > 0) {
-            RealmList choices = question.getChoices();
-            for (int i = 0; i < choices.size(); i++) {
-                addRadioButton(choices.get(i).toString());
-            }
+            radioWithOutCorrectChoice(question);
         } else {
-            RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
-                    .equalTo("questionId", question.getId()).findAll();
-            for (int i = 0; i < choices.size(); i++) {
-                addRadioButton(choices.get(i).getText());
-            }
+            radioWithCorrectChoice(question);
+        }
+    }
+
+    private void radioWithCorrectChoice(realm_examQuestion question) {
+        RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
+                .equalTo("questionId", question.getId()).findAll();
+        for (int i = 0; i < choices.size(); i++) {
+            addRadioButton(choices.get(i).getText());
+        }
+    }
+
+    private void radioWithOutCorrectChoice(realm_examQuestion question) {
+        RealmList choices = question.getChoices();
+        for (int i = 0; i < choices.size(); i++) {
+            addRadioButton(choices.get(i).toString());
         }
     }
 
@@ -185,7 +195,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     }
 
     private boolean updateAnsDb() {
-        boolean flag = false;
+        boolean flag;
         startTransaction();
         sub.setStatus(currentIndex == questions.size() - 1 ? "graded" : "pending");
         RealmList<realm_answer> list = sub.getAnswers();
@@ -198,19 +208,25 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
             answer.setMistakes(0);
             flag = true;
         } else {
-            answer.setPassed(que.getCorrectChoice().equalsIgnoreCase(ans));
-            answer.setGrade(1);
-            int mistake = answer.getMistakes();
-            if (que.getCorrectChoice().equalsIgnoreCase(ans)) {
-                mistake++;
-            } else {
-                flag = true;
-            }
-            answer.setMistakes(mistake);
+            flag = checkCorrectAns(answer, que);
         }
         list.add(currentIndex, answer);
         sub.setAnswers(list);
         mRealm.commitTransaction();
+        return flag;
+    }
+
+    private boolean checkCorrectAns(realm_answer answer, realm_examQuestion que) {
+        boolean flag = false;
+        answer.setPassed(que.getCorrectChoice().equalsIgnoreCase(ans));
+        answer.setGrade(1);
+        int mistake = answer.getMistakes();
+        if (que.getCorrectChoice().equalsIgnoreCase(ans)) {
+            mistake++;
+        } else {
+            flag = true;
+        }
+        answer.setMistakes(mistake);
         return flag;
     }
 
