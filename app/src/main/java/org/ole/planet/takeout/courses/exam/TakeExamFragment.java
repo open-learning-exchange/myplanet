@@ -16,9 +16,6 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
-
-import com.google.gson.JsonObject;
-
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_answerChoices;
 import org.ole.planet.takeout.Data.realm_examQuestion;
@@ -55,7 +52,6 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     String ans = "";
     realm_UserModel user;
     realm_submissions sub;
-
 
     public TakeExamFragment() {
     }
@@ -197,7 +193,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
                         }).show();
             }
         } else {
-            Utilities.toast(getActivity(), "Invalid answer.");
+            Utilities.toast(getActivity(), "Invalid answer");
         }
     }
 
