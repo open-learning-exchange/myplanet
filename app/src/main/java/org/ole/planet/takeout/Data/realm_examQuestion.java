@@ -30,7 +30,6 @@ public class realm_examQuestion extends RealmObject {
     private RealmList<String> choices;
 
     public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
-        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         for (int i = 0; i < questions.size(); i++) {
             String questionId = UUID.randomUUID().toString();
             JsonObject question = questions.get(i).getAsJsonObject();
@@ -41,13 +40,18 @@ public class realm_examQuestion extends RealmObject {
             myQuestion.setHeader(question.get("header").getAsString());
             if (question.has("marks"))
                 myQuestion.setMarks(question.get("marks").getAsString());
-            if (isMultipleChoiceQuestion(question)) {
-                JsonArray array = question.get("choices").getAsJsonArray();
-                realm_answerChoices.insertChoices(questionId, array, mRealm, settings);
-                insertCorrectChoice(array, question, myQuestion);
-            } else {
-                myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
-            }
+            insertChoices(question, questionId, mRealm, myQuestion);
+        }
+    }
+
+    private static void insertChoices(JsonObject question, String questionId, Realm mRealm, realm_examQuestion myQuestion) {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        if (isMultipleChoiceQuestion(question)) {
+            JsonArray array = question.get("choices").getAsJsonArray();
+            realm_answerChoices.insertChoices(questionId, array, mRealm, settings);
+            insertCorrectChoice(array, question, myQuestion);
+        } else {
+            myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
         }
     }
 
