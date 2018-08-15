@@ -41,7 +41,7 @@ public class realm_examQuestion extends RealmObject {
             myQuestion.setHeader(question.get("header").getAsString());
             if (question.has("marks"))
                 myQuestion.setMarks(question.get("marks").getAsString());
-            if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
+            if (isMultipleChoiceQuestion(question)) {
                 JsonArray array = question.get("choices").getAsJsonArray();
                 realm_answerChoices.insertChoices(questionId, array, mRealm, settings);
                 insertCorrectChoice(array, question, myQuestion);
@@ -57,6 +57,10 @@ public class realm_examQuestion extends RealmObject {
             if (question.get("correctChoice").getAsString().equals(res.get("id").getAsString()))
                 myQuestion.setCorrectChoice(res.get("text").getAsString());
         }
+    }
+
+    public static boolean isMultipleChoiceQuestion(JsonObject question) {
+        return question.has("correctChoice") && question.get("type").getAsString().equals("select");
     }
 
     public String getMarks() {
