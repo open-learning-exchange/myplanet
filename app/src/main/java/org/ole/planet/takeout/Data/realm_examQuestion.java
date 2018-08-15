@@ -9,6 +9,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.UUID;
 
@@ -25,6 +26,7 @@ public class realm_examQuestion extends RealmObject {
     private String type;
     private String examId;
     private String correctChoice;
+    private String marks;
     private RealmList<String> choices;
 
     public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
@@ -37,13 +39,29 @@ public class realm_examQuestion extends RealmObject {
             myQuestion.setBody(question.get("body").getAsString());
             myQuestion.setType(question.get("type").getAsString());
             myQuestion.setHeader(question.get("header").getAsString());
+            if (question.has("marks"))
+                myQuestion.setMarks(question.get("marks").getAsString());
             if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
-                realm_answerChoices.insertChoices(questionId, question.get("choices").getAsJsonArray(), mRealm, settings);
+                JsonArray array = question.get("choices").getAsJsonArray();
+                realm_answerChoices.insertChoices(questionId, array, mRealm, settings);
+                for (int a = 0; a < array.size(); a++) {
+                    JsonObject res = array.get(a).getAsJsonObject();
+                    if (question.has("correctChoice") && question.get("correctChoice").getAsString().equals(res.get("id").getAsString()))
+                        myQuestion.setCorrectChoice(res.get("text").getAsString());
+                    Utilities.log("Insert choices");
+                }
             } else {
                 myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
             }
-            myQuestion.setCorrectChoice(question.get("correctChoice").getAsString());
         }
+    }
+
+    public String getMarks() {
+        return marks;
+    }
+
+    public void setMarks(String marks) {
+        this.marks = marks;
     }
 
     public String getCorrectChoice() {

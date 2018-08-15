@@ -10,7 +10,7 @@ public class realm_submissions extends RealmObject {
     private String parentId;
     private String type;
     private String userId;
-    private RealmList<String> answers;
+    private RealmList<realm_answer> answers;
     private String grade;
     private String status;
 
@@ -46,11 +46,11 @@ public class realm_submissions extends RealmObject {
         this.userId = userId;
     }
 
-    public RealmList getAnswers() {
+    public RealmList<realm_answer> getAnswers() {
         return answers;
     }
 
-    public void setAnswers(RealmList answers) {
+    public void setAnswers(RealmList<realm_answer> answers) {
         this.answers = answers;
     }
 

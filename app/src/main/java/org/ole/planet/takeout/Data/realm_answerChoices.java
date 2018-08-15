@@ -17,7 +17,8 @@ public class realm_answerChoices extends RealmObject {
     private String questionId;
 
     public static void create(Realm mRealm, String questionId, JsonObject res, SharedPreferences settings) {
-        realm_answerChoices choice = mRealm.createObject(realm_answerChoices.class, res.get("_id").getAsString());
+        realm_answerChoices choice = mRealm.createObject(realm_answerChoices.class, res.get("id").getAsString());
+        choice.setText(res.get("text").getAsString());
         choice.setQuestionId(questionId);
     }
 

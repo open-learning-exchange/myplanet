@@ -74,10 +74,6 @@ public class CourseStepFragment extends BaseContainerFragment {
         super.onActivityCreated(savedInstanceState);
         step = mRealm.where(realm_courseSteps.class).equalTo("id", stepId).findFirst();
         resources = mRealm.where(realm_myLibrary.class).equalTo("stepId", stepId).findAll();
-        final RealmResults offlineResources = mRealm.where(realm_myLibrary.class)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", false)
-                .findAll();
 
         stepExams = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
@@ -86,6 +82,14 @@ public class CourseStepFragment extends BaseContainerFragment {
             btnExam.setText("Take Test [" + stepExams.size() + "]");
         tvTitle.setText(step.getStepTitle());
         wvDesc.loadDataWithBaseURL(null, step.getDescription(), "text/html", "utf-8", null);
+        setListeners();
+    }
+
+    private void setListeners() {
+        final RealmResults offlineResources = mRealm.where(realm_myLibrary.class)
+                .equalTo("stepId", stepId)
+                .equalTo("resourceOffline", false)
+                .findAll();
         btnResource.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
