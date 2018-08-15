@@ -1,9 +1,11 @@
 package org.ole.planet.takeout.courses.exam;
 
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -53,6 +55,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     String ans = "";
     realm_UserModel user;
     realm_submissions sub;
+
 
     public TakeExamFragment() {
     }
@@ -112,7 +115,10 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     }
 
     private void startExam(realm_examQuestion question) {
-        tvQuestionCount.setText("Question : " +  (currentIndex+1)+ "/" + questions.size());
+        tvQuestionCount.setText("Question : " + (currentIndex + 1) + "/" + questions.size());
+        if (currentIndex == questions.size() - 1) {
+            btnSubmit.setText("Finish");
+        }
         if (question.getType().equalsIgnoreCase("select")) {
             etAnswer.setVisibility(View.GONE);
             listChoices.setVisibility(View.VISIBLE);
@@ -180,10 +186,18 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
             if (currentIndex < questions.size()) {
                 startExam(questions.get(currentIndex));
             } else {
-                getActivity().onBackPressed();
+                new AlertDialog.Builder(getActivity())
+                        .setTitle("Thank you for taking this test. We wish you all the best")
+                        .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                getActivity().onBackPressed();
+
+                            }
+                        }).show();
             }
         } else {
-            Utilities.toast(getActivity(), "Invalid answer");
+            Utilities.toast(getActivity(), "Invalid answer.");
         }
     }
 
