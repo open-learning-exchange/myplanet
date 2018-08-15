@@ -92,6 +92,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
 
         exam = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findFirst();
         questions = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
+        tvQuestionCount.setText("Question : 1/" + questions.size());
         sub = mRealm.where(realm_submissions.class)
                 .equalTo("userId", user.getId())
                 .equalTo("parentId", exam.getId()).findFirst();
@@ -111,6 +112,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     }
 
     private void startExam(realm_examQuestion question) {
+        tvQuestionCount.setText("Question : " +  (currentIndex+1)+ "/" + questions.size());
         if (question.getType().equalsIgnoreCase("select")) {
             etAnswer.setVisibility(View.GONE);
             listChoices.setVisibility(View.VISIBLE);
