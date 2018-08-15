@@ -2,7 +2,7 @@ package org.ole.planet.takeout.Data;
 
 import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.annotations.PrimaryKey;
+import io.realm.annotations.*;
 
 public class realm_submissions extends RealmObject {
     @PrimaryKey

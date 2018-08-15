@@ -44,15 +44,18 @@ public class realm_examQuestion extends RealmObject {
             if (question.has("correctChoice") && question.get("type").getAsString().equals("select")) {
                 JsonArray array = question.get("choices").getAsJsonArray();
                 realm_answerChoices.insertChoices(questionId, array, mRealm, settings);
-                for (int a = 0; a < array.size(); a++) {
-                    JsonObject res = array.get(a).getAsJsonObject();
-                    if (question.has("correctChoice") && question.get("correctChoice").getAsString().equals(res.get("id").getAsString()))
-                        myQuestion.setCorrectChoice(res.get("text").getAsString());
-                    Utilities.log("Insert choices");
-                }
+                insertCorrectChoice(array, question, myQuestion);
             } else {
                 myQuestion.setChoice(question.get("choices").getAsJsonArray(), myQuestion);
             }
+        }
+    }
+
+    private static void insertCorrectChoice(JsonArray array, JsonObject question, realm_examQuestion myQuestion) {
+        for (int a = 0; a < array.size(); a++) {
+            JsonObject res = array.get(a).getAsJsonObject();
+            if (question.get("correctChoice").getAsString().equals(res.get("id").getAsString()))
+                myQuestion.setCorrectChoice(res.get("text").getAsString());
         }
     }
 

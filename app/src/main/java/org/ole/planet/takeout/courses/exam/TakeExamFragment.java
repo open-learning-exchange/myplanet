@@ -99,9 +99,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     }
 
     private void createSubmission() {
-        if (!mRealm.isInTransaction()) {
-            mRealm.beginTransaction();
-        }
+        startTransaction();
         if (sub == null)
             sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
         sub.setParentId(exam.getId());
@@ -115,18 +113,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
             etAnswer.setVisibility(View.GONE);
             listChoices.setVisibility(View.VISIBLE);
             listChoices.removeAllViews();
-            if (question.getChoices().size() > 0) {
-                RealmList choices = question.getChoices();
-                for (int i = 0; i < choices.size(); i++) {
-                    addRadioButton(choices.get(i).toString());
-                }
-            } else {
-                RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
-                        .equalTo("questionId", question.getId()).findAll();
-                for (int i = 0; i < choices.size(); i++) {
-                    addRadioButton(choices.get(i).getText());
-                }
-            }
+            multipleChoiceQuestion(question);
         } else if (question.getType().equalsIgnoreCase("input")) {
             etAnswer.setVisibility(View.VISIBLE);
             listChoices.setVisibility(View.GONE);
@@ -134,6 +121,21 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         header.setText(question.getHeader());
         body.setText(question.getBody());
         btnSubmit.setOnClickListener(this);
+    }
+
+    private void multipleChoiceQuestion(realm_examQuestion question) {
+        if (question.getChoices().size() > 0) {
+            RealmList choices = question.getChoices();
+            for (int i = 0; i < choices.size(); i++) {
+                addRadioButton(choices.get(i).toString());
+            }
+        } else {
+            RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
+                    .equalTo("questionId", question.getId()).findAll();
+            for (int i = 0; i < choices.size(); i++) {
+                addRadioButton(choices.get(i).getText());
+            }
+        }
     }
 
     public void addRadioButton(String choice) {
@@ -155,16 +157,20 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
             }
 
             boolean cont = updateAnsDb();
-            if (cont) {
-                currentIndex++;
-                if (currentIndex < questions.size()) {
-                    startExam(questions.get(currentIndex));
-                } else {
-                    getActivity().onBackPressed();
-                }
+            checkAnsAndContinue(cont);
+        }
+    }
+
+    private void checkAnsAndContinue(boolean cont) {
+        if (cont) {
+            currentIndex++;
+            if (currentIndex < questions.size()) {
+                startExam(questions.get(currentIndex));
             } else {
-                Utilities.toast(getActivity(), "Invalid answer");
+                getActivity().onBackPressed();
             }
+        } else {
+            Utilities.toast(getActivity(), "Invalid answer");
         }
     }
 
@@ -179,21 +185,10 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
 
     private boolean updateAnsDb() {
         boolean flag = false;
-        if (!mRealm.isInTransaction()) {
-            mRealm.beginTransaction();
-        }
-
+        startTransaction();
         sub.setStatus(currentIndex == questions.size() - 1 ? "graded" : "pending");
         RealmList<realm_answer> list = sub.getAnswers();
-        realm_answer answer;
-        if (list == null) {
-            list = new RealmList<>();
-        }
-        if (list.size() > currentIndex) {
-            answer = list.get(currentIndex);
-        } else {
-            answer = mRealm.createObject(realm_answer.class, UUID.randomUUID().toString());
-        }
+        realm_answer answer = mRealm.copyFromRealm(createAnswer(list));
         realm_examQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
         answer.setQuestionId(que.getId());
         answer.setValue(ans);
@@ -216,6 +211,25 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         sub.setAnswers(list);
         mRealm.commitTransaction();
         return flag;
+    }
+
+    private void startTransaction() {
+        if (!mRealm.isInTransaction()) {
+            mRealm.beginTransaction();
+        }
+    }
+
+    private realm_answer createAnswer(RealmList<realm_answer> list) {
+        realm_answer answer;
+        if (list == null) {
+            list = new RealmList<>();
+        }
+        if (list.size() > currentIndex) {
+            answer = list.get(currentIndex);
+        } else {
+            answer = mRealm.createObject(realm_answer.class, UUID.randomUUID().toString());
+        }
+        return answer;
     }
 
     @Override
