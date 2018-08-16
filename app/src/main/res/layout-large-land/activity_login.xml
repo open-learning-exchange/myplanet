@@ -55,7 +55,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="0dp"
                     android:layout_weight="0.7"
-                    android:text="Planet Learning"
+                    android:text="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:textSize="18sp"
@@ -66,7 +66,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Version 0.1"
+                    android:text="@string/app_version"
                     android:textAlignment="center"
                     android:textColor="@android:color/white" />
             </LinearLayout>

@@ -218,7 +218,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         isDashBoard = newfragment instanceof DashboardFragment;
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        //  fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.addToBackStack("");
         fragmentTransaction.commit();
     }
 
@@ -264,9 +264,11 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
-        } else if (!isDashBoard) {
-            openCallFragment(new DashboardFragment());
-        } else {
+        }
+//        else if (!isDashBoard) {
+//            openCallFragment(new DashboardFragment());
+//        }
+        else {
             super.onBackPressed();
         }
     }

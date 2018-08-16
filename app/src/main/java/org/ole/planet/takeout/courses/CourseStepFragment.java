@@ -16,6 +16,7 @@ import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.base.BaseContainerFragment;
+import org.ole.planet.takeout.courses.exam.TakeExamFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 
 import java.util.List;
@@ -73,10 +74,7 @@ public class CourseStepFragment extends BaseContainerFragment {
         super.onActivityCreated(savedInstanceState);
         step = mRealm.where(realm_courseSteps.class).equalTo("id", stepId).findFirst();
         resources = mRealm.where(realm_myLibrary.class).equalTo("stepId", stepId).findAll();
-        final RealmResults offlineResources = mRealm.where(realm_myLibrary.class)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", false)
-                .findAll();
+
         stepExams = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");
@@ -84,11 +82,31 @@ public class CourseStepFragment extends BaseContainerFragment {
             btnExam.setText("Take Test [" + stepExams.size() + "]");
         tvTitle.setText(step.getStepTitle());
         wvDesc.loadDataWithBaseURL(null, step.getDescription(), "text/html", "utf-8", null);
+        setListeners();
+    }
+
+    private void setListeners() {
+        final RealmResults offlineResources = mRealm.where(realm_myLibrary.class)
+                .equalTo("stepId", stepId)
+                .equalTo("resourceOffline", false)
+                .findAll();
         btnResource.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 if (offlineResources.size() > 0) {
                     showDownloadDialog(offlineResources);
+                }
+            }
+        });
+        btnExam.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (stepExams.size() > 0){
+                    Fragment takeExam  = new TakeExamFragment();
+                    Bundle b = new Bundle();
+                    b.putString("stepId", stepId);
+                    takeExam.setArguments(b);
+                    homeItemClickListener.openCallFragment(takeExam);
                 }
             }
         });
