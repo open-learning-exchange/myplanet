@@ -1,7 +1,15 @@
 package org.ole.planet.takeout.Data;
 
+import android.text.TextUtils;
+
 import com.google.gson.JsonObject;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.ole.planet.takeout.utilities.TimeUtils;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -21,6 +29,7 @@ public class realm_meetups extends RealmObject {
     private String recurring;
     private String Day;
     private String startTime;
+    private String endTime;
     private String category;
     private String meetupLocation;
     private String creator;
@@ -39,9 +48,19 @@ public class realm_meetups extends RealmObject {
         if (meetupDoc.has("day"))
             myMeetupsDB.setDay(meetupDoc.get("day").getAsJsonArray().toString());
         myMeetupsDB.setStartTime(meetupDoc.get("startTime").getAsString());
+        if (meetupDoc.has("endTime"))
+            myMeetupsDB.setStartTime(meetupDoc.get("endTime").getAsString());
         myMeetupsDB.setCategory(meetupDoc.get("category").getAsString());
         myMeetupsDB.setMeetupLocation(meetupDoc.get("meetupLocation").getAsString());
         myMeetupsDB.setCreator(meetupDoc.get("creator").getAsString());
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
     }
 
     public String getId() {
@@ -154,5 +173,43 @@ public class realm_meetups extends RealmObject {
 
     public void setCreator(String creator) {
         this.creator = creator;
+    }
+
+    public static HashMap<String, String> getHashMap(realm_meetups meetups) {
+        HashMap<String, String> map = new HashMap<>();
+        map.put("Meetup Title", checkNull(meetups.getTitle()));
+        map.put("Created By", checkNull(meetups.getCreator()));
+        map.put("Category", checkNull(meetups.getCategory()));
+        map.put("Meetup Date", TimeUtils.getFormatedDate(Long.parseLong(meetups.getStartDate())) + " - " + TimeUtils.getFormatedDate(Long.parseLong(meetups.getEndDate())));
+        map.put("Meetup Time", checkNull(meetups.getStartTime()) + " - " + checkNull(meetups.getEndTime()));
+        map.put("Recurring", checkNull(meetups.getRecurring()));
+
+        String recurringDays = "";
+        try {
+            JSONArray ar = new JSONArray(meetups.getDay());
+            for (int i = 0; i < ar.length(); i++) {
+                recurringDays += ar.get(i).toString() + ", ";
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        map.put("Recurring Days", checkNull(recurringDays));
+        map.put("Location", checkNull(meetups.getMeetupLocation()));
+        map.put("Description", checkNull(meetups.getDescription()));
+        return map;
+    }
+
+    public static String[] getJoinedUserIds(Realm mRealm) {
+        List<realm_meetups> list = mRealm.where(realm_meetups.class).isNotEmpty("userId").findAll();
+        String[] myIds = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            myIds[i] = list.get(i).getUserId();
+        }
+        return myIds;
+    }
+
+
+    public static String checkNull(String s) {
+        return TextUtils.isEmpty(s) ? "" : s;
     }
 }

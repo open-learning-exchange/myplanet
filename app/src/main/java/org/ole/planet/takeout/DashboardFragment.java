@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Gravity;
@@ -25,6 +26,7 @@ import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.base.BaseContainerFragment;
 import org.ole.planet.takeout.courses.TakeCourseFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
+import org.ole.planet.takeout.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -121,7 +123,7 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
-        RealmResults<RealmObject> db_myCourses = mRealm.where(c).findAll();
+        RealmResults<RealmObject> db_myCourses = mRealm.where(c).isNotEmpty("userId").findAll();
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
@@ -150,23 +152,30 @@ public class DashboardFragment extends BaseContainerFragment {
             textViewArray[itemCnt].setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    handleCourseClick((realm_myCourses) obj);
+                    // handleCourseClick((realm_myCourses) obj);
+                    handleClick(((realm_myCourses) obj).getCourseId(), new TakeCourseFragment());
                 }
             });
         } else if (obj instanceof realm_myTeams) {
             textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
         } else if (obj instanceof realm_meetups) {
             textViewArray[itemCnt].setText(((realm_meetups) obj).getTitle());
+            textViewArray[itemCnt].setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    //  handleCourseClick((realm_myCourses) obj);
+                    handleClick(((realm_meetups) obj).getMeetupId(), new MyMeetupDetailFragment());
+                }
+            });
         }
     }
 
-    private void handleCourseClick(realm_myCourses obj) {
+    private void handleClick(String id, Fragment f) {
         if (homeItemClickListener != null) {
-            TakeCourseFragment t = new TakeCourseFragment();
             Bundle b = new Bundle();
-            b.putString("courseId", ((realm_myCourses) obj).getCourseId());
-            t.setArguments(b);
-            homeItemClickListener.openCallFragment(t);
+            b.putString("id", id);
+            f.setArguments(b);
+            homeItemClickListener.openCallFragment(f);
         }
     }
 
