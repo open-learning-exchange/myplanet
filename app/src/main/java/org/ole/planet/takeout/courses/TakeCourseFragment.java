@@ -44,7 +44,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            courseId = getArguments().getString("courseId");
+            courseId = getArguments().getString("id");
         }
     }
 
