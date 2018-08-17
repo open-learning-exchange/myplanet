@@ -149,34 +149,27 @@ public class DashboardFragment extends BaseContainerFragment {
             textViewArray[itemCnt].setText(((realm_myLibrary) obj).getTitle());
         } else if (obj instanceof realm_myCourses) {
             textViewArray[itemCnt].setText(((realm_myCourses) obj).getCourseTitle());
-            textViewArray[itemCnt].setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    // handleCourseClick((realm_myCourses) obj);
-                    handleClick(((realm_myCourses) obj).getCourseId(), new TakeCourseFragment());
-                }
-            });
+            handleClick(((realm_myCourses) obj).getCourseId(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof realm_myTeams) {
             textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
         } else if (obj instanceof realm_meetups) {
             textViewArray[itemCnt].setText(((realm_meetups) obj).getTitle());
-            textViewArray[itemCnt].setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    //  handleCourseClick((realm_myCourses) obj);
-                    handleClick(((realm_meetups) obj).getMeetupId(), new MyMeetupDetailFragment());
-                }
-            });
+            handleClick(((realm_meetups) obj).getMeetupId(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         }
     }
 
-    private void handleClick(String id, Fragment f) {
-        if (homeItemClickListener != null) {
-            Bundle b = new Bundle();
-            b.putString("id", id);
-            f.setArguments(b);
-            homeItemClickListener.openCallFragment(f);
-        }
+    private void handleClick(final String id, final Fragment f, View v) {
+        v.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (homeItemClickListener != null) {
+                    Bundle b = new Bundle();
+                    b.putString("id", id);
+                    f.setArguments(b);
+                    homeItemClickListener.openCallFragment(f);
+                }
+            }
+        });
     }
 
     private RealmResults<realm_myLibrary> getLibraryList() {
