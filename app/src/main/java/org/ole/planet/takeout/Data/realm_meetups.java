@@ -190,7 +190,7 @@ public class realm_meetups extends RealmObject {
             for (int i = 0; i < ar.length(); i++) {
                 recurringDays += ar.get(i).toString() + ", ";
             }
-        } catch (JSONException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         map.put("Recurring Days", checkNull(recurringDays));

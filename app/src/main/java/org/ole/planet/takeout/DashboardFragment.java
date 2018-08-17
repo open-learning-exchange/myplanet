@@ -148,17 +148,16 @@ public class DashboardFragment extends BaseContainerFragment {
         if (obj instanceof realm_myLibrary) {
             textViewArray[itemCnt].setText(((realm_myLibrary) obj).getTitle());
         } else if (obj instanceof realm_myCourses) {
-            textViewArray[itemCnt].setText(((realm_myCourses) obj).getCourseTitle());
-            handleClick(((realm_myCourses) obj).getCourseId(), new TakeCourseFragment(), textViewArray[itemCnt]);
+            handleClick(((realm_myCourses) obj).getCourseId(), ((realm_myCourses) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof realm_myTeams) {
             textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
         } else if (obj instanceof realm_meetups) {
-            textViewArray[itemCnt].setText(((realm_meetups) obj).getTitle());
-            handleClick(((realm_meetups) obj).getMeetupId(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
+            handleClick(((realm_meetups) obj).getMeetupId(), ((realm_meetups) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         }
     }
 
-    private void handleClick(final String id, final Fragment f, View v) {
+    private void handleClick(final String id, String title, final Fragment f, TextView v) {
+        v.setText(title);
         v.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
