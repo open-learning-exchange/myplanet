@@ -64,9 +64,14 @@ public class realm_myCourses extends RealmObject {
     public static String[] getMyCourseIds(Realm mRealm) {
         List<realm_myCourses> list = mRealm.where(realm_myCourses.class).findAll();
         String[] myIds = new String[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            myIds[i] = list.get(i).getCourseId();
+        int i = 0 ;
+        for (realm_myCourses c : list){
+            myIds[i] = c.getCourseId();
+            i++;
         }
+//        for (int i = 0; i < list.size(); i++) {
+//            myIds[i] = list.get(i).getCourseId();
+//        }
         return myIds;
     }
 
