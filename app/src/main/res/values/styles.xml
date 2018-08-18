@@ -87,6 +87,12 @@
         <item name="colorControlHighlight">@color/colorPrimary</item>
     </style>
 
+    <style name="PrimaryFlatButton" parent="Theme.AppCompat.Light">
+        <item name="android:buttonStyle">@style/Widget.AppCompat.Button.Borderless</item>
+        <item name="colorControlHighlight">@color/colorAccent</item>
+        <item name="colorAccent">@color/colorPrimary</item>
+    </style>
+
     <style name="Seekbar" parent="Base.Widget.AppCompat.SeekBar.Discrete">
         <item name="tickMark">@drawable/ic_tick</item>
     </style>

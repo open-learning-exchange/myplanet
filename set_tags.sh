@@ -15,7 +15,7 @@ if [ "$TRAVIS_BRANCH" = "$BRANCH" ]; then
 
       # Add tag and push to master.
       PACKAGE_VERSION=$(sed -n 's/.*name="app_version">\([^"]*\).*<\/string>/\1/p' </app/src/main/res/values/strings.xml)
-      git tag -a v${PACKAGE_VERSION} -m "Travis build PACKAGE_VERSION pushed a tag."
+      git tag -a v${PACKAGE_VERSION} -m "Travis build ${PACKAGE_VERSION} pushed a tag."
       git push origin --tags
       git fetch origin
 
