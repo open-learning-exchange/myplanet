@@ -60,10 +60,10 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_my_meetup_detail, container, false);
         // llContent = v.findViewById(R.id.ll_content);
-        btnLeave = v.findViewById(R.id.btn_leave);
         listDesc = v.findViewById(R.id.list_desc);
         listUsers = v.findViewById(R.id.list_users);
         tvJoined = v.findViewById(R.id.tv_joined);
+        btnLeave = v.findViewById(R.id.btn_leave);
         btnLeave.setOnClickListener(this);
         title = v.findViewById(R.id.meetup_title);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
