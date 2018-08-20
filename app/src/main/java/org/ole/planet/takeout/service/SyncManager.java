@@ -58,6 +58,9 @@ public class SyncManager {
     public void start(SyncListener listener) {
         this.listener = listener;
         if (!isSyncing) {
+            if (listener != null) {
+                listener.onSyncStarted();
+            }
             syncDatabase();
         } else {
             Utilities.log("Already Syncing...");
@@ -74,9 +77,6 @@ public class SyncManager {
     }
 
     private void syncDatabase() {
-        if (listener != null) {
-            listener.onSyncStarted();
-        }
         Thread td = new Thread(new Runnable() {
             public void run() {
                 try {
@@ -89,7 +89,6 @@ public class SyncManager {
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
-
                 } finally {
                     NotificationUtil.cancel(context, 111);
                     isSyncing = false;
