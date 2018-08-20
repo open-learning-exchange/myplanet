@@ -4,6 +4,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TimeUtils {
+
+
     public static String getFormatedDate(long date) {
         try {
             Date d = new Date(date);

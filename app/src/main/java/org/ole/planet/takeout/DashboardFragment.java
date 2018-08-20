@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -18,6 +19,7 @@ import android.widget.TextView;
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
@@ -151,7 +153,7 @@ public class DashboardFragment extends BaseContainerFragment {
         } else if (obj instanceof realm_myCourses) {
             handleClick(((realm_myCourses) obj).getCourseId(), ((realm_myCourses) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof realm_myTeams) {
-        //    textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
+            //    textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
             handleClick(((realm_myTeams) obj).getTeamId(), ((realm_myTeams) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
 
         } else if (obj instanceof realm_meetups) {
@@ -189,13 +191,13 @@ public class DashboardFragment extends BaseContainerFragment {
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (items.getResourceOffline()) {
+                if (items.getResourceOffline() != null && items.getResourceOffline()) {
                     profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
-                    Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
                     openFileType(items, "offline");
-                } else {
-                    Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
+                } else if (TextUtils.equals(items.getMediaType(), "video")) {
                     openFileType(items, "online");
+                } else {
+                    Utilities.toast(getActivity(), "Resource can not be opened please download the resource first.");
                 }
             }
         });
