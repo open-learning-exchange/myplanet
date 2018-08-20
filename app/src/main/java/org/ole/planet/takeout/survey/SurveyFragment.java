@@ -14,32 +14,27 @@ import android.view.ViewGroup;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.base.BaseRecyclerFragment;
+import org.ole.planet.takeout.utilities.Utilities;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class SurveyFragment extends Fragment implements View.OnClickListener {
-    RecyclerView rvSurvey;
-    FloatingActionButton fabSurvey;
+public class SurveyFragment extends BaseRecyclerFragment<realm_stepExam> {
 
     public SurveyFragment() {
         // Required empty public constructor
     }
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_survey, container, false);
-        rvSurvey = v.findViewById(R.id.recycler);
-        fabSurvey = v.findViewById(R.id.fab_add_survey);
-        fabSurvey.setOnClickListener(this);
-        return v;
+    public int getLayout() {
+        return R.layout.fragment_survey;
     }
 
     @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.fab_add_survey){
-
-        }
+    public RecyclerView.Adapter getAdapter() {
+        Utilities.log("Exams "  +  getList(realm_stepExam.class).size());
+        return new AdapterSurvey(getActivity(), getList(realm_stepExam.class));
     }
+
+
 }

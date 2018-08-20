@@ -132,34 +132,6 @@ public class SyncManager {
         }
     }
 
-//    public void examTransactionSync() {
-//        final CouchDbProperties properties = dbService.getClouchDbProperties("exams", settings);
-//        mRealm.executeTransaction(new Realm.Transaction() {
-//            @Override
-//            public void execute(Realm realm) {
-//                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-//                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-//                for (int i = 0; i < allDocs.size(); i++) {
-//                    Document doc = allDocs.get(i);
-//                    Utilities.log("Document " + doc);
-//                    processExamDoc(dbClient, doc);
-//                }
-//            }
-//        });
-//    }
-//
-//    private void processExamDoc(CouchDbClientAndroid dbClient, Document doc) {
-//        try {
-//
-//            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-//            realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
-//            Log.e("Realm", " STRING " + jsonDoc.toString());
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
-
     private void myLibraryTransactionSync() {
         properties.setDbName("shelf");
         properties.setUsername(settings.getString("url_user", ""));

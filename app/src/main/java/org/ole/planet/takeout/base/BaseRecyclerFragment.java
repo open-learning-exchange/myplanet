@@ -13,6 +13,7 @@ import org.ole.planet.takeout.Data.realm_courses;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
@@ -87,6 +88,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         String[] mycourseIds = realm_myCourses.getMyCourseIds(mRealm);
         if (c == realm_myLibrary.class) {
             return mRealm.where(c).isEmpty("userId").or().isNull("userId").findAll();
+        } else if (c == realm_stepExam.class) {
+            return mRealm.where(c).equalTo("type", "surveys").findAll();
         } else {
             return mRealm.where(c).not().in("courseId", mycourseIds).findAll();
         }

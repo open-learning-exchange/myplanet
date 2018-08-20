@@ -27,6 +27,7 @@ import org.ole.planet.takeout.base.BaseContainerFragment;
 import org.ole.planet.takeout.courses.TakeCourseFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.takeout.teams.MyTeamsDetailFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -150,7 +151,9 @@ public class DashboardFragment extends BaseContainerFragment {
         } else if (obj instanceof realm_myCourses) {
             handleClick(((realm_myCourses) obj).getCourseId(), ((realm_myCourses) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof realm_myTeams) {
-            textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
+        //    textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
+            handleClick(((realm_myTeams) obj).getTeamId(), ((realm_myTeams) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
+
         } else if (obj instanceof realm_meetups) {
             handleClick(((realm_meetups) obj).getMeetupId(), ((realm_meetups) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         }
