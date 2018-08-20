@@ -14,6 +14,7 @@ import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myTeams;
+import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.SyncListener;
@@ -86,7 +87,9 @@ public class SyncManager {
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
                     myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
+
                 } finally {
                     NotificationUtil.cancel(context, 111);
                     isSyncing = false;
@@ -128,6 +131,34 @@ public class SyncManager {
             e.printStackTrace();
         }
     }
+
+//    public void examTransactionSync() {
+//        final CouchDbProperties properties = dbService.getClouchDbProperties("exams", settings);
+//        mRealm.executeTransaction(new Realm.Transaction() {
+//            @Override
+//            public void execute(Realm realm) {
+//                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+//                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+//                for (int i = 0; i < allDocs.size(); i++) {
+//                    Document doc = allDocs.get(i);
+//                    Utilities.log("Document " + doc);
+//                    processExamDoc(dbClient, doc);
+//                }
+//            }
+//        });
+//    }
+//
+//    private void processExamDoc(CouchDbClientAndroid dbClient, Document doc) {
+//        try {
+//
+//            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+//            realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
+//            Log.e("Realm", " STRING " + jsonDoc.toString());
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void myLibraryTransactionSync() {
         properties.setDbName("shelf");

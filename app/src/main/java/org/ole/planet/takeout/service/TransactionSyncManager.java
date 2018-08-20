@@ -11,6 +11,7 @@ import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_courses;
+import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 
@@ -40,6 +41,10 @@ public class TransactionSyncManager {
             if (type.equals("course")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_courses.insertMyCourses(jsonDoc, mRealm);
+            }
+            if (type.equals("exams")) {
+                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
             } else if (type.equals("users")) {
                 if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
                     JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());

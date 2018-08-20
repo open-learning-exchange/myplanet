@@ -11,15 +11,18 @@ public class realm_stepExam extends RealmObject {
     @PrimaryKey
     private String id;
     private String name;
+    private String type;
     private String stepId;
     private String courseId;
     private String passingPercentage;
     private String totalMarks;
 
+
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
         realm_stepExam myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
         myExam.setStepId(step_id);
         myExam.setCourseId(myCoursesID);
+        myExam.setType(exam.has("type") ? exam.get("type").getAsString() : "exam");
         myExam.setName(exam.get("name").getAsString());
         if (exam.has("passingPercentage"))
             myExam.setPassingPercentage(exam.get("passingPercentage").getAsString());
@@ -28,6 +31,7 @@ public class realm_stepExam extends RealmObject {
         if (exam.has("questions"))
             realm_examQuestion.insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString(), mRealm);
     }
+
 
     public static int getNoOfExam(Realm mRealm, String courseId) {
         RealmResults res = mRealm.where(realm_stepExam.class).equalTo("courseId", courseId).findAll();
@@ -43,6 +47,15 @@ public class realm_stepExam extends RealmObject {
 
     public void setPassingPercentage(String passingPercentage) {
         this.passingPercentage = passingPercentage;
+    }
+
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getTotalMarks() {
