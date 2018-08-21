@@ -58,6 +58,9 @@ public class SyncManager {
     public void start(SyncListener listener) {
         this.listener = listener;
         if (!isSyncing) {
+            if (listener != null) {
+                listener.onSyncStarted();
+            }
             syncDatabase();
         } else {
             Utilities.log("Already Syncing...");
@@ -74,9 +77,6 @@ public class SyncManager {
     }
 
     private void syncDatabase() {
-        if (listener != null) {
-            listener.onSyncStarted();
-        }
         Thread td = new Thread(new Runnable() {
             public void run() {
                 try {
@@ -131,6 +131,7 @@ public class SyncManager {
             e.printStackTrace();
         }
     }
+
 
     private void myLibraryTransactionSync() {
         properties.setDbName("shelf");

@@ -15,8 +15,8 @@ import java.util.List;
 
 public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    Context context;
-    List<realm_stepExam> examList;
+    private Context context;
+    private List<realm_stepExam> examList;
 
     public AdapterSurvey(Context context, List<realm_stepExam> examList) {
         this.context = context;
