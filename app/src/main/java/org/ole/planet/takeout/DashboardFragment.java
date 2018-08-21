@@ -105,7 +105,8 @@ public class DashboardFragment extends BaseContainerFragment {
         TextView count = view.findViewById(R.id.count_library);
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).isNotEmpty("userId").equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).isNotEmpty("userId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
         count.setText(db_myLibrary.size() + "");
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
@@ -127,7 +128,8 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
-        RealmResults<RealmObject> db_myCourses = mRealm.where(c).isNotEmpty("userId").findAll();
+        RealmResults<RealmObject> db_myCourses = mRealm.where(c).isNotEmpty("userId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
@@ -181,9 +183,11 @@ public class DashboardFragment extends BaseContainerFragment {
         return mRealm.where(realm_myLibrary.class)
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("userId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
                 .or()
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("courseId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
                 .findAll();
     }
 
