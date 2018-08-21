@@ -4,7 +4,9 @@ package org.ole.planet.takeout.courses.exam;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -16,6 +18,7 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_answerChoices;
 import org.ole.planet.takeout.Data.realm_examQuestion;
@@ -47,11 +50,14 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     DatabaseService db;
     Realm mRealm;
     String stepId;
+    String id = "";
+    String type = "exam";
     int currentIndex = 0;
     RealmResults<realm_examQuestion> questions;
     String ans = "";
     realm_UserModel user;
     realm_submissions sub;
+    NestedScrollView container;
 
     public TakeExamFragment() {
     }
@@ -61,6 +67,12 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             stepId = getArguments().getString("stepId");
+            if (TextUtils.isEmpty(stepId)) {
+                id = getArguments().getString("id");
+            }
+            if (getArguments().containsKey("type")) {
+                type = getArguments().getString("type");
+            }
         }
     }
 
@@ -83,13 +95,19 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         etAnswer = v.findViewById(R.id.et_answer);
         btnSubmit = v.findViewById(R.id.btn_submit);
         listChoices = v.findViewById(R.id.group_choices);
+        container = v.findViewById(R.id.container);
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
-        exam = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findFirst();
+        if (!TextUtils.isEmpty(stepId)) {
+            exam = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findFirst();
+        } else {
+            exam = mRealm.where(realm_stepExam.class).equalTo("id", id).findFirst();
+            Utilities.log("Exam " + (exam == null));
+        }
+        Utilities.log("Id " + id + " step id " + stepId);
         questions = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
         sub = mRealm.where(realm_submissions.class)
@@ -97,7 +115,12 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
                 .equalTo("parentId", exam.getId()).findFirst();
 
         createSubmission();
-        startExam(questions.get(currentIndex));
+        if (questions.size() > 0){
+            startExam(questions.get(currentIndex));
+        }else{
+            container.setVisibility(View.GONE);
+            Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
+        }
     }
 
     private void createSubmission() {
@@ -106,7 +129,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
             sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
-        sub.setType("exam");
+        sub.setType(type);
         mRealm.commitTransaction();
     }
 
@@ -183,7 +206,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
                 startExam(questions.get(currentIndex));
             } else {
                 new AlertDialog.Builder(getActivity())
-                        .setTitle("Thank you for taking this test. We wish you all the best")
+                        .setTitle("Thank you for taking this " + type + ". We wish you all the best")
                         .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {

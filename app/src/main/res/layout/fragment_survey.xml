@@ -26,15 +26,12 @@
 
     </FrameLayout>
 
-
-<<<<<<< HEAD
-=======
     <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab_add_survey"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|right"
+        android:layout_gravity="right|bottom"
+        android:id="@+id/fab_add_new_survey"
         android:layout_margin="@dimen/padding_large"
         android:src="@drawable/ic_add" />
->>>>>>> 3d208d9f3b41bfc00ddabc8f326664f320c23382
+
 </android.support.design.widget.CoordinatorLayout>

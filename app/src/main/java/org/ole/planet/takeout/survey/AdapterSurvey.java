@@ -1,15 +1,20 @@
 package org.ole.planet.takeout.survey;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
+import org.ole.planet.takeout.callback.OnHomeItemClickListener;
+import org.ole.planet.takeout.courses.exam.TakeExamFragment;
 
 import java.util.List;
 
@@ -17,10 +22,14 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     private Context context;
     private List<realm_stepExam> examList;
+    private OnHomeItemClickListener listener;
 
     public AdapterSurvey(Context context, List<realm_stepExam> examList) {
         this.context = context;
         this.examList = examList;
+        if (context instanceof OnHomeItemClickListener) {
+            this.listener = (OnHomeItemClickListener) context;
+        }
     }
 
     @NonNull
@@ -31,10 +40,24 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof ViewHolderSurvey) {
             ViewHolderSurvey ho = (ViewHolderSurvey) holder;
             ho.title.setText(examList.get(position).getName());
+            ho.startSurvey.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (listener!=null){
+                        Bundle b= new Bundle();
+                        b.putString("type", "survey");
+                        b.putString("id", examList.get(position).getId());
+
+                        Fragment f = new TakeExamFragment();
+                        f.setArguments(b);
+                        listener.openCallFragment(f);
+                    }
+                }
+            });
         }
     }
 
@@ -46,6 +69,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     class ViewHolderSurvey extends RecyclerView.ViewHolder {
 
         TextView title, description, noSubmission, lastSubDate;
+        Button startSurvey;
 
         public ViewHolderSurvey(View itemView) {
             super(itemView);
@@ -53,6 +77,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             description = itemView.findViewById(R.id.tv_description);
             noSubmission = itemView.findViewById(R.id.tv_no_submissions);
             lastSubDate = itemView.findViewById(R.id.tv_date);
+            startSurvey = itemView.findViewById(R.id.start_survey);
 
         }
     }

@@ -20,11 +20,8 @@ import org.ole.planet.takeout.utilities.Utilities;
  * A simple {@link Fragment} subclass.
  */
 public class SurveyFragment extends BaseRecyclerFragment<realm_stepExam>  {
-    RecyclerView rvSurvey;
-    FloatingActionButton fabSurvey;
-
+    FloatingActionButton addNewServey;
     public SurveyFragment() {
-        // Required empty public constructor
     }
 
     @Override
@@ -35,9 +32,18 @@ public class SurveyFragment extends BaseRecyclerFragment<realm_stepExam>  {
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        Utilities.log("Exams "  +  getList(realm_stepExam.class).size());
         return new AdapterSurvey(getActivity(), getList(realm_stepExam.class));
     }
 
-
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        addNewServey = getView().findViewById(R.id.fab_add_new_survey);
+        addNewServey.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // TODO: 8/21/18 Create add survey page for administrator
+            }
+        });
+    }
 }
