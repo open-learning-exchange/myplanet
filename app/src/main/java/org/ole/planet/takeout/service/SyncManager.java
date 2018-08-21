@@ -83,7 +83,7 @@ public class SyncManager {
                     isSyncing = true;
                     NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                     mRealm = dbService.getRealmInstance();
-                    properties = dbService.getClouchDbProperties("_users", settings);
+                    properties = dbService.getClouchDbProperties("tablet_users", settings);
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
                     myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
