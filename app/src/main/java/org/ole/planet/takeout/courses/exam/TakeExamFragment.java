@@ -42,49 +42,18 @@ import io.realm.Sort;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TakeExamFragment extends Fragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
+public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
 
     TextView tvQuestionCount, header, body;
     EditText etAnswer;
     Button btnSubmit;
     RadioGroup listChoices;
-    realm_stepExam exam;
-    DatabaseService db;
-    Realm mRealm;
-    String stepId;
-    String id = "";
-    String type = "exam";
-    int currentIndex = 0;
-    RealmResults<realm_examQuestion> questions;
-    String ans = "";
-    realm_UserModel user;
-    realm_submissions sub;
+
     NestedScrollView container;
 
     public TakeExamFragment() {
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            stepId = getArguments().getString("stepId");
-            checkId();
-            checkType();
-        }
-    }
-
-    private void checkId() {
-        if (TextUtils.isEmpty(stepId)) {
-            id = getArguments().getString("id");
-        }
-    }
-
-    private void checkType() {
-        if (getArguments().containsKey("type")) {
-            type = getArguments().getString("type");
-        }
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -111,11 +80,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        if (!TextUtils.isEmpty(stepId)) {
-            exam = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findFirst();
-        } else {
-            exam = mRealm.where(realm_stepExam.class).equalTo("id", id).findFirst();
-        }
+        initExam();
         questions = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
         sub = mRealm.where(realm_submissions.class)
@@ -123,18 +88,15 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
                 .equalTo("parentId", exam.getId())
                 .sort("date", Sort.DESCENDING)
                 .findFirst();
-
         if (questions.size() > 0) {
             createSubmission();
-            if (sub.getAnswers() != null) {
-                currentIndex = sub.getAnswers().size();
-            }
             startExam(questions.get(currentIndex));
         } else {
             container.setVisibility(View.GONE);
             Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
         }
     }
+
 
     private void createSubmission() {
         startTransaction();
@@ -144,6 +106,9 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         sub.setUserId(user.getId());
         sub.setType(type);
         sub.setDate(new Date().getTime());
+        if (sub.getAnswers() != null) {
+            currentIndex = sub.getAnswers().size();
+        }
         mRealm.commitTransaction();
     }
 
