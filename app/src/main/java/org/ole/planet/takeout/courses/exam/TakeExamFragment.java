@@ -69,12 +69,20 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             stepId = getArguments().getString("stepId");
-            if (TextUtils.isEmpty(stepId)) {
-                id = getArguments().getString("id");
-            }
-            if (getArguments().containsKey("type")) {
-                type = getArguments().getString("type");
-            }
+            checkId();
+            checkType();
+        }
+    }
+
+    private void checkId() {
+        if (TextUtils.isEmpty(stepId)) {
+            id = getArguments().getString("id");
+        }
+    }
+
+    private void checkType() {
+        if (getArguments().containsKey("type")) {
+            type = getArguments().getString("type");
         }
     }
 
@@ -107,9 +115,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
             exam = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findFirst();
         } else {
             exam = mRealm.where(realm_stepExam.class).equalTo("id", id).findFirst();
-            Utilities.log("Exam " + (exam == null));
         }
-        Utilities.log("Id " + id + " step id " + stepId);
         questions = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
         sub = mRealm.where(realm_submissions.class)
@@ -120,6 +126,9 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
 
         if (questions.size() > 0) {
             createSubmission();
+            if (sub.getAnswers() != null) {
+                currentIndex = sub.getAnswers().size();
+            }
             startExam(questions.get(currentIndex));
         } else {
             container.setVisibility(View.GONE);

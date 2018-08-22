@@ -69,11 +69,6 @@ public class Utilities {
         return datetime;
     }
 
-    public static String getFormatedDate(long date) {
-        Date d = new Date(date);
-        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa");
-        return dateformat.format(d);
-    }
 
     public static void openDownloadService(Context context, ArrayList urls) {
         Intent intent = new Intent(context, MyDownloadService.class);
