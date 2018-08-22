@@ -56,26 +56,23 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, ViewGroup parent,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_take_exam, container, false);
-        initializeView(v);
+        View view = inflater.inflate(R.layout.fragment_take_exam, parent, false);
+        tvQuestionCount = view.findViewById(R.id.tv_question_count);
+        header = view.findViewById(R.id.tv_header);
+        body = view.findViewById(R.id.tv_body);
+        etAnswer = view.findViewById(R.id.et_answer);
+        btnSubmit = view.findViewById(R.id.btn_submit);
+        listChoices = view.findViewById(R.id.group_choices);
+        container = view.findViewById(R.id.container);
         db = new DatabaseService(getActivity());
         mRealm = db.getRealmInstance();
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(dbHandler.getUserModel());
-        return v;
+        return view;
     }
 
-    private void initializeView(View v) {
-        tvQuestionCount = v.findViewById(R.id.tv_question_count);
-        header = v.findViewById(R.id.tv_header);
-        body = v.findViewById(R.id.tv_body);
-        etAnswer = v.findViewById(R.id.et_answer);
-        btnSubmit = v.findViewById(R.id.btn_submit);
-        listChoices = v.findViewById(R.id.group_choices);
-        container = v.findViewById(R.id.container);
-    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
