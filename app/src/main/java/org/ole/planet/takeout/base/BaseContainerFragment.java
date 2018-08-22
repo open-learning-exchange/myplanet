@@ -34,11 +34,14 @@ import org.ole.planet.takeout.PDFReaderActivity;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.TextFileViewerActivity;
+import org.ole.planet.takeout.WebFileViewing;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.realm.RealmResults;
 
@@ -155,30 +158,33 @@ public abstract class BaseContainerFragment extends Fragment {
     }
 
     public void openIntent(realm_myLibrary items, Class typeClass) {
-        Intent fileOpenIntent = new Intent(getActivity(), typeClass);
+        Intent fileOpenIntent = new Intent(getActivity(), WebFileViewing.class);
         fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        fileOpenIntent.putExtra("url", items.getResourceRemoteAddress());
+        fileOpenIntent.putExtra("auth",DashboardFragment.auth);
         startActivity(fileOpenIntent);
     }
 
     public void checkFileExtension(realm_myLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
         String extension = filenameArray[filenameArray.length - 1];
+        openIntent(items, PDFReaderActivity.class);
 
-        switch (extension) {
-            case "pdf":
-                openIntent(items, PDFReaderActivity.class);
-                break;
-            case "bmp":
-            case "gif":
-            case "jpg":
-            case "png":
-            case "webp":
-                openIntent(items, ImageViewerActivity.class);
-                break;
-            default:
-                checkMoreFileExtensions(extension, items);
-                break;
-        }
+//        switch (extension) {
+//            case "pdf":
+//                openIntent(items, PDFReaderActivity.class);
+//                break;
+//            case "bmp":
+//            case "gif":
+//            case "jpg":
+//            case "png":
+//            case "webp":
+//                openIntent(items, ImageViewerActivity.class);
+//                break;
+//            default:
+//                checkMoreFileExtensions(extension, items);
+//                break;
+//        }
     }
 
     public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
@@ -193,7 +199,7 @@ public abstract class BaseContainerFragment extends Fragment {
                 openIntent(items, CSVViewerActivity.class);
                 break;
             default:
-                Toast.makeText(getActivity(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
+//                Toast.makeText(getActivity(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
                 break;
         }
 

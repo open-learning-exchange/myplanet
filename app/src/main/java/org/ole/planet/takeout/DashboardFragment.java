@@ -47,7 +47,7 @@ import io.realm.RealmResults;
 public class DashboardFragment extends BaseContainerFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
+    public static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     TextView txtFullName, txtVisits;
     String fullName;
@@ -191,13 +191,20 @@ public class DashboardFragment extends BaseContainerFragment {
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+//                if (items.getResourceOffline() != null && items.getResourceOffline()) {
+//                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
+//                    openFileType(items, "offline");
+//                } else if (TextUtils.equals(items.getMediaType(), "video")) {
+//                    openFileType(items, "online");
+//                } else {
+//                    Utilities.toast(getActivity(), "Resource can not be opened please download the resource first.");
+//                }
                 if (items.getResourceOffline() != null && items.getResourceOffline()) {
                     profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
                     openFileType(items, "offline");
-                } else if (TextUtils.equals(items.getMediaType(), "video")) {
-                    openFileType(items, "online");
                 } else {
-                    Utilities.toast(getActivity(), "Resource can not be opened please download the resource first.");
+                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
+                    openFileType(items, "online");
                 }
             }
         });

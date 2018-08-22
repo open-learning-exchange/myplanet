@@ -79,6 +79,7 @@ dependencies {
     implementation 'com.github.tiagohm.MarkdownView:emoji:0.19.0'
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
+    implementation 'com.github.delight-im:Android-AdvancedWebView:v3.0.0'
 }
 realm {
     syncEnabled = true;
