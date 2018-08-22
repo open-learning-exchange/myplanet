@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="org.ole.planet.takeout.ExoPlayerVideo">
+    tools:context="org.ole.planet.myplanet.ExoPlayerVideo">
 
     <com.google.android.exoplayer2.ui.SimpleExoPlayerView
         android:id="@+id/exo_player_simple"
