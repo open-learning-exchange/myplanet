@@ -1,5 +1,6 @@
 package org.ole.planet.takeout.base;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -15,6 +16,7 @@ import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
+import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -22,12 +24,15 @@ import org.ole.planet.takeout.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
 
+import static android.content.Context.MODE_PRIVATE;
+
 public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fragment {
 
-
+    public static final String PREFS_NAME = "OLE_PLANET";
     public List<LI> selectedItems;
     RecyclerView recyclerView;
     TextView tvMessage;
@@ -35,7 +40,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     DatabaseService realmService;
     List<LI> list;
     UserProfileDbHandler profileDbHandler;
-    public realm_UserModel model;
+    realm_UserModel model;
+    public static SharedPreferences settings;
 
     public BaseRecyclerFragment() {
     }
@@ -48,6 +54,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(getLayout(), container, false);
+        settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         recyclerView = v.findViewById(R.id.recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         tvMessage = v.findViewById(R.id.tv_message);
@@ -57,7 +64,6 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         mRealm = realmService.getRealmInstance();
         profileDbHandler = new UserProfileDbHandler(getActivity());
         model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
-
         recyclerView.setAdapter(getAdapter());
         return v;
     }
@@ -87,9 +93,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public List<LI> getList(Class c) {
         String[] mycourseIds = realm_myCourses.getMyCourseIds(mRealm);
         if (c == realm_myLibrary.class) {
-            return mRealm.where(c).isEmpty("userId").or().isNull("userId").findAll();
-        } else if (c == realm_stepExam.class) {
-            return mRealm.where(c).equalTo("type", "surveys").findAll();
+            return mRealm.where(c).isEmpty("userId").or()
+                .notEqualTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
         } else {
             return mRealm.where(c).not().in("courseId", mycourseIds).findAll();
         }

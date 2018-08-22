@@ -135,7 +135,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
                     .equalTo("name", username)
                     .findAll();
-            mRealm.beginTransaction();
+            if(!mRealm.isInTransaction())
+                mRealm.beginTransaction();
             for (realm_UserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
                     saveUserInfoPref(settings, password, user);
