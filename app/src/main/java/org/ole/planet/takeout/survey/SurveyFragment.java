@@ -19,8 +19,9 @@ import org.ole.planet.takeout.utilities.Utilities;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class SurveyFragment extends BaseRecyclerFragment<realm_stepExam>  {
+public class SurveyFragment extends BaseRecyclerFragment<realm_stepExam> {
     FloatingActionButton addNewServey;
+
     public SurveyFragment() {
     }
 
@@ -32,7 +33,7 @@ public class SurveyFragment extends BaseRecyclerFragment<realm_stepExam>  {
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        return new AdapterSurvey(getActivity(), getList(realm_stepExam.class));
+        return new AdapterSurvey(getActivity(), getList(realm_stepExam.class), mRealm, model.getId());
     }
 
     @Override

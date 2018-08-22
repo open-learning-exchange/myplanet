@@ -1,5 +1,7 @@
 package org.ole.planet.takeout.Data;
 
+import org.ole.planet.takeout.utilities.Utilities;
+
 import io.realm.RealmList;
 import io.realm.*;
 
@@ -9,9 +11,28 @@ public class realm_submissions extends RealmObject {
     private String parentId;
     private String type;
     private String userId;
+    private long date;
     private RealmList<realm_answer> answers;
     private String grade;
     private String status;
+
+
+    public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
+        return "Survey Taken " + mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
+    }
+
+    public static String getRecentSubmissionDate(String id, String userId, Realm mRealm) {
+        realm_submissions s = mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).sort("date", Sort.DESCENDING).findFirst();
+        return s == null ? "" : Utilities.getFormatedDate(s.getDate()) + "";
+    }
+
+    public long getDate() {
+        return date;
+    }
+
+    public void setDate(long date) {
+        this.date = date;
+    }
 
     public String getId() {
         return id;

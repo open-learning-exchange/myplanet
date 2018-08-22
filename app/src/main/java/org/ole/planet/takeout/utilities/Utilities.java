@@ -21,6 +21,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 
@@ -66,6 +67,12 @@ public class Utilities {
         SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
         String datetime = dateformat.format(c.getTime());
         return datetime;
+    }
+
+    public static String getFormatedDate(long date) {
+        Date d = new Date(date);
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa");
+        return dateformat.format(d);
     }
 
     public static void openDownloadService(Context context, ArrayList urls) {

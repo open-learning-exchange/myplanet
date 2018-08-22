@@ -12,21 +12,28 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_stepExam;
+import org.ole.planet.takeout.Data.realm_submissions;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.exam.TakeExamFragment;
 
 import java.util.List;
 
+import io.realm.Realm;
+
 public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private Context context;
     private List<realm_stepExam> examList;
     private OnHomeItemClickListener listener;
+    private Realm mRealm;
+    private String userId;
 
-    public AdapterSurvey(Context context, List<realm_stepExam> examList) {
+    public AdapterSurvey(Context context, List<realm_stepExam> examList, Realm mRealm, String userId) {
         this.context = context;
         this.examList = examList;
+        this.mRealm = mRealm;
+        this.userId = userId;
         if (context instanceof OnHomeItemClickListener) {
             this.listener = (OnHomeItemClickListener) context;
         }
@@ -47,17 +54,20 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ho.startSurvey.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (listener!=null){
-                        Bundle b= new Bundle();
+                    if (listener != null) {
+                        Bundle b = new Bundle();
                         b.putString("type", "survey");
                         b.putString("id", examList.get(position).getId());
-
                         Fragment f = new TakeExamFragment();
                         f.setArguments(b);
                         listener.openCallFragment(f);
                     }
                 }
             });
+            String noOfSubmission = realm_submissions.getNoOfSubmissionByUser(examList.get(position).getId(), userId, mRealm);
+            String subDate = realm_submissions.getRecentSubmissionDate(examList.get(position).getId(), userId, mRealm);
+            ho.noSubmission.setText(noOfSubmission);
+            ho.lastSubDate.setText(subDate);
         }
     }
 
@@ -78,7 +88,6 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             noSubmission = itemView.findViewById(R.id.tv_no_submissions);
             lastSubDate = itemView.findViewById(R.id.tv_date);
             startSurvey = itemView.findViewById(R.id.start_survey);
-
         }
     }
 }

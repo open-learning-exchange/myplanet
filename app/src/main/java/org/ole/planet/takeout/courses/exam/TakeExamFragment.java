@@ -30,11 +30,13 @@ import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.Date;
 import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
+import io.realm.Sort;
 
 
 /**
@@ -112,12 +114,14 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         tvQuestionCount.setText("Question : 1/" + questions.size());
         sub = mRealm.where(realm_submissions.class)
                 .equalTo("userId", user.getId())
-                .equalTo("parentId", exam.getId()).findFirst();
+                .equalTo("parentId", exam.getId())
+                .sort("date", Sort.DESCENDING)
+                .findFirst();
 
-        createSubmission();
-        if (questions.size() > 0){
+        if (questions.size() > 0) {
+            createSubmission();
             startExam(questions.get(currentIndex));
-        }else{
+        } else {
             container.setVisibility(View.GONE);
             Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
         }
@@ -125,11 +129,12 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
 
     private void createSubmission() {
         startTransaction();
-        if (sub == null)
+        if (sub == null || questions.size() == sub.getAnswers().size())
             sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
         sub.setType(type);
+        sub.setDate(new Date().getTime());
         mRealm.commitTransaction();
     }
 
@@ -238,6 +243,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         realm_examQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
         answer.setQuestionId(que.getId());
         answer.setValue(ans);
+        answer.setSubmissionId(sub.getId());
         if (TextUtils.isEmpty(que.getCorrectChoice())) {
             answer.setGrade(0);
             answer.setMistakes(0);
