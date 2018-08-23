@@ -14,6 +14,7 @@ import org.ole.planet.takeout.Data.realm_courses;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myLibrary;
+import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.datamanager.DatabaseService;
@@ -35,11 +36,11 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public List<LI> selectedItems;
     RecyclerView recyclerView;
     TextView tvMessage;
-    Realm mRealm;
-    DatabaseService realmService;
+    public Realm mRealm;
+    public DatabaseService realmService;
     List<LI> list;
-    UserProfileDbHandler profileDbHandler;
-    realm_UserModel model;
+    public UserProfileDbHandler profileDbHandler;
+    public realm_UserModel model;
     public static SharedPreferences settings;
 
     public BaseRecyclerFragment() {
@@ -93,7 +94,9 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         String[] mycourseIds = realm_myCourses.getMyCourseIds(mRealm);
         if (c == realm_myLibrary.class) {
             return mRealm.where(c).isEmpty("userId").or()
-                .notEqualTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+                    .notEqualTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        } else if (c == realm_stepExam.class) {
+            return mRealm.where(c).equalTo("type", "surveys").findAll();
         } else {
             return mRealm.where(c).not().in("courseId", mycourseIds).findAll();
         }
