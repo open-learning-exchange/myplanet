@@ -46,6 +46,7 @@ public class LoginActivity extends SyncActivity {
     boolean connectionResult;
     dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
+    EditText serverPassword;
     Fuel ful = new Fuel();
     int[] syncTimeInteval = {15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
     private EditText inputName, inputPassword;
@@ -188,7 +189,9 @@ public class LoginActivity extends SyncActivity {
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+        serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
         serverUrl.setText(settings.getString("serverURL", ""));
+        serverPassword.setText(settings.getString("url_pwd", ""));
         serverUrl.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {

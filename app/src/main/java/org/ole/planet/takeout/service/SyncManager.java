@@ -91,6 +91,7 @@ public class SyncManager {
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
                 } catch(Exception err){
+                    //Todo alert user there was an error in URl
                     Log.e("couchdb", "Invalid server address / pin. Check and try again");
                 }
                 finally {
