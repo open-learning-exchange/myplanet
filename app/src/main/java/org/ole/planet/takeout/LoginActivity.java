@@ -30,7 +30,6 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
-import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 
 import java.util.ArrayList;
@@ -108,7 +107,7 @@ public class LoginActivity extends SyncActivity {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 dialog.dismiss();
-                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url),(EditText) dialog.getCustomView().findViewById(R.id.input_server_Password));
+                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url), (EditText) dialog.getCustomView().findViewById(R.id.input_server_Password));
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -212,7 +211,7 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
     }
 
-    public boolean isServerReachable(EditText textUrl,EditText textPassword) {
+    public boolean isServerReachable(EditText textUrl, EditText textPassword) {
         //serverUrl = textUrl;
         final String url = textUrl.getText().toString();
         final String pswd = textPassword.getText().toString();
