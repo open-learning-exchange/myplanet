@@ -17,6 +17,7 @@ import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.R;
+import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.utilities.Constants;
@@ -89,8 +90,10 @@ public class SyncManager {
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
-
-                } finally {
+                } catch(Exception err){
+                    //Todo alert to user invalid URL
+                }
+                finally {
                     NotificationUtil.cancel(context, 111);
                     isSyncing = false;
                     if (mRealm != null) {
