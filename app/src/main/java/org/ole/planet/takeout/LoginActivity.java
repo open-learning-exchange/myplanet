@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -231,7 +232,7 @@ public class LoginActivity extends SyncActivity {
 
             @Override
             public void failure(Request request, Response response, FuelError fuelError) {
-                ///Log.d("error", fuelError.toString());
+                Log.e("error", fuelError.toString());
                 alertDialogOkay("Device couldn't reach server. Check and try again");
                 if (mRealm != null)
                     mRealm.close();
