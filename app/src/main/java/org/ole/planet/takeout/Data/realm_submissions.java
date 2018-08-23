@@ -22,6 +22,10 @@ public class realm_submissions extends RealmObject {
         return "Survey Taken " + mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
     }
 
+    public static int getNoOfSurveySubmissionByUser(String userId, Realm mRealm) {
+        return mRealm.where(realm_submissions.class).equalTo("userId", userId).equalTo("type", "survey").findAll().size();
+    }
+
     public static String getRecentSubmissionDate(String id, String userId, Realm mRealm) {
         realm_submissions s = mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).sort("date", Sort.DESCENDING).findFirst();
         return s == null ? "" : TimeUtils.getFormatedDateWithTime(s.getDate()) + "";

@@ -19,7 +19,6 @@ public class SurveyHistoryFragment extends BaseRecyclerFragment<realm_submission
 
 
     public SurveyHistoryFragment() {
-        // Required empty public constructor
     }
 
     @Override
@@ -31,7 +30,5 @@ public class SurveyHistoryFragment extends BaseRecyclerFragment<realm_submission
     public RecyclerView.Adapter getAdapter() {
         return null;
     }
-
-
 
 }
