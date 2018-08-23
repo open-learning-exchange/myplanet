@@ -65,6 +65,6 @@ deploy:
   skip-cleanup: true
   on:
     branch: master
-    repo: ole-vi/takeout
+    repo: open-learning-exchange/myplanet
 after_success:
 - sh scripts/tag.sh
