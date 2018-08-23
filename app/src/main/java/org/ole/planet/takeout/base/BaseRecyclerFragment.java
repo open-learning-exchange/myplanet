@@ -32,9 +32,9 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     RecyclerView recyclerView;
     TextView tvMessage;
     public Realm mRealm;
-    DatabaseService realmService;
+    public DatabaseService realmService;
     List<LI> list;
-    UserProfileDbHandler profileDbHandler;
+    public UserProfileDbHandler profileDbHandler;
     public realm_UserModel model;
 
     public BaseRecyclerFragment() {
