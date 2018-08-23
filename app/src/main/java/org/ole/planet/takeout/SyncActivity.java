@@ -91,6 +91,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     // Create items in the spinner
     public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
+        list.add("10 Minutes");
         list.add("15 Minutes");
         list.add("30 Minutes");
         list.add("1 Hour");
@@ -153,26 +154,33 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         return false;
     }
 
-    public void setUrlParts(String url, String password, Context context) {
+    public String setUrlParts(String url, String password, Context context) {
         this.context = context;
         URI uri = URI.create(url);
+        String couchdbURL;
         String url_user = null, url_pwd = null;
         if (url.contains("@")) {
             String[] userinfo = uri.getUserInfo().split(":");
             url_user = userinfo[0];
             url_pwd = userinfo[1];
+            couchdbURL = url;
         } else {
-            url_user = "";
+            url_user = "satellite";
             url_pwd = password;
+            couchdbURL = uri.getScheme()+"://"+url_user+":"+url_user+"@"+uri.getHost()+":"+uri.getPort();
         }
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
+        editor.putString("couchdbURL", couchdbURL);
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
         editor.putInt("url_Port", uri.getPort());
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        return couchdbURL;
+    }
+    public void startSync(){
         SyncManager.getInstance().start(this);
     }
 

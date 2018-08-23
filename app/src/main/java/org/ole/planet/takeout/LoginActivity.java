@@ -30,6 +30,7 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 
 import java.util.ArrayList;
@@ -106,7 +107,7 @@ public class LoginActivity extends SyncActivity {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 dialog.dismiss();
-                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url));
+                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url),(EditText) dialog.getCustomView().findViewById(R.id.input_server_Password));
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -208,10 +209,13 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
     }
 
-    public boolean isServerReachable(EditText textUrl) {
+    public boolean isServerReachable(EditText textUrl,EditText textPassword) {
         //serverUrl = textUrl;
         final String url = textUrl.getText().toString();
-        ful.get(url + "/_all_dbs").responseString(new Handler<String>() {
+        final String pswd = textPassword.getText().toString();
+        String processedUrl = setUrlParts(url, pswd, context);
+
+        ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
@@ -222,8 +226,7 @@ public class LoginActivity extends SyncActivity {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
                         //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
-                        //Todo get password from EditText
-                        setUrlParts(url, "", context);
+                        startSync();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

@@ -1,8 +1,11 @@
 package org.ole.planet.takeout.service;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 
@@ -12,6 +15,7 @@ import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_courses;
 import org.ole.planet.takeout.Data.realm_stepExam;
+import org.ole.planet.takeout.LoginActivity;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 
@@ -24,12 +28,12 @@ public class TransactionSyncManager {
         mRealm.executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    processDoc(dbClient, doc, mRealm, type);
-                }
+                    final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                    final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
+                    for (int i = 0; i < allDocs.size(); i++) {
+                        Document doc = allDocs.get(i);
+                        processDoc(dbClient, doc, mRealm, type);
+                    }
             }
         });
     }
