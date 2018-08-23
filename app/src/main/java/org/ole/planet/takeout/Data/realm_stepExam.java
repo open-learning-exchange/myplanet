@@ -50,6 +50,7 @@ public class realm_stepExam extends RealmObject {
     }
 
 
+
     public String getType() {
         return type;
     }

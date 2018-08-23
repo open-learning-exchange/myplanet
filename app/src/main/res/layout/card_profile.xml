@@ -47,53 +47,76 @@
                 android:textColor="@color/textColorPrimary" />
 
         </LinearLayout>
-<ScrollView
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content">
 
-        <LinearLayout
+        <ScrollView
             android:layout_width="match_parent"
-            android:orientation="vertical"
             android:layout_height="wrap_content">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:textColor="@color/md_black_1000"
-                android:padding="@dimen/padding_normal"
-                android:textSize="18sp"
-                android:text="@string/submission"
-                android:layout_height="wrap_content" />
-            <TextView
-                android:layout_width="match_parent"
-                android:textColor="@color/md_black_1000"
-                android:padding="@dimen/padding_normal"
-                android:textSize="18sp"
-                android:text="@string/calendar"
-                android:layout_height="wrap_content" />
-            <TextView
-                android:layout_width="match_parent"
-                android:textColor="@color/md_black_1000"
-                android:padding="@dimen/padding_normal"
-                android:textSize="18sp"
-                android:text="@string/email"
-                android:layout_height="wrap_content" />
-            <TextView
-                android:layout_width="match_parent"
-                android:textColor="@color/md_black_1000"
-                android:padding="@dimen/padding_normal"
-                android:textSize="18sp"
-                android:text="@string/menu_surveys"
-                android:layout_height="wrap_content" />
-            <TextView
-                android:layout_width="match_parent"
-                android:textColor="@color/md_black_1000"
-                android:padding="@dimen/padding_normal"
-                android:textSize="18sp"
-                android:text="@string/documents"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-        </LinearLayout>
-</ScrollView>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/submission"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/calendar"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/email"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/tv_surveys"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/menu_surveys"
+                        android:textColor="@color/md_black_1000"
+                        android:textSize="18sp" />
+
+                    <ImageView
+                        android:id="@+id/img_survey_warn"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:layout_margin="4dp"
+                        android:src="@drawable/ic_warn"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/documents"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
+
+            </LinearLayout>
+        </ScrollView>
     </LinearLayout>
 
 </android.support.v7.widget.CardView>

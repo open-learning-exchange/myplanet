@@ -12,6 +12,7 @@ public class realm_answer extends RealmObject {
     private int grade;
     private String examId;
     private String questionId;
+    private String submissionId;
     public String getId() {
         return id;
     }
@@ -67,5 +68,13 @@ public class realm_answer extends RealmObject {
 
     public void setQuestionId(String questionId) {
         this.questionId = questionId;
+    }
+
+    public String getSubmissionId() {
+        return submissionId;
+    }
+
+    public void setSubmissionId(String submissionId) {
+        this.submissionId = submissionId;
     }
 }

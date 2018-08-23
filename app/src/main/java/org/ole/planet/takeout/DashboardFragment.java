@@ -25,10 +25,12 @@ import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myTeams;
+import org.ole.planet.takeout.Data.realm_submissions;
 import org.ole.planet.takeout.base.BaseContainerFragment;
 import org.ole.planet.takeout.courses.TakeCourseFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.takeout.survey.SurveyFragment;
 import org.ole.planet.takeout.teams.MyTeamsDetailFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -50,7 +52,7 @@ public class DashboardFragment extends BaseContainerFragment {
     public static final String PREFS_NAME = "OLE_PLANET";
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
     public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-    TextView txtFullName, txtVisits;
+    TextView txtFullName, txtVisits, tv_surveys;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -81,6 +83,8 @@ public class DashboardFragment extends BaseContainerFragment {
         ImageView imageView = view.findViewById(R.id.imageView);
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
+        int noOfSurvey = realm_submissions.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
+        (view.findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
         return view;
     }
 
@@ -91,6 +95,13 @@ public class DashboardFragment extends BaseContainerFragment {
         myTeamsImage = view.findViewById(R.id.myTeamsImageButton);
         txtFullName = view.findViewById(R.id.txtFullName);
         txtVisits = view.findViewById(R.id.txtVisits);
+        tv_surveys = view.findViewById(R.id.tv_surveys);
+        tv_surveys.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                homeItemClickListener.openCallFragment(new SurveyFragment());
+            }
+        });
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         myLibraryDiv(view);
