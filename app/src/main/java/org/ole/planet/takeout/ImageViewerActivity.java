@@ -11,6 +11,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.model.GlideUrl;
+import com.bumptech.glide.load.model.LazyHeaders;
 import com.github.barteksc.pdfviewer.PDFView;
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle;
 
@@ -22,11 +24,16 @@ public class ImageViewerActivity extends AppCompatActivity {
     private String filePath;
     private TextView mImageFileNameTitle;
     private ImageView mImageViewer;
-
+    String url, auth = "";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_viewer);
+
+        Intent intent = getIntent();
+        url = intent.getStringExtra("url");
+        auth = intent.getStringExtra("auth");
+
         declareElements();
         renderImageFile();
     }
@@ -43,7 +50,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
     private void renderImageFile() {
         // File name to be viewed
-
+        Log.e("Hello","IMAGE");
         Intent imageOpenIntent = getIntent();
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
 
@@ -53,8 +60,12 @@ public class ImageViewerActivity extends AppCompatActivity {
         }
 
         try{
+            GlideUrl glideUrl = new GlideUrl(url, new LazyHeaders.Builder()
+                    .addHeader("Accept", "application/json")
+                    .addHeader("Cookie", auth)
+                    .build());
             Glide.with(getApplicationContext())
-                    .load(new File(filePath, fileName))
+                    .load(glideUrl)
                     .into(mImageViewer);
         } catch (Exception e) {
             e.printStackTrace();

@@ -158,7 +158,7 @@ public abstract class BaseContainerFragment extends Fragment {
     }
 
     public void openIntent(realm_myLibrary items, Class typeClass) {
-        Intent fileOpenIntent = new Intent(getActivity(), WebFileViewing.class);
+        Intent fileOpenIntent = new Intent(getActivity(), ImageViewerActivity.class);
         fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
         fileOpenIntent.putExtra("url", items.getResourceRemoteAddress());
         fileOpenIntent.putExtra("auth",DashboardFragment.auth);
