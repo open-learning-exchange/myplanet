@@ -56,5 +56,6 @@
     <string name="version">Version</string>
     <string name="leave">Leave</string>
     <string name="invite_member">Invite Member</string>
+    <string name="menu_hotspot">Hotspot</string>
     <string name="app_version">0.1.9</string>
 </resources>

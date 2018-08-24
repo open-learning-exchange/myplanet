@@ -36,7 +36,6 @@ import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
 import org.ole.planet.takeout.survey.SurveyFragment;
 import org.ole.planet.takeout.utilities.Utilities;
-
 import java.util.ArrayList;
 
 
@@ -176,8 +175,13 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             case R.string.menu_courses:
                 openCallFragment(new MyCourseFragment());
                 break;
+            case R.string.menu_hotspot:
+                ApManager.configApState(Dashboard.this);
+                createDrawer();
+                break;
             case R.string.menu_feedback:
                 feedbackDialog();
+                break;
             case R.string.menu_logout:
                 logout();
                 break;
@@ -244,12 +248,19 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     @NonNull
     private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
+        Boolean state = ApManager.isApOn(Dashboard.this);
+        if(state){
+            menuImageListFooter.add(getResources().getDrawable(R.drawable.hotspot_on));
+        }else{
+            menuImageListFooter.add(getResources().getDrawable(R.drawable.hotspot));
+        }
         menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
         return new IDrawerItem[]{
-                changeUX(R.string.menu_feedback, menuImageListFooter.get(0)),
-                changeUX(R.string.menu_logout, menuImageListFooter.get(1)),
+                changeUX(R.string.menu_hotspot, menuImageListFooter.get(0)),
+                changeUX(R.string.menu_feedback, menuImageListFooter.get(1)),
+                changeUX(R.string.menu_logout, menuImageListFooter.get(2)),
         };
     }
 
