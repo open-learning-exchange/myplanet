@@ -34,6 +34,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
+import org.ole.planet.takeout.survey.SurveyFragment;
 import org.ole.planet.takeout.utilities.Utilities;
 import java.util.ArrayList;
 
@@ -169,7 +170,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 openCallFragment(new MyMeetUpsFragment());
                 break;
             case R.string.menu_surveys:
-                openCallFragment(new MySurveyFragment());
+                openCallFragment(new SurveyFragment());
                 break;
             case R.string.menu_courses:
                 openCallFragment(new MyCourseFragment());

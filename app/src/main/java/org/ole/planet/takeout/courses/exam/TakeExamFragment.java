@@ -4,7 +4,9 @@ package org.ole.planet.takeout.courses.exam;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -16,6 +18,7 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_answerChoices;
 import org.ole.planet.takeout.Data.realm_examQuestion;
@@ -27,86 +30,82 @@ import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.Date;
 import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
+import io.realm.Sort;
 
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TakeExamFragment extends Fragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
+public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
 
     TextView tvQuestionCount, header, body;
     EditText etAnswer;
     Button btnSubmit;
     RadioGroup listChoices;
-    realm_stepExam exam;
-    DatabaseService db;
-    Realm mRealm;
-    String stepId;
-    int currentIndex = 0;
-    RealmResults<realm_examQuestion> questions;
-    String ans = "";
-    realm_UserModel user;
-    realm_submissions sub;
+
+    NestedScrollView container;
 
     public TakeExamFragment() {
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            stepId = getArguments().getString("stepId");
-        }
-    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, ViewGroup parent,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_take_exam, container, false);
-        initializeView(v);
+        View view = inflater.inflate(R.layout.fragment_take_exam, parent, false);
+        tvQuestionCount = view.findViewById(R.id.tv_question_count);
+        header = view.findViewById(R.id.tv_header);
+        body = view.findViewById(R.id.tv_body);
+        etAnswer = view.findViewById(R.id.et_answer);
+        btnSubmit = view.findViewById(R.id.btn_submit);
+        listChoices = view.findViewById(R.id.group_choices);
+        container = view.findViewById(R.id.container);
         db = new DatabaseService(getActivity());
         mRealm = db.getRealmInstance();
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(dbHandler.getUserModel());
-        return v;
+        return view;
     }
 
-    private void initializeView(View v) {
-        tvQuestionCount = v.findViewById(R.id.tv_question_count);
-        header = v.findViewById(R.id.tv_header);
-        body = v.findViewById(R.id.tv_body);
-        etAnswer = v.findViewById(R.id.et_answer);
-        btnSubmit = v.findViewById(R.id.btn_submit);
-        listChoices = v.findViewById(R.id.group_choices);
-    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
-        exam = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findFirst();
+        initExam();
         questions = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
         sub = mRealm.where(realm_submissions.class)
                 .equalTo("userId", user.getId())
-                .equalTo("parentId", exam.getId()).findFirst();
-
-        createSubmission();
-        startExam(questions.get(currentIndex));
+                .equalTo("parentId", exam.getId())
+                .sort("date", Sort.DESCENDING)
+                .findFirst();
+        if (questions.size() > 0) {
+            createSubmission();
+            startExam(questions.get(currentIndex));
+        } else {
+            container.setVisibility(View.GONE);
+            Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
+        }
     }
+
 
     private void createSubmission() {
         startTransaction();
-        if (sub == null)
+        if (sub == null || questions.size() == sub.getAnswers().size())
             sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
-        sub.setType("exam");
+        sub.setType(type);
+        sub.setDate(new Date().getTime());
+        if (sub.getAnswers() != null) {
+            currentIndex = sub.getAnswers().size();
+        }
         mRealm.commitTransaction();
     }
 
@@ -183,7 +182,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
                 startExam(questions.get(currentIndex));
             } else {
                 new AlertDialog.Builder(getActivity())
-                        .setTitle("Thank you for taking this test. We wish you all the best")
+                        .setTitle("Thank you for taking this " + type + ". We wish you all the best")
                         .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
@@ -215,6 +214,7 @@ public class TakeExamFragment extends Fragment implements View.OnClickListener, 
         realm_examQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
         answer.setQuestionId(que.getId());
         answer.setValue(ans);
+        answer.setSubmissionId(sub.getId());
         if (TextUtils.isEmpty(que.getCorrectChoice())) {
             answer.setGrade(0);
             answer.setMistakes(0);
