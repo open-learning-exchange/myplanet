@@ -122,7 +122,6 @@ public class SyncManager {
 
     private void processResourceDoc(CouchDbClientAndroid dbClient, Document doc) {
         try {
-
             JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
             realm_myLibrary.insertResources(jsonDoc, mRealm);
             Log.e("Realm", " STRING " + jsonDoc.toString());

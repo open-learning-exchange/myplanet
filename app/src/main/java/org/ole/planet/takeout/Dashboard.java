@@ -34,7 +34,9 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
+import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.survey.SurveyFragment;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -47,6 +49,8 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     private Drawer result = null;
     private Toolbar mTopToolbar;
     private boolean isDashBoard = false;
+    UserProfileDbHandler profileDbHandler;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +61,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         headerResult = getAccountHeader();
+        profileDbHandler = new UserProfileDbHandler(this);
         createDrawer();
+        new UploadManager(this).uploadUserActivities();
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
@@ -158,7 +164,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 .withDrawerWidthDp(200)
                 .build();
     }
-
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
@@ -186,12 +191,18 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 break;
         }
     }
-
     private void logout() {
+       profileDbHandler.onLogout();
         Intent loginscreen = new Intent(this, LoginActivity.class);
         loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(loginscreen);
         this.finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        profileDbHandler.onDestory();
     }
 
     public void feedbackDialog() {

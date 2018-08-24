@@ -1,6 +1,14 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonObject;
+
+import org.jboss.security.auth.spi.Users;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.utilities.TimeUtils;
+
+import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.Sort;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_offlineActivities extends RealmObject {
@@ -67,5 +75,20 @@ public class realm_offlineActivities extends RealmObject {
 
     public void setLogoutTime(Long logoutTime) {
         this.logoutTime = logoutTime;
+    }
+
+    public static JsonObject serializeLoginActivities(realm_offlineActivities realm_offlineActivities) {
+        JsonObject ob = new JsonObject();
+        ob.addProperty("user", realm_offlineActivities.getUserFullName());
+        ob.addProperty("type", realm_offlineActivities.getType());
+        ob.addProperty("loginTime", realm_offlineActivities.getLoginTime());
+        ob.addProperty("logoutTime", realm_offlineActivities.getLogoutTime());
+        return ob;
+    }
+
+    public static realm_offlineActivities getRecentLogin(Realm mRealm){
+        realm_offlineActivities s = mRealm.where(realm_offlineActivities.class).equalTo("type", UserProfileDbHandler.KEY_LOGIN).sort("loginTime", Sort.DESCENDING).findFirst();
+        return s;
+
     }
 }

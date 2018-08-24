@@ -17,9 +17,9 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class UserProfileDbHandler {
-    private static final String KEY_LOGIN = "Login";
-    private static final String KEY_LOGOUT = "Logout";
-    private static final String KEY_RESOURCE_OPEN = "Resource Open";
+    public static final String KEY_LOGIN = "login";
+    public static final String KEY_LOGOUT = "logout";
+    public static final String KEY_RESOURCE_OPEN = "resource";
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
@@ -30,7 +30,7 @@ public class UserProfileDbHandler {
     public UserProfileDbHandler(Context context) {
         realmService = new DatabaseService(context);
         settings = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        fullName = Utilities.getFullName(settings);
+        fullName = Utilities.getUserName(settings);
         mRealm = realmService.getRealmInstance();
     }
 
@@ -46,6 +46,17 @@ public class UserProfileDbHandler {
         offlineActivities.setType(KEY_LOGIN);
         offlineActivities.setDescription("Member login on offline application");
         offlineActivities.setLoginTime(new Date().getTime());
+        mRealm.commitTransaction();
+    }
+
+    public void onLogout() {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        realm_offlineActivities offlineActivities = realm_offlineActivities.getRecentLogin(mRealm);
+        if (offlineActivities == null) {
+            return;
+        }
+        offlineActivities.setLogoutTime(new Date().getTime());
         mRealm.commitTransaction();
     }
 
