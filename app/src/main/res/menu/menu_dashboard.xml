@@ -23,11 +23,18 @@
         app:actionLayout="@layout/view_notification"
         app:showAsAction="ifRoom" />
 
-    <item
+   <!-- <item
         android:id="@+id/menu_language"
         android:icon="@drawable/en"
         android:orderInCategory="500"
         android:title="User"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="ifRoom" />-->
+
+    <item
+        android:id="@+id/spinner"
+        android:title="ActionBar Spinner"
+        android:icon="@drawable/en"
+        app:actionViewClass="android.widget.Spinner"
+        app:showAsAction="always" />
 
 </menu>
