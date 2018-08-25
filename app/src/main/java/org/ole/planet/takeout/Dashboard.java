@@ -109,24 +109,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_dashboard, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.menu_email) {
-            Toast.makeText(Dashboard.this, "Action clicked", Toast.LENGTH_LONG).show();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
     private AccountHeader getAccountHeader() {
         //Create User profile header
         return new AccountHeaderBuilder()
