@@ -10,6 +10,7 @@ import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Response;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
+import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -25,6 +26,15 @@ public class UploadManager {
     private CouchDbProperties properties;
     private SharedPreferences sharedPreferences;
     private Realm mRealm;
+    private static UploadManager instance;
+    public static UploadManager getInstance() {
+        if (instance == null) {
+            instance = new UploadManager(MainApplication.context);
+        }
+        return instance;
+    }
+
+
 
     public UploadManager(Context context) {
         this.context = context;

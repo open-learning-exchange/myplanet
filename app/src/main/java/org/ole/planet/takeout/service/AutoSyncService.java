@@ -23,6 +23,7 @@ public class AutoSyncService extends JobService implements SyncListener {
         if ((currentTime - lastSync) > (syncInterval * 1000)) {
             Utilities.toast(this, "Syncing started...");
             SyncManager.getInstance().start(this);
+            UploadManager.getInstance().uploadUserActivities();
         }
         Utilities.log("Diff  " + (currentTime - lastSync) + " " + (syncInterval * 1000));
         return false;
