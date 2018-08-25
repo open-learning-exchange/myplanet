@@ -115,8 +115,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 R.array.languages, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
-        return true;
-    }
+        return true;    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -125,7 +124,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             Toast.makeText(Dashboard.this, "Action clicked", Toast.LENGTH_LONG).show();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -138,7 +136,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
                 .build();
-
     }
 
     private void createDrawer() {
