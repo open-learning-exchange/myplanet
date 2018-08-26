@@ -3,6 +3,7 @@ package org.ole.planet.takeout.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.text.TextUtils;
 
 import com.google.gson.JsonObject;
 
@@ -27,13 +28,13 @@ public class UploadManager {
     private SharedPreferences sharedPreferences;
     private Realm mRealm;
     private static UploadManager instance;
+
     public static UploadManager getInstance() {
         if (instance == null) {
             instance = new UploadManager(MainApplication.context);
         }
         return instance;
     }
-
 
 
     public UploadManager(Context context) {
@@ -48,11 +49,15 @@ public class UploadManager {
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
-                final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class).findAll();
+                final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
+                        .findAll();
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (int i = 0; i < activities.size(); i++) {
-                  Response r =   dbClient.post(realm_offlineActivities.serializeLoginActivities(activities.get(i)));
-                    Utilities.log("Response " + r.getId());
+                    Response r = dbClient.post(realm_offlineActivities.serializeLoginActivities(activities.get(i)));
+                    if (!TextUtils.isEmpty(r.getId())) {
+                        activities.get(i).deleteFromRealm();
+                    }
+                    Utilities.log("id  " + r.getId());
                 }
             }
         });

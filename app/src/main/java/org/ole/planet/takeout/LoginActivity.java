@@ -30,6 +30,7 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 
 import java.util.ArrayList;
@@ -137,6 +138,7 @@ public class LoginActivity extends SyncActivity {
             @Override
             public void onClick(View v) {
                 gifDrawable.reset();
+                UploadManager.getInstance().uploadUserActivities();
                 Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
             }
         });

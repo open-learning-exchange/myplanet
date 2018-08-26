@@ -77,6 +77,7 @@ public class realm_offlineActivities extends RealmObject {
         this.logoutTime = logoutTime;
     }
 
+
     public static JsonObject serializeLoginActivities(realm_offlineActivities realm_offlineActivities) {
         JsonObject ob = new JsonObject();
         ob.addProperty("user", realm_offlineActivities.getUserFullName());
@@ -86,7 +87,7 @@ public class realm_offlineActivities extends RealmObject {
         return ob;
     }
 
-    public static realm_offlineActivities getRecentLogin(Realm mRealm){
+    public static realm_offlineActivities getRecentLogin(Realm mRealm) {
         realm_offlineActivities s = mRealm.where(realm_offlineActivities.class).equalTo("type", UserProfileDbHandler.KEY_LOGIN).sort("loginTime", Sort.DESCENDING).findFirst();
         return s;
 

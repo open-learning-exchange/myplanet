@@ -63,7 +63,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         headerResult = getAccountHeader();
         profileDbHandler = new UserProfileDbHandler(this);
         createDrawer();
-        UploadManager.getInstance().uploadUserActivities();
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
