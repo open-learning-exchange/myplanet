@@ -1,7 +1,12 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import org.ole.planet.takeout.utilities.TimeUtils;
 import org.ole.planet.takeout.utilities.Utilities;
+
+import java.util.List;
 
 import io.realm.RealmList;
 import io.realm.*;
@@ -16,7 +21,19 @@ public class realm_submissions extends RealmObject {
     private RealmList<realm_answer> answers;
     private String grade;
     private String status;
+    private boolean uploaded;
 
+    public static JsonArray serializeExamResult(Realm mRealm){
+        JsonArray array = new JsonArray();
+        List<realm_submissions> submissions = mRealm.where(realm_submissions.class).equalTo("type", "exam").findAll();
+        for (int i = 0 ; i < submissions.size() ; i ++){
+            JsonObject object = new JsonObject();
+            object.addProperty("", "");
+        }
+
+        return  array;
+
+    }
 
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
         return "Survey Taken " + mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
