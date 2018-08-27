@@ -6,6 +6,13 @@
     <dimen name="user_image_size">150dp</dimen>
     <dimen name="padding_normal">8dp</dimen>
     <dimen name="padding_large">16dp</dimen>
-    <dimen name="text_size_large">24sp</dimen>
-    <dimen name="text_size_mid">18sp</dimen>
+    <dimen name="text_size_very_large">24sp</dimen>
+    <dimen name="text_size_large">18sp</dimen>
+    <dimen name="text_size_mid">16sp</dimen>
+    <dimen name="text_size_small">14sp</dimen>
+    <dimen name="icon_size_mid">36dp</dimen>
+    <dimen name="profile_card">150dp</dimen>
+    <dimen name="padding_small">4dp</dimen>
+    <dimen name="image_size_home_card">50dp</dimen>
+
 </resources>

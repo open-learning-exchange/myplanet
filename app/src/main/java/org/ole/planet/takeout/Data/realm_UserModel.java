@@ -227,4 +227,9 @@ public class realm_UserModel extends RealmObject {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return " - " +  name;
+    }
 }

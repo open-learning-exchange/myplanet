@@ -2,6 +2,7 @@ package org.ole.planet.takeout.Data;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonArray;
@@ -58,7 +59,15 @@ public class realm_myLibrary extends RealmObject {
     private RealmList<String> languages;
     private String courseId;
     private String stepId;
+    private String downloaded;
 
+    public String getDownloaded() {
+        return downloaded;
+    }
+
+    public void setDownloaded(String downloaded) {
+        this.downloaded = downloaded;
+    }
 
     public static void insertResources(JsonObject doc, Realm mRealm) {
         insertMyLibrary("", doc, mRealm);
@@ -83,13 +92,25 @@ public class realm_myLibrary extends RealmObject {
     }
 
     public static void insertMyLibrary(String userId, String stepId, String courseId, JsonObject doc, Realm mRealm) {
+
         String resourceId = doc.get("_id").getAsString();
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        realm_myLibrary resource = mRealm.createObject(realm_myLibrary.class, UUID.randomUUID().toString());
+        realm_myLibrary resource = mRealm.where(realm_myLibrary.class).equalTo("id", resourceId).findFirst();
+
+        if (resource == null) {
+            resource = mRealm.createObject(realm_myLibrary.class, resourceId);
+        }
+        if (!TextUtils.isEmpty(userId)) {
+            resource.setUserId(userId);
+        }
+        if (!TextUtils.isEmpty(stepId)) {
+            resource.setStepId(stepId);
+        }
+        if (!TextUtils.isEmpty(courseId)) {
+            resource.setCourseId(courseId);
+        }
         resource.set_rev(doc.get("_rev").getAsString());
-        resource.setUserId(userId);
-        resource.setStepId(stepId);
-        resource.setCourseId(courseId);
+
         resource.setResource_id(resourceId);
         resource.setTitle(doc.get("title").getAsString());
         resource.setDescription(doc.get("description").getAsString());
@@ -101,7 +122,7 @@ public class realm_myLibrary extends RealmObject {
             Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
             for (Map.Entry<String, JsonElement> entry : entries) {
                 if (entry.getKey().indexOf("/") < 0) {
-                    resource.setResourceRemoteAddress(settings.getString("serverURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
+                    resource.setResourceRemoteAddress(settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
                     resource.setResourceLocalAddress(entry.getKey());
                     resource.setResourceOffline(false);
                 }
@@ -137,7 +158,6 @@ public class realm_myLibrary extends RealmObject {
         if (doc.has("languages") && doc.get("languages").isJsonArray()) {
             resource.setLanguages(doc.get("languages").getAsJsonArray(), resource);
         }
-
     }
 
 

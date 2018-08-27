@@ -21,6 +21,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 
@@ -63,10 +64,11 @@ public class Utilities {
 
     public static String currentDate() {
         Calendar c = Calendar.getInstance();
-        SimpleDateFormat dateformat = new SimpleDateFormat("dd-MMM-yyyy");
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
         String datetime = dateformat.format(c.getTime());
         return datetime;
     }
+
 
     public static void openDownloadService(Context context, ArrayList urls) {
         Intent intent = new Intent(context, MyDownloadService.class);

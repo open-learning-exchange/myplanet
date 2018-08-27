@@ -34,6 +34,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
+import org.ole.planet.takeout.survey.SurveyFragment;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -170,7 +171,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 openCallFragment(new MyMeetUpsFragment());
                 break;
             case R.string.menu_surveys:
-                openCallFragment(new MySurveyFragment());
+                openCallFragment(new SurveyFragment());
                 break;
             case R.string.menu_courses:
                 openCallFragment(new MyCourseFragment());
@@ -218,7 +219,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         isDashBoard = newfragment instanceof DashboardFragment;
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
-        //  fragmentTransaction.addToBackStack(null);
+        fragmentTransaction.addToBackStack("");
         fragmentTransaction.commit();
     }
 
@@ -264,9 +265,11 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
-        } else if (!isDashBoard) {
-            openCallFragment(new DashboardFragment());
-        } else {
+        }
+//        else if (!isDashBoard) {
+//            openCallFragment(new DashboardFragment());
+//        }
+        else {
             super.onBackPressed();
         }
     }

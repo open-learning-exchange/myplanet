@@ -70,7 +70,7 @@ public class AuthSessionUpdater extends DashboardFragment {
 
     private static URL getSessionUrl(SharedPreferences settings) {
         try {
-            String pref = settings.getString("serverURL", "");
+            String pref = settings.getString("couchdbURL", "");
             pref += "/_session";
             URL SERVER_URL = new URL(pref);
             return SERVER_URL;

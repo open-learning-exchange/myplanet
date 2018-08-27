@@ -23,7 +23,7 @@ env:
   global:
   - ANDROID_API=22
   - EMULATOR_API=21
-  - ANDROID_BUILD_TOOLS=27.0.1
+  - ANDROID_BUILD_TOOLS=27.0.3
   - ADB_INSTALL_TIMEOUT=5
   - secure: 3QdGzrK+yE0smDraCQV/4aDXYr4Y+dz2QgBFHn0uzq7vclKJLcAO9Qq4foyHfOdOyQKwHrNLBRr2H3qopmWmWjmj2mhEuLmsglrzxBDMtEgjyGjgSy0QvLHafNfR/nj4P5ddEEMXimaTp8InIUF3K49AG6v2VNJS1dXtv/ZVvWlDuTUsA5yiiQf1JX5aYF0hI5M/cblUC66ehWvsUfObj9GLRcvIl2xcX0QLbGvrhnpBIascd9ULZahEfQhijd3hC9VHu9hM+YHvLHM4KE9h13n41hTKndofDQggG4HVPAFCV5ngDzlifGoZmoma0XGfmBMgJOwQkLT9l6YICpGGN8ebLlC2zC4yZZvE/bPKoh8e3rRzbQjiPJqW16nKx1/k5viKdgjAAiiWXoWY2QHv2QII2l9Dxs4Xh9Sc+qOA6LYBaZeNOKkNp+Ux1mfVM8rFm8N5BvH7LPLQO0Ru0Ty5Esb21qbRU1urj4OInZMjGEoUJl4IWCpiy0btboGCHTnuvX8ot0VDvSvG8dgk5PPg7MsiRFz3WyD3iP4QIxK8SaXMzI4E2IP6HN8nZI2cwyjisIojQxrOxYM7X8yoJSBo2rKouSO5Qn7gMKLYnWu6wohB+1aPqSwNR30NnE+tXP+2OVqbdUTHTrFnb2jJ/2pf4M9TPWw8tlGwRZ/1IMsQzaA=
   - secure: zNtIaEcxzVYac7Di+6zR90zbKRAy1tQtOrW2GyHXH1LRiP7FemH3vvtJfSs7NT0dMSLYmRJD9YNKRumN+8tABvt2i8zFr+liUl5A+vp484Nsn7AKn2gf5B8IR7TNLp8DTdvHsx3iR8yyM/HWVJjSXmE7xAMmMqh4kPmGIUKCuiKlmFYze5vF0imtNjYU4Q3PeEb/4HsQC/qE8fchy1VNU15ywgDBhxNhb/MIGHwEkjOwLHnK7Nu6fINBheMjcoTkePQRrMY4XoABSzNrZoSshjJhRv2E0G77+CnEfVzH/9rzCx0ANlRLNNVnfYSzRVeAJigrfzABEhGvWnftYLBtlKYj3hRiDJZo822Hh2vyRoZTFyeAZTXGU2iW3176wwbDTNC9q84cMizqXt4D0hx8rnzdDm+KshCOddi1PXrZg/GXbngYq4/arszs8Vo6Z+Wha2yeaw6D/PcocQQWelBkrVKP7cYDpiR7fYOw1ZtH1OxnY3rTOmp718kavwO7CkFa/ni8r6ws1QkVLhfmMBSWcVhi8TQX2j48d5w04oWK0ea0B75yBidDNmRprU0g0jcscs6N2DsN3uX6wFQBFgGpyTXvV2NY9Rgolr1nMzPF/iQA53dcW0YxR4sSsOOR+MVylUw/pzplSGn8gw2cAcNR4jxU3A+4RJEUoDa5JQT6dWM=
@@ -41,7 +41,7 @@ android:
   - addon-google_apis-google-19
   - sys-img-armeabi-v7a-addon-google_apis-google-$ANDROID_API_LEVEL
   - sys-img-armeabi-v7a-addon-google_apis-google-$EMULATOR_API_LEVEL
-  - build-tools-27.0.1
+  - build-tools-27.0.3
   - android-26
   - android-25
   - android-24
@@ -65,6 +65,6 @@ deploy:
   skip-cleanup: true
   on:
     branch: master
-    repo: ole-vi/takeout
+    repo: open-learning-exchange/myplanet
 after_success:
 - sh scripts/tag.sh

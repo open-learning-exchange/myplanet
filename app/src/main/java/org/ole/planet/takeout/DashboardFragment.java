@@ -1,105 +1,71 @@
 package org.ole.planet.takeout;
 
-import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
-import com.squareup.picasso.Picasso;
 
-import org.ole.planet.takeout.Data.Download;
+import org.apache.commons.lang3.BooleanUtils;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
-import org.ole.planet.takeout.Data.realm_myTeams;
 import org.ole.planet.takeout.Data.realm_myLibrary;
-
+import org.ole.planet.takeout.Data.realm_myTeams;
+import org.ole.planet.takeout.Data.realm_submissions;
+import org.ole.planet.takeout.base.BaseContainerFragment;
+import org.ole.planet.takeout.courses.TakeCourseFragment;
 import org.ole.planet.takeout.datamanager.DatabaseService;
+import org.ole.planet.takeout.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.takeout.survey.SurveyFragment;
+import org.ole.planet.takeout.teams.MyTeamsDetailFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
-import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.ole.planet.takeout.Data.realm_myLibrary;
-
+import io.realm.Case;
 import io.realm.Realm;
-import io.realm.RealmConfiguration;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
-
-import static android.content.Context.MODE_PRIVATE;
-import static org.ole.planet.takeout.Dashboard.MESSAGE_PROGRESS;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends Fragment {
+public class DashboardFragment extends BaseContainerFragment {
 
-    //TextViews
     public static final String PREFS_NAME = "OLE_PLANET";
-    public static SharedPreferences settings;
-    TextView txtFullName, txtCurDate, txtVisits;
-    ImageView userImage;
+    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
+    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
+    TextView txtFullName, txtVisits, tv_surveys;
     String fullName;
     Realm mRealm;
-    static ProgressDialog prgDialog;
-    ArrayList<Integer> selectedItemsList = new ArrayList<>();
-    //ImageButtons
-    private ImageButton myLibraryImage;
-    private ImageButton myCourseImage;
-    private ImageButton myMeetUpsImage;
-    private ImageButton myTeamsImage;
     DatabaseService dbService;
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
             250,
             100
     );
+    private ImageView myLibraryImage;
+    private ImageView myCourseImage;
+    private ImageView myMeetUpsImage;
+    private ImageView myTeamsImage;
     private UserProfileDbHandler profileDbHandler;
-    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
-
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed()) {
-                    setProgress(download);
-                } else {
-                    DialogUtils.showError(prgDialog, download.getMessage());
-                }
-            }
-        }
-    };
 
     public DashboardFragment() {
     }
@@ -107,45 +73,52 @@ public class DashboardFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
-        settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        View view = inflater.inflate(R.layout.fragment_home, container, false);
+        profileDbHandler = new UserProfileDbHandler(getActivity());
         declareElements(view);
         fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
         txtFullName.setText(fullName);
-        txtCurDate.setText(Utilities.currentDate());
-        profileDbHandler = new UserProfileDbHandler(getActivity());
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         ImageView imageView = view.findViewById(R.id.imageView);
-        Utilities.log("User image " + model.getUserImage());
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
-        prgDialog = DialogUtils.getProgressDialog(getActivity());
-        registerReceiver();
+        int noOfSurvey = realm_submissions.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
+        (view.findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
         return view;
     }
 
     private void declareElements(View view) {
-        myLibraryImage = (ImageButton) view.findViewById(R.id.myLibraryImageButton);
-        myCourseImage = (ImageButton) view.findViewById(R.id.myCoursesImageButton);
-        myMeetUpsImage = (ImageButton) view.findViewById(R.id.myMeetUpsImageButton);
-        myTeamsImage = (ImageButton) view.findViewById(R.id.myTeamsImageButton);
+        myLibraryImage = view.findViewById(R.id.myLibraryImageButton);
+        myCourseImage = view.findViewById(R.id.myCoursesImageButton);
+        myMeetUpsImage = view.findViewById(R.id.myMeetUpsImageButton);
+        myTeamsImage = view.findViewById(R.id.myTeamsImageButton);
         txtFullName = view.findViewById(R.id.txtFullName);
-        txtCurDate = view.findViewById(R.id.txtCurDate);
         txtVisits = view.findViewById(R.id.txtVisits);
+        tv_surveys = view.findViewById(R.id.tv_surveys);
+        tv_surveys.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                homeItemClickListener.openCallFragment(new SurveyFragment());
+            }
+        });
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         myLibraryDiv(view);
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, realm_myCourses.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, realm_meetups.class);
-        showDownloadDialog();
+        showDownloadDialog(getLibraryList());
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
     }
 
     public void myLibraryDiv(View view) {
+        TextView count = view.findViewById(R.id.count_library);
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).findAll();
+        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).isNotEmpty("userId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        count.setText(db_myLibrary.size() + "");
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {
@@ -162,11 +135,13 @@ public class DashboardFragment extends Fragment {
     public void initializeFlexBoxView(View v, int id, Class c) {
         FlexboxLayout flexboxLayout = v.findViewById(id);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        setUpMyList(c, flexboxLayout);
+        setUpMyList(c, flexboxLayout, v);
     }
 
-    public void setUpMyList(Class c, FlexboxLayout flexboxLayout) {
-        RealmResults<RealmObject> db_myCourses = mRealm.where(c).findAll();
+    public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
+        RealmResults<RealmObject> db_myCourses = mRealm.where(c).isNotEmpty("userId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
         for (final RealmObject items : db_myCourses) {
@@ -180,7 +155,7 @@ public class DashboardFragment extends Fragment {
     }
 
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, RealmObject obj) {
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, final RealmObject obj) {
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
         textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
@@ -190,71 +165,55 @@ public class DashboardFragment extends Fragment {
         if (obj instanceof realm_myLibrary) {
             textViewArray[itemCnt].setText(((realm_myLibrary) obj).getTitle());
         } else if (obj instanceof realm_myCourses) {
-            textViewArray[itemCnt].setText(((realm_myCourses) obj).getCourseTitle());
+            handleClick(((realm_myCourses) obj).getCourseId(), ((realm_myCourses) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof realm_myTeams) {
-            textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
+            //    textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
+            handleClick(((realm_myTeams) obj).getTeamId(), ((realm_myTeams) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
+
         } else if (obj instanceof realm_meetups) {
-            textViewArray[itemCnt].setText(((realm_meetups) obj).getTitle());
+            handleClick(((realm_meetups) obj).getMeetupId(), ((realm_meetups) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         }
     }
 
-    public void startDownload(ArrayList urls) {
-        if (!urls.isEmpty()) {
-            prgDialog.show();
-            Utilities.openDownloadService(getActivity(), urls);
-        }
-    }
-
-    private void showDownloadDialog() {
-        final RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).equalTo("resourceOffline", false).findAll();
-        if (!db_myLibrary.isEmpty()) {
-            new AlertDialog.Builder(getActivity()).setTitle(R.string.download_suggestion).setMultiChoiceItems(realm_myLibrary.getListAsArray(db_myLibrary), null, new DialogInterface.OnMultiChoiceClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i, boolean b) {
-                    DialogUtils.handleCheck(selectedItemsList, b, i);
+    private void handleClick(final String id, String title, final Fragment f, TextView v) {
+        v.setText(title);
+        v.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (homeItemClickListener != null) {
+                    Bundle b = new Bundle();
+                    b.putString("id", id);
+                    f.setArguments(b);
+                    homeItemClickListener.openCallFragment(f);
                 }
-            }).setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
-                }
-            }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings));
-                }
-            }).setNegativeButton(R.string.txt_cancel, null).show();
-        }
+            }
+        });
     }
 
-    public void setProgress(Download download) {
-        prgDialog.setProgress(download.getProgress());
-        if (!TextUtils.isEmpty(download.getFileName())) {
-            prgDialog.setTitle(download.getFileName());
-        }
-        if (download.isCompleteAll()) {
-            DialogUtils.showError(prgDialog, "All files downloaded successfully");
-        }
+    private RealmResults<realm_myLibrary> getLibraryList() {
+        return mRealm.where(realm_myLibrary.class)
+                .equalTo("resourceOffline", false)
+                .isNotEmpty("userId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
+                .or()
+                .equalTo("resourceOffline", false)
+                .isNotEmpty("courseId")
+                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
+                .findAll();
     }
 
-    private void registerReceiver() {
-        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(MESSAGE_PROGRESS);
-        bManager.registerReceiver(broadcastReceiver, intentFilter);
-    }
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (items.getResourceOffline()) {
+                if (items.getResourceOffline() != null && items.getResourceOffline()) {
                     profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
-                    Log.e("Item", items.getId() + " Resource is Offline " + items.getResourceRemoteAddress());
                     openFileType(items, "offline");
-                } else {
-                    Log.e("Item", items.getId() + " Resource is Online " + items.getResourceRemoteAddress());
+                } else if (TextUtils.equals(items.getMediaType(), "video")) {
                     openFileType(items, "online");
+                } else {
+                    Utilities.toast(getActivity(), "Resource can not be opened please download the resource first.");
                 }
             }
         });
@@ -297,48 +256,13 @@ public class DashboardFragment extends Fragment {
         startActivity(intent);
     }
 
-    public void openIntent(realm_myLibrary items, Class typeClass) {
-        Intent fileOpenIntent = new Intent(DashboardFragment.this.getActivity(), typeClass);
-        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
-        startActivity(fileOpenIntent);
-    }
 
-    public void checkFileExtension(realm_myLibrary items) {
-        String filenameArray[] = items.getResourceLocalAddress().split("\\.");
-        String extension = filenameArray[filenameArray.length - 1];
-
-        switch (extension) {
-            case "pdf":
-                openIntent(items, PDFReaderActivity.class);
-                break;
-            case "bmp":
-            case "gif":
-            case "jpg":
-            case "png":
-            case "webp":
-                openIntent(items, ImageViewerActivity.class);
-                break;
-            default:
-                checkMoreFileExtensions(extension, items);
-                break;
-        }
-    }
-
-    public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
-        switch (extension) {
-            case "txt":
-                openIntent(items, TextFileViewerActivity.class);
-                break;
-            case "md":
-                openIntent(items, MarkdownViewerActivity.class);
-                break;
-            case "csv":
-                openIntent(items, CSVViewerActivity.class);
-                break;
-            default:
-                Toast.makeText(DashboardFragment.this.getContext(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
-                break;
-        }
-
+    public void setCountText(int countText, Class c, View v) {
+        if (c == realm_myCourses.class)
+            ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
+        else if (c == realm_meetups.class)
+            ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
+        else if (c == realm_myTeams.class)
+            ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
     }
 }

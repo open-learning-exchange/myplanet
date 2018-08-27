@@ -57,6 +57,9 @@ public class SyncManager {
     public void start(SyncListener listener) {
         this.listener = listener;
         if (!isSyncing) {
+            if (listener != null) {
+                listener.onSyncStarted();
+            }
             syncDatabase();
         } else {
             Utilities.log("Already Syncing...");
@@ -73,20 +76,20 @@ public class SyncManager {
     }
 
     private void syncDatabase() {
-        if (listener != null) {
-            listener.onSyncStarted();
-        }
         Thread td = new Thread(new Runnable() {
             public void run() {
                 try {
                     isSyncing = true;
                     NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                     mRealm = dbService.getRealmInstance();
-                    properties = dbService.getClouchDbProperties("_users", settings);
+                    properties = dbService.getClouchDbProperties("tablet_users", settings);
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
                     myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
+                } catch (Exception err) {
+                    //Todo alert to user invalid URL
                 } finally {
                     NotificationUtil.cancel(context, 111);
                     isSyncing = false;
@@ -128,6 +131,7 @@ public class SyncManager {
             e.printStackTrace();
         }
     }
+
 
     private void myLibraryTransactionSync() {
         properties.setDbName("shelf");
@@ -203,6 +207,7 @@ public class SyncManager {
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds, int x, JsonObject resourceDoc) {
         switch (stringArray[2]) {
             case "resources":
+                Utilities.log("Resource  " + stringArray[0]);
                 realm_myLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":
