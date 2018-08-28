@@ -167,7 +167,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         } else {
             url_user = "satellite";
             url_pwd = password;
-            couchdbURL = uri.getScheme()+"://"+url_user+":"+url_user+"@"+uri.getHost()+":"+uri.getPort();
+            couchdbURL = uri.getScheme()+"://"+url_user+":"+url_pwd+"@"+uri.getHost()+":"+uri.getPort();
         }
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
