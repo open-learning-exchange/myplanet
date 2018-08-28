@@ -252,10 +252,6 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
         return connectionResult;
     }
 
-    protected void hideKeyboard(View view) {
-        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-    }
 
     public void declareHideKeyboardElements() {
         constraintLayout = findViewById(R.id.constraintLayout);
@@ -270,11 +266,6 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
 
     @Override
     public void onSuccess(String s) {
-        DialogUtils.showSnack(btnSignIn, s);
-    }
-
-    @Override
-    public void onError(String s) {
         DialogUtils.showSnack(btnSignIn, s);
     }
 
