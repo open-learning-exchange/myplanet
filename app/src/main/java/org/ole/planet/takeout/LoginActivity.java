@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -30,8 +31,11 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.callback.SuccessListener;
 import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.utilities.DialogUtils;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +45,7 @@ import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
 
-public class LoginActivity extends SyncActivity {
+public class LoginActivity extends SyncActivity implements SuccessListener {
     Context context;
     boolean connectionResult;
     dbSetup dbsetup = new dbSetup();
@@ -138,8 +142,8 @@ public class LoginActivity extends SyncActivity {
             @Override
             public void onClick(View v) {
                 gifDrawable.reset();
-                UploadManager.getInstance().uploadUserActivities();
-                Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
+                UploadManager.getInstance().uploadUserActivities(LoginActivity.this);
+                Toast.makeText(LoginActivity.this, "Syncing data, please wait...", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -262,6 +266,16 @@ public class LoginActivity extends SyncActivity {
                 return false;
             }
         });
+    }
+
+    @Override
+    public void onSuccess(String s) {
+        DialogUtils.showSnack(btnSignIn, s);
+    }
+
+    @Override
+    public void onError(String s) {
+        DialogUtils.showSnack(btnSignIn, s);
     }
 
     private class MyTextWatcher implements TextWatcher {

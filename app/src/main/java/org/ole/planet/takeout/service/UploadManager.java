@@ -3,6 +3,7 @@ package org.ole.planet.takeout.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import com.google.gson.JsonObject;
@@ -13,6 +14,7 @@ import org.lightcouch.Response;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
+import org.ole.planet.takeout.callback.SuccessListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.utilities.Utilities;
 
@@ -44,23 +46,30 @@ public class UploadManager {
         mRealm = dbService.getRealmInstance();
     }
 
-    public void uploadUserActivities() {
+    public void uploadUserActivities(final SuccessListener listener) {
         properties = dbService.getClouchDbProperties("login_activities", sharedPreferences);
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
-            public void execute(Realm realm) {
+            public void execute(@NonNull Realm realm) {
+
                 final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
-                        .findAll();
+                        .isNull("_rev").findAll();
+
+                Utilities.log("Size " + activities.size());
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                for (int i = 0; i < activities.size(); i++) {
-                    Response r = dbClient.post(realm_offlineActivities.serializeLoginActivities(activities.get(i)));
+                for (realm_offlineActivities act : activities) {
+                    Response r = dbClient.post(realm_offlineActivities.serializeLoginActivities(act));
                     if (!TextUtils.isEmpty(r.getId())) {
-                        activities.get(i).deleteFromRealm();
+                        act.set_rev(r.getRev());
+                        act.set_id(r.getId());
                     }
-                    Utilities.log("id  " + r.getId());
                 }
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess("Sync with server completed successfully");
             }
         });
     }
-
 }

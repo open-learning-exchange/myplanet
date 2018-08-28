@@ -145,6 +145,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 .withDrawerWidthDp(200)
                 .build();
     }
+
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
@@ -172,8 +173,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 break;
         }
     }
+
     private void logout() {
-       profileDbHandler.onLogout();
+        profileDbHandler.onLogout();
         Intent loginscreen = new Intent(this, LoginActivity.class);
         loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(loginscreen);

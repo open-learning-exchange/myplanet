@@ -153,7 +153,7 @@ public class Utilities {
     }
 
     public static String getUserName(SharedPreferences settings) {
-        return settings.getString("url_user", "");
+        return settings.getString("name", "");
     }
 
     public static void loadImage(String userImage, ImageView imageView) {

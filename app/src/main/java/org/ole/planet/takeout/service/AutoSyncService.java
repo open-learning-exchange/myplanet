@@ -5,13 +5,14 @@ import android.content.SharedPreferences;
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
+import org.ole.planet.takeout.callback.SuccessListener;
 import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Date;
 
 
-public class AutoSyncService extends JobService implements SyncListener {
+public class AutoSyncService extends JobService implements SyncListener{
     SharedPreferences preferences;
 
     @Override
@@ -23,7 +24,6 @@ public class AutoSyncService extends JobService implements SyncListener {
         if ((currentTime - lastSync) > (syncInterval * 1000)) {
             Utilities.toast(this, "Syncing started...");
             SyncManager.getInstance().start(this);
-            UploadManager.getInstance().uploadUserActivities();
         }
         Utilities.log("Diff  " + (currentTime - lastSync) + " " + (syncInterval * 1000));
         return false;

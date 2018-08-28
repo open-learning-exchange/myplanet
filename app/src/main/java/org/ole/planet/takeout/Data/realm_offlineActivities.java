@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 import org.jboss.security.auth.spi.Users;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.TimeUtils;
+import org.ole.planet.takeout.utilities.Utilities;
+
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
@@ -14,12 +17,22 @@ import io.realm.annotations.PrimaryKey;
 public class realm_offlineActivities extends RealmObject {
     @PrimaryKey
     private String id;
-    private String userFullName;
+    private String _id;
+    private String _rev;
+    private String userName;
     private String userId;
     private String type;
     private String description;
     private Long loginTime;
     private Long logoutTime;
+
+    public String get_rev() {
+        return _rev;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
+    }
 
     public String getId() {
         return id;
@@ -29,12 +42,20 @@ public class realm_offlineActivities extends RealmObject {
         this.id = id;
     }
 
-    public String getUserFullName() {
-        return userFullName;
+    public String get_id() {
+        return _id;
     }
 
-    public void setUserFullName(String userName) {
-        this.userFullName = userName;
+    public void set_id(String _id) {
+        this._id = _id;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getUserId() {
@@ -80,16 +101,32 @@ public class realm_offlineActivities extends RealmObject {
 
     public static JsonObject serializeLoginActivities(realm_offlineActivities realm_offlineActivities) {
         JsonObject ob = new JsonObject();
-        ob.addProperty("user", realm_offlineActivities.getUserFullName());
+        ob.addProperty("user", realm_offlineActivities.getUserName());
         ob.addProperty("type", realm_offlineActivities.getType());
         ob.addProperty("loginTime", realm_offlineActivities.getLoginTime());
         ob.addProperty("logoutTime", realm_offlineActivities.getLogoutTime());
+        if (realm_offlineActivities.get_id() != null) {
+            ob.addProperty("_id", realm_offlineActivities.getLogoutTime());
+        }
+        if (realm_offlineActivities.get_rev() != null) {
+            ob.addProperty("_rev", realm_offlineActivities.get_rev());
+        }
         return ob;
     }
 
     public static realm_offlineActivities getRecentLogin(Realm mRealm) {
         realm_offlineActivities s = mRealm.where(realm_offlineActivities.class).equalTo("type", UserProfileDbHandler.KEY_LOGIN).sort("loginTime", Sort.DESCENDING).findFirst();
         return s;
+    }
 
+    public static void insertOfflineActivities(Realm mRealm, JsonObject act) {
+        realm_offlineActivities activities = mRealm.createObject(realm_offlineActivities.class, act.get("_id").toString());
+        activities.set_rev(act.get("_rev").toString());
+        activities.set_id(act.get("_id").toString());
+        activities.setLoginTime(act.has("loginTime") ? act.get("logoutTime").getAsLong() : 0L);
+        activities.setType(act.get("type").getAsString());
+        activities.setUserName(act.get("user").getAsString());
+        activities.setLogoutTime(act.has("logoutTime") ? act.get("logoutTime").getAsLong() : 0L);
+        Utilities.log("Inserted " + act.toString());
     }
 }

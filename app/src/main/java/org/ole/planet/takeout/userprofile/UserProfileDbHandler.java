@@ -44,6 +44,8 @@ public class UserProfileDbHandler {
             mRealm.beginTransaction();
         realm_offlineActivities offlineActivities = mRealm.copyToRealm(createUser());
         offlineActivities.setType(KEY_LOGIN);
+        offlineActivities.set_rev(null);
+        offlineActivities.set_id(null);
         offlineActivities.setDescription("Member login on offline application");
         offlineActivities.setLoginTime(new Date().getTime());
         mRealm.commitTransaction();
@@ -68,7 +70,7 @@ public class UserProfileDbHandler {
     private realm_offlineActivities createUser() {
         realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
         offlineActivities.setUserId(settings.getString("userId", ""));
-        offlineActivities.setUserFullName(fullName);
+        offlineActivities.setUserName(fullName);
         return offlineActivities;
     }
 
@@ -78,8 +80,10 @@ public class UserProfileDbHandler {
 
 
     public int getOfflineVisits() {
+        realm_UserModel m = getUserModel();
+
         RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
-                .equalTo("userId", settings.getString("userId", ""))
+                .equalTo("userName", m.getName())
                 .equalTo("type", KEY_LOGIN)
                 .findAll();
         if (!db_users.isEmpty()) {
