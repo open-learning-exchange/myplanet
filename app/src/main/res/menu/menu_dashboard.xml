@@ -5,11 +5,10 @@
 
     <item
         android:id="@+id/menu_email"
-        android:icon="@drawable/email"
         android:orderInCategory="200"
         android:title="User"
-        app:showAsAction="ifRoom" />
-
+        android:icon="@drawable/email"
+        app:showAsAction="ifRoom"/>
     <item
         android:id="@+id/menu_profile"
         android:icon="@drawable/usersettings"
@@ -18,16 +17,36 @@
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/menu_notifications"
-        android:orderInCategory="400"
-        android:title="Alerts"
+        android:orderInCategory="300"
+        android:icon="@drawable/notifications"
         app:actionLayout="@layout/view_notification"
-        app:showAsAction="ifRoom" />
+        android:title="Alerts"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/menu_prpfile"
+        android:icon="@drawable/en"
+        android:orderInCategory="400"
+        android:title="View Profile" />
+    <item
+        android:id="@+id/edit_profile"
+        android:icon="@drawable/en"
+        android:orderInCategory="401"
+        android:title="Edit Profile" />
 
     <item
-        android:id="@+id/menu_language"
+        android:id="@+id/change_password"
         android:icon="@drawable/en"
-        android:orderInCategory="500"
-        android:title="User"
-        app:showAsAction="ifRoom" />
+        android:orderInCategory="401"
+        android:title="Change Password" />
+    <item
+        android:id="@+id/menu_logout"
+        android:icon="@drawable/en"
+        android:orderInCategory="401"
+        android:title="Logout" />
+    <!--<item-->
+        <!--android:id="@+id/menu_language"-->
+        <!--android:icon="@drawable/en"-->
+        <!--android:orderInCategory="401"-->
+        <!--android:title="User" />-->
 
 </menu>
