@@ -56,5 +56,9 @@
     <string name="version">Version</string>
     <string name="leave">Leave</string>
     <string name="invite_member">Invite Member</string>
-    <string name="app_version">0.2.0</string>
+    <string name="app_version">0.2.0</string><string-array name="languages">
+        <item>English</item>
+        <item>German</item>
+        <item>Hindi</item>
+    </string-array>
 </resources>
