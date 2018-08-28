@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
@@ -41,6 +42,10 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     CouchDbProperties properties;
     MaterialDialog progress_dialog;
 
+    protected void hideKeyboard(View view) {
+        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+    }
 
     public void sync(MaterialDialog dialog) {
         // Check Autosync switch (Toggler)
@@ -167,7 +172,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         } else {
             url_user = "satellite";
             url_pwd = password;
-            couchdbURL = uri.getScheme()+"://"+url_user+":"+url_user+"@"+uri.getHost()+":"+uri.getPort();
+            couchdbURL = uri.getScheme()+"://"+url_user+":"+url_pwd+"@"+uri.getHost()+":"+uri.getPort();
         }
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);

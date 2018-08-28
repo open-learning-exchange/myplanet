@@ -152,8 +152,8 @@ public class Utilities {
         return "Just now";
     }
 
-    public static String getFullName(SharedPreferences settings) {
-        return settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+    public static String getUserName(SharedPreferences settings) {
+        return settings.getString("name", "");
     }
 
     public static void loadImage(String userImage, ImageView imageView) {
