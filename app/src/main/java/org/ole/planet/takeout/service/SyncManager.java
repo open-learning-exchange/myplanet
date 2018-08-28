@@ -88,6 +88,7 @@ public class SyncManager {
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                 } catch (Exception err) {
                     //Todo alert to user invalid URL
                 } finally {
@@ -122,7 +123,6 @@ public class SyncManager {
 
     private void processResourceDoc(CouchDbClientAndroid dbClient, Document doc) {
         try {
-
             JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
             realm_myLibrary.insertResources(jsonDoc, mRealm);
             Log.e("Realm", " STRING " + jsonDoc.toString());
