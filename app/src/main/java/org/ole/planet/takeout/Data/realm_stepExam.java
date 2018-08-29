@@ -1,5 +1,6 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.realm.Realm;
@@ -41,6 +42,16 @@ public class realm_stepExam extends RealmObject {
         return 0;
     }
 
+    public static JsonObject serializeExam(Realm mRealm, realm_stepExam exam) {
+        JsonObject object = new JsonObject();
+        object.addProperty("name", exam.getName());
+        object.addProperty("passingPercentage", exam.getPassingPercentage());
+        object.addProperty("type", exam.getType());
+        RealmResults<realm_examQuestion> question = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
+        object.add("questions", realm_examQuestion.serializeQuestions(mRealm, question));
+        return object;
+    }
+
     public String getPassingPercentage() {
         return passingPercentage;
     }
@@ -48,7 +59,6 @@ public class realm_stepExam extends RealmObject {
     public void setPassingPercentage(String passingPercentage) {
         this.passingPercentage = passingPercentage;
     }
-
 
 
     public String getType() {

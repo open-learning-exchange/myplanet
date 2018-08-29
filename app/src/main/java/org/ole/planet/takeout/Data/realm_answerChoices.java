@@ -30,6 +30,14 @@ public class realm_answerChoices extends RealmObject {
         }
     }
 
+
+    public JsonObject serialize() {
+        JsonObject object = new JsonObject();
+        object.addProperty("id", getId());
+        object.addProperty("text", getText());
+        return object;
+    }
+
     public String getId() {
         return id;
     }

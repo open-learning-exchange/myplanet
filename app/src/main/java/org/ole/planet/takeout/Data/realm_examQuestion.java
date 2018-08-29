@@ -2,6 +2,7 @@ package org.ole.planet.takeout.Data;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -16,6 +17,7 @@ import java.util.UUID;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_examQuestion extends RealmObject {
@@ -63,7 +65,6 @@ public class realm_examQuestion extends RealmObject {
                 myQuestion.setCorrectChoice(res.get("text").getAsString());
         }
     }
-
 
 
     public String getMarks() {
@@ -136,4 +137,44 @@ public class realm_examQuestion extends RealmObject {
             myQuestion.choices.add(s.getAsString());
         }
     }
+
+    public JsonArray getChoicesArrayObj(Realm mRealm) {
+        JsonArray array = new JsonArray();
+        RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class).equalTo("questionId", getId()).findAll();
+        for (realm_answerChoices s : choices) {
+            array.add(s.serialize());
+        }
+        return array;
+    }
+
+    public JsonArray getChoicesArray() {
+        JsonArray array = new JsonArray();
+        for (String s : getChoices()) {
+            array.add(s);
+        }
+        return array;
+    }
+
+    public static JsonArray serializeQuestions(Realm mRealm, RealmResults<realm_examQuestion> question) {
+        JsonArray array = new JsonArray();
+        if (question != null) {
+            for (realm_examQuestion que : question) {
+                JsonObject object = new JsonObject();
+                object.addProperty("header", que.getHeader());
+                object.addProperty("body", que.getBody());
+                object.addProperty("type", que.getType());
+                object.addProperty("marks", que.getMarks());
+                object.addProperty("correctChoice", que.getCorrectChoice());
+                if (!TextUtils.isEmpty(que.getCorrectChoice())) {
+                    object.add("choices", que.getChoicesArrayObj(mRealm));
+                } else {
+                    object.add("choices", que.getChoicesArray());
+                }
+                array.add(object);
+            }
+        }
+        return array;
+    }
+
+
 }
