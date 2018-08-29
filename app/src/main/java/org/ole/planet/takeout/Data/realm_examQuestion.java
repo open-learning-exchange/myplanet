@@ -157,21 +157,19 @@ public class realm_examQuestion extends RealmObject {
 
     public static JsonArray serializeQuestions(Realm mRealm, RealmResults<realm_examQuestion> question) {
         JsonArray array = new JsonArray();
-        if (question != null) {
-            for (realm_examQuestion que : question) {
-                JsonObject object = new JsonObject();
-                object.addProperty("header", que.getHeader());
-                object.addProperty("body", que.getBody());
-                object.addProperty("type", que.getType());
-                object.addProperty("marks", que.getMarks());
-                object.addProperty("correctChoice", que.getCorrectChoice());
-                if (!TextUtils.isEmpty(que.getCorrectChoice())) {
-                    object.add("choices", que.getChoicesArrayObj(mRealm));
-                } else {
-                    object.add("choices", que.getChoicesArray());
-                }
-                array.add(object);
+        for (realm_examQuestion que : question) {
+            JsonObject object = new JsonObject();
+            object.addProperty("header", que.getHeader());
+            object.addProperty("body", que.getBody());
+            object.addProperty("type", que.getType());
+            object.addProperty("marks", que.getMarks());
+            object.addProperty("correctChoice", que.getCorrectChoice());
+            if (!TextUtils.isEmpty(que.getCorrectChoice())) {
+                object.add("choices", que.getChoicesArrayObj(mRealm));
+            } else {
+                object.add("choices", que.getChoicesArray());
             }
+            array.add(object);
         }
         return array;
     }
