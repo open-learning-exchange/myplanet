@@ -13,7 +13,6 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -30,7 +29,10 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.takeout.callback.SuccessListener;
+import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.utilities.DialogUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,10 +42,9 @@ import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
 
-public class LoginActivity extends SyncActivity {
+public class LoginActivity extends SyncActivity implements SuccessListener {
     Context context;
     boolean connectionResult;
-    dbSetup dbsetup = new dbSetup();
     EditText serverUrl;
     EditText serverPassword;
     Fuel ful = new Fuel();
@@ -74,7 +75,6 @@ public class LoginActivity extends SyncActivity {
 
         declareElements();
         declareMoreElements();
-
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -82,7 +82,6 @@ public class LoginActivity extends SyncActivity {
                 submitForm();
             }
         });
-        dbsetup.Setup_db(this.context);
     }
 
     public void changeLogoColor() {
@@ -125,7 +124,6 @@ public class LoginActivity extends SyncActivity {
     }
 
     public void declareMoreElements() {
-        //Sync Gif-Button
         syncIcon = findViewById(R.id.syncIcon);
         syncIcon.setImageResource(R.drawable.sync_icon);
         syncIcon.getScaleType();
@@ -137,14 +135,11 @@ public class LoginActivity extends SyncActivity {
             @Override
             public void onClick(View v) {
                 gifDrawable.reset();
-                Toast.makeText(LoginActivity.this, "Syncing now...", Toast.LENGTH_SHORT).show();
+                UploadManager.getInstance().uploadUserActivities(LoginActivity.this);
+                Toast.makeText(LoginActivity.this, "Syncing data, please wait...", Toast.LENGTH_SHORT).show();
             }
         });
-
-        // allows the user to touch anywhere else on the screen to dismiss the keyboard
         declareHideKeyboardElements();
-
-        //listeners / actions
         inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
@@ -246,10 +241,6 @@ public class LoginActivity extends SyncActivity {
         return connectionResult;
     }
 
-    protected void hideKeyboard(View view) {
-        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-    }
 
     public void declareHideKeyboardElements() {
         constraintLayout = findViewById(R.id.constraintLayout);
@@ -260,6 +251,11 @@ public class LoginActivity extends SyncActivity {
                 return false;
             }
         });
+    }
+
+    @Override
+    public void onSuccess(String s) {
+        DialogUtils.showSnack(btnSignIn, s);
     }
 
     private class MyTextWatcher implements TextWatcher {
