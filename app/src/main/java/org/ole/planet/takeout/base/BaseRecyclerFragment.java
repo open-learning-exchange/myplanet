@@ -10,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_UserModel;
-import org.ole.planet.takeout.Data.realm_courses;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -73,12 +72,12 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
             RealmObject object = (RealmObject) selectedItems.get(i);
             if (object instanceof realm_myLibrary) {
                 realm_myLibrary myObject = mRealm.where(realm_myLibrary.class).equalTo("resourceId", ((realm_myLibrary) object).getResource_id()).findFirst();
-                Utilities.log("User id " + model.getId());
                 realm_myLibrary.createFromResource(myObject, mRealm, model.getId());
                 Utilities.toast(getActivity(), "Added to my library");
             } else {
-                realm_myCourses myObject = mRealm.where(realm_myCourses.class).equalTo("courseId", ((realm_courses) object).getCourseId()).findFirst();
-                checkNullAndAdd(myObject, object, "course");
+                realm_myCourses myObject = mRealm.where(realm_myCourses.class).equalTo("courseId", ((realm_myCourses) object).getCourseId()).findFirst();
+                realm_myCourses.createFromCourse(myObject, mRealm, model.getId());
+                Utilities.toast(getActivity(), "Added to my courses");
             }
         }
     }
@@ -91,28 +90,11 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     }
 
     public List<LI> getList(Class c) {
-        String[] mycourseIds = realm_myCourses.getMyCourseIds(mRealm);
-        if (c == realm_myLibrary.class) {
-            return mRealm.where(c).isEmpty("userId").or()
-                    .notEqualTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
-        } else if (c == realm_stepExam.class) {
+        if (c == realm_stepExam.class) {
             return mRealm.where(c).equalTo("type", "surveys").findAll();
         } else {
-            return mRealm.where(c).not().in("courseId", mycourseIds).findAll();
+            return mRealm.where(c).isEmpty("userId").or()
+                    .notEqualTo("userId", model.getId(), Case.INSENSITIVE).findAll();
         }
     }
-
-
-    public void checkNullAndAdd(RealmObject myObject, RealmObject object, String type) {
-        String title = object instanceof realm_courses ? ((realm_courses) object).getCourseTitle() : ((realm_myLibrary) object).getTitle();
-        if (myObject != null) {
-            Utilities.toast(getActivity(), type + " Already Exists in my " + type + " : " + title);
-            return;
-        } else if (object instanceof realm_courses) {
-            realm_myCourses.createFromCourse((realm_courses) object, mRealm, model.getId());
-        }
-        Utilities.toast(getActivity(), type + "Added to my " + type);
-    }
-
-
 }

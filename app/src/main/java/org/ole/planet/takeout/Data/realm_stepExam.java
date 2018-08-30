@@ -1,5 +1,7 @@
 package org.ole.planet.takeout.Data;
 
+import android.text.TextUtils;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -20,9 +22,16 @@ public class realm_stepExam extends RealmObject {
 
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
-        realm_stepExam myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
-        myExam.setStepId(step_id);
-        myExam.setCourseId(myCoursesID);
+        realm_stepExam myExam = mRealm.where(realm_stepExam.class).equalTo("id", exam.get("_id").getAsString()).findFirst();
+        if (myExam == null) {
+            myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
+        }
+        if (!TextUtils.isEmpty(myCoursesID)) {
+            myExam.setCourseId(myCoursesID);
+        }
+        if (!TextUtils.isEmpty(step_id)) {
+            myExam.setStepId(step_id);
+        }
         myExam.setType(exam.has("type") ? exam.get("type").getAsString() : "exam");
         myExam.setName(exam.get("name").getAsString());
         if (exam.has("passingPercentage"))
