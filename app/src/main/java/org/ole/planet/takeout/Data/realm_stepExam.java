@@ -26,12 +26,7 @@ public class realm_stepExam extends RealmObject {
         if (myExam == null) {
             myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
         }
-        if (!TextUtils.isEmpty(myCoursesID)) {
-            myExam.setCourseId(myCoursesID);
-        }
-        if (!TextUtils.isEmpty(step_id)) {
-            myExam.setStepId(step_id);
-        }
+        checkIdsAndInsert(myCoursesID, step_id, myExam);
         myExam.setType(exam.has("type") ? exam.get("type").getAsString() : "exam");
         myExam.setName(exam.get("name").getAsString());
         if (exam.has("passingPercentage"))
@@ -40,6 +35,15 @@ public class realm_stepExam extends RealmObject {
             myExam.setPassingPercentage(exam.get("totalMarks").getAsString());
         if (exam.has("questions"))
             realm_examQuestion.insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString(), mRealm);
+    }
+
+    private static void checkIdsAndInsert(String myCoursesID, String step_id, realm_stepExam myExam) {
+        if (!TextUtils.isEmpty(myCoursesID)) {
+            myExam.setCourseId(myCoursesID);
+        }
+        if (!TextUtils.isEmpty(step_id)) {
+            myExam.setStepId(step_id);
+        }
     }
 
 

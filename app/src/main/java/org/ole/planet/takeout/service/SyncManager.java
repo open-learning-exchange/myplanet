@@ -196,14 +196,18 @@ public class SyncManager {
                     .findAll();
             if (db_Categrory.isEmpty()) {
                 setRealmProperties(stringArray[2]);
-                CouchDbClientAndroid generaldb = new CouchDbClientAndroid(properties);
-                if (generaldb.contains(array_categoryIds.get(x).getAsString())) {
-                    JsonObject resourceDoc = generaldb.find(JsonObject.class, array_categoryIds.get(x).getAsString());
-                    triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
-                }
+                validateDocument(array_categoryIds, x);
             } else {
                 Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
             }
+        }
+    }
+
+    private void validateDocument(JsonArray array_categoryIds, int x) {
+        CouchDbClientAndroid generaldb = new CouchDbClientAndroid(properties);
+        if (generaldb.contains(array_categoryIds.get(x).getAsString())) {
+            JsonObject resourceDoc = generaldb.find(JsonObject.class, array_categoryIds.get(x).getAsString());
+            triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
         }
     }
 
