@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
@@ -41,6 +42,10 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     CouchDbProperties properties;
     MaterialDialog progress_dialog;
 
+    protected void hideKeyboard(View view) {
+        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+    }
 
     public void sync(MaterialDialog dialog) {
         // Check Autosync switch (Toggler)
@@ -91,6 +96,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     // Create items in the spinner
     public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
+        list.add("10 Minutes");
         list.add("15 Minutes");
         list.add("30 Minutes");
         list.add("1 Hour");
@@ -135,7 +141,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
                     .equalTo("name", username)
                     .findAll();
-            mRealm.beginTransaction();
+            if(!mRealm.isInTransaction())
+                mRealm.beginTransaction();
             for (realm_UserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
                     saveUserInfoPref(settings, password, user);
@@ -152,26 +159,33 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         return false;
     }
 
-    public void setUrlParts(String url, String password, Context context) {
+    public String setUrlParts(String url, String password, Context context) {
         this.context = context;
         URI uri = URI.create(url);
+        String couchdbURL;
         String url_user = null, url_pwd = null;
         if (url.contains("@")) {
             String[] userinfo = uri.getUserInfo().split(":");
             url_user = userinfo[0];
             url_pwd = userinfo[1];
+            couchdbURL = url;
         } else {
-            url_user = "";
+            url_user = "satellite";
             url_pwd = password;
+            couchdbURL = uri.getScheme()+"://"+url_user+":"+url_pwd+"@"+uri.getHost()+":"+uri.getPort();
         }
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
+        editor.putString("couchdbURL", couchdbURL);
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
         editor.putInt("url_Port", uri.getPort());
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        return couchdbURL;
+    }
+    public void startSync(){
         SyncManager.getInstance().start(this);
     }
 

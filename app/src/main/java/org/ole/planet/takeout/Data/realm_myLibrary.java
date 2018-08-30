@@ -122,7 +122,7 @@ public class realm_myLibrary extends RealmObject {
             Set<Map.Entry<String, JsonElement>> entries = obj.entrySet();
             for (Map.Entry<String, JsonElement> entry : entries) {
                 if (entry.getKey().indexOf("/") < 0) {
-                    resource.setResourceRemoteAddress(settings.getString("serverURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
+                    resource.setResourceRemoteAddress(settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
                     resource.setResourceLocalAddress(entry.getKey());
                     resource.setResourceOffline(false);
                 }

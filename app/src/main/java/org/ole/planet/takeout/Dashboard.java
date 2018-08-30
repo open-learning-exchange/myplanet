@@ -34,6 +34,9 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
+import org.ole.planet.takeout.service.UploadManager;
+import org.ole.planet.takeout.survey.SurveyFragment;
+import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -46,6 +49,8 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     private Drawer result = null;
     private Toolbar mTopToolbar;
     private boolean isDashBoard = false;
+    UserProfileDbHandler profileDbHandler;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +61,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         headerResult = getAccountHeader();
+        profileDbHandler = new UserProfileDbHandler(this);
         createDrawer();
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
@@ -100,24 +106,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             default:
                 break;
         }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_dashboard, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.menu_email) {
-            Toast.makeText(Dashboard.this, "Action clicked", Toast.LENGTH_LONG).show();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     private AccountHeader getAccountHeader() {
@@ -170,7 +158,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 openCallFragment(new MyMeetUpsFragment());
                 break;
             case R.string.menu_surveys:
-                openCallFragment(new MySurveyFragment());
+                openCallFragment(new SurveyFragment());
                 break;
             case R.string.menu_courses:
                 openCallFragment(new MyCourseFragment());
@@ -187,10 +175,17 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     }
 
     private void logout() {
+        profileDbHandler.onLogout();
         Intent loginscreen = new Intent(this, LoginActivity.class);
         loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(loginscreen);
         this.finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        profileDbHandler.onDestory();
     }
 
     public void feedbackDialog() {

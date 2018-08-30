@@ -21,6 +21,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 
@@ -67,6 +68,7 @@ public class Utilities {
         String datetime = dateformat.format(c.getTime());
         return datetime;
     }
+
 
     public static void openDownloadService(Context context, ArrayList urls) {
         Intent intent = new Intent(context, MyDownloadService.class);
@@ -150,8 +152,8 @@ public class Utilities {
         return "Just now";
     }
 
-    public static String getFullName(SharedPreferences settings) {
-        return settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+    public static String getUserName(SharedPreferences settings) {
+        return settings.getString("name", "");
     }
 
     public static void loadImage(String userImage, ImageView imageView) {

@@ -17,4 +17,11 @@ public class TimeUtils {
         }
         return "N/A";
     }
+
+    public static String getFormatedDateWithTime(long date) {
+        Date d = new Date(date);
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa");
+        return dateformat.format(d);
+    }
+
 }

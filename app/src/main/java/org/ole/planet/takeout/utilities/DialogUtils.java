@@ -4,6 +4,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.support.design.widget.Snackbar;
+import android.view.View;
 
 import org.ole.planet.takeout.datamanager.MyDownloadService;
 
@@ -45,5 +47,10 @@ public class DialogUtils {
         prgDialog.setTitle(message);
         if (prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE) != null)
             prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE).setEnabled(false);
+    }
+
+    public static void showSnack(View v, String s) {
+        if (v != null)
+            Snackbar.make(v, s, Snackbar.LENGTH_LONG).show();
     }
 }
