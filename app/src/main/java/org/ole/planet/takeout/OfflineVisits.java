@@ -17,7 +17,7 @@ public class OfflineVisits {
         offlineActivities.setUserId(settings.getString("name", ""));
         offlineActivities.setType("Login");
         offlineActivities.setDescription("Member login on offline application");
-        offlineActivities.setUserFullName(fullName);
+        offlineActivities.setUserName(fullName);
         RealmResults<realm_offlineActivities> db_users = mRealm.where(realm_offlineActivities.class)
                 .equalTo("userId", settings.getString("name", ""))
                 .equalTo("type", "Visits")
