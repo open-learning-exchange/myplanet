@@ -1,7 +1,12 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import org.ole.planet.takeout.utilities.TimeUtils;
 import org.ole.planet.takeout.utilities.Utilities;
+
+import java.util.List;
 
 import io.realm.RealmList;
 import io.realm.*;
@@ -9,6 +14,8 @@ import io.realm.*;
 public class realm_submissions extends RealmObject {
     @io.realm.annotations.PrimaryKey
     private String id;
+    private String _id;
+    private String _rev;
     private String parentId;
     private String type;
     private String userId;
@@ -16,7 +23,47 @@ public class realm_submissions extends RealmObject {
     private RealmList<realm_answer> answers;
     private String grade;
     private String status;
+    private boolean uploaded;
 
+    public static JsonObject serializeExamResult(Realm mRealm, realm_submissions sub) {
+        JsonObject object = new JsonObject();
+        realm_UserModel user = mRealm.where(realm_UserModel.class).equalTo("id", sub.userId).findFirst();
+        realm_stepExam exam = mRealm.where(realm_stepExam.class).equalTo("id", sub.parentId).findFirst();
+        object.addProperty("parentId", sub.getParentId());
+        object.addProperty("type", sub.getType());
+        object.addProperty("grade", sub.getGrade());
+        object.addProperty("status", sub.getStatus());
+        object.add("answers", realm_answer.serializeRealmAnswer(mRealm, sub.getAnswers()));
+        object.add("parent", realm_stepExam.serializeExam(mRealm, exam));
+        object.add("user", user.serialize());
+        return object;
+
+    }
+
+
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
+    }
+
+    public String get_rev() {
+        return _rev;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
+    }
+
+    public boolean isUploaded() {
+        return uploaded;
+    }
+
+    public void setUploaded(boolean uploaded) {
+        this.uploaded = uploaded;
+    }
 
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
         return "Survey Taken " + mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";

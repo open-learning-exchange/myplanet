@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
+import org.lightcouch.NoDocumentException;
 import org.ole.planet.takeout.Data.realm_meetups;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -195,16 +196,23 @@ public class SyncManager {
                     .findAll();
             if (db_Categrory.isEmpty()) {
                 setRealmProperties(stringArray[2]);
-                CouchDbClientAndroid generaldb = new CouchDbClientAndroid(properties);
-                JsonObject resourceDoc = generaldb.find(JsonObject.class, array_categoryIds.get(x).getAsString());
-                triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
+                validateDocument(array_categoryIds, x);
             } else {
                 Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
             }
         }
     }
 
-    private void triggerInsert(String[] stringArray, JsonArray array_categoryIds, int x, JsonObject resourceDoc) {
+    private void validateDocument(JsonArray array_categoryIds, int x) {
+        CouchDbClientAndroid generaldb = new CouchDbClientAndroid(properties);
+        if (generaldb.contains(array_categoryIds.get(x).getAsString())) {
+            JsonObject resourceDoc = generaldb.find(JsonObject.class, array_categoryIds.get(x).getAsString());
+            triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
+        }
+    }
+
+    private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
+                               int x, JsonObject resourceDoc) {
         switch (stringArray[2]) {
             case "resources":
                 Utilities.log("Resource  " + stringArray[0]);
@@ -214,7 +222,7 @@ public class SyncManager {
                 realm_meetups.insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
                 break;
             case "courses":
-                realm_myCourses.insertMyCourses(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                realm_myCourses.insertMyCourses(stringArray[0], resourceDoc, mRealm);
                 break;
             case "teams":
                 realm_myTeams.insertMyTeams(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
