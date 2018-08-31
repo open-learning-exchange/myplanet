@@ -37,6 +37,23 @@ public class realm_UserModel extends RealmObject {
     private String communityName;
     private String userImage;
 
+
+    public JsonObject serialize() {
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", getId());
+        object.addProperty("_rev", get_rev());
+        object.addProperty("name", getName());
+        object.addProperty("roles", getRoles());
+        object.addProperty("isUserAdmin", getUserAdmin());
+        object.addProperty("joinDate", getJoinDate());
+        object.addProperty("firstName", getFirstName());
+        object.addProperty("lastName", getLastName());
+        object.addProperty("middleName", getMiddleName());
+        object.addProperty("email", getEmail());
+        object.addProperty("phoneNumber", getPhoneNumber());
+        return object;
+    }
+
     public static void populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
@@ -228,8 +245,10 @@ public class realm_UserModel extends RealmObject {
         }
     }
 
+
     @Override
     public String toString() {
         return " - " +  name;
     }
+
 }

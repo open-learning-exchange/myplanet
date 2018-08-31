@@ -11,7 +11,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
-import org.ole.planet.takeout.Data.realm_courses;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.OnCourseItemSelected;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -22,11 +22,11 @@ import java.util.List;
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private Context context;
-    private List<realm_courses> courseList;
-    private List<realm_courses> selectedItems;
+    private List<realm_myCourses> courseList;
+    private List<realm_myCourses> selectedItems;
     private OnCourseItemSelected listener;
 
-    public AdapterCourses(Context context, List<realm_courses> courseList) {
+    public AdapterCourses(Context context, List<realm_myCourses> courseList) {
         this.context = context;
         this.courseList = courseList;
         this.selectedItems = new ArrayList<>();

@@ -17,7 +17,10 @@ public class realm_answerChoices extends RealmObject {
     private String questionId;
 
     public static void create(Realm mRealm, String questionId, JsonObject res, SharedPreferences settings) {
-        realm_answerChoices choice = mRealm.createObject(realm_answerChoices.class, res.get("id").getAsString());
+        realm_answerChoices choice = mRealm.where(realm_answerChoices.class).equalTo("id", res.get("id").getAsString()).findFirst();
+        if (choice == null) {
+            choice = mRealm.createObject(realm_answerChoices.class, res.get("id").getAsString());
+        }
         choice.setText(res.get("text").getAsString());
         choice.setQuestionId(questionId);
     }
@@ -28,6 +31,14 @@ public class realm_answerChoices extends RealmObject {
             realm_answerChoices.create(mRealm, questionId, res, settings);
             Utilities.log("Insert choices");
         }
+    }
+
+
+    public JsonObject serialize() {
+        JsonObject object = new JsonObject();
+        object.addProperty("id", getId());
+        object.addProperty("text", getText());
+        return object;
     }
 
     public String getId() {

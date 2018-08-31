@@ -1,5 +1,10 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -13,8 +18,22 @@ public class realm_answer extends RealmObject {
     private String examId;
     private String questionId;
     private String submissionId;
+
     public String getId() {
         return id;
+    }
+
+    public static JsonArray serializeRealmAnswer(Realm mRealm, RealmList<realm_answer> answers) {
+        JsonArray array = new JsonArray();
+        for (realm_answer ans : answers) {
+            JsonObject object = new JsonObject();
+            object.addProperty("value", ans.getValue());
+            object.addProperty("mistakes", ans.getMistakes());
+            object.addProperty("passed", ans.isPassed());
+            array.add(object);
+        }
+
+        return array;
     }
 
     public void setId(String id) {

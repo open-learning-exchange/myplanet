@@ -6,12 +6,15 @@ import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Response;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
+import org.ole.planet.takeout.Data.realm_submissions;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.callback.SuccessListener;
@@ -43,18 +46,41 @@ public class UploadManager {
         this.context = context;
         sharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
-        mRealm = dbService.getRealmInstance();
+
     }
 
-    public void uploadUserActivities(final SuccessListener listener) {
-        properties = dbService.getClouchDbProperties("login_activities", sharedPreferences);
+    public void uploadExamResult(final SuccessListener listener) {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties("submissions", sharedPreferences);
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
             public void execute(@NonNull Realm realm) {
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
+                for (realm_submissions sub : submissions) {
+                    Response r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
+                    if (!TextUtils.isEmpty(r.getId())) {
+                        sub.setUploaded(true);
+                        Utilities.log("ID " + r.getId());
+                    }
+                }
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess("Result sync completed successfully");
+            }
+        });
+    }
 
+    public void uploadUserActivities(final SuccessListener listener) {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties("login_activities", sharedPreferences);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(@NonNull Realm realm) {
                 final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
                         .isNull("_rev").findAll();
-
                 Utilities.log("Size " + activities.size());
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (realm_offlineActivities act : activities) {
