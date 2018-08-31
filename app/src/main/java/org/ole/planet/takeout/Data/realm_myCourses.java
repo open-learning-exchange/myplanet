@@ -54,8 +54,11 @@ public class realm_myCourses extends RealmObject {
         insertMyCourses("", doc, mRealm);
     }
 
+    public static realm_myCourses getMyCourse(Realm mRealm, String id) {
+        return mRealm.where(realm_myCourses.class).equalTo("courseId", id).findFirst();
+    }
 
-    public static void createFromCourse(realm_myCourses course, Realm mRealm, String id) {
+    public static void createMyCourse(realm_myCourses course, Realm mRealm, String id) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         course.setUserId(id);
