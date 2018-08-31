@@ -59,6 +59,7 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
 
     private View constraintLayout;
     private CheckBox save;
+    SharedPreferences.Editor editor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,13 +67,12 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
         setContentView(R.layout.activity_login);
         context = this.getApplicationContext();
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        editor = settings.edit();
         changeLogoColor();
-        //layouts
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         save = findViewById(R.id.save);
-
         declareElements();
         declareMoreElements();
         btnSignIn = findViewById(R.id.btn_signin); //buttons
@@ -100,7 +100,6 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
             @Override
             public void onClick(View view) {
                 MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-
                 builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
                         .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
@@ -112,7 +111,6 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        SharedPreferences.Editor editor = settings.edit();
                         editor.putBoolean("autoSync", syncSwitch.isChecked());
                         editor.putInt("autoSyncInterval", syncTimeInteval[spinner.getSelectedItemPosition()]);
                         editor.putInt("autoSyncPosition", spinner.getSelectedItemPosition());
