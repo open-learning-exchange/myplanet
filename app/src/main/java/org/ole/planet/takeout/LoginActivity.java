@@ -100,6 +100,7 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
             @Override
             public void onClick(View view) {
                 MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+
                 builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
                         .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
@@ -114,6 +115,7 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
                         SharedPreferences.Editor editor = settings.edit();
                         editor.putBoolean("autoSync", syncSwitch.isChecked());
                         editor.putInt("autoSyncInterval", syncTimeInteval[spinner.getSelectedItemPosition()]);
+                        editor.putInt("autoSyncPosition", spinner.getSelectedItemPosition());
                         editor.commit();
                         Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
                     }

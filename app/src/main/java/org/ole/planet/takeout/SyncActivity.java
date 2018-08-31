@@ -20,7 +20,9 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
+import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.utilities.NotificationUtil;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -104,6 +106,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
+        spinner.setSelection(settings.getInt("autoSyncPosition", 0));
+
     }
 
     public void alertDialogOkay(String Message) {
