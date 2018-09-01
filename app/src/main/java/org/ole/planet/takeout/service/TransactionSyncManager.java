@@ -10,7 +10,7 @@ import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
 import org.ole.planet.takeout.Data.realm_UserModel;
-import org.ole.planet.takeout.Data.realm_courses;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.MainApplication;
@@ -40,9 +40,8 @@ public class TransactionSyncManager {
         try {
             if (type.equals("course")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                realm_courses.insertMyCourses(jsonDoc, mRealm);
-            }
-            else if (type.equals("exams")) {
+                realm_myCourses.insertMyCourses(jsonDoc, mRealm);
+            } else if (type.equals("exams")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
             } else if (type.equals("users")) {

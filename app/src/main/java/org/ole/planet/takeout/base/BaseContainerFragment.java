@@ -52,7 +52,6 @@ public abstract class BaseContainerFragment extends Fragment {
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     ListView lv;
     View convertView;
-    ArrayList<String> names = new ArrayList<>();
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -69,6 +68,7 @@ public abstract class BaseContainerFragment extends Fragment {
 
     public void createListView(RealmResults<realm_myLibrary> db_myLibrary) {
         lv = (ListView) convertView.findViewById(R.id.alertDialog_listView);
+        ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < db_myLibrary.size(); i++) {
             names.add(db_myLibrary.get(i).getTitle().toString());
         }

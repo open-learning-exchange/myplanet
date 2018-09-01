@@ -1,5 +1,7 @@
 package org.ole.planet.takeout.Data;
 
+import android.text.TextUtils;
+
 import com.google.gson.JsonObject;
 
 import java.util.List;
@@ -25,10 +27,16 @@ public class realm_myCourses extends RealmObject {
     private String createdDate;
     private Integer numberOfSteps;
 
-    public static void insertMyCourses(String userId, String myCoursesID, JsonObject myCousesDoc, Realm mRealm) {
-        realm_myCourses myMyCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
-        myMyCoursesDB.setUserId(userId);
-        myMyCoursesDB.setCourseId(myCoursesID);
+    public static void insertMyCourses(String userId, JsonObject myCousesDoc, Realm mRealm) {
+        String id = myCousesDoc.get("_id").getAsString();
+        realm_myCourses myMyCoursesDB = mRealm.where(realm_myCourses.class).equalTo("id", id).findFirst();
+        if (myMyCoursesDB == null) {
+            myMyCoursesDB = mRealm.createObject(realm_myCourses.class, id);
+        }
+        if (!TextUtils.isEmpty(userId)) {
+            myMyCoursesDB.setUserId(userId);
+        }
+        myMyCoursesDB.setCourseId(myCousesDoc.get("_id").getAsString());
         myMyCoursesDB.setCourse_rev(myCousesDoc.get("_rev").getAsString());
         myMyCoursesDB.setLanguageOfInstruction(myCousesDoc.get("languageOfInstruction").getAsString());
         myMyCoursesDB.setCourseTitle(myCousesDoc.get("courseTitle").getAsString());
@@ -39,30 +47,26 @@ public class realm_myCourses extends RealmObject {
         myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel").getAsString());
         myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate").getAsString());
         myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
-        realm_courseSteps.insertCourseSteps(myCoursesID, myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
+        realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
     }
 
-    public static void createFromCourse(realm_courses course, Realm mRealm, String id) {
+    public static void insertMyCourses(JsonObject doc, Realm mRealm) {
+        insertMyCourses("", doc, mRealm);
+    }
+
+    public static realm_myCourses getMyCourse(Realm mRealm, String id) {
+        return mRealm.where(realm_myCourses.class).equalTo("courseId", id).findFirst();
+    }
+
+    public static void createMyCourse(realm_myCourses course, Realm mRealm, String id) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        realm_myCourses myMyCoursesDB = mRealm.createObject(realm_myCourses.class, UUID.randomUUID().toString());
-        myMyCoursesDB.setUserId(id);
-        myMyCoursesDB.setCourseId(course.getCourseId());
-        myMyCoursesDB.setCourse_rev(course.getCourse_rev());
-        myMyCoursesDB.setLanguageOfInstruction(course.getLanguageOfInstruction());
-        myMyCoursesDB.setCourseTitle(course.getCourseTitle());
-        myMyCoursesDB.setMemberLimit(course.getMemberLimit());
-        myMyCoursesDB.setDescription(course.getDescription());
-        myMyCoursesDB.setMethod(course.getMethod());
-        myMyCoursesDB.setGradeLevel(course.getGradeLevel());
-        myMyCoursesDB.setSubjectLevel(course.getSubjectLevel());
-        myMyCoursesDB.setCreatedDate(course.getCreatedDate());
-        myMyCoursesDB.setnumberOfSteps(course.getnumberOfSteps());
+        course.setUserId(id);
         mRealm.commitTransaction();
     }
 
-    public static String[] getMyCourseIds(Realm mRealm) {
-        List<realm_myCourses> list = mRealm.where(realm_myCourses.class).findAll();
+    public static String[] getMyCourseIds(Realm mRealm, String userId) {
+        List<realm_myCourses> list = mRealm.where(realm_myCourses.class).equalTo("userId", userId).findAll();
         String[] myIds = new String[list.size()];
         for (int i = 0; i < list.size(); i++) {
             myIds[i] = list.get(i).getCourseId();

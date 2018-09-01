@@ -8,18 +8,21 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.TextView;
 
-import org.ole.planet.takeout.Data.realm_courses;
+import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.base.BaseRecyclerFragment;
 import org.ole.planet.takeout.callback.OnCourseItemSelected;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.List;
+
+import io.realm.RealmResults;
 
 /**
  * A simple {@link Fragment} subclass.
  */
 
-public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implements OnCourseItemSelected {
+public class MyCourseFragment extends BaseRecyclerFragment<realm_myCourses> implements OnCourseItemSelected {
 
     TextView tvAddToLib;
 
@@ -33,7 +36,7 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implem
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        AdapterCourses mAdapter = new AdapterCourses(getActivity(), getList(realm_courses.class));
+        AdapterCourses mAdapter = new AdapterCourses(getActivity(), getList(realm_myCourses.class));
         mAdapter.setListener(this);
         return mAdapter;
     }
@@ -51,7 +54,7 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_courses> implem
     }
 
     @Override
-    public void onSelectedListChange(List<realm_courses> list) {
+    public void onSelectedListChange(List<realm_myCourses> list) {
         this.selectedItems = list;
         changeButtonStatus();
     }
