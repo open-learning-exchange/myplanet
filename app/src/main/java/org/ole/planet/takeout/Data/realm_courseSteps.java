@@ -38,8 +38,8 @@ public class realm_courseSteps extends io.realm.RealmObject {
     public static String[] getStepIds(Realm mRealm, String courseId) {
         List<realm_courseSteps> list = mRealm.where(realm_courseSteps.class).equalTo("courseId", courseId).findAll();
         String[] myIds = new String[list.size()];
-        int i = 0 ;
-        for (realm_courseSteps c : list){
+        int i = 0;
+        for (realm_courseSteps c : list) {
             myIds[i] = c.getId();
             i++;
         }
