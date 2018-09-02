@@ -3,10 +3,12 @@ package org.ole.planet.takeout;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
@@ -20,7 +22,9 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
+import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.utilities.NotificationUtil;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -41,6 +45,15 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     Context context;
     CouchDbProperties properties;
     MaterialDialog progress_dialog;
+    SharedPreferences.Editor editor;
+    int[] syncTimeInteval = {10 * 60,15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        editor = settings.edit();
+    }
 
     protected void hideKeyboard(View view) {
         InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -48,7 +61,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     }
 
     public void sync(MaterialDialog dialog) {
-        // Check Autosync switch (Toggler)
         spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
@@ -104,6 +116,15 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
+        spinner.setSelection(settings.getInt("autoSyncPosition", 0));
+
+    }
+
+    public void saveSyncInfoToPreference() {
+        editor.putBoolean("autoSync", syncSwitch.isChecked());
+        editor.putInt("autoSyncInterval", syncTimeInteval[spinner.getSelectedItemPosition()]);
+        editor.putInt("autoSyncPosition", spinner.getSelectedItemPosition());
+        editor.commit();
     }
 
     public void alertDialogOkay(String Message) {
@@ -141,7 +162,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
                     .equalTo("name", username)
                     .findAll();
-            if(!mRealm.isInTransaction())
+            if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
             for (realm_UserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
@@ -172,7 +193,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         } else {
             url_user = "satellite";
             url_pwd = password;
-            couchdbURL = uri.getScheme()+"://"+url_user+":"+url_pwd+"@"+uri.getHost()+":"+uri.getPort();
+            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + uri.getPort();
         }
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
@@ -185,7 +206,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         editor.commit();
         return couchdbURL;
     }
-    public void startSync(){
+
+    public void startSync() {
         SyncManager.getInstance().start(this);
     }
 
@@ -203,4 +225,5 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         progress_dialog.dismiss();
         NotificationUtil.cancellAll(this);
     }
+
 }

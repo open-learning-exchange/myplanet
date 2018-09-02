@@ -48,7 +48,6 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
     EditText serverUrl;
     EditText serverPassword;
     Fuel ful = new Fuel();
-    int[] syncTimeInteval = {15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
@@ -56,7 +55,6 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-
     private View constraintLayout;
     private CheckBox save;
 
@@ -65,14 +63,11 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         context = this.getApplicationContext();
-        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         changeLogoColor();
-        //layouts
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         save = findViewById(R.id.save);
-
         declareElements();
         declareMoreElements();
         btnSignIn = findViewById(R.id.btn_signin); //buttons
@@ -106,15 +101,13 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 dialog.dismiss();
+                                saveSyncInfoToPreference();
                                 isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url), (EditText) dialog.getCustomView().findViewById(R.id.input_server_Password));
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        SharedPreferences.Editor editor = settings.edit();
-                        editor.putBoolean("autoSync", syncSwitch.isChecked());
-                        editor.putInt("autoSyncInterval", syncTimeInteval[spinner.getSelectedItemPosition()]);
-                        editor.commit();
+                        saveSyncInfoToPreference();
                         Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -122,6 +115,7 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
             }
         });
     }
+
 
     public void declareMoreElements() {
         syncIcon = findViewById(R.id.syncIcon);
