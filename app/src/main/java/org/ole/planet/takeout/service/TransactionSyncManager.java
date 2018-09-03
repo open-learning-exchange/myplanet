@@ -41,7 +41,8 @@ public class TransactionSyncManager {
             if (type.equals("course")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_myCourses.insertMyCourses(jsonDoc, mRealm);
-            } else if (type.equals("exams")) {
+            }
+            else if (type.equals("exams")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
             } else if (type.equals("users")) {
