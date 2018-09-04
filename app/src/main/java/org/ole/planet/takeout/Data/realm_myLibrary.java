@@ -113,7 +113,8 @@ public class realm_myLibrary extends RealmObject {
 
         resource.setResource_id(resourceId);
         resource.setTitle(doc.get("title").getAsString());
-        resource.setDescription(doc.get("description").getAsString());
+        ///resource.setDescription(doc.get("description").getAsString());
+        resource.setDescription(((doc.has("description")) ? "N/A" : doc.get("description").getAsString()));
         if (doc.has("_attachments")) {
             JsonObject attachments = doc.get("_attachments").getAsJsonObject();
             JsonParser parser = new JsonParser();
