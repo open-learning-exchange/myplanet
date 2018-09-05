@@ -53,7 +53,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     Button btnSubmit;
     RadioGroup listChoices;
     LinearLayout llCheckbox;
-    HashMap<String, realm_answerChoices> listAns;
 
     NestedScrollView container;
 
@@ -117,7 +116,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         mRealm.commitTransaction();
     }
 
-    private void startExam(realm_examQuestion question) {
+    @Override
+    public void startExam(realm_examQuestion question) {
         tvQuestionCount.setText("Question : " + (currentIndex + 1) + "/" + questions.size());
         if (currentIndex == questions.size() - 1) {
             btnSubmit.setText("Finish");
@@ -204,41 +204,11 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             if (showErrorMessage("Please select / write your answer to continue")) {
                 return;
             }
-
             boolean cont = updateAnsDb();
             checkAnsAndContinue(cont);
         }
     }
 
-    private void checkAnsAndContinue(boolean cont) {
-        if (cont) {
-            currentIndex++;
-            if (currentIndex < questions.size()) {
-                startExam(questions.get(currentIndex));
-            } else {
-                new AlertDialog.Builder(getActivity())
-                        .setTitle("Thank you for taking this " + type + ". We wish you all the best")
-                        .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                getActivity().onBackPressed();
-
-                            }
-                        }).show();
-            }
-        } else {
-            Utilities.toast(getActivity(), "Invalid answer");
-        }
-    }
-
-    private boolean showErrorMessage(String s) {
-        if (ans.isEmpty() && listAns.isEmpty()) {
-            Utilities.toast(getActivity(), "Please select answer");
-            return true;
-        }
-        return false;
-
-    }
 
     private boolean updateAnsDb() {
         boolean flag;
@@ -306,14 +276,10 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         if (b) {
-            if (compoundButton.getTag() != null) {
-                listAns.put(compoundButton.getText().toString(), (realm_answerChoices) compoundButton.getTag());
-            } else {
-                ans = compoundButton.getText().toString();
-            }
-        } else {
-            if (compoundButton.getTag() != null)
-                listAns.remove(compoundButton.getText().toString());
+            addAnswer(compoundButton);
+        } else if (compoundButton.getTag() != null) {
+            listAns.remove(compoundButton.getText().toString());
         }
     }
+
 }
