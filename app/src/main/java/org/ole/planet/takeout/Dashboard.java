@@ -33,6 +33,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
+import org.ole.planet.takeout.feedback.FeedbackFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
 import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.survey.SurveyFragment;
@@ -164,7 +165,8 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 openCallFragment(new MyCourseFragment());
                 break;
             case R.string.menu_feedback:
-                feedbackDialog();
+                new FeedbackFragment().show(getSupportFragmentManager(), "");
+                break;
             case R.string.menu_logout:
                 logout();
                 break;
@@ -188,25 +190,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         profileDbHandler.onDestory();
     }
 
-    public void feedbackDialog() {
-        MaterialDialog.Builder feedback_dialog = new MaterialDialog.Builder(Dashboard.this).customView(R.layout.dialog_feedback, true).title(R.string.menu_feedback)
-                .positiveText(R.string.button_submit).negativeText(R.string.button_cancel)
-                .onPositive(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        Toast.makeText(Dashboard.this, "Your response has been submitted!", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    }
-                }).onNegative(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(MaterialDialog dialog, DialogAction which) {
-                        dialog.dismiss();
-                    }
-                });
-        MaterialDialog dialog = feedback_dialog.build();
-        disableSubmit(dialog);
-        dialog.show();
-    }
+
 
     @Override
     public void openCallFragment(Fragment newfragment) {

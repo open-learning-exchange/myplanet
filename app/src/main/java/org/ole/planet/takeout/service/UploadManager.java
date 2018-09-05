@@ -13,6 +13,7 @@ import com.google.gson.JsonObject;
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Response;
+import org.ole.planet.takeout.Data.realm_feedback;
 import org.ole.planet.takeout.Data.realm_offlineActivities;
 import org.ole.planet.takeout.Data.realm_submissions;
 import org.ole.planet.takeout.MainApplication;
@@ -69,6 +70,29 @@ public class UploadManager {
             @Override
             public void onSuccess() {
                 listener.onSuccess("Result sync completed successfully");
+            }
+        });
+    }
+
+    public void uploadFeedback(final SuccessListener listener) {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties("feedback", sharedPreferences);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(@NonNull Realm realm) {
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                List<realm_feedback> feedbacks = realm.where(realm_feedback.class).equalTo("uploaded", false).findAll();
+                for (realm_feedback feedback : feedbacks) {
+                    Response r = dbClient.post(realm_feedback.serializeFeedback(feedback));
+                    if (!TextUtils.isEmpty(r.getId())) {
+                        feedback.setUploaded(true);
+                    }
+                }
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess("Feedback sync completed successfully");
             }
         });
     }

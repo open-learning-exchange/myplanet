@@ -131,6 +131,7 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
                 gifDrawable.reset();
                 UploadManager.getInstance().uploadUserActivities(LoginActivity.this);
                 UploadManager.getInstance().uploadExamResult(LoginActivity.this);
+                UploadManager.getInstance().uploadFeedback(LoginActivity.this);
                 Toast.makeText(LoginActivity.this, "Syncing data, please wait...", Toast.LENGTH_SHORT).show();
             }
         });
