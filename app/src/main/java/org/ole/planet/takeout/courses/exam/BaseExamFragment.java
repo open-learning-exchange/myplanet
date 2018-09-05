@@ -6,12 +6,16 @@ import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 
 import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.Data.realm_answerChoices;
 import org.ole.planet.takeout.Data.realm_examQuestion;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.Data.realm_submissions;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 
+import java.util.List;
+
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmResults;
 
 public class BaseExamFragment extends Fragment {
