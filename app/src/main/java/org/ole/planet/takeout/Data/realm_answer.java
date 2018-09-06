@@ -1,7 +1,13 @@
 package org.ole.planet.takeout.Data;
 
+import android.text.TextUtils;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import org.ole.planet.takeout.utilities.Utilities;
+
+import java.util.HashMap;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -12,6 +18,7 @@ public class realm_answer extends RealmObject {
     @PrimaryKey
     private String id;
     private String value;
+    private RealmList<realm_answerChoices> valueChoices;
     private int mistakes = 0;
     private boolean passed;
     private int grade;
@@ -27,13 +34,43 @@ public class realm_answer extends RealmObject {
         JsonArray array = new JsonArray();
         for (realm_answer ans : answers) {
             JsonObject object = new JsonObject();
-            object.addProperty("value", ans.getValue());
+            if (!TextUtils.isEmpty(ans.getValue())) {
+                object.addProperty("value", ans.getValue());
+            } else {
+                object.add("value", ans.getValueChoicesArray());
+            }
             object.addProperty("mistakes", ans.getMistakes());
             object.addProperty("passed", ans.isPassed());
             array.add(object);
         }
 
         return array;
+    }
+
+    public JsonArray getValueChoicesArray() {
+        JsonArray array = new JsonArray();
+        if (valueChoices == null) {
+            return array;
+        }
+        for (realm_answerChoices choice : valueChoices
+                ) {
+            array.add(choice.serialize());
+        }
+        return array;
+    }
+
+    public RealmList<realm_answerChoices> getValueChoices() {
+        return valueChoices;
+    }
+
+    public void setValueChoices(RealmList<realm_answerChoices> valueChoices) {
+        this.valueChoices = valueChoices;
+    }
+
+    public void setValueChoices(HashMap<String, realm_answerChoices> map) {
+        for (String key : map.keySet()) {
+            this.valueChoices.add(map.get(key));
+        }
     }
 
     public void setId(String id) {

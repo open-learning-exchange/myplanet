@@ -8,7 +8,6 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
@@ -22,9 +21,7 @@ import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
-import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.utilities.NotificationUtil;
-import org.ole.planet.takeout.utilities.Utilities;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -46,7 +43,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     CouchDbProperties properties;
     MaterialDialog progress_dialog;
     SharedPreferences.Editor editor;
-    int[] syncTimeInteval = {10 * 60,15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
+    int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
