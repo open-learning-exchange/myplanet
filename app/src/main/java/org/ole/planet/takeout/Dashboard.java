@@ -14,8 +14,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -34,7 +32,6 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 import org.ole.planet.takeout.callback.OnHomeItemClickListener;
 import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
-import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.survey.SurveyFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -46,11 +43,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     public static final String MESSAGE_PROGRESS = "message_progress";
     private static final int PERMISSION_REQUEST_CODE = 111;
     AccountHeader headerResult;
+    UserProfileDbHandler profileDbHandler;
     private Drawer result = null;
     private Toolbar mTopToolbar;
     private boolean isDashBoard = false;
-    UserProfileDbHandler profileDbHandler;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
