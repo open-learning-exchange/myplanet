@@ -134,7 +134,7 @@ public class realm_examQuestion extends RealmObject {
     public void setChoice(JsonArray array, realm_examQuestion myQuestion) {
         for (JsonElement s :
                 array) {
-            myQuestion.choices.add(s.getAsString());
+            myQuestion.choices.add(s.toString());
         }
     }
 
