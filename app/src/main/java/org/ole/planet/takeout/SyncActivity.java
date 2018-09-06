@@ -14,11 +14,13 @@ import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.takeout.Data.realm_UserModel;
+import org.ole.planet.takeout.callback.SuccessListener;
 import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
@@ -33,7 +35,7 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public abstract class SyncActivity extends ProcessUserData implements SyncListener {
+public abstract class SyncActivity extends ProcessUserData implements SyncListener , SuccessListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
     public TextView intervalLabel;
@@ -82,6 +84,14 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             spinner.setVisibility(View.GONE);
             intervalLabel.setVisibility(View.GONE);
         }
+    }
+
+
+    public void startUpload() {
+        UploadManager.getInstance().uploadUserActivities(this);
+        UploadManager.getInstance().uploadExamResult(this);
+        UploadManager.getInstance().uploadFeedback(this);
+        Toast.makeText(this, "Syncing data, please wait...", Toast.LENGTH_SHORT).show();
     }
 
     private void dateCheck(MaterialDialog dialog) {

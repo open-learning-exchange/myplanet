@@ -172,7 +172,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 break;
             default:
                 openCallFragment(new DashboardFragment());
-                break;
         }
     }
 
@@ -189,7 +188,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         super.onDestroy();
         profileDbHandler.onDestory();
     }
-
 
 
     @Override
