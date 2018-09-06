@@ -12,10 +12,8 @@ import android.widget.TextView;
 import org.ole.planet.takeout.Data.realm_UserModel;
 import org.ole.planet.takeout.Data.realm_myCourses;
 import org.ole.planet.takeout.Data.realm_myLibrary;
-import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.Data.realm_stepExam;
 import org.ole.planet.takeout.R;
-import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -32,15 +30,15 @@ import static android.content.Context.MODE_PRIVATE;
 public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
+    public static SharedPreferences settings;
     public List<LI> selectedItems;
-    RecyclerView recyclerView;
-    TextView tvMessage;
     public Realm mRealm;
     public DatabaseService realmService;
-    List<LI> list;
     public UserProfileDbHandler profileDbHandler;
     public realm_UserModel model;
-    public static SharedPreferences settings;
+    RecyclerView recyclerView;
+    TextView tvMessage;
+    List<LI> list;
 
     public BaseRecyclerFragment() {
     }
