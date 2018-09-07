@@ -28,6 +28,7 @@ import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import okhttp3.internal.Util;
 
 public class SyncManager {
     static final String PREFS_NAME = "OLE_PLANET";
@@ -112,26 +113,47 @@ public class SyncManager {
             @Override
             public void execute(Realm realm) {
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allDocs.size(); i++) {
-                    Document doc = allDocs.get(i);
-                    Utilities.log("Document " + doc);
-                    processResourceDoc(dbClient, doc);
-                }
+                syncResource(dbClient);
             }
         });
     }
 
-    private void processResourceDoc(CouchDbClientAndroid dbClient, Document doc) {
-        try {
-            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-            realm_myLibrary.insertResources(jsonDoc, mRealm);
-            Log.e("Realm", " STRING " + jsonDoc.toString());
+    private void syncResource(CouchDbClientAndroid dbClient) {
+        int skip = 0;
+        int limit = 100;
+        while (true) {
+            final List<JsonObject> allDocs = dbClient.findDocs("\n" +
+                    "{\n" +
+                    "    \"selector\": {\n" +
+                    "    },\n" +
+                    "    \"limit\":" + limit + " ,\n" +
+                    "    \"skip\": " + skip + "\n" +
+                    "}", JsonObject.class);
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            for (int i = 0; i < allDocs.size(); i++) {
+                JsonObject doc = allDocs.get(i);
+                Utilities.log("Doc " + doc);
+                realm_myLibrary.insertResources(allDocs.get(i), mRealm);
+            }
+            if (allDocs.size() < 100) {
+                break;
+            } else {
+                skip = skip + 100;
+            }
+
         }
     }
+
+//    private void processResourceDoc(CouchDbClientAndroid dbClient, Document doc) {
+//        try {
+//            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+//            realm_myLibrary.insertResources(jsonDoc, mRealm);
+//            Log.e("Realm", " STRING " + jsonDoc.toString());
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
 
     private void myLibraryTransactionSync() {
