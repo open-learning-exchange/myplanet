@@ -13,8 +13,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -31,12 +33,14 @@ import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
 import io.realm.Sort;
+import okhttp3.internal.Util;
 
 
 /**
@@ -48,6 +52,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     EditText etAnswer;
     Button btnSubmit;
     RadioGroup listChoices;
+    LinearLayout llCheckbox;
 
     NestedScrollView container;
 
@@ -59,9 +64,11 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public View onCreateView(LayoutInflater inflater, ViewGroup parent,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_take_exam, parent, false);
+        listAns = new HashMap<>();
         tvQuestionCount = view.findViewById(R.id.tv_question_count);
         header = view.findViewById(R.id.tv_header);
         body = view.findViewById(R.id.tv_body);
+        llCheckbox = view.findViewById(R.id.ll_checkbox);
         etAnswer = view.findViewById(R.id.et_answer);
         btnSubmit = view.findViewById(R.id.btn_submit);
         listChoices = view.findViewById(R.id.group_choices);
@@ -109,33 +116,52 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         mRealm.commitTransaction();
     }
 
-    private void startExam(realm_examQuestion question) {
+    @Override
+    public void startExam(realm_examQuestion question) {
         tvQuestionCount.setText("Question : " + (currentIndex + 1) + "/" + questions.size());
         if (currentIndex == questions.size() - 1) {
             btnSubmit.setText("Finish");
         }
+        listChoices.removeAllViews();
+        llCheckbox.removeAllViews();
+        etAnswer.setVisibility(View.GONE);
+        listChoices.setVisibility(View.GONE);
+        llCheckbox.setVisibility(View.GONE);
+
         if (question.getType().equalsIgnoreCase("select")) {
-            etAnswer.setVisibility(View.GONE);
             listChoices.setVisibility(View.VISIBLE);
-            listChoices.removeAllViews();
-            multipleChoiceQuestion(question);
+            selectQuestion(question);
         } else if (question.getType().equalsIgnoreCase("input")) {
             etAnswer.setVisibility(View.VISIBLE);
-            listChoices.setVisibility(View.GONE);
+        } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
+            Utilities.log("Select multiple");
+            llCheckbox.setVisibility(View.VISIBLE);
+            showCheckBoxes(question);
         }
         etAnswer.setText("");
+        ans = "";
         header.setText(question.getHeader());
         body.setText(question.getBody());
         btnSubmit.setOnClickListener(this);
     }
 
-    private void multipleChoiceQuestion(realm_examQuestion question) {
+
+    private void showCheckBoxes(realm_examQuestion question) {
+        RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
+                .equalTo("questionId", question.getId()).findAll();
+        for (int i = 0; i < choices.size(); i++) {
+            addCheckBoxes(choices.get(i));
+        }
+    }
+
+    private void selectQuestion(realm_examQuestion question) {
         if (question.getChoices().size() > 0) {
             radioWithOutCorrectChoice(question);
         } else {
             radioWithCorrectChoice(question);
         }
     }
+
 
     private void radioWithCorrectChoice(realm_examQuestion question) {
         RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
@@ -159,6 +185,15 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         listChoices.addView(rdBtn);
     }
 
+    public void addCheckBoxes(realm_answerChoices choice) {
+        CheckBox rdBtn = (CheckBox) LayoutInflater.from(getActivity()).inflate(R.layout.item_checkbox, null);
+        rdBtn.setText(choice.getText());
+        rdBtn.setTag(choice);
+        rdBtn.setOnCheckedChangeListener(this);
+        llCheckbox.addView(rdBtn);
+    }
+
+
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_submit) {
@@ -169,41 +204,11 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             if (showErrorMessage("Please select / write your answer to continue")) {
                 return;
             }
-
             boolean cont = updateAnsDb();
             checkAnsAndContinue(cont);
         }
     }
 
-    private void checkAnsAndContinue(boolean cont) {
-        if (cont) {
-            currentIndex++;
-            if (currentIndex < questions.size()) {
-                startExam(questions.get(currentIndex));
-            } else {
-                new AlertDialog.Builder(getActivity())
-                        .setTitle("Thank you for taking this " + type + ". We wish you all the best")
-                        .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                getActivity().onBackPressed();
-
-                            }
-                        }).show();
-            }
-        } else {
-            Utilities.toast(getActivity(), "Invalid answer");
-        }
-    }
-
-    private boolean showErrorMessage(String s) {
-        if (ans.isEmpty()) {
-            Utilities.toast(getActivity(), "Please select answer");
-            return true;
-        }
-        return false;
-
-    }
 
     private boolean updateAnsDb() {
         boolean flag;
@@ -214,6 +219,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         realm_examQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
         answer.setQuestionId(que.getId());
         answer.setValue(ans);
+        answer.setValueChoices(listAns);
         answer.setSubmissionId(sub.getId());
         if (TextUtils.isEmpty(que.getCorrectChoice())) {
             answer.setGrade(0);
@@ -270,7 +276,10 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         if (b) {
-            ans = compoundButton.getText().toString();
+            addAnswer(compoundButton);
+        } else if (compoundButton.getTag() != null) {
+            listAns.remove(compoundButton.getText().toString());
         }
     }
+
 }
