@@ -86,11 +86,11 @@ public class SyncManager {
                     mRealm = dbService.getRealmInstance();
                     properties = dbService.getClouchDbProperties("tablet_users", settings);
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
-                    myLibraryTransactionSync();
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
+                  //  myLibraryTransactionSync();
+                   // TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                   // TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
+                   // TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                 } catch (Exception err) {
                     //Todo alert to user invalid URL
                 } finally {
@@ -129,16 +129,11 @@ public class SyncManager {
                     "    \"limit\":" + limit + " ,\n" +
                     "    \"skip\": " + skip + "\n" +
                     "}", JsonObject.class);
-
-            for (int i = 0; i < allDocs.size(); i++) {
-                JsonObject doc = allDocs.get(i);
-                Utilities.log("Doc " + doc);
-                realm_myLibrary.insertResources(allDocs.get(i), mRealm);
-            }
-            if (allDocs.size() < 100) {
+            realm_myLibrary.save(allDocs, mRealm);
+            if (allDocs.size() < limit) {
                 break;
             } else {
-                skip = skip + 100;
+                skip = skip + limit;
             }
 
         }
