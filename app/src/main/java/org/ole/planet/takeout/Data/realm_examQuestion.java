@@ -48,9 +48,11 @@ public class realm_examQuestion extends RealmObject {
 
     private static void insertChoices(JsonObject question, String questionId, Realm mRealm, realm_examQuestion myQuestion) {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        boolean isMultipleChoice = question.has("correctChoice") && question.get("type").getAsString().equals("select");
+        boolean isMultipleChoice = question.has("correctChoice") && question.get("type").getAsString().startsWith("select");
         if (isMultipleChoice) {
+            Utilities.log("Has multiple choices " + question.get("body") + " " + question.get("header")  );
             JsonArray array = question.get("choices").getAsJsonArray();
+            Utilities.log(array + " ");
             realm_answerChoices.insertChoices(questionId, array, mRealm, settings);
             insertCorrectChoice(array, question, myQuestion);
         } else {
@@ -173,6 +175,4 @@ public class realm_examQuestion extends RealmObject {
         }
         return array;
     }
-
-
 }

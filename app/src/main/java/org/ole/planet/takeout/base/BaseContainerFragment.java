@@ -13,18 +13,15 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-
 import android.widget.Toast;
 
 import org.ole.planet.takeout.CSVViewerActivity;
-import org.ole.planet.takeout.DashboardFragment;
 import org.ole.planet.takeout.Data.Download;
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.DownloadFiles;
