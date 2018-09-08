@@ -3,6 +3,7 @@ package org.ole.planet.takeout.Data;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Base64;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -31,10 +32,12 @@ public class realm_examQuestion extends RealmObject {
     private String marks;
     private RealmList<String> choices;
 
+
+
     public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
         for (int i = 0; i < questions.size(); i++) {
-            String questionId = UUID.randomUUID().toString();
             JsonObject question = questions.get(i).getAsJsonObject();
+            String questionId = Base64.encodeToString(question.toString().getBytes(), Base64.NO_WRAP);
             realm_examQuestion myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
             myQuestion.setExamId(examId);
             myQuestion.setBody(question.get("body").getAsString());
