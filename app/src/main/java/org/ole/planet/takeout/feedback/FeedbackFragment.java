@@ -98,7 +98,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
         }
         RadioButton rbUrgent = getView().findViewById(rgUrgent.getCheckedRadioButtonId());
         RadioButton rbType = getView().findViewById(rgType.getCheckedRadioButtonId());
-        if (rbType == null && rbType == null) {
+        if (rbType == null && rbUrgent == null) {
             Snackbar.make(getView(), "All fields are necessary", Snackbar.LENGTH_LONG).show();
             return;
         }
