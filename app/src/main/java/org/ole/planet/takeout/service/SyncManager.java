@@ -85,11 +85,11 @@ public class SyncManager {
                     mRealm = dbService.getRealmInstance();
                     properties = dbService.getClouchDbProperties("tablet_users", settings);
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
-                    //myLibraryTransactionSync();
-                    //TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
-                    //TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
-                    //resourceTransactionSync();
-                    //TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
+                     myLibraryTransactionSync();
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                      TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
+                    resourceTransactionSync();
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                 } catch (Exception err) {
                     //Todo alert to user invalid URL
                 } finally {
