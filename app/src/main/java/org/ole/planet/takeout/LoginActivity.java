@@ -42,7 +42,7 @@ import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
 
-public class LoginActivity extends SyncActivity implements SuccessListener {
+public class LoginActivity extends SyncActivity {
     Context context;
     boolean connectionResult;
     EditText serverUrl;
@@ -124,14 +124,11 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
         gifDrawable = (GifDrawable) syncIcon.getDrawable();
         gifDrawable.setSpeed(3.0f);
         gifDrawable.stop();
-
         syncIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 gifDrawable.reset();
-                UploadManager.getInstance().uploadUserActivities(LoginActivity.this);
-                UploadManager.getInstance().uploadExamResult(LoginActivity.this);
-                Toast.makeText(LoginActivity.this, "Syncing data, please wait...", Toast.LENGTH_SHORT).show();
+                startUpload();
             }
         });
         declareHideKeyboardElements();
@@ -147,6 +144,7 @@ public class LoginActivity extends SyncActivity implements SuccessListener {
         }
 
     }
+
 
     /**
      * Form  Validation
