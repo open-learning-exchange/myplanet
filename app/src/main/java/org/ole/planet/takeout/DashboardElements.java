@@ -24,7 +24,7 @@ import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 public abstract class DashboardElements extends AppCompatActivity {
 
     public EditText feedbackText;
-   public UserProfileDbHandler profileDbHandler;
+    public UserProfileDbHandler profileDbHandler;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -72,8 +72,8 @@ public abstract class DashboardElements extends AppCompatActivity {
         if (id == R.id.menu_email) {
             Toast.makeText(this, "Action clicked", Toast.LENGTH_LONG).show();
             return true;
-        }else if (id == R.id.menu_logout){
-
+        } else if (id == R.id.menu_logout) {
+            logout();
         }
 
         return super.onOptionsItemSelected(item);
