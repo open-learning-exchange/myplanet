@@ -43,7 +43,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     public static final String MESSAGE_PROGRESS = "message_progress";
     private static final int PERMISSION_REQUEST_CODE = 111;
     AccountHeader headerResult;
-    UserProfileDbHandler profileDbHandler;
     private Drawer result = null;
     private Toolbar mTopToolbar;
     private boolean isDashBoard = false;
@@ -57,7 +56,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         headerResult = getAccountHeader();
-        profileDbHandler = new UserProfileDbHandler(this);
         createDrawer();
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
@@ -170,13 +168,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         }
     }
 
-    private void logout() {
-        profileDbHandler.onLogout();
-        Intent loginscreen = new Intent(this, LoginActivity.class);
-        loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        startActivity(loginscreen);
-        this.finish();
-    }
 
     @Override
     protected void onDestroy() {
