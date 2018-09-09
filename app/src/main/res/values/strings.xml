@@ -56,5 +56,13 @@
     <string name="version">Version</string>
     <string name="leave">Leave</string>
     <string name="invite_member">Invite Member</string>
+    <string name="is_urgent">Is your feedback Urgent?</string>
+    <string name="feedback_type">Feedback Type :</string>
+    <string name="suggestion">Suggestion</string>
+    <string name="no">No</string>
+    <string name="yes">Yes</string>
+    <string name="question">Question</string>
+    <string name="bug">Bug</string>
+    <string name="your_feedback">Your Feedback *</string>
     <string name="app_version">0.2.2</string>
 </resources>
