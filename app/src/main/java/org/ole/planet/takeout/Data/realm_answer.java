@@ -30,21 +30,24 @@ public class realm_answer extends RealmObject {
         return id;
     }
 
-    public static JsonArray serializeRealmAnswer(Realm mRealm, RealmList<realm_answer> answers) {
+    public static JsonArray serializeRealmAnswer(RealmList<realm_answer> answers) {
         JsonArray array = new JsonArray();
         for (realm_answer ans : answers) {
-            JsonObject object = new JsonObject();
-            if (!TextUtils.isEmpty(ans.getValue())) {
-                object.addProperty("value", ans.getValue());
-            } else {
-                object.add("value", ans.getValueChoicesArray());
-            }
-            object.addProperty("mistakes", ans.getMistakes());
-            object.addProperty("passed", ans.isPassed());
-            array.add(object);
+            array.add(createObject(ans));
         }
-
         return array;
+    }
+
+    private static JsonObject createObject(realm_answer ans) {
+        JsonObject object = new JsonObject();
+        if (!TextUtils.isEmpty(ans.getValue())) {
+            object.addProperty("value", ans.getValue());
+        } else {
+            object.add("value", ans.getValueChoicesArray());
+        }
+        object.addProperty("mistakes", ans.getMistakes());
+        object.addProperty("passed", ans.isPassed());
+        return object;
     }
 
     public JsonArray getValueChoicesArray() {

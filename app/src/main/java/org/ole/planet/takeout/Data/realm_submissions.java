@@ -33,7 +33,7 @@ public class realm_submissions extends RealmObject {
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
         object.addProperty("status", sub.getStatus());
-        object.add("answers", realm_answer.serializeRealmAnswer(mRealm, sub.getAnswers()));
+        object.add("answers", realm_answer.serializeRealmAnswer( sub.getAnswers()));
         object.add("parent", realm_stepExam.serializeExam(mRealm, exam));
         object.add("user", user.serialize());
         return object;
