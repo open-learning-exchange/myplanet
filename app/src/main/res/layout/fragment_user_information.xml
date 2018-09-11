@@ -2,6 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="@dimen/padding_normal"
     tools:context="org.ole.planet.takeout.courses.exam.UserInformationFragment">
 
     <LinearLayout
@@ -23,7 +24,7 @@
                     android:id="@+id/et_fname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="First Name" />
+                    android:hint="@string/first_name" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -37,7 +38,7 @@
                     android:id="@+id/et_mname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Middle Name" />
+                    android:hint="@string/middle_name" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -51,7 +52,7 @@
                     android:id="@+id/et_lname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Last Name" />
+                    android:hint="@string/last_name" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -72,7 +73,7 @@
                     android:id="@+id/et_email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Email" />
+                    android:hint="@string/email" />
 
             </android.support.design.widget.TextInputLayout>
 
@@ -88,13 +89,14 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:padding="@dimen/padding_small"
-                    android:text="Language"
+                    android:text="@string/language"
                     android:textColor="@color/md_black_1000" />
 
                 <Spinner
                     android:id="@+id/spn_lang"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:entries="@array/language"
                     android:padding="4dp" />
 
             </LinearLayout>
@@ -114,20 +116,22 @@
                     android:id="@+id/et_phone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Phone Number" />
+                    android:hint="@string/phone_number" />
 
             </android.support.design.widget.TextInputLayout>
 
 
             <TextView
+                android:id="@+id/txt_dob"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:drawableRight="@drawable/ic_date"
+                android:gravity="center_vertical"
                 android:padding="@dimen/padding_normal"
-                android:text="Birth Date"
+                android:text="@string/birth_date"
                 android:textSize="@dimen/text_size_mid" />
 
         </LinearLayout>
@@ -143,13 +147,13 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:padding="@dimen/padding_normal"
-                android:text="Gender"
+                android:text="@string/gender"
                 android:textColor="@color/md_black_1000"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
             <RadioGroup
-                android:id="@+id/rb_radio_gender"
+                android:id="@+id/rb_gender"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -159,12 +163,12 @@
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Male" />
+                    android:text="@string/male" />
 
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Male" />
+                    android:text="@string/female" />
 
 
             </RadioGroup>
@@ -182,14 +186,37 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:padding="@dimen/padding_small"
-                android:text="Level"
+                android:text="@string/level"
                 android:textColor="@color/md_black_1000" />
 
             <Spinner
                 android:id="@+id/spn_level"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:entries="@array/level"
                 android:padding="@dimen/padding_small" />
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right">
+
+            <Button
+                android:id="@+id/btn_submit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/button_update"
+                android:theme="@style/PrimaryButton" />
+
+            <Button
+                android:id="@+id/btn_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/button_cancel"
+                android:theme="@style/AccentButton" />
 
         </LinearLayout>
 
