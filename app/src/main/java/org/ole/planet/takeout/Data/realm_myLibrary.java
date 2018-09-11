@@ -14,6 +14,7 @@ import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -470,5 +471,11 @@ public class realm_myLibrary extends RealmObject {
 
     public void setTimesRated(int timesRated) {
         this.timesRated = timesRated;
+    }
+
+    public static void save(List<JsonObject> allDocs, Realm mRealm) {
+        for (int i = 0; i < allDocs.size(); i++) {
+            realm_myLibrary.insertResources(allDocs.get(i), mRealm);
+        }
     }
 }
