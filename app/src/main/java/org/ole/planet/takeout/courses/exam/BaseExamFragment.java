@@ -74,14 +74,18 @@ public abstract class BaseExamFragment extends Fragment {
             if (currentIndex < questions.size()) {
                 startExam(questions.get(currentIndex));
             } else {
-                new AlertDialog.Builder(getActivity())
-                        .setTitle("Thank you for taking this " + type + ". We wish you all the best")
-                        .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                getActivity().onBackPressed();
-                            }
-                        }).show();
+                if (type.startsWith("survey")) {
+                    
+                } else {
+                    new AlertDialog.Builder(getActivity())
+                            .setTitle("Thank you for taking this " + type + ". We wish you all the best")
+                            .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    getActivity().onBackPressed();
+                                }
+                            }).show();
+                }
             }
         } else {
             Utilities.toast(getActivity(), "Invalid answer");
