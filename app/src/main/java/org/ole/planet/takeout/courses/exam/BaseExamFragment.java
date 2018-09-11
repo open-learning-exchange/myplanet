@@ -71,29 +71,37 @@ public abstract class BaseExamFragment extends Fragment {
     public void checkAnsAndContinue(boolean cont) {
         if (cont) {
             currentIndex++;
-            if (currentIndex < questions.size()) {
-                startExam(questions.get(currentIndex));
-            } else if (type.startsWith("survey")) {
-                UserInformationFragment f = new UserInformationFragment();
-                Bundle b = new Bundle();
-                b.putString("sub_id", sub.getId());
-                f.setArguments(b);
-                f.show(getChildFragmentManager(), "");
-            } else {
-                new AlertDialog.Builder(getActivity())
-                        .setTitle("Thank you for taking this " + type + ". We wish you all the best")
-                        .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                getActivity().onBackPressed();
-                            }
-                        }).show();
-            }
-
+            continueExam();
         } else {
             Utilities.toast(getActivity(), "Invalid answer");
         }
 
+    }
+
+    private void continueExam() {
+        if (currentIndex < questions.size()) {
+            startExam(questions.get(currentIndex));
+        } else if (type.startsWith("survey")) {
+            showUserInfoDialog();
+        } else {
+            new AlertDialog.Builder(getActivity())
+                    .setTitle("Thank you for taking this " + type + ". We wish you all the best")
+                    .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            getActivity().onBackPressed();
+                        }
+                    }).show();
+        }
+
+    }
+
+    private void showUserInfoDialog() {
+        UserInformationFragment f = new UserInformationFragment();
+        Bundle b = new Bundle();
+        b.putString("sub_id", sub.getId());
+        f.setArguments(b);
+        f.show(getChildFragmentManager(), "");
     }
 
 

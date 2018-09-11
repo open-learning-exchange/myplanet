@@ -91,12 +91,16 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
 
     @Override
     public void onClick(View view) {
-        if (view.getId() == R.id.btn_cancel) {
-            dismiss();
-        } else if (view.getId() == R.id.btn_submit) {
-            submitForm();
-        } else if (view.getId() == R.id.txt_dob) {
-            showDatePickerDialog();
+        switch (view.getId()){
+            case R.id.btn_cancel:
+                dismiss();
+                break;
+            case R.id.btn_submit:
+                submitForm();
+                break;
+            case R.id.txt_dob:
+                showDatePickerDialog();
+                break;
         }
     }
 
@@ -123,13 +127,16 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
         user.addProperty("birthDate", dob);
         user.addProperty("gender", gender);
         user.addProperty("level", level);
+        saveUser(user);
+
+    }
+
+    private void saveUser(JsonObject user) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-
         submissions.setUser(user.toString());
         mRealm.commitTransaction();
         dismiss();
-
     }
 
     @Override
