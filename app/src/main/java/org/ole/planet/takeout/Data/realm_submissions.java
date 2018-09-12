@@ -1,7 +1,13 @@
 package org.ole.planet.takeout.Data;
 
+import android.text.TextUtils;
+
+import com.github.kittinunf.fuel.android.core.Json;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.ole.planet.takeout.utilities.TimeUtils;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -19,6 +25,7 @@ public class realm_submissions extends RealmObject {
     private String parentId;
     private String type;
     private String userId;
+    private String user;
     private long date;
     private RealmList<realm_answer> answers;
     private String grade;
@@ -33,9 +40,14 @@ public class realm_submissions extends RealmObject {
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
         object.addProperty("status", sub.getStatus());
-        object.add("answers", realm_answer.serializeRealmAnswer( sub.getAnswers()));
+        object.add("answers", realm_answer.serializeRealmAnswer(sub.getAnswers()));
         object.add("parent", realm_stepExam.serializeExam(mRealm, exam));
-        object.add("user", user.serialize());
+        if (TextUtils.isEmpty(sub.getUser())) {
+            object.add("user", user.serialize());
+        } else {
+            JsonParser parser = new JsonParser();
+            object.add("user", parser.parse(sub.getUser()));
+        }
         return object;
 
     }
@@ -140,5 +152,13 @@ public class realm_submissions extends RealmObject {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
     }
 }
