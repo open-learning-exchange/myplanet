@@ -65,4 +65,32 @@
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
     <string name="app_version">0.2.2</string>
+    <string name="button_update">Update</string>
+    <string name="level">Level</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+    <string name="gender">Gender</string>
+    <string name="birth_date">Birth Date</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="language">Language</string>
+    <string name="last_name">Last Name</string>
+    <string name="middle_name">Middle Name</string>
+    <string name="first_name">First Name</string>
+    <string-array name="level">
+        <item></item>
+        <item>Beginner</item>
+        <item>Intermediate</item>
+        <item>Advanced</item>
+        <item>Expert</item>
+    </string-array>
+
+    <string-array name="language">
+        <item></item>
+        <item>English</item>
+        <item>नेपाली</item>
+        <item>Français</item>
+        <item>Español</item>
+        <item>عربى</item>
+        <item>Somali</item>
+    </string-array>
 </resources>
