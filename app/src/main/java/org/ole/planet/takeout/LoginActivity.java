@@ -160,7 +160,7 @@ public class LoginActivity extends SyncActivity {
             return;
         }
         editor.putBoolean("saveUsernameAndPassword", save.isChecked());
-        if (save.isChecked()) {
+        if (save.isChecked()){
             editor.putString("loginUserName", inputName.getText().toString());
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
