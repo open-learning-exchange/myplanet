@@ -226,6 +226,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
                 .content("Please wait")
                 .progress(true, 0)
                 .show();
+        progress_dialog.setCancelable(false);
     }
 
     @Override
