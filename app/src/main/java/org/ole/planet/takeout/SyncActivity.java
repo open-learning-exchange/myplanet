@@ -229,6 +229,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     }
 
 
+
     @Override
     public void onSyncComplete() {
         progress_dialog.dismiss();
