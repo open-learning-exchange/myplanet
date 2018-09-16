@@ -52,6 +52,7 @@ public class UploadManager {
 
     public void uploadExamResult(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();
+        Utilities.log("Upload exam result");
         final CouchDbProperties properties = dbService.getClouchDbProperties("submissions", sharedPreferences);
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
