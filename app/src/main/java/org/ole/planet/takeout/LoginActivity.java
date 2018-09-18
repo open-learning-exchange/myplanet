@@ -138,8 +138,8 @@ public class LoginActivity extends SyncActivity {
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
 
         if (settings.getBoolean("saveUsernameAndPassword", false)) {
-            inputName.setText(settings.getString("url_user", ""));
-            inputPassword.setText(settings.getString("url_pwd", ""));
+            inputName.setText(settings.getString("loginUserName", ""));
+            inputPassword.setText(settings.getString("loginUserPassword", ""));
             save.setChecked(true);
         }
 
@@ -151,14 +151,20 @@ public class LoginActivity extends SyncActivity {
      */
     private void submitForm() {
         SharedPreferences.Editor editor = settings.edit();
-        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
-        editor.commit();
+
+
         if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
             return;
         }
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
+        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
+        if (save.isChecked()){
+            editor.putString("loginUserName", inputName.getText().toString());
+            editor.putString("loginUserPassword", inputPassword.getText().toString());
+        }
+        editor.commit();
         if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             UserProfileDbHandler handler = new UserProfileDbHandler(this);
@@ -169,7 +175,6 @@ public class LoginActivity extends SyncActivity {
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
         }
-
     }
 
     public void settingDialog(MaterialDialog.Builder builder) {
