@@ -65,7 +65,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
         navigationView.setOnNavigationItemSelectedListener(this);
-        navigationView.setVisibility(preferences.getBoolean("show_topbar", true) ? View.VISIBLE : View.GONE);
+        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         headerResult = getAccountHeader();

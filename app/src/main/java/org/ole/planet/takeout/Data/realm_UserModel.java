@@ -36,6 +36,7 @@ public class realm_UserModel extends RealmObject {
     private String dob;
     private String communityName;
     private String userImage;
+    private boolean showTopbar;
 
 
     public JsonObject serialize() {
@@ -85,6 +86,7 @@ public class realm_UserModel extends RealmObject {
         user.setSalt(jsonDoc.get("salt").getAsString());
         user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
         user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
+        user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
     }
 
@@ -245,10 +247,17 @@ public class realm_UserModel extends RealmObject {
         }
     }
 
+    public Boolean getShowTopbar() {
+        return showTopbar;
+    }
+
+    public void setShowTopbar(Boolean showTopbar) {
+        this.showTopbar = showTopbar;
+    }
 
     @Override
     public String toString() {
-        return " - " +  name;
+        return " - " + name;
     }
 
 }
