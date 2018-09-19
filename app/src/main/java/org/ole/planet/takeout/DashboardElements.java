@@ -15,6 +15,7 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import org.ole.planet.takeout.userprofile.SettingActivity;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 
 /**
@@ -30,7 +31,6 @@ public abstract class DashboardElements extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
-
     }
 
     /**
@@ -61,7 +61,6 @@ public abstract class DashboardElements extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
         return true;
     }
@@ -74,6 +73,8 @@ public abstract class DashboardElements extends AppCompatActivity {
             return true;
         } else if (id == R.id.menu_logout) {
             logout();
+        } else if (id == R.id.action_setting) {
+            startActivity(new Intent(this, SettingActivity.class));
         }
 
         return super.onOptionsItemSelected(item);

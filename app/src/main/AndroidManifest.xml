@@ -38,11 +38,14 @@
 
         <service android:name=".datamanager.MyDownloadService" />
 
-        <activity android:name=".ExoPlayerVideo"></activity>
+        <activity android:name=".ExoPlayerVideo" />
         <activity android:name=".ImageViewerActivity" />
         <activity android:name=".TextFileViewerActivity" />
         <activity android:name=".MarkdownViewerActivity" />
         <activity android:name=".CSVViewerActivity" />
+        <activity
+            android:name=".userprofile.SettingActivity"
+            android:theme="@style/AppTheme" />
 
         <service
             android:name=".service.AutoSyncService"
