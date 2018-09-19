@@ -229,6 +229,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         progress_dialog.setCancelable(false);
     }
 
+
+
     @Override
     public void onSyncComplete() {
         progress_dialog.dismiss();
