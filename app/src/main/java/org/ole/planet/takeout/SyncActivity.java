@@ -24,7 +24,9 @@ import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.service.UploadManager;
+import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.NotificationUtil;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -33,7 +35,7 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public abstract class SyncActivity extends ProcessUserData implements SyncListener , SuccessListener {
+public abstract class SyncActivity extends ProcessUserData implements SyncListener, SuccessListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
     public TextView intervalLabel;
@@ -230,9 +232,21 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     }
 
 
+    @Override
+    public void onSyncFailed() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                DialogUtils.showWifiSettingDialog(SyncActivity.this);
+            }
+        });
+    }
+
 
     @Override
     public void onSyncComplete() {
+        Utilities.log("On Sync Complete");
+//        MainApplication.syncFailedCount = 0;
         progress_dialog.dismiss();
         NotificationUtil.cancellAll(this);
     }

@@ -30,6 +30,7 @@ import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
 import org.ole.planet.takeout.callback.SuccessListener;
+import org.ole.planet.takeout.service.AutoSyncService;
 import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.DialogUtils;
@@ -70,6 +71,9 @@ public class LoginActivity extends SyncActivity {
         save = findViewById(R.id.save);
         declareElements();
         declareMoreElements();
+        if (getIntent().getBooleanExtra("showWifiDialog", false)) {
+            DialogUtils.showWifiSettingDialog(this);
+        }
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -264,7 +268,6 @@ public class LoginActivity extends SyncActivity {
         }
 
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            //action before text change
         }
 
         public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
