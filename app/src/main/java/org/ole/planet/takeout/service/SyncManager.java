@@ -95,7 +95,6 @@ public class SyncManager {
                     handleException();
                 } finally {
                     NotificationUtil.cancel(context, 111);
-                    isSyncing = false;
                     if (mRealm != null) {
                         mRealm.close();
                     }
