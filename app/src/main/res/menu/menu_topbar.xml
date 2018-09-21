@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <item
+        android:id="@+id/menu_library"
+        android:icon="@drawable/library"
+        android:title="@string/menu_library" />
+    <item
+        android:id="@+id/menu_courses"
+        android:icon="@drawable/courses"
+        android:title="@string/menu_courses" />
+
+    <item
+        android:id="@+id/menu_survey"
+        android:icon="@drawable/survey"
+        android:title="@string/menu_surveys" />
+    <item
+        android:id="@+id/menu_teams"
+        android:icon="@drawable/team"
+        android:title="@string/menu_teams" />
+</menu>

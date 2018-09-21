@@ -129,4 +129,11 @@ public class UserProfileDbHandler {
         return maxCount == 0 ? "" : maxOpenedResource + " opened " + maxCount + " times";
     }
 
+    public void changeTopbarSetting(boolean o) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+
+        getUserModel().setShowTopbar(o);
+        mRealm.commitTransaction();
+    }
 }
