@@ -2,18 +2,21 @@ package org.ole.planet.takeout;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -34,19 +37,23 @@ import org.ole.planet.takeout.courses.MyCourseFragment;
 import org.ole.planet.takeout.feedback.FeedbackFragment;
 import org.ole.planet.takeout.library.MyLibraryFragment;
 import org.ole.planet.takeout.survey.SurveyFragment;
+import org.ole.planet.takeout.teams.MyTeamsDetailFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.utilities.BottomNavigationViewHelper;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.ArrayList;
 
 
-public class Dashboard extends DashboardElements implements OnHomeItemClickListener {
+public class Dashboard extends DashboardElements implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
     private static final int PERMISSION_REQUEST_CODE = 111;
     AccountHeader headerResult;
     private Drawer result = null;
     private Toolbar mTopToolbar;
     private boolean isDashBoard = false;
+    private BottomNavigationView navigationView;
+    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +61,11 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(mTopToolbar);
+        preferences = getPreferences(SyncActivity.MODE_PRIVATE);
+        navigationView = findViewById(R.id.top_bar_navigation);
+        BottomNavigationViewHelper.disableShiftMode(navigationView);
+        navigationView.setOnNavigationItemSelectedListener(this);
+        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         headerResult = getAccountHeader();
@@ -104,7 +116,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     }
 
     private AccountHeader getAccountHeader() {
-        //Create User profile header
         return new AccountHeaderBuilder()
                 .withActivity(Dashboard.this)
                 .withTextColor(getResources().getColor(R.color.bg_white))
@@ -112,7 +123,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
                 .build();
-
     }
 
     private void createDrawer() {
@@ -238,4 +248,17 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     }
 
 
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.menu_library) {
+            openCallFragment(new MyLibraryFragment());
+        } else if (item.getItemId() == R.id.menu_courses) {
+            openCallFragment(new MyCourseFragment());
+        } else if (item.getItemId() == R.id.menu_survey) {
+            openCallFragment(new SurveyFragment());
+        } else {
+            openCallFragment(new MyMeetUpsFragment());
+        }
+        return true;
+    }
 }
