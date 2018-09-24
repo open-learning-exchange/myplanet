@@ -6,6 +6,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_myLibrary;
@@ -23,6 +25,9 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
 
     TextView tvAddToLib, tvDelete;
 
+    EditText etSearch;
+    ImageView imgSearch;
+    AdapterLibrary adapterLibrary;
 
     public MyLibraryFragment() {
     }
@@ -34,9 +39,9 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        AdapterLibrary mAdapter = new AdapterLibrary(getActivity(), getList(realm_myLibrary.class));
-        mAdapter.setListener(this);
-        return mAdapter;
+        adapterLibrary = new AdapterLibrary(getActivity(), getList(realm_myLibrary.class));
+        adapterLibrary.setListener(this);
+        return adapterLibrary;
     }
 
     @Override
@@ -44,10 +49,18 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
         super.onActivityCreated(savedInstanceState);
         tvAddToLib = getView().findViewById(R.id.tv_add_to_lib);
         tvDelete = getView().findViewById(R.id.tv_delete);
+        etSearch = getView().findViewById(R.id.et_search);
+        imgSearch = getView().findViewById(R.id.img_search);
         tvAddToLib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 addToMyList();
+            }
+        });
+        imgSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                adapterLibrary.setLibraryList(search(etSearch.getText().toString()));
             }
         });
     }
@@ -62,6 +75,5 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
     private void changeButtonStatus() {
         tvDelete.setEnabled(selectedItems.size() > 0);
         tvAddToLib.setEnabled(selectedItems.size() > 0);
-
     }
 }

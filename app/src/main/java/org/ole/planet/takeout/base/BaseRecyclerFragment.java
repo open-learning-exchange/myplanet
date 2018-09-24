@@ -36,7 +36,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public DatabaseService realmService;
     public UserProfileDbHandler profileDbHandler;
     public realm_UserModel model;
-    RecyclerView recyclerView;
+    public RecyclerView recyclerView;
     TextView tvMessage;
     List<LI> list;
 
@@ -86,6 +86,15 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         super.onDestroy();
         mRealm.close();
     }
+
+    public List<realm_myLibrary> search(String s) {
+        if (s.isEmpty()) {
+            return (List<realm_myLibrary>) getList(realm_myLibrary.class);
+        }
+        return mRealm.where(realm_myLibrary.class).isEmpty("userId").or()
+                .notEqualTo("userId", model.getId(), Case.INSENSITIVE).contains("title", s, Case.INSENSITIVE).findAll();
+    }
+
 
     public List<LI> getList(Class c) {
         if (c == realm_stepExam.class) {
