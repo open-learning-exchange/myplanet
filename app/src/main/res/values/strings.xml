@@ -77,6 +77,7 @@
     <string name="middle_name">Middle Name</string>
     <string name="first_name">First Name</string>
     <string name="menu_teams">Teams</string>
+    <string name="search">Search...</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

@@ -32,6 +32,11 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.selectedItems = new ArrayList<>();
     }
 
+    public void setLibraryList(List<realm_myLibrary> libraryList) {
+        this.libraryList = libraryList;
+        notifyDataSetChanged();
+    }
+
     public void setListener(OnLibraryItemSelected listener) {
         this.listener = listener;
     }
@@ -46,7 +51,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof ViewHolderLibrary) {
-            ((ViewHolderLibrary) holder).title.setText(libraryList.get(position).getTitle());
+            ((ViewHolderLibrary) holder).title.setText((position + 1) + ". " + libraryList.get(position).getTitle());
             ((ViewHolderLibrary) holder).desc.setText(libraryList.get(position).getDescription());
             ((ViewHolderLibrary) holder).times_rated.setText(libraryList.get(position).getTimesRated() + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
