@@ -50,17 +50,17 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
         tvAddToLib = getView().findViewById(R.id.tv_add_to_lib);
         tvDelete = getView().findViewById(R.id.tv_delete);
         etSearch = getView().findViewById(R.id.et_search);
-        imgSearch = getView().findViewById(R.id.img_search);
         tvAddToLib.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 addToMyList();
             }
         });
+        imgSearch = getView().findViewById(R.id.img_search);
         imgSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                adapterLibrary.setLibraryList(search(etSearch.getText().toString()));
+                adapterLibrary.setLibraryList(search(etSearch.getText().toString(), realm_myLibrary.class));
             }
         });
     }
