@@ -12,7 +12,14 @@ android {
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
+        applicationVariants.all { variant ->
+            variant.outputs.all { output ->
+                outputFileName = new File("myPlanet.apk")
+            }
+        }
+
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -33,6 +40,7 @@ android {
         abortOnError false
     }
 }
+
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
