@@ -7,6 +7,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_UserModel;
@@ -39,6 +41,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public RecyclerView recyclerView;
     TextView tvMessage;
     List<LI> list;
+
 
     public BaseRecyclerFragment() {
     }
@@ -87,12 +90,12 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         mRealm.close();
     }
 
-    public List<realm_myLibrary> search(String s) {
+    public List<LI> search(String s, Class c) {
         if (s.isEmpty()) {
-            return (List<realm_myLibrary>) getList(realm_myLibrary.class);
+            return getList(c);
         }
-        return mRealm.where(realm_myLibrary.class).isEmpty("userId").or()
-                .notEqualTo("userId", model.getId(), Case.INSENSITIVE).contains("title", s, Case.INSENSITIVE).findAll();
+        return mRealm.where(c).isEmpty("userId").or()
+                .notEqualTo("userId", model.getId(), Case.INSENSITIVE).contains(c == realm_myLibrary.class ?  "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
     }
 
 

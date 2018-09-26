@@ -6,12 +6,16 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.ole.planet.takeout.Data.realm_myCourses;
+import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.base.BaseRecyclerFragment;
 import org.ole.planet.takeout.callback.OnCourseItemSelected;
+import org.ole.planet.takeout.library.AdapterLibrary;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.List;
@@ -26,6 +30,10 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_myCourses> impl
 
     TextView tvAddToLib;
 
+    EditText etSearch;
+    ImageView imgSearch;
+    AdapterCourses adapterCourses;
+
     public MyCourseFragment() {
     }
 
@@ -36,9 +44,9 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_myCourses> impl
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        AdapterCourses mAdapter = new AdapterCourses(getActivity(), getList(realm_myCourses.class));
-        mAdapter.setListener(this);
-        return mAdapter;
+        adapterCourses = new AdapterCourses(getActivity(), getList(realm_myCourses.class));
+        adapterCourses.setListener(this);
+        return adapterCourses;
     }
 
     @Override
@@ -49,6 +57,14 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_myCourses> impl
             @Override
             public void onClick(View view) {
                 addToMyList();
+            }
+        });
+        etSearch = getView().findViewById(R.id.et_search);
+        imgSearch = getView().findViewById(R.id.img_search);
+        imgSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                adapterCourses.setCourseList(search(etSearch.getText().toString(), realm_myCourses.class));
             }
         });
     }
