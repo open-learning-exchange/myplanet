@@ -51,7 +51,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     AccountHeader headerResult;
     private Drawer result = null;
     private Toolbar mTopToolbar;
-    private boolean isDashBoard = false;
     private BottomNavigationView navigationView;
     private SharedPreferences preferences;
 
@@ -189,7 +188,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
 
     @Override
     public void openCallFragment(Fragment newfragment) {
-        isDashBoard = newfragment instanceof DashboardFragment;
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
         fragmentTransaction.addToBackStack("");
