@@ -24,6 +24,7 @@ import org.ole.planet.takeout.callback.SyncListener;
 import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.service.UploadManager;
+import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.NotificationUtil;
 
 import java.net.URI;
@@ -33,7 +34,7 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public abstract class SyncActivity extends ProcessUserData implements SyncListener , SuccessListener {
+public abstract class SyncActivity extends ProcessUserData implements SyncListener, SuccessListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
     public TextView intervalLabel;
@@ -230,6 +231,11 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     }
 
 
+    @Override
+    public void onSyncFailed() {
+        if (spinner != null)
+            DialogUtils.showSnack(spinner, "Connection failed, please try again later.");
+    }
 
     @Override
     public void onSyncComplete() {
