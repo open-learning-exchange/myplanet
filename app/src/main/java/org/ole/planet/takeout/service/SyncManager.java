@@ -69,6 +69,10 @@ public class SyncManager {
     }
 
     public void destroy() {
+        NotificationUtil.cancel(context, 111);
+        if (mRealm != null) {
+            mRealm.close();
+        }
         isSyncing = false;
         ourInstance = null;
         settings.edit().putLong("LastSync", new Date().getTime()).commit();
@@ -96,11 +100,6 @@ public class SyncManager {
                         listener.onSyncFailed();
                     }
                 } finally {
-                    NotificationUtil.cancel(context, 111);
-                    isSyncing = false;
-                    if (mRealm != null) {
-                        mRealm.close();
-                    }
                     destroy();
                 }
             }
