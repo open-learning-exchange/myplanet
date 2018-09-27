@@ -32,6 +32,7 @@ import org.ole.planet.takeout.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.takeout.survey.SurveyFragment;
 import org.ole.planet.takeout.teams.MyTeamsDetailFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
+import org.ole.planet.takeout.userprofile.UserProfileFragment;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.io.File;
@@ -59,10 +60,6 @@ public class DashboardFragment extends BaseContainerFragment {
             250,
             100
     );
-    private ImageView myLibraryImage;
-    private ImageView myCourseImage;
-    private ImageView myMeetUpsImage;
-    private ImageView myTeamsImage;
     private UserProfileDbHandler profileDbHandler;
 
 
@@ -88,10 +85,10 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     private void declareElements(View view) {
-        myLibraryImage = view.findViewById(R.id.myLibraryImageButton);
-        myCourseImage = view.findViewById(R.id.myCoursesImageButton);
-        myMeetUpsImage = view.findViewById(R.id.myMeetUpsImageButton);
-        myTeamsImage = view.findViewById(R.id.myTeamsImageButton);
+//        myLibraryImage = view.findViewById(R.id.myLibraryImageButton);
+//        myCourseImage = view.findViewById(R.id.myCoursesImageButton);
+//        myMeetUpsImage = view.findViewById(R.id.myMeetUpsImageButton);
+//        myTeamsImage = view.findViewById(R.id.myTeamsImageButton);
         txtFullName = view.findViewById(R.id.txtFullName);
         txtVisits = view.findViewById(R.id.txtVisits);
         tv_surveys = view.findViewById(R.id.tv_surveys);
@@ -99,6 +96,12 @@ public class DashboardFragment extends BaseContainerFragment {
             @Override
             public void onClick(View view) {
                 homeItemClickListener.openCallFragment(new SurveyFragment());
+            }
+        });
+        view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                homeItemClickListener.openCallFragment(new UserProfileFragment());
             }
         });
         dbService = new DatabaseService(getActivity());
