@@ -92,10 +92,9 @@ public class SyncManager {
                     resourceTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                 } catch (Exception err) {
-                    //Todo alert to user invalid URL
+                    handleException();
                 } finally {
                     NotificationUtil.cancel(context, 111);
-                    isSyncing = false;
                     if (mRealm != null) {
                         mRealm.close();
                     }
@@ -104,6 +103,14 @@ public class SyncManager {
             }
         });
         td.start();
+    }
+
+    private void handleException() {
+        if (listener != null) {
+            isSyncing = false;
+            MainApplication.syncFailedCount++;
+            listener.onSyncFailed();
+        }
     }
 
 

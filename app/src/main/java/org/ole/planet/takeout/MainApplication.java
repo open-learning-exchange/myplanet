@@ -21,6 +21,7 @@ public class MainApplication extends Application implements Application.Activity
     public static FirebaseJobDispatcher dispatcher;
     public static Context context;
     SharedPreferences preferences;
+    public static int syncFailedCount = 0;
 
     @Override
     public void onCreate() {
