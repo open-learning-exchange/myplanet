@@ -4,5 +4,4 @@ public interface SyncListener {
     void onSyncStarted();
     void onSyncComplete();
     void onSyncFailed();
-
 }

@@ -96,15 +96,21 @@ public class SyncManager {
                     resourceTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                 } catch (Exception err) {
-                    if (listener != null) {
-                        listener.onSyncFailed();
-                    }
+                    handleException();
                 } finally {
                     destroy();
                 }
             }
         });
         td.start();
+    }
+
+    private void handleException() {
+        if (listener != null) {
+            isSyncing = false;
+            MainApplication.syncFailedCount++;
+            listener.onSyncFailed();
+        }
     }
 
 

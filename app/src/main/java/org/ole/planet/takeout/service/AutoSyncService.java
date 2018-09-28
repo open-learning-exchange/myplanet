@@ -1,18 +1,24 @@
 package org.ole.planet.takeout.service;
 
+import android.app.Dialog;
+import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
+import org.ole.planet.takeout.LoginActivity;
+import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.callback.SuccessListener;
 import org.ole.planet.takeout.callback.SyncListener;
+import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Date;
 
 
-public class AutoSyncService extends JobService implements SyncListener{
+public class AutoSyncService extends JobService implements SyncListener {
     SharedPreferences preferences;
 
     @Override
@@ -25,7 +31,6 @@ public class AutoSyncService extends JobService implements SyncListener{
             Utilities.toast(this, "Syncing started...");
             SyncManager.getInstance().start(this);
         }
-        Utilities.log("Diff  " + (currentTime - lastSync) + " " + (syncInterval * 1000));
         return false;
     }
 
@@ -42,5 +47,13 @@ public class AutoSyncService extends JobService implements SyncListener{
     @Override
     public void onSyncComplete() {
         Utilities.log("Sync completed");
+    }
+
+    @Override
+    public void onSyncFailed() {
+        if (MainApplication.syncFailedCount > 3) {
+            startActivity(new Intent(this, LoginActivity.class).putExtra("showWifiDialog", true)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        }
     }
 }

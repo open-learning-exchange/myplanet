@@ -26,6 +26,7 @@ import org.ole.planet.takeout.service.SyncManager;
 import org.ole.planet.takeout.service.UploadManager;
 import org.ole.planet.takeout.utilities.DialogUtils;
 import org.ole.planet.takeout.utilities.NotificationUtil;
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -235,10 +236,19 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     public void onSyncFailed() {
         if (spinner != null)
             DialogUtils.showSnack(spinner, "Connection failed, please try again later.");
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                DialogUtils.showWifiSettingDialog(SyncActivity.this);
+            }
+        });
     }
+
 
     @Override
     public void onSyncComplete() {
+        Utilities.log("On Sync Complete");
+//        MainApplication.syncFailedCount = 0;
         progress_dialog.dismiss();
         NotificationUtil.cancellAll(this);
     }
