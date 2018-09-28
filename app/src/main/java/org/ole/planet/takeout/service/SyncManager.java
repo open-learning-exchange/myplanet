@@ -2,9 +2,11 @@ package org.ole.planet.takeout.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
@@ -195,14 +197,21 @@ public class SyncManager {
     }
 
     private void triggerInsert(String categroryId, String categoryDBName) {
-        stringArray[0] = shelfDoc.getId();
-        stringArray[1] = categroryId;
-        stringArray[2] = categoryDBName;
+        if (!TextUtils.isEmpty(categroryId)) {
+            stringArray[0] = shelfDoc.getId();
+            stringArray[1] = categroryId;
+            stringArray[2] = categoryDBName;
+        }
     }
 
 
     private void check(String[] stringArray, JsonArray array_categoryIds, Class aClass) {
         for (int x = 0; x < array_categoryIds.size(); x++) {
+            Utilities.log(stringArray[1] + " " + array_categoryIds.get(x) + " " + stringArray[0]);
+            if (array_categoryIds.get(x) instanceof JsonNull) {
+                Utilities.log("Is null");
+                continue;
+            }
             RealmResults db_Categrory = mRealm.where(aClass)
                     .equalTo("userId", stringArray[0])
                     .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
