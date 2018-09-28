@@ -2,9 +2,12 @@ package org.ole.planet.takeout.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
@@ -25,6 +28,7 @@ import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;
+import java.util.function.Consumer;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -195,24 +199,31 @@ public class SyncManager {
     }
 
     private void triggerInsert(String categroryId, String categoryDBName) {
-        stringArray[0] = shelfDoc.getId();
-        stringArray[1] = categroryId;
-        stringArray[2] = categoryDBName;
+            stringArray[0] = shelfDoc.getId();
+            stringArray[1] = categroryId;
+            stringArray[2] = categoryDBName;
     }
 
 
     private void check(String[] stringArray, JsonArray array_categoryIds, Class aClass) {
         for (int x = 0; x < array_categoryIds.size(); x++) {
+            if (array_categoryIds.get(x) instanceof JsonNull) {
+                continue;
+            }
             RealmResults db_Categrory = mRealm.where(aClass)
                     .equalTo("userId", stringArray[0])
                     .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
                     .findAll();
-            if (db_Categrory.isEmpty()) {
-                setRealmProperties(stringArray[2]);
-                validateDocument(array_categoryIds, x);
-            } else {
-                Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
-            }
+           checkEmptyAndSave(db_Categrory, x, array_categoryIds);
+        }
+    }
+
+    private void checkEmptyAndSave( RealmResults db_Categrory , int x, JsonArray array_categoryIds) {
+        if (db_Categrory.isEmpty()) {
+            setRealmProperties(stringArray[2]);
+            validateDocument(array_categoryIds, x);
+        } else {
+            Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
         }
     }
 
