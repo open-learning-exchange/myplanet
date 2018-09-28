@@ -54,10 +54,13 @@ public class DialogUtils {
     }
 
     public static void showWifiSettingDialog(final Context context) {
+        if (!NetworkUtils.isWifiBluetoothEnabled())
+            return;
         if (MainApplication.syncFailedCount > 3) {
             AlertDialog.Builder pd = new AlertDialog.Builder(context);
             String message = NetworkUtils.isBluetoothEnabled() ? "Bluetooth " : "";
             message += NetworkUtils.isWifiEnabled() ? "Wifi " : "";
+
             message += " is on please turn of to save battery";
             pd.setMessage(message);
             pd.setPositiveButton("Go to settings", new DialogInterface.OnClickListener() {
@@ -70,7 +73,6 @@ public class DialogUtils {
             }).setNegativeButton("Cancel", null);
             pd.setCancelable(false);
             AlertDialog d = pd.create();
-            d.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
             d.show();
         }
     }
