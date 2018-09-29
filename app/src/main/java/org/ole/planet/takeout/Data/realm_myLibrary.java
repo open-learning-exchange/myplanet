@@ -7,9 +7,11 @@ import android.text.TextUtils;
 import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.json.JSONStringer;
 import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -115,7 +117,7 @@ public class realm_myLibrary extends RealmObject {
         resource.setResource_id(resourceId);
         resource.setTitle(doc.get("title").getAsString());
         ///resource.setDescription(doc.get("description").getAsString());
-        resource.setDescription(((doc.has("description")) ? "N/A" : doc.get("description").getAsString()));
+        resource.setDescription(((doc.get("description") == null) ? "N/A" : doc.get("description").getAsString()));
         if (doc.has("_attachments")) {
             JsonObject attachments = doc.get("_attachments").getAsJsonObject();
             JsonParser parser = new JsonParser();
@@ -211,35 +213,40 @@ public class realm_myLibrary extends RealmObject {
     public void setResourceFor(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            resource.getResourceFor().add(s.getAsString());
+            if (!(s instanceof JsonNull))
+                resource.getResourceFor().add(s.getAsString());
         }
     }
 
     public void setSubject(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            resource.getSubject().add(s.getAsString());
+            if (!(s instanceof JsonNull))
+                resource.getSubject().add(s.getAsString());
         }
     }
 
     public void setLevel(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            resource.getLevel().add(s.getAsString());
+            if (!(s instanceof JsonNull))
+                resource.getLevel().add(s.getAsString());
         }
     }
 
     public void setTag(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            resource.tag.add(s.getAsString());
+            if (!(s instanceof JsonNull))
+                resource.tag.add(s.getAsString());
         }
     }
 
     public void setLanguages(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            resource.languages.add(s.getAsString());
+            if (!(s instanceof JsonNull))
+                resource.languages.add(s.getAsString());
         }
     }
 

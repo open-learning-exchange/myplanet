@@ -33,12 +33,15 @@ public class realm_examQuestion extends RealmObject {
     private RealmList<String> choices;
 
 
-
     public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
         for (int i = 0; i < questions.size(); i++) {
             JsonObject question = questions.get(i).getAsJsonObject();
+
             String questionId = Base64.encodeToString(question.toString().getBytes(), Base64.NO_WRAP);
-            realm_examQuestion myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
+            realm_examQuestion myQuestion = mRealm.where(realm_examQuestion.class).equalTo("id", questionId).findFirst();
+            if (myQuestion == null) {
+                myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
+            }
             myQuestion.setExamId(examId);
             myQuestion.setBody(question.get("body").getAsString());
             myQuestion.setType(question.get("type").getAsString());
@@ -53,7 +56,7 @@ public class realm_examQuestion extends RealmObject {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         boolean isMultipleChoice = question.has("correctChoice") && question.get("type").getAsString().startsWith("select");
         if (isMultipleChoice) {
-            Utilities.log("Has multiple choices " + question.get("body") + " " + question.get("header")  );
+            Utilities.log("Has multiple choices " + question.get("body") + " " + question.get("header"));
             JsonArray array = question.get("choices").getAsJsonArray();
             Utilities.log(array + " ");
             realm_answerChoices.insertChoices(questionId, array, mRealm, settings);
