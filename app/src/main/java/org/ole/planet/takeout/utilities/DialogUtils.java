@@ -54,6 +54,12 @@ public class DialogUtils {
     }
 
     public static void showWifiSettingDialog(final Context context) {
+        if (!NetworkUtils.isWifiBluetoothEnabled())
+            return;
+        showDialog(context);
+    }
+
+    private static void showDialog(final Context context) {
         if (MainApplication.syncFailedCount > 3) {
             AlertDialog.Builder pd = new AlertDialog.Builder(context);
             String message = NetworkUtils.isBluetoothEnabled() ? "Bluetooth " : "";
@@ -63,13 +69,13 @@ public class DialogUtils {
             pd.setPositiveButton("Go to settings", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialogInterface, int i) {
+                    MainApplication.syncFailedCount = 0;
                     Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                     context.startActivity(intent);
                 }
             }).setNegativeButton("Cancel", null);
             pd.setCancelable(false);
             AlertDialog d = pd.create();
-            d.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
             d.show();
         }
     }
