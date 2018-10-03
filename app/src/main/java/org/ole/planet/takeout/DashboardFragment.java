@@ -33,6 +33,7 @@ import org.ole.planet.takeout.survey.SurveyFragment;
 import org.ole.planet.takeout.teams.MyTeamsDetailFragment;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.userprofile.UserProfileFragment;
+import org.ole.planet.takeout.utilities.FileUtils;
 import org.ole.planet.takeout.utilities.Utilities;
 
 import java.io.File;
@@ -212,7 +213,7 @@ public class DashboardFragment extends BaseContainerFragment {
                 if (items.getResourceOffline() != null && items.getResourceOffline()) {
                     profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
                     openFileType(items, "offline");
-                } else if (TextUtils.equals(items.getMediaType(), "video")) {
+                } else if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
                     openFileType(items, "online");
                 } else {
                     Utilities.toast(getActivity(), "Resource can not be opened please download the resource first.");
@@ -228,7 +229,8 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     public void openFileType(final realm_myLibrary items, String videotype) {
-        if (items.getMediaType().equals("video")) {
+        Utilities.log("Media type " + items.getMediaType() + " " + videotype);
+        if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
             playVideo(videotype, items);
         } else {
             checkFileExtension(items);

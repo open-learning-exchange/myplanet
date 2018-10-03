@@ -157,10 +157,11 @@ public abstract class BaseContainerFragment extends Fragment {
         startActivity(fileOpenIntent);
     }
 
+    abstract  public void playVideo(String videoType, final realm_myLibrary items);
+
     public void checkFileExtension(realm_myLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
         String extension = filenameArray[filenameArray.length - 1];
-
         switch (extension) {
             case "pdf":
                 openIntent(items, PDFReaderActivity.class);
@@ -172,6 +173,8 @@ public abstract class BaseContainerFragment extends Fragment {
             case "webp":
                 openIntent(items, ImageViewerActivity.class);
                 break;
+            case "mp4":
+                playVideo("offline", items);
             default:
                 checkMoreFileExtensions(extension, items);
                 break;

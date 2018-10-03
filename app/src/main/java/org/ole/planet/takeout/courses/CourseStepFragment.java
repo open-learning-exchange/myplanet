@@ -51,6 +51,11 @@ public class CourseStepFragment extends BaseContainerFragment {
     }
 
     @Override
+    public void playVideo(String videoType, realm_myLibrary items) {
+
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_course_step, container, false);
