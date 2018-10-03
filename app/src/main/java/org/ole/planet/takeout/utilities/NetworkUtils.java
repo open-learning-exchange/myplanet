@@ -12,6 +12,9 @@ public class NetworkUtils {
         return mng != null && mng.isWifiEnabled();
     }
 
+    public static boolean isWifiBluetoothEnabled(){
+        return isBluetoothEnabled() || isWifiEnabled();
+    }
     public static boolean isBluetoothEnabled() {
         BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         return mBluetoothAdapter != null && mBluetoothAdapter.isEnabled();

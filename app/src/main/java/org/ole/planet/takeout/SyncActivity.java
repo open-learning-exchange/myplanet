@@ -234,6 +234,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     @Override
     public void onSyncFailed() {
+        if (spinner != null)
+            DialogUtils.showSnack(spinner, "Connection failed, please try again later.");
         runOnUiThread(new Runnable() {
             @Override
             public void run() {

@@ -114,7 +114,7 @@ public class realm_offlineActivities extends RealmObject {
         return ob;
     }
 
-    public static realm_offlineActivities getRecentLogin(Realm mRealm) {
+    public static realm_offlineActivDiaities getRecentLogin(Realm mRealm) {
         realm_offlineActivities s = mRealm.where(realm_offlineActivities.class).equalTo("type", UserProfileDbHandler.KEY_LOGIN).sort("loginTime", Sort.DESCENDING).findFirst();
         return s;
     }

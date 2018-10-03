@@ -254,7 +254,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             openCallFragment(new MyCourseFragment());
         } else if (item.getItemId() == R.id.menu_survey) {
             openCallFragment(new SurveyFragment());
-        } else {
+        }else if (item.getItemId() == R.id.menu_home) {
+            openCallFragment(new DashboardFragment());
+        }
+        else {
             openCallFragment(new MyMeetUpsFragment());
         }
         return true;
