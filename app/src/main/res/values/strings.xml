@@ -23,6 +23,7 @@
     <string name="btn_connect">Connect</string>
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">My Planet</string>
+    <string name="menu_home">Home</string>
     <string name="menu_library">Library</string>
     <string name="menu_courses">Courses</string>
     <string name="menu_meetups">Meetups</string>

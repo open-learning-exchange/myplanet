@@ -4,6 +4,10 @@
 
 
     <item
+        android:id="@+id/menu_home"
+        android:icon="@drawable/ic_home"
+        android:title="@string/menu_home" />
+    <item
         android:id="@+id/menu_library"
         android:icon="@drawable/library"
         android:title="@string/menu_library" />
