@@ -74,7 +74,6 @@ public class CourseStepFragment extends BaseContainerFragment {
         super.onActivityCreated(savedInstanceState);
         step = mRealm.where(realm_courseSteps.class).equalTo("id", stepId).findFirst();
         resources = mRealm.where(realm_myLibrary.class).equalTo("stepId", stepId).findAll();
-
         stepExams = mRealm.where(realm_stepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");

@@ -1,7 +1,11 @@
 package org.ole.planet.takeout.Data;
 
+import android.util.Base64;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import org.ole.planet.takeout.utilities.Utilities;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,8 +23,11 @@ public class realm_courseSteps extends io.realm.RealmObject {
 
     public static void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps, Realm mRealm) {
         for (int step = 0; step < numberOfSteps; step++) {
-            String step_id = UUID.randomUUID().toString();
-            realm_courseSteps myCourseStepDB = mRealm.createObject(realm_courseSteps.class, step_id);
+            String step_id = Base64.encodeToString(steps.get(step).toString().getBytes(), Base64.NO_WRAP);
+            realm_courseSteps myCourseStepDB = mRealm.where(realm_courseSteps.class).equalTo("id", step_id).findFirst();
+            if (myCourseStepDB == null) {
+                myCourseStepDB = mRealm.createObject(realm_courseSteps.class, step_id);
+            }
             myCourseStepDB.setCourseId(myCoursesID);
             JsonObject stepContainer = steps.get(step).getAsJsonObject();
             myCourseStepDB.setStepTitle(stepContainer.get("stepTitle").getAsString());
