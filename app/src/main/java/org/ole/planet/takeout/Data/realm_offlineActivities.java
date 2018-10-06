@@ -1,5 +1,6 @@
 package org.ole.planet.takeout.Data;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.jboss.security.auth.spi.Users;
@@ -123,7 +124,7 @@ public class realm_offlineActivities extends RealmObject {
         realm_offlineActivities activities = mRealm.createObject(realm_offlineActivities.class, act.get("_id").toString());
         activities.set_rev(act.get("_rev").toString());
         activities.set_id(act.get("_id").toString());
-        activities.setLoginTime(act.has("loginTime") ? act.get("logoutTime").getAsLong() : 0L);
+        activities.setLoginTime(act.get("loginTime") instanceof JsonNull ? act.get("logoutTime").getAsLong() : 0L);
         activities.setType(act.get("type").getAsString());
         activities.setUserName(act.get("user").getAsString());
         activities.setLogoutTime(act.has("logoutTime") ? act.get("logoutTime").getAsLong() : 0L);
