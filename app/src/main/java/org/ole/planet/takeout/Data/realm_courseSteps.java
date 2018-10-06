@@ -21,6 +21,7 @@ public class realm_courseSteps extends io.realm.RealmObject {
     private Integer noOfResources;
     private Integer noOfExams;
 
+
     public static void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps, Realm mRealm) {
         for (int step = 0; step < numberOfSteps; step++) {
             String step_id = Base64.encodeToString(steps.get(step).toString().getBytes(), Base64.NO_WRAP);
@@ -37,9 +38,13 @@ public class realm_courseSteps extends io.realm.RealmObject {
                 insertCourseStepsAttachments(myCoursesID, step_id, stepContainer.getAsJsonArray("resources"), mRealm);
             }
             // myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
-            if (stepContainer.has("exam"))
-                realm_stepExam.insertCourseStepsExams(myCoursesID, step_id, stepContainer.getAsJsonObject("exam"), mRealm);
+            insertExam(stepContainer, mRealm, step_id, myCoursesID);
         }
+    }
+
+    private static void insertExam(JsonObject stepContainer, Realm mRealm, String step_id, String myCoursesID) {
+        if (stepContainer.has("exam"))
+            realm_stepExam.insertCourseStepsExams(myCoursesID, step_id, stepContainer.getAsJsonObject("exam"), mRealm);
     }
 
     public static String[] getStepIds(Realm mRealm, String courseId) {
