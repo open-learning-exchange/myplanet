@@ -76,6 +76,7 @@ public class DialogUtils {
             }).setNegativeButton("Cancel", null);
             pd.setCancelable(false);
             AlertDialog d = pd.create();
+//            d.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
             d.show();
         }
     }

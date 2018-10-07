@@ -23,4 +23,10 @@ public class FileUtils {
         }
     }
 
+    public static String getFileExtension(String address) {
+        String filenameArray[] = address.split("\\.");
+        String extension = filenameArray[filenameArray.length - 1];
+        return extension;
+    }
+
 }
