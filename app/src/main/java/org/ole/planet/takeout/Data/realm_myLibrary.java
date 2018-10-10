@@ -47,6 +47,7 @@ public class realm_myLibrary extends RealmObject {
     private String language;
     private String author;
     private String year;
+    private String medium;
     private String title;
     private String averageRating;
     private String filename;
@@ -63,6 +64,7 @@ public class realm_myLibrary extends RealmObject {
     private String courseId;
     private String stepId;
     private String downloaded;
+
 
     public String getDownloaded() {
         return downloaded;
@@ -86,6 +88,13 @@ public class realm_myLibrary extends RealmObject {
         insertMyLibrary(userId, "", "", doc, mRealm);
     }
 
+    public String getMedium() {
+        return medium;
+    }
+
+    public void setMedium(String medium) {
+        this.medium = medium;
+    }
 
     public static void createFromResource(realm_myLibrary resource, Realm mRealm, String userId) {
         if (!mRealm.isInTransaction())
@@ -147,6 +156,7 @@ public class realm_myLibrary extends RealmObject {
         resource.setAuthor(doc.has("author") ? doc.get("author").getAsString() : "");
         resource.setMediaType(doc.has("mediaType") ? doc.get("mediaType").getAsString() : "");
         resource.setTimesRated(doc.has("timesRated") ? doc.get("timesRated").getAsInt() : 0);
+        resource.setMedium(!doc.has("medium")? "" : doc.get("medium").getAsString());
         if (doc.has("resourceFor") && doc.get("resourceFor").isJsonArray()) {
             resource.setResourceFor(doc.get("resourceFor").getAsJsonArray(), resource);
         }
@@ -213,7 +223,7 @@ public class realm_myLibrary extends RealmObject {
     public void setResourceFor(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            if (!(s instanceof JsonNull))
+            if (!(s instanceof JsonNull) && !resource.getResourceFor().contains(s.getAsString()))
                 resource.getResourceFor().add(s.getAsString());
         }
     }
@@ -221,7 +231,7 @@ public class realm_myLibrary extends RealmObject {
     public void setSubject(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            if (!(s instanceof JsonNull))
+            if (!(s instanceof JsonNull) && !resource.getSubject().contains(s.getAsString()))
                 resource.getSubject().add(s.getAsString());
         }
     }
@@ -229,7 +239,7 @@ public class realm_myLibrary extends RealmObject {
     public void setLevel(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            if (!(s instanceof JsonNull))
+            if (!(s instanceof JsonNull) && !resource.getLevel().contains(s.getAsString()))
                 resource.getLevel().add(s.getAsString());
         }
     }
@@ -237,16 +247,16 @@ public class realm_myLibrary extends RealmObject {
     public void setTag(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            if (!(s instanceof JsonNull))
-                resource.tag.add(s.getAsString());
+            if (!(s instanceof JsonNull) && !resource.getTag().contains(s.getAsString()))
+                resource.getTag().add(s.getAsString());
         }
     }
 
     public void setLanguages(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
-            if (!(s instanceof JsonNull))
-                resource.languages.add(s.getAsString());
+            if (!(s instanceof JsonNull) && !resource.getLanguages().contains(s.getAsString()))
+                resource.getLanguages().add(s.getAsString());
         }
     }
 

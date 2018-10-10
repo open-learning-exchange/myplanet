@@ -1,6 +1,7 @@
 package org.ole.planet.takeout.library;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -11,6 +12,8 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.google.android.flexbox.FlexboxLayout;
+
 import org.ole.planet.takeout.Data.realm_myLibrary;
 import org.ole.planet.takeout.R;
 import org.ole.planet.takeout.callback.OnLibraryItemSelected;
@@ -19,17 +22,29 @@ import org.ole.planet.takeout.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.List;
 
+import fisk.chipcloud.ChipCloud;
+import fisk.chipcloud.ChipCloudConfig;
+
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private Context context;
     private List<realm_myLibrary> libraryList;
     private List<realm_myLibrary> selectedItems;
     private OnLibraryItemSelected listener;
+    private ChipCloudConfig config;
 
     public AdapterLibrary(Context context, List<realm_myLibrary> libraryList) {
         this.context = context;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
+
+        config = new ChipCloudConfig()
+                .selectMode(ChipCloud.SelectMode.multi)
+                .useInsetPadding(true)
+                .checkedChipColor(Color.parseColor("#e0e0e0"))
+                .checkedTextColor(Color.parseColor("#000000"))
+                .uncheckedChipColor(Color.parseColor("#e0e0e0"))
+                .uncheckedTextColor(Color.parseColor("#000000"));
     }
 
     public void setLibraryList(List<realm_myLibrary> libraryList) {
@@ -56,7 +71,17 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).times_rated.setText(libraryList.get(position).getTimesRated() + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
+            ((ViewHolderLibrary) holder).flexboxDrawable.removeAllViews();
+            ChipCloud chipCloud = new ChipCloud(context, ((ViewHolderLibrary) holder).flexboxDrawable, config);
+            for (String s : libraryList.get(position).getLanguages()) {
+                chipCloud.addChip("Language : " + s);
+            }
+            for (String s : libraryList.get(position).getSubject()) {
+                chipCloud.addChip("Subject : " + s);
+            }
 
+            if (!TextUtils.isEmpty(libraryList.get(position).getMedium()))
+                chipCloud.addChip("Medium : " + libraryList.get(position).getMedium());
         }
     }
 //
@@ -78,6 +103,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
         TextView title, desc, rating, times_rated;
         CheckBox checkBox;
+        FlexboxLayout flexboxDrawable;
 
         public ViewHolderLibrary(View itemView) {
             super(itemView);
@@ -95,6 +121,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     }
                 }
             });
+            flexboxDrawable = itemView.findViewById(R.id.flexbox_drawable);
         }
     }
 }
