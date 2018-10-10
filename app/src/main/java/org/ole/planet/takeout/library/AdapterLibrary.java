@@ -71,18 +71,22 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).times_rated.setText(libraryList.get(position).getTimesRated() + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
-            ((ViewHolderLibrary) holder).flexboxDrawable.removeAllViews();
-            ChipCloud chipCloud = new ChipCloud(context, ((ViewHolderLibrary) holder).flexboxDrawable, config);
-            for (String s : libraryList.get(position).getLanguages()) {
-                chipCloud.addChip("Language : " + s);
-            }
-            for (String s : libraryList.get(position).getSubject()) {
-                chipCloud.addChip("Subject : " + s);
-            }
-
-            if (!TextUtils.isEmpty(libraryList.get(position).getMedium()))
-                chipCloud.addChip("Medium : " + libraryList.get(position).getMedium());
+            displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
         }
+    }
+
+    private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
+       flexboxDrawable.removeAllViews();
+        ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
+        for (String s : libraryList.get(position).getLanguages()) {
+            chipCloud.addChip("Language : " + s);
+        }
+        for (String s : libraryList.get(position).getSubject()) {
+            chipCloud.addChip("Subject : " + s);
+        }
+
+        if (!TextUtils.isEmpty(libraryList.get(position).getMedium()))
+            chipCloud.addChip("Medium : " + libraryList.get(position).getMedium());
     }
 //
 //    private void handleCheck(boolean b, int i) {
