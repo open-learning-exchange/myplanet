@@ -76,28 +76,14 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
-       flexboxDrawable.removeAllViews();
+        flexboxDrawable.removeAllViews();
         ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
-        for (String s : libraryList.get(position).getLanguages()) {
-            chipCloud.addChip("Language : " + s);
-        }
-        for (String s : libraryList.get(position).getSubject()) {
-            chipCloud.addChip("Subject : " + s);
+
+        for (String s : libraryList.get(position).getTag()) {
+            chipCloud.addChip(s);
         }
 
-        if (!TextUtils.isEmpty(libraryList.get(position).getMedium()))
-            chipCloud.addChip("Medium : " + libraryList.get(position).getMedium());
     }
-//
-//    private void handleCheck(boolean b, int i) {
-//        if (b) {
-//            selectedItems.add(libraryList.get(i));
-//        } else if (selectedItems.contains(libraryList.get(i))) {
-//            selectedItems.remove(libraryList.get(i));
-//        }
-//        listener.onSelectedListChange(selectedItems);
-//    }
-
 
     @Override
     public int getItemCount() {
