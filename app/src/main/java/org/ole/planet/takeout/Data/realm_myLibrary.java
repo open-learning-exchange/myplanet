@@ -166,8 +166,8 @@ public class realm_myLibrary extends RealmObject {
         if (doc.has("level") && doc.get("level").isJsonArray()) {
             resource.setLevel(doc.get("level").getAsJsonArray(), resource);
         }
-        if (doc.has("tag") && doc.get("tag").isJsonArray()) {
-            resource.setTag(doc.get("tag").getAsJsonArray(), resource);
+        if (doc.has("tags") && doc.get("tags").isJsonArray()) {
+            resource.setTag(doc.get("tags").getAsJsonArray(), resource);
         }
         if (doc.has("languages") && doc.get("languages").isJsonArray()) {
             resource.setLanguages(doc.get("languages").getAsJsonArray(), resource);
