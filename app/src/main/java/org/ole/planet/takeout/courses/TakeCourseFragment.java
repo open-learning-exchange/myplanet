@@ -100,7 +100,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             tvStepTitle.setText(steps.get(position - 1).getStepTitle());
         }
         tvSteps.setText(String.format("Step %d/%d", position, steps.size()));
-
     }
 
     @Override
