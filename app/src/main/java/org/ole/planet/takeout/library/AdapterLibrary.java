@@ -39,13 +39,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
 
-        config = new ChipCloudConfig()
-                .selectMode(ChipCloud.SelectMode.single)
-                .useInsetPadding(true)
-                .checkedChipColor(Color.parseColor("#e0e0e0"))
-                .checkedTextColor(Color.parseColor("#000000"))
-                .uncheckedChipColor(Color.parseColor("#e0e0e0"))
-                .uncheckedTextColor(Color.parseColor("#000000"));
+        config = Utilities.getCloudConfig()
+                .selectMode(ChipCloud.SelectMode.single);
+
     }
 
     public void setLibraryList(List<realm_myLibrary> libraryList) {

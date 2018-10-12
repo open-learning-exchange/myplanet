@@ -43,9 +43,8 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
     ImageView imgSearch;
     AdapterLibrary adapterLibrary;
     FlexboxLayout flexBoxTags;
-    ChipCloudConfig config;
     List<String> searchTags;
-
+    ChipCloudConfig config;
 
     public MyLibraryFragment() {
     }
@@ -66,13 +65,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        config = new ChipCloudConfig()
-                .showClose(R.color.black_overlay)
-                .useInsetPadding(true)
-                .checkedChipColor(Color.parseColor("#e0e0e0"))
-                .checkedTextColor(Color.parseColor("#000000"))
-                .uncheckedChipColor(Color.parseColor("#e0e0e0"))
-                .uncheckedTextColor(Color.parseColor("#000000"));
+        config = Utilities.getCloudConfig().showClose(R.color.black_overlay);
         tvAddToLib = getView().findViewById(R.id.tv_add_to_lib);
         tvDelete = getView().findViewById(R.id.tv_delete);
         etSearch = getView().findViewById(R.id.et_search);
@@ -127,7 +120,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
 
     @Override
     public boolean onKey(View view, int i, KeyEvent keyEvent) {
-        if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_SPACE || keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER){
+        if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_SPACE || keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
             onTagClicked(etTags.getText().toString());
             etTags.setText("");
         }
