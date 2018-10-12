@@ -63,6 +63,7 @@ deploy:
   file_glob: true
   file: app/build/outputs/apk/debug/*
   skip-cleanup: true
+  prerelease: true
   on:
     branch: master
     repo: open-learning-exchange/myplanet
