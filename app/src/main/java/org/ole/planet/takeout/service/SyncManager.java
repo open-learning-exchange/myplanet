@@ -131,7 +131,7 @@ public class SyncManager {
 
     private void syncResource(CouchDbClientAndroid dbClient) {
         int skip = 0;
-        int limit = 100;
+        int limit = 1000;
         while (true) {
             final List<JsonObject> allDocs = dbClient.findDocs("\n" +
                     "{\n" +

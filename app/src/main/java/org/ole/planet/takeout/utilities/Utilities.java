@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
@@ -23,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+
+import fisk.chipcloud.ChipCloudConfig;
 
 
 public class Utilities {
@@ -120,13 +123,13 @@ public class Utilities {
 ////        return null;
 //    }
 
-    private static boolean isVideo(String link) {
-        return link.contains(".mp4") || link.contains(".avi");
-    }
-
-    private static boolean isImage(String link) {
-        return link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png");
-    }
+//    private static boolean isVideo(String link) {
+//        return link.contains(".mp4") || link.contains(".avi");
+//    }
+//
+//    private static boolean isImage(String link) {
+//        return link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png");
+//    }
 
     private static void openIntent(Context context, Intent intent) {
         intent.putExtra(Intent.EXTRA_SUBJECT, "Open With ..");
@@ -137,6 +140,15 @@ public class Utilities {
         } catch (ActivityNotFoundException e) {
             Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public static ChipCloudConfig getCloudConfig() {
+        return new ChipCloudConfig()
+                .useInsetPadding(true)
+                .checkedChipColor(Color.parseColor("#e0e0e0"))
+                .checkedTextColor(Color.parseColor("#000000"))
+                .uncheckedChipColor(Color.parseColor("#e0e0e0"))
+                .uncheckedTextColor(Color.parseColor("#000000"));
     }
 
     public static String checkNA(String s) {
