@@ -20,12 +20,16 @@ import org.ole.planet.takeout.datamanager.DatabaseService;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -95,9 +99,32 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
             return getList(c);
         }
         return mRealm.where(c).isEmpty("userId").or()
-                .notEqualTo("userId", model.getId(), Case.INSENSITIVE).contains(c == realm_myLibrary.class ?  "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+                .notEqualTo("userId", model.getId(), Case.INSENSITIVE).contains(c == realm_myLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
     }
 
+    public List<realm_myLibrary> filterByTag(String[] tags) {
+        List<realm_myLibrary> list = (List<realm_myLibrary>) getList(realm_myLibrary.class);
+        if (tags.length == 0) {
+            return list;
+        }
+        RealmList<realm_myLibrary> libraries = new RealmList<>();
+        for (realm_myLibrary library : list) {
+            String tagAsString = library.getTagAsString();
+            if (tagAsString.toLowerCase().contains(getTagsAsString(tags).toLowerCase())) {
+                libraries.add(library);
+            }
+        }
+        return libraries;
+
+    }
+
+    public String getTagsAsString(String[] tags) {
+        StringBuilder s = new StringBuilder();
+        for (String tag : tags) {
+            s.append(tag).append(", ");
+        }
+        return s.toString();
+    }
 
     public List<LI> getList(Class c) {
         if (c == realm_stepExam.class) {

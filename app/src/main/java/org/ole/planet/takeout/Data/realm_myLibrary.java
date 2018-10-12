@@ -16,6 +16,8 @@ import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.SyncActivity;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -103,6 +105,7 @@ public class realm_myLibrary extends RealmObject {
         mRealm.commitTransaction();
     }
 
+
     public static void insertMyLibrary(String userId, String stepId, String courseId, JsonObject doc, Realm mRealm) {
 
         String resourceId = doc.get("_id").getAsString();
@@ -156,7 +159,7 @@ public class realm_myLibrary extends RealmObject {
         resource.setAuthor(doc.has("author") ? doc.get("author").getAsString() : "");
         resource.setMediaType(doc.has("mediaType") ? doc.get("mediaType").getAsString() : "");
         resource.setTimesRated(doc.has("timesRated") ? doc.get("timesRated").getAsInt() : 0);
-        resource.setMedium(!doc.has("medium")? "" : doc.get("medium").getAsString());
+        resource.setMedium(!doc.has("medium") ? "" : doc.get("medium").getAsString());
         if (doc.has("resourceFor") && doc.get("resourceFor").isJsonArray()) {
             resource.setResourceFor(doc.get("resourceFor").getAsJsonArray(), resource);
         }
@@ -291,6 +294,14 @@ public class realm_myLibrary extends RealmObject {
 
     public RealmList<String> getTag() {
         return tag;
+    }
+
+    public String getTagAsString() {
+        StringBuilder s = new StringBuilder();
+        for (String tag : getTag()) {
+            s.append(tag).append(", ");
+        }
+        return s.toString();
     }
 
 

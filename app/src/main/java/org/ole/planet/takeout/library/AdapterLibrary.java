@@ -24,6 +24,7 @@ import java.util.List;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
+import fisk.chipcloud.ChipListener;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -39,7 +40,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.selectedItems = new ArrayList<>();
 
         config = new ChipCloudConfig()
-                .selectMode(ChipCloud.SelectMode.multi)
+                .selectMode(ChipCloud.SelectMode.single)
                 .useInsetPadding(true)
                 .checkedChipColor(Color.parseColor("#e0e0e0"))
                 .checkedTextColor(Color.parseColor("#000000"))
@@ -77,10 +78,18 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
-        ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
+        final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
 
         for (String s : libraryList.get(position).getTag()) {
             chipCloud.addChip(s);
+            chipCloud.setListener(new ChipListener() {
+                @Override
+                public void chipCheckedChange(int i, boolean b, boolean b1) {
+                    if (b1 && listener != null) {
+                        listener.onTagClicked(chipCloud.getLabel(i));
+                    }
+                }
+            });
         }
 
     }
