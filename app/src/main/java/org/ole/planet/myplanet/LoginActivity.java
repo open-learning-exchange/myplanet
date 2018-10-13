@@ -213,14 +213,11 @@ public class LoginActivity extends SyncActivity {
         final String url = textUrl.getText().toString();
         final String pswd = textPassword.getText().toString();
         String processedUrl = setUrlParts(url, pswd, context);
-
         ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
-                    List<String> myList = new ArrayList<>();
-                    myList.clear();
-                    myList = Arrays.asList(s.split(","));
+                    List<String> myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
@@ -234,7 +231,6 @@ public class LoginActivity extends SyncActivity {
 
             @Override
             public void failure(Request request, Response response, FuelError fuelError) {
-                Log.e("error", fuelError.toString());
                 alertDialogOkay("Device couldn't reach server. Check and try again");
                 if (mRealm != null)
                     mRealm.close();
