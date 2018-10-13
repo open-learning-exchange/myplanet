@@ -4,7 +4,7 @@ apply plugin: 'realm-android'
 android {
     compileSdkVersion 27
     defaultConfig {
-        applicationId "org.ole.planet.takeaway"
+        applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
         versionCode 1
@@ -17,7 +17,6 @@ android {
                 outputFileName = new File("myPlanet.apk")
             }
         }
-
     }
 
     buildTypes {
