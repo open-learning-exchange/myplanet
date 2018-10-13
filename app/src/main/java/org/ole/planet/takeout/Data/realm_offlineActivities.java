@@ -4,6 +4,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.jboss.security.auth.spi.Users;
+import org.ole.planet.takeout.MainApplication;
 import org.ole.planet.takeout.userprofile.UserProfileDbHandler;
 import org.ole.planet.takeout.utilities.TimeUtils;
 import org.ole.planet.takeout.utilities.Utilities;
@@ -26,6 +27,7 @@ public class realm_offlineActivities extends RealmObject {
     private String description;
     private Long loginTime;
     private Long logoutTime;
+    private String androidId;
 
     public String get_rev() {
         return _rev;
@@ -99,6 +101,13 @@ public class realm_offlineActivities extends RealmObject {
         this.logoutTime = logoutTime;
     }
 
+    public String getAndroidId() {
+        return androidId;
+    }
+
+    public void setAndroidId(String androidId) {
+        this.androidId = androidId;
+    }
 
     public static JsonObject serializeLoginActivities(realm_offlineActivities realm_offlineActivities) {
         JsonObject ob = new JsonObject();
@@ -106,6 +115,7 @@ public class realm_offlineActivities extends RealmObject {
         ob.addProperty("type", realm_offlineActivities.getType());
         ob.addProperty("loginTime", realm_offlineActivities.getLoginTime());
         ob.addProperty("logoutTime", realm_offlineActivities.getLogoutTime());
+        ob.addProperty("androidId", MainApplication.getAndroidId());
         if (realm_offlineActivities.get_id() != null) {
             ob.addProperty("_id", realm_offlineActivities.getLogoutTime());
         }

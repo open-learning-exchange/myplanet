@@ -1,10 +1,12 @@
 package org.ole.planet.takeout;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.provider.Settings;
 
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
@@ -17,11 +19,25 @@ import org.ole.planet.takeout.service.AutoSyncService;
 import org.ole.planet.takeout.utilities.NotificationUtil;
 import org.ole.planet.takeout.utilities.Utilities;
 
+import java.util.UUID;
+
 public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
     public static FirebaseJobDispatcher dispatcher;
     public static Context context;
     SharedPreferences preferences;
     public static int syncFailedCount = 0;
+
+    @SuppressLint("HardwareIds")
+    public static String getAndroidId() {
+        try {
+            return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "0";
+
+    }
+
 
     @Override
     public void onCreate() {
