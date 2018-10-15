@@ -138,5 +138,7 @@ public class realm_offlineActivities extends RealmObject {
         activities.setType(act.get("type").getAsString());
         activities.setUserName(act.get("user").getAsString());
         activities.setLogoutTime(act.has("logoutTime") ? act.get("logoutTime").getAsLong() : 0L);
+        activities.setAndroidId(act.has("androidId") ? act.get("androidId").getAsString() : "");
+
     }
 }
