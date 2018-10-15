@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_large"
-    tools:context="org.ole.planet.takeout.feedback.FeedbackFragment">
+    tools:context="org.ole.planet.myplanet.feedback.FeedbackFragment">
 
 
     <LinearLayout

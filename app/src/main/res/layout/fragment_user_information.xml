@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
-    tools:context="org.ole.planet.takeout.courses.exam.UserInformationFragment">
+    tools:context="org.ole.planet.myplanet.courses.exam.UserInformationFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
