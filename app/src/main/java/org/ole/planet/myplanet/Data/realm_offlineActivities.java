@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import java.util.UUID;
 
@@ -112,7 +113,7 @@ public class realm_offlineActivities extends RealmObject {
         ob.addProperty("type", realm_offlineActivities.getType());
         ob.addProperty("loginTime", realm_offlineActivities.getLoginTime());
         ob.addProperty("logoutTime", realm_offlineActivities.getLogoutTime());
-        ob.addProperty("androidId", MainApplication.getAndroidId());
+        ob.addProperty("androidId", NetworkUtils.getMacAddr());
         if (realm_offlineActivities.get_id() != null) {
             ob.addProperty("_id", realm_offlineActivities.getLogoutTime());
         }
