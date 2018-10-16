@@ -60,6 +60,7 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_myCourses> impl
             }
         });
         etSearch = getView().findViewById(R.id.et_search);
+        getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
         imgSearch = getView().findViewById(R.id.img_search);
         imgSearch.setOnClickListener(new View.OnClickListener() {
             @Override
