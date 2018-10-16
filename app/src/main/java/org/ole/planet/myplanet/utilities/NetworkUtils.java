@@ -30,25 +30,27 @@ public class NetworkUtils {
             List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
             for (NetworkInterface nif : all) {
                 if (!nif.getName().equalsIgnoreCase("wlan0")) continue;
-
-                byte[] macBytes = nif.getHardwareAddress();
-                if (macBytes == null) {
-                    return "";
-                }
-
-                StringBuilder res1 = new StringBuilder();
-                for (byte b : macBytes) {
-                    res1.append(String.format("%02X:", b));
-                }
-
-                if (res1.length() > 0) {
-                    res1.deleteCharAt(res1.length() - 1);
-                }
-                return res1.toString();
+                return getAddress(nif);
             }
         } catch (Exception ex) {
-            //handle exception
         }
         return "";
+    }
+
+    private static String getAddress(NetworkInterface nif) throws Exception {
+        byte[] macBytes = nif.getHardwareAddress();
+        if (macBytes == null) {
+            return "";
+        }
+
+        StringBuilder res1 = new StringBuilder();
+        for (byte b : macBytes) {
+            res1.append(String.format("%02X:", b));
+        }
+
+        if (res1.length() > 0) {
+            res1.deleteCharAt(res1.length() - 1);
+        }
+        return res1.toString();
     }
 }
