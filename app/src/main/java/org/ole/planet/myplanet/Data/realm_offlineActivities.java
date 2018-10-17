@@ -3,10 +3,9 @@ package org.ole.planet.myplanet.Data;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
-import org.jboss.security.auth.spi.Users;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
-import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import java.util.UUID;
 
@@ -26,6 +25,7 @@ public class realm_offlineActivities extends RealmObject {
     private String description;
     private Long loginTime;
     private Long logoutTime;
+    private String androidId;
 
     public String get_rev() {
         return _rev;
@@ -99,6 +99,13 @@ public class realm_offlineActivities extends RealmObject {
         this.logoutTime = logoutTime;
     }
 
+    public String getAndroidId() {
+        return androidId;
+    }
+
+    public void setAndroidId(String androidId) {
+        this.androidId = androidId;
+    }
 
     public static JsonObject serializeLoginActivities(realm_offlineActivities realm_offlineActivities) {
         JsonObject ob = new JsonObject();
@@ -106,6 +113,7 @@ public class realm_offlineActivities extends RealmObject {
         ob.addProperty("type", realm_offlineActivities.getType());
         ob.addProperty("loginTime", realm_offlineActivities.getLoginTime());
         ob.addProperty("logoutTime", realm_offlineActivities.getLogoutTime());
+        ob.addProperty("androidId", NetworkUtils.getMacAddr());
         if (realm_offlineActivities.get_id() != null) {
             ob.addProperty("_id", realm_offlineActivities.getLogoutTime());
         }
@@ -128,5 +136,7 @@ public class realm_offlineActivities extends RealmObject {
         activities.setType(act.get("type").getAsString());
         activities.setUserName(act.get("user").getAsString());
         activities.setLogoutTime(act.has("logoutTime") ? act.get("logoutTime").getAsLong() : 0L);
+        activities.setAndroidId(act.has("androidId") ? act.get("androidId").getAsString() : "");
+
     }
 }
