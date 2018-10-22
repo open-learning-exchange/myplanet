@@ -47,7 +47,8 @@ import java.util.ArrayList;
 
 public class Dashboard extends DashboardElements implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
-    private static final int PERMISSION_REQUEST_CODE = 111;
+    private static final int PERMISSION_REQUEST_CODE_FILE = 111;
+    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
     AccountHeader headerResult;
     private Drawer result = null;
     private Toolbar mTopToolbar;
@@ -80,7 +81,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         }
 
         if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
+            requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE_FILE);
+        }
+        if (!checkPermission(Manifest.permission.CAMERA)) {
+            requestPermission(Manifest.permission.CAMERA, PERMISSION_REQUEST_CODE_CAMERA);
         }
         openCallFragment(new DashboardFragment());
     }
@@ -100,19 +104,14 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case 111:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
-                } else {
-                    Utilities.toast(this, "Download Function will not work, please grant the permission.");
-                    requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
-                }
-                break;
-            default:
-                break;
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
+        } else {
+            Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
+            requestPermission(requestCode == PERMISSION_REQUEST_CODE_FILE ? Manifest.permission.WRITE_EXTERNAL_STORAGE : Manifest.permission.CAMERA, requestCode);
         }
     }
+
 
     private AccountHeader getAccountHeader() {
         return new AccountHeaderBuilder()
@@ -254,10 +253,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             openCallFragment(new MyCourseFragment());
         } else if (item.getItemId() == R.id.menu_survey) {
             openCallFragment(new SurveyFragment());
-        }else if (item.getItemId() == R.id.menu_home) {
+        } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
-        }
-        else {
+        } else {
             openCallFragment(new MyMeetUpsFragment());
         }
         return true;
