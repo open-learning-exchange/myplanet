@@ -88,8 +88,6 @@ dependencies {
     implementation 'com.github.tiagohm.MarkdownView:emoji:0.19.0'
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
-
-
     implementation 'com.github.fiskurgit:ChipCloud:3.0.5'
 
 }

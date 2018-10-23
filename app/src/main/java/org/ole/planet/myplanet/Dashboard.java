@@ -75,22 +75,20 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE_FILE);
-        }
-        if (!checkPermission(Manifest.permission.CAMERA)) {
-            requestPermission(Manifest.permission.CAMERA, PERMISSION_REQUEST_CODE_CAMERA);
-        }
+        requestPermission();
         openCallFragment(new DashboardFragment());
     }
 
-    public void requestPermission(String strPermission, int perCode) {
-        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
+    public void requestPermission() {
+        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE_FILE);
+        }
+        if (!checkPermission(Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_CAMERA);
+        }
     }
 
     public boolean checkPermission(String strPermission) {
@@ -108,10 +106,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
         } else {
             Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
-            requestPermission(requestCode == PERMISSION_REQUEST_CODE_FILE ? Manifest.permission.WRITE_EXTERNAL_STORAGE : Manifest.permission.CAMERA, requestCode);
+            requestPermission();
         }
     }
-
 
     private AccountHeader getAccountHeader() {
         return new AccountHeaderBuilder()
@@ -235,15 +232,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
-        }
-//        else if (!isDashBoard) {
-//            openCallFragment(new DashboardFragment());
-//        }
-        else {
+        } else {
             super.onBackPressed();
         }
     }
-
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {

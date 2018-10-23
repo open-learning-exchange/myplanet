@@ -8,11 +8,6 @@ import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.widget.CompoundButton;
 
-import com.androidhiddencamera.CameraConfig;
-import com.androidhiddencamera.config.CameraFacing;
-import com.androidhiddencamera.config.CameraImageFormat;
-import com.androidhiddencamera.config.CameraResolution;
-import com.androidhiddencamera.config.CameraRotation;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_answerChoices;
