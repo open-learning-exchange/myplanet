@@ -162,7 +162,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
     }
 
-
     private void radioWithCorrectChoice(realm_examQuestion question) {
         RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
                 .equalTo("questionId", question.getId()).findAll();
