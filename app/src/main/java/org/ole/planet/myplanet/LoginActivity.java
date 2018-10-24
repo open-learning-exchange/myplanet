@@ -115,7 +115,6 @@ public class LoginActivity extends SyncActivity {
                         String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
                         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
                         setUrlParts(url, pin, context);
-                        Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
                     }
                 });
                 settingDialog(builder);

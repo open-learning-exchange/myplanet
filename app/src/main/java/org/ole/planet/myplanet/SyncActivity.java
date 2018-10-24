@@ -191,8 +191,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     public String setUrlParts(String url, String password, Context context) {
         this.context = context;
         URI uri = URI.create(url);
-        String couchdbURL;
-        String url_user = null, url_pwd = null;
+        String couchdbURL, url_user, url_pwd;
         if (url.contains("@")) {
             String[] userinfo = uri.getUserInfo().split(":");
             url_user = userinfo[0];
@@ -213,6 +212,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        Toast.makeText(this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
         return couchdbURL;
     }
 
