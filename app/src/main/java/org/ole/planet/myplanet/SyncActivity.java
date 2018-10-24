@@ -86,7 +86,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         }
     }
 
-
     public void startUpload() {
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
@@ -231,24 +230,20 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         progress_dialog.setCancelable(false);
     }
 
-
     @Override
-    public void onSyncFailed() {
-        if (spinner != null)
-            DialogUtils.showSnack(spinner, "Connection failed, please try again later.");
+    public void onSyncFailed(final String s) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
                 DialogUtils.showWifiSettingDialog(SyncActivity.this);
             }
         });
     }
 
-
     @Override
     public void onSyncComplete() {
         Utilities.log("On Sync Complete");
-//        MainApplication.syncFailedCount = 0;
         progress_dialog.dismiss();
         NotificationUtil.cancellAll(this);
     }
