@@ -104,7 +104,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
             syncDate.setText("Last Sync Date: " + convertedDate);
         }
-
         // Init spinner dropdown items
         syncDropdownAdd();
     }
@@ -127,7 +126,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
         spinner.setSelection(settings.getInt("autoSyncPosition", 0));
-
     }
 
     public void saveSyncInfoToPreference() {
@@ -208,6 +206,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
         editor.putString("couchdbURL", couchdbURL);
+        editor.putString("serverPin", password);
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
         editor.putInt("url_Port", uri.getPort());
