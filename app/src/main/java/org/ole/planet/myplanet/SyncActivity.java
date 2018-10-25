@@ -104,7 +104,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
             syncDate.setText("Last Sync Date: " + convertedDate);
         }
-
         // Init spinner dropdown items
         syncDropdownAdd();
     }
@@ -127,7 +126,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
         spinner.setSelection(settings.getInt("autoSyncPosition", 0));
-
     }
 
     public void saveSyncInfoToPreference() {
@@ -193,8 +191,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     public String setUrlParts(String url, String password, Context context) {
         this.context = context;
         URI uri = URI.create(url);
-        String couchdbURL;
-        String url_user = null, url_pwd = null;
+        String couchdbURL, url_user, url_pwd;
         if (url.contains("@")) {
             String[] userinfo = uri.getUserInfo().split(":");
             url_user = userinfo[0];
@@ -208,12 +205,14 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
         editor.putString("couchdbURL", couchdbURL);
+        editor.putString("serverPin", password);
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
         editor.putInt("url_Port", uri.getPort());
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        Toast.makeText(this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
         return couchdbURL;
     }
 

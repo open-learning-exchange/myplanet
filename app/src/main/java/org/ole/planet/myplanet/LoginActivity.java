@@ -112,7 +112,9 @@ public class LoginActivity extends SyncActivity {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         saveSyncInfoToPreference();
-                        Toast.makeText(LoginActivity.this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
+                        String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
+                        String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
+                        setUrlParts(url, pin, context);
                     }
                 });
                 settingDialog(builder);
@@ -155,8 +157,6 @@ public class LoginActivity extends SyncActivity {
      */
     private void submitForm() {
         SharedPreferences.Editor editor = settings.edit();
-
-
         if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
             return;
         }
@@ -187,7 +187,7 @@ public class LoginActivity extends SyncActivity {
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
         serverUrl.setText(settings.getString("serverURL", ""));
-        serverPassword.setText(settings.getString("url_pwd", ""));
+        serverPassword.setText(settings.getString("serverPin", ""));
         serverUrl.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
