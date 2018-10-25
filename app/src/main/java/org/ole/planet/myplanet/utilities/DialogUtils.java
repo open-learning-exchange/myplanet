@@ -85,4 +85,12 @@ public class DialogUtils {
         if (v != null)
             Snackbar.make(v, s, Snackbar.LENGTH_LONG).show();
     }
+
+    public static void showAlert(Context context, String title, String message) {
+        new AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Dismiss", null)
+                .show();
+    }
 }

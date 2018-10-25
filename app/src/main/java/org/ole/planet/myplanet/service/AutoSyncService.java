@@ -50,7 +50,7 @@ public class AutoSyncService extends JobService implements SyncListener {
     }
 
     @Override
-    public void onSyncFailed() {
+    public void onSyncFailed(String msg) {
         if (MainApplication.syncFailedCount > 3) {
             startActivity(new Intent(this, LoginActivity.class).putExtra("showWifiDialog", true)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
