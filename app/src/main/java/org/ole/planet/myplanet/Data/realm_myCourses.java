@@ -45,10 +45,10 @@ public class realm_myCourses extends RealmObject {
         myMyCoursesDB.setDescription(myCousesDoc.get("description").getAsString());
         myMyCoursesDB.setMethod(myCousesDoc.get("method").getAsString());
         myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
-        myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel") instanceof JsonNull ? "" : myCousesDoc.get("subjectLevel").getAsString());
-        myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate") instanceof JsonNull ? "" : myCousesDoc.get("createdDate").getAsString());
-        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
         realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
+        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
+        myMyCoursesDB.setCreatedDate(myCousesDoc.has("createdDate") && !(myCousesDoc.get("createdDate") instanceof JsonNull) ? myCousesDoc.get("createdDate").getAsString() : "");
+        myMyCoursesDB.setSubjectLevel(myCousesDoc.has("subjectLevel") && !(myCousesDoc.get("subjectLevel") instanceof JsonNull) ? myCousesDoc.get("subjectLevel").getAsString() : "");
     }
 
     public static void insertMyCourses(JsonObject doc, Realm mRealm) {
