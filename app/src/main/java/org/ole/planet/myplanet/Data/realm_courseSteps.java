@@ -4,12 +4,7 @@ import android.util.Base64;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
-import org.ole.planet.myplanet.utilities.Utilities;
-
 import java.util.List;
-import java.util.UUID;
-
 import io.realm.Realm;
 
 public class realm_courseSteps extends io.realm.RealmObject {
