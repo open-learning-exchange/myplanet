@@ -8,6 +8,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.URLUtil;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
@@ -196,6 +197,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             url_user = userinfo[0];
             url_pwd = userinfo[1];
             couchdbURL = url;
+        } else if (password.isEmpty()) {
+            DialogUtils.showAlert(this, "", "Pin is required.");
+            return "";
         } else {
             url_user = "satellite";
             url_pwd = password;

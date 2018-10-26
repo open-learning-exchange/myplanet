@@ -172,7 +172,7 @@ public class realm_myCourses extends RealmObject {
     }
 
     public Integer getnumberOfSteps() {
-        return numberOfSteps;
+        return numberOfSteps == null ? 0 : numberOfSteps;
     }
 
     public void setnumberOfSteps(Integer numberOfSteps) {

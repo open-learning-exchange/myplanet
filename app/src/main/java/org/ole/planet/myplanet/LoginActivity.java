@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -114,7 +115,10 @@ public class LoginActivity extends SyncActivity {
                         saveSyncInfoToPreference();
                         String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
                         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
-                        setUrlParts(url, pin, context);
+                        if (URLUtil.isValidUrl(url))
+                            setUrlParts(url, pin, context);
+                        else
+                            DialogUtils.showAlert(LoginActivity.this, "Invalid Url", "Please enter valid url to continue.");
                     }
                 });
                 settingDialog(builder);
@@ -212,30 +216,36 @@ public class LoginActivity extends SyncActivity {
         //serverUrl = textUrl;
         final String url = textUrl.getText().toString();
         final String pswd = textPassword.getText().toString();
+        if (!URLUtil.isValidUrl(url)) {
+            DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
+            return false;
+        }
         String processedUrl = setUrlParts(url, pswd, context);
-        ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
-            @Override
-            public void success(Request request, Response response, String s) {
-                try {
-                    List<String> myList = Arrays.asList(s.split(","));
-                    if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
-                    } else {
-                        //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
-                        startSync();
+        if (!TextUtils.isEmpty(processedUrl)) {
+            ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
+                @Override
+                public void success(Request request, Response response, String s) {
+                    try {
+                        List<String> myList = Arrays.asList(s.split(","));
+                        if (myList.size() < 8) {
+                            alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
+                        } else {
+                            //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                            startSync();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
-            }
 
-            @Override
-            public void failure(Request request, Response response, FuelError fuelError) {
-                alertDialogOkay("Device couldn't reach server. Check and try again");
-                if (mRealm != null)
-                    mRealm.close();
-            }
-        });
+                @Override
+                public void failure(Request request, Response response, FuelError fuelError) {
+                    alertDialogOkay("Device couldn't reach server. Check and try again");
+                    if (mRealm != null)
+                        mRealm.close();
+                }
+            });
+        }
         return connectionResult;
     }
 
