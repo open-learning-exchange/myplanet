@@ -98,8 +98,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         if (s.isEmpty()) {
             return getList(c);
         }
-        return mRealm.where(c).isEmpty("userId").or()
-                .notEqualTo("userId", model.getId(), Case.INSENSITIVE).contains(c == realm_myLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        return mRealm.where(c).contains(c == realm_myLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
     }
 
     public List<realm_myLibrary> filterByTag(String[] tags) {
@@ -130,8 +129,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         if (c == realm_stepExam.class) {
             return mRealm.where(c).equalTo("type", "surveys").findAll();
         } else {
-            return mRealm.where(c).isEmpty("userId").or()
-                    .notEqualTo("userId", model.getId(), Case.INSENSITIVE).findAll();
+            return mRealm.where(c).findAll();
         }
     }
 }
