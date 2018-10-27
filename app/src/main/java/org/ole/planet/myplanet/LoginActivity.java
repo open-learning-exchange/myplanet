@@ -105,25 +105,33 @@ public class LoginActivity extends SyncActivity {
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                dialog.dismiss();
-                                saveSyncInfoToPreference();
-                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url), (EditText) dialog.getCustomView().findViewById(R.id.input_server_Password));
+                                String processedUrl = saveConfigAndContinue(dialog);
+                                    try {
+                                        isServerReachable(processedUrl);
+                                    } catch (Exception e) {
+                                        DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
+                                    }
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        saveSyncInfoToPreference();
-                        String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
-                        String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
-                        if (URLUtil.isValidUrl(url))
-                            setUrlParts(url, pin, context);
-                        else
-                            DialogUtils.showAlert(LoginActivity.this, "Invalid Url", "Please enter valid url to continue.");
+                        saveConfigAndContinue(dialog);
                     }
                 });
                 settingDialog(builder);
             }
         });
+    }
+
+    private String saveConfigAndContinue(MaterialDialog dialog) {
+        dialog.dismiss();
+        saveSyncInfoToPreference();
+        String processedUrl = "";
+        String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
+        String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
+        if (isUrlValid(url))
+            processedUrl = setUrlParts(url, pin, context);
+        return processedUrl;
     }
 
 
@@ -152,7 +160,6 @@ public class LoginActivity extends SyncActivity {
             inputPassword.setText(settings.getString("loginUserPassword", ""));
             save.setChecked(true);
         }
-
     }
 
 
@@ -212,40 +219,30 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
     }
 
-    public boolean isServerReachable(EditText textUrl, EditText textPassword) {
-        //serverUrl = textUrl;
-        final String url = textUrl.getText().toString();
-        final String pswd = textPassword.getText().toString();
-        if (!URLUtil.isValidUrl(url)) {
-            DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
-            return false;
-        }
-        String processedUrl = setUrlParts(url, pswd, context);
-        if (!TextUtils.isEmpty(processedUrl)) {
-            ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
-                @Override
-                public void success(Request request, Response response, String s) {
-                    try {
-                        List<String> myList = Arrays.asList(s.split(","));
-                        if (myList.size() < 8) {
-                            alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
-                        } else {
-                            //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
-                            startSync();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+    public boolean isServerReachable(String processedUrl) throws Exception {
+        ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
+            @Override
+            public void success(Request request, Response response, String s) {
+                try {
+                    List<String> myList = Arrays.asList(s.split(","));
+                    if (myList.size() < 8) {
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
+                    } else {
+                        //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
+                        startSync();
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+            }
 
-                @Override
-                public void failure(Request request, Response response, FuelError fuelError) {
-                    alertDialogOkay("Device couldn't reach server. Check and try again");
-                    if (mRealm != null)
-                        mRealm.close();
-                }
-            });
-        }
+            @Override
+            public void failure(Request request, Response response, FuelError fuelError) {
+                alertDialogOkay("Device couldn't reach server. Check and try again");
+                if (mRealm != null)
+                    mRealm.close();
+            }
+        });
         return connectionResult;
     }
 

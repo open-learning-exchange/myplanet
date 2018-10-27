@@ -3,9 +3,11 @@ package org.ole.planet.myplanet;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
@@ -190,14 +192,14 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     public String setUrlParts(String url, String password, Context context) {
         this.context = context;
-        URI uri = URI.create(url);
+        Uri uri = Uri.parse(url);
         String couchdbURL, url_user, url_pwd;
         if (url.contains("@")) {
             String[] userinfo = uri.getUserInfo().split(":");
             url_user = userinfo[0];
             url_pwd = userinfo[1];
             couchdbURL = url;
-        } else if (password.isEmpty()) {
+        } else if (TextUtils.isEmpty(password)) {
             DialogUtils.showAlert(this, "", "Pin is required.");
             return "";
         } else {
@@ -205,18 +207,20 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             url_pwd = password;
             couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + uri.getPort();
         }
-        SharedPreferences.Editor editor = settings.edit();
         editor.putString("serverURL", url);
         editor.putString("couchdbURL", couchdbURL);
         editor.putString("serverPin", password);
-        editor.putString("url_Scheme", uri.getScheme());
-        editor.putString("url_Host", uri.getHost());
-        editor.putInt("url_Port", uri.getPort());
+        saveUrlScheme(uri);
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
-        Toast.makeText(this, "Saving sync settings...", Toast.LENGTH_SHORT).show();
         return couchdbURL;
+    }
+
+    protected void saveUrlScheme(Uri uri) {
+        editor.putString("url_Scheme", uri.getScheme());
+        editor.putString("url_Host", uri.getHost());
+        editor.putInt("url_Port", uri.getPort());
     }
 
     public void startSync() {
@@ -231,6 +235,14 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
                 .progress(true, 0)
                 .show();
         progress_dialog.setCancelable(false);
+    }
+
+    public boolean isUrlValid(String url) {
+        if (!URLUtil.isValidUrl(url) || url.equals("http://") || url.equals("https://")) {
+            DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
+            return false;
+        }
+        return true;
     }
 
     @Override
