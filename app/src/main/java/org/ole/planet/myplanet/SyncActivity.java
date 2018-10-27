@@ -13,6 +13,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -48,7 +49,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     SharedPreferences settings;
     Realm mRealm;
     Context context;
-    CouchDbProperties properties;
     MaterialDialog progress_dialog;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
@@ -60,10 +60,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         editor = settings.edit();
     }
 
-    protected void hideKeyboard(View view) {
-        InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
-    }
 
     public void sync(MaterialDialog dialog) {
         spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
@@ -137,20 +133,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         editor.commit();
     }
 
-    public void alertDialogOkay(String Message) {
-        AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
-        builder1.setMessage(Message);
-        builder1.setCancelable(true);
-        builder1.setNegativeButton("Okay",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                });
-        AlertDialog alert11 = builder1.create();
-        alert11.show();
-    }
-
     public boolean authenticateUser(SharedPreferences settings, String username, String password, Context context) {
         this.settings = settings;
         this.context = context;
@@ -196,8 +178,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         String couchdbURL, url_user, url_pwd;
         if (url.contains("@")) {
             String[] userinfo = uri.getUserInfo().split(":");
-            url_user = userinfo[0];
-            url_pwd = userinfo[1];
+            url_user = userinfo.length > 0 ? userinfo[0] : "";
+            url_pwd = userinfo.length > 1 ? userinfo[1] : "";
             couchdbURL = url;
         } else if (TextUtils.isEmpty(password)) {
             DialogUtils.showAlert(this, "", "Pin is required.");
@@ -210,22 +192,29 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         editor.putString("serverURL", url);
         editor.putString("couchdbURL", couchdbURL);
         editor.putString("serverPin", password);
-        saveUrlScheme(uri);
+        saveUrlScheme(editor,uri);
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
         return couchdbURL;
     }
 
-    protected void saveUrlScheme(Uri uri) {
-        editor.putString("url_Scheme", uri.getScheme());
-        editor.putString("url_Host", uri.getHost());
-        editor.putInt("url_Port", uri.getPort());
-    }
 
     public void startSync() {
         SyncManager.getInstance().start(this);
     }
+
+    public String saveConfigAndContinue(MaterialDialog dialog) {
+        dialog.dismiss();
+        saveSyncInfoToPreference();
+        String processedUrl = "";
+        String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
+        String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
+        if (isUrlValid(url))
+            processedUrl = setUrlParts(url, pin, context);
+        return processedUrl;
+    }
+
 
     @Override
     public void onSyncStarted() {

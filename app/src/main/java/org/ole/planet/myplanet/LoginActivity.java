@@ -123,17 +123,6 @@ public class LoginActivity extends SyncActivity {
         });
     }
 
-    private String saveConfigAndContinue(MaterialDialog dialog) {
-        dialog.dismiss();
-        saveSyncInfoToPreference();
-        String processedUrl = "";
-        String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
-        String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
-        if (isUrlValid(url))
-            processedUrl = setUrlParts(url, pin, context);
-        return processedUrl;
-    }
-
 
     public void declareMoreElements() {
         syncIcon = findViewById(R.id.syncIcon);
