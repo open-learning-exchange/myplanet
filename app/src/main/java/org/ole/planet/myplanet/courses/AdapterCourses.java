@@ -74,16 +74,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         }
     }
-//
-//    private void handleCheck(boolean b, int i) {
-//        if (b) {
-//            selectedItems.add(courseList.get(i));
-//        } else if (selectedItems.contains(courseList.get(i))) {
-//            selectedItems.remove(courseList.get(i));
-//        }
-//        listener.onSelectedListChange(selectedItems);
-//    }
-
 
     @Override
     public int getItemCount() {

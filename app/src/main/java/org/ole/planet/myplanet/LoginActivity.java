@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -104,17 +105,17 @@ public class LoginActivity extends SyncActivity {
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                dialog.dismiss();
-                                saveSyncInfoToPreference();
-                                isServerReachable((EditText) dialog.getCustomView().findViewById(R.id.input_server_url), (EditText) dialog.getCustomView().findViewById(R.id.input_server_Password));
+                                String processedUrl = saveConfigAndContinue(dialog);
+                                    try {
+                                        isServerReachable(processedUrl);
+                                    } catch (Exception e) {
+                                        DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
+                                    }
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        saveSyncInfoToPreference();
-                        String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
-                        String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
-                        setUrlParts(url, pin, context);
+                        saveConfigAndContinue(dialog);
                     }
                 });
                 settingDialog(builder);
@@ -148,7 +149,6 @@ public class LoginActivity extends SyncActivity {
             inputPassword.setText(settings.getString("loginUserPassword", ""));
             save.setChecked(true);
         }
-
     }
 
 
@@ -208,11 +208,7 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
     }
 
-    public boolean isServerReachable(EditText textUrl, EditText textPassword) {
-        //serverUrl = textUrl;
-        final String url = textUrl.getText().toString();
-        final String pswd = textPassword.getText().toString();
-        String processedUrl = setUrlParts(url, pswd, context);
+    public boolean isServerReachable(String processedUrl) throws Exception {
         ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
