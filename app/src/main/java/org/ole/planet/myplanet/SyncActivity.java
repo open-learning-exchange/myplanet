@@ -177,9 +177,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         Uri uri = Uri.parse(url);
         String couchdbURL, url_user, url_pwd;
         if (url.contains("@")) {
-            String[] userinfo = uri.getUserInfo().split(":");
-            url_user = userinfo.length > 0 ? userinfo[0] : "";
-            url_pwd = userinfo.length > 1 ? userinfo[1] : "";
+            String[] userinfo = getUserInfo(uri);
+            url_user = userinfo[0];
+            url_pwd = userinfo[1];
             couchdbURL = url;
         } else if (TextUtils.isEmpty(password)) {
             DialogUtils.showAlert(this, "", "Pin is required.");
@@ -192,11 +192,21 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         editor.putString("serverURL", url);
         editor.putString("couchdbURL", couchdbURL);
         editor.putString("serverPin", password);
-        saveUrlScheme(editor,uri);
+        saveUrlScheme(editor, uri);
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
         return couchdbURL;
+    }
+
+    private String[] getUserInfo(Uri uri) {
+        String[] ar = {"", ""};
+        String[] info = uri.getUserInfo().split(":");
+        if (info.length > 1) {
+            ar[0] = info[0];
+            ar[1] = info[1];
+        }
+        return ar;
     }
 
 
