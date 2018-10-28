@@ -66,8 +66,8 @@ public class realm_examQuestion extends RealmObject {
     private static void insertCorrectChoice(JsonArray array, JsonObject question, realm_examQuestion myQuestion) {
         for (int a = 0; a < array.size(); a++) {
             JsonObject res = array.get(a).getAsJsonObject();
-            if (question.get("correctChoice").getAsString().equals(res.get("id").getAsString()))
-                myQuestion.setCorrectChoice(res.get("text").getAsString());
+            if (JsonUtils.getString("correctChoice", question).equals(JsonUtils.getString("id", res)))
+                myQuestion.setCorrectChoice(JsonUtils.getString("res", res));
         }
     }
 
