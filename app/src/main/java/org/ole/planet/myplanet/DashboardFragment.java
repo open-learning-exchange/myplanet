@@ -73,7 +73,7 @@ public class DashboardFragment extends BaseContainerFragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         profileDbHandler = new UserProfileDbHandler(getActivity());
         declareElements(view);
-        fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+        fullName = profileDbHandler.getUserModel().getName();
         txtFullName.setText(fullName);
         ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
@@ -86,10 +86,6 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     private void declareElements(View view) {
-//        myLibraryImage = view.findViewById(R.id.myLibraryImageButton);
-//        myCourseImage = view.findViewById(R.id.myCoursesImageButton);
-//        myMeetUpsImage = view.findViewById(R.id.myMeetUpsImageButton);
-//        myTeamsImage = view.findViewById(R.id.myTeamsImageButton);
         txtFullName = view.findViewById(R.id.txtFullName);
         txtVisits = view.findViewById(R.id.txtVisits);
         tv_surveys = view.findViewById(R.id.tv_surveys);

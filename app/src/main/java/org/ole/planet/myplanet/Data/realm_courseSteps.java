@@ -63,8 +63,7 @@ public class realm_courseSteps extends io.realm.RealmObject {
 
     public static void insertCourseStepsAttachments(String myCoursesID, String stepId, JsonArray resources, Realm mRealm) {
         for (int i = 0; i < resources.size(); i++) {
-            JsonObject res = resources.get(i).getAsJsonObject();
-            realm_myLibrary.createStepResource(mRealm, res, myCoursesID, stepId);
+            realm_myLibrary.createStepResource(mRealm, resources.get(i).getAsJsonObject(), myCoursesID, stepId);
         }
     }
 
