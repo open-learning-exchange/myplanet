@@ -5,6 +5,7 @@ import android.util.Base64;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
@@ -31,12 +32,10 @@ public class realm_courseSteps extends io.realm.RealmObject {
             }
             myCourseStepDB.setCourseId(myCoursesID);
             JsonObject stepContainer = steps.get(step).getAsJsonObject();
-            myCourseStepDB.setStepTitle(stepContainer.get("stepTitle").getAsString());
-            myCourseStepDB.setDescription(stepContainer.get("description").getAsString());
-            if (stepContainer.has("resources")) {
-                myCourseStepDB.setNoOfResources(stepContainer.get("resources").getAsJsonArray().size());
-                insertCourseStepsAttachments(myCoursesID, step_id, stepContainer.getAsJsonArray("resources"), mRealm);
-            }
+            myCourseStepDB.setStepTitle(JsonUtils.getString("stepTitle", stepContainer));
+            myCourseStepDB.setDescription(JsonUtils.getString("description", stepContainer));
+            myCourseStepDB.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size());
+            insertCourseStepsAttachments(myCoursesID, step_id, JsonUtils.getJsonArray("resources", stepContainer), mRealm);
             // myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
             insertExam(stepContainer, mRealm, step_id, myCoursesID);
         }

@@ -29,7 +29,6 @@ public class realm_answerChoices extends RealmObject {
         for (int i = 0; i < choices.size(); i++) {
             JsonObject res = choices.get(i).getAsJsonObject();
             realm_answerChoices.create(mRealm, questionId, res, settings);
-            Utilities.log("Insert choices");
         }
     }
 

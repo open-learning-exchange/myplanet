@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.Data;
 
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
+
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -23,12 +25,11 @@ public class realm_myTeams extends RealmObject {
         realm_myTeams myTeams = mRealm.createObject(realm_myTeams.class, UUID.randomUUID().toString());
         myTeams.setUserId(userId);
         myTeams.setTeamId(teamId);
-        myTeams.setName(doc.get("name").getAsString());
-        myTeams.setDescription(doc.get("description").getAsString());
-        myTeams.setLimit(doc.get("limit").getAsString());
-        myTeams.setStatus(doc.get("status").getAsString());
-        myTeams.setRequests(doc.get("requests").getAsJsonArray().toString());
-
+        myTeams.setName(JsonUtils.getString("name", doc));
+        myTeams.setDescription(JsonUtils.getString("description", doc));
+        myTeams.setLimit(JsonUtils.getString("limit", doc));
+        myTeams.setStatus(JsonUtils.getString("status", doc));
+        myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
     }
 
     public String getId() {
