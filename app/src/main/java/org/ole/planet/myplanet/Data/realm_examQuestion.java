@@ -1,24 +1,15 @@
 package org.ole.planet.myplanet.Data;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.text.TextUtils;
 import android.util.Base64;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import io.realm.Realm;
-import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
@@ -62,6 +53,20 @@ public class realm_examQuestion extends RealmObject {
         }
     }
 
+    public static JsonArray serializeQuestions(Realm mRealm, RealmResults<realm_examQuestion> question) {
+        JsonArray array = new JsonArray();
+        for (realm_examQuestion que : question) {
+            JsonObject object = new JsonObject();
+            object.addProperty("header", que.getHeader());
+            object.addProperty("body", que.getBody());
+            object.addProperty("type", que.getType());
+            object.addProperty("marks", que.getMarks());
+            object.add("choices", JsonParserUtils.getStringAsJsonArray(que.getChoices()));
+            object.addProperty("correctChoice", que.getCorrectChoice());
+            array.add(object);
+        }
+        return array;
+    }
 
     public String getMarks() {
         return marks;
@@ -114,10 +119,6 @@ public class realm_examQuestion extends RealmObject {
     public String getType() {
         return type;
     }
-
-    public void setType(String type) {
-        this.type = type;
-    }
 //
 //    public JsonArray getChoicesArrayObj(Realm mRealm) {
 //        JsonArray array = new JsonArray();
@@ -136,6 +137,9 @@ public class realm_examQuestion extends RealmObject {
 //        return array;
 //    }
 
+    public void setType(String type) {
+        this.type = type;
+    }
 
     public String getChoices() {
         return choices;
@@ -143,20 +147,5 @@ public class realm_examQuestion extends RealmObject {
 
     public void setChoices(String choices) {
         this.choices = choices;
-    }
-
-    public static JsonArray serializeQuestions(Realm mRealm, RealmResults<realm_examQuestion> question) {
-        JsonArray array = new JsonArray();
-        for (realm_examQuestion que : question) {
-            JsonObject object = new JsonObject();
-            object.addProperty("header", que.getHeader());
-            object.addProperty("body", que.getBody());
-            object.addProperty("type", que.getType());
-            object.addProperty("marks", que.getMarks());
-            object.add("choices", JsonParserUtils.getStringAsJsonArray(que.getChoices()));
-            object.addProperty("correctChoice", que.getCorrectChoice());
-            array.add(object);
-        }
-        return array;
     }
 }
