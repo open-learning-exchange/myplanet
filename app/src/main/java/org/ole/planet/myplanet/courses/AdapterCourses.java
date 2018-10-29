@@ -75,23 +75,24 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         Utilities.handleCheck(b, position, (ArrayList) selectedItems, courseList);
                         listener.onSelectedListChange(selectedItems);
                     }
-
                 }
             });
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-
-                    if (homeItemClickListener != null) {
-                        Fragment f = new TakeCourseFragment();
-                        Bundle b = new Bundle();
-                        b.putString("id", courseList.get(position).getCourseId());
-                        f.setArguments(b);
-                        homeItemClickListener.openCallFragment(f);
-                    }
+                    openCourse(courseList.get(position));
                 }
             });
+        }
+    }
 
+    private void openCourse(realm_myCourses realm_myCourses) {
+        if (homeItemClickListener != null) {
+            Fragment f = new TakeCourseFragment();
+            Bundle b = new Bundle();
+            b.putString("id", realm_myCourses.getCourseId());
+            f.setArguments(b);
+            homeItemClickListener.openCallFragment(f);
         }
     }
 
