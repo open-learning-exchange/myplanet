@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
@@ -17,19 +18,18 @@ public class realm_answerChoices extends RealmObject {
     private String questionId;
 
     public static void create(Realm mRealm, String questionId, JsonObject res, SharedPreferences settings) {
-        realm_answerChoices choice = mRealm.where(realm_answerChoices.class).equalTo("id", res.get("id").getAsString()).findFirst();
+        realm_answerChoices choice = mRealm.where(realm_answerChoices.class).equalTo("id", JsonUtils.getString("id", res)).findFirst();
         if (choice == null) {
-            choice = mRealm.createObject(realm_answerChoices.class, res.get("id").getAsString());
+            choice = mRealm.createObject(realm_answerChoices.class, JsonUtils.getString("id", res));
         }
         choice.setQuestionId(questionId);
-        choice.setText(res.get("text").getAsString());
+        choice.setText(JsonUtils.getString("text", res));
     }
 
     public static void insertChoices(String questionId, JsonArray choices, Realm mRealm, SharedPreferences settings) {
         for (int i = 0; i < choices.size(); i++) {
             JsonObject res = choices.get(i).getAsJsonObject();
             realm_answerChoices.create(mRealm, questionId, res, settings);
-            Utilities.log("Insert choices");
         }
     }
 

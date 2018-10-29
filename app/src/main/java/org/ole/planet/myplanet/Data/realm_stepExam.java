@@ -5,6 +5,8 @@ import android.text.TextUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
@@ -27,14 +29,11 @@ public class realm_stepExam extends RealmObject {
             myExam = mRealm.createObject(realm_stepExam.class, exam.get("_id").getAsString());
         }
         checkIdsAndInsert(myCoursesID, step_id, myExam);
-        myExam.setType(exam.has("type") ? exam.get("type").getAsString() : "exam");
-        myExam.setName(exam.get("name").getAsString());
-        if (exam.has("passingPercentage"))
-            myExam.setPassingPercentage(exam.get("passingPercentage").getAsString());
-        if (exam.has("totalMarks"))
-            myExam.setPassingPercentage(exam.get("totalMarks").getAsString());
-        if (exam.has("questions"))
-            realm_examQuestion.insertExamQuestions(exam.get("questions").getAsJsonArray(), exam.get("_id").getAsString(), mRealm);
+        myExam.setType(exam.has("type") ? JsonUtils.getString("type", exam) : "exam");
+        myExam.setName(JsonUtils.getString("name", exam));
+        myExam.setPassingPercentage(JsonUtils.getString("passingPercentage", exam));
+        myExam.setTotalMarks(JsonUtils.getString("totalMarks", exam));
+        realm_examQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
     }
 
     private static void checkIdsAndInsert(String myCoursesID, String step_id, realm_stepExam myExam) {
