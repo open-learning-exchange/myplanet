@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Base64;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -14,9 +15,7 @@ import com.google.gson.JsonParser;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.util.UUID;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -38,31 +37,28 @@ public class realm_examQuestion extends RealmObject {
     public static void insertExamQuestions(JsonArray questions, String examId, Realm mRealm) {
         for (int i = 0; i < questions.size(); i++) {
             JsonObject question = questions.get(i).getAsJsonObject();
-
             String questionId = Base64.encodeToString(question.toString().getBytes(), Base64.NO_WRAP);
             realm_examQuestion myQuestion = mRealm.where(realm_examQuestion.class).equalTo("id", questionId).findFirst();
             if (myQuestion == null) {
                 myQuestion = mRealm.createObject(realm_examQuestion.class, questionId);
             }
             myQuestion.setExamId(examId);
-            myQuestion.setBody(question.get("body").getAsString());
-            myQuestion.setType(question.get("type").getAsString());
-            myQuestion.setHeader(question.get("header").getAsString());
-            if (question.has("marks"))
-                myQuestion.setMarks(question.get("marks").getAsString());
-            myQuestion.setChoices(question.get("choices").getAsJsonArray().toString());
-            boolean isMultipleChoice = question.has("correctChoice") && question.get("type").getAsString().startsWith("select");
+            myQuestion.setBody(JsonUtils.getString("body", question));
+            myQuestion.setType(JsonUtils.getString("type", question));
+            myQuestion.setHeader(JsonUtils.getString("header", question));
+            myQuestion.setMarks(JsonUtils.getString("marks", question));
+            myQuestion.setChoices(new Gson().toJson(JsonUtils.getString("choices", question)));
+            boolean isMultipleChoice = question.has("correctChoice") && JsonUtils.getString("type", question).startsWith("select");
             if (isMultipleChoice)
                 insertCorrectChoice(question.get("choices").getAsJsonArray(), question, myQuestion);
-
         }
     }
 
     private static void insertCorrectChoice(JsonArray array, JsonObject question, realm_examQuestion myQuestion) {
         for (int a = 0; a < array.size(); a++) {
             JsonObject res = array.get(a).getAsJsonObject();
-            if (!question.get("correctChoice").isJsonNull() && question.get("correctChoice").getAsString().equals(res.get("id").getAsString()))
-                myQuestion.setCorrectChoice(res.get("text").getAsString());
+            if (JsonUtils.getString("correctChoice", question).equals(JsonUtils.getString("id", res)))
+                myQuestion.setCorrectChoice(JsonUtils.getString("res", res));
         }
     }
 

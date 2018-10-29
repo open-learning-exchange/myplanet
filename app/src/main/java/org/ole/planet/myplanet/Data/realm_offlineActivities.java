@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.Data;
 
+import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import java.util.UUID;
@@ -129,14 +131,13 @@ public class realm_offlineActivities extends RealmObject {
     }
 
     public static void insertOfflineActivities(Realm mRealm, JsonObject act) {
-        realm_offlineActivities activities = mRealm.createObject(realm_offlineActivities.class, act.get("_id").toString());
-        activities.set_rev(act.get("_rev").toString());
-        activities.set_id(act.get("_id").toString());
-        activities.setLoginTime(act.get("loginTime") instanceof JsonNull ? act.get("logoutTime").getAsLong() : 0L);
-        activities.setType(act.get("type").getAsString());
-        activities.setUserName(act.get("user").getAsString());
-        activities.setLogoutTime(act.has("logoutTime") ? act.get("logoutTime").getAsLong() : 0L);
-        activities.setAndroidId(act.has("androidId") ? act.get("androidId").getAsString() : "");
-
+        realm_offlineActivities activities = mRealm.createObject(realm_offlineActivities.class, JsonUtils.getString("_id", act));
+        activities.set_rev(JsonUtils.getString("_rev", act));
+        activities.set_id(JsonUtils.getString("_id", act));
+        activities.setLoginTime(JsonUtils.getLong("loginTime", act));
+        activities.setType(JsonUtils.getString("type", act));
+        activities.setUserName(JsonUtils.getString("user", act));
+        activities.setLogoutTime(JsonUtils.getLong("logoutTime", act));
+        activities.setAndroidId(JsonUtils.getString("androidId", act));
     }
 }
