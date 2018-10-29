@@ -1,8 +1,11 @@
 package org.ole.planet.myplanet;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -36,6 +39,18 @@ public abstract class DashboardElements extends AppCompatActivity {
     /**
      * Disables the submit button until the feedback form is complete
      */
+    public void requestPermission(String strPermission, int perCode) {
+        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
+    }
+
+    public boolean checkPermission(String strPermission) {
+        int result = ContextCompat.checkSelfPermission(this, strPermission);
+        if (result == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
 
     public void disableSubmit(MaterialDialog dialog) {

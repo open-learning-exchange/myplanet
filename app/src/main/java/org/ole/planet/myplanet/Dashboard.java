@@ -12,6 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.Toolbar;
@@ -45,7 +46,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 
 
-public class Dashboard extends DashboardElements implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+public class Dashboard extends DashboardElements implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener, FragmentManager.OnBackStackChangedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
     private static final int PERMISSION_REQUEST_CODE = 111;
     AccountHeader headerResult;
@@ -85,18 +86,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         openCallFragment(new DashboardFragment());
     }
 
-    public void requestPermission(String strPermission, int perCode) {
-        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
-    }
-
-    public boolean checkPermission(String strPermission) {
-        int result = ContextCompat.checkSelfPermission(this, strPermission);
-        if (result == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
@@ -190,6 +179,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     public void openCallFragment(Fragment newfragment) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        getSupportFragmentManager().addOnBackStackChangedListener(this);
         fragmentTransaction.addToBackStack("");
         fragmentTransaction.commit();
     }
@@ -260,6 +250,19 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         else {
             openCallFragment(new MyMeetUpsFragment());
         }
-        return true;
+        return false;
+    }
+
+    @Override
+    public void onBackStackChanged() {
+
+        Fragment f = (getSupportFragmentManager()).findFragmentById(R.id.fragment_container);
+        if (f instanceof MyCourseFragment){
+            navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
+        }else if (f instanceof MyLibraryFragment){
+            navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
+
+        }
+
     }
 }
