@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -45,7 +47,6 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public RecyclerView recyclerView;
     TextView tvMessage;
     List<LI> list;
-
 
     public BaseRecyclerFragment() {
     }
