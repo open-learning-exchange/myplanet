@@ -7,6 +7,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.ArraySet;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -35,7 +37,7 @@ import fisk.chipcloud.ChipDeletedListener;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> implements OnLibraryItemSelected, ChipDeletedListener, View.OnKeyListener {
+public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TextWatcher {
 
     TextView tvAddToLib, tvDelete;
 
@@ -84,7 +86,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
                 adapterLibrary.setLibraryList(search(etSearch.getText().toString(), realm_myLibrary.class));
             }
         });
-        etTags.setOnKeyListener(this);
+        etTags.addTextChangedListener(this);
     }
 
 
@@ -104,6 +106,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
             searchTags.add(text);
         chipCloud.addChips(searchTags);
         adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()])));
+
     }
 
     private void changeButtonStatus() {
@@ -119,11 +122,24 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
     }
 
     @Override
-    public boolean onKey(View view, int i, KeyEvent keyEvent) {
-        if (keyEvent.getKeyCode() == KeyEvent.KEYCODE_SPACE || keyEvent.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-            onTagClicked(etTags.getText().toString());
-            etTags.setText("");
+    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+    }
+
+    @Override
+    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        if (!charSequence.toString().isEmpty()) {
+            String lastChar = charSequence.toString().substring(charSequence.length() - 1);
+            Utilities.log("char " + lastChar);
+            if (lastChar.equals(" ") || lastChar.equals("\n")) {
+                onTagClicked(etTags.getText().toString());
+                etTags.setText("");
+            }
         }
-        return true;
+    }
+
+    @Override
+    public void afterTextChanged(Editable editable) {
+
     }
 }
