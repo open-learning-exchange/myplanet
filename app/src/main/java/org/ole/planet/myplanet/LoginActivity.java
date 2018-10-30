@@ -210,14 +210,13 @@ public class LoginActivity extends SyncActivity {
     }
 
     public boolean isServerReachable(String processedUrl) throws Exception {
-        ProgressDialog pg = new ProgressDialog(this);
-        pg.setMessage("Connecting to server, please wait....");
-        pg.show();
+        progressDialog.setMessage("Connecting to server....");
+        progressDialog.show();
         ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
-                    pg.dismiss();
+                    progressDialog.dismiss();
                     List<String> myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
@@ -234,7 +233,7 @@ public class LoginActivity extends SyncActivity {
                 alertDialogOkay("Device couldn't reach server. Check and try again");
                 if (mRealm != null)
                     mRealm.close();
-                pg.dismiss();
+                progressDialog.dismiss();
             }
         });
         return connectionResult;
