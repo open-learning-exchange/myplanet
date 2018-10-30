@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -106,11 +107,11 @@ public class LoginActivity extends SyncActivity {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 String processedUrl = saveConfigAndContinue(dialog);
-                                    try {
-                                        isServerReachable(processedUrl);
-                                    } catch (Exception e) {
-                                        DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
-                                    }
+                                try {
+                                    isServerReachable(processedUrl);
+                                } catch (Exception e) {
+                                    DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
+                                }
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -209,15 +210,18 @@ public class LoginActivity extends SyncActivity {
     }
 
     public boolean isServerReachable(String processedUrl) throws Exception {
+        ProgressDialog pg = new ProgressDialog(this);
+        pg.setMessage("Connecting to server, please wait....");
+        pg.show();
         ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
+                    pg.dismiss();
                     List<String> myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
-                        //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         startSync();
                     }
                 } catch (Exception e) {
@@ -230,6 +234,7 @@ public class LoginActivity extends SyncActivity {
                 alertDialogOkay("Device couldn't reach server. Check and try again");
                 if (mRealm != null)
                     mRealm.close();
+                pg.dismiss();
             }
         });
         return connectionResult;

@@ -229,7 +229,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     @Override
     public void onSyncStarted() {
         progress_dialog = new MaterialDialog.Builder(this)
-                .title("Syncing")
+                .title("Syncing...")
                 .content("Please wait")
                 .progress(true, 0)
                 .show();
@@ -257,7 +257,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     @Override
     public void onSyncComplete() {
-        Utilities.log("On Sync Complete");
         progress_dialog.dismiss();
         NotificationUtil.cancellAll(this);
     }
