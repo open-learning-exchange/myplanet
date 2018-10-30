@@ -46,7 +46,6 @@ import pl.droidsonroids.gif.GifImageButton;
 
 
 public class LoginActivity extends SyncActivity {
-    Context context;
     boolean connectionResult;
     EditText serverUrl;
     EditText serverPassword;
@@ -65,7 +64,6 @@ public class LoginActivity extends SyncActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        context = this.getApplicationContext();
         changeLogoColor();
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
@@ -170,7 +168,7 @@ public class LoginActivity extends SyncActivity {
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
         editor.commit();
-        if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
+        if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), this)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             UserProfileDbHandler handler = new UserProfileDbHandler(this);
             handler.onLogin();
@@ -224,7 +222,6 @@ public class LoginActivity extends SyncActivity {
                         startSync();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
 
