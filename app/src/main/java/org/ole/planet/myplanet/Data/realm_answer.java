@@ -23,10 +23,6 @@ public class realm_answer extends RealmObject {
     private String questionId;
     private String submissionId;
 
-    public String getId() {
-        return id;
-    }
-
     public static JsonArray serializeRealmAnswer(RealmList<realm_answer> answers) {
         JsonArray array = new JsonArray();
         for (realm_answer ans : answers) {
@@ -47,6 +43,14 @@ public class realm_answer extends RealmObject {
         return object;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public JsonArray getValueChoicesArray() {
         JsonArray array = new JsonArray();
         if (valueChoices == null) {
@@ -63,18 +67,14 @@ public class realm_answer extends RealmObject {
         return valueChoices;
     }
 
-    public void setValueChoices(RealmList<String> valueChoices) {
-        this.valueChoices = valueChoices;
-    }
-
     public void setValueChoices(HashMap<String, String> map) {
         for (String key : map.keySet()) {
             this.valueChoices.add(map.get(key));
         }
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setValueChoices(RealmList<String> valueChoices) {
+        this.valueChoices = valueChoices;
     }
 
     public String getValue() {
