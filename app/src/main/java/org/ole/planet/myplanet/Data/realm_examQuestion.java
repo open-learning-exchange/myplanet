@@ -47,7 +47,7 @@ public class realm_examQuestion extends RealmObject {
             myQuestion.setType(JsonUtils.getString("type", question));
             myQuestion.setHeader(JsonUtils.getString("header", question));
             myQuestion.setMarks(JsonUtils.getString("marks", question));
-            myQuestion.setChoices(new Gson().toJson(JsonUtils.getString("choices", question)));
+            myQuestion.setChoices(new Gson().toJson(JsonUtils.getJsonArray("choices", question)));
             boolean isMultipleChoice = question.has("correctChoice") && JsonUtils.getString("type", question).startsWith("select");
             if (isMultipleChoice)
                 insertCorrectChoice(question.get("choices").getAsJsonArray(), question, myQuestion);
@@ -57,7 +57,9 @@ public class realm_examQuestion extends RealmObject {
     private static void insertCorrectChoice(JsonArray array, JsonObject question, realm_examQuestion myQuestion) {
         for (int a = 0; a < array.size(); a++) {
             JsonObject res = array.get(a).getAsJsonObject();
-            if (JsonUtils.getString("correctChoice", question).equals(JsonUtils.getString("id", res)))
+            if (question.get("correctChoice").isJsonArray() && question.get("correctChoice").getAsJsonArray().size() > 0) {
+                myQuestion.setCorrectChoice(new Gson().toJson(JsonUtils.getJsonArray("correctChoice", question).get(0)));
+            } else if (JsonUtils.getString("correctChoice", question).equals(JsonUtils.getString("id", res)))
                 myQuestion.setCorrectChoice(JsonUtils.getString("res", res));
         }
     }
