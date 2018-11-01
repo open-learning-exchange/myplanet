@@ -91,7 +91,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (homeItemClickListener != null) {
             Fragment f = new LibraryDetailFragment();
             Bundle b = new Bundle();
-            b.putString("id", library.getId());
+            b.putString("libraryId", library.getResource_id());
             f.setArguments(b);
             homeItemClickListener.openCallFragment(f);
         }

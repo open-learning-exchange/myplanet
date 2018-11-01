@@ -36,7 +36,7 @@ public class realm_myLibrary extends RealmObject {
     private String userId;
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
-    private Boolean resourceOffline;
+    private Boolean resourceOffline = false;
     private String resourceId;
     private String _rev;
     private boolean need_optimization;

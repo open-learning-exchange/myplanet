@@ -6,11 +6,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
@@ -28,7 +30,7 @@ import io.realm.RealmResults;
 
 
 public class LibraryDetailFragment extends BaseContainerFragment {
-    TextView author, pubishedBy, media, subjects, license, rating, language, resource, type;
+    TextView author, pubishedBy, title, media, subjects, license, rating, language, resource, type;
     Button download, remove;
     String libraryId;
     DatabaseService dbService;
@@ -50,22 +52,25 @@ public class LibraryDetailFragment extends BaseContainerFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        super.onCreateView(inflater, container, savedInstanceState);
         View v = inflater.inflate(R.layout.fragment_library_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        Utilities.log("Library id " + libraryId);
         initView(v);
         return v;
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        library = mRealm.where(realm_myLibrary.class).equalTo("id", libraryId).findFirst();
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        library = mRealm.where(realm_myLibrary.class).equalTo("resourceId", libraryId).findFirst();
         setLibraryData();
     }
 
     private void initView(View v) {
         author = v.findViewById(R.id.tv_author);
+        title = v.findViewById(R.id.tv_title);
         pubishedBy = v.findViewById(R.id.tv_published);
         media = v.findViewById(R.id.tv_media);
         subjects = v.findViewById(R.id.tv_subject);
@@ -79,22 +84,26 @@ public class LibraryDetailFragment extends BaseContainerFragment {
     }
 
     private void setLibraryData() {
+
+        Utilities.log("Lib  " + library.getTitle());
+        title.setText(library.getTitle());
         author.setText(library.getAuthor());
         pubishedBy.setText(library.getPublisher());
         media.setText(library.getMediaType());
         subjects.setText(library.getSubjectsAsString());
         language.setText(library.getLanguage());
         license.setText(library.getLinkToLicense());
-        rating.setText(library.getAverageRating());
+        rating.setText(TextUtils.isEmpty(library.getAverageRating()) ? "0.0" : library.getAverageRating());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
-        // type.setText(library.getMediaType());
-
+        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
         download.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ArrayList<String> arrayList = new ArrayList<>();
-                arrayList.add(Utilities.getUrl(library, settings));
-                startDownload(arrayList);
+                if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
+                    Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                openResource(library);
             }
         });
     }

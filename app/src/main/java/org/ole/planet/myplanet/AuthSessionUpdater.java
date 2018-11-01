@@ -10,7 +10,7 @@ import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class AuthSessionUpdater extends DashboardFragment {
+public class AuthSessionUpdater  {
 
     // Updates Auth Session Token every 15 mins to prevent Timing Out
     public static void timerSendPostNewAuthSessionID(final SharedPreferences settings) {

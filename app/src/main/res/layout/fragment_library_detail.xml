@@ -40,9 +40,17 @@
                         android:textStyle="bold" />
 
                     <Button
+                        android:id="@+id/btn_download"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_gravity="right"
+                        android:text="@string/download"
+                        android:theme="@style/PrimaryButton" />
+
+                    <Button
                         android:id="@+id/btn_remove"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="@string/btn_remove_lib"
                         android:theme="@style/AccentButton" />
 
@@ -58,14 +66,6 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
 
-
-                        <Button
-                            android:id="@+id/btn_download"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="right"
-                            android:text="@string/download"
-                            android:theme="@style/PrimaryButton" />
 
                         <LinearLayout
                             android:layout_width="wrap_content"

@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.utilities.Utilities;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -14,13 +16,7 @@ public class TextFileViewerActivity extends AppCompatActivity {
 
     private TextView mTextFileNameTitle;
     private TextView mTextFileContent;
-    private String filePath;
     private String fileName;
-
-
-    public TextFileViewerActivity() {
-        filePath = new DashboardFragment().globalFilePath;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,7 +48,7 @@ public class TextFileViewerActivity extends AppCompatActivity {
             @Override
             public void run() {
                 try {
-                    File file = new File(filePath, fileName);
+                    File file = new File(Utilities.SD_PATH, fileName);
                     StringBuilder text = new StringBuilder();
 
                     BufferedReader reader = new BufferedReader(new FileReader(file));
