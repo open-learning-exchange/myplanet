@@ -84,8 +84,6 @@ public class LibraryDetailFragment extends BaseContainerFragment {
     }
 
     private void setLibraryData() {
-
-        Utilities.log("Lib  " + library.getTitle());
         title.setText(library.getTitle());
         author.setText(library.getAuthor());
         pubishedBy.setText(library.getPublisher());
@@ -95,6 +93,11 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         license.setText(library.getLinkToLicense());
         rating.setText(TextUtils.isEmpty(library.getAverageRating()) ? "0.0" : library.getAverageRating());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
+        setClickListeners();
+    }
+
+
+    public void setClickListeners() {
         download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
         download.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -119,10 +122,5 @@ public class LibraryDetailFragment extends BaseContainerFragment {
                 setLibraryData();
             }
         });
-    }
-
-    @Override
-    public void playVideo(String videoType, realm_myLibrary items) {
-
     }
 }

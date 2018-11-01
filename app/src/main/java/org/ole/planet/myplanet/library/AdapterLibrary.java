@@ -89,11 +89,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private void openLibrary(realm_myLibrary library) {
         if (homeItemClickListener != null) {
-            Fragment f = new LibraryDetailFragment();
-            Bundle b = new Bundle();
-            b.putString("libraryId", library.getResource_id());
-            f.setArguments(b);
-            homeItemClickListener.openCallFragment(f);
+
+            homeItemClickListener.openLibraryDetailFragment(library);
         }
     }
 

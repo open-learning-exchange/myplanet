@@ -203,11 +203,8 @@ public class DashboardFragment extends BaseContainerFragment {
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Fragment f = new LibraryDetailFragment();
-                Bundle b = new Bundle();
-                b.putString("libraryId", items.getResource_id());
-                f.setArguments(b);
-                homeItemClickListener.openCallFragment(f);
+                if (homeItemClickListener != null)
+                    homeItemClickListener.openLibraryDetailFragment(items);
             }
         });
     }
