@@ -212,6 +212,7 @@ public class realm_myLibrary extends RealmObject {
     }
 
 
+
     public void setResourceFor(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
@@ -269,6 +270,15 @@ public class realm_myLibrary extends RealmObject {
         return subject;
     }
 
+
+    public String getSubjectsAsString() {
+        String str = "";
+        for (String s : subject) {
+            str += s + ", ";
+        }
+        return str.substring(0, str.length() - 1);
+    }
+
     public void setSubject(RealmList<String> subject) {
         this.subject = subject;
     }
@@ -293,6 +303,14 @@ public class realm_myLibrary extends RealmObject {
         return s.toString();
     }
 
+    public static String listToString(RealmList<String> list){
+        StringBuilder s = new StringBuilder();
+        for (String tag : list) {
+            s.append(tag).append(", ");
+        }
+        return s.toString();
+
+    }
 
     public String getCourseId() {
         return courseId;
