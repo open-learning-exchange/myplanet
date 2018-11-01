@@ -24,7 +24,8 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
+                    android:layout_height="wrap_content"
+                    android:minHeight="?attr/actionBarSize"
                     android:background="@color/colorPrimary"
                     android:padding="8dp">
 

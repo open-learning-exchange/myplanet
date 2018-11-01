@@ -62,7 +62,7 @@ public abstract class BaseContainerFragment extends Fragment {
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     ListView lv;
     View convertView;
-    UserProfileDbHandler profileDbHandler;
+   public UserProfileDbHandler profileDbHandler;
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 //    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 

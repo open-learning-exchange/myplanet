@@ -106,6 +106,19 @@ public class LibraryDetailFragment extends BaseContainerFragment {
                 openResource(library);
             }
         });
+        boolean isAdd = TextUtils.isEmpty(library.getUserId());
+        remove.setText(isAdd ? "Add To My Library" : "Remove");
+        remove.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!mRealm.isInTransaction())
+                    mRealm.beginTransaction();
+                library.setUserId(isAdd ? profileDbHandler.getUserModel().getId() : "");
+                mRealm.commitTransaction();
+                Utilities.toast(getActivity(), "Resource " + (isAdd ? " added to" : " removed from ") + " my library");
+                setLibraryData();
+            }
+        });
     }
 
     @Override
