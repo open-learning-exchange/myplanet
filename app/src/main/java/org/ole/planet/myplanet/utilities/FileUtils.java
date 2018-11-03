@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utilities;
 
 import android.os.Environment;
 import android.os.StatFs;
+import android.text.TextUtils;
 
 import java.io.File;
 
@@ -24,6 +25,7 @@ public class FileUtils {
     }
 
     public static String getFileExtension(String address) {
+
         String filenameArray[] = address.split("\\.");
         String extension = filenameArray[filenameArray.length - 1];
         return extension;

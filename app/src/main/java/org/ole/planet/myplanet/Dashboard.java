@@ -32,9 +32,11 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.MyCourseFragment;
 import org.ole.planet.myplanet.feedback.FeedbackFragment;
+import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.library.MyLibraryFragment;
 import org.ole.planet.myplanet.survey.SurveyFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
@@ -194,6 +196,15 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         fragmentTransaction.commit();
     }
 
+    @Override
+    public void openLibraryDetailFragment(realm_myLibrary library) {
+        Fragment f = new LibraryDetailFragment();
+        Bundle b = new Bundle();
+        b.putString("libraryId", library.getResource_id());
+        f.setArguments(b);
+        openCallFragment(f);
+    }
+
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         ArrayList<Drawable> menuImageList = new ArrayList<>();
@@ -254,10 +265,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             openCallFragment(new MyCourseFragment());
         } else if (item.getItemId() == R.id.menu_survey) {
             openCallFragment(new SurveyFragment());
-        }else if (item.getItemId() == R.id.menu_home) {
+        } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
-        }
-        else {
+        } else {
             openCallFragment(new MyMeetUpsFragment());
         }
         return true;

@@ -6,6 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.utilities.Utilities;
+
 import java.io.File;
 
 import br.tiagohm.markdownview.MarkdownView;
@@ -15,12 +17,8 @@ public class MarkdownViewerActivity extends AppCompatActivity {
 
     private TextView mMarkdownNameTitle;
     private MarkdownView mMarkdownContent;
-    private String filePath;
     private String fileName;
 
-    public MarkdownViewerActivity() {
-        filePath = new DashboardFragment().globalFilePath;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +44,6 @@ public class MarkdownViewerActivity extends AppCompatActivity {
             mMarkdownNameTitle.setVisibility(View.VISIBLE);
         }
 
-        mMarkdownContent.loadMarkdownFromFile(new File(filePath, fileName));
+        mMarkdownContent.loadMarkdownFromFile(new File(Utilities.SD_PATH, fileName));
     }
 }
