@@ -95,10 +95,10 @@ public class SyncManager {
                     mRealm = dbService.getRealmInstance();
                     properties = dbService.getClouchDbProperties("tablet_users", settings);
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
-                    myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
+                    myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                 } catch (Exception err) {
                     err.printStackTrace();
@@ -194,6 +194,7 @@ public class SyncManager {
     }
 
     private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
+        Utilities.log("Array " + array);
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type);
             check(stringArray, array, shelfData.aClass);
@@ -239,9 +240,10 @@ public class SyncManager {
 
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
                                int x, JsonObject resourceDoc) {
+
         switch (stringArray[2]) {
             case "resources":
-                Utilities.log("Resource  " + stringArray[0]);
+                Utilities.log("Resource  " + array_categoryIds);
                 realm_myLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":
