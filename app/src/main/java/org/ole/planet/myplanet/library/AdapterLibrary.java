@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.library;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -14,9 +16,12 @@ import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
 
+import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
+import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -33,6 +38,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private List<realm_myLibrary> selectedItems;
     private OnLibraryItemSelected listener;
     private ChipCloudConfig config;
+    private OnHomeItemClickListener homeItemClickListener;
 
     public AdapterLibrary(Context context, List<realm_myLibrary> libraryList) {
         this.context = context;
@@ -41,6 +47,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         config = Utilities.getCloudConfig()
                 .selectMode(ChipCloud.SelectMode.single);
+        if (context instanceof OnHomeItemClickListener) {
+            homeItemClickListener = (OnHomeItemClickListener) context;
+        }
 
     }
 
@@ -69,8 +78,22 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    openLibrary(libraryList.get(position));
+                }
+            });
         }
     }
+
+    private void openLibrary(realm_myLibrary library) {
+        if (homeItemClickListener != null) {
+
+            homeItemClickListener.openLibraryDetailFragment(library);
+        }
+    }
+
 
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();

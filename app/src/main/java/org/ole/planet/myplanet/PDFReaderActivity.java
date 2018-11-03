@@ -15,6 +15,7 @@ import com.github.barteksc.pdfviewer.listener.OnPageErrorListener;
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle;
 
 import org.ole.planet.myplanet.Data.SourceFile;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.util.HashMap;
@@ -30,11 +31,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
     private PDFView pdfView;
     private int currentPageNumber, totalPages;
     private String currentUsername = "admin";
-    private String filePath;
 
-    public PDFReaderActivity() {
-        filePath = new DashboardFragment().globalFilePath;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,7 +59,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         }
 
         try {
-            pdfView.fromFile(new File(filePath, fileName))
+            pdfView.fromFile(new File(Utilities.SD_PATH, fileName))
                     .defaultPage(0)
                     .enableAnnotationRendering(true)
                     .onLoad(this)
