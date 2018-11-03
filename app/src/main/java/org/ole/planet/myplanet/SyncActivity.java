@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -49,15 +50,17 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     SharedPreferences settings;
     Realm mRealm;
     Context context;
-    MaterialDialog progress_dialog;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
+    ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         editor = settings.edit();
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setCancelable(false);
     }
 
 
@@ -228,12 +231,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     @Override
     public void onSyncStarted() {
-        progress_dialog = new MaterialDialog.Builder(this)
-                .title("Syncing")
-                .content("Please wait")
-                .progress(true, 0)
-                .show();
-        progress_dialog.setCancelable(false);
+        progressDialog.setMessage("Syncing data, Please wait...");
+        progressDialog.show();
     }
 
     public boolean isUrlValid(String url) {
@@ -257,8 +256,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     @Override
     public void onSyncComplete() {
-        Utilities.log("On Sync Complete");
-        progress_dialog.dismiss();
+        progressDialog.dismiss();
         NotificationUtil.cancellAll(this);
     }
 

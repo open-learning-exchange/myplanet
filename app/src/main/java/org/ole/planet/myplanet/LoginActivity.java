@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -45,7 +46,6 @@ import pl.droidsonroids.gif.GifImageButton;
 
 
 public class LoginActivity extends SyncActivity {
-    Context context;
     boolean connectionResult;
     EditText serverUrl;
     EditText serverPassword;
@@ -64,7 +64,6 @@ public class LoginActivity extends SyncActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-        context = this.getApplicationContext();
         changeLogoColor();
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
@@ -106,11 +105,11 @@ public class LoginActivity extends SyncActivity {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 String processedUrl = saveConfigAndContinue(dialog);
-                                    try {
-                                        isServerReachable(processedUrl);
-                                    } catch (Exception e) {
-                                        DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
-                                    }
+                                try {
+                                    isServerReachable(processedUrl);
+                                } catch (Exception e) {
+                                    DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
+                                }
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -169,7 +168,7 @@ public class LoginActivity extends SyncActivity {
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
         editor.commit();
-        if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), context)) {
+        if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), this)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             UserProfileDbHandler handler = new UserProfileDbHandler(this);
             handler.onLogin();
@@ -209,19 +208,20 @@ public class LoginActivity extends SyncActivity {
     }
 
     public boolean isServerReachable(String processedUrl) throws Exception {
+        progressDialog.setMessage("Connecting to server....");
+        progressDialog.show();
         ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
                 try {
+                    progressDialog.dismiss();
                     List<String> myList = Arrays.asList(s.split(","));
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
-                        //alertDialogOkay("Test successful. You can now click on \"Save and Proceed\" ");
                         startSync();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
 
@@ -230,6 +230,7 @@ public class LoginActivity extends SyncActivity {
                 alertDialogOkay("Device couldn't reach server. Check and try again");
                 if (mRealm != null)
                     mRealm.close();
+                progressDialog.dismiss();
             }
         });
         return connectionResult;

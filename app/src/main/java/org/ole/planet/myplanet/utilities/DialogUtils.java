@@ -39,14 +39,6 @@ public class DialogUtils {
         return prgDialog;
     }
 
-    public static void handleCheck(ArrayList<Integer> selectedItemsList, boolean b, Integer i) {
-        if (b) {
-            selectedItemsList.add(i);
-        } else if (selectedItemsList.contains(i)) {
-            selectedItemsList.remove(i);
-        }
-    }
-
     public static void showError(ProgressDialog prgDialog, String message) {
         prgDialog.setTitle(message);
         if (prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE) != null)
