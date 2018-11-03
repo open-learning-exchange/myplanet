@@ -113,19 +113,8 @@ public class UploadManager {
             @Override
             public void execute(Realm realm) {
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                JsonArray myLibs = realm_myLibrary.getMyLibIds(realm, sharedPreferences);
-                JsonArray myCourses = realm_myCourses.getMyCourseIds(realm, sharedPreferences);
-                JsonArray myTeams = realm_myTeams.getMyTeamIds(realm, sharedPreferences);
-                JsonArray myMeetups = realm_meetups.getMyMeetUpIds(realm, sharedPreferences);
-                JsonObject object = new JsonObject();
-                object.addProperty("_id", sharedPreferences.getString("userId", ""));
-                object.add("meetupIds", myMeetups);
-                object.add("resourceIds", myLibs);
-                object.add("courseIds", myCourses);
-                object.add("myTeamIds", myTeams);
-
+                JsonObject object = getShelfData(realm);
                 try {
-
                     JsonObject d = dbClient.find(JsonObject.class, sharedPreferences.getString("userId", ""));
                     object.addProperty("_rev", d.get("_rev").getAsString());
                     Response r = dbClient.update(object);
@@ -167,5 +156,19 @@ public class UploadManager {
                 listener.onSuccess("Sync with server completed successfully");
             }
         });
+    }
+
+    public JsonObject getShelfData(Realm realm) {
+        JsonArray myLibs = realm_myLibrary.getMyLibIds(realm, sharedPreferences);
+        JsonArray myCourses = realm_myCourses.getMyCourseIds(realm, sharedPreferences);
+        JsonArray myTeams = realm_myTeams.getMyTeamIds(realm, sharedPreferences);
+        JsonArray myMeetups = realm_meetups.getMyMeetUpIds(realm, sharedPreferences);
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", sharedPreferences.getString("userId", ""));
+        object.add("meetupIds", myMeetups);
+        object.add("resourceIds", myLibs);
+        object.add("courseIds", myCourses);
+        object.add("myTeamIds", myTeams);
+        return object;
     }
 }
