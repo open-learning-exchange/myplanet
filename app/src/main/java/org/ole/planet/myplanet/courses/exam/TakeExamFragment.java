@@ -19,6 +19,8 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import com.github.kittinunf.fuel.android.core.Json;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -29,8 +31,10 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
@@ -86,9 +90,11 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
                 .equalTo("userId", user.getId())
                 .equalTo("parentId", exam.getId())
                 .sort("date", Sort.DESCENDING)
+                .equalTo("status", "pending")
                 .findFirst();
         if (questions.size() > 0) {
             createSubmission();
+            Utilities.log("Current index " + currentIndex);
             startExam(questions.get(currentIndex));
         } else {
             container.setVisibility(View.GONE);
@@ -129,7 +135,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else if (question.getType().equalsIgnoreCase("input")) {
             etAnswer.setVisibility(View.VISIBLE);
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
-            Utilities.log("Select multiple");
             llCheckbox.setVisibility(View.VISIBLE);
             showCheckBoxes(question);
         }
@@ -154,11 +159,10 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             if (choices.get(i).isJsonObject()) {
                 addRadioButton(choices.get(i).getAsJsonObject());
             } else {
-                addRadioButton(choices.get(i).getAsString());
+                addRadioButton(JsonUtils.getString(choices, i));
             }
         }
     }
-
 
     public void addRadioButton(String choice) {
         RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
@@ -169,16 +173,16 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     public void addRadioButton(JsonObject choice) {
         RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
-        rdBtn.setText(choice.get("text").getAsString());
-        rdBtn.setTag(choice.get("id") + "");
+        rdBtn.setText(JsonUtils.getString("text", choice));
+        rdBtn.setTag(JsonUtils.getString("id", choice));
         rdBtn.setOnCheckedChangeListener(this);
         listChoices.addView(rdBtn);
     }
 
     public void addCheckBoxes(JsonObject choice) {
         CheckBox rdBtn = (CheckBox) LayoutInflater.from(getActivity()).inflate(R.layout.item_checkbox, null);
-        rdBtn.setText(choice.get("text").getAsString());
-        rdBtn.setTag(choice.get("id").getAsString() + "");
+        rdBtn.setText(JsonUtils.getString("text", choice));
+        rdBtn.setTag(JsonUtils.getString("id", choice));
         rdBtn.setOnCheckedChangeListener(this);
         llCheckbox.addView(rdBtn);
     }
@@ -203,6 +207,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     private boolean updateAnsDb() {
         boolean flag;
         startTransaction();
+        Utilities.log("Current  index " + currentIndex + " " + (questions.size() - 1));
         sub.setStatus(currentIndex == questions.size() - 1 ? "graded" : "pending");
         RealmList<realm_answer> list = sub.getAnswers();
         realm_answer answer = mRealm.copyFromRealm(createAnswer(list));
@@ -211,7 +216,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         answer.setValue(ans);
         answer.setValueChoices(listAns);
         answer.setSubmissionId(sub.getId());
-        if (TextUtils.isEmpty(que.getCorrectChoice())) {
+        if (que.getCorrectChoice().size() == 0) {
             answer.setGrade(0);
             answer.setMistakes(0);
             flag = true;
@@ -226,16 +231,32 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private boolean checkCorrectAns(realm_answer answer, realm_examQuestion que) {
         boolean flag = false;
-        answer.setPassed(que.getCorrectChoice().equalsIgnoreCase(ans));
+        answer.setPassed(que.getCorrectChoice().contains(ans.toLowerCase()));
         answer.setGrade(1);
         int mistake = answer.getMistakes();
-        if (que.getCorrectChoice().equalsIgnoreCase(ans)) {
+        String[] selectedAns = listAns.values().toArray(new String[listAns.keySet().size()]);
+        String[] correctChoices = que.getCorrectChoice().toArray(new String[que.getCorrectChoice().size()]);
+        if (!isEqual(selectedAns, correctChoices)) {
             mistake++;
         } else {
             flag = true;
         }
         answer.setMistakes(mistake);
         return flag;
+    }
+
+
+    public boolean isEqual(String[] ar1, String[] ar2) {
+        Arrays.sort(ar1);
+        Arrays.sort(ar2);
+        Utilities.log("Array " + Arrays.toString(ar1) + " " + Arrays.toString(ar2));
+        for (int i = 0; i < ar2.length; i++) {
+            Utilities.log("Is equal " + new Gson().toJson(ar1[i]) + " " + ar2[i]);
+            if (!ar1[i].equalsIgnoreCase(ar2[i]))
+                return false;
+        }
+
+        return true;
     }
 
     private void startTransaction() {
@@ -268,7 +289,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         if (b) {
             addAnswer(compoundButton);
         } else if (compoundButton.getTag() != null) {
-            listAns.remove(compoundButton.getText().toString());
+            listAns.remove(compoundButton.getText() + "");
         }
     }
 

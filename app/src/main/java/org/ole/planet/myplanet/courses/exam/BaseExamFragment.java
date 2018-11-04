@@ -67,7 +67,8 @@ public abstract class BaseExamFragment extends Fragment {
 
     public void checkAnsAndContinue(boolean cont) {
         if (cont) {
-            currentIndex++;
+            Utilities.log("Update current index");
+            currentIndex = currentIndex + 1;
             continueExam();
         } else {
             Utilities.toast(getActivity(), "Invalid answer");
@@ -81,6 +82,7 @@ public abstract class BaseExamFragment extends Fragment {
         } else if (type.startsWith("survey")) {
             showUserInfoDialog();
         } else {
+            Utilities.log(realm_submissions.serializeExamResult(mRealm, sub) + " result");
             new AlertDialog.Builder(getActivity())
                     .setTitle("Thank you for taking this " + type + ". We wish you all the best")
                     .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
@@ -112,9 +114,10 @@ public abstract class BaseExamFragment extends Fragment {
 
     public void addAnswer(CompoundButton compoundButton) {
         if (compoundButton.getTag() != null) {
-            listAns.put(compoundButton.getText().toString(), compoundButton.getTag() + "");
+            Utilities.log("Tag " + compoundButton.getTag());
+            listAns.put(compoundButton.getText() + "", compoundButton.getTag() + "");
         } else {
-            ans = compoundButton.getText().toString();
+            ans = compoundButton.getText() + "";
         }
     }
 

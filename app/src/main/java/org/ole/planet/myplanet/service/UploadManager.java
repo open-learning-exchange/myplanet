@@ -59,6 +59,7 @@ public class UploadManager {
             public void execute(@NonNull Realm realm) {
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
+                Utilities.log("Sub size " + submissions.size());
                 for (realm_submissions sub : submissions) {
                     Response r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
                     if (!TextUtils.isEmpty(r.getId())) {
