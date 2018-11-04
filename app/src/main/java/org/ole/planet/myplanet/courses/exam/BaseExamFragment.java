@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.widget.CompoundButton;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
+import org.ole.planet.myplanet.Data.realm_answer;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
@@ -16,8 +17,10 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
+import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmResults;
 
 public abstract class BaseExamFragment extends Fragment {
@@ -110,6 +113,19 @@ public abstract class BaseExamFragment extends Fragment {
             return true;
         }
         return false;
+    }
+
+    public realm_answer createAnswer(RealmList<realm_answer> list) {
+        realm_answer answer;
+        if (list == null) {
+            list = new RealmList<>();
+        }
+        if (list.size() > currentIndex) {
+            answer = list.get(currentIndex);
+        } else {
+            answer = mRealm.createObject(realm_answer.class, UUID.randomUUID().toString());
+        }
+        return answer;
     }
 
     public void addAnswer(CompoundButton compoundButton) {

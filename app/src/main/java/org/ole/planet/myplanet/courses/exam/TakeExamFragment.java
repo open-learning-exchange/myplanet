@@ -149,7 +149,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     private void showCheckBoxes(realm_examQuestion question) {
         JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
-            addCheckBoxes(choices.get(i).getAsJsonObject());
+            addCompoundButton(choices.get(i).getAsJsonObject(), false);
         }
     }
 
@@ -157,7 +157,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
             if (choices.get(i).isJsonObject()) {
-                addRadioButton(choices.get(i).getAsJsonObject());
+                addCompoundButton(choices.get(i).getAsJsonObject(), true);
             } else {
                 addRadioButton(JsonUtils.getString(choices, i));
             }
@@ -171,21 +171,24 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         listChoices.addView(rdBtn);
     }
 
-    public void addRadioButton(JsonObject choice) {
-        RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
+    public void addCompoundButton(JsonObject choice, boolean isRadio) {
+        CompoundButton rdBtn = (CompoundButton) LayoutInflater.from(getActivity()).inflate(isRadio ? R.layout.item_radio_btn : R.layout.item_checkbox, null);
         rdBtn.setText(JsonUtils.getString("text", choice));
         rdBtn.setTag(JsonUtils.getString("id", choice));
         rdBtn.setOnCheckedChangeListener(this);
-        listChoices.addView(rdBtn);
+        if (isRadio)
+            listChoices.addView(rdBtn);
+        else
+            llCheckbox.addView(rdBtn);
     }
 
-    public void addCheckBoxes(JsonObject choice) {
-        CheckBox rdBtn = (CheckBox) LayoutInflater.from(getActivity()).inflate(R.layout.item_checkbox, null);
-        rdBtn.setText(JsonUtils.getString("text", choice));
-        rdBtn.setTag(JsonUtils.getString("id", choice));
-        rdBtn.setOnCheckedChangeListener(this);
-        llCheckbox.addView(rdBtn);
-    }
+//    public void addCheckBoxes(JsonObject choice) {
+//        CheckBox rdBtn = (CheckBox) LayoutInflater.from(getActivity()).inflate(R.layout.item_checkbox, null);
+//        rdBtn.setText(JsonUtils.getString("text", choice));
+//        rdBtn.setTag(JsonUtils.getString("id", choice));
+//        rdBtn.setOnCheckedChangeListener(this);
+//        llCheckbox.addView(rdBtn);
+//    }
 
 
     @Override
@@ -265,18 +268,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
     }
 
-    private realm_answer createAnswer(RealmList<realm_answer> list) {
-        realm_answer answer;
-        if (list == null) {
-            list = new RealmList<>();
-        }
-        if (list.size() > currentIndex) {
-            answer = list.get(currentIndex);
-        } else {
-            answer = mRealm.createObject(realm_answer.class, UUID.randomUUID().toString());
-        }
-        return answer;
-    }
 
     @Override
     public void onDestroy() {
