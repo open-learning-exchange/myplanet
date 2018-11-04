@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.courses.exam;
 
 
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.NestedScrollView;
-import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,27 +19,24 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
-import org.ole.planet.myplanet.Data.realm_UserModel;
-import org.ole.planet.myplanet.Data.realm_answerChoices;
-import org.ole.planet.myplanet.Data.realm_examQuestion;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import org.ole.planet.myplanet.Data.realm_answer;
-import org.ole.planet.myplanet.Data.realm_stepExam;
+import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
-import io.realm.Realm;
 import io.realm.RealmList;
-import io.realm.RealmResults;
 import io.realm.Sort;
-import okhttp3.internal.Util;
-
 
 /**
  * A simple {@link Fragment} subclass.
@@ -147,36 +142,23 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
 
     private void showCheckBoxes(realm_examQuestion question) {
-        RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
-                .equalTo("questionId", question.getId()).findAll();
+        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
-            addCheckBoxes(choices.get(i));
+            addCheckBoxes(choices.get(i).getAsJsonObject());
         }
     }
 
     private void selectQuestion(realm_examQuestion question) {
-        if (question.getChoices().size() > 0) {
-            radioWithOutCorrectChoice(question);
-        } else {
-            radioWithCorrectChoice(question);
-        }
-    }
-
-
-    private void radioWithCorrectChoice(realm_examQuestion question) {
-        RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class)
-                .equalTo("questionId", question.getId()).findAll();
+        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
-            addRadioButton(choices.get(i).getText());
+            if (choices.get(i).isJsonObject()) {
+                addRadioButton(choices.get(i).getAsJsonObject());
+            } else {
+                addRadioButton(choices.get(i).getAsString());
+            }
         }
     }
 
-    private void radioWithOutCorrectChoice(realm_examQuestion question) {
-        RealmList choices = question.getChoices();
-        for (int i = 0; i < choices.size(); i++) {
-            addRadioButton(choices.get(i).toString());
-        }
-    }
 
     public void addRadioButton(String choice) {
         RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
@@ -185,10 +167,18 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         listChoices.addView(rdBtn);
     }
 
-    public void addCheckBoxes(realm_answerChoices choice) {
+    public void addRadioButton(JsonObject choice) {
+        RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
+        rdBtn.setText(choice.get("text").getAsString());
+        rdBtn.setTag(choice.get("id") + "");
+        rdBtn.setOnCheckedChangeListener(this);
+        listChoices.addView(rdBtn);
+    }
+
+    public void addCheckBoxes(JsonObject choice) {
         CheckBox rdBtn = (CheckBox) LayoutInflater.from(getActivity()).inflate(R.layout.item_checkbox, null);
-        rdBtn.setText(choice.getText());
-        rdBtn.setTag(choice);
+        rdBtn.setText(choice.get("text").getAsString());
+        rdBtn.setTag(choice.get("id").getAsString() + "");
         rdBtn.setOnCheckedChangeListener(this);
         llCheckbox.addView(rdBtn);
     }

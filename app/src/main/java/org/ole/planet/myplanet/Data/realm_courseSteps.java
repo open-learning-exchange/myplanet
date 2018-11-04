@@ -6,10 +6,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
-import java.util.UUID;
 
 import io.realm.Realm;
 
@@ -21,7 +19,6 @@ public class realm_courseSteps extends io.realm.RealmObject {
     private String description;
     private Integer noOfResources;
     private Integer noOfExams;
-
 
     public static void insertCourseSteps(String myCoursesID, JsonArray steps, int numberOfSteps, Realm mRealm) {
         for (int step = 0; step < numberOfSteps; step++) {
@@ -36,7 +33,6 @@ public class realm_courseSteps extends io.realm.RealmObject {
             myCourseStepDB.setDescription(JsonUtils.getString("description", stepContainer));
             myCourseStepDB.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size());
             insertCourseStepsAttachments(myCoursesID, step_id, JsonUtils.getJsonArray("resources", stepContainer), mRealm);
-            // myCourseStepDB.setNoOfResources(stepContainer.get("exam").getAsJsonArray().size());
             insertExam(stepContainer, mRealm, step_id, myCoursesID);
         }
     }

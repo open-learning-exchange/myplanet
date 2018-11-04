@@ -9,7 +9,6 @@ import android.text.TextUtils;
 import android.widget.CompoundButton;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
-import org.ole.planet.myplanet.Data.realm_answerChoices;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
@@ -17,10 +16,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
-import java.util.List;
 
 import io.realm.Realm;
-import io.realm.RealmList;
 import io.realm.RealmResults;
 
 public abstract class BaseExamFragment extends Fragment {
@@ -35,7 +32,7 @@ public abstract class BaseExamFragment extends Fragment {
     String ans = "";
     realm_UserModel user;
     realm_submissions sub;
-    HashMap<String, realm_answerChoices> listAns;
+    HashMap<String, String> listAns;
 
 
     @Override
@@ -111,13 +108,11 @@ public abstract class BaseExamFragment extends Fragment {
             return true;
         }
         return false;
-
     }
-
 
     public void addAnswer(CompoundButton compoundButton) {
         if (compoundButton.getTag() != null) {
-            listAns.put(compoundButton.getText().toString(), (realm_answerChoices) compoundButton.getTag());
+            listAns.put(compoundButton.getText().toString(), compoundButton.getTag() + "");
         } else {
             ans = compoundButton.getText().toString();
         }

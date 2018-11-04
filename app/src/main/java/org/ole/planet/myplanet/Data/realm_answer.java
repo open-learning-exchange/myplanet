@@ -5,11 +5,8 @@ import android.text.TextUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.utilities.Utilities;
-
 import java.util.HashMap;
 
-import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -18,17 +15,13 @@ public class realm_answer extends RealmObject {
     @PrimaryKey
     private String id;
     private String value;
-    private RealmList<realm_answerChoices> valueChoices;
+    private RealmList<String> valueChoices;
     private int mistakes = 0;
     private boolean passed;
     private int grade;
     private String examId;
     private String questionId;
     private String submissionId;
-
-    public String getId() {
-        return id;
-    }
 
     public static JsonArray serializeRealmAnswer(RealmList<realm_answer> answers) {
         JsonArray array = new JsonArray();
@@ -50,34 +43,38 @@ public class realm_answer extends RealmObject {
         return object;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public JsonArray getValueChoicesArray() {
         JsonArray array = new JsonArray();
         if (valueChoices == null) {
             return array;
         }
-        for (realm_answerChoices choice : valueChoices
+        for (String choice : valueChoices
                 ) {
-            array.add(choice.serialize());
+            array.add(choice);
         }
         return array;
     }
 
-    public RealmList<realm_answerChoices> getValueChoices() {
+    public RealmList<String> getValueChoices() {
         return valueChoices;
     }
 
-    public void setValueChoices(RealmList<realm_answerChoices> valueChoices) {
-        this.valueChoices = valueChoices;
-    }
-
-    public void setValueChoices(HashMap<String, realm_answerChoices> map) {
+    public void setValueChoices(HashMap<String, String> map) {
         for (String key : map.keySet()) {
             this.valueChoices.add(map.get(key));
         }
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setValueChoices(RealmList<String> valueChoices) {
+        this.valueChoices = valueChoices;
     }
 
     public String getValue() {
