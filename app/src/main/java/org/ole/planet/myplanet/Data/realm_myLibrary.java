@@ -112,7 +112,6 @@ public class realm_myLibrary extends RealmObject {
         String resourceId = JsonUtils.getString("_id", doc);
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         realm_myLibrary resource = mRealm.where(realm_myLibrary.class).equalTo("id", resourceId).findFirst();
-
         if (resource == null) {
             resource = mRealm.createObject(realm_myLibrary.class, resourceId);
         }
@@ -140,7 +139,7 @@ public class realm_myLibrary extends RealmObject {
                 if (entry.getKey().indexOf("/") < 0) {
                     resource.setResourceRemoteAddress(settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
                     resource.setResourceLocalAddress(entry.getKey());
-                    resource.setResourceOffline(false);
+                    resource.setResourceOffline(Utilities.checkFileExist(resource.getResourceRemoteAddress()));
                 }
             }
         }
