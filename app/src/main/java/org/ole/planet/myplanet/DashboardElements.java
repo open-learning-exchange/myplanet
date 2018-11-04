@@ -69,7 +69,7 @@ public abstract class DashboardElements extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.menu_email) {
-            Toast.makeText(this, "Action clicked", Toast.LENGTH_LONG).show();
+//            Toast.makeText(this, "Action clicked", Toast.LENGTH_LONG).show();
             return true;
         } else if (id == R.id.menu_logout) {
             logout();

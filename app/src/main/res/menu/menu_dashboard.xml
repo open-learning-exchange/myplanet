@@ -8,18 +8,22 @@
         android:icon="@drawable/email"
         android:orderInCategory="200"
         android:title="User"
+        app:iconTint="@color/disable_color"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/menu_profile"
         android:icon="@drawable/usersettings"
         android:orderInCategory="300"
         android:title="Profile"
+        app:iconTint="@color/disable_color"
         app:showAsAction="ifRoom" />
+
     <item
         android:id="@+id/menu_notifications"
         android:icon="@drawable/notifications"
         android:orderInCategory="300"
         android:title="Alerts"
+        app:iconTint="@color/disable_color"
         app:actionLayout="@layout/view_notification"
         app:showAsAction="ifRoom" />
     <item
@@ -31,12 +35,14 @@
         android:id="@+id/edit_profile"
         android:icon="@drawable/en"
         android:orderInCategory="401"
+        app:iconTint="@color/disable_color"
         android:title="Edit Profile" />
 
     <item
         android:id="@+id/change_password"
         android:icon="@drawable/en"
         android:orderInCategory="401"
+        app:iconTint="@color/disable_color"
         android:title="Change Password" />
 
     <item

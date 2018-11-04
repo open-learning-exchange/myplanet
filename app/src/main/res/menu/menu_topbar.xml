@@ -23,5 +23,6 @@
     <item
         android:id="@+id/menu_teams"
         android:icon="@drawable/team"
+        app:iconTint="@color/disable_color"
         android:title="@string/menu_teams" />
 </menu>

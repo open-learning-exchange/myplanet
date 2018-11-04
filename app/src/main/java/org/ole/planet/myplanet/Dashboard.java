@@ -161,8 +161,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 openCallFragment(new MyLibraryFragment());
                 break;
             case R.string.menu_meetups:
-                openCallFragment(new MyMeetUpsFragment());
-                break;
+//                openCallFragment(new MyMeetUpsFragment());
+//                break;
+                return;
             case R.string.menu_surveys:
                 openCallFragment(new SurveyFragment());
                 break;
@@ -267,9 +268,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             openCallFragment(new SurveyFragment());
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
-        } else {
-            openCallFragment(new MyMeetUpsFragment());
         }
+//        else {
+//            openCallFragment(new MyMeetUpsFragment());
+//        }
         return true;
     }
 }
