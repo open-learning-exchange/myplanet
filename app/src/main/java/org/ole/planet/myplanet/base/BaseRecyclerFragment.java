@@ -112,20 +112,23 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         Arrays.sort(tags);
         RealmList<realm_myLibrary> libraries = new RealmList<>();
         for (realm_myLibrary library : list) {
-            boolean contains = true;
-            for (String s : tags) {
-                if (!library.getTag().contains(s)) {
-                    contains = false;
-                    break;
-                }
-            }
-            if (contains) {
+            if (filter(tags, library)) {
                 libraries.add(library);
             }
-
         }
         return libraries;
 
+    }
+
+    private boolean filter(String[] tags, realm_myLibrary library) {
+        boolean contains = true;
+        for (String s : tags) {
+            if (!library.getTag().contains(s)) {
+                contains = false;
+                break;
+            }
+        }
+        return contains;
     }
 
 
