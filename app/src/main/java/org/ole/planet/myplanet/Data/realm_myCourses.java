@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.Data;
 
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
@@ -10,8 +12,10 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import java.util.List;
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_myCourses extends RealmObject {
@@ -75,6 +79,18 @@ public class realm_myCourses extends RealmObject {
             myIds[i] = list.get(i).getCourseId();
         }
         return myIds;
+    }
+
+    public static JsonArray getMyCourseIds(Realm realm, SharedPreferences sharedPreferences) {
+        RealmResults<realm_myCourses> myCourses = realm.where(realm_myCourses.class).isNotEmpty("userId")
+                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+
+        JsonArray ids = new JsonArray();
+        for (realm_myCourses lib : myCourses
+                ) {
+            ids.add(lib.getCourseId());
+        }
+        return ids;
     }
 
     public String getId() {
