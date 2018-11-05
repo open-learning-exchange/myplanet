@@ -14,6 +14,11 @@ public class JsonUtils {
         return "";
     }
 
+    public static String getString(JsonArray array, int index) {
+        JsonElement el = array.get(index);
+        return el instanceof JsonNull ? "" : el.getAsString();
+    }
+
     public static boolean getBoolean(String fieldName, JsonObject jsonObject) {
         if (jsonObject.has(fieldName)) {
             JsonElement el = jsonObject.get(fieldName);

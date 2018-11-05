@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
@@ -21,7 +22,7 @@ public class realm_examQuestion extends RealmObject {
     private String body;
     private String type;
     private String examId;
-    private String correctChoice;
+    private RealmList<String> correctChoice;
     private String marks;
     private String choices;
 
@@ -49,9 +50,18 @@ public class realm_examQuestion extends RealmObject {
         for (int a = 0; a < array.size(); a++) {
             JsonObject res = array.get(a).getAsJsonObject();
             if (question.get("correctChoice").isJsonArray() && question.get("correctChoice").getAsJsonArray().size() > 0) {
-                myQuestion.setCorrectChoice(new Gson().toJson(JsonUtils.getJsonArray("correctChoice", question).get(0)));
-            } else if (JsonUtils.getString("correctChoice", question).equals(JsonUtils.getString("id", res)))
-                myQuestion.setCorrectChoice(JsonUtils.getString("res", res));
+                myQuestion.correctChoice = new RealmList<>();
+                myQuestion.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion);
+            } else if (JsonUtils.getString("correctChoice", question).equals(JsonUtils.getString("id", res))) {
+                myQuestion.correctChoice = new RealmList<>();
+                myQuestion.correctChoice.add(JsonUtils.getString("res", res));
+            }
+        }
+    }
+
+    private void setCorrectChoiceArray(JsonArray array, realm_examQuestion question) {
+        for (int i = 0; i < array.size(); i++) {
+            question.correctChoice.add(JsonUtils.getString(array, i).toLowerCase());
         }
     }
 
@@ -64,7 +74,7 @@ public class realm_examQuestion extends RealmObject {
             object.addProperty("type", que.getType());
             object.addProperty("marks", que.getMarks());
             object.add("choices", JsonParserUtils.getStringAsJsonArray(que.getChoices()));
-            object.addProperty("correctChoice", que.getCorrectChoice());
+            object.add("correctChoice", que.getCorrectChoiceArray());
             array.add(object);
         }
         return array;
@@ -78,11 +88,19 @@ public class realm_examQuestion extends RealmObject {
         this.marks = marks;
     }
 
-    public String getCorrectChoice() {
+    public RealmList<String> getCorrectChoice() {
         return correctChoice;
     }
 
-    public void setCorrectChoice(String correctChoice) {
+    public JsonArray getCorrectChoiceArray() {
+        JsonArray array = new JsonArray();
+        for (String s : correctChoice) {
+            array.add(s);
+        }
+        return array;
+    }
+
+    public void setCorrectChoice(RealmList<String> correctChoice) {
         this.correctChoice = correctChoice;
     }
 

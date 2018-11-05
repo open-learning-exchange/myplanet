@@ -5,6 +5,8 @@ import android.text.TextUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.Utilities;
+
 import java.util.HashMap;
 
 import io.realm.RealmList;
@@ -24,6 +26,7 @@ public class realm_answer extends RealmObject {
     private String submissionId;
 
     public static JsonArray serializeRealmAnswer(RealmList<realm_answer> answers) {
+        Utilities.log("Ans size " + answers.size());
         JsonArray array = new JsonArray();
         for (realm_answer ans : answers) {
             array.add(createObject(ans));
