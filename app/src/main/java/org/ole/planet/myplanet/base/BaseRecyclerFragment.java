@@ -12,6 +12,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
@@ -107,10 +109,10 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         if (tags.length == 0) {
             return list;
         }
+        Arrays.sort(tags);
         RealmList<realm_myLibrary> libraries = new RealmList<>();
         for (realm_myLibrary library : list) {
-            String tagAsString = library.getTagAsString();
-            if (tagAsString.toLowerCase().contains(getTagsAsString(tags).toLowerCase())) {
+            if (filter(tags, library)) {
                 libraries.add(library);
             }
         }
@@ -118,13 +120,17 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
 
     }
 
-    public String getTagsAsString(String[] tags) {
-        StringBuilder s = new StringBuilder();
-        for (String tag : tags) {
-            s.append(tag).append(", ");
+    private boolean filter(String[] tags, realm_myLibrary library) {
+        boolean contains = true;
+        for (String s : tags) {
+            if (!library.getTag().contains(s)) {
+                contains = false;
+                break;
+            }
         }
-        return s.toString();
+        return contains;
     }
+
 
     public List<LI> getList(Class c) {
         if (c == realm_stepExam.class) {

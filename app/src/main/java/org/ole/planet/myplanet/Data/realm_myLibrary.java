@@ -118,7 +118,7 @@ public class realm_myLibrary extends RealmObject {
             resource = mRealm.createObject(realm_myLibrary.class, resourceId);
         }
 //        if (!TextUtils.isEmpty(userId) ) {
-            resource.setUserId(userId);
+        resource.setUserId(userId);
 //        }
         if (!TextUtils.isEmpty(stepId)) {
             resource.setStepId(stepId);
@@ -294,14 +294,16 @@ public class realm_myLibrary extends RealmObject {
     public RealmList<String> getTag() {
         return tag;
     }
-
-    public String getTagAsString() {
-        StringBuilder s = new StringBuilder();
-        for (String tag : getTag()) {
-            s.append(tag).append(", ");
-        }
-        return s.toString();
-    }
+//
+//    public String getTagAsString() {
+//        StringBuilder s = new StringBuilder();
+//        String[] tags = getTag().toArray(new String[getTag().size()]);
+//        Arrays.sort(tags);
+//        for (String tag : tags) {
+//            s.append(tag).append(", ");
+//        }
+//        return s.toString();
+//    }
 
     public static String listToString(RealmList<String> list) {
         StringBuilder s = new StringBuilder();
