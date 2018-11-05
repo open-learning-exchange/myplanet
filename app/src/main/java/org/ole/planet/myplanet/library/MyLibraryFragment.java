@@ -132,7 +132,8 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
             String lastChar = charSequence.toString().substring(charSequence.length() - 1);
             Utilities.log("char " + lastChar);
             if (lastChar.equals(" ") || lastChar.equals("\n")) {
-                onTagClicked(etTags.getText().toString());
+//                onTagClicked(etTags.getText().toString().substring(0,etTags.getText().toString().length() - 1));
+                onTagClicked(etTags.getText().toString().trim());
                 etTags.setText("");
             }
         }
