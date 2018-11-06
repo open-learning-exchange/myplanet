@@ -1,13 +1,18 @@
 package org.ole.planet.myplanet.Data;
 
+import android.content.SharedPreferences;
+
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_myTeams extends RealmObject {
@@ -30,6 +35,19 @@ public class realm_myTeams extends RealmObject {
         myTeams.setLimit(JsonUtils.getString("limit", doc));
         myTeams.setStatus(JsonUtils.getString("status", doc));
         myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
+    }
+
+
+    public static JsonArray getMyTeamIds(Realm realm, SharedPreferences sharedPreferences) {
+        RealmResults<realm_myTeams> teams = realm.where(realm_myTeams.class).isNotEmpty("userId")
+                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+
+        JsonArray ids = new JsonArray();
+        for (realm_myTeams lib : teams
+                ) {
+            ids.add(lib.getTeamId());
+        }
+        return ids;
     }
 
     public String getId() {

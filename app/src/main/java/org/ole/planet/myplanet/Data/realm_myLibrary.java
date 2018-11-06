@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
@@ -88,6 +89,7 @@ public class realm_myLibrary extends RealmObject {
     }
 
     public static void insertMyLibrary(String userId, JsonObject doc, Realm mRealm) {
+        Utilities.log("Insert shelf " + userId);
         insertMyLibrary(userId, "", "", doc, mRealm);
     }
 
@@ -115,9 +117,9 @@ public class realm_myLibrary extends RealmObject {
         if (resource == null) {
             resource = mRealm.createObject(realm_myLibrary.class, resourceId);
         }
-        if (!TextUtils.isEmpty(userId)) {
-            resource.setUserId(userId);
-        }
+//        if (!TextUtils.isEmpty(userId) ) {
+        resource.setUserId(userId);
+//        }
         if (!TextUtils.isEmpty(stepId)) {
             resource.setStepId(stepId);
         }
@@ -211,7 +213,6 @@ public class realm_myLibrary extends RealmObject {
     }
 
 
-
     public void setResourceFor(JsonArray array, realm_myLibrary resource) {
         for (JsonElement s :
                 array) {
@@ -293,16 +294,18 @@ public class realm_myLibrary extends RealmObject {
     public RealmList<String> getTag() {
         return tag;
     }
+//
+//    public String getTagAsString() {
+//        StringBuilder s = new StringBuilder();
+//        String[] tags = getTag().toArray(new String[getTag().size()]);
+//        Arrays.sort(tags);
+//        for (String tag : tags) {
+//            s.append(tag).append(", ");
+//        }
+//        return s.toString();
+//    }
 
-    public String getTagAsString() {
-        StringBuilder s = new StringBuilder();
-        for (String tag : getTag()) {
-            s.append(tag).append(", ");
-        }
-        return s.toString();
-    }
-
-    public static String listToString(RealmList<String> list){
+    public static String listToString(RealmList<String> list) {
         StringBuilder s = new StringBuilder();
         for (String tag : list) {
             s.append(tag).append(", ");
@@ -511,5 +514,17 @@ public class realm_myLibrary extends RealmObject {
         for (int i = 0; i < allDocs.size(); i++) {
             realm_myLibrary.insertResources(allDocs.get(i), mRealm);
         }
+    }
+
+    public static JsonArray getMyLibIds(Realm realm, SharedPreferences sharedPreferences) {
+        RealmResults<realm_myLibrary> myLibraries = realm.where(realm_myLibrary.class).isNotEmpty("userId")
+                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+
+        JsonArray ids = new JsonArray();
+        for (realm_myLibrary lib : myLibraries
+                ) {
+            ids.add(lib.getId());
+        }
+        return ids;
     }
 }

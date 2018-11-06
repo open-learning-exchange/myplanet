@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.Data;
 
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
@@ -13,8 +15,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_meetups extends RealmObject {
@@ -53,6 +57,20 @@ public class realm_meetups extends RealmObject {
         myMeetupsDB.setCreator(JsonUtils.getString("creator", meetupDoc));
         myMeetupsDB.setDay(JsonUtils.getJsonArray("day", meetupDoc).toString());
     }
+
+
+    public static JsonArray getMyMeetUpIds(Realm realm, SharedPreferences sharedPreferences) {
+        RealmResults<realm_meetups> meetups = realm.where(realm_meetups.class).isNotEmpty("userId")
+                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+
+        JsonArray ids = new JsonArray();
+        for (realm_meetups lib : meetups
+                ) {
+            ids.add(lib.getMeetupId());
+        }
+        return ids;
+    }
+
 
     public String getEndTime() {
         return endTime;
