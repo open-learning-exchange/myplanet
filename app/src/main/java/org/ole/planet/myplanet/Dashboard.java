@@ -161,9 +161,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 openCallFragment(new MyLibraryFragment());
                 break;
             case R.string.menu_meetups:
-//                openCallFragment(new MyMeetUpsFragment());
-//                break;
-                return;
+                /* TODO: remove
+                openCallFragment(new MyMeetUpsFragment());
+                */
+                break;
             case R.string.menu_surveys:
                 openCallFragment(new SurveyFragment());
                 break;
@@ -219,7 +220,11 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 changeUX(R.string.menu_myplanet, menuImageList.get(0)),
                 changeUX(R.string.menu_library, menuImageList.get(1)),
                 changeUX(R.string.menu_courses, menuImageList.get(2)),
-                changeUX(R.string.menu_meetups, menuImageList.get(3)),
+                changeUX(R.string.menu_meetups, menuImageList.get(3))
+                        /* TODO: remove */
+                        .withSelectable(false)
+                        .withDisabledIconColor(getResources().getColor(R.color.disable_color))
+                        .withDisabledTextColor(getResources().getColor(R.color.disable_color)),
                 changeUX(R.string.menu_surveys, menuImageList.get(4)),
         };
     }
@@ -269,9 +274,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
         }
-//        else {
-//            openCallFragment(new MyMeetUpsFragment());
-//        }
+        /* TODO: remove
+        else {
+            openCallFragment(new MyMeetUpsFragment());
+        }*/
         return true;
     }
 }
