@@ -30,6 +30,8 @@ public class realm_UserModel extends RealmObject {
     private String lastName;
     private String middleName;
     private String email;
+    private String planetCode;
+    private String parentCode;
     private String phoneNumber;
     private String password_scheme;
     private String iterations;
@@ -80,6 +82,8 @@ public class realm_UserModel extends RealmObject {
         user.setFirstName(JsonUtils.getString("firstName", jsonDoc));
         user.setLastName(JsonUtils.getString("lastName", jsonDoc));
         user.setMiddleName(JsonUtils.getString("middleName", jsonDoc));
+        user.setPlanetCode(JsonUtils.getString("planetCode", jsonDoc));
+        user.setParentCode(JsonUtils.getString("parentCode", jsonDoc));
         user.setEmail(JsonUtils.getString("email", jsonDoc));
         user.setPhoneNumber(JsonUtils.getString("phoneNumber", jsonDoc));
         user.setPassword_scheme(JsonUtils.getString("password_scheme", jsonDoc));
@@ -90,6 +94,22 @@ public class realm_UserModel extends RealmObject {
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
+    }
+
+    public String getPlanetCode() {
+        return planetCode;
+    }
+
+    public void setPlanetCode(String planetCode) {
+        this.planetCode = planetCode;
+    }
+
+    public String getParentCode() {
+        return parentCode;
+    }
+
+    public void setParentCode(String parentCode) {
+        this.parentCode = parentCode;
     }
 
     public String getUserImage() {
