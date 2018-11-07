@@ -120,7 +120,6 @@ public class UploadManager {
                     JsonObject d = dbClient.find(JsonObject.class, sharedPreferences.getString("userId", ""));
                     object.addProperty("_rev", d.get("_rev").getAsString());
                     Response r = dbClient.update(object);
-                    Utilities.log("Rev " + r.getRev());
                 } catch (Exception e) {
                     listener.onSuccess("Unable to update documents.");
                 }
@@ -142,14 +141,10 @@ public class UploadManager {
             public void execute(@NonNull Realm realm) {
                 final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
                         .isNull("_rev").equalTo("type", "login").findAll();
-                Utilities.log("Size " + activities.size());
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (realm_offlineActivities act : activities) {
                     Response r = dbClient.post(realm_offlineActivities.serializeLoginActivities(act));
-                    if (!TextUtils.isEmpty(r.getId())) {
-                        act.set_rev(r.getRev());
-                        act.set_id(r.getId());
-                    }
+                    act.changeRev(r);
                 }
             }
         }, new Realm.Transaction.OnSuccess() {

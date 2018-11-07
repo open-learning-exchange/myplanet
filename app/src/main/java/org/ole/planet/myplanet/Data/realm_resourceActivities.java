@@ -107,13 +107,6 @@ public class realm_resourceActivities extends RealmObject {
         this.user = user;
     }
 
-    public void setAndroidId(String androidId) {
-        this.androidId = androidId;
-    }
-
-    public String getAndroidId() {
-        return androidId;
-    }
 
     public static JsonObject serializeResourceActivities(realm_resourceActivities realm_resourceActivities) {
         JsonObject ob = new JsonObject();
@@ -127,15 +120,15 @@ public class realm_resourceActivities extends RealmObject {
         return ob;
     }
 
-    public static void insertResourceActivities(Realm mRealm, JsonObject act) {
-        realm_resourceActivities activities = mRealm.createObject(realm_resourceActivities.class, JsonUtils.getString("_id", act));
-        activities.set_rev(JsonUtils.getString("_rev", act));
-        activities.set_id(JsonUtils.getString("_id", act));
-        activities.setType(JsonUtils.getString("type", act));
-        activities.setUser(JsonUtils.getString("user", act));
-        activities.setTime(JsonUtils.getLong("time", act));
-        activities.setParentCode(JsonUtils.getString("parentCode", act));
-        activities.setCreatedOn(JsonUtils.getString("createdOn", act));
-        activities.setAndroidId(JsonUtils.getString("androidId", act));
-    }
+//    public static void insertResourceActivities(Realm mRealm, JsonObject act) {
+//        realm_resourceActivities activities = mRealm.createObject(realm_resourceActivities.class, JsonUtils.getString("_id", act));
+//        activities.set_rev(JsonUtils.getString("_rev", act));
+//        activities.set_id(JsonUtils.getString("_id", act));
+//        activities.setType(JsonUtils.getString("type", act));
+//        activities.setUser(JsonUtils.getString("user", act));
+//        activities.setTime(JsonUtils.getLong("time", act));
+//        activities.setParentCode(JsonUtils.getString("parentCode", act));
+//        activities.setCreatedOn(JsonUtils.getString("createdOn", act));
+//        activities.setAndroidId(JsonUtils.getString("androidId", act));
+//    }
 }

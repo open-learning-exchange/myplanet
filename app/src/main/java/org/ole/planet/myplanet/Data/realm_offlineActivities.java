@@ -1,9 +1,12 @@
 package org.ole.planet.myplanet.Data;
 
+import android.text.TextUtils;
+
 import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
+import org.lightcouch.Response;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -162,5 +165,12 @@ public class realm_offlineActivities extends RealmObject {
         activities.setUserName(JsonUtils.getString("user", act));
         activities.setLogoutTime(JsonUtils.getLong("logoutTime", act));
         activities.setAndroidId(JsonUtils.getString("androidId", act));
+    }
+
+    public void changeRev(Response r) {
+        if (!TextUtils.isEmpty(r.getId())) {
+            this.set_rev(r.getRev());
+            this.set_id(r.getId());
+        }
     }
 }
