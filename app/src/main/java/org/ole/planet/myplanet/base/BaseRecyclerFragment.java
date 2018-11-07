@@ -139,4 +139,5 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
             return mRealm.where(c).findAll();
         }
     }
+
 }

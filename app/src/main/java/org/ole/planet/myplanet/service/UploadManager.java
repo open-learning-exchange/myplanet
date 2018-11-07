@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_myTeams;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
+import org.ole.planet.myplanet.Data.realm_resourceActivities;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
@@ -140,7 +141,7 @@ public class UploadManager {
             @Override
             public void execute(@NonNull Realm realm) {
                 final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
-                        .isNull("_rev").findAll();
+                        .isNull("_rev").equalTo("type", "login").findAll();
                 Utilities.log("Size " + activities.size());
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (realm_offlineActivities act : activities) {
@@ -155,6 +156,26 @@ public class UploadManager {
             @Override
             public void onSuccess() {
                 listener.onSuccess("Sync with server completed successfully");
+            }
+        });
+    }
+
+    public void uploadResourceActivities(final SuccessListener listener) {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties("resource_activities", sharedPreferences);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(@NonNull Realm realm) {
+                final RealmResults<realm_resourceActivities> activities = realm.where(realm_resourceActivities.class)
+                        .isNull("_rev").findAll();
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                for (realm_resourceActivities act : activities) {
+                    Response r = dbClient.post(realm_resourceActivities.serializeResourceActivities(act));
+                    if (!TextUtils.isEmpty(r.getId())) {
+                        act.set_rev(r.getRev());
+                        act.set_id(r.getId());
+                    }
+                }
             }
         });
     }

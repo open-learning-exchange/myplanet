@@ -62,7 +62,7 @@ public abstract class BaseContainerFragment extends Fragment {
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     ListView lv;
     View convertView;
-   public UserProfileDbHandler profileDbHandler;
+    public UserProfileDbHandler profileDbHandler;
     private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 //    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
 
@@ -158,7 +158,12 @@ public abstract class BaseContainerFragment extends Fragment {
         }
         if (download.isCompleteAll()) {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
+            onDownloadComplete();
+
         }
+    }
+
+    public void onDownloadComplete() {
     }
 
     private void registerReceiver() {
@@ -188,7 +193,7 @@ public abstract class BaseContainerFragment extends Fragment {
     public void openResource(realm_myLibrary items) {
 
         if (items.getResourceOffline() != null && items.getResourceOffline()) {
-            profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
+            profileDbHandler.setResourceOpenCount(items);
             openFileType(items, "offline");
         } else if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
             openFileType(items, "online");

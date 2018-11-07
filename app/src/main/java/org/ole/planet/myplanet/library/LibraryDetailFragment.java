@@ -50,6 +50,11 @@ public class LibraryDetailFragment extends BaseContainerFragment {
     }
 
     @Override
+    public void onDownloadComplete() {
+        download.setText("Open Resource");
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
