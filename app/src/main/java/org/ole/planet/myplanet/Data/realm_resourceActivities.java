@@ -113,6 +113,7 @@ public class realm_resourceActivities extends RealmObject {
         ob.addProperty("user", realm_resourceActivities.getUser());
         ob.addProperty("resourceId", realm_resourceActivities.getResourceId());
         ob.addProperty("type", realm_resourceActivities.getType());
+        ob.addProperty("title", realm_resourceActivities.getTitle());
         ob.addProperty("time", realm_resourceActivities.getTime());
         ob.addProperty("createdOn", realm_resourceActivities.getCreatedOn());
         ob.addProperty("parentCode", realm_resourceActivities.getParentCode());
