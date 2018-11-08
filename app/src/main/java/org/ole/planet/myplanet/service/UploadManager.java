@@ -159,8 +159,6 @@ public class UploadManager {
     public void uploadResourceActivities(String type) {
         mRealm = dbService.getRealmInstance();
         final CouchDbProperties properties = dbService.getClouchDbProperties(type.equals("sync") ? "admin_activities" : "resource_activities", sharedPreferences);
-        Utilities.log("Type = " + type);
-
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
             public void execute(@NonNull Realm realm) {
@@ -170,7 +168,6 @@ public class UploadManager {
                 } else {
                     activities = realm.where(realm_resourceActivities.class).isNull("_rev").notEqualTo("type", "sync").findAll();
                 }
-                Utilities.log("Activities size " + activities.size());
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (realm_resourceActivities act : activities) {
                     Response r = dbClient.post(realm_resourceActivities.serializeResourceActivities(act));
