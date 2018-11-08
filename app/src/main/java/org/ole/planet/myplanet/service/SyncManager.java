@@ -19,10 +19,12 @@ import org.ole.planet.myplanet.Data.realm_meetups;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_myTeams;
+import org.ole.planet.myplanet.Data.realm_resourceActivities;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -47,11 +49,13 @@ public class SyncManager {
     private Document shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
+    private UserProfileDbHandler userProfileDbHandler;
 
     private SyncManager(Context context) {
         this.context = context;
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
+        userProfileDbHandler = new UserProfileDbHandler(context);
     }
 
     public static SyncManager getInstance() {
@@ -100,6 +104,7 @@ public class SyncManager {
                     resourceTransactionSync();
                     myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
+                    realm_resourceActivities.onSynced(mRealm, settings);
                 } catch (Exception err) {
                     err.printStackTrace();
                     handleException("Unauthorized , invalid name or password");
