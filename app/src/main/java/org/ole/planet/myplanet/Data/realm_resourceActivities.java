@@ -1,10 +1,16 @@
 package org.ole.planet.myplanet.Data;
 
+import android.content.SharedPreferences;
+
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.Date;
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
@@ -15,7 +21,6 @@ public class realm_resourceActivities extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id;
-
 
     private String createdOn;
 
@@ -121,15 +126,27 @@ public class realm_resourceActivities extends RealmObject {
         return ob;
     }
 
-//    public static void insertResourceActivities(Realm mRealm, JsonObject act) {
-//        realm_resourceActivities activities = mRealm.createObject(realm_resourceActivities.class, JsonUtils.getString("_id", act));
-//        activities.set_rev(JsonUtils.getString("_rev", act));
-//        activities.set_id(JsonUtils.getString("_id", act));
-//        activities.setType(JsonUtils.getString("type", act));
-//        activities.setUser(JsonUtils.getString("user", act));
-//        activities.setTime(JsonUtils.getLong("time", act));
-//        activities.setParentCode(JsonUtils.getString("parentCode", act));
-//        activities.setCreatedOn(JsonUtils.getString("createdOn", act));
-//        activities.setAndroidId(JsonUtils.getString("androidId", act));
-//    }
+
+    public static void onSynced(Realm mRealm, SharedPreferences settings) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        realm_UserModel user = mRealm.where(realm_UserModel.class).equalTo("id", settings.getString("userId", ""))
+                .findFirst();
+        if (user == null) {
+            Utilities.log("User is null");
+            return;
+        }
+        realm_resourceActivities activities = mRealm.createObject(realm_resourceActivities.class, UUID.randomUUID().toString());
+        activities.setUser(user.getName());
+        activities.set_rev(null);
+        activities.set_id(null);
+        activities.setParentCode(user.getParentCode());
+        activities.setCreatedOn(user.getPlanetCode());
+        activities.setType("sync");
+        activities.setTime(new Date().getTime());
+        Utilities.log("Saved Sync Activity");
+
+        mRealm.commitTransaction();
+    }
+
 }

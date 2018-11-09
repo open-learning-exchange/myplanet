@@ -33,6 +33,7 @@ import java.util.List;
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import okhttp3.ResponseBody;
 
@@ -155,14 +156,18 @@ public class UploadManager {
         });
     }
 
-    public void uploadResourceActivities(final SuccessListener listener) {
+    public void uploadResourceActivities(String type) {
         mRealm = dbService.getRealmInstance();
-        final CouchDbProperties properties = dbService.getClouchDbProperties("resource_activities", sharedPreferences);
+        final CouchDbProperties properties = dbService.getClouchDbProperties(type.equals("sync") ? "admin_activities" : "resource_activities", sharedPreferences);
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
             public void execute(@NonNull Realm realm) {
-                final RealmResults<realm_resourceActivities> activities = realm.where(realm_resourceActivities.class)
-                        .isNull("_rev").findAll();
+                RealmResults<realm_resourceActivities> activities;
+                if (type.equals("sync")) {
+                    activities = realm.where(realm_resourceActivities.class).isNull("_rev").equalTo("type", "sync").findAll();
+                } else {
+                    activities = realm.where(realm_resourceActivities.class).isNull("_rev").notEqualTo("type", "sync").findAll();
+                }
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (realm_resourceActivities act : activities) {
                     Response r = dbClient.post(realm_resourceActivities.serializeResourceActivities(act));

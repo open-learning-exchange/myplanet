@@ -93,7 +93,8 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
         UploadManager.getInstance().uploadToshelf(this);
-        UploadManager.getInstance().uploadResourceActivities(this);
+        UploadManager.getInstance().uploadResourceActivities("");
+        UploadManager.getInstance().uploadResourceActivities("sync");
         Toast.makeText(this, "Syncing data, please wait...", Toast.LENGTH_SHORT).show();
     }
 

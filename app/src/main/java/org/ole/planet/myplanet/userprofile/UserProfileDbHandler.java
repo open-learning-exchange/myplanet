@@ -54,6 +54,7 @@ public class UserProfileDbHandler {
         mRealm.commitTransaction();
     }
 
+
     public void onLogout() {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
@@ -135,7 +136,7 @@ public class UserProfileDbHandler {
         String maxOpenedResource = "";
         for (realm_resourceActivities realm_resourceActivities : result) {
             Long count = mRealm.where(realm_resourceActivities.class)
-                    .equalTo("user",fullName)
+                    .equalTo("user", fullName)
                     .equalTo("type", KEY_RESOURCE_OPEN)
                     .equalTo("resourceId", realm_resourceActivities.getResourceId()).count();
             if (count > maxCount) {
@@ -153,4 +154,6 @@ public class UserProfileDbHandler {
         getUserModel().setShowTopbar(o);
         mRealm.commitTransaction();
     }
+
+
 }
