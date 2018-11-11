@@ -138,11 +138,6 @@ public class realm_rating extends RealmObject {
         this.userId = userId;
     }
 
-
-    public boolean isUpdated() {
-        return isUpdated;
-    }
-
     public void setUpdated(boolean updated) {
         isUpdated = updated;
     }

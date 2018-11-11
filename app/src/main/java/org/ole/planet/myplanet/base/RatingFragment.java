@@ -44,6 +44,17 @@ public class RatingFragment extends DialogFragment {
     EditText etComment;
     SharedPreferences settings;
 
+
+    public static RatingFragment newInstance(String type, String id, String title) {
+        RatingFragment fragment = new RatingFragment();
+        Bundle b = new Bundle();
+        b.putString("id", id);
+        b.putString("title", title);
+        b.putString("type", type);
+        fragment.setArguments(b);
+        return fragment;
+    }
+
     public RatingFragment() {
     }
 
@@ -101,15 +112,7 @@ public class RatingFragment extends DialogFragment {
                     ratingObject = realm.createObject(realm_rating.class, UUID.randomUUID().toString());
                 model = realm.where(realm_UserModel.class).equalTo("id", settings.getString("userId", ""))
                         .findFirst();
-                ratingObject.setUpdated(true);
-                ratingObject.setComment(comment);
-                ratingObject.setRate((int) rating);
-                ratingObject.setTime(new Date().getTime());
-                ratingObject.setUserId(model.getId());
-                ratingObject.setUser(new Gson().toJson(model.serialize()));
-                ratingObject.setType(type);
-                ratingObject.setItem(id);
-                ratingObject.setTitle(title);
+                setData(model, ratingObject, comment, rating);
             }
         }, new Realm.Transaction.OnSuccess() {
             @Override
@@ -118,6 +121,17 @@ public class RatingFragment extends DialogFragment {
                 dismiss();
             }
         });
+    }
 
+    private void setData(realm_UserModel model, realm_rating ratingObject, String comment, float rating) {
+        ratingObject.setUpdated(true);
+        ratingObject.setComment(comment);
+        ratingObject.setRate((int) rating);
+        ratingObject.setTime(new Date().getTime());
+        ratingObject.setUserId(model.getId());
+        ratingObject.setUser(new Gson().toJson(model.serialize()));
+        ratingObject.setType(type);
+        ratingObject.setItem(id);
+        ratingObject.setTitle(title);
     }
 }

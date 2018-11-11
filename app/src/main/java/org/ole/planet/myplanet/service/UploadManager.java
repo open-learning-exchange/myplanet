@@ -179,11 +179,6 @@ public class UploadManager {
                     }
                 }
             }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                listener.onSuccess("Sync with server completed successfully");
-            }
         });
     }
 

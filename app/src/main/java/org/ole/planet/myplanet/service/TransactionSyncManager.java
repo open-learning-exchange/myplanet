@@ -42,8 +42,7 @@ public class TransactionSyncManager {
             if (type.equals("course")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_myCourses.insertMyCourses(jsonDoc, mRealm);
-            }
-            else if (type.equals("exams")) {
+            } else if (type.equals("exams")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
             } else if (type.equals("users")) {
@@ -51,7 +50,7 @@ public class TransactionSyncManager {
             } else if (type.equals("login")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_offlineActivities.insertOfflineActivities(mRealm, jsonDoc);
-            }else if (type.equals("rating")){
+            } else if (type.equals("rating")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_rating.insertRatings(mRealm, jsonDoc);
             }

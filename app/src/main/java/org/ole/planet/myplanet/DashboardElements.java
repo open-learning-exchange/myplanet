@@ -91,14 +91,7 @@ public abstract class DashboardElements extends AppCompatActivity {
     }
 
     public void showRatingDialog(String type, String resource_id, String title) {
-        RatingFragment fragment = new RatingFragment();
-        Bundle b = new Bundle();
-        b.putString("id", resource_id);
-        b.putString("title", title);
-        b.putString("type", type);
-        fragment.setArguments(b);
-        fragment.show(getSupportFragmentManager(), "");
+        RatingFragment f = RatingFragment.newInstance(type, resource_id, title);
+        f.show(getSupportFragmentManager(), "");
     }
-
-
 }

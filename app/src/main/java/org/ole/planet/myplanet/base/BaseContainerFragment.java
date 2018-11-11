@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.media.Rating;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -55,17 +56,7 @@ import io.realm.RealmResults;
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
-public abstract class BaseContainerFragment extends Fragment {
-    public static SharedPreferences settings;
-    static ProgressDialog prgDialog;
-    public OnHomeItemClickListener homeItemClickListener;
-    ArrayList<Integer> selectedItemsList = new ArrayList<>();
-    ListView lv;
-    View convertView;
-    public UserProfileDbHandler profileDbHandler;
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
-//    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-
+public abstract class BaseContainerFragment extends BaseResourceFragment {
 
     @Nullable
     @Override
@@ -73,104 +64,6 @@ public abstract class BaseContainerFragment extends Fragment {
         profileDbHandler = new UserProfileDbHandler(getActivity());
         AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
         return super.onCreateView(inflater, container, savedInstanceState);
-    }
-
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed()) {
-                    setProgress(download);
-                } else {
-                    DialogUtils.showError(prgDialog, download.getMessage());
-                }
-            }
-        }
-    };
-
-    public void createListView(RealmResults<realm_myLibrary> db_myLibrary) {
-        lv = (ListView) convertView.findViewById(R.id.alertDialog_listView);
-        ArrayList<String> names = new ArrayList<>();
-        for (int i = 0; i < db_myLibrary.size(); i++) {
-            names.add(db_myLibrary.get(i).getTitle().toString());
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
-        lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        lv.setAdapter(adapter);
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String itemSelected = ((TextView) view).getText().toString();
-                if (selectedItemsList.contains(itemSelected)) {
-                    selectedItemsList.remove(itemSelected);
-                } else {
-                    selectedItemsList.add(i);
-                }
-                Toast.makeText(getContext(), "Clicked on  : " + itemSelected + "Number " + i, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    protected void showDownloadDialog(final RealmResults<realm_myLibrary> db_myLibrary) {
-
-        if (!db_myLibrary.isEmpty()) {
-            LayoutInflater inflater = getLayoutInflater();
-            convertView = (View) inflater.inflate(R.layout.my_library_alertdialog, null);
-            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
-            alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
-            createListView(db_myLibrary);
-            alertDialogBuilder.setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
-                }
-            }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings));
-                }
-            }).setNegativeButton(R.string.txt_cancel, null).show();
-        }
-    }
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        prgDialog = DialogUtils.getProgressDialog(getActivity());
-        settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
-        registerReceiver();
-    }
-
-
-    public void startDownload(ArrayList urls) {
-        if (!urls.isEmpty()) {
-            prgDialog.show();
-            Utilities.openDownloadService(getActivity(), urls);
-        }
-    }
-
-
-    public void setProgress(Download download) {
-        prgDialog.setProgress(download.getProgress());
-        if (!TextUtils.isEmpty(download.getFileName())) {
-            prgDialog.setTitle(download.getFileName());
-        }
-        if (download.isCompleteAll()) {
-            DialogUtils.showError(prgDialog, "All files downloaded successfully");
-            onDownloadComplete();
-
-        }
-    }
-
-    public void onDownloadComplete() {
-    }
-
-    private void registerReceiver() {
-        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(MESSAGE_PROGRESS);
-        bManager.registerReceiver(broadcastReceiver, intentFilter);
     }
 
 
@@ -188,7 +81,6 @@ public abstract class BaseContainerFragment extends Fragment {
         startActivity(fileOpenIntent);
     }
 
-//    abstract  public void playVideo(String videoType, final realm_myLibrary items);
 
     public void openResource(realm_myLibrary items) {
 
@@ -245,9 +137,7 @@ public abstract class BaseContainerFragment extends Fragment {
 
     }
 
-
     public void openFileType(final realm_myLibrary items, String videotype) {
-        Utilities.log("Media type " + items.getMediaType() + " " + videotype);
         if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
             playVideo(videotype, items);
         } else {
@@ -276,14 +166,9 @@ public abstract class BaseContainerFragment extends Fragment {
         startActivity(intent);
     }
 
-    public void showRatingDialog(String type, String id, String title){
-        RatingFragment fragment = new RatingFragment();
-        Bundle b = new Bundle();
-        b.putString("id", id);
-        b.putString("title", title);
-        b.putString("type", type);
-        fragment.setArguments(b);
-        fragment.show(getChildFragmentManager(), "");
+    public void showRatingDialog(String type, String id, String title) {
+        RatingFragment f = RatingFragment.newInstance(type, id, title);
+        f.show(getChildFragmentManager(), "");
     }
 
 
