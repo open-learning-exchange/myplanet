@@ -33,6 +33,7 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.MyCourseFragment;
 import org.ole.planet.myplanet.feedback.FeedbackFragment;
@@ -206,6 +207,7 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         f.setArguments(b);
         openCallFragment(f);
     }
+
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {

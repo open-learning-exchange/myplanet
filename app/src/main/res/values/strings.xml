@@ -90,6 +90,8 @@
     <string name="license">License :</string>
     <string name="type">Type :</string>
     <string name="resource">Resource :</string>
+    <string name="your_rating">Your Rating</string>
+    <string name="your_comment">Leave your comment</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

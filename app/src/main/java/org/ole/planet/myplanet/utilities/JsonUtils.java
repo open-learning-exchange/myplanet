@@ -42,6 +42,13 @@ public class JsonUtils {
         }
         return new JsonArray();
     }
+    public static JsonObject getJsonObject(String fieldName, JsonObject jsonObject) {
+        if (jsonObject.has(fieldName)) {
+            JsonElement el = jsonObject.get(fieldName);
+            return el instanceof JsonNull ? new JsonObject() : el.getAsJsonObject();
+        }
+        return new JsonObject();
+    }
 
     public static long getLong(String fieldName, JsonObject jsonObject) {
         if (jsonObject.has(fieldName)) {

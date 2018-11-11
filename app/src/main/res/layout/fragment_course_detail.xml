@@ -35,6 +35,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:id="@+id/ll_rating"
                     android:gravity="center">
 
                     <LinearLayout
@@ -59,7 +60,7 @@
                             style="@style/Base.Widget.AppCompat.RatingBar.Small"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:isIndicator="false" />
+                            android:isIndicator="true" />
 
 
                     </LinearLayout>

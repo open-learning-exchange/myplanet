@@ -276,5 +276,15 @@ public abstract class BaseContainerFragment extends Fragment {
         startActivity(intent);
     }
 
+    public void showRatingDialog(String type, String id, String title){
+        RatingFragment fragment = new RatingFragment();
+        Bundle b = new Bundle();
+        b.putString("id", id);
+        b.putString("title", title);
+        b.putString("type", type);
+        fragment.setArguments(b);
+        fragment.show(getChildFragmentManager(), "");
+    }
+
 
 }

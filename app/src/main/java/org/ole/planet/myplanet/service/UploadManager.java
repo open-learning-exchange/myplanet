@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_myTeams;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
+import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_resourceActivities;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.MainApplication;
@@ -146,6 +147,36 @@ public class UploadManager {
                 for (realm_offlineActivities act : activities) {
                     Response r = dbClient.post(realm_offlineActivities.serializeLoginActivities(act));
                     act.changeRev(r);
+                }
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess("Sync with server completed successfully");
+            }
+        });
+    }
+
+    public void uploadRating(final SuccessListener listener) {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties("ratings", sharedPreferences);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(@NonNull Realm realm) {
+                final RealmResults<realm_rating> activities = realm.where(realm_rating.class).equalTo("isUpdated", true).equalTo("userId", sharedPreferences.getString("userId", "")).findAll();
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                for (realm_rating act : activities) {
+                    Response r;
+                    if (TextUtils.isEmpty(act.get_id())) {
+                        r = dbClient.post(realm_rating.serializeRating(act));
+                    } else {
+                        r = dbClient.update(realm_rating.serializeRating(act));
+                    }
+                    if (r.getId() != null) {
+                        act.set_id(r.getId());
+                        act.set_rev(r.getRev());
+                        act.setUpdated(false);
+                    }
                 }
             }
         }, new Realm.Transaction.OnSuccess() {

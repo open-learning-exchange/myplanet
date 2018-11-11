@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
@@ -84,6 +85,12 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     openLibrary(libraryList.get(position));
                 }
             });
+            ((ViewHolderLibrary) holder).llRating.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle());
+                }
+            });
         }
     }
 
@@ -122,7 +129,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         TextView title, desc, rating, times_rated;
         CheckBox checkBox;
         FlexboxLayout flexboxDrawable;
-
+        LinearLayout llRating;
         public ViewHolderLibrary(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);
@@ -130,6 +137,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             rating = itemView.findViewById(R.id.rating);
             times_rated = itemView.findViewById(R.id.times_rated);
             checkBox = itemView.findViewById(R.id.checkbox);
+            llRating = itemView.findViewById(R.id.ll_rating);
             checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
