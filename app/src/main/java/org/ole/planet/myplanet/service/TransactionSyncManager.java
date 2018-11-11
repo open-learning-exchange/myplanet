@@ -22,6 +22,7 @@ import java.util.List;
 import io.realm.Realm;
 
 public class TransactionSyncManager {
+
     public static void syncDb(final Realm mRealm, final CouchDbProperties properties, final String type) {
         mRealm.executeTransaction(new Realm.Transaction() {
             @Override
@@ -30,15 +31,18 @@ public class TransactionSyncManager {
                 final List<Document> allDocs = dbClient.view("_all_docs").includeDocs(true).query(Document.class);
                 for (int i = 0; i < allDocs.size(); i++) {
                     Document doc = allDocs.get(i);
-                    processDoc(dbClient, doc, mRealm, type);
+                    try {
+                        processDoc(dbClient, doc, mRealm, type);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
     }
 
-    private static void processDoc(CouchDbClientAndroid dbClient, Document doc, Realm mRealm, String type) {
+    private static void processDoc(CouchDbClientAndroid dbClient, Document doc, Realm mRealm, String type) throws Exception {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        try {
             if (type.equals("course")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_myCourses.insertMyCourses(jsonDoc, mRealm);
@@ -54,16 +58,12 @@ public class TransactionSyncManager {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_rating.insertRatings(mRealm, jsonDoc);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     private static void processUserDoc(Document doc, CouchDbClientAndroid dbClient, Realm mRealm, SharedPreferences settings) {
         if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
             JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
             realm_UserModel.populateUsersTable(jsonDoc, mRealm, settings);
-            Log.e("Realm", " STRING " + jsonDoc.get("_id"));
         }
     }
 
