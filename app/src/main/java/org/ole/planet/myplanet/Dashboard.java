@@ -261,7 +261,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
         }else if (f instanceof MyLibraryFragment){
             navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
-
         }
 
     }
