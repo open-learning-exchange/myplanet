@@ -21,6 +21,7 @@ public class realm_submissions extends RealmObject {
     private String type;
     private String userId;
     private String user;
+    private String localUserImageUri;
     private long date;
     private RealmList<realm_answer> answers;
     private String grade;
@@ -34,6 +35,7 @@ public class realm_submissions extends RealmObject {
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
+        object.addProperty("localUserImageUri", sub.getLocalUserImageUri());
         object.addProperty("status", sub.getStatus());
         object.add("answers", realm_answer.serializeRealmAnswer(sub.getAnswers()));
         object.add("parent", realm_stepExam.serializeExam(mRealm, exam));
@@ -45,6 +47,14 @@ public class realm_submissions extends RealmObject {
         }
         return object;
 
+    }
+
+    public String getLocalUserImageUri() {
+        return localUserImageUri;
+    }
+
+    public void setLocalUserImageUri(String localUserImageUri) {
+        this.localUserImageUri = localUserImageUri;
     }
 
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {

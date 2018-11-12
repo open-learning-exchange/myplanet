@@ -49,7 +49,8 @@ import java.util.ArrayList;
 
 public class Dashboard extends DashboardElements implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
-    private static final int PERMISSION_REQUEST_CODE = 111;
+    private static final int PERMISSION_REQUEST_CODE_FILE = 111;
+    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
     AccountHeader headerResult;
     private Drawer result = null;
     private Toolbar mTopToolbar;
@@ -76,43 +77,34 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
-        }
+        requestPermission();
         openCallFragment(new DashboardFragment());
     }
 
-    public void requestPermission(String strPermission, int perCode) {
-        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
+    public void requestPermission() {
+        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE_FILE);
+        }
+        if (!checkPermission(Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_CAMERA);
+        }
     }
 
     public boolean checkPermission(String strPermission) {
         int result = ContextCompat.checkSelfPermission(this, strPermission);
-        if (result == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        } else {
-            return false;
-        }
+        return result == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case 111:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
-                } else {
-                    Utilities.toast(this, "Download Function will not work, please grant the permission.");
-                    requestPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, PERMISSION_REQUEST_CODE);
-                }
-                break;
-            default:
-                break;
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
+        } else {
+            Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
+            // requestPermission();
         }
     }
 
@@ -253,15 +245,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     public void onBackPressed() {
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
-        }
-//        else if (!isDashBoard) {
-//            openCallFragment(new DashboardFragment());
-//        }
-        else {
+        } else {
             super.onBackPressed();
         }
     }
-
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
@@ -274,10 +261,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
         }
-        /* TODO: remove
-        else {
-            openCallFragment(new MyMeetUpsFragment());
-        }*/
         return true;
     }
 }
