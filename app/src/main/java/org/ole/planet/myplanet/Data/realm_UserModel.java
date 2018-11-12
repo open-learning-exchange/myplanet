@@ -6,9 +6,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import io.realm.Realm;
@@ -28,6 +30,8 @@ public class realm_UserModel extends RealmObject {
     private String lastName;
     private String middleName;
     private String email;
+    private String planetCode;
+    private String parentCode;
     private String phoneNumber;
     private String password_scheme;
     private String iterations;
@@ -58,10 +62,10 @@ public class realm_UserModel extends RealmObject {
     public static void populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
-                    .equalTo("id", jsonDoc.get("_id").getAsString())
+                    .equalTo("id", JsonUtils.getString("_id", jsonDoc))
                     .findAll();
             if (db_users.isEmpty()) {
-                realm_UserModel user = mRealm.createObject(realm_UserModel.class, jsonDoc.get("_id").getAsString());
+                realm_UserModel user = mRealm.createObject(realm_UserModel.class, JsonUtils.getString("_id", jsonDoc));
                 insertIntoUsers(jsonDoc, user, settings);
             }
         } catch (Exception err) {
@@ -70,24 +74,42 @@ public class realm_UserModel extends RealmObject {
     }
 
     private static void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user, SharedPreferences settings) {
-        user.set_rev(jsonDoc.get("_rev").getAsString());
-        user.setName(jsonDoc.get("name").getAsString());
+        user.set_rev(JsonUtils.getString("_rev", jsonDoc));
+        user.setName(JsonUtils.getString("name", jsonDoc));
         user.setRoles("");
-        user.setUserAdmin(jsonDoc.get("isUserAdmin").getAsBoolean());
-        user.setJoinDate(jsonDoc.get("joinDate").getAsInt());
-        user.setFirstName(jsonDoc.get("firstName").getAsString());
-        user.setLastName(jsonDoc.get("lastName").getAsString());
-        user.setMiddleName(jsonDoc.get("middleName").getAsString());
-        user.setEmail(jsonDoc.get("email").getAsString());
-        user.setPhoneNumber(jsonDoc.get("phoneNumber").getAsString());
-        user.setPassword_scheme(jsonDoc.get("password_scheme").getAsString());
-        user.setIterations(jsonDoc.get("iterations").getAsString());
-        user.setDerived_key(jsonDoc.get("derived_key").getAsString());
-        user.setSalt(jsonDoc.get("salt").getAsString());
-        user.setDob(jsonDoc.get("birthDate") == null ? "" : jsonDoc.get("birthDate").getAsString());
-        user.setCommunityName(jsonDoc.get("communityName") == null ? "" : jsonDoc.get("communityName").getAsString());
+        user.setUserAdmin(JsonUtils.getBoolean("isUserAdmin", jsonDoc));
+        user.setJoinDate(JsonUtils.getInt("joinDate", jsonDoc));
+        user.setFirstName(JsonUtils.getString("firstName", jsonDoc));
+        user.setLastName(JsonUtils.getString("lastName", jsonDoc));
+        user.setMiddleName(JsonUtils.getString("middleName", jsonDoc));
+        user.setPlanetCode(JsonUtils.getString("planetCode", jsonDoc));
+        user.setParentCode(JsonUtils.getString("parentCode", jsonDoc));
+        user.setEmail(JsonUtils.getString("email", jsonDoc));
+        user.setPhoneNumber(JsonUtils.getString("phoneNumber", jsonDoc));
+        user.setPassword_scheme(JsonUtils.getString("password_scheme", jsonDoc));
+        user.setIterations(JsonUtils.getString("iterations", jsonDoc));
+        user.setDerived_key(JsonUtils.getString("derived_key", jsonDoc));
+        user.setSalt(JsonUtils.getString("salt", jsonDoc));
+        user.setDob(JsonUtils.getString("birthDate", jsonDoc));
+        user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
+    }
+
+    public String getPlanetCode() {
+        return planetCode;
+    }
+
+    public void setPlanetCode(String planetCode) {
+        this.planetCode = planetCode;
+    }
+
+    public String getParentCode() {
+        return parentCode;
+    }
+
+    public void setParentCode(String parentCode) {
+        this.parentCode = parentCode;
     }
 
     public String getUserImage() {

@@ -14,6 +14,7 @@ import com.google.gson.JsonParser;
 import org.json.JSONStringer;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
@@ -35,7 +37,7 @@ public class realm_myLibrary extends RealmObject {
     private String userId;
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
-    private Boolean resourceOffline;
+    private Boolean resourceOffline = false;
     private String resourceId;
     private String _rev;
     private boolean need_optimization;
@@ -87,6 +89,7 @@ public class realm_myLibrary extends RealmObject {
     }
 
     public static void insertMyLibrary(String userId, JsonObject doc, Realm mRealm) {
+        Utilities.log("Insert shelf " + userId);
         insertMyLibrary(userId, "", "", doc, mRealm);
     }
 
@@ -108,28 +111,26 @@ public class realm_myLibrary extends RealmObject {
 
     public static void insertMyLibrary(String userId, String stepId, String courseId, JsonObject doc, Realm mRealm) {
 
-        String resourceId = doc.get("_id").getAsString();
+        String resourceId = JsonUtils.getString("_id", doc);
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         realm_myLibrary resource = mRealm.where(realm_myLibrary.class).equalTo("id", resourceId).findFirst();
-
         if (resource == null) {
             resource = mRealm.createObject(realm_myLibrary.class, resourceId);
         }
-        if (!TextUtils.isEmpty(userId)) {
-            resource.setUserId(userId);
-        }
+//        if (!TextUtils.isEmpty(userId) ) {
+        resource.setUserId(userId);
+//        }
         if (!TextUtils.isEmpty(stepId)) {
             resource.setStepId(stepId);
         }
         if (!TextUtils.isEmpty(courseId)) {
             resource.setCourseId(courseId);
         }
-        resource.set_rev(doc.get("_rev").getAsString());
+        resource.set_rev(JsonUtils.getString("_rev", doc));
 
         resource.setResource_id(resourceId);
-        resource.setTitle(doc.get("title").getAsString());
-        ///resource.setDescription(doc.get("description").getAsString());
-        resource.setDescription(((doc.get("description") == null) ? "N/A" : doc.get("description").getAsString()));
+        resource.setTitle(JsonUtils.getString("title", doc));
+        resource.setDescription(JsonUtils.getString("description", doc));
         if (doc.has("_attachments")) {
             JsonObject attachments = doc.get("_attachments").getAsJsonObject();
             JsonParser parser = new JsonParser();
@@ -140,41 +141,30 @@ public class realm_myLibrary extends RealmObject {
                 if (entry.getKey().indexOf("/") < 0) {
                     resource.setResourceRemoteAddress(settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
                     resource.setResourceLocalAddress(entry.getKey());
-                    resource.setResourceOffline(false);
+                    resource.setResourceOffline(Utilities.checkFileExist(resource.getResourceRemoteAddress()));
                 }
             }
         }
-        resource.setFilename(doc.has("filename") ? doc.get("filename").getAsString() : "");
-        resource.setAverageRating(doc.has("averageRating") ? doc.get("averageRating").getAsString() : "");
-        if (doc.has("uploadDate"))
-            resource.setUploadDate(doc.get("uploadDate").getAsString());
-        resource.setYear(doc.has("year") ? doc.get("year").getAsString() : "");
-        resource.setAddedBy(doc.has("addedBy") ? doc.get("addedBy").getAsString() : "");
-        resource.setPublisher(doc.has("Publisher") ? doc.get("Publisher").getAsString() : "");
-        resource.setLinkToLicense(doc.has("linkToLicense") ? doc.get("linkToLicense").getAsString() : "");
-        resource.setOpenWith(doc.has("openWith") ? doc.get("openWith").getAsString() : "");
-        resource.setArticleDate(doc.has("articleDate") ? doc.get("articleDate").getAsString() : "");
-        resource.setKind(doc.has("kind") ? doc.get("kind").getAsString() : "");
-        resource.setLanguage(doc.has("language") ? doc.get("language").getAsString() : "");
-        resource.setAuthor(doc.has("author") ? doc.get("author").getAsString() : "");
-        resource.setMediaType(doc.has("mediaType") ? doc.get("mediaType").getAsString() : "");
-        resource.setTimesRated(doc.has("timesRated") ? doc.get("timesRated").getAsInt() : 0);
-        resource.setMedium(!doc.has("medium") ? "" : doc.get("medium").getAsString());
-        if (doc.has("resourceFor") && doc.get("resourceFor").isJsonArray()) {
-            resource.setResourceFor(doc.get("resourceFor").getAsJsonArray(), resource);
-        }
-        if (doc.has("subject") && doc.get("subject").isJsonArray()) {
-            resource.setSubject(doc.get("subject").getAsJsonArray(), resource);
-        }
-        if (doc.has("level") && doc.get("level").isJsonArray()) {
-            resource.setLevel(doc.get("level").getAsJsonArray(), resource);
-        }
-        if (doc.has("tags") && doc.get("tags").isJsonArray()) {
-            resource.setTag(doc.get("tags").getAsJsonArray(), resource);
-        }
-        if (doc.has("languages") && doc.get("languages").isJsonArray()) {
-            resource.setLanguages(doc.get("languages").getAsJsonArray(), resource);
-        }
+        resource.setFilename(JsonUtils.getString("filename", doc));
+        resource.setAverageRating(JsonUtils.getString("averageRating", doc));
+        resource.setUploadDate(JsonUtils.getString("uploadDate", doc));
+        resource.setYear(JsonUtils.getString("year", doc));
+        resource.setAddedBy(JsonUtils.getString("addedBy", doc));
+        resource.setPublisher(JsonUtils.getString("Publisher", doc));
+        resource.setLinkToLicense(JsonUtils.getString("linkToLicense", doc));
+        resource.setOpenWith(JsonUtils.getString("openWith", doc));
+        resource.setArticleDate(JsonUtils.getString("articleDate", doc));
+        resource.setKind(JsonUtils.getString("kind", doc));
+        resource.setLanguage(JsonUtils.getString("language", doc));
+        resource.setAuthor(JsonUtils.getString("author", doc));
+        resource.setMediaType(JsonUtils.getString("mediaType", doc));
+        resource.setTimesRated(JsonUtils.getInt("timesRated", doc));
+        resource.setMedium(JsonUtils.getString("medium", doc));
+        resource.setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), resource);
+        resource.setSubject(JsonUtils.getJsonArray("subject", doc), resource);
+        resource.setLevel(JsonUtils.getJsonArray("level", doc), resource);
+        resource.setTag(JsonUtils.getJsonArray("tags", doc), resource);
+        resource.setLanguages(JsonUtils.getJsonArray("languages", doc), resource);
     }
 
 
@@ -280,6 +270,15 @@ public class realm_myLibrary extends RealmObject {
         return subject;
     }
 
+
+    public String getSubjectsAsString() {
+        String str = "";
+        for (String s : subject) {
+            str += s + ", ";
+        }
+        return str.substring(0, str.length() - 1);
+    }
+
     public void setSubject(RealmList<String> subject) {
         this.subject = subject;
     }
@@ -295,15 +294,25 @@ public class realm_myLibrary extends RealmObject {
     public RealmList<String> getTag() {
         return tag;
     }
+//
+//    public String getTagAsString() {
+//        StringBuilder s = new StringBuilder();
+//        String[] tags = getTag().toArray(new String[getTag().size()]);
+//        Arrays.sort(tags);
+//        for (String tag : tags) {
+//            s.append(tag).append(", ");
+//        }
+//        return s.toString();
+//    }
 
-    public String getTagAsString() {
+    public static String listToString(RealmList<String> list) {
         StringBuilder s = new StringBuilder();
-        for (String tag : getTag()) {
+        for (String tag : list) {
             s.append(tag).append(", ");
         }
         return s.toString();
-    }
 
+    }
 
     public String getCourseId() {
         return courseId;
@@ -505,5 +514,17 @@ public class realm_myLibrary extends RealmObject {
         for (int i = 0; i < allDocs.size(); i++) {
             realm_myLibrary.insertResources(allDocs.get(i), mRealm);
         }
+    }
+
+    public static JsonArray getMyLibIds(Realm realm, SharedPreferences sharedPreferences) {
+        RealmResults<realm_myLibrary> myLibraries = realm.where(realm_myLibrary.class).isNotEmpty("userId")
+                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+
+        JsonArray ids = new JsonArray();
+        for (realm_myLibrary lib : myLibraries
+                ) {
+            ids.add(lib.getId());
+        }
+        return ids;
     }
 }

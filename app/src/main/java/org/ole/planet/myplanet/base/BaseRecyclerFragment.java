@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,11 +12,14 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -45,7 +49,6 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public RecyclerView recyclerView;
     TextView tvMessage;
     List<LI> list;
-
 
     public BaseRecyclerFragment() {
     }
@@ -98,8 +101,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         if (s.isEmpty()) {
             return getList(c);
         }
-        return mRealm.where(c).isEmpty("userId").or()
-                .notEqualTo("userId", model.getId(), Case.INSENSITIVE).contains(c == realm_myLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        return mRealm.where(c).contains(c == realm_myLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
     }
 
     public List<realm_myLibrary> filterByTag(String[] tags) {
@@ -107,10 +109,10 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         if (tags.length == 0) {
             return list;
         }
+        Arrays.sort(tags);
         RealmList<realm_myLibrary> libraries = new RealmList<>();
         for (realm_myLibrary library : list) {
-            String tagAsString = library.getTagAsString();
-            if (tagAsString.toLowerCase().contains(getTagsAsString(tags).toLowerCase())) {
+            if (filter(tags, library)) {
                 libraries.add(library);
             }
         }
@@ -118,20 +120,24 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
 
     }
 
-    public String getTagsAsString(String[] tags) {
-        StringBuilder s = new StringBuilder();
-        for (String tag : tags) {
-            s.append(tag).append(", ");
+    private boolean filter(String[] tags, realm_myLibrary library) {
+        boolean contains = true;
+        for (String s : tags) {
+            if (!library.getTag().contains(s)) {
+                contains = false;
+                break;
+            }
         }
-        return s.toString();
+        return contains;
     }
+
 
     public List<LI> getList(Class c) {
         if (c == realm_stepExam.class) {
             return mRealm.where(c).equalTo("type", "surveys").findAll();
         } else {
-            return mRealm.where(c).isEmpty("userId").or()
-                    .notEqualTo("userId", model.getId(), Case.INSENSITIVE).findAll();
+            return mRealm.where(c).findAll();
         }
     }
+
 }

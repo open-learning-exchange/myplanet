@@ -7,24 +7,32 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.ole.planet.myplanet.AuthSessionUpdater;
 import org.ole.planet.myplanet.CSVViewerActivity;
+import org.ole.planet.myplanet.DashboardFragment;
 import org.ole.planet.myplanet.Data.Download;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.DownloadFiles;
+import org.ole.planet.myplanet.ExoPlayerVideo;
 import org.ole.planet.myplanet.ImageViewerActivity;
 import org.ole.planet.myplanet.MarkdownViewerActivity;
 import org.ole.planet.myplanet.PDFReaderActivity;
@@ -32,10 +40,15 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.TextFileViewerActivity;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import io.realm.RealmResults;
 
@@ -49,6 +62,19 @@ public abstract class BaseContainerFragment extends Fragment {
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     ListView lv;
     View convertView;
+    public UserProfileDbHandler profileDbHandler;
+    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
+//    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
+
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        profileDbHandler = new UserProfileDbHandler(getActivity());
+        AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
+
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -132,7 +158,12 @@ public abstract class BaseContainerFragment extends Fragment {
         }
         if (download.isCompleteAll()) {
             DialogUtils.showError(prgDialog, "All files downloaded successfully");
+            onDownloadComplete();
+
         }
+    }
+
+    public void onDownloadComplete() {
     }
 
     private void registerReceiver() {
@@ -157,7 +188,22 @@ public abstract class BaseContainerFragment extends Fragment {
         startActivity(fileOpenIntent);
     }
 
-    abstract  public void playVideo(String videoType, final realm_myLibrary items);
+//    abstract  public void playVideo(String videoType, final realm_myLibrary items);
+
+    public void openResource(realm_myLibrary items) {
+
+        if (items.getResourceOffline() != null && items.getResourceOffline()) {
+            profileDbHandler.setResourceOpenCount(items);
+            openFileType(items, "offline");
+        } else if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
+            openFileType(items, "online");
+        } else {
+            ArrayList<String> arrayList = new ArrayList<>();
+            arrayList.add(Utilities.getUrl(items, settings));
+            startDownload(arrayList);
+        }
+    }
+
 
     public void checkFileExtension(realm_myLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
@@ -198,4 +244,37 @@ public abstract class BaseContainerFragment extends Fragment {
         }
 
     }
+
+
+    public void openFileType(final realm_myLibrary items, String videotype) {
+        Utilities.log("Media type " + items.getMediaType() + " " + videotype);
+        if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
+            playVideo(videotype, items);
+        } else {
+            checkFileExtension(items);
+        }
+    }
+
+    public void setAuthSession(Map<String, List<String>> responseHeader) {
+        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+        auth = headerauth[0];
+    }
+
+    public void playVideo(String videoType, final realm_myLibrary items) {
+        Intent intent = new Intent(getActivity(), ExoPlayerVideo.class);
+        Bundle bundle = new Bundle();
+        bundle.putString("videoType", videoType);
+        if (videoType.equals("online")) {
+            bundle.putString("videoURL", "" + items.getResourceRemoteAddress());
+            Log.e("AUTH", "" + auth);
+            bundle.putString("Auth", "" + auth);
+        } else if (videoType.equals("offline")) {
+            bundle.putString("videoURL", "" + Uri.fromFile(new File("" + Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+            bundle.putString("Auth", "");
+        }
+        intent.putExtras(bundle);
+        startActivity(intent);
+    }
+
+
 }

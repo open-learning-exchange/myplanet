@@ -5,7 +5,9 @@ import android.content.SharedPreferences;
 
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.myplanet.Data.realm_UserModel;
+import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
+import org.ole.planet.myplanet.Data.realm_resourceActivities;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -19,7 +21,8 @@ import io.realm.RealmResults;
 public class UserProfileDbHandler {
     public static final String KEY_LOGIN = "login";
     public static final String KEY_LOGOUT = "logout";
-    public static final String KEY_RESOURCE_OPEN = "resource";
+    public static final String KEY_RESOURCE_OPEN = "visit";
+    public static final String KEY_RESOURCE_DOWNLOAD = "download";
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
@@ -51,6 +54,7 @@ public class UserProfileDbHandler {
         mRealm.commitTransaction();
     }
 
+
     public void onLogout() {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
@@ -69,8 +73,11 @@ public class UserProfileDbHandler {
 
     private realm_offlineActivities createUser() {
         realm_offlineActivities offlineActivities = mRealm.createObject(realm_offlineActivities.class, UUID.randomUUID().toString());
+        realm_UserModel model = getUserModel();
         offlineActivities.setUserId(settings.getString("userId", ""));
-        offlineActivities.setUserName(fullName);
+        offlineActivities.setUserName(model.getName());
+        offlineActivities.setParentCode(model.getParentCode());
+        offlineActivities.setCreatedOn(model.getPlanetCode());
         return offlineActivities;
     }
 
@@ -93,37 +100,48 @@ public class UserProfileDbHandler {
         }
     }
 
-    public void setResourceOpenCount(String id) {
+    public void setResourceOpenCount(realm_myLibrary item) {
         mRealm.beginTransaction();
-        realm_offlineActivities offlineActivities = mRealm.copyToRealm(createUser());
+        realm_resourceActivities offlineActivities = mRealm.copyToRealm(createResourceUser());
         offlineActivities.setType(KEY_RESOURCE_OPEN);
-        offlineActivities.setDescription(id);
+        offlineActivities.setTitle(item.getTitle());
+        offlineActivities.setResourceId(item.getResource_id());
+        offlineActivities.setTime(new Date().getTime());
         mRealm.commitTransaction();
     }
 
+
+    private realm_resourceActivities createResourceUser() {
+        realm_resourceActivities offlineActivities = mRealm.createObject(realm_resourceActivities.class, UUID.randomUUID().toString());
+        realm_UserModel model = getUserModel();
+        offlineActivities.setUser(model.getName());
+        offlineActivities.setParentCode(model.getParentCode());
+        offlineActivities.setCreatedOn(model.getPlanetCode());
+        return offlineActivities;
+    }
+
     public String getNumberOfResourceOpen() {
-        Long count = mRealm.where(realm_offlineActivities.class).equalTo("type", KEY_RESOURCE_OPEN)
-                .equalTo("userId", settings.getString("userId", ""))
+        Long count = mRealm.where(realm_resourceActivities.class)
+                .equalTo("user", fullName)
                 .equalTo("type", KEY_RESOURCE_OPEN)
                 .count();
         return count == 0 ? "" : "Resource opened " + count + " times.";
     }
 
     public String getMaxOpenedResource() {
-        RealmResults<realm_offlineActivities> result = mRealm.where(realm_offlineActivities.class)
-                .equalTo("userId", settings.getString("userId", ""))
-                .equalTo("type", KEY_RESOURCE_OPEN).findAll().where().distinct("description").findAll();
+        RealmResults<realm_resourceActivities> result = mRealm.where(realm_resourceActivities.class)
+                .equalTo("user", fullName)
+                .equalTo("type", KEY_RESOURCE_OPEN).findAll().where().distinct("resourceId").findAll();
         Long maxCount = 0l;
         String maxOpenedResource = "";
-        for (realm_offlineActivities realm_offlineActivities : result) {
-            Utilities.log("desc " + realm_offlineActivities.getDescription());
-            Long count = mRealm.where(realm_offlineActivities.class)
-                    .equalTo("userId", settings.getString("userId", ""))
+        for (realm_resourceActivities realm_resourceActivities : result) {
+            Long count = mRealm.where(realm_resourceActivities.class)
+                    .equalTo("user", fullName)
                     .equalTo("type", KEY_RESOURCE_OPEN)
-                    .equalTo("description", realm_offlineActivities.getDescription()).count();
+                    .equalTo("resourceId", realm_resourceActivities.getResourceId()).count();
             if (count > maxCount) {
                 maxCount = count;
-                maxOpenedResource = realm_offlineActivities.getDescription();
+                maxOpenedResource = realm_resourceActivities.getTitle();
             }
         }
         return maxCount == 0 ? "" : maxOpenedResource + " opened " + maxCount + " times";
@@ -136,4 +154,6 @@ public class UserProfileDbHandler {
         getUserModel().setShowTopbar(o);
         mRealm.commitTransaction();
     }
+
+
 }

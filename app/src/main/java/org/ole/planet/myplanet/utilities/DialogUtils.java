@@ -39,14 +39,6 @@ public class DialogUtils {
         return prgDialog;
     }
 
-    public static void handleCheck(ArrayList<Integer> selectedItemsList, boolean b, Integer i) {
-        if (b) {
-            selectedItemsList.add(i);
-        } else if (selectedItemsList.contains(i)) {
-            selectedItemsList.remove(i);
-        }
-    }
-
     public static void showError(ProgressDialog prgDialog, String message) {
         prgDialog.setTitle(message);
         if (prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE) != null)
@@ -84,5 +76,13 @@ public class DialogUtils {
     public static void showSnack(View v, String s) {
         if (v != null)
             Snackbar.make(v, s, Snackbar.LENGTH_LONG).show();
+    }
+
+    public static void showAlert(Context context, String title, String message) {
+        new AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Dismiss", null)
+                .show();
     }
 }

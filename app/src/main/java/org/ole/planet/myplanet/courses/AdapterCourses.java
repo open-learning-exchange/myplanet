@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.courses;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -15,6 +17,7 @@ import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -26,11 +29,15 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private List<realm_myCourses> courseList;
     private List<realm_myCourses> selectedItems;
     private OnCourseItemSelected listener;
+    private OnHomeItemClickListener homeItemClickListener;
 
     public AdapterCourses(Context context, List<realm_myCourses> courseList) {
         this.context = context;
         this.courseList = courseList;
         this.selectedItems = new ArrayList<>();
+        if (context instanceof OnHomeItemClickListener) {
+            homeItemClickListener = (OnHomeItemClickListener) context;
+        }
     }
 
     public void setCourseList(List<realm_myCourses> courseList) {
@@ -68,22 +75,26 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                         Utilities.handleCheck(b, position, (ArrayList) selectedItems, courseList);
                         listener.onSelectedListChange(selectedItems);
                     }
-
                 }
             });
-
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    openCourse(courseList.get(position));
+                }
+            });
         }
     }
-//
-//    private void handleCheck(boolean b, int i) {
-//        if (b) {
-//            selectedItems.add(courseList.get(i));
-//        } else if (selectedItems.contains(courseList.get(i))) {
-//            selectedItems.remove(courseList.get(i));
-//        }
-//        listener.onSelectedListChange(selectedItems);
-//    }
 
+    private void openCourse(realm_myCourses realm_myCourses) {
+        if (homeItemClickListener != null) {
+            Fragment f = new TakeCourseFragment();
+            Bundle b = new Bundle();
+            b.putString("id", realm_myCourses.getCourseId());
+            f.setArguments(b);
+            homeItemClickListener.openCallFragment(f);
+        }
+    }
 
     @Override
     public int getItemCount() {

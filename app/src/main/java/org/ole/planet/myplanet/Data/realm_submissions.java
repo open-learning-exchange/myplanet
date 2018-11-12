@@ -2,20 +2,15 @@ package org.ole.planet.myplanet.Data;
 
 import android.text.TextUtils;
 
-import com.github.kittinunf.fuel.android.core.Json;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.List;
-
+import io.realm.Realm;
 import io.realm.RealmList;
-import io.realm.*;
+import io.realm.RealmObject;
+import io.realm.Sort;
 
 public class realm_submissions extends RealmObject {
     @io.realm.annotations.PrimaryKey
@@ -62,6 +57,19 @@ public class realm_submissions extends RealmObject {
         this.localUserImageUri = localUserImageUri;
     }
 
+    public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
+        return "Survey Taken " + mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
+    }
+
+    public static int getNoOfSurveySubmissionByUser(String userId, Realm mRealm) {
+        return mRealm.where(realm_submissions.class).equalTo("userId", userId).equalTo("type", "survey").findAll().size();
+    }
+
+    public static String getRecentSubmissionDate(String id, String userId, Realm mRealm) {
+        realm_submissions s = mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).sort("date", Sort.DESCENDING).findFirst();
+        return s == null ? "" : TimeUtils.getFormatedDateWithTime(s.getDate()) + "";
+    }
+
     public String get_id() {
         return _id;
     }
@@ -84,19 +92,6 @@ public class realm_submissions extends RealmObject {
 
     public void setUploaded(boolean uploaded) {
         this.uploaded = uploaded;
-    }
-
-    public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
-        return "Survey Taken " + mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
-    }
-
-    public static int getNoOfSurveySubmissionByUser(String userId, Realm mRealm) {
-        return mRealm.where(realm_submissions.class).equalTo("userId", userId).equalTo("type", "survey").findAll().size();
-    }
-
-    public static String getRecentSubmissionDate(String id, String userId, Realm mRealm) {
-        realm_submissions s = mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).sort("date", Sort.DESCENDING).findFirst();
-        return s == null ? "" : TimeUtils.getFormatedDateWithTime(s.getDate()) + "";
     }
 
     public long getDate() {

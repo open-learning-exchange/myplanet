@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.survey.SurveyFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
@@ -51,8 +52,6 @@ import io.realm.RealmResults;
 public class DashboardFragment extends BaseContainerFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    private static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
-    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     TextView txtFullName, txtVisits, tv_surveys;
     String fullName;
     Realm mRealm;
@@ -73,7 +72,7 @@ public class DashboardFragment extends BaseContainerFragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         profileDbHandler = new UserProfileDbHandler(getActivity());
         declareElements(view);
-        fullName = settings.getString("firstName", "") + " " + settings.getString("middleName", "") + " " + settings.getString("lastName", "");
+        fullName = profileDbHandler.getUserModel().getName();
         txtFullName.setText(fullName);
         ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
         realm_UserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
@@ -86,10 +85,6 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     private void declareElements(View view) {
-//        myLibraryImage = view.findViewById(R.id.myLibraryImageButton);
-//        myCourseImage = view.findViewById(R.id.myCoursesImageButton);
-//        myMeetUpsImage = view.findViewById(R.id.myMeetUpsImageButton);
-//        myTeamsImage = view.findViewById(R.id.myTeamsImageButton);
         txtFullName = view.findViewById(R.id.txtFullName);
         txtVisits = view.findViewById(R.id.txtVisits);
         tv_surveys = view.findViewById(R.id.tv_surveys);
@@ -112,7 +107,6 @@ public class DashboardFragment extends BaseContainerFragment {
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, realm_myTeams.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, realm_meetups.class);
         showDownloadDialog(getLibraryList());
-        AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
     }
 
     public void myLibraryDiv(View view) {
@@ -172,7 +166,6 @@ public class DashboardFragment extends BaseContainerFragment {
         } else if (obj instanceof realm_myTeams) {
             //    textViewArray[itemCnt].setText(((realm_myTeams) obj).getName());
             handleClick(((realm_myTeams) obj).getTeamId(), ((realm_myTeams) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
-
         } else if (obj instanceof realm_meetups) {
             handleClick(((realm_meetups) obj).getMeetupId(), ((realm_meetups) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         }
@@ -210,14 +203,8 @@ public class DashboardFragment extends BaseContainerFragment {
         textView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (items.getResourceOffline() != null && items.getResourceOffline()) {
-                    profileDbHandler.setResourceOpenCount(items.getResourceLocalAddress());
-                    openFileType(items, "offline");
-                } else if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
-                    openFileType(items, "online");
-                } else {
-                    Utilities.toast(getActivity(), "Resource can not be opened please download the resource first.");
-                }
+                if (homeItemClickListener != null)
+                    homeItemClickListener.openLibraryDetailFragment(items);
             }
         });
     }
@@ -227,39 +214,6 @@ public class DashboardFragment extends BaseContainerFragment {
         super.onDestroy();
         profileDbHandler.onDestory();
     }
-
-    public void openFileType(final realm_myLibrary items, String videotype) {
-        Utilities.log("Media type " + items.getMediaType() + " " + videotype);
-        if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
-            playVideo(videotype, items);
-        } else {
-            checkFileExtension(items);
-        }
-    }
-
-    //Sets Auth Session Variable every 15 mins
-    public void setAuthSession(Map<String, List<String>> responseHeader) {
-        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
-        auth = headerauth[0];
-    }
-
-    // Plays Video Using ExoPlayerVideo.java
-    public void playVideo(String videoType, final realm_myLibrary items) {
-        Intent intent = new Intent(DashboardFragment.this.getActivity(), ExoPlayerVideo.class);
-        Bundle bundle = new Bundle();
-        bundle.putString("videoType", videoType);
-        if (videoType.equals("online")) {
-            bundle.putString("videoURL", "" + items.getResourceRemoteAddress());
-            Log.e("AUTH", "" + auth);
-            bundle.putString("Auth", "" + auth);
-        } else if (videoType.equals("offline")) {
-            bundle.putString("videoURL", "" + Uri.fromFile(new File("" + Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
-            bundle.putString("Auth", "");
-        }
-        intent.putExtras(bundle);
-        startActivity(intent);
-    }
-
 
     public void setCountText(int countText, Class c, View v) {
         if (c == realm_myCourses.class)

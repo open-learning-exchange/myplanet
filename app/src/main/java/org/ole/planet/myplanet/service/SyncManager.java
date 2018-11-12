@@ -11,6 +11,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
+import org.lightcouch.CouchDbException;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
 import org.lightcouch.NoDocumentException;
@@ -18,10 +19,12 @@ import org.ole.planet.myplanet.Data.realm_meetups;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_myTeams;
+import org.ole.planet.myplanet.Data.realm_resourceActivities;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -46,11 +49,13 @@ public class SyncManager {
     private Document shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
+    private UserProfileDbHandler userProfileDbHandler;
 
     private SyncManager(Context context) {
         this.context = context;
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
+        userProfileDbHandler = new UserProfileDbHandler(context);
     }
 
     public static SyncManager getInstance() {
@@ -94,13 +99,15 @@ public class SyncManager {
                     mRealm = dbService.getRealmInstance();
                     properties = dbService.getClouchDbProperties("tablet_users", settings);
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
-                    myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
+                    myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
+                    realm_resourceActivities.onSynced(mRealm, settings);
                 } catch (Exception err) {
-                    handleException();
+                    err.printStackTrace();
+                    handleException("Unauthorized , invalid name or password");
                 } finally {
                     destroy();
                 }
@@ -109,11 +116,11 @@ public class SyncManager {
         td.start();
     }
 
-    private void handleException() {
+    private void handleException(String message) {
         if (listener != null) {
             isSyncing = false;
             MainApplication.syncFailedCount++;
-            listener.onSyncFailed();
+            listener.onSyncFailed(message);
         }
     }
 
@@ -192,6 +199,7 @@ public class SyncManager {
     }
 
     private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
+        Utilities.log("Array " + array);
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type);
             check(stringArray, array, shelfData.aClass);
@@ -199,9 +207,9 @@ public class SyncManager {
     }
 
     private void triggerInsert(String categroryId, String categoryDBName) {
-            stringArray[0] = shelfDoc.getId();
-            stringArray[1] = categroryId;
-            stringArray[2] = categoryDBName;
+        stringArray[0] = shelfDoc.getId();
+        stringArray[1] = categroryId;
+        stringArray[2] = categoryDBName;
     }
 
 
@@ -214,11 +222,11 @@ public class SyncManager {
                     .equalTo("userId", stringArray[0])
                     .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
                     .findAll();
-           checkEmptyAndSave(db_Categrory, x, array_categoryIds);
+            checkEmptyAndSave(db_Categrory, x, array_categoryIds);
         }
     }
 
-    private void checkEmptyAndSave( RealmResults db_Categrory , int x, JsonArray array_categoryIds) {
+    private void checkEmptyAndSave(RealmResults db_Categrory, int x, JsonArray array_categoryIds) {
         if (db_Categrory.isEmpty()) {
             setRealmProperties(stringArray[2]);
             validateDocument(array_categoryIds, x);
@@ -237,9 +245,10 @@ public class SyncManager {
 
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
                                int x, JsonObject resourceDoc) {
+
         switch (stringArray[2]) {
             case "resources":
-                Utilities.log("Resource  " + stringArray[0]);
+                Utilities.log("Resource  " + array_categoryIds);
                 realm_myLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":

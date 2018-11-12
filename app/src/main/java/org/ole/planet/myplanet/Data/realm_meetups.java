@@ -1,19 +1,24 @@
 package org.ole.planet.myplanet.Data;
 
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_meetups extends RealmObject {
@@ -39,21 +44,33 @@ public class realm_meetups extends RealmObject {
         realm_meetups myMeetupsDB = mRealm.createObject(realm_meetups.class, UUID.randomUUID().toString());
         myMeetupsDB.setUserId(userId);
         myMeetupsDB.setMeetupId(meetupID);
-        myMeetupsDB.setMeetupId_rev(meetupDoc.get("_rev").getAsString());
-        myMeetupsDB.setTitle(meetupDoc.get("title").getAsString());
-        myMeetupsDB.setDescription(meetupDoc.get("description").getAsString());
-        myMeetupsDB.setStartDate(meetupDoc.get("startDate").getAsString());
-        myMeetupsDB.setEndDate(meetupDoc.get("endDate").getAsString());
-        myMeetupsDB.setRecurring(meetupDoc.get("recurring").getAsString());
-        if (meetupDoc.has("day"))
-            myMeetupsDB.setDay(meetupDoc.get("day").getAsJsonArray().toString());
-        myMeetupsDB.setStartTime(meetupDoc.get("startTime").getAsString());
-        if (meetupDoc.has("endTime"))
-            myMeetupsDB.setStartTime(meetupDoc.get("endTime").getAsString());
-        myMeetupsDB.setCategory(meetupDoc.get("category").getAsString());
-        myMeetupsDB.setMeetupLocation(meetupDoc.get("meetupLocation").getAsString());
-        myMeetupsDB.setCreator(meetupDoc.get("creator").getAsString());
+        myMeetupsDB.setMeetupId_rev(JsonUtils.getString("_rev", meetupDoc));
+        myMeetupsDB.setTitle(JsonUtils.getString("title", meetupDoc));
+        myMeetupsDB.setDescription(JsonUtils.getString("description", meetupDoc));
+        myMeetupsDB.setStartDate(JsonUtils.getString("startDate", meetupDoc));
+        myMeetupsDB.setEndDate(JsonUtils.getString("endDate", meetupDoc));
+        myMeetupsDB.setRecurring(JsonUtils.getString("recurring", meetupDoc));
+        myMeetupsDB.setStartTime(JsonUtils.getString("startTime", meetupDoc));
+        myMeetupsDB.setEndTime(JsonUtils.getString("endTime", meetupDoc));
+        myMeetupsDB.setCategory(JsonUtils.getString("category", meetupDoc));
+        myMeetupsDB.setMeetupLocation(JsonUtils.getString("meetupLocation", meetupDoc));
+        myMeetupsDB.setCreator(JsonUtils.getString("creator", meetupDoc));
+        myMeetupsDB.setDay(JsonUtils.getJsonArray("day", meetupDoc).toString());
     }
+
+
+    public static JsonArray getMyMeetUpIds(Realm realm, SharedPreferences sharedPreferences) {
+        RealmResults<realm_meetups> meetups = realm.where(realm_meetups.class).isNotEmpty("userId")
+                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+
+        JsonArray ids = new JsonArray();
+        for (realm_meetups lib : meetups
+                ) {
+            ids.add(lib.getMeetupId());
+        }
+        return ids;
+    }
+
 
     public String getEndTime() {
         return endTime;
@@ -180,9 +197,10 @@ public class realm_meetups extends RealmObject {
         map.put("Meetup Title", checkNull(meetups.getTitle()));
         map.put("Created By", checkNull(meetups.getCreator()));
         map.put("Category", checkNull(meetups.getCategory()));
-        try{
+        try {
             map.put("Meetup Date", TimeUtils.getFormatedDate(Long.parseLong(meetups.getStartDate())) + " - " + TimeUtils.getFormatedDate(Long.parseLong(meetups.getEndDate())));
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
         map.put("Meetup Time", checkNull(meetups.getStartTime()) + " - " + checkNull(meetups.getEndTime()));
         map.put("Recurring", checkNull(meetups.getRecurring()));
 

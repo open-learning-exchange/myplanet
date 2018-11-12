@@ -12,9 +12,15 @@ import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
+import org.lightcouch.Document;
 import org.lightcouch.Response;
 import org.ole.planet.myplanet.Data.realm_feedback;
+import org.ole.planet.myplanet.Data.realm_meetups;
+import org.ole.planet.myplanet.Data.realm_myCourses;
+import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.Data.realm_myTeams;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
+import org.ole.planet.myplanet.Data.realm_resourceActivities;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
@@ -24,8 +30,12 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
+import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmObject;
+import io.realm.RealmQuery;
 import io.realm.RealmResults;
+import okhttp3.ResponseBody;
 
 public class UploadManager {
     private DatabaseService dbService;
@@ -59,6 +69,7 @@ public class UploadManager {
             public void execute(@NonNull Realm realm) {
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
+                Utilities.log("Sub size " + submissions.size());
                 for (realm_submissions sub : submissions) {
                     Response r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
                     if (!TextUtils.isEmpty(r.getId())) {
@@ -98,6 +109,31 @@ public class UploadManager {
         });
     }
 
+    public void uploadToshelf(final SuccessListener listener) {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties("shelf", sharedPreferences);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                JsonObject object = getShelfData(realm);
+                try {
+                    JsonObject d = dbClient.find(JsonObject.class, sharedPreferences.getString("userId", ""));
+                    object.addProperty("_rev", d.get("_rev").getAsString());
+                    Response r = dbClient.update(object);
+                } catch (Exception e) {
+                    listener.onSuccess("Unable to update documents.");
+                }
+
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                listener.onSuccess("Sync with server completed successfully");
+            }
+        });
+    }
+
     public void uploadUserActivities(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();
         final CouchDbProperties properties = dbService.getClouchDbProperties("login_activities", sharedPreferences);
@@ -105,15 +141,11 @@ public class UploadManager {
             @Override
             public void execute(@NonNull Realm realm) {
                 final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
-                        .isNull("_rev").findAll();
-                Utilities.log("Size " + activities.size());
+                        .isNull("_rev").equalTo("type", "login").findAll();
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (realm_offlineActivities act : activities) {
                     Response r = dbClient.post(realm_offlineActivities.serializeLoginActivities(act));
-                    if (!TextUtils.isEmpty(r.getId())) {
-                        act.set_rev(r.getRev());
-                        act.set_id(r.getId());
-                    }
+                    act.changeRev(r);
                 }
             }
         }, new Realm.Transaction.OnSuccess() {
@@ -122,5 +154,43 @@ public class UploadManager {
                 listener.onSuccess("Sync with server completed successfully");
             }
         });
+    }
+
+    public void uploadResourceActivities(String type) {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties(type.equals("sync") ? "admin_activities" : "resource_activities", sharedPreferences);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(@NonNull Realm realm) {
+                RealmResults<realm_resourceActivities> activities;
+                if (type.equals("sync")) {
+                    activities = realm.where(realm_resourceActivities.class).isNull("_rev").equalTo("type", "sync").findAll();
+                } else {
+                    activities = realm.where(realm_resourceActivities.class).isNull("_rev").notEqualTo("type", "sync").findAll();
+                }
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                for (realm_resourceActivities act : activities) {
+                    Response r = dbClient.post(realm_resourceActivities.serializeResourceActivities(act));
+                    if (!TextUtils.isEmpty(r.getId())) {
+                        act.set_rev(r.getRev());
+                        act.set_id(r.getId());
+                    }
+                }
+            }
+        });
+    }
+
+    public JsonObject getShelfData(Realm realm) {
+        JsonArray myLibs = realm_myLibrary.getMyLibIds(realm, sharedPreferences);
+        JsonArray myCourses = realm_myCourses.getMyCourseIds(realm, sharedPreferences);
+        JsonArray myTeams = realm_myTeams.getMyTeamIds(realm, sharedPreferences);
+        JsonArray myMeetups = realm_meetups.getMyMeetUpIds(realm, sharedPreferences);
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", sharedPreferences.getString("userId", ""));
+        object.add("meetupIds", myMeetups);
+        object.add("resourceIds", myLibs);
+        object.add("courseIds", myCourses);
+        object.add("myTeamIds", myTeams);
+        return object;
     }
 }
