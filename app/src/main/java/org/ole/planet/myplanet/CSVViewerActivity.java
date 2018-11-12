@@ -9,6 +9,8 @@ import android.widget.TextView;
 
 import com.opencsv.CSVReader;
 
+import org.ole.planet.myplanet.utilities.Utilities;
+
 import java.io.File;
 import java.io.FileReader;
 import java.util.Arrays;
@@ -19,12 +21,6 @@ public class CSVViewerActivity extends AppCompatActivity {
 
     private TextView mCSVNameTitle;
     private TextView mCSVContent;
-    private String filePath;
-    private String fileName;
-
-    public CSVViewerActivity() {
-        filePath = new DashboardFragment().globalFilePath;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +39,7 @@ public class CSVViewerActivity extends AppCompatActivity {
         // File name to be viewed
 
         Intent imageOpenIntent = getIntent();
-        fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
+        String fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
 
         if (fileName != null && !fileName.isEmpty()) {
             mCSVNameTitle.setText(fileName);
@@ -51,14 +47,13 @@ public class CSVViewerActivity extends AppCompatActivity {
         }
 
         try {
-            CSVReader reader = new CSVReader(new FileReader(new File(filePath, fileName)), ',', '"');
+            CSVReader reader = new CSVReader(new FileReader(new File(Utilities.SD_PATH, fileName)), ',', '"');
 
             //Get all lines from CSV file
             List<String[]> allRows = reader.readAll();
 
             //Read List "allRows" into textview line by line
             for (String[] row : allRows) {
-                Log.i("CSV_CONTENT", Arrays.toString(row));
                 mCSVContent.append(Arrays.toString(row));
                 mCSVContent.append("\n");
             }

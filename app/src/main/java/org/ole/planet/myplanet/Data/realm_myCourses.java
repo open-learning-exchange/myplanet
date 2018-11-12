@@ -1,15 +1,21 @@
 package org.ole.planet.myplanet.Data;
 
+import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+
+import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import java.util.List;
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_myCourses extends RealmObject {
@@ -29,7 +35,7 @@ public class realm_myCourses extends RealmObject {
     private Integer numberOfSteps;
 
     public static void insertMyCourses(String userId, JsonObject myCousesDoc, Realm mRealm) {
-        String id = myCousesDoc.get("_id").getAsString();
+        String id = JsonUtils.getString("_id", myCousesDoc);
         realm_myCourses myMyCoursesDB = mRealm.where(realm_myCourses.class).equalTo("id", id).findFirst();
         if (myMyCoursesDB == null) {
             myMyCoursesDB = mRealm.createObject(realm_myCourses.class, id);
@@ -37,18 +43,18 @@ public class realm_myCourses extends RealmObject {
         if (!TextUtils.isEmpty(userId)) {
             myMyCoursesDB.setUserId(userId);
         }
-        myMyCoursesDB.setCourseId(myCousesDoc.get("_id").getAsString());
-        myMyCoursesDB.setCourse_rev(myCousesDoc.get("_rev").getAsString());
-        myMyCoursesDB.setLanguageOfInstruction(myCousesDoc.get("languageOfInstruction").getAsString());
-        myMyCoursesDB.setCourseTitle(myCousesDoc.get("courseTitle").getAsString());
-        myMyCoursesDB.setMemberLimit(myCousesDoc.get("memberLimit").getAsInt());
-        myMyCoursesDB.setDescription(myCousesDoc.get("description").getAsString());
-        myMyCoursesDB.setMethod(myCousesDoc.get("method").getAsString());
-        myMyCoursesDB.setGradeLevel(myCousesDoc.get("gradeLevel").getAsString());
-        myMyCoursesDB.setSubjectLevel(myCousesDoc.get("subjectLevel") instanceof JsonNull ? "" : myCousesDoc.get("subjectLevel").getAsString());
-        myMyCoursesDB.setCreatedDate(myCousesDoc.get("createdDate") instanceof JsonNull ? "" : myCousesDoc.get("createdDate").getAsString());
-        myMyCoursesDB.setnumberOfSteps(myCousesDoc.get("steps").getAsJsonArray().size());
-        realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), myCousesDoc.get("steps").getAsJsonArray(), myCousesDoc.get("steps").getAsJsonArray().size(), mRealm);
+        myMyCoursesDB.setCourseId(JsonUtils.getString("_id", myCousesDoc));
+        myMyCoursesDB.setCourse_rev(JsonUtils.getString("_rev", myCousesDoc));
+        myMyCoursesDB.setLanguageOfInstruction(JsonUtils.getString("languageOfInstruction", myCousesDoc));
+        myMyCoursesDB.setCourseTitle(JsonUtils.getString("courseTitle", myCousesDoc));
+        myMyCoursesDB.setMemberLimit(JsonUtils.getInt("memberLimit", myCousesDoc));
+        myMyCoursesDB.setDescription(JsonUtils.getString("description", myCousesDoc));
+        myMyCoursesDB.setMethod(JsonUtils.getString("method", myCousesDoc));
+        myMyCoursesDB.setGradeLevel(JsonUtils.getString("gradeLevel", myCousesDoc));
+        myMyCoursesDB.setSubjectLevel(JsonUtils.getString("subjectLevel", myCousesDoc));
+        myMyCoursesDB.setCreatedDate(JsonUtils.getString("createdDate", myCousesDoc));
+        myMyCoursesDB.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size());
+        realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), JsonUtils.getJsonArray("steps", myCousesDoc), JsonUtils.getJsonArray("steps", myCousesDoc).size(), mRealm);
     }
 
     public static void insertMyCourses(JsonObject doc, Realm mRealm) {
@@ -73,6 +79,18 @@ public class realm_myCourses extends RealmObject {
             myIds[i] = list.get(i).getCourseId();
         }
         return myIds;
+    }
+
+    public static JsonArray getMyCourseIds(Realm realm, SharedPreferences sharedPreferences) {
+        RealmResults<realm_myCourses> myCourses = realm.where(realm_myCourses.class).isNotEmpty("userId")
+                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+
+        JsonArray ids = new JsonArray();
+        for (realm_myCourses lib : myCourses
+                ) {
+            ids.add(lib.getCourseId());
+        }
+        return ids;
     }
 
     public String getId() {

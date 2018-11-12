@@ -56,13 +56,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
-
+                <!-- TODO: change back color to md_black_1000 -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/submission"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/disable_color"
                     android:textSize="18sp" />
 
                 <TextView
@@ -70,7 +70,7 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/calendar"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/disable_color"
                     android:textSize="18sp" />
 
                 <TextView
@@ -78,7 +78,7 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/email"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/disable_color"
                     android:textSize="18sp" />
 
                 <LinearLayout
@@ -112,7 +112,7 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/documents"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/disable_color"
                     android:textSize="18sp" />
 
             </LinearLayout>

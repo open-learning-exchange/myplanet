@@ -91,7 +91,7 @@ public class MyDownloadService extends IntentService {
                     downloadFile(responseBody);
                 }
             } else {
-                downloadFiled("Connection failed");
+                downloadFiled(r.code() == 404 ? "File Not found " :  "Connection failed");
             }
         } catch (IOException e) {
             e.printStackTrace();

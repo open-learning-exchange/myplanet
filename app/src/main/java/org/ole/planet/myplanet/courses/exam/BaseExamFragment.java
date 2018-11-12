@@ -9,7 +9,7 @@ import android.text.TextUtils;
 import android.widget.CompoundButton;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
-import org.ole.planet.myplanet.Data.realm_answerChoices;
+import org.ole.planet.myplanet.Data.realm_answer;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
-import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -35,7 +35,7 @@ public abstract class BaseExamFragment extends Fragment {
     String ans = "";
     realm_UserModel user;
     realm_submissions sub;
-    HashMap<String, realm_answerChoices> listAns;
+    HashMap<String, String> listAns;
 
 
     @Override
@@ -70,7 +70,8 @@ public abstract class BaseExamFragment extends Fragment {
 
     public void checkAnsAndContinue(boolean cont) {
         if (cont) {
-            currentIndex++;
+            Utilities.log("Update current index");
+            currentIndex = currentIndex + 1;
             continueExam();
         } else {
             Utilities.toast(getActivity(), "Invalid answer");
@@ -84,6 +85,7 @@ public abstract class BaseExamFragment extends Fragment {
         } else if (type.startsWith("survey")) {
             showUserInfoDialog();
         } else {
+            Utilities.log(realm_submissions.serializeExamResult(mRealm, sub) + " result");
             new AlertDialog.Builder(getActivity())
                     .setTitle("Thank you for taking this " + type + ". We wish you all the best")
                     .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
@@ -111,15 +113,27 @@ public abstract class BaseExamFragment extends Fragment {
             return true;
         }
         return false;
-
     }
 
+    public realm_answer createAnswer(RealmList<realm_answer> list) {
+        realm_answer answer;
+        if (list == null) {
+            list = new RealmList<>();
+        }
+        if (list.size() > currentIndex) {
+            answer = list.get(currentIndex);
+        } else {
+            answer = mRealm.createObject(realm_answer.class, UUID.randomUUID().toString());
+        }
+        return answer;
+    }
 
     public void addAnswer(CompoundButton compoundButton) {
         if (compoundButton.getTag() != null) {
-            listAns.put(compoundButton.getText().toString(), (realm_answerChoices) compoundButton.getTag());
+            Utilities.log("Tag " + compoundButton.getTag());
+            listAns.put(compoundButton.getText() + "", compoundButton.getTag() + "");
         } else {
-            ans = compoundButton.getText().toString();
+            ans = compoundButton.getText() + "";
         }
     }
 

@@ -33,9 +33,11 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
+import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.MyCourseFragment;
 import org.ole.planet.myplanet.feedback.FeedbackFragment;
+import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.library.MyLibraryFragment;
 import org.ole.planet.myplanet.survey.SurveyFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
@@ -148,7 +150,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 openCallFragment(new MyLibraryFragment());
                 break;
             case R.string.menu_meetups:
+                /* TODO: remove
                 openCallFragment(new MyMeetUpsFragment());
+                */
                 break;
             case R.string.menu_surveys:
                 openCallFragment(new SurveyFragment());
@@ -184,6 +188,15 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         fragmentTransaction.commit();
     }
 
+    @Override
+    public void openLibraryDetailFragment(realm_myLibrary library) {
+        Fragment f = new LibraryDetailFragment();
+        Bundle b = new Bundle();
+        b.putString("libraryId", library.getResource_id());
+        f.setArguments(b);
+        openCallFragment(f);
+    }
+
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         ArrayList<Drawable> menuImageList = new ArrayList<>();
@@ -197,7 +210,11 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
                 changeUX(R.string.menu_myplanet, menuImageList.get(0)),
                 changeUX(R.string.menu_library, menuImageList.get(1)),
                 changeUX(R.string.menu_courses, menuImageList.get(2)),
-                changeUX(R.string.menu_meetups, menuImageList.get(3)),
+                changeUX(R.string.menu_meetups, menuImageList.get(3))
+                        /* TODO: remove */
+                        .withSelectable(false)
+                        .withDisabledIconColor(getResources().getColor(R.color.disable_color))
+                        .withDisabledTextColor(getResources().getColor(R.color.disable_color)),
                 changeUX(R.string.menu_surveys, menuImageList.get(4)),
         };
     }
@@ -244,22 +261,21 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             openCallFragment(new MyCourseFragment());
         } else if (item.getItemId() == R.id.menu_survey) {
             openCallFragment(new SurveyFragment());
-        }else if (item.getItemId() == R.id.menu_home) {
+        } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
         }
-        else {
-            openCallFragment(new MyMeetUpsFragment());
-        }
-        return false;
+
+        return true;
     }
+
 
     @Override
     public void onBackStackChanged() {
 
         Fragment f = (getSupportFragmentManager()).findFragmentById(R.id.fragment_container);
-        if (f instanceof MyCourseFragment){
+        if (f instanceof MyCourseFragment) {
             navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
-        }else if (f instanceof MyLibraryFragment){
+        } else if (f instanceof MyLibraryFragment) {
             navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
         }
 

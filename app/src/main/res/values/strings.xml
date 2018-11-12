@@ -65,7 +65,8 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.2.11</string>
+
+    <string name="app_version">0.2.18</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -79,6 +80,16 @@
     <string name="first_name">First Name</string>
     <string name="menu_teams">Teams</string>
     <string name="search">Search...</string>
+    <string name="btn_remove_lib">Remove</string>
+    <string name="download">Download</string>
+    <string name="published_by">Published By:</string>
+    <string name="author">Author:</string>
+    <string name="language_with_colon">Language :</string>
+    <string name="description">Description :</string>
+    <string name="subject">Subject/s :</string>
+    <string name="license">License :</string>
+    <string name="type">Type :</string>
+    <string name="resource">Resource :</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
