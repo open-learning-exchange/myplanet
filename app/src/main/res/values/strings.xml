@@ -66,7 +66,7 @@
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
 
-    <string name="app_version">0.2.18</string>
+    <string name="app_version">0.2.19</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -90,6 +90,8 @@
     <string name="license">License :</string>
     <string name="type">Type :</string>
     <string name="resource">Resource :</string>
+    <string name="your_rating">Your Rating</string>
+    <string name="your_comment">Leave your comment</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

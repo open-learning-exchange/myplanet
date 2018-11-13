@@ -73,7 +73,12 @@ public class CourseDetailFragment extends BaseContainerFragment {
         rating = v.findViewById(R.id.rating);
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
-
+        v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle());
+            }
+        });
     }
 
     private void setCourseData() {

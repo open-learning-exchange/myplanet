@@ -1,11 +1,6 @@
 package org.ole.planet.myplanet.feedback;
 
-
-import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.res.Resources;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputLayout;

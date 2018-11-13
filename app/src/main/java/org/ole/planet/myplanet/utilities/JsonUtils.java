@@ -36,11 +36,22 @@ public class JsonUtils {
     }
 
     public static JsonArray getJsonArray(String fieldName, JsonObject jsonObject) {
+        JsonElement arry = getJsonElement(fieldName, jsonObject, JsonArray.class);
+        return arry instanceof JsonNull ? new JsonArray() : arry.getAsJsonArray();
+    }
+
+    public static JsonObject getJsonObject(String fieldName, JsonObject jsonObject) {
+        JsonElement el = getJsonElement(fieldName, jsonObject, JsonArray.class);
+        return el instanceof JsonNull ? new JsonObject() : el.getAsJsonObject();
+    }
+
+    public static JsonElement getJsonElement(String fieldName, JsonObject jsonObject, Class type) {
+        JsonElement jsonElement = type == JsonObject.class ? new JsonObject() : new JsonArray();
         if (jsonObject.has(fieldName)) {
-            JsonElement el = jsonObject.get(fieldName);
-            return el instanceof JsonNull ? new JsonArray() : el.getAsJsonArray();
+            return jsonObject.get(fieldName);
         }
-        return new JsonArray();
+        return jsonElement;
+
     }
 
     public static long getLong(String fieldName, JsonObject jsonObject) {

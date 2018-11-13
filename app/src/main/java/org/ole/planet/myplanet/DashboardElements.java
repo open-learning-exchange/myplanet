@@ -15,6 +15,7 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.userprofile.SettingActivity;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 
@@ -89,4 +90,8 @@ public abstract class DashboardElements extends AppCompatActivity {
         this.finish();
     }
 
+    public void showRatingDialog(String type, String resource_id, String title) {
+        RatingFragment f = RatingFragment.newInstance(type, resource_id, title);
+        f.show(getSupportFragmentManager(), "");
+    }
 }

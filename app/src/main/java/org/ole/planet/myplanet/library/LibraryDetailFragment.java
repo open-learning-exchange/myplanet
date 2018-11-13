@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.AppCompatRatingBar;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,7 +20,9 @@ import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -33,6 +36,7 @@ public class LibraryDetailFragment extends BaseContainerFragment {
     TextView author, pubishedBy, title, media, subjects, license, rating, language, resource, type;
     Button download, remove;
     String libraryId;
+    AppCompatRatingBar ratingBar;
     DatabaseService dbService;
     Realm mRealm;
     realm_myLibrary library;
@@ -86,6 +90,13 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
+        ratingBar = v.findViewById(R.id.rating_bar);
+        v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                showRatingDialog("resource", library.getResource_id(), library.getTitle());
+            }
+        });
     }
 
     private void setLibraryData() {
