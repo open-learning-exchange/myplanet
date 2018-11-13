@@ -86,12 +86,12 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     }
 
     public void requestPermission() {
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE_FILE);
+        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) || !checkPermission(Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_FILE);
         }
-        if (!checkPermission(Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_CAMERA);
-        }
+//        if (!checkPermission(Manifest.permission.CAMERA)) {
+//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_CAMERA);
+//        }
     }
 
     public boolean checkPermission(String strPermission) {
@@ -275,7 +275,10 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
         } else if (f instanceof MyLibraryFragment) {
             navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
+        }else if (f instanceof DashboardFragment){
+            navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
+        }else if (f instanceof SurveyFragment){
+            navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
-
     }
 }

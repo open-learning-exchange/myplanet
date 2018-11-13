@@ -20,10 +20,11 @@
         android:id="@+id/menu_survey"
         android:icon="@drawable/survey"
         android:title="@string/menu_surveys" />
-    <item
-        android:id="@+id/menu_teams"
-        android:icon="@drawable/team"
-        android:enabled="false"
-        app:iconTint="@color/disable_color"
-        android:title="@string/menu_teams" />
+    <!--<item-->
+        <!--android:id="@+id/menu_teams"-->
+        <!--android:icon="@drawable/team"-->
+        <!--android:enabled="false"-->
+        <!--android:visible="false"-->
+        <!--app:iconTint="@color/disable_color"-->
+        <!--android:title="@string/menu_teams" />-->
 </menu>
