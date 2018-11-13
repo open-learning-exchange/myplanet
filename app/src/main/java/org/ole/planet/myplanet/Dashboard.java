@@ -85,8 +85,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         openCallFragment(new DashboardFragment());
     }
 
-<<<<<<< HEAD
-=======
     public void requestPermission() {
         if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE_FILE);
@@ -100,7 +98,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         int result = ContextCompat.checkSelfPermission(this, strPermission);
         return result == PackageManager.PERMISSION_GRANTED;
     }
->>>>>>> c17a9c0b5d6defd4c4d10007ae71047712c16ceb
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
