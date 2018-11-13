@@ -8,12 +8,14 @@ import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.widget.CompoundButton;
 
+
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_answer;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
@@ -23,7 +25,7 @@ import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
 
-public abstract class BaseExamFragment extends Fragment {
+public abstract class BaseExamFragment extends Fragment implements CameraUtils.ImageCaptureCallback {
     realm_stepExam exam;
     DatabaseService db;
     Realm mRealm;
@@ -76,10 +78,10 @@ public abstract class BaseExamFragment extends Fragment {
         } else {
             Utilities.toast(getActivity(), "Invalid answer");
         }
-
     }
 
     private void continueExam() {
+
         if (currentIndex < questions.size()) {
             startExam(questions.get(currentIndex));
         } else if (type.startsWith("survey")) {
@@ -92,10 +94,15 @@ public abstract class BaseExamFragment extends Fragment {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
                             getActivity().onBackPressed();
+                            try {
+                                CameraUtils.CapturePhoto(BaseExamFragment.this);
+                            } catch (Exception e) {
+                                Utilities.log("Take picture error " + e.getMessage());
+                                e.printStackTrace();
+                            }
                         }
                     }).show();
         }
-
     }
 
     private void showUserInfoDialog() {
@@ -139,4 +146,11 @@ public abstract class BaseExamFragment extends Fragment {
 
     abstract void startExam(realm_examQuestion question);
 
+    @Override
+    public void onImageCapture(String fileUri) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        sub.setLocalUserImageUri(fileUri);
+        mRealm.close();
+    }
 }

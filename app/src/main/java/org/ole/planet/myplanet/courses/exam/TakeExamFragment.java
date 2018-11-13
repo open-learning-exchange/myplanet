@@ -164,6 +164,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
     }
 
+
     public void addRadioButton(String choice) {
         RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
         rdBtn.setText(choice);
@@ -181,14 +182,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         else
             llCheckbox.addView(rdBtn);
     }
-
-//    public void addCheckBoxes(JsonObject choice) {
-//        CheckBox rdBtn = (CheckBox) LayoutInflater.from(getActivity()).inflate(R.layout.item_checkbox, null);
-//        rdBtn.setText(JsonUtils.getString("text", choice));
-//        rdBtn.setTag(JsonUtils.getString("id", choice));
-//        rdBtn.setOnCheckedChangeListener(this);
-//        llCheckbox.addView(rdBtn);
-//    }
 
 
     @Override
