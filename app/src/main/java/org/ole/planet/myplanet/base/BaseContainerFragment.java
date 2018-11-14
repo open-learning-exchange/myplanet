@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.TextFileViewerActivity;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.courses.AdapterCourses;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
@@ -73,9 +74,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
     public void setRatings(JsonObject object) {
         if (object != null) {
-            rating.setText(object.get("averageRating").getAsFloat() + "");
-            timesRated.setText(object.get("total").getAsInt() + " total");
-            ratingBar.setRating(object.get("averageRating").getAsFloat());
+            AdapterCourses.showRating(object, rating, timesRated, ratingBar);
         }
     }
     public void initRatingView(View v) {
