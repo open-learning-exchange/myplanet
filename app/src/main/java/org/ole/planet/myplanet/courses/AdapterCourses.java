@@ -84,12 +84,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     }
                 }
             });
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    openCourse(courseList.get(position));
-                }
-            });
             renderRating((ViewHoldercourse) holder, courseList.get(position));
         }
     }
@@ -135,6 +129,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             subject_level = itemView.findViewById(R.id.subject_level);
             checkBox = itemView.findViewById(R.id.checkbox);
             progressBar = itemView.findViewById(R.id.progress);
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    openCourse(courseList.get(getAdapterPosition()));
+                }
+            });
         }
     }
 }

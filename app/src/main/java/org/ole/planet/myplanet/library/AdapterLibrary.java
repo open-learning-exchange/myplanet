@@ -97,12 +97,16 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle());
                 }
             });
-            if (ratingMap.containsKey(libraryList.get(position).getResource_id())){
-                JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
-                ((ViewHolderLibrary) holder).rating.setText(object.get("averageRating").getAsFloat() + "" );
-                ((ViewHolderLibrary) holder).timesRated.setText(object.get("total").getAsInt() + " total");
-                ((ViewHolderLibrary) holder).ratingBar.setRating(object.get("averageRating").getAsFloat());
-            }
+            showRating((ViewHolderLibrary) holder, libraryList.get(position));
+        }
+    }
+
+    private void showRating(ViewHolderLibrary holder, realm_myLibrary library) {
+        if (ratingMap.containsKey(library.getResource_id())){
+            JsonObject object = ratingMap.get(library.getResource_id());
+            ( holder).rating.setText(object.get("averageRating").getAsFloat() + "" );
+            ( holder).timesRated.setText(object.get("total").getAsInt() + " total");
+            ( holder).ratingBar.setRating(object.get("averageRating").getAsFloat());
         }
     }
 
