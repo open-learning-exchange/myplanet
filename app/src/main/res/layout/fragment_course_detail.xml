@@ -54,12 +54,14 @@
                             android:layout_gravity="center"
                             android:gravity="center"
                             android:padding="4dp"
+                            android:text="0 total"
                             android:textColor="@color/md_black_1000" />
 
                         <android.support.v7.widget.AppCompatRatingBar
                             style="@style/Base.Widget.AppCompat.RatingBar.Small"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:id="@+id/rating_bar"
                             android:isIndicator="true" />
 
 
@@ -74,7 +76,7 @@
                         android:padding="4dp">
 
                         <TextView
-                            android:id="@+id/rating"
+                            android:id="@+id/tv_rating"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"

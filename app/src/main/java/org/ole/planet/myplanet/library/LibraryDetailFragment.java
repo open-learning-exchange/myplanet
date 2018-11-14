@@ -15,8 +15,11 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.JsonObject;
+
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
@@ -33,10 +36,9 @@ import io.realm.RealmResults;
 
 
 public class LibraryDetailFragment extends BaseContainerFragment {
-    TextView author, pubishedBy, title, media, subjects, license, rating, language, resource, type;
+    TextView author, pubishedBy, title, media, subjects, license, language, resource, type;
     Button download, remove;
     String libraryId;
-    AppCompatRatingBar ratingBar;
     DatabaseService dbService;
     Realm mRealm;
     realm_myLibrary library;
@@ -85,18 +87,17 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         subjects = v.findViewById(R.id.tv_subject);
         language = v.findViewById(R.id.tv_language);
         license = v.findViewById(R.id.tv_license);
-        rating = v.findViewById(R.id.tv_rating);
         resource = v.findViewById(R.id.tv_resource);
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-        ratingBar = v.findViewById(R.id.rating_bar);
         v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 showRatingDialog("resource", library.getResource_id(), library.getTitle());
             }
         });
+        initRatingView(v);
     }
 
     private void setLibraryData() {
@@ -107,8 +108,9 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         subjects.setText(library.getSubjectsAsString());
         language.setText(library.getLanguage());
         license.setText(library.getLinkToLicense());
-        rating.setText(TextUtils.isEmpty(library.getAverageRating()) ? "0.0" : library.getAverageRating());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
+        JsonObject object = realm_rating.getRatingsById(mRealm, "resource", library.getResource_id());
+        setRatings(object);
         setClickListeners();
     }
 

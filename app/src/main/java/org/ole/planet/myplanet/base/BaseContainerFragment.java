@@ -16,6 +16,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.AppCompatRatingBar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -26,6 +27,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.AuthSessionUpdater;
 import org.ole.planet.myplanet.CSVViewerActivity;
@@ -57,6 +60,8 @@ import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
 public abstract class BaseContainerFragment extends BaseResourceFragment {
+    public TextView timesRated, rating;
+    public AppCompatRatingBar ratingBar;
 
     @Nullable
     @Override
@@ -66,6 +71,18 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
+    public void setRatings(JsonObject object) {
+        if (object != null) {
+            rating.setText(object.get("averageRating").getAsFloat() + "");
+            timesRated.setText(object.get("total").getAsInt() + " total");
+            ratingBar.setRating(object.get("averageRating").getAsFloat());
+        }
+    }
+    public void initRatingView(View v) {
+        timesRated = v.findViewById(R.id.times_rated);
+        rating = v.findViewById(R.id.tv_rating);
+        ratingBar = v.findViewById(R.id.rating_bar);
+    }
 
     @Override
     public void onAttach(Context context) {
