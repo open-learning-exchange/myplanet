@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
+import org.ole.planet.myplanet.courses.AdapterCourses;
 import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -45,7 +46,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnLibraryItemSelected listener;
     private ChipCloudConfig config;
     private OnHomeItemClickListener homeItemClickListener;
-    private HashMap<String , JsonObject> ratingMap;
+    private HashMap<String, JsonObject> ratingMap;
+
     public AdapterLibrary(Context context, List<realm_myLibrary> libraryList, HashMap<String, JsonObject> ratingMap) {
         this.ratingMap = ratingMap;
         this.context = context;
@@ -97,22 +99,15 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle());
                 }
             });
-            showRating((ViewHolderLibrary) holder, libraryList.get(position));
-        }
-    }
-
-    private void showRating(ViewHolderLibrary holder, realm_myLibrary library) {
-        if (ratingMap.containsKey(library.getResource_id())){
-            JsonObject object = ratingMap.get(library.getResource_id());
-            ( holder).rating.setText(object.get("averageRating").getAsFloat() + "" );
-            ( holder).timesRated.setText(object.get("total").getAsInt() + " total");
-            ( holder).ratingBar.setRating(object.get("averageRating").getAsFloat());
+            if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
+                JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
+                AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);
+            }
         }
     }
 
     private void openLibrary(realm_myLibrary library) {
         if (homeItemClickListener != null) {
-
             homeItemClickListener.openLibraryDetailFragment(library);
         }
     }
@@ -147,6 +142,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;
         LinearLayout llRating;
+
         public ViewHolderLibrary(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);

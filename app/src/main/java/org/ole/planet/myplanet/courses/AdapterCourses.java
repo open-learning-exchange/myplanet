@@ -84,17 +84,18 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     }
                 }
             });
-            renderRating((ViewHoldercourse) holder, courseList.get(position));
+            if (map.containsKey(courseList.get(position).getCourseId())) {
+                JsonObject object = map.get(courseList.get(position).getCourseId());
+                showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
+            }
         }
     }
 
-    private void renderRating(ViewHoldercourse holder, realm_myCourses courses) {
-        if (map.containsKey(courses.getCourseId())) {
-            JsonObject object = map.get(courses.getCourseId());
-            (holder).average.setText(object.get("averageRating").getAsFloat() + "");
-            (holder).ratingCount.setText(object.get("total").getAsInt() + " total");
-            (holder).ratingBar.setRating(object.get("averageRating").getAsFloat());
-        }
+
+    public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
+        average.setText(object.get("averageRating").getAsFloat() + "");
+        ratingCount.setText(object.get("total").getAsInt() + " total");
+        ratingBar.setRating(object.get("averageRating").getAsFloat());
     }
 
     private void openCourse(realm_myCourses realm_myCourses) {
