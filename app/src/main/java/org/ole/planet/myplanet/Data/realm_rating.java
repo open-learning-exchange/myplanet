@@ -7,10 +7,13 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.HashMap;
 import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_rating extends RealmObject {
@@ -41,6 +44,32 @@ public class realm_rating extends RealmObject {
     private String type;
 
     private String user;
+
+    public static HashMap<String, JsonObject> getRatings(Realm mRealm, String type) {
+        RealmResults<realm_rating> r = mRealm.where(realm_rating.class).equalTo("type", type).findAll();
+        HashMap<String, JsonObject> map = new HashMap<>();
+        for (realm_rating rating : r) {
+            JsonObject object = getRatingsById(mRealm, rating.getType(), rating.getItem());
+            if (object != null)
+                map.put(rating.getItem(), object);
+        }
+        return map;
+    }
+
+    public static JsonObject getRatingsById(Realm mRealm, String type, String id) {
+        RealmResults<realm_rating> r = mRealm.where(realm_rating.class).equalTo("type", type).equalTo("item", id).findAll();
+        if (r.size() == 0) {
+            return null;
+        }
+        JsonObject object = new JsonObject();
+        int totalRating = 0;
+        for (realm_rating rating : r) {
+            totalRating += rating.getRate();
+        }
+        object.addProperty("averageRating", (float) totalRating / r.size());
+        object.addProperty("total", r.size());
+        return object;
+    }
 
     public String getCreatedOn() {
         return createdOn;

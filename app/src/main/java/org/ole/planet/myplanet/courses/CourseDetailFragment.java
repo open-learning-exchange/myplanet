@@ -10,8 +10,11 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.gson.JsonObject;
+
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
@@ -24,7 +27,7 @@ import io.realm.RealmResults;
  * A simple {@link Fragment} subclass.
  */
 public class CourseDetailFragment extends BaseContainerFragment {
-    TextView description, subjectLevel, gradeLevel, method, timesRated, rating, language, noOfExams;
+    TextView description, subjectLevel, gradeLevel, method, language, noOfExams;
 
     DatabaseService dbService;
     Realm mRealm;
@@ -67,10 +70,8 @@ public class CourseDetailFragment extends BaseContainerFragment {
         description = v.findViewById(R.id.description);
         subjectLevel = v.findViewById(R.id.subject_level);
         gradeLevel = v.findViewById(R.id.grade_level);
-        timesRated = v.findViewById(R.id.times_rated);
         language = v.findViewById(R.id.language);
         method = v.findViewById(R.id.method);
-        rating = v.findViewById(R.id.rating);
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
         v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
@@ -79,7 +80,10 @@ public class CourseDetailFragment extends BaseContainerFragment {
                 showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle());
             }
         });
+        initRatingView(v);
     }
+
+
 
     private void setCourseData() {
         subjectLevel.setText(courses.getSubjectLevel());
@@ -100,6 +104,8 @@ public class CourseDetailFragment extends BaseContainerFragment {
                     showDownloadDialog(resources);
             }
         });
+        JsonObject object = realm_rating.getRatingsById(mRealm, "course", courses.getCourseId());
+        setRatings(object);
     }
 
 }

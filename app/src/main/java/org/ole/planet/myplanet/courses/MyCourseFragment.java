@@ -10,17 +10,16 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.gson.JsonObject;
+
 import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
-import org.ole.planet.myplanet.library.AdapterLibrary;
-import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.HashMap;
 import java.util.List;
-
-import io.realm.RealmResults;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -44,7 +43,8 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_myCourses> impl
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        adapterCourses = new AdapterCourses(getActivity(), getList(realm_myCourses.class));
+        HashMap<String, JsonObject> map = realm_rating.getRatings(mRealm, "course");
+        adapterCourses = new AdapterCourses(getActivity(), getList(realm_myCourses.class), map);
         adapterCourses.setListener(this);
         return adapterCourses;
     }

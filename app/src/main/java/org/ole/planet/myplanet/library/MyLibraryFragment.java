@@ -16,9 +16,11 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 
+import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
@@ -27,6 +29,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -58,7 +61,8 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        adapterLibrary = new AdapterLibrary(getActivity(), getList(realm_myLibrary.class));
+        HashMap<String, JsonObject> map = realm_rating.getRatings(mRealm, "resource");
+        adapterLibrary = new AdapterLibrary(getActivity(), getList(realm_myLibrary.class), map);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList();
         return adapterLibrary;

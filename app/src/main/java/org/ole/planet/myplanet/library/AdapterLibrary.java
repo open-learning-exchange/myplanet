@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.AppCompatRatingBar;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -13,24 +14,29 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
+import org.ole.planet.myplanet.courses.AdapterCourses;
 import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipListener;
+import io.realm.Realm;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -40,8 +46,10 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnLibraryItemSelected listener;
     private ChipCloudConfig config;
     private OnHomeItemClickListener homeItemClickListener;
+    private HashMap<String, JsonObject> ratingMap;
 
-    public AdapterLibrary(Context context, List<realm_myLibrary> libraryList) {
+    public AdapterLibrary(Context context, List<realm_myLibrary> libraryList, HashMap<String, JsonObject> ratingMap) {
+        this.ratingMap = ratingMap;
         this.context = context;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
@@ -75,7 +83,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHolderLibrary) {
             ((ViewHolderLibrary) holder).title.setText((position + 1) + ". " + libraryList.get(position).getTitle());
             ((ViewHolderLibrary) holder).desc.setText(libraryList.get(position).getDescription());
-            ((ViewHolderLibrary) holder).times_rated.setText(libraryList.get(position).getTimesRated() + " Total");
+            ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
@@ -91,12 +99,15 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle());
                 }
             });
+            if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
+                JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
+                AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);
+            }
         }
     }
 
     private void openLibrary(realm_myLibrary library) {
         if (homeItemClickListener != null) {
-
             homeItemClickListener.openLibraryDetailFragment(library);
         }
     }
@@ -126,16 +137,19 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        TextView title, desc, rating, times_rated;
+        TextView title, desc, rating, timesRated;
         CheckBox checkBox;
+        AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;
         LinearLayout llRating;
+
         public ViewHolderLibrary(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);
             desc = itemView.findViewById(R.id.description);
             rating = itemView.findViewById(R.id.rating);
-            times_rated = itemView.findViewById(R.id.times_rated);
+            timesRated = itemView.findViewById(R.id.times_rated);
+            ratingBar = itemView.findViewById(R.id.rating_bar);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
             checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
