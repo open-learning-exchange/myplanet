@@ -32,13 +32,13 @@
                 android:layout_weight="1" />
 
             <include
-                layout="@layout/home_card_meetups"
+                layout="@layout/home_card_teams"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
 
             <include
-                layout="@layout/home_card_teams"
+                layout="@layout/home_card_meetups"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1" />
