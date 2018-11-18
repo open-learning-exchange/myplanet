@@ -14,6 +14,7 @@ import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
 import org.lightcouch.Response;
+import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_feedback;
 import org.ole.planet.myplanet.Data.realm_meetups;
 import org.ole.planet.myplanet.Data.realm_myCourses;
@@ -75,7 +76,6 @@ public class UploadManager {
                     Response r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
                     if (!TextUtils.isEmpty(r.getId())) {
                         sub.setUploaded(true);
-                        Utilities.log("ID " + r.getId());
                     }
                 }
             }
@@ -83,6 +83,27 @@ public class UploadManager {
             @Override
             public void onSuccess() {
                 listener.onSuccess("Result sync completed successfully");
+            }
+        });
+        uploadCourseProgress();
+    }
+
+    public void uploadCourseProgress() {
+        mRealm = dbService.getRealmInstance();
+        final CouchDbProperties properties = dbService.getClouchDbProperties("courses_progress", sharedPreferences);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(@NonNull Realm realm) {
+                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+                List<realm_courseProgress> data = realm.where(realm_courseProgress.class)
+                        .isNull("_id").findAll();
+                for (realm_courseProgress sub : data) {
+                    Response r = dbClient.post(realm_courseProgress.serializeProgress(sub));
+                    if (!TextUtils.isEmpty(r.getId())) {
+                        sub.set_id(r.getId());
+                        sub.set_rev(r.getRev());
+                    }
+                }
             }
         });
     }

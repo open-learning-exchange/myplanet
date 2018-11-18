@@ -11,15 +11,21 @@ import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.Data.realm_UserModel;
+import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_courseSteps;
+import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.courses.exam.TakeExamFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -38,6 +44,8 @@ public class CourseStepFragment extends BaseContainerFragment {
     realm_courseSteps step;
     List<realm_myLibrary> resources;
     List<realm_stepExam> stepExams;
+    realm_UserModel user;
+    int stepNumber;
 
     public CourseStepFragment() {
     }
@@ -47,7 +55,9 @@ public class CourseStepFragment extends BaseContainerFragment {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             stepId = getArguments().getString("stepId");
+            stepNumber = getArguments().getInt("stepNumber");
         }
+        setUserVisibleHint(false);
     }
 
     @Override
@@ -65,7 +75,28 @@ public class CourseStepFragment extends BaseContainerFragment {
         btnResource = v.findViewById(R.id.btn_resources);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        user = new UserProfileDbHandler(getActivity()).getUserModel();
         return v;
+    }
+
+    public void saveCourseProgress() {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        realm_courseProgress courseProgress = mRealm.where(realm_courseProgress.class)
+                .equalTo("courseId", step.getCourseId())
+                .equalTo("userId", user.getId())
+                .equalTo("stepNum", stepNumber)
+                .findFirst();
+        if (courseProgress == null) {
+            courseProgress = mRealm.createObject(realm_courseProgress.class, UUID.randomUUID().toString());
+        }
+        courseProgress.setCourseId(step.getCourseId());
+        courseProgress.setStepNum(stepNumber);
+        courseProgress.setPassed(stepExams.size() <= 0);
+        courseProgress.setCreatedOn(new Date().getTime());
+        courseProgress.setParentCode(user.getParentCode());
+        courseProgress.setUserId(user.getId());
+        mRealm.commitTransaction();
     }
 
     @Override
@@ -87,6 +118,15 @@ public class CourseStepFragment extends BaseContainerFragment {
         tvTitle.setText(step.getStepTitle());
         wvDesc.loadDataWithBaseURL(null, step.getDescription(), "text/html", "utf-8", null);
         setListeners();
+
+    }
+
+    @Override
+    public void setMenuVisibility(final boolean visible) {
+        super.setMenuVisibility(visible);
+        if (visible && realm_myCourses.isMyCourse(user.getId(), mRealm)) {
+            saveCourseProgress();
+        }
     }
 
     private void setListeners() {
@@ -105,10 +145,11 @@ public class CourseStepFragment extends BaseContainerFragment {
         btnExam.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (stepExams.size() > 0){
-                    Fragment takeExam  = new TakeExamFragment();
+                if (stepExams.size() > 0) {
+                    Fragment takeExam = new TakeExamFragment();
                     Bundle b = new Bundle();
                     b.putString("stepId", stepId);
+                    b.putInt("stepNum", stepNumber);
                     takeExam.setArguments(b);
                     homeItemClickListener.openCallFragment(takeExam);
                 }

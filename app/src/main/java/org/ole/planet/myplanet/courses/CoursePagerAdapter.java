@@ -15,7 +15,6 @@ public class CoursePagerAdapter extends FragmentStatePagerAdapter {
         this.steps = steps;
         this.courseId = courseId;
     }
-
     @Override
     public Fragment getItem(int position) {
         Bundle b = new Bundle();
@@ -27,6 +26,7 @@ public class CoursePagerAdapter extends FragmentStatePagerAdapter {
         } else {
             f = new CourseStepFragment();
             b.putString("stepId", steps[position - 1]);
+            b.putInt("stepNumber", position);
         }
         f.setArguments(b);
         return f;

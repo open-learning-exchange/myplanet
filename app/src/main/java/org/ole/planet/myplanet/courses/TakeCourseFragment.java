@@ -6,16 +6,23 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.Data.realm_UserModel;
+import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_courseSteps;
 import org.ole.planet.myplanet.Data.realm_myCourses;
+import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.CustomViewPager;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -26,7 +33,7 @@ import io.realm.Realm;
  */
 public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChangeListener, View.OnClickListener {
 
-    ViewPager mViewPager;
+    CustomViewPager mViewPager;
     TextView tvCourseTitle, tvCompleted, tvStepTitle, tvSteps;
     SeekBar courseProgress;
     DatabaseService dbService;
@@ -35,6 +42,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     realm_myCourses currentCourse;
     List<realm_courseSteps> steps;
     ImageView next, previous;
+    realm_UserModel userModel;
 
     public TakeCourseFragment() {
     }
@@ -56,6 +64,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         initView(v);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        userModel = new UserProfileDbHandler(getActivity()).getUserModel();
         currentCourse = mRealm.where(realm_myCourses.class).equalTo("courseId", courseId).findFirst();
         return v;
     }
@@ -82,11 +91,20 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         previous.setOnClickListener(this);
     }
 
+
     private void setCourseData() {
         tvStepTitle.setText(currentCourse.getCourseTitle());
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
+        int i;
+        for (i = 0; i < steps.size(); i++) {
+            realm_courseProgress progress = mRealm.where(realm_courseProgress.class).equalTo("stepNum", i + 1).equalTo("courseId", courseId).findFirst();
+            if (progress == null) {
+                break;
+            }
+        }
+        courseProgress.setProgress(i);
     }
 
     @Override
@@ -98,13 +116,24 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public void onPageSelected(int position) {
         if (position > 0) {
             tvStepTitle.setText(steps.get(position - 1).getStepTitle());
+            if ((position - 1) < steps.size())
+                if (realm_submissions.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId())) {
+                    next.setClickable(true);
+                    next.setColorFilter(getResources().getColor(R.color.md_white_1000));
+                } else {
+                    next.setColorFilter(getResources().getColor(R.color.md_grey_500));
+                    next.setClickable(false);
+                }
+        }else{
+            next.setClickable(true);
+            next.setColorFilter(getResources().getColor(R.color.md_white_1000));
         }
         tvSteps.setText(String.format("Step %d/%d", position, steps.size()));
     }
 
     @Override
     public void onPageScrollStateChanged(int state) {
-
+        Utilities.log("State " + state);
     }
 
     @Override

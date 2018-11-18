@@ -11,6 +11,7 @@ import android.widget.CompoundButton;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_answer;
+import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
@@ -33,6 +34,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     String id = "";
     String type = "exam";
     int currentIndex = 0;
+    int stepNumber;
     RealmResults<realm_examQuestion> questions;
     String ans = "";
     realm_UserModel user;
@@ -45,6 +47,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             stepId = getArguments().getString("stepId");
+            stepNumber = getArguments().getInt("stepNum");
             checkId();
             checkType();
         }
@@ -87,7 +90,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         } else if (type.startsWith("survey")) {
             showUserInfoDialog();
         } else {
-            Utilities.log(realm_submissions.serializeExamResult(mRealm, sub) + " result");
+            saveCourseProgress();
             new AlertDialog.Builder(getActivity())
                     .setTitle("Thank you for taking this " + type + ". We wish you all the best")
                     .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
@@ -97,11 +100,22 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
                             try {
                                 CameraUtils.CapturePhoto(BaseExamFragment.this);
                             } catch (Exception e) {
-                                Utilities.log("Take picture error " + e.getMessage());
                                 e.printStackTrace();
                             }
                         }
                     }).show();
+        }
+    }
+
+    private void saveCourseProgress() {
+        realm_courseProgress progress = mRealm.where(realm_courseProgress.class)
+                .equalTo("courseId", exam.getCourseId()).equalTo("stepNum", stepNumber)
+                .findFirst();
+        if (progress != null) {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            progress.setPassed(sub.getStatus().equals("graded"));
+            mRealm.commitTransaction();
         }
     }
 

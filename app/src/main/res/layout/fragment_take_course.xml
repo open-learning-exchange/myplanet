@@ -91,7 +91,7 @@
                 <!--/>-->
 
 
-                <android.support.v4.view.ViewPager
+                <org.ole.planet.myplanet.utilities.CustomViewPager
                     android:id="@+id/view_pager_course"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
@@ -102,6 +102,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
                     android:background="@color/colorPrimary"
+                    android:id="@+id/ll_progress"
                     android:padding="8dp">
 
                     <android.support.v7.widget.AppCompatSeekBar
@@ -119,6 +120,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
+                        android:visibility="gone"
                         android:gravity="center"
                         android:padding="@dimen/padding_normal"
                         android:text="42% complete"

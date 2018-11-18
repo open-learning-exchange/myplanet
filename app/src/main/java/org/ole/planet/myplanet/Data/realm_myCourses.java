@@ -57,6 +57,11 @@ public class realm_myCourses extends RealmObject {
         realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), JsonUtils.getJsonArray("steps", myCousesDoc), JsonUtils.getJsonArray("steps", myCousesDoc).size(), mRealm);
     }
 
+    public static boolean isMyCourse(String userId, Realm realm) {
+        realm_myCourses courses = realm.where(realm_myCourses.class).equalTo("userId", userId).findFirst();
+        return courses != null;
+    }
+
     public static void insertMyCourses(JsonObject doc, Realm mRealm) {
         insertMyCourses("", doc, mRealm);
     }
