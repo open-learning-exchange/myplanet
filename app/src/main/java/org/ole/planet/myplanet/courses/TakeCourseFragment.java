@@ -117,18 +117,22 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         if (position > 0) {
             tvStepTitle.setText(steps.get(position - 1).getStepTitle());
             if ((position - 1) < steps.size())
-                if (realm_submissions.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId())) {
-                    next.setClickable(true);
-                    next.setColorFilter(getResources().getColor(R.color.md_white_1000));
-                } else {
-                    next.setColorFilter(getResources().getColor(R.color.md_grey_500));
-                    next.setClickable(false);
-                }
+                changeNextButtonState(position);
         }else{
             next.setClickable(true);
             next.setColorFilter(getResources().getColor(R.color.md_white_1000));
         }
         tvSteps.setText(String.format("Step %d/%d", position, steps.size()));
+    }
+
+    private void changeNextButtonState(int position) {
+        if (realm_submissions.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId())) {
+            next.setClickable(true);
+            next.setColorFilter(getResources().getColor(R.color.md_white_1000));
+        } else {
+            next.setColorFilter(getResources().getColor(R.color.md_grey_500));
+            next.setClickable(false);
+        }
     }
 
     @Override

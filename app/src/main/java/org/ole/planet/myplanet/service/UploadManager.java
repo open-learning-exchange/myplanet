@@ -99,9 +99,8 @@ public class UploadManager {
                         .isNull("_id").findAll();
                 for (realm_courseProgress sub : data) {
                     Response r = dbClient.post(realm_courseProgress.serializeProgress(sub));
-                    if (!TextUtils.isEmpty(r.getId())) {
+                    if (r != null) {
                         sub.set_id(r.getId());
-                        sub.set_rev(r.getRev());
                     }
                 }
             }
