@@ -4,13 +4,13 @@ buildscript {
     ext {
         setup = [
                 compileSdk: 27,
-                buildTools: "27.0.3",
+                buildTools: "27.1.1",
                 minSdk    : 19,
                 targetSdk : 27
         ]
 
         versions = [
-                supportLib: "27.1.0"
+                supportLib: "27.1.1"
         ]
     }
 

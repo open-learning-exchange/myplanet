@@ -66,6 +66,7 @@ dependencies {
     implementation "com.android.support:recyclerview-v7:${versions.supportLib}"
     implementation "com.android.support:support-annotations:${versions.supportLib}"
     implementation "com.android.support:design:${versions.supportLib}"
+    implementation "com.android.support:exifinterface:${versions.supportLib}"
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
     implementation 'com.mikepenz:fontawesome-typeface:5.0.6.0@aar'
     implementation 'com.mikepenz:octicons-typeface:3.0.0.1@aar'
@@ -93,6 +94,7 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'com.github.fiskurgit:ChipCloud:3.0.5'
+
 
 }
 realm {
