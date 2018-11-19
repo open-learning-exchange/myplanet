@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -81,6 +82,7 @@ public class CourseDetailFragment extends BaseContainerFragment {
             }
         });
         initRatingView(v);
+
     }
 
 

@@ -203,7 +203,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     private boolean updateAnsDb() {
         boolean flag;
         startTransaction();
-        Utilities.log("Current  index " + currentIndex + " " + (questions.size() - 1));
         sub.setStatus(currentIndex == questions.size() - 1 ? "graded" : "pending");
         RealmList<realm_answer> list = sub.getAnswers();
         realm_answer answer = mRealm.copyFromRealm(createAnswer(list));
@@ -245,9 +244,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public boolean isEqual(String[] ar1, String[] ar2) {
         Arrays.sort(ar1);
         Arrays.sort(ar2);
-        Utilities.log("Array " + Arrays.toString(ar1) + " " + Arrays.toString(ar2));
         for (int i = 0; i < ar2.length; i++) {
-            Utilities.log("Is equal " + new Gson().toJson(ar1[i]) + " " + ar2[i]);
             if (!ar1[i].equalsIgnoreCase(ar2[i]))
                 return false;
         }

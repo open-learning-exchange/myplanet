@@ -49,6 +49,15 @@ public class realm_submissions extends RealmObject {
 
     }
 
+    public static boolean isStepCompleted(Realm realm, String id, String userId) {
+        realm_stepExam exam = realm.where(realm_stepExam.class).equalTo("stepId", id).findFirst();
+        return realm.where(realm_submissions.class)
+                .equalTo("userId", userId)
+                .equalTo("parentId", exam.getId())
+                .equalTo("status", "graded")
+                .findFirst() != null;
+    }
+
     public String getLocalUserImageUri() {
         return localUserImageUri;
     }
