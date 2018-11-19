@@ -7,8 +7,12 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.HashMap;
+import java.util.List;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_courseProgress extends RealmObject {
@@ -29,7 +33,7 @@ public class realm_courseProgress extends RealmObject {
 
     private String parentCode;
 
-    public static JsonObject serializeProgress( realm_courseProgress progress) {
+    public static JsonObject serializeProgress(realm_courseProgress progress) {
         JsonObject object = new JsonObject();
         object.addProperty("userId", progress.getUserId());
         object.addProperty("parentCode", progress.getParentCode());
@@ -38,6 +42,31 @@ public class realm_courseProgress extends RealmObject {
         object.addProperty("stepNum", progress.getStepNum());
         object.addProperty("createdOn", progress.getCreatedOn());
         return object;
+    }
+
+    public static HashMap<String, JsonObject> getCourseProgress(Realm mRealm, String userId) {
+        RealmResults<realm_courseProgress> r = mRealm.where(realm_courseProgress.class).equalTo("userId", userId).findAll();
+        HashMap<String, JsonObject> map = new HashMap<>();
+        for (realm_courseProgress progress : r) {
+            JsonObject object = new JsonObject();
+            List<realm_courseSteps> steps = realm_courseSteps.getSteps(mRealm, progress.getCourseId());
+            object.addProperty("max", steps.size());
+            object.addProperty("current", getCurrentProgress(steps, mRealm, progress.getCourseId()));
+            if (realm_myCourses.isMyCourse(userId, mRealm))
+                map.put(progress.getCourseId(), object);
+        }
+        return map;
+    }
+
+    public static int getCurrentProgress(List<realm_courseSteps> steps, Realm mRealm, String courseId) {
+        int i;
+        for (i = 0; i < steps.size(); i++) {
+            realm_courseProgress progress = mRealm.where(realm_courseProgress.class).equalTo("stepNum", i + 1).equalTo("courseId", courseId).findFirst();
+            if (progress == null) {
+                break;
+            }
+        }
+        return i;
     }
 
     public long getCreatedOn() {
