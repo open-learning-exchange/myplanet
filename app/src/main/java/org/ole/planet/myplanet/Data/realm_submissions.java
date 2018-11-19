@@ -51,6 +51,9 @@ public class realm_submissions extends RealmObject {
 
     public static boolean isStepCompleted(Realm realm, String id, String userId) {
         realm_stepExam exam = realm.where(realm_stepExam.class).equalTo("stepId", id).findFirst();
+        if (exam == null){
+            return true;
+        }
         return realm.where(realm_submissions.class)
                 .equalTo("userId", userId)
                 .equalTo("parentId", exam.getId())

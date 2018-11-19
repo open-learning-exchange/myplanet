@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -77,6 +78,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         next = v.findViewById(R.id.next_step);
         previous = v.findViewById(R.id.previous_step);
         courseProgress = v.findViewById(R.id.course_progress);
+
     }
 
     @Override
@@ -89,6 +91,12 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         setCourseData();
         next.setOnClickListener(this);
         previous.setOnClickListener(this);
+//        mViewPager.setOnTouchListener(new View.OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View view, MotionEvent motionEvent) {
+//                return !(view instanceof Button);
+//            }
+//        });
     }
 
 
@@ -118,7 +126,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             tvStepTitle.setText(steps.get(position - 1).getStepTitle());
             if ((position - 1) < steps.size())
                 changeNextButtonState(position);
-        }else{
+        } else {
             next.setClickable(true);
             next.setColorFilter(getResources().getColor(R.color.md_white_1000));
         }
