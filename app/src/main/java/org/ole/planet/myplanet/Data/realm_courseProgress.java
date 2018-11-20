@@ -45,15 +45,16 @@ public class realm_courseProgress extends RealmObject {
     }
 
     public static HashMap<String, JsonObject> getCourseProgress(Realm mRealm, String userId) {
-        RealmResults<realm_courseProgress> r = mRealm.where(realm_courseProgress.class).equalTo("userId", userId).findAll();
+        RealmResults<realm_myCourses> r = mRealm.where(realm_myCourses.class).equalTo("userId", userId).findAll();
+
         HashMap<String, JsonObject> map = new HashMap<>();
-        for (realm_courseProgress progress : r) {
+        for (realm_myCourses course : r) {
             JsonObject object = new JsonObject();
-            List<realm_courseSteps> steps = realm_courseSteps.getSteps(mRealm, progress.getCourseId());
+            List<realm_courseSteps> steps = realm_courseSteps.getSteps(mRealm, course.getCourseId());
             object.addProperty("max", steps.size());
-            object.addProperty("current", getCurrentProgress(steps, mRealm, progress.getCourseId()));
+            object.addProperty("current", getCurrentProgress(steps, mRealm, course.getCourseId()));
             if (realm_myCourses.isMyCourse(userId, mRealm))
-                map.put(progress.getCourseId(), object);
+                map.put(course.getCourseId(), object);
         }
         return map;
     }

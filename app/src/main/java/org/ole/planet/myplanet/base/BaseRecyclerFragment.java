@@ -86,6 +86,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
                 realm_myCourses myObject = realm_myCourses.getMyCourse(mRealm, ((realm_myCourses) object).getCourseId());
                 realm_myCourses.createMyCourse(myObject, mRealm, model.getId());
                 Utilities.toast(getActivity(), "Added to my courses");
+                recyclerView.setAdapter(getAdapter());
             }
         }
     }
