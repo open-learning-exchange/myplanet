@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.R;
@@ -44,7 +45,9 @@ public class MyCourseFragment extends BaseRecyclerFragment<realm_myCourses> impl
     @Override
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = realm_rating.getRatings(mRealm, "course");
+        HashMap<String, JsonObject> progressMap = realm_courseProgress.getCourseProgress(mRealm,model.getId());
         adapterCourses = new AdapterCourses(getActivity(), getList(realm_myCourses.class), map);
+        adapterCourses.setProgressMap(progressMap);
         adapterCourses.setListener(this);
         return adapterCourses;
     }

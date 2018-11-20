@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -97,13 +98,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
-        int i;
-        for (i = 0; i < steps.size(); i++) {
-            realm_courseProgress progress = mRealm.where(realm_courseProgress.class).equalTo("stepNum", i + 1).equalTo("courseId", courseId).findFirst();
-            if (progress == null) {
-                break;
-            }
-        }
+        int i = realm_courseProgress.getCurrentProgress(steps, mRealm, courseId);
         courseProgress.setProgress(i);
     }
 
@@ -118,7 +113,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             tvStepTitle.setText(steps.get(position - 1).getStepTitle());
             if ((position - 1) < steps.size())
                 changeNextButtonState(position);
-        }else{
+        } else {
             next.setClickable(true);
             next.setColorFilter(getResources().getColor(R.color.md_white_1000));
         }

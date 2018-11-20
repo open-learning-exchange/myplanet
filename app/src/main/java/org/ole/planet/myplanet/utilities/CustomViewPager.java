@@ -6,6 +6,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.Scroller;
+
+import java.lang.reflect.Field;
 
 public class CustomViewPager extends ViewPager {
     public CustomViewPager(@NonNull Context context) {
@@ -18,11 +22,12 @@ public class CustomViewPager extends ViewPager {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent event) {
-        return true;
+        return false;
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        return true;
+        return false;
     }
+
 }

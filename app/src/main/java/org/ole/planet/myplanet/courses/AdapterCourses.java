@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.google.gson.JsonObject;
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.library.AdapterLibrary;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -36,6 +38,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnCourseItemSelected listener;
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> map;
+    private HashMap<String, JsonObject> progressMap;
 
     public AdapterCourses(Context context, List<realm_myCourses> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
@@ -45,6 +48,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
+    }
+
+    public void setProgressMap(HashMap<String, JsonObject> progressMap) {
+        this.progressMap = progressMap;
     }
 
     public void setCourseList(List<realm_myCourses> courseList) {
@@ -88,6 +95,18 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 JsonObject object = map.get(courseList.get(position).getCourseId());
                 showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
             }
+            showProgress(position, holder);
+        }
+    }
+
+    private void showProgress(int position, RecyclerView.ViewHolder holder) {
+        if (progressMap.containsKey(courseList.get(position).getCourseId())) {
+            JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
+            ((ViewHoldercourse) holder).progressBar.setMax(JsonUtils.getInt("max", ob));
+            ((ViewHoldercourse) holder).progressBar.setProgress(JsonUtils.getInt("current", ob));
+            ((ViewHoldercourse) holder).progressBar.setVisibility(View.VISIBLE);
+        } else {
+            ((ViewHoldercourse) holder).progressBar.setVisibility(View.GONE);
         }
     }
 
@@ -117,7 +136,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         TextView title, desc, grad_level, subject_level, ratingCount, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
-        ContentLoadingProgressBar progressBar;
+        SeekBar progressBar;
 
         public ViewHoldercourse(View itemView) {
             super(itemView);
@@ -129,7 +148,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ratingBar = itemView.findViewById(R.id.rating_bar);
             subject_level = itemView.findViewById(R.id.subject_level);
             checkBox = itemView.findViewById(R.id.checkbox);
-            progressBar = itemView.findViewById(R.id.progress);
+            progressBar = itemView.findViewById(R.id.course_progress);
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
