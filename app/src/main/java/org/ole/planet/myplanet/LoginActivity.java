@@ -105,6 +105,9 @@ public class LoginActivity extends SyncActivity {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                                 String processedUrl = saveConfigAndContinue(dialog);
+                                if (TextUtils.isEmpty(processedUrl)){
+                                    return;
+                                }
                                 try {
                                     isServerReachable(processedUrl);
                                 } catch (Exception e) {

@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.Data.realm_UserModel;
 public abstract class ProcessUserData extends AppCompatActivity {
     SharedPreferences settings;
 
-    public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
+    public boolean  validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
             textLayout.setError(err_message);
             requestFocus(textField);
