@@ -10,14 +10,19 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.URLUtil;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
+import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.service.UploadManager;
+import org.ole.planet.myplanet.utilities.DialogUtils;
 
-public abstract class ProcessUserData extends AppCompatActivity {
+public abstract class ProcessUserData extends AppCompatActivity implements SuccessListener {
     SharedPreferences settings;
 
-    public boolean  validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
+    public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
             textLayout.setError(err_message);
             requestFocus(textField);
@@ -33,6 +38,26 @@ public abstract class ProcessUserData extends AppCompatActivity {
         if (view.requestFocus()) {
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         }
+    }
+
+
+    public boolean isUrlValid(String url) {
+        if (!URLUtil.isValidUrl(url) || url.equals("http://") || url.equals("https://")) {
+            DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
+            return false;
+        }
+        return true;
+    }
+
+    public void startUpload() {
+        UploadManager.getInstance().uploadUserActivities(this);
+        UploadManager.getInstance().uploadExamResult(this);
+        UploadManager.getInstance().uploadFeedback(this);
+        UploadManager.getInstance().uploadToshelf(this);
+        UploadManager.getInstance().uploadResourceActivities("");
+        UploadManager.getInstance().uploadResourceActivities("sync");
+        UploadManager.getInstance().uploadRating(this);
+        Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -69,8 +94,7 @@ public abstract class ProcessUserData extends AppCompatActivity {
     }
 
 
-
-    protected void saveUrlScheme(SharedPreferences.Editor editor,Uri uri) {
+    protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri) {
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
         editor.putInt("url_Port", uri.getPort());

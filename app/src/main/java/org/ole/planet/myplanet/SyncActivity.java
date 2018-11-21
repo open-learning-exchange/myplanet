@@ -41,7 +41,7 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public abstract class SyncActivity extends ProcessUserData implements SyncListener, SuccessListener {
+public abstract class SyncActivity extends ProcessUserData implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
     public TextView intervalLabel;
@@ -88,17 +88,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             spinner.setVisibility(View.GONE);
             intervalLabel.setVisibility(View.GONE);
         }
-    }
-
-    public void startUpload() {
-        UploadManager.getInstance().uploadUserActivities(this);
-        UploadManager.getInstance().uploadExamResult(this);
-        UploadManager.getInstance().uploadFeedback(this);
-        UploadManager.getInstance().uploadToshelf(this);
-        UploadManager.getInstance().uploadResourceActivities("");
-        UploadManager.getInstance().uploadResourceActivities("sync");
-        UploadManager.getInstance().uploadRating(this);
-        Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -253,13 +242,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         progressDialog.show();
     }
 
-    public boolean isUrlValid(String url) {
-        if (!URLUtil.isValidUrl(url) || url.equals("http://") || url.equals("https://")) {
-            DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
-            return false;
-        }
-        return true;
-    }
 
     @Override
     public void onSyncFailed(final String s) {
