@@ -37,7 +37,7 @@ public class JsonUtils {
 
     public static JsonArray getJsonArray(String fieldName, JsonObject jsonObject) {
         JsonElement arry = getJsonElement(fieldName, jsonObject, JsonArray.class);
-        return arry instanceof JsonNull ? new JsonArray() : arry.getAsJsonArray();
+        return arry instanceof JsonNull || !(arry instanceof  JsonArray) ? new JsonArray() : arry.getAsJsonArray();
     }
 
     public static JsonObject getJsonObject(String fieldName, JsonObject jsonObject) {
