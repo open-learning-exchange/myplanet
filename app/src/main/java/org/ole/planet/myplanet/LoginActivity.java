@@ -57,7 +57,6 @@ public class LoginActivity extends SyncActivity {
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-    private View constraintLayout;
     private CheckBox save;
 
     @Override
@@ -242,16 +241,6 @@ public class LoginActivity extends SyncActivity {
     }
 
 
-    public void declareHideKeyboardElements() {
-        constraintLayout = findViewById(R.id.constraintLayout);
-        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent ev) {
-                hideKeyboard(view);
-                return false;
-            }
-        });
-    }
 
     @Override
     public void onSuccess(String s) {

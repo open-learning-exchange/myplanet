@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
@@ -53,6 +54,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
     ProgressDialog progressDialog;
+    private View constraintLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -97,6 +99,18 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         UploadManager.getInstance().uploadResourceActivities("sync");
         UploadManager.getInstance().uploadRating(this);
         Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
+    }
+
+
+    public void declareHideKeyboardElements() {
+        constraintLayout = findViewById(R.id.constraintLayout);
+        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent ev) {
+                hideKeyboard(view);
+                return false;
+            }
+        });
     }
 
     private void dateCheck(MaterialDialog dialog) {
