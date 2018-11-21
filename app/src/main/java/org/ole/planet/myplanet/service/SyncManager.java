@@ -107,8 +107,7 @@ public class SyncManager {
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                     realm_resourceActivities.onSynced(mRealm, settings);
                 } catch (Exception err) {
-                    err.printStackTrace();
-                    handleException("Unauthorized , invalid name or password");
+                    handleException(err.getMessage());
                 } finally {
                     destroy();
                 }
