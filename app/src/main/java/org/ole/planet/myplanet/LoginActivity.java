@@ -57,7 +57,6 @@ public class LoginActivity extends SyncActivity {
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-    private View constraintLayout;
     private CheckBox save;
 
     @Override
@@ -104,12 +103,7 @@ public class LoginActivity extends SyncActivity {
                         .onPositive(new MaterialDialog.SingleButtonCallback() {
                             @Override
                             public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                String processedUrl = saveConfigAndContinue(dialog);
-                                try {
-                                    isServerReachable(processedUrl);
-                                } catch (Exception e) {
-                                    DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
-                                }
+                                continueSync(dialog);
                             }
                         }).onNeutral(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -120,6 +114,16 @@ public class LoginActivity extends SyncActivity {
                 settingDialog(builder);
             }
         });
+    }
+
+    private void continueSync(MaterialDialog dialog) {
+        String processedUrl = saveConfigAndContinue(dialog);
+        if (TextUtils.isEmpty(processedUrl)) return;
+        try {
+            isServerReachable(processedUrl);
+        } catch (Exception e) {
+            DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
+        }
     }
 
 
@@ -237,16 +241,6 @@ public class LoginActivity extends SyncActivity {
     }
 
 
-    public void declareHideKeyboardElements() {
-        constraintLayout = findViewById(R.id.constraintLayout);
-        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent ev) {
-                hideKeyboard(view);
-                return false;
-            }
-        });
-    }
 
     @Override
     public void onSuccess(String s) {

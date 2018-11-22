@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
@@ -40,7 +41,7 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-public abstract class SyncActivity extends ProcessUserData implements SyncListener, SuccessListener {
+public abstract class SyncActivity extends ProcessUserData implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
     public TextView intervalLabel;
@@ -53,6 +54,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
     ProgressDialog progressDialog;
+    private View constraintLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -88,15 +90,16 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         }
     }
 
-    public void startUpload() {
-        UploadManager.getInstance().uploadUserActivities(this);
-        UploadManager.getInstance().uploadExamResult(this);
-        UploadManager.getInstance().uploadFeedback(this);
-        UploadManager.getInstance().uploadToshelf(this);
-        UploadManager.getInstance().uploadResourceActivities("");
-        UploadManager.getInstance().uploadResourceActivities("sync");
-        UploadManager.getInstance().uploadRating(this);
-        Toast.makeText(this, "Syncing data, please wait...", Toast.LENGTH_SHORT).show();
+
+    public void declareHideKeyboardElements() {
+        constraintLayout = findViewById(R.id.constraintLayout);
+        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent ev) {
+                hideKeyboard(view);
+                return false;
+            }
+        });
     }
 
     private void dateCheck(MaterialDialog dialog) {
@@ -239,13 +242,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         progressDialog.show();
     }
 
-    public boolean isUrlValid(String url) {
-        if (!URLUtil.isValidUrl(url) || url.equals("http://") || url.equals("https://")) {
-            DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
-            return false;
-        }
-        return true;
-    }
 
     @Override
     public void onSyncFailed(final String s) {
