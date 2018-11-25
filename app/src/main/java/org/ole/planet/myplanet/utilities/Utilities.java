@@ -72,6 +72,13 @@ public class Utilities {
         return datetime;
     }
 
+    public static String formatDate(long date) {
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
+        String datetime = dateformat.format(date);
+        return datetime;
+    }
+
 
     public static void openDownloadService(Context context, ArrayList urls) {
         Intent intent = new Intent(context, MyDownloadService.class);

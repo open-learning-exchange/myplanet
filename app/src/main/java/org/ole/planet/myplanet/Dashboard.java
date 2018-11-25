@@ -34,12 +34,14 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.MyCourseFragment;
 import org.ole.planet.myplanet.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.library.MyLibraryFragment;
+import org.ole.planet.myplanet.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.survey.SurveyFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
@@ -202,6 +204,16 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         openCallFragment(f);
     }
 
+    @Override
+    public void sendSurvey(realm_stepExam current) {
+        SendSurveyFragment f = new SendSurveyFragment();
+        Bundle b = new Bundle();
+        b.putString("surveyId", current.getId());
+        f.setArguments(b);
+        f.show(getSupportFragmentManager(), "");
+
+    }
+
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
@@ -277,9 +289,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
         } else if (f instanceof MyLibraryFragment) {
             navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
-        }else if (f instanceof DashboardFragment){
+        } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
-        }else if (f instanceof SurveyFragment){
+        } else if (f instanceof SurveyFragment) {
             navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
     }

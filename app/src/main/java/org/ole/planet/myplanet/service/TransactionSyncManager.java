@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
 import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_stepExam;
+import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
 
@@ -54,6 +55,9 @@ public class TransactionSyncManager {
             } else if (type.equals("login")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_offlineActivities.insertOfflineActivities(mRealm, jsonDoc);
+            } else if (type.equals("submissions")) {
+                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+                realm_submissions.insertSubmission(mRealm, jsonDoc);
             } else if (type.equals("rating")) {
                 JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
                 realm_rating.insertRatings(mRealm, jsonDoc);

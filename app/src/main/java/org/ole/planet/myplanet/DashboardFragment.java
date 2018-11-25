@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.myplanet.survey.MySurveyFragment;
 import org.ole.planet.myplanet.survey.SurveyFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
@@ -91,7 +92,7 @@ public class DashboardFragment extends BaseContainerFragment {
         tv_surveys.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                homeItemClickListener.openCallFragment(new SurveyFragment());
+                homeItemClickListener.openCallFragment(new MySurveyFragment());
             }
         });
         view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {

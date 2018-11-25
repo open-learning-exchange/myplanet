@@ -42,8 +42,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:visibility="gone"
-            android:maxLines="2" />
+            android:maxLines="2"
+            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -60,6 +60,13 @@
                 android:textColor="@color/colorPrimary"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/send_survey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Send Survey"
+                android:theme="@style/PrimaryButton" />
 
             <Button
                 android:id="@+id/start_survey"

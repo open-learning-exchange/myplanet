@@ -2,10 +2,13 @@ package org.ole.planet.myplanet.Data;
 
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -28,10 +31,32 @@ public class realm_submissions extends RealmObject {
     private String status;
     private boolean uploaded;
 
+
+    public static void insertSubmission(Realm mRealm, JsonObject submission) {
+        Utilities.log("Insert submission  ");
+        String id = JsonUtils.getString("_id", submission);
+        realm_submissions sub = mRealm.where(realm_submissions.class).equalTo("id", id).findFirst();
+        if (sub == null) {
+            sub = mRealm.createObject(realm_submissions.class, id);
+        }
+        sub.setStatus(JsonUtils.getString("_id", submission));
+        sub.setStatus(JsonUtils.getString("status", submission));
+        sub.set_rev(JsonUtils.getString("_rev", submission));
+        sub.setDate(JsonUtils.getLong("data", submission));
+        sub.setGrade(JsonUtils.getString("grade", submission));
+        sub.setGrade(JsonUtils.getString("type", submission));
+        sub.setUploaded(JsonUtils.getString("status", submission).equals("graded"));
+        sub.setParentId(JsonUtils.getString("parentId", submission));
+        sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
+        sub.setUser(JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission)));
+    }
+
+
     public static JsonObject serializeExamResult(Realm mRealm, realm_submissions sub) {
         JsonObject object = new JsonObject();
         realm_UserModel user = mRealm.where(realm_UserModel.class).equalTo("id", sub.userId).findFirst();
         realm_stepExam exam = mRealm.where(realm_stepExam.class).equalTo("id", sub.parentId).findFirst();
+        object.addProperty("_id", sub.get_id());
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
@@ -51,7 +76,7 @@ public class realm_submissions extends RealmObject {
 
     public static boolean isStepCompleted(Realm realm, String id, String userId) {
         realm_stepExam exam = realm.where(realm_stepExam.class).equalTo("stepId", id).findFirst();
-        if (exam == null){
+        if (exam == null) {
             return true;
         }
         return realm.where(realm_submissions.class)

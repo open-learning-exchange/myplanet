@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -42,7 +43,7 @@ public class JsonUtils {
 
     public static JsonObject getJsonObject(String fieldName, JsonObject jsonObject) {
         JsonElement el = getJsonElement(fieldName, jsonObject, JsonArray.class);
-        return el instanceof JsonNull ? new JsonObject() : el.getAsJsonObject();
+        return el instanceof JsonObject ? el.getAsJsonObject() : new JsonObject() ;
     }
 
     public static JsonElement getJsonElement(String fieldName, JsonObject jsonObject, Class type) {
