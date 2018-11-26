@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseDialogFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -35,9 +36,8 @@ import io.realm.Sort;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class SendSurveyFragment extends DialogFragment {
+public class SendSurveyFragment extends BaseDialogFragment {
 
-    String surveyId;
     ListView listView;
     Realm mRealm;
     DatabaseService dbService;
@@ -47,14 +47,6 @@ public class SendSurveyFragment extends DialogFragment {
     }
 
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setStyle(DialogFragment.STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog_NoActionBar_MinWidth);
-        if (getArguments() != null) {
-            surveyId = getArguments().getString("surveyId");
-        }
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -64,7 +56,7 @@ public class SendSurveyFragment extends DialogFragment {
         listView = v.findViewById(R.id.list_users);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
-        if (TextUtils.isEmpty(surveyId)){
+        if (TextUtils.isEmpty(id)) {
             dismiss();
             return v;
         }
@@ -79,16 +71,16 @@ public class SendSurveyFragment extends DialogFragment {
 
     private void createSurveySubmission(String userId) {
         Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        List<realm_examQuestion> questions = mRealm.where(realm_examQuestion.class).equalTo("examId", surveyId).findAll();
+        List<realm_examQuestion> questions = mRealm.where(realm_examQuestion.class).equalTo("examId", id).findAll();
         mRealm.beginTransaction();
         realm_submissions sub = mRealm.where(realm_submissions.class)
                 .equalTo("userId", userId)
-                .equalTo("parentId", surveyId)
+                .equalTo("parentId", id)
                 .sort("date", Sort.DESCENDING)
                 .equalTo("status", "pending")
                 .findFirst();
         sub = realm_submissions.createSubmission(sub, questions, mRealm);
-        sub.setParentId(surveyId);
+        sub.setParentId(id);
         sub.setUserId(userId);
         sub.setType("survey");
         sub.setStatus("pending");
@@ -100,6 +92,21 @@ public class SendSurveyFragment extends DialogFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         List<realm_UserModel> users = mRealm.where(realm_UserModel.class).findAll();
+        initListView(users);
+        getView().findViewById(R.id.send_survey).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                for (int i = 0; i < selectedItemsList.size(); i++) {
+                    realm_UserModel u = users.get(i);
+                    createSurveySubmission(u.getId());
+                }
+                Utilities.toast(getActivity(), "Survey sent to users");
+                dismiss();
+            }
+        });
+    }
+
+    private void initListView(List<realm_UserModel> users) {
         ArrayAdapter<realm_UserModel> adapter = new ArrayAdapter<realm_UserModel>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
@@ -114,16 +121,10 @@ public class SendSurveyFragment extends DialogFragment {
                 }
             }
         });
-        getView().findViewById(R.id.send_survey).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                for (int i = 0 ; i < selectedItemsList.size() ; i ++){
-                    realm_UserModel u = users.get(i);
-                    createSurveySubmission(u.getId());
-                }
-                Utilities.toast(getActivity(), "Survey sent to users");
-                dismiss();
-            }
-        });
+    }
+
+    @Override
+    protected String getKey() {
+        return "surveyId";
     }
 }

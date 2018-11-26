@@ -73,15 +73,7 @@ public class UploadManager {
                 List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
                 Utilities.log("Sub size " + submissions.size());
                 for (realm_submissions sub : submissions) {
-                    Response r;
-                    if (TextUtils.isEmpty(sub.get_id())) {
-                        r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
-                    } else {
-                        r = dbClient.update(realm_submissions.serializeExamResult(realm, sub));
-                    }
-                    if (!TextUtils.isEmpty(r.getId())) {
-                        sub.setUploaded(true);
-                    }
+                    continueResultUpload(sub, dbClient, realm);
                 }
             }
         }, new Realm.Transaction.OnSuccess() {
@@ -91,6 +83,18 @@ public class UploadManager {
             }
         });
         uploadCourseProgress();
+    }
+
+    private void continueResultUpload(realm_submissions sub, CouchDbClientAndroid dbClient, Realm realm) {
+        Response r;
+        if (TextUtils.isEmpty(sub.get_id())) {
+            r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
+        } else {
+            r = dbClient.update(realm_submissions.serializeExamResult(realm, sub));
+        }
+        if (!TextUtils.isEmpty(r.getId())) {
+            sub.setUploaded(true);
+        }
     }
 
     public void uploadCourseProgress() {

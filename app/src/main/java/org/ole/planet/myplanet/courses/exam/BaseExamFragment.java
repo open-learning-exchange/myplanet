@@ -130,11 +130,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
 
     private void showUserInfoDialog() {
         if (!isMySurvey) {
-            UserInformationFragment f = new UserInformationFragment();
-            Bundle b = new Bundle();
-            b.putString("sub_id", sub.getId());
-            f.setArguments(b);
-            f.show(getChildFragmentManager(), "");
+            UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
