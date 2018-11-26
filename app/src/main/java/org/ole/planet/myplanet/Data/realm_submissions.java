@@ -6,6 +6,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.lightcouch.CouchDbClientAndroid;
+import org.lightcouch.Response;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -93,6 +95,18 @@ public class realm_submissions extends RealmObject {
         if (sub == null || questions.size() == sub.getAnswers().size())
             sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
         return sub;
+    }
+
+    public static void continueResultUpload(realm_submissions sub, CouchDbClientAndroid dbClient, Realm realm) {
+        Response r;
+        if (TextUtils.isEmpty(sub.get_id())) {
+            r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
+        } else {
+            r = dbClient.update(realm_submissions.serializeExamResult(realm, sub));
+        }
+        if (!TextUtils.isEmpty(r.getId())) {
+            sub.setUploaded(true);
+        }
     }
 
     public String getLocalUserImageUri() {
