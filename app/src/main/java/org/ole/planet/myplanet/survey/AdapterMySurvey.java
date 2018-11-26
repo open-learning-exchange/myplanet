@@ -52,16 +52,21 @@ public class AdapterMySurvey extends RecyclerView.Adapter<RecyclerView.ViewHolde
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (listener != null) {
-                        Bundle b = new Bundle();
-                        b.putString("type", "survey");
-                        b.putString("id", list.get(position).getParentId());
-                        Fragment f = new TakeExamFragment();
-                        f.setArguments(b);
-                        listener.openCallFragment(f);
-                    }
+                    openSurvey(listener, list.get(position).getId(), true);
                 }
             });
+        }
+    }
+
+    public static void openSurvey(OnHomeItemClickListener listener, String id, boolean isMySurvey) {
+        if (listener != null) {
+            Bundle b = new Bundle();
+            b.putString("type", "survey");
+            b.putString("id", id);
+            b.putBoolean("isMySurvey", isMySurvey);
+            Fragment f = new TakeExamFragment();
+            f.setArguments(b);
+            listener.openCallFragment(f);
         }
     }
 

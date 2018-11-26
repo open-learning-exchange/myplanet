@@ -10,6 +10,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.List;
+import java.util.UUID;
+
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
@@ -84,6 +87,12 @@ public class realm_submissions extends RealmObject {
                 .equalTo("parentId", exam.getId())
                 .equalTo("status", "graded")
                 .findFirst() != null;
+    }
+
+    public static realm_submissions createSubmission(realm_submissions sub, List<realm_examQuestion> questions, Realm mRealm) {
+        if (sub == null || questions.size() == sub.getAnswers().size())
+            sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
+        return sub;
     }
 
     public String getLocalUserImageUri() {

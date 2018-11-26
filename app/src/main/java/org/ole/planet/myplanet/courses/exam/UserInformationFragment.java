@@ -135,6 +135,7 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         submissions.setUser(user.toString());
+        submissions.setStatus("completed");
         mRealm.commitTransaction();
         dismiss();
     }

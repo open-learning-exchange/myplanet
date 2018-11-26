@@ -72,8 +72,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         btnSubmit = view.findViewById(R.id.btn_submit);
         listChoices = view.findViewById(R.id.group_choices);
         container = view.findViewById(R.id.container);
-        db = new DatabaseService(getActivity());
-        mRealm = db.getRealmInstance();
+
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(dbHandler.getUserModel());
         return view;
@@ -86,12 +85,13 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         initExam();
         questions = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
-        sub = mRealm.where(realm_submissions.class)
-                .equalTo("userId", user.getId())
-                .equalTo("parentId", exam.getId())
-                .sort("date", Sort.DESCENDING)
-                .equalTo("status", "pending")
-                .findFirst();
+        if (!isMySurvey)
+            sub = mRealm.where(realm_submissions.class)
+                    .equalTo("userId", user.getId())
+                    .equalTo("parentId", exam.getId())
+                    .sort("date", Sort.DESCENDING)
+                    .equalTo("status", "pending")
+                    .findFirst();
         if (questions.size() > 0) {
             createSubmission();
             Utilities.log("Current index " + currentIndex);
@@ -105,8 +105,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private void createSubmission() {
         startTransaction();
-        if (sub == null || questions.size() == sub.getAnswers().size())
-            sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
+        sub = realm_submissions.createSubmission(sub, questions, mRealm);
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
         sub.setType(type);

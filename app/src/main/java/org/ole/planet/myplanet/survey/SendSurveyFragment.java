@@ -87,8 +87,7 @@ public class SendSurveyFragment extends DialogFragment {
                 .sort("date", Sort.DESCENDING)
                 .equalTo("status", "pending")
                 .findFirst();
-        if (sub == null || questions.size() == sub.getAnswers().size())
-            sub = mRealm.createObject(realm_submissions.class, UUID.randomUUID().toString());
+        sub = realm_submissions.createSubmission(sub, questions, mRealm);
         sub.setParentId(surveyId);
         sub.setUserId(userId);
         sub.setType("survey");

@@ -1,14 +1,17 @@
 package org.ole.planet.myplanet;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,13 +24,15 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.userprofile.SettingActivity;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 /**
  * Extra class for excess methods in Dashboard activities
  */
 
 public abstract class DashboardElements extends AppCompatActivity {
-
+    private static final int PERMISSION_REQUEST_CODE_FILE = 111;
+    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
     public EditText feedbackText;
     public UserProfileDbHandler profileDbHandler;
 
@@ -109,4 +114,20 @@ public abstract class DashboardElements extends AppCompatActivity {
         RatingFragment f = RatingFragment.newInstance(type, resource_id, title);
         f.show(getSupportFragmentManager(), "");
     }
+
+    public void requestPermission() {
+        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) || !checkPermission(Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_FILE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
+        } else {
+            Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
+        }
+    }
+
 }

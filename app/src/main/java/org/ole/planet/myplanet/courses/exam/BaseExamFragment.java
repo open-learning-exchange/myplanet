@@ -40,14 +40,18 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     realm_UserModel user;
     realm_submissions sub;
     HashMap<String, String> listAns;
+    boolean isMySurvey;
 
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        db = new DatabaseService(getActivity());
+        mRealm = db.getRealmInstance();
         if (getArguments() != null) {
             stepId = getArguments().getString("stepId");
             stepNumber = getArguments().getInt("stepNum");
+            isMySurvey = getArguments().getBoolean("isMySurvey");
             checkId();
             checkType();
         }
@@ -56,6 +60,11 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     private void checkId() {
         if (TextUtils.isEmpty(stepId)) {
             id = getArguments().getString("id");
+            if (isMySurvey) {
+                sub = mRealm.where(realm_submissions.class).equalTo("id", id).findFirst();
+                id = sub.getParentId();
+            }
+            Utilities.log("Id " + id);
         }
     }
 
@@ -120,11 +129,21 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void showUserInfoDialog() {
-        UserInformationFragment f = new UserInformationFragment();
-        Bundle b = new Bundle();
-        b.putString("sub_id", sub.getId());
-        f.setArguments(b);
-        f.show(getChildFragmentManager(), "");
+        if (!isMySurvey) {
+            UserInformationFragment f = new UserInformationFragment();
+            Bundle b = new Bundle();
+            b.putString("sub_id", sub.getId());
+            f.setArguments(b);
+            f.show(getChildFragmentManager(), "");
+        } else {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            sub.setStatus("completed");
+            mRealm.commitTransaction();
+            Utilities.toast(getActivity(), "Thank you for taking this survey.");
+            getActivity().onBackPressed();
+        }
+
     }
 
 
