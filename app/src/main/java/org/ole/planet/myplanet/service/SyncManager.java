@@ -103,6 +103,7 @@ public class SyncManager {
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
                     resourceTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("ratings", settings), "rating");
+                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("submissions", settings), "submissions");
                     myLibraryTransactionSync();
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
                     realm_resourceActivities.onSynced(mRealm, settings);

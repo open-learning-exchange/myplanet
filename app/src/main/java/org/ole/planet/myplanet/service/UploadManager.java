@@ -73,10 +73,7 @@ public class UploadManager {
                 List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
                 Utilities.log("Sub size " + submissions.size());
                 for (realm_submissions sub : submissions) {
-                    Response r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
-                    if (!TextUtils.isEmpty(r.getId())) {
-                        sub.setUploaded(true);
-                    }
+                  realm_submissions.continueResultUpload(sub, dbClient, realm);
                 }
             }
         }, new Realm.Transaction.OnSuccess() {

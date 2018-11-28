@@ -34,12 +34,14 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.MyCourseFragment;
 import org.ole.planet.myplanet.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.library.MyLibraryFragment;
+import org.ole.planet.myplanet.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.survey.SurveyFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
@@ -51,13 +53,11 @@ import java.util.ArrayList;
 
 public class Dashboard extends DashboardElements implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener, FragmentManager.OnBackStackChangedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
-    private static final int PERMISSION_REQUEST_CODE_FILE = 111;
-    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
+
     AccountHeader headerResult;
     private Drawer result = null;
     private Toolbar mTopToolbar;
     private BottomNavigationView navigationView;
-    private SharedPreferences preferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +65,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(mTopToolbar);
-        preferences = getPreferences(SyncActivity.MODE_PRIVATE);
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
         navigationView.setOnNavigationItemSelectedListener(this);
@@ -86,29 +85,12 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         openCallFragment(new DashboardFragment());
     }
 
-    public void requestPermission() {
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) || !checkPermission(Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_FILE);
-        }
-//        if (!checkPermission(Manifest.permission.CAMERA)) {
-//            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_CAMERA);
-//        }
-    }
 
     public boolean checkPermission(String strPermission) {
         int result = ContextCompat.checkSelfPermission(this, strPermission);
         return result == PackageManager.PERMISSION_GRANTED;
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
-        } else {
-            Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
-            // requestPermission();
-        }
-    }
 
     private AccountHeader getAccountHeader() {
         return new AccountHeaderBuilder()
@@ -202,6 +184,16 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         openCallFragment(f);
     }
 
+    @Override
+    public void sendSurvey(realm_stepExam current) {
+        SendSurveyFragment f = new SendSurveyFragment();
+        Bundle b = new Bundle();
+        b.putString("surveyId", current.getId());
+        f.setArguments(b);
+        f.show(getSupportFragmentManager(), "");
+
+    }
+
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
@@ -277,9 +269,9 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
             navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
         } else if (f instanceof MyLibraryFragment) {
             navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
-        }else if (f instanceof DashboardFragment){
+        } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
-        }else if (f instanceof SurveyFragment){
+        } else if (f instanceof SurveyFragment) {
             navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
     }

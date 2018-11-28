@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseDialogFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -33,7 +34,7 @@ import io.realm.Realm;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class UserInformationFragment extends DialogFragment implements View.OnClickListener {
+public class UserInformationFragment extends BaseDialogFragment implements View.OnClickListener {
 
     EditText etFname, etMname, etLname, etPhone, etEmail;
     TextView tvBirthDate;
@@ -41,20 +42,18 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
     RadioGroup rbGender;
     Spinner spnLang, spnLvl;
     Button btnSubmit, btnCancel;
-    String id;
     Realm mRealm;
     realm_submissions submissions;
 
     public UserInformationFragment() {
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setStyle(DialogFragment.STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog_NoActionBar_MinWidth);
-        if (getArguments() != null) {
-            id = getArguments().getString("sub_id");
-        }
+    public static UserInformationFragment getInstance(String id){
+        UserInformationFragment f = new UserInformationFragment();
+        Bundle b = new Bundle();
+        b.putString("sub_id",id);
+        f.setArguments(b);
+        return  f;
     }
 
     @Override
@@ -62,6 +61,7 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_information, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        Utilities.log("Sub id " + id);
         submissions = mRealm.where(realm_submissions.class).equalTo("id", id).findFirst();
         initViews(v);
         return v;
@@ -91,7 +91,7 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()){
+        switch (view.getId()) {
             case R.id.btn_cancel:
                 dismiss();
                 break;
@@ -135,6 +135,7 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         submissions.setUser(user.toString());
+        submissions.setStatus("completed");
         mRealm.commitTransaction();
         dismiss();
     }
@@ -161,4 +162,8 @@ public class UserInformationFragment extends DialogFragment implements View.OnCl
         dpd.show();
     }
 
+    @Override
+    protected String getKey() {
+        return "sub_id";
+    }
 }

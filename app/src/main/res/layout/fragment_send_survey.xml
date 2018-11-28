@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:padding="@dimen/padding_normal"
+    android:layout_height="match_parent"
+    tools:context=".survey.SendSurveyFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:text="Send Survey to : "
+        android:padding="@dimen/padding_normal"
+        android:layout_height="wrap_content" />
+
+        <ListView
+            android:id="@+id/list_users"
+            android:padding="@dimen/padding_normal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="right"
+            android:layout_gravity="right">
+
+            <Button
+                android:id="@+id/btn_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:text="Cancel"
+                android:theme="@style/AccentButton" />
+
+            <Button
+                android:id="@+id/send_survey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:text="Send Survey"
+                android:theme="@style/PrimaryButton" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</FrameLayout>

@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.exam.TakeExamFragment;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -54,20 +55,14 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ho.startSurvey.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (listener != null) {
-                        Bundle b = new Bundle();
-                        b.putString("type", "survey");
-                        b.putString("id", examList.get(position).getId());
-                        Fragment f = new TakeExamFragment();
-                        f.setArguments(b);
-                        listener.openCallFragment(f);
-                    }
+                    AdapterMySurvey.openSurvey(listener, examList.get(position).getId(), false);
                 }
             });
             String noOfSubmission = realm_submissions.getNoOfSubmissionByUser(examList.get(position).getId(), userId, mRealm);
             String subDate = realm_submissions.getRecentSubmissionDate(examList.get(position).getId(), userId, mRealm);
             ho.noSubmission.setText(noOfSubmission);
             ho.lastSubDate.setText(subDate);
+
         }
     }
 
@@ -79,7 +74,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     class ViewHolderSurvey extends RecyclerView.ViewHolder {
 
         TextView title, description, noSubmission, lastSubDate;
-        Button startSurvey;
+        Button startSurvey, sendSurvey;
 
         public ViewHolderSurvey(View itemView) {
             super(itemView);
@@ -88,6 +83,16 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             noSubmission = itemView.findViewById(R.id.tv_no_submissions);
             lastSubDate = itemView.findViewById(R.id.tv_date);
             startSurvey = itemView.findViewById(R.id.start_survey);
+            sendSurvey = itemView.findViewById(R.id.send_survey);
+            sendSurvey.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    realm_stepExam current = examList.get(getAdapterPosition());
+                    if (listener != null)
+                        listener.sendSurvey(current);
+
+                }
+            });
         }
     }
 }

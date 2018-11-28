@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
 import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_stepExam;
+import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
 
@@ -43,21 +44,29 @@ public class TransactionSyncManager {
 
     private static void processDoc(CouchDbClientAndroid dbClient, Document doc, Realm mRealm, String type) throws Exception {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-            if (type.equals("course")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                realm_myCourses.insertMyCourses(jsonDoc, mRealm);
-            } else if (type.equals("exams")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
-            } else if (type.equals("users")) {
-                processUserDoc(doc, dbClient, mRealm, settings);
-            } else if (type.equals("login")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                realm_offlineActivities.insertOfflineActivities(mRealm, jsonDoc);
-            } else if (type.equals("rating")) {
-                JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
-                realm_rating.insertRatings(mRealm, jsonDoc);
-            }
+        if (type.equals("course")) {
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            realm_myCourses.insertMyCourses(jsonDoc, mRealm);
+        } else if (type.equals("exams")) {
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            realm_stepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
+        } else if (type.equals("users")) {
+            processUserDoc(doc, dbClient, mRealm, settings);
+        } else if (type.equals("login")) {
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            realm_offlineActivities.insertOfflineActivities(mRealm, jsonDoc);
+        }
+        checkDoc(dbClient, doc, mRealm, type);
+    }
+
+    private static void checkDoc(CouchDbClientAndroid dbClient, Document doc, Realm mRealm, String type) {
+        if (type.equals("submissions")) {
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            realm_submissions.insertSubmission(mRealm, jsonDoc);
+        } else if (type.equals("rating")) {
+            JsonObject jsonDoc = dbClient.find(JsonObject.class, doc.getId());
+            realm_rating.insertRatings(mRealm, jsonDoc);
+        }
     }
 
     private static void processUserDoc(Document doc, CouchDbClientAndroid dbClient, Realm mRealm, SharedPreferences settings) {
