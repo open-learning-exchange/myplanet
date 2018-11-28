@@ -42,7 +42,6 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     RadioGroup rbGender;
     Spinner spnLang, spnLvl;
     Button btnSubmit, btnCancel;
-    String id;
     Realm mRealm;
     realm_submissions submissions;
 
@@ -62,6 +61,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_information, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        Utilities.log("Sub id " + id);
         submissions = mRealm.where(realm_submissions.class).equalTo("id", id).findFirst();
         initViews(v);
         return v;
