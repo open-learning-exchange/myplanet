@@ -111,6 +111,7 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
         JsonObject object = realm_rating.getRatingsById(mRealm, "resource", library.getResource_id());
         setRatings(object);
+        profileDbHandler.setResourceOpenCount(library);
         setClickListeners();
     }
 
