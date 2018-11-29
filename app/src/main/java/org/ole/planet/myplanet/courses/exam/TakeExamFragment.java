@@ -89,7 +89,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             sub = mRealm.where(realm_submissions.class)
                     .equalTo("userId", user.getId())
                     .equalTo("parentId", exam.getId())
-                    .sort("date", Sort.DESCENDING)
+                    .sort("startTime", Sort.DESCENDING)
                     .equalTo("status", "pending")
                     .findFirst();
         if (questions.size() > 0) {

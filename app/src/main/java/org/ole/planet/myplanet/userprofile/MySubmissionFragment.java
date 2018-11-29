@@ -28,6 +28,7 @@ public class MySubmissionFragment extends Fragment {
     Realm mRealm;
     RecyclerView rvSurvey;
     String type = "";
+    HashMap<String, realm_stepExam> exams;
 
     public static Fragment newInstance(String type) {
         MySubmissionFragment fragment = new MySubmissionFragment();
@@ -52,6 +53,8 @@ public class MySubmissionFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_my_submission, container, false);
+        exams = new HashMap<>();
+
         rvSurvey = v.findViewById(R.id.rv_mysurvey);
         return v;
     }
@@ -61,24 +64,25 @@ public class MySubmissionFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         List<realm_submissions> submissions = mRealm.where(realm_submissions.class).findAll();
-
-        HashMap<String, realm_stepExam> exams = new HashMap<>();
-        for (realm_submissions sub : submissions) {
-            realm_stepExam survey = mRealm.where(realm_stepExam.class).equalTo("id", sub.getParentId()).findFirst();
-            if (survey != null)
-                exams.put(sub.getParentId(), survey);
-        }
+        createHashMap(submissions);
         if (type.equals("survey")) {
             submissions = mRealm.where(realm_submissions.class).equalTo("type", "survey").findAll();
         } else {
             submissions = mRealm.where(realm_submissions.class).notEqualTo("type", "survey").findAll();
         }
-
         rvSurvey.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvSurvey.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
         adapter.setType(type);
         rvSurvey.setAdapter(adapter);
 
+    }
+
+    private void createHashMap(List<realm_submissions> submissions) {
+        for (realm_submissions sub : submissions) {
+            realm_stepExam survey = mRealm.where(realm_stepExam.class).equalTo("id", sub.getParentId()).findFirst();
+            if (survey != null)
+                exams.put(sub.getParentId(), survey);
+        }
     }
 }

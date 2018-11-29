@@ -48,12 +48,16 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     public UserInformationFragment() {
     }
 
-    public static UserInformationFragment getInstance(String id){
+    public static UserInformationFragment getInstance(String id) {
         UserInformationFragment f = new UserInformationFragment();
+        setArgs(f, id);
+        return f;
+    }
+
+    private static void setArgs(UserInformationFragment f, String id) {
         Bundle b = new Bundle();
-        b.putString("sub_id",id);
+        b.putString("sub_id", id);
         f.setArguments(b);
-        return  f;
     }
 
     @Override

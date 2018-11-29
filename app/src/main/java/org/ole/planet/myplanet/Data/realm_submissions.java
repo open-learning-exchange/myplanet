@@ -138,7 +138,7 @@ public class realm_submissions extends RealmObject {
     }
 
     public static String getRecentSubmissionDate(String id, String userId, Realm mRealm) {
-        realm_submissions s = mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).sort("date", Sort.DESCENDING).findFirst();
+        realm_submissions s = mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).sort("startTime", Sort.DESCENDING).findFirst();
         return s == null ? "" : TimeUtils.getFormatedDateWithTime(s.getStartTime()) + "";
     }
 
