@@ -107,6 +107,7 @@ public class RatingFragment extends DialogFragment {
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
+                Utilities.log("User id " + settings.getString("userId", "") );
                 realm_rating ratingObject = realm.where(realm_rating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
                 if (ratingObject == null)
                     ratingObject = realm.createObject(realm_rating.class, UUID.randomUUID().toString());
