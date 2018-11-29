@@ -109,7 +109,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
         sub.setType(type);
-        sub.setDate(new Date().getTime());
+        sub.setStartTime(new Date().getTime());
         if (sub.getAnswers() != null) {
             currentIndex = sub.getAnswers().size();
         }

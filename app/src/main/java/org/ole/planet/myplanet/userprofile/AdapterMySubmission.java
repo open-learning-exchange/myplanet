@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.survey;
+package org.ole.planet.myplanet.userprofile;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -20,13 +20,14 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.HashMap;
 import java.util.List;
 
-public class AdapterMySurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnHomeItemClickListener listener;
     private Context context;
     private List<realm_submissions> list;
     private HashMap<String, realm_stepExam> examHashMap;
+    private String type = "";
 
-    public AdapterMySurvey(Context context, List<realm_submissions> list, HashMap<String, realm_stepExam> exams) {
+    public AdapterMySubmission(Context context, List<realm_submissions> list, HashMap<String, realm_stepExam> exams) {
         this.context = context;
         this.list = list;
         this.examHashMap = exams;
@@ -46,15 +47,21 @@ public class AdapterMySurvey extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMySurvey) {
             ((ViewHolderMySurvey) holder).status.setText(list.get(position).getStatus());
-            ((ViewHolderMySurvey) holder).date.setText(Utilities.formatDate(list.get(position).getDate()));
+            ((ViewHolderMySurvey) holder).date.setText(Utilities.formatDate(list.get(position).getStartTime()));
             if (examHashMap.containsKey(list.get(position).getParentId()))
                 ((ViewHolderMySurvey) holder).title.setText(examHashMap.get(list.get(position).getParentId()).getName());
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
+            holder.itemView.setOnClickListener(view -> {
+                if (type.equals("survey"))
                     openSurvey(listener, list.get(position).getId(), true);
-                }
+                else
+                    openSubmissionDetail(listener, list.get(position).getId());
             });
+        }
+    }
+
+    private void openSubmissionDetail(OnHomeItemClickListener listener, String id) {
+        if (listener!=null){
+
         }
     }
 
@@ -73,6 +80,10 @@ public class AdapterMySurvey extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public int getItemCount() {
         return list.size();
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     class ViewHolderMySurvey extends RecyclerView.ViewHolder {

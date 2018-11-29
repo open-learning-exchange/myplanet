@@ -30,7 +30,8 @@ public class realm_submissions extends RealmObject {
     private String userId;
     private String user;
     private String localUserImageUri;
-    private long date;
+    private long startTime;
+    private long lastUpdateTime;
     private RealmList<realm_answer> answers;
     private String grade;
     private String status;
@@ -44,16 +45,17 @@ public class realm_submissions extends RealmObject {
         if (sub == null) {
             sub = mRealm.createObject(realm_submissions.class, id);
         }
-        sub.setStatus(JsonUtils.getString("_id", submission));
+        sub.set_id(JsonUtils.getString("_id", submission));
         sub.setStatus(JsonUtils.getString("status", submission));
         sub.set_rev(JsonUtils.getString("_rev", submission));
-        sub.setDate(JsonUtils.getLong("data", submission));
         sub.setGrade(JsonUtils.getString("grade", submission));
-        sub.setGrade(JsonUtils.getString("type", submission));
+        sub.setType(JsonUtils.getString("type", submission));
         sub.setUploaded(JsonUtils.getString("status", submission).equals("graded"));
+        sub.setStartTime(JsonUtils.getLong("startTime", submission));
+        sub.setLastUpdateTime(JsonUtils.getLong("lastUpdateTime", submission));
         sub.setParentId(JsonUtils.getString("parentId", submission));
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
-        sub.setUser(JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission)));
+        sub.setUserId(JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission)));
     }
 
 
@@ -65,6 +67,8 @@ public class realm_submissions extends RealmObject {
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
+        object.addProperty("startTime", sub.getStartTime());
+        object.addProperty("lastUpdateTime", sub.getLastUpdateTime());
         object.addProperty("localUserImageUri", sub.getLocalUserImageUri());
         object.addProperty("status", sub.getStatus());
         object.add("answers", realm_answer.serializeRealmAnswer(sub.getAnswers()));
@@ -77,6 +81,14 @@ public class realm_submissions extends RealmObject {
         }
         return object;
 
+    }
+
+    public long getLastUpdateTime() {
+        return lastUpdateTime;
+    }
+
+    public void setLastUpdateTime(long lastUpdateTime) {
+        this.lastUpdateTime = lastUpdateTime;
     }
 
     public static boolean isStepCompleted(Realm realm, String id, String userId) {
@@ -127,7 +139,7 @@ public class realm_submissions extends RealmObject {
 
     public static String getRecentSubmissionDate(String id, String userId, Realm mRealm) {
         realm_submissions s = mRealm.where(realm_submissions.class).equalTo("parentId", id).equalTo("userId", userId).sort("date", Sort.DESCENDING).findFirst();
-        return s == null ? "" : TimeUtils.getFormatedDateWithTime(s.getDate()) + "";
+        return s == null ? "" : TimeUtils.getFormatedDateWithTime(s.getStartTime()) + "";
     }
 
     public String get_id() {
@@ -154,12 +166,12 @@ public class realm_submissions extends RealmObject {
         this.uploaded = uploaded;
     }
 
-    public long getDate() {
-        return date;
+    public long getStartTime() {
+        return startTime;
     }
 
-    public void setDate(long date) {
-        this.date = date;
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
     }
 
     public String getId() {
