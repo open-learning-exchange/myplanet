@@ -18,6 +18,9 @@ import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import okhttp3.internal.Util;
 
 public abstract class ProcessUserData extends AppCompatActivity implements SuccessListener {
     SharedPreferences settings;
@@ -68,6 +71,7 @@ public abstract class ProcessUserData extends AppCompatActivity implements Succe
 
     public void saveUserInfoPref(SharedPreferences settings, String password, realm_UserModel user) {
         this.settings = settings;
+        Utilities.log("UserId "  + user.getId());
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("userId", user.getId());
         editor.putString("name", user.getName());
