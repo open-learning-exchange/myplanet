@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.TextFileViewerActivity;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.courses.AdapterCourses;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.survey.SendSurveyFragment;
@@ -193,10 +194,12 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         startActivity(intent);
     }
 
-    public void showRatingDialog(String type, String id, String title) {
+    public void showRatingDialog(String type, String id, String title, OnRatingChangeListener listener) {
         RatingFragment f = RatingFragment.newInstance(type, id, title);
+        f.setListener(listener);
         f.show(getChildFragmentManager(), "");
     }
+
 
 
 }

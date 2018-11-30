@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 
@@ -27,7 +28,7 @@ import io.realm.RealmResults;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CourseDetailFragment extends BaseContainerFragment {
+public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView description, subjectLevel, gradeLevel, method, language, noOfExams;
 
     DatabaseService dbService;
@@ -78,7 +79,7 @@ public class CourseDetailFragment extends BaseContainerFragment {
         v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle());
+                showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this);
             }
         });
         initRatingView(v);
@@ -106,8 +107,12 @@ public class CourseDetailFragment extends BaseContainerFragment {
                     showDownloadDialog(resources);
             }
         });
+       onRatingChanged();
+    }
+
+    @Override
+    public void onRatingChanged() {
         JsonObject object = realm_rating.getRatingsById(mRealm, "course", courses.getCourseId());
         setRatings(object);
     }
-
 }

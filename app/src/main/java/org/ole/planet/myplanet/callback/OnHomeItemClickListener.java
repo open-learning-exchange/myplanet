@@ -10,7 +10,7 @@ public interface OnHomeItemClickListener {
 
     void openLibraryDetailFragment(realm_myLibrary library);
 
-    void showRatingDialog(String resource, String resource_id, String title);
+    void showRatingDialog(String resource, String resource_id, String title, OnRatingChangeListener listener);
 
     void sendSurvey(realm_stepExam current);
 }

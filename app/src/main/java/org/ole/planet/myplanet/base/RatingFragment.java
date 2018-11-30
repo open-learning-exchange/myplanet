@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.Data.realm_feedback;
 import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.SyncActivity;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -43,7 +44,12 @@ public class RatingFragment extends DialogFragment {
     AppCompatRatingBar ratingBar;
     EditText etComment;
     SharedPreferences settings;
+    OnRatingChangeListener listener;
 
+
+    public void setListener(OnRatingChangeListener listener) {
+        this.listener = listener;
+    }
 
     public static RatingFragment newInstance(String type, String id, String title) {
         RatingFragment fragment = new RatingFragment();
@@ -119,6 +125,8 @@ public class RatingFragment extends DialogFragment {
             @Override
             public void onSuccess() {
                 Utilities.toast(getActivity(), "Thank you, your rating is submitted.");
+                if (listener!=null)
+                    listener.onRatingChanged();
                 dismiss();
             }
         });
