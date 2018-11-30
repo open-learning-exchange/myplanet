@@ -109,6 +109,7 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         language.setText(library.getLanguage());
         license.setText(library.getLinkToLicense());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
+        download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
         JsonObject object = realm_rating.getRatingsById(mRealm, "resource", library.getResource_id());
         setRatings(object);
         setClickListeners();
