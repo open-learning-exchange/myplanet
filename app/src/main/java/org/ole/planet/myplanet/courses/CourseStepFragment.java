@@ -135,25 +135,19 @@ public class CourseStepFragment extends BaseContainerFragment {
                 .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
                 .findAll();
-        btnResource.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (offlineResources.size() > 0) {
-                    showDownloadDialog(offlineResources);
-                }
+        btnResource.setOnClickListener(view -> {
+            if (offlineResources.size() > 0) {
+                showDownloadDialog(offlineResources);
             }
         });
-        btnExam.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (stepExams.size() > 0) {
-                    Fragment takeExam = new TakeExamFragment();
-                    Bundle b = new Bundle();
-                    b.putString("stepId", stepId);
-                    b.putInt("stepNum", stepNumber);
-                    takeExam.setArguments(b);
-                    homeItemClickListener.openCallFragment(takeExam);
-                }
+        btnExam.setOnClickListener(view -> {
+            if (stepExams.size() > 0) {
+                Fragment takeExam = new TakeExamFragment();
+                Bundle b = new Bundle();
+                b.putString("stepId", stepId);
+                b.putInt("stepNum", stepNumber);
+                takeExam.setArguments(b);
+                homeItemClickListener.openCallFragment(takeExam);
             }
         });
     }
