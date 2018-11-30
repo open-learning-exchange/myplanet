@@ -106,6 +106,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         license.setText(library.getLinkToLicense());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
         onRatingChanged();
+        download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
         setClickListeners();
     }
 

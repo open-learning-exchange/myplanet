@@ -58,11 +58,12 @@
                 android:orientation="vertical">
                 <!-- TODO: change back color to md_black_1000 -->
                 <TextView
+                    android:id="@+id/tv_submission"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/submission"
-                    android:textColor="@color/disable_color"
+                    android:textColor="@color/md_black_1000"
                     android:textSize="18sp" />
 
                 <TextView
