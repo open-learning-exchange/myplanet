@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -37,7 +38,7 @@ import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 
-public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fragment {
+public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fragment implements OnRatingChangeListener {
 
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
@@ -73,6 +74,11 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         recyclerView.setAdapter(getAdapter());
         return v;
+    }
+
+    @Override
+    public void onRatingChanged() {
+        recyclerView.setAdapter(getAdapter());
     }
 
     public void addToMyList() {

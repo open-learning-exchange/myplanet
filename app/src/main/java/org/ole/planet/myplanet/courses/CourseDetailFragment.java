@@ -18,7 +18,9 @@ import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 
 import io.realm.Realm;
@@ -27,7 +29,7 @@ import io.realm.RealmResults;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CourseDetailFragment extends BaseContainerFragment {
+public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView description, subjectLevel, gradeLevel, method, language, noOfExams;
 
     DatabaseService dbService;
@@ -75,16 +77,10 @@ public class CourseDetailFragment extends BaseContainerFragment {
         method = v.findViewById(R.id.method);
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
-        v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle());
-            }
-        });
+        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
         initRatingView(v);
 
     }
-
 
 
     private void setCourseData() {
@@ -97,17 +93,19 @@ public class CourseDetailFragment extends BaseContainerFragment {
         final RealmResults resources = mRealm.where(realm_myLibrary.class)
                 .equalTo("courseId", id)
                 .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
                 .findAll();
         btnResources.setText("Resources [" + resources.size() + "]");
-        btnResources.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (resources.size() > 0)
-                    showDownloadDialog(resources);
-            }
+        btnResources.setOnClickListener(view -> {
+            if (resources.size() > 0)
+                showDownloadDialog(resources);
         });
+        onRatingChanged();
+    }
+
+    @Override
+    public void onRatingChanged() {
         JsonObject object = realm_rating.getRatingsById(mRealm, "course", courses.getCourseId());
         setRatings(object);
     }
-
 }

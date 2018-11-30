@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.survey;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,8 +13,7 @@ import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.courses.exam.TakeExamFragment;
-import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.userprofile.AdapterMySubmission;
 
 import java.util.List;
 
@@ -55,7 +52,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ho.startSurvey.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    AdapterMySurvey.openSurvey(listener, examList.get(position).getId(), false);
+                    AdapterMySubmission.openSurvey(listener, examList.get(position).getId(), false);
                 }
             });
             String noOfSubmission = realm_submissions.getNoOfSubmissionByUser(examList.get(position).getId(), userId, mRealm);

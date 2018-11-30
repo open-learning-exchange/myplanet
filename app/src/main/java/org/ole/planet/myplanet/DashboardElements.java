@@ -22,6 +22,7 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.base.RatingFragment;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.userprofile.SettingActivity;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -110,8 +111,9 @@ public abstract class DashboardElements extends AppCompatActivity {
         this.finish();
     }
 
-    public void showRatingDialog(String type, String resource_id, String title) {
+    public void showRatingDialog(String type, String resource_id, String title, OnRatingChangeListener listener) {
         RatingFragment f = RatingFragment.newInstance(type, resource_id, title);
+        f.setListener(listener);
         f.show(getSupportFragmentManager(), "");
     }
 

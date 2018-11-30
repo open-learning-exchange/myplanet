@@ -112,7 +112,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
     public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
-        average.setText(object.get("averageRating").getAsFloat() + "");
+        average.setText(String.format("%.2f", object.get("averageRating").getAsFloat()));
         ratingCount.setText(object.get("total").getAsInt() + " total");
         ratingBar.setRating(object.get("averageRating").getAsFloat());
     }

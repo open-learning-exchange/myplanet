@@ -84,7 +84,7 @@ public class SendSurveyFragment extends BaseDialogFragment {
         sub.setUserId(userId);
         sub.setType("survey");
         sub.setStatus("pending");
-        sub.setDate(new Date().getTime());
+        sub.setStartTime(new Date().getTime());
         mRealm.commitTransaction();
     }
 

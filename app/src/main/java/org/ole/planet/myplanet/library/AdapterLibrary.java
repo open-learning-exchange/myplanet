@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.courses.AdapterCourses;
 import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -47,6 +48,11 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private ChipCloudConfig config;
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> ratingMap;
+    private OnRatingChangeListener ratingChangeListener;
+
+    public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
+        this.ratingChangeListener = ratingChangeListener;
+    }
 
     public AdapterLibrary(Context context, List<realm_myLibrary> libraryList, HashMap<String, JsonObject> ratingMap) {
         this.ratingMap = ratingMap;
@@ -87,18 +93,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    openLibrary(libraryList.get(position));
-                }
-            });
-            ((ViewHolderLibrary) holder).llRating.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle());
-                }
-            });
+            holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
+            ((ViewHolderLibrary) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle(), ratingChangeListener));
+
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
                 JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
                 AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);

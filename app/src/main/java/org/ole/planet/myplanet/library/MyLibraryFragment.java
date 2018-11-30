@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.AbstractSet;
@@ -63,10 +64,13 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = realm_rating.getRatings(mRealm, "resource");
         adapterLibrary = new AdapterLibrary(getActivity(), getList(realm_myLibrary.class), map);
+        adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList();
         return adapterLibrary;
     }
+
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -147,4 +151,5 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
     public void afterTextChanged(Editable editable) {
 
     }
+
 }
