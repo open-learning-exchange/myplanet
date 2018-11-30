@@ -1,13 +1,8 @@
 package org.ole.planet.myplanet;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,19 +23,12 @@ import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.mymeetup.MyMeetupDetailFragment;
-import org.ole.planet.myplanet.survey.MySurveyFragment;
-import org.ole.planet.myplanet.survey.SurveyFragment;
+import org.ole.planet.myplanet.userprofile.MySubmissionFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.userprofile.UserProfileFragment;
-import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.io.File;
-import java.util.List;
-import java.util.Map;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -53,7 +41,7 @@ import io.realm.RealmResults;
 public class DashboardFragment extends BaseContainerFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    TextView txtFullName, txtVisits, tv_surveys;
+    TextView txtFullName, txtVisits, tv_surveys, tv_submission;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -89,18 +77,10 @@ public class DashboardFragment extends BaseContainerFragment {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtVisits = view.findViewById(R.id.txtVisits);
         tv_surveys = view.findViewById(R.id.tv_surveys);
-        tv_surveys.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                homeItemClickListener.openCallFragment(new MySurveyFragment());
-            }
-        });
-        view.findViewById(R.id.ll_user).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                homeItemClickListener.openCallFragment(new UserProfileFragment());
-            }
-        });
+        tv_submission = view.findViewById(R.id.tv_submission);
+        tv_surveys.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey")));
+        tv_submission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
+        view.findViewById(R.id.ll_user).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         myLibraryDiv(view);
