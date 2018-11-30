@@ -110,7 +110,6 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
 
     public void openResource(realm_myLibrary items) {
-
         if (items.getResourceOffline() != null && items.getResourceOffline()) {
             profileDbHandler.setResourceOpenCount(items);
             openFileType(items, "offline");

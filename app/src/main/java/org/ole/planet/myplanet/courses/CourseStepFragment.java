@@ -133,6 +133,7 @@ public class CourseStepFragment extends BaseContainerFragment {
         final RealmResults offlineResources = mRealm.where(realm_myLibrary.class)
                 .equalTo("stepId", stepId)
                 .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
                 .findAll();
         btnResource.setOnClickListener(new View.OnClickListener() {
             @Override

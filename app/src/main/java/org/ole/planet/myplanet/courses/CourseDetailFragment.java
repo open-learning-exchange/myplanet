@@ -97,6 +97,7 @@ public class CourseDetailFragment extends BaseContainerFragment {
         final RealmResults resources = mRealm.where(realm_myLibrary.class)
                 .equalTo("courseId", id)
                 .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
                 .findAll();
         btnResources.setText("Resources [" + resources.size() + "]");
         btnResources.setOnClickListener(new View.OnClickListener() {

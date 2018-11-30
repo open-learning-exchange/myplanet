@@ -50,7 +50,6 @@ public abstract class BaseResourceFragment extends Fragment {
 
     //    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
     protected void showDownloadDialog(final RealmResults<realm_myLibrary> db_myLibrary) {
-
         if (!db_myLibrary.isEmpty()) {
             LayoutInflater inflater = getLayoutInflater();
             convertView = (View) inflater.inflate(R.layout.my_library_alertdialog, null);
@@ -133,15 +132,12 @@ public abstract class BaseResourceFragment extends Fragment {
     }
 
 
-
-
     private void registerReceiver() {
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MESSAGE_PROGRESS);
         bManager.registerReceiver(broadcastReceiver, intentFilter);
     }
-
 
 
     @Override

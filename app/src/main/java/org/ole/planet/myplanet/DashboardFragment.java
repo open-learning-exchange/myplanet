@@ -191,10 +191,12 @@ public class DashboardFragment extends BaseContainerFragment {
         return mRealm.where(realm_myLibrary.class)
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("userId")
+                .isNotNull("resourceLocalAddress")
                 .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
                 .or()
                 .equalTo("resourceOffline", false)
                 .isNotEmpty("courseId")
+                .isNotNull("resourceLocalAddress")
                 .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
                 .findAll();
     }
