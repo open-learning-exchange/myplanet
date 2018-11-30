@@ -92,12 +92,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-        v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
-            }
-        });
+        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
         initRatingView(v);
     }
 
@@ -110,7 +105,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         language.setText(library.getLanguage());
         license.setText(library.getLinkToLicense());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
-       onRatingChanged();
+        onRatingChanged();
         setClickListeners();
     }
 

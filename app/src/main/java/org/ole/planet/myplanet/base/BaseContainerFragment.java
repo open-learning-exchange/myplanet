@@ -193,13 +193,4 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         intent.putExtras(bundle);
         startActivity(intent);
     }
-
-    public void showRatingDialog(String type, String id, String title, OnRatingChangeListener listener) {
-        RatingFragment f = RatingFragment.newInstance(type, id, title);
-        f.setListener(listener);
-        f.show(getChildFragmentManager(), "");
-    }
-
-
-
 }

@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 
 import io.realm.Realm;
@@ -76,16 +77,10 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         method = v.findViewById(R.id.method);
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
-        v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this);
-            }
-        });
+        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
         initRatingView(v);
 
     }
-
 
 
     private void setCourseData() {
@@ -100,14 +95,11 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
                 .equalTo("resourceOffline", false)
                 .findAll();
         btnResources.setText("Resources [" + resources.size() + "]");
-        btnResources.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (resources.size() > 0)
-                    showDownloadDialog(resources);
-            }
+        btnResources.setOnClickListener(view -> {
+            if (resources.size() > 0)
+                showDownloadDialog(resources);
         });
-       onRatingChanged();
+        onRatingChanged();
     }
 
     @Override
