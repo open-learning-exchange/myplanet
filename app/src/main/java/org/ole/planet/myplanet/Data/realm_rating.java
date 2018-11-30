@@ -48,6 +48,7 @@ public class realm_rating extends RealmObject {
     public static HashMap<String, JsonObject> getRatings(Realm mRealm, String type) {
         RealmResults<realm_rating> r = mRealm.where(realm_rating.class).equalTo("type", type).findAll();
         HashMap<String, JsonObject> map = new HashMap<>();
+        Utilities.log("RATINGS " + r.size());
         for (realm_rating rating : r) {
             JsonObject object = getRatingsById(mRealm, rating.getType(), rating.getItem());
             if (object != null)
@@ -58,6 +59,7 @@ public class realm_rating extends RealmObject {
 
     public static JsonObject getRatingsById(Realm mRealm, String type, String id) {
         RealmResults<realm_rating> r = mRealm.where(realm_rating.class).equalTo("type", type).equalTo("item", id).findAll();
+        Utilities.log("Size " + r.size());
         if (r.size() == 0) {
             return null;
         }
@@ -196,8 +198,8 @@ public class realm_rating extends RealmObject {
         rating.set_rev(JsonUtils.getString("_rev", act));
         rating.set_id(JsonUtils.getString("_id", act));
         rating.setTime(JsonUtils.getLong("time", act));
-        rating.setType(JsonUtils.getString("title", act));
-        rating.setTitle(JsonUtils.getString("type", act));
+        rating.setTitle(JsonUtils.getString("title", act));
+        rating.setType(JsonUtils.getString("type", act));
         rating.setItem(JsonUtils.getString("item", act));
         rating.setRate(JsonUtils.getInt("rate", act));
         rating.setUpdated(false);

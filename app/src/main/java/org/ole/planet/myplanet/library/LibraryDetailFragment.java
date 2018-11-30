@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.base.RatingFragment;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -35,7 +36,7 @@ import io.realm.RealmList;
 import io.realm.RealmResults;
 
 
-public class LibraryDetailFragment extends BaseContainerFragment {
+public class LibraryDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView author, pubishedBy, title, media, subjects, license, language, resource, type;
     Button download, remove;
     String libraryId;
@@ -91,12 +92,7 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-        v.findViewById(R.id.ll_rating).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showRatingDialog("resource", library.getResource_id(), library.getTitle());
-            }
-        });
+        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
         initRatingView(v);
     }
 
@@ -109,9 +105,8 @@ public class LibraryDetailFragment extends BaseContainerFragment {
         language.setText(library.getLanguage());
         license.setText(library.getLinkToLicense());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
+        onRatingChanged();
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
-        JsonObject object = realm_rating.getRatingsById(mRealm, "resource", library.getResource_id());
-        setRatings(object);
         setClickListeners();
     }
 
@@ -141,5 +136,11 @@ public class LibraryDetailFragment extends BaseContainerFragment {
                 setLibraryData();
             }
         });
+    }
+
+    @Override
+    public void onRatingChanged() {
+        JsonObject object = realm_rating.getRatingsById(mRealm, "resource", library.getResource_id());
+        setRatings(object);
     }
 }

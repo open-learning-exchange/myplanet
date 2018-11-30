@@ -73,7 +73,7 @@ public class UploadManager {
                 List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
                 Utilities.log("Sub size " + submissions.size());
                 for (realm_submissions sub : submissions) {
-                  realm_submissions.continueResultUpload(sub, dbClient, realm);
+                    realm_submissions.continueResultUpload(sub, dbClient, realm);
                 }
             }
         }, new Realm.Transaction.OnSuccess() {
@@ -180,7 +180,7 @@ public class UploadManager {
         mRealm.executeTransactionAsync(new Realm.Transaction() {
             @Override
             public void execute(@NonNull Realm realm) {
-                final RealmResults<realm_rating> activities = realm.where(realm_rating.class).equalTo("isUpdated", true).equalTo("userId", sharedPreferences.getString("userId", "")).findAll();
+                final RealmResults<realm_rating> activities = realm.where(realm_rating.class).equalTo("isUpdated", true).findAll();
                 final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
                 for (realm_rating act : activities) {
                     Response r;

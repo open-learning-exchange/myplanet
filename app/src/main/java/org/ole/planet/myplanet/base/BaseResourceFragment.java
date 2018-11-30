@@ -105,6 +105,7 @@ public abstract class BaseResourceFragment extends Fragment {
         }
     }
 
+
     public void onDownloadComplete() {
     }
 
