@@ -88,9 +88,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     }
 
     private void validateAndSaveData() {
-        tlUrgent.setError("");
-        tlType.setError("");
-        tlMessage.setError("");
+        clearError();
         final String message = etMessage.getText().toString();
         if (message.isEmpty()) {
             tlMessage.setError("Please enter feedback.");
@@ -106,21 +104,15 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
             tlType.setError("Feedback type is required.");
             return;
         }
-
         final String urgent = rbUrgent.getText().toString();
         final String type = rbType.getText().toString();
+        mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, message), () -> Utilities.toast(getActivity(), "Feedback Saved.."));
+    }
 
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                saveData(realm, urgent, type, message);
-            }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                Utilities.toast(getActivity(), "Feedback Saved..");
-            }
-        });
+    private void clearError() {
+        tlUrgent.setError("");
+        tlType.setError("");
+        tlMessage.setError("");
     }
 
 
