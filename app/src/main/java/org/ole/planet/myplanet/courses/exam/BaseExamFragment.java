@@ -145,7 +145,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
 
     public boolean showErrorMessage(String s) {
         if (ans.isEmpty() && listAns.isEmpty()) {
-            Utilities.toast(getActivity(), "Please select answer");
+            Utilities.toast(getActivity(), s);
             return true;
         }
         return false;
