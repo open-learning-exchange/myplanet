@@ -37,7 +37,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
 
     EditText etMessage;
     RadioGroup rgType, rgUrgent;
-    TextInputLayout tlMessage;
+    TextInputLayout tlMessage, tlUrgent, tlType;
     Realm mRealm;
     DatabaseService databaseService;
     realm_UserModel model;
@@ -64,6 +64,8 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
         rgUrgent = v.findViewById(R.id.rg_urgent);
         rgType = v.findViewById(R.id.rg_type);
         tlMessage = v.findViewById(R.id.tl_message);
+        tlUrgent = v.findViewById(R.id.tl_urgent);
+        tlType = v.findViewById(R.id.tl_type);
         v.findViewById(R.id.btn_submit).setOnClickListener(this);
         v.findViewById(R.id.btn_cancel).setOnClickListener(this);
         return v;
@@ -86,17 +88,25 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     }
 
     private void validateAndSaveData() {
+        tlUrgent.setError("");
+        tlType.setError("");
+        tlMessage.setError("");
         final String message = etMessage.getText().toString();
         if (message.isEmpty()) {
-            tlMessage.setError("This field is required");
+            tlMessage.setError("Please enter feedback.");
             return;
         }
         RadioButton rbUrgent = getView().findViewById(rgUrgent.getCheckedRadioButtonId());
         RadioButton rbType = getView().findViewById(rgType.getCheckedRadioButtonId());
-        if (rbType == null || rbUrgent == null) {
-            Snackbar.make(getView(), "All fields are necessary", Snackbar.LENGTH_LONG).show();
+        if (rbUrgent == null) {
+            tlUrgent.setError("Feedback priority is required.");
             return;
         }
+        if (rbType == null) {
+            tlType.setError("Feedback type is required.");
+            return;
+        }
+
         final String urgent = rbUrgent.getText().toString();
         final String type = rbType.getText().toString();
 
@@ -112,6 +122,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
             }
         });
     }
+
 
     private void saveData(Realm realm, String urgent, String type, String message) {
         realm_feedback feedback = realm.createObject(realm_feedback.class, UUID.randomUUID().toString());
