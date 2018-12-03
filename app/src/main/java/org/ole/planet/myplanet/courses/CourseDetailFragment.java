@@ -22,6 +22,9 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -36,7 +39,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     Realm mRealm;
     realm_myCourses courses;
     String id;
-    Button btnResources;
+    Button btnResources, btnOpen;
 
     public CourseDetailFragment() {
     }
@@ -77,9 +80,9 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         method = v.findViewById(R.id.method);
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
+        btnOpen = v.findViewById(R.id.btn_open);
         v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
         initRatingView(v);
-
     }
 
 
@@ -95,17 +98,26 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
                 .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
                 .findAll();
-        btnResources.setText("Resources [" + resources.size() + "]");
-        btnResources.setOnClickListener(view -> {
-            if (resources.size() > 0)
-                showDownloadDialog(resources);
-        });
+        setResourceButton(resources, btnResources);
+        final List<realm_myLibrary> downloadedResources = mRealm.where(realm_myLibrary.class)
+                .equalTo("resourceOffline", true)
+                .equalTo("courseId", id)
+                .isNotNull("resourceLocalAddress")
+                .findAll();
+        setOpenResourceButton(downloadedResources, btnOpen);
         onRatingChanged();
     }
+
 
     @Override
     public void onRatingChanged() {
         JsonObject object = realm_rating.getRatingsById(mRealm, "course", courses.getCourseId());
         setRatings(object);
+    }
+    @Override
+    public void onDownloadComplete() {
+        super.onDownloadComplete();
+        Utilities.log("On download complete");
+        setCourseData();
     }
 }
