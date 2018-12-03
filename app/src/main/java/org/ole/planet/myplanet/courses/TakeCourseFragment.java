@@ -85,6 +85,10 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         super.onActivityCreated(savedInstanceState);
         tvCourseTitle.setText(currentCourse.getCourseTitle());
         steps = realm_courseSteps.getSteps(mRealm, courseId);
+        if (steps == null || steps.size() == 0) {
+            next.setVisibility(View.GONE);
+            previous.setVisibility(View.GONE);
+        }
         mViewPager.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), courseId, realm_courseSteps.getStepIds(mRealm, courseId)));
         mViewPager.addOnPageChangeListener(this);
         setCourseData();
