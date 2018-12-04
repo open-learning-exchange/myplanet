@@ -76,7 +76,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHoldercourse) {
             ((ViewHoldercourse) holder).title.setText((position + 1) + ". " + courseList.get(position).getCourseTitle());
             ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
-            ((ViewHoldercourse) holder).grad_level.setText("Grad Level  : " + courseList.get(position).getGradeLevel());
+            ((ViewHoldercourse) holder).grad_level.setText("Grade Level  : " + courseList.get(position).getGradeLevel());
             ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " + courseList.get(position).getSubjectLevel());
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
             if (courseList.get(position) != null) {
