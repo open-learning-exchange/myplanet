@@ -14,14 +14,28 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-
-            <Button
-                android:id="@+id/btn_resources"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:text="Resources"
-                android:theme="@style/PrimaryButton" />
+                android:layout_gravity="right">
+
+
+                <Button
+                    android:id="@+id/btn_open"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Open Resource"
+                    android:theme="@style/PrimaryButton" />
+
+                <Button
+                    android:id="@+id/btn_resources"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Resources"
+                    android:theme="@style/PrimaryButton" />
+
+            </LinearLayout>
+
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -32,10 +46,10 @@
                 android:padding="@dimen/padding_normal">
 
                 <LinearLayout
+                    android:id="@+id/ll_rating"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:id="@+id/ll_rating"
                     android:gravity="center">
 
                     <LinearLayout
@@ -58,10 +72,10 @@
                             android:textColor="@color/md_black_1000" />
 
                         <android.support.v7.widget.AppCompatRatingBar
+                            android:id="@+id/rating_bar"
                             style="@style/Base.Widget.AppCompat.RatingBar.Small"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:id="@+id/rating_bar"
                             android:isIndicator="true" />
 
 

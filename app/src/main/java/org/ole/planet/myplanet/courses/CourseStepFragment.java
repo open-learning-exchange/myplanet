@@ -1,13 +1,16 @@
 package org.ole.planet.myplanet.courses;
 
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -22,6 +25,7 @@ import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.courses.exam.TakeExamFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;
@@ -38,7 +42,7 @@ public class CourseStepFragment extends BaseContainerFragment {
     TextView tvTitle;
     WebView wvDesc;
     String stepId;
-    Button btnResource, btnExam;
+    Button btnResource, btnExam, btnOpen;
     DatabaseService dbService;
     Realm mRealm;
     realm_courseSteps step;
@@ -72,6 +76,7 @@ public class CourseStepFragment extends BaseContainerFragment {
         tvTitle = v.findViewById(R.id.tv_title);
         wvDesc = v.findViewById(R.id.wv_desc);
         btnExam = v.findViewById(R.id.btn_take_test);
+        btnOpen = v.findViewById(R.id.btn_open);
         btnResource = v.findViewById(R.id.btn_resources);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
@@ -135,11 +140,16 @@ public class CourseStepFragment extends BaseContainerFragment {
                 .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
                 .findAll();
-        btnResource.setOnClickListener(view -> {
-            if (offlineResources.size() > 0) {
-                showDownloadDialog(offlineResources);
-            }
-        });
+//        if (offlineResources == null || offlineResources.size() == 0) {
+//            btnResource.setVisibility(View.GONE);
+//        }
+//        btnResource.setOnClickListener(view -> {
+//            if (offlineResources.size() > 0) {
+//                showDownloadDialog(offlineResources);
+//            }
+//        });
+        setResourceButton(offlineResources, btnResource);
+
         btnExam.setOnClickListener(view -> {
             if (stepExams.size() > 0) {
                 Fragment takeExam = new TakeExamFragment();
@@ -150,5 +160,27 @@ public class CourseStepFragment extends BaseContainerFragment {
                 homeItemClickListener.openCallFragment(takeExam);
             }
         });
+        final List<realm_myLibrary> downloadedResources = mRealm.where(realm_myLibrary.class)
+                .equalTo("stepId", stepId)
+                .equalTo("resourceOffline", true)
+                .isNotNull("resourceLocalAddress")
+                .findAll();
+//
+//        if (downloadedResources == null || downloadedResources.size() == 0) {
+//            btnOpen.setVisibility(View.GONE);
+//        } else {
+//            btnOpen.setOnClickListener(view -> {
+//                showResourceList(downloadedResources);
+//            });
+//        }
+        setOpenResourceButton(downloadedResources, btnOpen);
+
+    }
+
+    @Override
+    public void onDownloadComplete() {
+        super.onDownloadComplete();
+        Utilities.log("On download complete");
+        setListeners();
     }
 }

@@ -527,4 +527,9 @@ public class realm_myLibrary extends RealmObject {
         }
         return ids;
     }
+
+    @Override
+    public String toString() {
+        return title;
+    }
 }

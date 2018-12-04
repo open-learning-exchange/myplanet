@@ -24,6 +24,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -191,4 +192,44 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         intent.putExtras(bundle);
         startActivity(intent);
     }
+
+    public void showResourceList(List<realm_myLibrary> downloadedResources) {
+
+        AlertDialog.Builder builderSingle = new AlertDialog.Builder(getActivity());
+        builderSingle.setTitle("Select resource to open : ");
+
+        final ArrayAdapter<realm_myLibrary> arrayAdapter = new ArrayAdapter<realm_myLibrary>(getActivity(), android.R.layout.select_dialog_singlechoice, downloadedResources);
+        builderSingle.setAdapter(arrayAdapter, (dialogInterface, i) -> {
+            realm_myLibrary library = arrayAdapter.getItem(i);
+            openResource(library);
+        });
+        builderSingle.setNegativeButton("Dismiss", null).show();
+
+    }
+
+    public void setOpenResourceButton(List<realm_myLibrary> downloadedResources, Button btnOpen) {
+        if (downloadedResources == null || downloadedResources.size() == 0) {
+            btnOpen.setVisibility(View.GONE);
+        } else {
+            btnOpen.setVisibility(View.VISIBLE);
+            btnOpen.setOnClickListener(view -> {
+                showResourceList(downloadedResources);
+            });
+        }
+    }
+
+    public void setResourceButton(RealmResults resources, Button btnResources) {
+        if (resources == null || resources.size() == 0) {
+            btnResources.setVisibility(View.GONE);
+        } else {
+            btnResources.setVisibility(View.VISIBLE);
+            btnResources.setText("Resources [" + resources.size() + "]");
+            btnResources.setOnClickListener(view -> {
+                if (resources.size() > 0)
+                    showDownloadDialog(resources);
+            });
+        }
+
+    }
+
 }
