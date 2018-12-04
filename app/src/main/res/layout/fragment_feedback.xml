@@ -20,25 +20,32 @@
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large" />
 
-        <RadioGroup
+        <android.support.design.widget.TextInputLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:id="@+id/rg_urgent"
-            android:padding="@dimen/padding_normal">
+            android:id="@+id/tl_urgent"
+            android:padding="@dimen/padding_normal"
+            android:layout_height="wrap_content">
 
-            <RadioButton
-                android:id="@+id/urgent_yes"
-                android:layout_width="wrap_content"
+            <RadioGroup
+                android:id="@+id/rg_urgent"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/yes" />
+                android:orientation="horizontal"
+               >
 
-            <RadioButton
-                android:id="@+id/urgent_no"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/no" />
-        </RadioGroup>
+                <RadioButton
+                    android:id="@+id/urgent_yes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/yes" />
+
+                <RadioButton
+                    android:id="@+id/urgent_no"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no" />
+            </RadioGroup>
+        </android.support.design.widget.TextInputLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -47,13 +54,18 @@
             android:text="@string/feedback_type"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large" />
+        <android.support.design.widget.TextInputLayout
+            android:layout_width="match_parent"
+            android:id="@+id/tl_type"
+            android:padding="@dimen/padding_normal"
+            android:layout_height="wrap_content">
 
         <RadioGroup
+            android:id="@+id/rg_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:id="@+id/rg_type"
-            android:padding="@dimen/padding_normal">
+          >
 
             <RadioButton
                 android:id="@+id/type_question"
@@ -73,11 +85,12 @@
                 android:layout_height="wrap_content"
                 android:text="@string/suggestion" />
         </RadioGroup>
+        </android.support.design.widget.TextInputLayout>
 
         <android.support.design.widget.TextInputLayout
+            android:id="@+id/tl_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/tl_message"
             android:paddingBottom="@dimen/padding_normal">
 
             <EditText
@@ -93,17 +106,17 @@
             android:layout_gravity="right">
 
             <Button
+                android:id="@+id/btn_submit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/btn_submit"
                 android:text="@string/button_submit"
                 android:theme="@style/PrimaryButton" />
 
             <Button
+                android:id="@+id/btn_cancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_cancel"
-                android:id="@+id/btn_cancel"
                 android:theme="@style/AccentButton" />
 
         </LinearLayout>
