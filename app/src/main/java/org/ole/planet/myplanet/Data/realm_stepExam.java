@@ -2,10 +2,15 @@ package org.ole.planet.myplanet.Data;
 
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
@@ -62,6 +67,21 @@ public class realm_stepExam extends RealmObject {
         RealmResults<realm_examQuestion> question = mRealm.where(realm_examQuestion.class).equalTo("examId", exam.getId()).findAll();
         object.add("questions", realm_examQuestion.serializeQuestions(mRealm, question));
         return object;
+    }
+
+    public static String[] getIds(List<realm_stepExam> list) {
+        String[] ids = new String[list.size()];
+        int i = 0;
+        for (realm_stepExam e : list
+                ) {
+            if (e.getType().equals("survey"))
+                ids[i] = (e.getId());
+            else
+                ids[i] = e.getId() + "@" + e.getCourseId();
+            i++;
+        }
+        Utilities.log(new Gson().toJson(ids));
+        return ids;
     }
 
     public String getPassingPercentage() {
