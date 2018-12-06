@@ -104,6 +104,10 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
 
             }
         });
+        showHideRadioButton();
+    }
+
+    private void showHideRadioButton() {
         if (!type.equals("survey")) {
             rbExam.setChecked(true);
             rbExam.setOnCheckedChangeListener(this);
