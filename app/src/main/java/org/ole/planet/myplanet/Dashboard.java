@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.survey.SurveyFragment;
 import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -203,13 +204,11 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         menuImageList.add(getResources().getDrawable(R.drawable.courses));
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
-
         return new IDrawerItem[]{
                 changeUX(R.string.menu_myplanet, menuImageList.get(0)),
                 changeUX(R.string.menu_library, menuImageList.get(1)),
                 changeUX(R.string.menu_courses, menuImageList.get(2)),
                 changeUX(R.string.menu_meetups, menuImageList.get(3))
-                        /* TODO: remove */
                         .withSelectable(false)
                         .withDisabledIconColor(getResources().getColor(R.color.disable_color))
                         .withDisabledTextColor(getResources().getColor(R.color.disable_color)),

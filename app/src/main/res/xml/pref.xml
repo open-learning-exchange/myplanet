@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <SwitchPreference android:title="Show Top Navigation Bar in Dashboard"
+    <SwitchPreference android:title="@string/show_top_nav"
         android:key="show_topbar"
         android:defaultValue="true"
+        />
+
+    <SwitchPreference android:title="Beta Functionality"
+        android:key="beta_function"
+        android:defaultValue="false"
         />
 </PreferenceScreen>

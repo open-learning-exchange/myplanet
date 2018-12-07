@@ -8,6 +8,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.gson.JsonObject;
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
@@ -34,7 +36,7 @@ import io.realm.RealmResults;
  */
 public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView description, subjectLevel, gradeLevel, method, language, noOfExams;
-
+    LinearLayout llRating;
     DatabaseService dbService;
     Realm mRealm;
     realm_myCourses courses;
@@ -81,6 +83,8 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
         btnOpen = v.findViewById(R.id.btn_open);
+        llRating = v.findViewById(R.id.ll_rating);
+        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE :View.GONE );
         v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
         initRatingView(v);
     }
@@ -114,6 +118,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         JsonObject object = realm_rating.getRatingsById(mRealm, "course", courses.getCourseId());
         setRatings(object);
     }
+
     @Override
     public void onDownloadComplete() {
         super.onDownloadComplete();
