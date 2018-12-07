@@ -50,13 +50,9 @@ public class SettingActivity extends AppCompatActivity {
             user = profileDbHandler.getUserModel();
             SwitchPreference p = (SwitchPreference) findPreference("show_topbar");
             p.setChecked(user.getShowTopbar());
-            p.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-                @Override
-                public boolean onPreferenceChange(Preference preference, Object o) {
-                    Utilities.log(String.valueOf((boolean) o));
-                    profileDbHandler.changeTopbarSetting((boolean) o);
-                    return true;
-                }
+            p.setOnPreferenceChangeListener((preference, o) -> {
+                profileDbHandler.changeTopbarSetting((boolean) o);
+                return true;
             });
 
         }
@@ -66,11 +62,6 @@ public class SettingActivity extends AppCompatActivity {
             super.onDestroy();
             profileDbHandler.onDestory();
         }
-
-        private void changeSettingOnDb(boolean o) {
-
-        }
-
 
     }
 

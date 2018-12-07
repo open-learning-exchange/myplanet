@@ -1,5 +1,9 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 
 import org.ole.planet.myplanet.DashboardFragment;
@@ -18,6 +22,15 @@ import java.util.List;
 
 public class Constants {
     public static List<ShelfData> shelfDataList;
+    public static List<String> betaList;
+    public static final String KEY_RATING = "rating";
+    public static final String KEY_COURSE = "course";
+    public static final String KEY_EXAM = "exam";
+    public static final String KEY_RESOURCE = "resource";
+    public static final String KEY_FEEDBACK = "feedback";
+    public static final String KEY_SURVEY = "survey";
+    public static final String KEY_MEETUPS = "meetup";
+    public static final String KEY_TEAMS = "teams";
 
     static {
         shelfDataList = new ArrayList<>();
@@ -26,8 +39,10 @@ public class Constants {
         shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", realm_myCourses.class));
         shelfDataList.add(new ShelfData("myTeamIds", "teams", "teamId", realm_myTeams.class));
 
+        betaList = new ArrayList<>();
+        betaList.add(KEY_RATING);
+        betaList.add(KEY_EXAM);
     }
-
 
     public static class ShelfData {
         public String key;
@@ -42,4 +57,16 @@ public class Constants {
             this.aClass = aClass;
         }
     }
+
+
+    public static boolean showBetaFeature(String s, Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        if (betaList.contains(s)) {
+            Utilities.log("return " + preferences.getBoolean("beta_function", false));
+            return preferences.getBoolean("beta_function", false);
+        }
+        return true;
+    }
+
+
 }

@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.courses.exam.TakeExamFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
@@ -81,6 +82,7 @@ public class CourseStepFragment extends BaseContainerFragment {
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
+        btnExam.setVisibility(Constants.showBetaFeature(Constants.KEY_EXAM, getActivity()) ? View.VISIBLE : View.GONE);
         return v;
     }
 

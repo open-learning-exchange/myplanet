@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.userprofile.SettingActivity;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 /**
@@ -131,5 +132,7 @@ public abstract class DashboardElements extends AppCompatActivity {
             Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
         }
     }
+
+
 
 }
