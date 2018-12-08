@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -42,6 +43,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     String courseId;
     realm_myCourses currentCourse;
     List<realm_courseSteps> steps;
+    Button btnAddRemove;
     ImageView next, previous;
     realm_UserModel userModel;
 
@@ -77,6 +79,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         tvSteps = v.findViewById(R.id.tv_step);
         next = v.findViewById(R.id.next_step);
         previous = v.findViewById(R.id.previous_step);
+        btnAddRemove = v.findViewById(R.id.btn_remove);
         courseProgress = v.findViewById(R.id.course_progress);
     }
 
@@ -94,16 +97,19 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         setCourseData();
         next.setOnClickListener(this);
         previous.setOnClickListener(this);
+        btnAddRemove.setOnClickListener(this);
     }
 
 
     private void setCourseData() {
         tvStepTitle.setText(currentCourse.getCourseTitle());
+        btnAddRemove.setText(!TextUtils.equals(currentCourse.getUserId(), userModel.getId()) ? "Add To My Courses" : "Remove");
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
         int i = realm_courseProgress.getCurrentProgress(steps, mRealm, courseId);
         courseProgress.setProgress(i);
+        courseProgress.setVisibility(TextUtils.equals(currentCourse.getUserId(), userModel.getId()) ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -151,6 +157,13 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickLeft()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() - 1);
                 }
+            case R.id.btn_remove:
+                if (!mRealm.isInTransaction())
+                    mRealm.beginTransaction();
+                currentCourse.setUserId(TextUtils.isEmpty(currentCourse.getUserId()) ? userModel.getId() : "");
+                mRealm.commitTransaction();
+                Utilities.toast(getActivity(), "Course " + (TextUtils.equals(currentCourse.getUserId(), userModel.getId()) ? " added to" : " removed from ") + " my courses");
+                setCourseData();
                 break;
         }
     }

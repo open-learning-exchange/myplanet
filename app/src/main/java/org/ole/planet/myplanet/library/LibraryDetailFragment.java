@@ -114,28 +114,22 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
     public void setClickListeners() {
         download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
-        download.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
-                    Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                openResource(library);
+        download.setOnClickListener(view -> {
+            if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
+                Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();
+                return;
             }
+            openResource(library);
         });
-        boolean isAdd = TextUtils.isEmpty(library.getUserId());
+        boolean isAdd = !TextUtils.equals(library.getUserId(), profileDbHandler.getUserModel().getId());
         remove.setText(isAdd ? "Add To My Library" : "Remove");
-        remove.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (!mRealm.isInTransaction())
-                    mRealm.beginTransaction();
-                library.setUserId(isAdd ? profileDbHandler.getUserModel().getId() : "");
-                mRealm.commitTransaction();
-                Utilities.toast(getActivity(), "Resource " + (isAdd ? " added to" : " removed from ") + " my library");
-                setLibraryData();
-            }
+        remove.setOnClickListener(view -> {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            library.setUserId(isAdd ? profileDbHandler.getUserModel().getId() : "");
+            mRealm.commitTransaction();
+            Utilities.toast(getActivity(), "Resource " + (isAdd ? " added to" : " removed from ") + " my library");
+            setLibraryData();
         });
     }
 
