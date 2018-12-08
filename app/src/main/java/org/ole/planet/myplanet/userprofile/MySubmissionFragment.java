@@ -17,6 +17,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioButton;
 
+import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
@@ -42,6 +43,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     EditText etSearch;
     HashMap<String, realm_stepExam> exams;
     List<realm_submissions> submissions;
+    realm_UserModel user;
 
     public static Fragment newInstance(String type) {
         MySubmissionFragment fragment = new MySubmissionFragment();
@@ -71,6 +73,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         rbSurvey = v.findViewById(R.id.rb_survey);
         rvSurvey = v.findViewById(R.id.rv_mysurvey);
         etSearch = v.findViewById(R.id.et_search);
+        user = new UserProfileDbHandler(getActivity()).getUserModel();
         return v;
     }
 
@@ -96,7 +99,6 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
                     search(cleanString);
                 else
                     setData();
-                Utilities.log("String " + cleanString);
             }
 
             @Override
@@ -133,7 +135,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         if (rbSurvey.isChecked()) {
-            type = "survey";
+            type = "survey_submission";
         } else {
             type = "exam";
         }
@@ -142,12 +144,12 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
 
     private void search(String s) {
         List<realm_stepExam> ex = mRealm.where(realm_stepExam.class).contains("name", s, Case.INSENSITIVE).findAll();
-        // submissions = mRealm.where(realm_submissions.class).notEqualTo("type", "survey").findAll();
-        Utilities.log("List size " + ex.size());
         if (type.equals("survey")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+        } else if (type.equals("survey_submission")) {
+            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
         } else {
-            submissions = mRealm.where(realm_submissions.class).notEqualTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
         }
         AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
         adapter.setType(type);
@@ -156,9 +158,11 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
 
     private void setData() {
         if (type.equals("survey")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("type", "survey").findAll();
+            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll();
+        } else if (type.equals("survey_submission")) {
+            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey").findAll();
         } else {
-            submissions = mRealm.where(realm_submissions.class).notEqualTo("type", "survey").findAll();
+            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey").findAll();
         }
         AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
         adapter.setType(type);
