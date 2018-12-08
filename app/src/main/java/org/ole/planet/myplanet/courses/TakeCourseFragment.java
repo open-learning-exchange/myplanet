@@ -158,14 +158,18 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() - 1);
                 }
             case R.id.btn_remove:
-                if (!mRealm.isInTransaction())
-                    mRealm.beginTransaction();
-                currentCourse.setUserId(TextUtils.isEmpty(currentCourse.getUserId()) ? userModel.getId() : "");
-                mRealm.commitTransaction();
-                Utilities.toast(getActivity(), "Course " + (TextUtils.equals(currentCourse.getUserId(), userModel.getId()) ? " added to" : " removed from ") + " my courses");
-                setCourseData();
+                addRemoveCourse();
                 break;
         }
+    }
+
+    private void addRemoveCourse() {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        currentCourse.setUserId(TextUtils.isEmpty(currentCourse.getUserId()) ? userModel.getId() : "");
+        mRealm.commitTransaction();
+        Utilities.toast(getActivity(), "Course " + (TextUtils.equals(currentCourse.getUserId(), userModel.getId()) ? " added to" : " removed from ") + " my courses");
+        setCourseData();
     }
 
     private boolean isValidClickRight() {
