@@ -8,6 +8,7 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,6 +32,7 @@ import java.util.List;
 
 import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmQuery;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -85,7 +87,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         rvSurvey.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         submissions = mRealm.where(realm_submissions.class).findAll();
         createHashMap(submissions);
-        setData();
+        setData("");
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -95,10 +97,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 String cleanString = charSequence.toString();
-                if (!cleanString.isEmpty())
-                    search(cleanString);
-                else
-                    setData();
+                setData(cleanString);
             }
 
             @Override
@@ -139,31 +138,38 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         } else {
             type = "exam";
         }
-        setData();
+        setData("");
     }
 
-    private void search(String s) {
-        List<realm_stepExam> ex = mRealm.where(realm_stepExam.class).contains("name", s, Case.INSENSITIVE).findAll();
-        if (type.equals("survey")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
-        } else if (type.equals("survey_submission")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
-        } else {
-            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
-        }
-        AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
-        adapter.setType(type);
-        rvSurvey.setAdapter(adapter);
-    }
+//    private void search(String s) {
+//        List<realm_stepExam> ex = mRealm.where(realm_stepExam.class).contains("name", s, Case.INSENSITIVE).findAll();
+//        if (type.equals("survey")) {
+//            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+//        } else if (type.equals("survey_submission")) {
+//            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+//        } else {
+//            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+//        }
+//        AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
+//        adapter.setType(type);
+//        rvSurvey.setAdapter(adapter);
+//    }
 
-    private void setData() {
+    private void setData(String s) {
+        RealmQuery q = null;
         if (type.equals("survey")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll();
+            q = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey");
         } else if (type.equals("survey_submission")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey").findAll();
+            q = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey");
         } else {
-            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey").findAll();
+            q = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey");
         }
+
+        if (!TextUtils.isEmpty(s)) {
+            List<realm_stepExam> ex = mRealm.where(realm_stepExam.class).contains("name", s, Case.INSENSITIVE).findAll();
+            q.in("parentId", realm_stepExam.getIds(ex));
+        }
+        submissions = q.findAll();
         AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
         adapter.setType(type);
         rvSurvey.setAdapter(adapter);
