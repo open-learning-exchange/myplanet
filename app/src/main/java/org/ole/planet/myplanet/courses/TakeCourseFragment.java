@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.CustomViewPager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -125,7 +126,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     }
 
     private void changeNextButtonState(int position) {
-        if (realm_submissions.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId())) {
+        if (realm_submissions.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())  ) {
             next.setClickable(true);
             next.setColorFilter(getResources().getColor(R.color.md_white_1000));
         } else {
