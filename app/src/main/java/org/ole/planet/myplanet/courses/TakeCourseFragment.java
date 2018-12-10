@@ -158,6 +158,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickLeft()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() - 1);
                 }
+                break;
             case R.id.btn_remove:
                 addRemoveCourse();
                 break;
