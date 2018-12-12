@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import org.lightcouch.CouchDbProperties;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -29,18 +30,18 @@ public class DatabaseService {
     }
 
     public CouchDbProperties getClouchDbProperties(String dbName, SharedPreferences settings) {
+        String path = settings.getInt("url_Port", 80) == 80 || settings.getInt("url_Port", 80) == 443 ? "db" : null;
         return new CouchDbProperties()
                 .setDbName(dbName)
                 .setCreateDbIfNotExist(false)
                 .setProtocol(settings.getString("url_Scheme", "http"))
                 .setHost(settings.getString("url_Host", "192.168.2.1"))
-                .setPort(settings.getInt("url_Port", 3000))
+                .setPort(settings.getInt("url_Port", 80))
+                .setPath(path)
                 .setUsername(settings.getString("url_user", ""))
                 .setPassword(settings.getString("url_pwd", ""))
-                .setMaxConnections(100)
+                .setMaxConnections(101)
                 .setConnectionTimeout(0);
     }
-
-
 
 }

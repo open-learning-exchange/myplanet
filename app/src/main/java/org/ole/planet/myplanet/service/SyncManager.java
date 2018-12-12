@@ -2,19 +2,15 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.lightcouch.CouchDbClientAndroid;
-import org.lightcouch.CouchDbException;
 import org.lightcouch.CouchDbProperties;
 import org.lightcouch.Document;
-import org.lightcouch.NoDocumentException;
 import org.ole.planet.myplanet.Data.realm_meetups;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
@@ -28,14 +24,10 @@ import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
-
 import java.util.Date;
 import java.util.List;
-import java.util.function.Consumer;
-
 import io.realm.Realm;
 import io.realm.RealmResults;
-import okhttp3.internal.Util;
 
 public class SyncManager {
     static final String PREFS_NAME = "OLE_PLANET";
@@ -91,27 +83,26 @@ public class SyncManager {
     }
 
     private void syncDatabase() {
-        Thread td = new Thread(new Runnable() {
-            public void run() {
-                try {
-                    isSyncing = true;
-                    NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
-                    mRealm = dbService.getRealmInstance();
-                    properties = dbService.getClouchDbProperties("tablet_users", settings);
-                    TransactionSyncManager.syncDb(mRealm, properties, "users");
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
-                    resourceTransactionSync();
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("ratings", settings), "rating");
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("submissions", settings), "submissions");
-                    myLibraryTransactionSync();
-                    TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
-                    realm_resourceActivities.onSynced(mRealm, settings);
-                } catch (Exception err) {
-                    handleException(err.getMessage());
-                } finally {
-                    destroy();
-                }
+        Thread td = new Thread(() -> {
+            try {
+                isSyncing = true;
+                NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
+                mRealm = dbService.getRealmInstance();
+                properties = dbService.getClouchDbProperties("tablet_users", settings);
+                TransactionSyncManager.syncDb(mRealm, properties, "users");
+                TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
+                resourceTransactionSync();
+                TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("ratings", settings), "rating");
+                TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("submissions", settings), "submissions");
+                myLibraryTransactionSync();
+                TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
+                realm_resourceActivities.onSynced(mRealm, settings);
+            } catch (Exception err) {
+                err.printStackTrace();
+                handleException(err.getMessage());
+            } finally {
+                destroy();
             }
         });
         td.start();
@@ -163,15 +154,12 @@ public class SyncManager {
         properties.setDbName("shelf");
         properties.setUsername(settings.getString("url_user", ""));
         properties.setPassword(settings.getString("url_pwd", ""));
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
-                List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
-                for (int i = 0; i < allShelfDocs.size(); i++) {
-                    shelfDoc = allShelfDocs.get(i);
-                    populateShelfItems(settings, realm);
-                }
+        mRealm.executeTransaction(realm -> {
+            CouchDbClientAndroid dbShelfClient = new CouchDbClientAndroid(properties);
+            List<Document> allShelfDocs = dbShelfClient.view("_all_docs").includeDocs(true).query(Document.class);
+            for (int i = 0; i < allShelfDocs.size(); i++) {
+                shelfDoc = allShelfDocs.get(i);
+                populateShelfItems(settings, realm);
             }
         });
     }

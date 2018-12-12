@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -94,25 +95,13 @@ public class LoginActivity extends SyncActivity {
     }
 
     public void declareElements() {
-        imgBtnSetting.setOnClickListener(new View.OnClickListener() { //Settings button
-            @Override
-            public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-                builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
-                        .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
-                        .onPositive(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                continueSync(dialog);
-                            }
-                        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        saveConfigAndContinue(dialog);
-                    }
-                });
-                settingDialog(builder);
-            }
+        //Settings button
+        imgBtnSetting.setOnClickListener(view -> {
+            MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+            builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
+                    .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                    .onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+            settingDialog(builder);
         });
     }
 
@@ -123,6 +112,7 @@ public class LoginActivity extends SyncActivity {
             isServerReachable(processedUrl);
         } catch (Exception e) {
             DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
+            progressDialog.dismiss();
         }
     }
 
@@ -134,12 +124,9 @@ public class LoginActivity extends SyncActivity {
         gifDrawable = (GifDrawable) syncIcon.getDrawable();
         gifDrawable.setSpeed(3.0f);
         gifDrawable.stop();
-        syncIcon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                gifDrawable.reset();
-                startUpload();
-            }
+        syncIcon.setOnClickListener(v -> {
+            gifDrawable.reset();
+            startUpload();
         });
         declareHideKeyboardElements();
         inputName = findViewById(R.id.input_name);//editText
@@ -217,6 +204,7 @@ public class LoginActivity extends SyncActivity {
         ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
+                Utilities.log("Response " + s);
                 try {
                     progressDialog.dismiss();
                     List<String> myList = Arrays.asList(s.split(","));

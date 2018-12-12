@@ -71,7 +71,7 @@ public abstract class ProcessUserData extends AppCompatActivity implements Succe
 
     public void saveUserInfoPref(SharedPreferences settings, String password, realm_UserModel user) {
         this.settings = settings;
-        Utilities.log("UserId "  + user.getId());
+        Utilities.log("UserId " + user.getId());
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("userId", user.getId());
         editor.putString("name", user.getName());
@@ -88,11 +88,7 @@ public abstract class ProcessUserData extends AppCompatActivity implements Succe
         builder1.setMessage(Message);
         builder1.setCancelable(true);
         builder1.setNegativeButton("Okay",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                });
+                (dialog, id) -> dialog.cancel());
         AlertDialog alert11 = builder1.create();
         alert11.show();
     }
@@ -101,7 +97,7 @@ public abstract class ProcessUserData extends AppCompatActivity implements Succe
     protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri) {
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
-        editor.putInt("url_Port", uri.getPort());
+        editor.putInt("url_Port", uri.getPort() == -1 ? (uri.getScheme().equals("http") ? 80 : 443) : uri.getPort());
     }
 
 }

@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -70,12 +71,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
-        syncSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                setSpinnerVisibility(isChecked);
-            }
-        });
+        syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> setSpinnerVisibility(isChecked));
         syncSwitch.setChecked(settings.getBoolean("autoSync", false));
         dateCheck(dialog);
     }
@@ -93,12 +89,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     public void declareHideKeyboardElements() {
         constraintLayout = findViewById(R.id.constraintLayout);
-        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent ev) {
-                hideKeyboard(view);
-                return false;
-            }
+        constraintLayout.setOnTouchListener((view, ev) -> {
+            hideKeyboard(view);
+            return false;
         });
     }
 
@@ -197,7 +190,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         } else {
             url_user = "satellite";
             url_pwd = password;
-            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + uri.getPort();
+            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + (uri.getPort() == -1 ? (Objects.equals(uri.getScheme(), "http") ? 80 : 443) : uri.getPort());
         }
         editor.putString("serverURL", url);
         editor.putString("couchdbURL", couchdbURL);
@@ -206,6 +199,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        if (!couchdbURL.endsWith("db") && uri.getPort() == -1) {
+            couchdbURL += "/db";
+        }
         return couchdbURL;
     }
 
@@ -245,12 +241,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     @Override
     public void onSyncFailed(final String s) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
-                DialogUtils.showWifiSettingDialog(SyncActivity.this);
-            }
+        runOnUiThread(() -> {
+            DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
+            DialogUtils.showWifiSettingDialog(SyncActivity.this);
         });
     }
 
