@@ -1,14 +1,19 @@
 package org.ole.planet.myplanet;
 
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -31,11 +36,17 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.myplanet.Data.Download;
+import org.ole.planet.myplanet.Data.MyPlanet;
 import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.datamanager.ApiClient;
+import org.ole.planet.myplanet.datamanager.ApiInterface;
+import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,9 +54,13 @@ import java.util.List;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
+import retrofit2.Call;
+import retrofit2.Callback;
+
+import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
 
-public class LoginActivity extends SyncActivity {
+public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback {
     boolean connectionResult;
     EditText serverUrl;
     EditText serverPassword;
@@ -73,13 +88,10 @@ public class LoginActivity extends SyncActivity {
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
         }
+        new Service(this).checkVersion(this, settings);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
-        btnSignIn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                submitForm();
-            }
-        });
+        btnSignIn.setOnClickListener(view -> submitForm());
+        registerReceiver();
     }
 
     public void changeLogoColor() {
@@ -116,6 +128,7 @@ public class LoginActivity extends SyncActivity {
         });
     }
 
+
     private void continueSync(MaterialDialog dialog) {
         String processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
@@ -134,12 +147,9 @@ public class LoginActivity extends SyncActivity {
         gifDrawable = (GifDrawable) syncIcon.getDrawable();
         gifDrawable.setSpeed(3.0f);
         gifDrawable.stop();
-        syncIcon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                gifDrawable.reset();
-                startUpload();
-            }
+        syncIcon.setOnClickListener(v -> {
+            gifDrawable.reset();
+            startUpload();
         });
         declareHideKeyboardElements();
         inputName = findViewById(R.id.input_name);//editText
@@ -241,10 +251,53 @@ public class LoginActivity extends SyncActivity {
     }
 
 
-
     @Override
     public void onSuccess(String s) {
         DialogUtils.showSnack(btnSignIn, s);
+    }
+
+    @Override
+    public void onUpdateAvailable(String filePath) {
+        Utilities.toast(this,"Update available " + filePath);
+        new AlertDialog.Builder(context).setTitle("New version of my planet available")
+                .setCancelable(false).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
+            ArrayList url = new ArrayList();
+            url.add(filePath);
+            Utilities.openDownloadService(context, url);
+        }).show();
+    }
+
+    private void registerReceiver() {
+        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(MESSAGE_PROGRESS);
+        bManager.registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                if (!download.isFailed()) {
+                    if (download.isCompleteAll()) {
+                        progressDialog.dismiss();
+                        // TODO: 12/13/18 install apk
+                    }
+                } else {
+                    progressDialog.dismiss();
+                    DialogUtils.showError(progressDialog, download.getMessage());
+                }
+            }
+        }
+    };
+
+
+    @Override
+    public void onError(String msg) {
+        Utilities.toast(this,"Error "  + msg );
+        progressDialog.dismiss();
     }
 
     private class MyTextWatcher implements TextWatcher {

@@ -4,6 +4,8 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Environment;
 import android.text.TextUtils;
@@ -60,6 +62,10 @@ public class Utilities {
                 settings.getInt("url_Port", 0) + "/";
     }
 
+    public static String getUpdateUrl(SharedPreferences settings) {
+        return settings.getString("url_Scheme", "") + "://" +
+                settings.getString("url_Host", "") + "/versions";
+    }
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
         return getServerUrl(settings) + "_users/" + userId + "/" + imageName;
@@ -188,5 +194,16 @@ public class Utilities {
             selectedItems.remove(list.get(i));
         }
 
+    }
+
+
+    public static int getVersionCode(Context context) {
+        try {
+            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            return pInfo.versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }
