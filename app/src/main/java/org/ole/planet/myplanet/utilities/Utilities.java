@@ -144,16 +144,16 @@ public class Utilities {
 //        return link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png");
 //    }
 
-    private static void openIntent(Context context, Intent intent) {
-        intent.putExtra(Intent.EXTRA_SUBJECT, "Open With ..");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        Intent openInent = Intent.createChooser(intent, context.getString(R.string.app_name));
-        try {
-            context.startActivity(openInent);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
-        }
-    }
+//    private static void openIntent(Context context, Intent intent) {
+//        intent.putExtra(Intent.EXTRA_SUBJECT, "Open With ..");
+//        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//        Intent openInent = Intent.createChooser(intent, context.getString(R.string.app_name));
+//        try {
+//            context.startActivity(openInent);
+//        } catch (ActivityNotFoundException e) {
+//            Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
+//        }
+//    }
 
     public static ChipCloudConfig getCloudConfig() {
         return new ChipCloudConfig()
@@ -197,22 +197,5 @@ public class Utilities {
     }
 
 
-    public static int getVersionCode(Context context) {
-        try {
-            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            return pInfo.versionCode;
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        }
-        return 0;
-    }
-    public static String getVersionName(Context context) {
-        try {
-            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
-            return pInfo.versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        }
-        return "";
-    }
+
 }

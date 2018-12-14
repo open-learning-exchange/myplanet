@@ -78,8 +78,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save;
-    private static final int PERMISSION_REQUEST_CODE_FILE = 111;
-    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,29 +100,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         registerReceiver();
     }
 
-    public boolean checkPermission(String strPermission) {
-        int result = ContextCompat.checkSelfPermission(this, strPermission);
-        return result == PackageManager.PERMISSION_GRANTED;
-    }
-
-    public void requestPermission(String strPermission, int perCode) {
-        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
-    }
-
-    public void requestPermission() {
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) || !checkPermission(Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_FILE);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
-        } else {
-            Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
-        }
-    }
 
     public void changeLogoColor() {
         ImageView logo = findViewById(R.id.logoImageView);
@@ -308,20 +284,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
                 Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed()) {
-                    progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
-                    if (download.isCompleteAll()) {
-                        progressDialog.dismiss();
-                        Utilities.log("File " + download.getFileName());
-                        FileUtils.installApk(LoginActivity.this, download.getFileName());
-                    }
-                } else {
-                    progressDialog.dismiss();
-                    DialogUtils.showError(progressDialog, download.getMessage());
-                }
+                checkDownloadResult(download);
             }
         }
     };
+
+    private void checkDownloadResult(Download download) {
+        if (!download.isFailed()) {
+            progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
+            if (download.isCompleteAll()) {
+                progressDialog.dismiss();
+                Utilities.log("File " + download.getFileName());
+                FileUtils.installApk(LoginActivity.this, download.getFileName());
+            }
+        } else {
+            progressDialog.dismiss();
+            DialogUtils.showError(progressDialog, download.getMessage());
+        }
+    }
 
 
     @Override

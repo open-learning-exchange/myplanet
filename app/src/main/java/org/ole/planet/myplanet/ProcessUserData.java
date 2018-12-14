@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
+import org.ole.planet.myplanet.base.PermissionActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.utilities.DialogUtils;
@@ -22,7 +23,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import okhttp3.internal.Util;
 
-public abstract class ProcessUserData extends AppCompatActivity implements SuccessListener {
+public abstract class ProcessUserData extends PermissionActivity implements SuccessListener {
     SharedPreferences settings;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {

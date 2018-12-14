@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import org.ole.planet.myplanet.Data.MyPlanet;
 import org.ole.planet.myplanet.LoginActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.ArrayList;
 
@@ -24,12 +25,11 @@ public class Service {
 
     public void checkVersion(CheckVersionCallback callback, SharedPreferences settings) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-        Utilities.log("Check version");
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
                 Utilities.log("Response  " + new Gson().toJson(response.body()));
-                if (response.body() != null && !("v" + Utilities.getVersionName(context)).equals(response.body().getLatestapk())) {
+                if (response.body() != null && !("v" + VersionUtils.getVersionName(context)).equals(response.body().getLatestapk())) {
 //                if (response.body() != null) {
                     callback.onUpdateAvailable(response.body().getApkpath());
                 } else {
