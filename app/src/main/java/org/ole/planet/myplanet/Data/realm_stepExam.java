@@ -74,7 +74,7 @@ public class realm_stepExam extends RealmObject {
         int i = 0;
         for (realm_stepExam e : list
                 ) {
-            if (e.getType().equals("survey"))
+            if (e.getType().startsWith("survey"))
                 ids[i] = (e.getId());
             else
                 ids[i] = e.getId() + "@" + e.getCourseId();

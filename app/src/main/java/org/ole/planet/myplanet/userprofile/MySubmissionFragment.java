@@ -8,6 +8,7 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +18,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioButton;
 
+import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
@@ -30,6 +32,7 @@ import java.util.List;
 
 import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmQuery;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -42,6 +45,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     EditText etSearch;
     HashMap<String, realm_stepExam> exams;
     List<realm_submissions> submissions;
+    realm_UserModel user;
 
     public static Fragment newInstance(String type) {
         MySubmissionFragment fragment = new MySubmissionFragment();
@@ -71,6 +75,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         rbSurvey = v.findViewById(R.id.rb_survey);
         rvSurvey = v.findViewById(R.id.rv_mysurvey);
         etSearch = v.findViewById(R.id.et_search);
+        user = new UserProfileDbHandler(getActivity()).getUserModel();
         return v;
     }
 
@@ -82,7 +87,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         rvSurvey.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         submissions = mRealm.where(realm_submissions.class).findAll();
         createHashMap(submissions);
-        setData();
+        setData("");
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -92,11 +97,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 String cleanString = charSequence.toString();
-                if (!cleanString.isEmpty())
-                    search(cleanString);
-                else
-                    setData();
-                Utilities.log("String " + cleanString);
+                setData(cleanString);
             }
 
             @Override
@@ -133,33 +134,42 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         if (rbSurvey.isChecked()) {
-            type = "survey";
+            type = "survey_submission";
         } else {
             type = "exam";
         }
-        setData();
+        setData("");
     }
 
-    private void search(String s) {
-        List<realm_stepExam> ex = mRealm.where(realm_stepExam.class).contains("name", s, Case.INSENSITIVE).findAll();
-        // submissions = mRealm.where(realm_submissions.class).notEqualTo("type", "survey").findAll();
-        Utilities.log("List size " + ex.size());
-        if (type.equals("survey")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
-        } else {
-            submissions = mRealm.where(realm_submissions.class).notEqualTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
-        }
-        AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
-        adapter.setType(type);
-        rvSurvey.setAdapter(adapter);
-    }
+//    private void search(String s) {
+//        List<realm_stepExam> ex = mRealm.where(realm_stepExam.class).contains("name", s, Case.INSENSITIVE).findAll();
+//        if (type.equals("survey")) {
+//            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+//        } else if (type.equals("survey_submission")) {
+//            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+//        } else {
+//            submissions = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey").in("parentId", realm_stepExam.getIds(ex)).findAll();
+//        }
+//        AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
+//        adapter.setType(type);
+//        rvSurvey.setAdapter(adapter);
+//    }
 
-    private void setData() {
+    private void setData(String s) {
+        RealmQuery q = null;
         if (type.equals("survey")) {
-            submissions = mRealm.where(realm_submissions.class).equalTo("type", "survey").findAll();
+            q = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey");
+        } else if (type.equals("survey_submission")) {
+            q = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).equalTo("type", "survey");
         } else {
-            submissions = mRealm.where(realm_submissions.class).notEqualTo("type", "survey").findAll();
+            q = mRealm.where(realm_submissions.class).equalTo("userId", user.getId()).notEqualTo("type", "survey");
         }
+
+        if (!TextUtils.isEmpty(s)) {
+            List<realm_stepExam> ex = mRealm.where(realm_stepExam.class).contains("name", s, Case.INSENSITIVE).findAll();
+            q.in("parentId", realm_stepExam.getIds(ex));
+        }
+        submissions = q.findAll();
         AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
         adapter.setType(type);
         rvSurvey.setAdapter(adapter);
