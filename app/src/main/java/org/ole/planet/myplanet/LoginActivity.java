@@ -68,7 +68,6 @@ import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback {
     EditText serverUrl;
     EditText serverPassword;
-    Fuel ful = new Fuel();
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
@@ -100,16 +99,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-    public void changeLogoColor() {
-        ImageView logo = findViewById(R.id.logoImageView);
-        final int newColor = getResources().getColor(android.R.color.white);
-        int alpha = Math.round(Color.alpha(newColor) * 10);
-        int red = Color.red(newColor);
-        int green = Color.green(newColor);
-        int blue = Color.blue(newColor);
-        int alphaWhite = Color.argb(alpha, red, green, blue);
-        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
-    }
+
 
     public void declareElements() {
         //Settings button
@@ -255,24 +245,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
                 Download download = intent.getParcelableExtra("download");
-                checkDownloadResult(download);
+                checkDownloadResult(download, progressDialog);
             }
         }
     };
-
-    private void checkDownloadResult(Download download) {
-        if (!download.isFailed()) {
-            progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
-            if (download.isCompleteAll()) {
-                progressDialog.dismiss();
-                Utilities.log("File " + download.getFileName());
-                FileUtils.installApk(LoginActivity.this, download.getFileName());
-            }
-        } else {
-            progressDialog.dismiss();
-            DialogUtils.showError(progressDialog, download.getMessage());
-        }
-    }
 
 
     @Override

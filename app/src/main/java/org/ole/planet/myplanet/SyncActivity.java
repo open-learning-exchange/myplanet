@@ -54,7 +54,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     public Spinner spinner;
     public Switch syncSwitch;
     int convertedDate;
-    SharedPreferences settings;
     boolean connectionResult;
     Realm mRealm;
     Context context;
@@ -77,12 +76,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
-        syncSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                setSpinnerVisibility(isChecked);
-            }
-        });
+        syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> setSpinnerVisibility(isChecked));
         syncSwitch.setChecked(settings.getBoolean("autoSync", false));
         dateCheck(dialog);
     }
@@ -129,12 +123,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     public void declareHideKeyboardElements() {
         constraintLayout = findViewById(R.id.constraintLayout);
-        constraintLayout.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent ev) {
-                hideKeyboard(view);
-                return false;
-            }
+        constraintLayout.setOnTouchListener((view, ev) -> {
+            hideKeyboard(view);
+            return false;
         });
     }
 
@@ -216,33 +207,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         }
         mRealm.close();
         return false;
-    }
-
-    public String setUrlParts(String url, String password, Context context) {
-        this.context = context;
-        Uri uri = Uri.parse(url);
-        String couchdbURL, url_user, url_pwd;
-        if (url.contains("@")) {
-            String[] userinfo = getUserInfo(uri);
-            url_user = userinfo[0];
-            url_pwd = userinfo[1];
-            couchdbURL = url;
-        } else if (TextUtils.isEmpty(password)) {
-            DialogUtils.showAlert(this, "", "Pin is required.");
-            return "";
-        } else {
-            url_user = "satellite";
-            url_pwd = password;
-            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + uri.getPort();
-        }
-        editor.putString("serverURL", url);
-        editor.putString("couchdbURL", couchdbURL);
-        editor.putString("serverPin", password);
-        saveUrlScheme(editor, uri);
-        editor.putString("url_user", url_user);
-        editor.putString("url_pwd", url_pwd);
-        editor.commit();
-        return couchdbURL;
     }
 
 
