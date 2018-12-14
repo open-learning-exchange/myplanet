@@ -66,7 +66,6 @@ import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback {
-    boolean connectionResult;
     EditText serverUrl;
     EditText serverPassword;
     Fuel ful = new Fuel();
@@ -216,34 +215,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         sync(dialog);
     }
 
-    public boolean isServerReachable(String processedUrl) throws Exception {
-        progressDialog.setMessage("Connecting to server....");
-        progressDialog.show();
-        ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
-            @Override
-            public void success(Request request, Response response, String s) {
-                try {
-                    progressDialog.dismiss();
-                    List<String> myList = Arrays.asList(s.split(","));
-                    if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
-                    } else {
-                        startSync();
-                    }
-                } catch (Exception e) {
-                }
-            }
-
-            @Override
-            public void failure(Request request, Response response, FuelError fuelError) {
-                alertDialogOkay("Device couldn't reach server. Check and try again");
-                if (mRealm != null)
-                    mRealm.close();
-                progressDialog.dismiss();
-            }
-        });
-        return connectionResult;
-    }
 
 
     @Override

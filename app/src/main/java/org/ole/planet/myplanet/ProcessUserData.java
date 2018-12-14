@@ -89,15 +89,21 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         builder1.setMessage(Message);
         builder1.setCancelable(true);
         builder1.setNegativeButton("Okay",
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
-                });
+                (dialog, id) -> dialog.cancel());
         AlertDialog alert11 = builder1.create();
         alert11.show();
     }
 
+
+    public String[] getUserInfo(Uri uri) {
+        String[] ar = {"", ""};
+        String[] info = uri.getUserInfo().split(":");
+        if (info.length > 1) {
+            ar[0] = info[0];
+            ar[1] = info[1];
+        }
+        return ar;
+    }
 
     protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri) {
         editor.putString("url_Scheme", uri.getScheme());

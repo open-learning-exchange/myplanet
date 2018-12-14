@@ -22,6 +22,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.github.kittinunf.fuel.Fuel;
+import com.github.kittinunf.fuel.core.FuelError;
+import com.github.kittinunf.fuel.core.Handler;
+import com.github.kittinunf.fuel.core.Request;
+import com.github.kittinunf.fuel.core.Response;
 
 import org.lightcouch.CouchDbProperties;
 import org.ole.planet.myplanet.Data.realm_UserModel;
@@ -36,6 +41,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import io.realm.Realm;
@@ -49,6 +55,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     public Switch syncSwitch;
     int convertedDate;
     SharedPreferences settings;
+    boolean connectionResult;
     Realm mRealm;
     Context context;
     SharedPreferences.Editor editor;
@@ -88,6 +95,35 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             spinner.setVisibility(View.GONE);
             intervalLabel.setVisibility(View.GONE);
         }
+    }
+
+    public boolean isServerReachable(String processedUrl) throws Exception {
+        progressDialog.setMessage("Connecting to server....");
+        progressDialog.show();
+        Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
+            @Override
+            public void success(Request request, Response response, String s) {
+                try {
+                    progressDialog.dismiss();
+                    List<String> myList = Arrays.asList(s.split(","));
+                    if (myList.size() < 8) {
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
+                    } else {
+                        startSync();
+                    }
+                } catch (Exception e) {
+                }
+            }
+
+            @Override
+            public void failure(Request request, Response response, FuelError fuelError) {
+                alertDialogOkay("Device couldn't reach server. Check and try again");
+                if (mRealm != null)
+                    mRealm.close();
+                progressDialog.dismiss();
+            }
+        });
+        return connectionResult;
     }
 
 
@@ -209,15 +245,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         return couchdbURL;
     }
 
-    private String[] getUserInfo(Uri uri) {
-        String[] ar = {"", ""};
-        String[] info = uri.getUserInfo().split(":");
-        if (info.length > 1) {
-            ar[0] = info[0];
-            ar[1] = info[1];
-        }
-        return ar;
-    }
 
 
     public void startSync() {
@@ -245,12 +272,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
 
     @Override
     public void onSyncFailed(final String s) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
-                DialogUtils.showWifiSettingDialog(SyncActivity.this);
-            }
+        runOnUiThread(() -> {
+            DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
+            DialogUtils.showWifiSettingDialog(SyncActivity.this);
         });
     }
 
