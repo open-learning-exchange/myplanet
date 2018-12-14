@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,11 +8,14 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.Editable;
@@ -46,6 +50,7 @@ import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -73,7 +78,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save;
-
+    private static final int PERMISSION_REQUEST_CODE_FILE = 111;
+    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,10 +94,35 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
         }
+        requestPermission();
         new Service(this).checkVersion(this, settings);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         registerReceiver();
+    }
+
+    public boolean checkPermission(String strPermission) {
+        int result = ContextCompat.checkSelfPermission(this, strPermission);
+        return result == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public void requestPermission(String strPermission, int perCode) {
+        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
+    }
+
+    public void requestPermission() {
+        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) || !checkPermission(Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_FILE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
+        } else {
+            Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
+        }
     }
 
     public void changeLogoColor() {
@@ -106,25 +137,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void declareElements() {
-        imgBtnSetting.setOnClickListener(new View.OnClickListener() { //Settings button
-            @Override
-            public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-                builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
-                        .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
-                        .onPositive(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                continueSync(dialog);
-                            }
-                        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        saveConfigAndContinue(dialog);
-                    }
-                });
-                settingDialog(builder);
-            }
+        //Settings button
+        imgBtnSetting.setOnClickListener(view -> {
+            MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+            builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
+                    .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                    .onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+            settingDialog(builder);
         });
     }
 
@@ -258,13 +277,22 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onUpdateAvailable(String filePath) {
-        Utilities.toast(this,"Update available " + filePath);
-        new AlertDialog.Builder(context).setTitle("New version of my planet available")
+        Utilities.toast(this, "Update available " + filePath);
+        new AlertDialog.Builder(this).setTitle("New version of my planet available")
                 .setCancelable(false).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
             ArrayList url = new ArrayList();
             url.add(filePath);
-            Utilities.openDownloadService(context, url);
+            progressDialog.setMessage("Downloading file...");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+            Utilities.openDownloadService(this, url);
         }).show();
+    }
+
+    @Override
+    public void onCheckingVersion() {
+        progressDialog.setMessage("Checking version....");
+        progressDialog.show();
     }
 
     private void registerReceiver() {
@@ -281,9 +309,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
                 Download download = intent.getParcelableExtra("download");
                 if (!download.isFailed()) {
+                    progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
                     if (download.isCompleteAll()) {
                         progressDialog.dismiss();
-                        // TODO: 12/13/18 install apk
+                        Utilities.log("File " + download.getFileName());
+                        FileUtils.installApk(LoginActivity.this, download.getFileName());
                     }
                 } else {
                     progressDialog.dismiss();
@@ -296,7 +326,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onError(String msg) {
-        Utilities.toast(this,"Error "  + msg );
+        Utilities.toast(this, msg);
         progressDialog.dismiss();
     }
 

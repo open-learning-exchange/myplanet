@@ -177,6 +177,7 @@ public class MyDownloadService extends IntentService {
     private void onDownloadComplete() {
         changeOfflineStatus();
         Download download = new Download();
+        download.setFileName(Utilities.getFileNameFromUrl(url));
         download.setProgress(100);
         if (currentIndex == urls.size() - 1) {
             completeAll = true;
