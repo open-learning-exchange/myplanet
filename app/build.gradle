@@ -7,8 +7,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 227
-        versionName "0.2.26"
+        versionCode 228
+        versionName "0.2.28"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -45,6 +45,7 @@ android {
 }
 
 repositories {
+    mavenCentral()
     jcenter()
     maven { url "https://jitpack.io" }
 }
@@ -97,5 +98,5 @@ dependencies {
 
 }
 realm {
-    syncEnabled = true;
+    syncEnabled = true
 }
