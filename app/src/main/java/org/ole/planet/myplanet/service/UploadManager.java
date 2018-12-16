@@ -66,22 +66,14 @@ public class UploadManager {
         mRealm = dbService.getRealmInstance();
         Utilities.log("Upload exam result");
         final CouchDbProperties properties = dbService.getClouchDbProperties("submissions", sharedPreferences);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(@NonNull Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
-                Utilities.log("Sub size " + submissions.size());
-                for (realm_submissions sub : submissions) {
-                    realm_submissions.continueResultUpload(sub, dbClient, realm);
-                }
+        mRealm.executeTransactionAsync(realm -> {
+            final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
+            List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
+            Utilities.log("Sub size " + submissions.size());
+            for (realm_submissions sub : submissions) {
+                realm_submissions.continueResultUpload(sub, dbClient, realm);
             }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                listener.onSuccess("Result sync completed successfully");
-            }
-        });
+        }, () -> listener.onSuccess("Result sync completed successfully"));
         uploadCourseProgress();
     }
 

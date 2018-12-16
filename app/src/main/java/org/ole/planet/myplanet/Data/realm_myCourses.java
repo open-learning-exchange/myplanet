@@ -3,11 +3,13 @@ package org.ole.planet.myplanet.Data;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class realm_myCourses extends RealmObject {
     private Integer numberOfSteps;
 
     public static void insertMyCourses(String userId, JsonObject myCousesDoc, Realm mRealm) {
+        Utilities.log("INSERT COURSE " + new Gson().toJson(myCousesDoc));
         String id = JsonUtils.getString("_id", myCousesDoc);
         realm_myCourses myMyCoursesDB = mRealm.where(realm_myCourses.class).equalTo("id", id).findFirst();
         if (myMyCoursesDB == null) {

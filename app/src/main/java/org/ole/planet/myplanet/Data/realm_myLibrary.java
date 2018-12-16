@@ -510,9 +510,9 @@ public class realm_myLibrary extends RealmObject {
         this.timesRated = timesRated;
     }
 
-    public static void save(List<JsonObject> allDocs, Realm mRealm) {
+    public static void save(JsonArray allDocs, Realm mRealm) {
         for (int i = 0; i < allDocs.size(); i++) {
-            realm_myLibrary.insertResources(allDocs.get(i), mRealm);
+            realm_myLibrary.insertResources(allDocs.get(i).getAsJsonObject(), mRealm);
         }
     }
 

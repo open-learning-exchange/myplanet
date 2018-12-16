@@ -38,6 +38,7 @@ public class DatabaseService {
                 .setHost(settings.getString("url_Host", "192.168.2.1"))
                 .setPort(settings.getInt("url_Port", 80))
                 .setPath(path)
+                .setSocketTimeout(100)
                 .setUsername(settings.getString("url_user", ""))
                 .setPassword(settings.getString("url_pwd", ""))
                 .setMaxConnections(101)
