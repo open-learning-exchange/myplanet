@@ -9,11 +9,6 @@ import android.text.TextUtils;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
-import org.lightcouch.CouchDbClientAndroid;
-import org.lightcouch.CouchDbProperties;
-import org.lightcouch.Document;
-import org.lightcouch.Response;
 import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_feedback;
 import org.ole.planet.myplanet.Data.realm_meetups;
@@ -27,9 +22,13 @@ import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.datamanager.ApiClient;
+import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.IOException;
 import java.util.List;
 
 import io.realm.Case;
@@ -42,7 +41,6 @@ import okhttp3.ResponseBody;
 public class UploadManager {
     private DatabaseService dbService;
     private Context context;
-    private CouchDbProperties properties;
     private SharedPreferences sharedPreferences;
     private Realm mRealm;
     private static UploadManager instance;
@@ -64,128 +62,114 @@ public class UploadManager {
 
     public void uploadExamResult(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();
-        Utilities.log("Upload exam result");
-        final CouchDbProperties properties = dbService.getClouchDbProperties("submissions", sharedPreferences);
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
-            final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
             List<realm_submissions> submissions = realm.where(realm_submissions.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
-            Utilities.log("Sub size " + submissions.size());
             for (realm_submissions sub : submissions) {
-                realm_submissions.continueResultUpload(sub, dbClient, realm);
+                try {
+                    realm_submissions.continueResultUpload(sub, apiInterface, realm);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }, () -> listener.onSuccess("Result sync completed successfully"));
         uploadCourseProgress();
     }
 
     public void uploadCourseProgress() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
-        final CouchDbProperties properties = dbService.getClouchDbProperties("courses_progress", sharedPreferences);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(@NonNull Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                List<realm_courseProgress> data = realm.where(realm_courseProgress.class)
-                        .isNull("_id").findAll();
-                for (realm_courseProgress sub : data) {
-                    Response r = dbClient.post(realm_courseProgress.serializeProgress(sub));
-                    if (r != null) {
-                        sub.set_id(r.getId());
+        mRealm.executeTransactionAsync(realm -> {
+            List<realm_courseProgress> data = realm.where(realm_courseProgress.class)
+                    .isNull("_id").findAll();
+            for (realm_courseProgress sub : data) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/courses_progress", realm_courseProgress.serializeProgress(sub)).execute().body();
+                    if (object != null) {
+                        sub.set_id(JsonUtils.getString("_id", object));
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         });
     }
 
+
     public void uploadFeedback(final SuccessListener listener) {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
-        final CouchDbProperties properties = dbService.getClouchDbProperties("feedback", sharedPreferences);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(@NonNull Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                List<realm_feedback> feedbacks = realm.where(realm_feedback.class).equalTo("uploaded", false).findAll();
-                for (realm_feedback feedback : feedbacks) {
-                    Response r = dbClient.post(realm_feedback.serializeFeedback(feedback));
-                    if (!TextUtils.isEmpty(r.getId())) {
+        mRealm.executeTransactionAsync(realm -> {
+            List<realm_feedback> feedbacks = realm.where(realm_feedback.class).equalTo("uploaded", false).findAll();
+            for (realm_feedback feedback : feedbacks) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedbacks", realm_feedback.serializeFeedback(feedback)).execute().body();
+                    if (!TextUtils.isEmpty(JsonUtils.getString("_id", object))) {
                         feedback.setUploaded(true);
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+
             }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                listener.onSuccess("Feedback sync completed successfully");
-            }
-        });
+        }, () -> listener.onSuccess("Feedback sync completed successfully"));
     }
 
     public void uploadToshelf(final SuccessListener listener) {
-        mRealm = dbService.getRealmInstance();
-        final CouchDbProperties properties = dbService.getClouchDbProperties("shelf", sharedPreferences);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                JsonObject object = getShelfData(realm);
-                try {
-                    JsonObject d = dbClient.find(JsonObject.class, sharedPreferences.getString("userId", ""));
-                    object.addProperty("_rev", d.get("_rev").getAsString());
-                    Response r = dbClient.update(object);
-                } catch (Exception e) {
-                    listener.onSuccess("Unable to update documents.");
-                }
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
 
+        mRealm = dbService.getRealmInstance();
+        mRealm.executeTransactionAsync(realm -> {
+            JsonObject object = getShelfData(realm);
+            try {
+                JsonObject d = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", "")).execute().body();
+                object.addProperty("_rev", JsonUtils.getString("_rev", d));
+                apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), object).execute().body();
+            } catch (Exception e) {
+                listener.onSuccess("Unable to update documents.");
             }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                listener.onSuccess("Sync with server completed successfully");
-            }
-        });
+
+        }, () -> listener.onSuccess("Sync with server completed successfully"));
     }
 
     public void uploadUserActivities(final SuccessListener listener) {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
-        final CouchDbProperties properties = dbService.getClouchDbProperties("login_activities", sharedPreferences);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(@NonNull Realm realm) {
-                final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
-                        .isNull("_rev").equalTo("type", "login").findAll();
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                for (realm_offlineActivities act : activities) {
-                    Response r = dbClient.post(realm_offlineActivities.serializeLoginActivities(act));
-                    act.changeRev(r);
+        mRealm.executeTransactionAsync(realm -> {
+            final RealmResults<realm_offlineActivities> activities = realm.where(realm_offlineActivities.class)
+                    .isNull("_rev").equalTo("type", "login").findAll();
+            for (realm_offlineActivities act : activities) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/login_activities", realm_offlineActivities.serializeLoginActivities(act)).execute().body();
+                    act.changeRev(object);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+
             }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                listener.onSuccess("Sync with server completed successfully");
-            }
-        });
+        }, () -> listener.onSuccess("Sync with server completed successfully"));
     }
 
     public void uploadRating(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();
-        final CouchDbProperties properties = dbService.getClouchDbProperties("ratings", sharedPreferences);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(@NonNull Realm realm) {
-                final RealmResults<realm_rating> activities = realm.where(realm_rating.class).equalTo("isUpdated", true).findAll();
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                for (realm_rating act : activities) {
-                    Response r;
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm.executeTransactionAsync(realm -> {
+            final RealmResults<realm_rating> activities = realm.where(realm_rating.class).equalTo("isUpdated", true).findAll();
+            for (realm_rating act : activities) {
+                try {
+                    JsonObject object;
                     if (TextUtils.isEmpty(act.get_id())) {
-                        r = dbClient.post(realm_rating.serializeRating(act));
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", realm_rating.serializeRating(act)).execute().body();
                     } else {
-                        r = dbClient.update(realm_rating.serializeRating(act));
+                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), realm_rating.serializeRating(act)).execute().body();
                     }
-                    if (r.getId() != null) {
-                        act.set_id(r.getId());
-                        act.set_rev(r.getRev());
+                    if (object != null) {
+                        act.set_id(JsonUtils.getString("_id", object));
+                        act.set_rev(JsonUtils.getString("_rev", object));
                         act.setUpdated(false);
                     }
+
+                } catch (Exception e) {
                 }
             }
         });
@@ -193,24 +177,27 @@ public class UploadManager {
 
     public void uploadResourceActivities(String type) {
         mRealm = dbService.getRealmInstance();
-        final CouchDbProperties properties = dbService.getClouchDbProperties(type.equals("sync") ? "admin_activities" : "resource_activities", sharedPreferences);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(@NonNull Realm realm) {
-                RealmResults<realm_resourceActivities> activities;
-                if (type.equals("sync")) {
-                    activities = realm.where(realm_resourceActivities.class).isNull("_rev").equalTo("type", "sync").findAll();
-                } else {
-                    activities = realm.where(realm_resourceActivities.class).isNull("_rev").notEqualTo("type", "sync").findAll();
-                }
-                final CouchDbClientAndroid dbClient = new CouchDbClientAndroid(properties);
-                for (realm_resourceActivities act : activities) {
-                    Response r = dbClient.post(realm_resourceActivities.serializeResourceActivities(act));
-                    if (!TextUtils.isEmpty(r.getId())) {
-                        act.set_rev(r.getRev());
-                        act.set_id(r.getId());
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+
+        String db = type.equals("sync") ? "admin_activities" : "resource_activities";
+        mRealm.executeTransactionAsync(realm -> {
+            RealmResults<realm_resourceActivities> activities;
+            if (type.equals("sync")) {
+                activities = realm.where(realm_resourceActivities.class).isNull("_rev").equalTo("type", "sync").findAll();
+            } else {
+                activities = realm.where(realm_resourceActivities.class).isNull("_rev").notEqualTo("type", "sync").findAll();
+            }
+            for (realm_resourceActivities act : activities) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + db, realm_resourceActivities.serializeResourceActivities(act)).execute().body();
+                    if (object != null) {
+                        act.set_rev(JsonUtils.getString("_rev", object));
+                        act.set_id(JsonUtils.getString("_id", object));
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+
             }
         });
     }

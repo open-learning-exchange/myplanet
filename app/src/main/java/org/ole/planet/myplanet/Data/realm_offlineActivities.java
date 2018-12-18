@@ -167,10 +167,10 @@ public class realm_offlineActivities extends RealmObject {
         activities.setAndroidId(JsonUtils.getString("androidId", act));
     }
 
-    public void changeRev(Response r) {
-        if (!TextUtils.isEmpty(r.getId())) {
-            this.set_rev(r.getRev());
-            this.set_id(r.getId());
+    public void changeRev(JsonObject r) {
+        if (r != null) {
+            this.set_rev(JsonUtils.getString("_rev", r));
+            this.set_id(JsonUtils.getString("_id", r));
         }
     }
 }

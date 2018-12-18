@@ -8,10 +8,12 @@ import com.google.gson.JsonParser;
 
 import org.lightcouch.CouchDbClientAndroid;
 import org.lightcouch.Response;
+import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -109,14 +111,14 @@ public class realm_submissions extends RealmObject {
         return sub;
     }
 
-    public static void continueResultUpload(realm_submissions sub, CouchDbClientAndroid dbClient, Realm realm) {
-        Response r;
+    public static void continueResultUpload(realm_submissions sub, ApiInterface apiInterface, Realm realm) throws IOException {
+        JsonObject object;
         if (TextUtils.isEmpty(sub.get_id())) {
-            r = dbClient.post(realm_submissions.serializeExamResult(realm, sub));
+            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", realm_submissions.serializeExamResult(realm, sub)).execute().body();
         } else {
-            r = dbClient.update(realm_submissions.serializeExamResult(realm, sub));
+            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), realm_submissions.serializeExamResult(realm, sub)).execute().body();
         }
-        if (!TextUtils.isEmpty(r.getId())) {
+        if (object != null) {
             sub.setUploaded(true);
         }
     }

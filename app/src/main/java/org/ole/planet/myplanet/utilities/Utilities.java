@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
 
@@ -26,6 +28,9 @@ import java.util.Date;
 import java.util.List;
 
 import fisk.chipcloud.ChipCloudConfig;
+
+import static android.content.Context.MODE_PRIVATE;
+import static org.ole.planet.myplanet.SyncActivity.PREFS_NAME;
 
 
 public class Utilities {
@@ -188,5 +193,20 @@ public class Utilities {
             selectedItems.remove(list.get(i));
         }
 
+    }
+
+    public static String getHeader() {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
+                settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
+    }
+
+    public static String getUrl() {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String url = settings.getString("couchdbURL", "");
+        if (!url.endsWith("db")) {
+            url += "/db";
+        }
+        return url;
     }
 }
