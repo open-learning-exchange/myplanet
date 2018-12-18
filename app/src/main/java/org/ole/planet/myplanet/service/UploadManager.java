@@ -103,8 +103,8 @@ public class UploadManager {
             List<realm_feedback> feedbacks = realm.where(realm_feedback.class).equalTo("uploaded", false).findAll();
             for (realm_feedback feedback : feedbacks) {
                 try {
-                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedbacks", realm_feedback.serializeFeedback(feedback)).execute().body();
-                    if (!TextUtils.isEmpty(JsonUtils.getString("_id", object))) {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", realm_feedback.serializeFeedback(feedback)).execute().body();
+                    if (object!=null) {
                         feedback.setUploaded(true);
                     }
                 } catch (IOException e) {

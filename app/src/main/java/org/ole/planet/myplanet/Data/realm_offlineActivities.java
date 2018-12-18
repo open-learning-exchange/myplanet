@@ -1,19 +1,9 @@
 package org.ole.planet.myplanet.Data;
 
-import android.text.TextUtils;
-
-import com.github.kittinunf.fuel.android.core.Json;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-
-import org.lightcouch.Response;
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
-
-import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.Sort;

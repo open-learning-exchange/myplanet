@@ -11,9 +11,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
-import org.lightcouch.CouchDbClientAndroid;
-import org.lightcouch.CouchDbProperties;
-import org.lightcouch.Document;
 import org.ole.planet.myplanet.Data.DocumentResponse;
 import org.ole.planet.myplanet.Data.Rows;
 import org.ole.planet.myplanet.Data.realm_meetups;
@@ -47,7 +44,6 @@ public class SyncManager {
     private static SyncManager ourInstance;
     private SharedPreferences settings;
     private Realm mRealm;
-    private CouchDbProperties properties;
     private Context context;
     private boolean isSyncing = false;
     private String[] stringArray = new String[4];
@@ -103,7 +99,6 @@ public class SyncManager {
                 isSyncing = true;
                 NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                 mRealm = dbService.getRealmInstance();
-                properties = dbService.getClouchDbProperties("tablet_users", settings);
                 String url = settings.getString("couchdbURL", "");
                 if (!url.endsWith("db")) {
                     url += "/db";

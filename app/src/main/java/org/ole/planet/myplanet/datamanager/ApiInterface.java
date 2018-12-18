@@ -4,7 +4,6 @@ package org.ole.planet.myplanet.datamanager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import org.lightcouch.Document;
 import org.ole.planet.myplanet.Data.DocumentResponse;
 
 import java.util.List;

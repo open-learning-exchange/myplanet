@@ -23,7 +23,6 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 
-import org.lightcouch.CouchDbProperties;
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.callback.SyncListener;

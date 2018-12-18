@@ -2,18 +2,9 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.ListPreference;
-import android.util.Log;
-
-import com.github.kittinunf.fuel.Fuel;
-import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import org.lightcouch.CouchDbClientAndroid;
-import org.lightcouch.CouchDbProperties;
-import org.lightcouch.Document;
 import org.ole.planet.myplanet.Data.DocumentResponse;
 import org.ole.planet.myplanet.Data.Rows;
 import org.ole.planet.myplanet.Data.realm_UserModel;
@@ -38,11 +29,9 @@ public class TransactionSyncManager {
 
         mRealm.executeTransactionAsync(realm -> {
             try {
-                Utilities.log("Url " + baseUrl + "/" + table + "_all_docs");
                 DocumentResponse res = apiInterface.getDocuments(header, baseUrl + "/" + table + "/_all_docs").execute().body();
                 for (int i = 0; i < res.getRows().size(); i++) {
                     Rows doc = res.getRows().get(i);
-                    Utilities.log("For " + new Gson().toJson(doc));
                     try {
                         processDoc(apiInterface, doc, realm, header, baseUrl, table);
                     } catch (Exception e) {
