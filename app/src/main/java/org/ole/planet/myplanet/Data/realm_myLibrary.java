@@ -14,6 +14,7 @@ import com.google.gson.JsonParser;
 import org.json.JSONStringer;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -141,7 +142,7 @@ public class realm_myLibrary extends RealmObject {
                 if (entry.getKey().indexOf("/") < 0) {
                     resource.setResourceRemoteAddress(settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
                     resource.setResourceLocalAddress(entry.getKey());
-                    resource.setResourceOffline(Utilities.checkFileExist(resource.getResourceRemoteAddress()));
+                    resource.setResourceOffline(FileUtils.checkFileExist(resource.getResourceRemoteAddress()));
                 }
             }
         }

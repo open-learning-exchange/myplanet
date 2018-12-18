@@ -116,7 +116,7 @@ public class MyDownloadService extends IntentService {
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();
         InputStream bis = new BufferedInputStream(body.byteStream(), 1024 * 8);
-        outputFile = Utilities.getSDPathFromUrl(url);
+        outputFile = FileUtils.getSDPathFromUrl(url);
         OutputStream output = new FileOutputStream(outputFile);
         long total = 0;
         long startTime = System.currentTimeMillis();
@@ -128,7 +128,7 @@ public class MyDownloadService extends IntentService {
             int progress = (int) ((total * 100) / fileSize);
             long currentTime = System.currentTimeMillis() - startTime;
             Download download = new Download();
-            download.setFileName(Utilities.getFileNameFromUrl(url));
+            download.setFileName(FileUtils.getFileNameFromUrl(url));
             download.setTotalFileSize(totalFileSize);
             if (currentTime > 1000 * timeCount) {
                 download.setCurrentFileSize((int) current);
@@ -160,7 +160,7 @@ public class MyDownloadService extends IntentService {
     }
 
     private void sendNotification(Download download) {
-        download.setFileName("Downloading : " + Utilities.getFileNameFromUrl(url));
+        download.setFileName("Downloading : " + FileUtils.getFileNameFromUrl(url));
         sendIntent(download);
         notificationBuilder.setProgress(100, download.getProgress(), false);
         notificationBuilder.setContentText("Downloading file " + download.getCurrentFileSize() + "/" + totalFileSize + " KB");
@@ -205,17 +205,13 @@ public class MyDownloadService extends IntentService {
     }
 
     private void changeOfflineStatus() {
-        final String currentFileName = Utilities.getFileNameFromUrl(url);
-        Utilities.log("File Name " + currentFileName);
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(@NonNull Realm realm) {
-                realm_myLibrary obj = realm.where(realm_myLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
-                if (obj != null) {
-                    obj.setResourceOffline(true);
-                }else{
-                    Utilities.log("object Is null");
-                }
+        final String currentFileName = FileUtils.getFileNameFromUrl(url);
+        mRealm.executeTransaction(realm -> {
+            realm_myLibrary obj = realm.where(realm_myLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
+            if (obj != null) {
+                obj.setResourceOffline(true);
+            }else{
+                Utilities.log("object Is null");
             }
         });
     }

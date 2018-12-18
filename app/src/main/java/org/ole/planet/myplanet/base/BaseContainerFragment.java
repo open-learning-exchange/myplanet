@@ -186,7 +186,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
             Log.e("AUTH", "" + auth);
             bundle.putString("Auth", "" + auth);
         } else if (videoType.equals("offline")) {
-            bundle.putString("videoURL", "" + Uri.fromFile(new File("" + Utilities.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+            bundle.putString("videoURL", "" + Uri.fromFile(new File("" + FileUtils.getSDPathFromUrl(items.getResourceRemoteAddress()))));
             bundle.putString("Auth", "");
         }
         intent.putExtras(bundle);

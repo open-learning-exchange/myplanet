@@ -40,14 +40,7 @@ public class Utilities {
         Log.d("OLE ", "log: " + message);
     }
 
-    public static String getFileNameFromUrl(String url) {
-        try {
-            return url.substring(url.lastIndexOf("/") + 1);
-        } catch (Exception e) {
-        }
-        return "";
 
-    }
 
     public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
         return getUrl(library.getResource_id(), library.getResourceLocalAddress(), settings);
@@ -91,25 +84,8 @@ public class Utilities {
         context.startService(intent);
     }
 
-    public static File getSDPathFromUrl(String url) {
-        return createFilePath(SD_PATH, getFileNameFromUrl(url));
-    }
 
-    public static boolean checkFileExist(String url) {
-        if (url == null || url.isEmpty())
-            return false;
-        File f = createFilePath(SD_PATH, getFileNameFromUrl(url));
-        return f.exists();
 
-    }
-
-    private static File createFilePath(String folder, String filename) {
-        File f = new File(folder);
-        if (!f.exists())
-            f.mkdirs();
-        Utilities.log("Return file " + folder + "/" + filename);
-        return new File(f, filename);
-    }
 
     public static void toast(Context context, String s) {
         if (context == null) {
