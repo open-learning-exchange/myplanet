@@ -81,11 +81,10 @@ public class MyDownloadService extends IntentService {
 
     private void initDownload() {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-        request = retrofitInterface.downloadFile(getHeader(), url);
+        request = retrofitInterface.downloadFile( Utilities.getHeader(), url);
         try {
             Response r = request.execute();
             if (r.code() == 200) {
-                Log.e("Download File Response", "" + (ResponseBody) r.body() + " ;;Get Header: " + getHeader() + " ;; URL: " + url + " :;; Original Request: " + request);
                 ResponseBody responseBody = (ResponseBody) r.body();
                 if (!checkStorage(responseBody.contentLength())) {
                     downloadFile(responseBody);
@@ -109,10 +108,10 @@ public class MyDownloadService extends IntentService {
         stopSelf();
     }
 
-    public String getHeader() {
-        return "Basic " + Base64.encodeToString((preferences.getString("url_user", "") + ":" +
-                preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
-    }
+//    public String getHeader() {
+//        return "Basic " + Base64.encodeToString((preferences.getString("url_user", "") + ":" +
+//                preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
+//    }
 
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();

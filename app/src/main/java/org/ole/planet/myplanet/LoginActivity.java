@@ -204,7 +204,6 @@ public class LoginActivity extends SyncActivity {
         ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {
-                Utilities.log("Response " + s);
                 try {
                     progressDialog.dismiss();
                     List<String> myList = Arrays.asList(s.split(","));

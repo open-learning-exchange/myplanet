@@ -94,10 +94,12 @@ public abstract class ProcessUserData extends AppCompatActivity implements Succe
     }
 
 
-    protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri) {
+    protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri, String url, String couchdbURL) {
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
         editor.putInt("url_Port", uri.getPort() == -1 ? (uri.getScheme().equals("http") ? 80 : 443) : uri.getPort());
+        editor.putString("serverURL", url);
+        editor.putString("couchdbURL", couchdbURL);
     }
 
 }

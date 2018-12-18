@@ -51,8 +51,6 @@ public class SyncManager {
     private SyncListener listener;
     private DatabaseService dbService;
     private UserProfileDbHandler userProfileDbHandler;
-    private String header = "";
-    private String url = "";
 
     private SyncManager(Context context) {
         this.context = context;
@@ -99,20 +97,15 @@ public class SyncManager {
                 isSyncing = true;
                 NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                 mRealm = dbService.getRealmInstance();
-                String url = settings.getString("couchdbURL", "");
-                if (!url.endsWith("db")) {
-                    url += "/db";
-                }
-                String header = "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
-                        settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
-                TransactionSyncManager.syncDb(mRealm, url, "tablet_users", header);
-                TransactionSyncManager.syncDb(mRealm, url, "courses", header);
-                TransactionSyncManager.syncDb(mRealm, url, "exams", header);
-                resourceTransactionSync(header, url);
-                TransactionSyncManager.syncDb(mRealm, url, "ratings", header);
-                TransactionSyncManager.syncDb(mRealm, url, "submissions", header);
-                myLibraryTransactionSync(url, header);
-                TransactionSyncManager.syncDb(mRealm, url, "login_activities", header);
+
+                TransactionSyncManager.syncDb(mRealm, "tablet_users");
+                TransactionSyncManager.syncDb(mRealm, "courses");
+                TransactionSyncManager.syncDb(mRealm, "exams");
+                resourceTransactionSync();
+                TransactionSyncManager.syncDb(mRealm, "ratings");
+                TransactionSyncManager.syncDb(mRealm, "submissions");
+                myLibraryTransactionSync();
+                TransactionSyncManager.syncDb(mRealm, "login_activities");
                 realm_resourceActivities.onSynced(mRealm, settings);
             } catch (Exception err) {
                 err.printStackTrace();
@@ -133,27 +126,26 @@ public class SyncManager {
     }
 
 
-    public void resourceTransactionSync(String header, String url) {
+    public void resourceTransactionSync() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
             try {
-                syncResource(apiInterface, url, header);
+                syncResource(apiInterface);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
     }
 
-    private void syncResource(ApiInterface dbClient, String url, String header) throws IOException {
+    private void syncResource(ApiInterface dbClient) throws IOException {
         int skip = 0;
         int limit = 1000;
         while (true) {
-            Utilities.log("Urlll " + url);
             JsonObject object = new JsonObject();
             object.add("selector", new JsonObject());
             object.addProperty("limit", limit);
             object.addProperty("skip", skip);
-            final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(header, "application/json", url + "/resources/_find", object);
+            final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
             Response<JsonObject> a = allDocs.execute();
             realm_myLibrary.save(a.body().getAsJsonArray("docs"), mRealm);
             if (a.body().size() < limit) {
@@ -166,13 +158,11 @@ public class SyncManager {
     }
 
 
-    private void myLibraryTransactionSync(String url, String header) {
+    private void myLibraryTransactionSync() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        this.header = header;
-        this.url = url;
         mRealm.executeTransaction(realm -> {
             try {
-                DocumentResponse res = apiInterface.getDocuments(header, url + "/shelf/_all_docs").execute().body();
+                DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/shelf/_all_docs").execute().body();
                 for (int i = 0; i < res.getRows().size(); i++) {
                     shelfDoc = res.getRows().get(i);
                     populateShelfItems(apiInterface, realm);
@@ -188,7 +178,7 @@ public class SyncManager {
     private void populateShelfItems(ApiInterface apiInterface, Realm mRealm) {
         try {
             this.mRealm = mRealm;
-            JsonObject jsonDoc = apiInterface.getJsonObject(header, url + "/shelf/" + shelfDoc.getId()).execute().body();
+            JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.getId()).execute().body();
             if (jsonDoc.getAsJsonArray("resourceIds") != null) {
                 for (int i = 0; i < Constants.shelfDataList.size(); i++) {
                     Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
@@ -241,7 +231,7 @@ public class SyncManager {
     private void validateDocument(JsonArray array_categoryIds, int x) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         try {
-            JsonObject resourceDoc = apiInterface.getJsonObject(header, url + "/" + stringArray[2] + "/" + array_categoryIds.get(x).getAsString()).execute().body();
+            JsonObject resourceDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + stringArray[2] + "/" + array_categoryIds.get(x).getAsString()).execute().body();
             if (resourceDoc != null)
                 triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
         } catch (IOException e) {
@@ -252,10 +242,8 @@ public class SyncManager {
 
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
                                int x, JsonObject resourceDoc) {
-
         switch (stringArray[2]) {
             case "resources":
-                Utilities.log("Resource  " + array_categoryIds);
                 realm_myLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":

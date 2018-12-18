@@ -191,10 +191,9 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
             url_pwd = password;
             couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + (uri.getPort() == -1 ? (Objects.equals(uri.getScheme(), "http") ? 80 : 443) : uri.getPort());
         }
-        editor.putString("serverURL", url);
-        editor.putString("couchdbURL", couchdbURL);
+
         editor.putString("serverPin", password);
-        saveUrlScheme(editor, uri);
+        saveUrlScheme(editor, uri, url, couchdbURL);
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
