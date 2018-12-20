@@ -72,7 +72,7 @@ public class realm_myCourses extends RealmObject {
     }
 
 
-    public static List<realm_myCourses> getMyByUserId(String userId, RealmResults<realm_myCourses> libs) {
+    public static List<realm_myCourses> getMyCourseByUserId(String userId, RealmResults<realm_myCourses> libs) {
         List<realm_myCourses> libraries = new ArrayList<>();
         for (realm_myCourses item : libs) {
             if (item.getUserId().contains(userId)) {

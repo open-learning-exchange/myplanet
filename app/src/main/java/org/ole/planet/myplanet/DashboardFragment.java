@@ -97,7 +97,7 @@ public class DashboardFragment extends BaseContainerFragment {
         TextView count = view.findViewById(R.id.count_library);
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        List<realm_myLibrary> db_myLibrary = realm_myLibrary.getMyByUserId(mRealm, settings);
+        List<realm_myLibrary> db_myLibrary = realm_myLibrary.getMyLibraryByUserId(mRealm, settings);
         count.setText(db_myLibrary.size() + "");
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
