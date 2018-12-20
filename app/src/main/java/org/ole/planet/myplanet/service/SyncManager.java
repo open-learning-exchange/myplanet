@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -147,7 +148,10 @@ public class SyncManager {
             object.addProperty("skip", skip);
             final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
             Response<JsonObject> a = allDocs.execute();
-            realm_myLibrary.save(a.body().getAsJsonArray("docs"), mRealm);
+            if (a.body() == null) {
+                return;
+            }
+            realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
             if (a.body().size() < limit) {
                 break;
             } else {
@@ -162,6 +166,7 @@ public class SyncManager {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
             try {
+                Utilities.log("URL " + Utilities.getUrl());
                 DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/shelf/_all_docs").execute().body();
                 for (int i = 0; i < res.getRows().size(); i++) {
                     shelfDoc = res.getRows().get(i);
@@ -212,15 +217,29 @@ public class SyncManager {
             if (array_categoryIds.get(x) instanceof JsonNull) {
                 continue;
             }
-            RealmResults db_Categrory = mRealm.where(aClass)
-                    .equalTo("userId", stringArray[0])
-                    .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-                    .findAll();
-            checkEmptyAndSave(db_Categrory, x, array_categoryIds);
+            List db_Categrory = null;
+            if (aClass == realm_myLibrary.class) {
+                db_Categrory =
+                        realm_myLibrary.getMyByUserId(stringArray[0], mRealm.where(aClass)
+                                .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
+                                .findAll());
+
+            } else if (aClass == realm_myCourses.class) {
+                db_Categrory =
+                        realm_myCourses.getMyByUserId(stringArray[0], mRealm.where(aClass)
+                                .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
+                                .findAll());
+            } else {
+                db_Categrory = mRealm.where(aClass)
+                        .contains("userId", stringArray[0])
+                        .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
+                        .findAll();
+            }
+            checkEmptyAndSave( db_Categrory, x, array_categoryIds);
         }
     }
 
-    private void checkEmptyAndSave(RealmResults db_Categrory, int x, JsonArray array_categoryIds) {
+    private void checkEmptyAndSave(List db_Categrory, int x, JsonArray array_categoryIds) {
         if (db_Categrory.isEmpty()) {
             validateDocument(array_categoryIds, x);
         } else {

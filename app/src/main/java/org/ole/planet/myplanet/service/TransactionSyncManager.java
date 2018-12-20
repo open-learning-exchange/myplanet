@@ -44,8 +44,6 @@ public class TransactionSyncManager {
                 e.printStackTrace();
             }
         });
-
-
     }
 
     private static void processDoc(ApiInterface dbClient, Rows doc, Realm mRealm, String type) throws Exception {

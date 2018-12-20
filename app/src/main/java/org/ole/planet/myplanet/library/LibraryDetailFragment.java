@@ -121,12 +121,16 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             }
             openResource(library);
         });
-        boolean isAdd = !TextUtils.equals(library.getUserId(), profileDbHandler.getUserModel().getId());
+        boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
         remove.setText(isAdd ? "Add To My Library" : "Remove");
         remove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
-            library.setUserId(isAdd ? profileDbHandler.getUserModel().getId() : "");
+            if (isAdd){
+                library.setUserId(profileDbHandler.getUserModel().getId());
+            }else {
+                library.removeUserId(profileDbHandler.getUserModel().getId());
+            }
             mRealm.commitTransaction();
             Utilities.toast(getActivity(), "Resource " + (isAdd ? " added to" : " removed from ") + " my library");
             setLibraryData();

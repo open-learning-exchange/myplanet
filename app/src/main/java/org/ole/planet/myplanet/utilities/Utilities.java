@@ -180,7 +180,7 @@ public class Utilities {
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String url = settings.getString("couchdbURL", "");
-        if (!url.endsWith("db")) {
+        if (url.endsWith("80")) {
             url += "/db";
         }
         return url;

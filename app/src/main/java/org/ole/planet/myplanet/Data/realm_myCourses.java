@@ -11,11 +11,13 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
@@ -23,7 +25,7 @@ import io.realm.annotations.PrimaryKey;
 public class realm_myCourses extends RealmObject {
     @PrimaryKey
     private String id;
-    private String userId;
+    private RealmList<String> userId;
     private String courseId;
     private String course_rev;
     private String languageOfInstruction;
@@ -43,9 +45,7 @@ public class realm_myCourses extends RealmObject {
         if (myMyCoursesDB == null) {
             myMyCoursesDB = mRealm.createObject(realm_myCourses.class, id);
         }
-        if (!TextUtils.isEmpty(userId)) {
-            myMyCoursesDB.setUserId(userId);
-        }
+        myMyCoursesDB.setUserId(userId);
         myMyCoursesDB.setCourseId(JsonUtils.getString("_id", myCousesDoc));
         myMyCoursesDB.setCourse_rev(JsonUtils.getString("_rev", myCousesDoc));
         myMyCoursesDB.setLanguageOfInstruction(JsonUtils.getString("languageOfInstruction", myCousesDoc));
@@ -59,6 +59,29 @@ public class realm_myCourses extends RealmObject {
         myMyCoursesDB.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size());
         realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), JsonUtils.getJsonArray("steps", myCousesDoc), JsonUtils.getJsonArray("steps", myCousesDoc).size(), mRealm);
     }
+
+    public static List<realm_myCourses> getMyByUserId(Realm mRealm, SharedPreferences settings) {
+        RealmResults<realm_myCourses> libs = mRealm.where(realm_myCourses.class).findAll();
+        List<realm_myCourses> libraries = new ArrayList<>();
+        for (realm_myCourses item : libs) {
+            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
+
+
+    public static List<realm_myCourses> getMyByUserId(String userId, RealmResults<realm_myCourses> libs) {
+        List<realm_myCourses> libraries = new ArrayList<>();
+        for (realm_myCourses item : libs) {
+            if (item.getUserId().contains(userId)) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
+
 
     public static boolean isMyCourse(String userId, Realm realm) {
         realm_myCourses courses = realm.where(realm_myCourses.class).equalTo("userId", userId).findFirst();
@@ -109,12 +132,21 @@ public class realm_myCourses extends RealmObject {
         this.id = id;
     }
 
-    public String getUserId() {
+    public RealmList<String> getUserId() {
         return userId;
     }
 
     public void setUserId(String userId) {
-        this.userId = userId;
+        if (this.userId == null) {
+            this.userId = new RealmList<>();
+        }
+
+        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
+            this.userId.add(userId);
+    }
+
+    public void removeUserId(String userId) {
+        this.userId.remove(userId);
     }
 
     public String getCourseId() {

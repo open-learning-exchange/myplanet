@@ -30,6 +30,9 @@ import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
@@ -94,8 +97,7 @@ public class DashboardFragment extends BaseContainerFragment {
         TextView count = view.findViewById(R.id.count_library);
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
-        RealmResults<realm_myLibrary> db_myLibrary = mRealm.where(realm_myLibrary.class).isNotEmpty("userId")
-                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        List<realm_myLibrary> db_myLibrary = realm_myLibrary.getMyByUserId(mRealm, settings);
         count.setText(db_myLibrary.size() + "");
         TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
@@ -117,8 +119,13 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
-        RealmResults<RealmObject> db_myCourses = mRealm.where(c).isNotEmpty("userId")
-                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        List<RealmObject> db_myCourses = new ArrayList<>();
+        if (c == realm_myCourses.class) {
+            realm_myCourses.getMyByUserId(mRealm, settings);
+        } else {
+            db_myCourses = mRealm.where(c)
+                    .contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        }
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
@@ -167,18 +174,18 @@ public class DashboardFragment extends BaseContainerFragment {
         });
     }
 
-    private RealmResults<realm_myLibrary> getLibraryList() {
-        return mRealm.where(realm_myLibrary.class)
+    private List<realm_myLibrary> getLibraryList() {
+        RealmResults<realm_myLibrary> libraries = mRealm.where(realm_myLibrary.class)
                 .equalTo("resourceOffline", false)
-                .isNotEmpty("userId")
                 .isNotNull("resourceLocalAddress")
-                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
-                .or()
-                .equalTo("resourceOffline", false)
-                .isNotEmpty("courseId")
-                .isNotNull("resourceLocalAddress")
-                .equalTo("userId", settings.getString("userId", "--"), Case.INSENSITIVE)
                 .findAll();
+        List<realm_myLibrary> libList = new ArrayList<>();
+        for (realm_myLibrary item : libraries) {
+            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+                libList.add(item);
+            }
+        }
+        return libList;
     }
 
 
