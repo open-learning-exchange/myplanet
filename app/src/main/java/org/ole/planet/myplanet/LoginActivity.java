@@ -251,6 +251,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     };
 
 
+
     @Override
     public void onError(String msg) {
         Utilities.toast(this, msg);
