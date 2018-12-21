@@ -15,8 +15,8 @@ buildscript {
     }
 
     repositories {
-        google()
         jcenter()
+        google()
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 
@@ -34,6 +34,8 @@ allprojects {
     repositories {
         google()
         jcenter()
+        maven { url 'https://google.bintray.com/exoplayer/' }
+        maven { url 'https://google.bintray.com/flexbox-layout/' }
         mavenCentral()
         maven { url "https://jitpack.io" }
     }

@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.datamanager;
 
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.DocumentResponse;
-
-import java.util.List;
+import org.ole.planet.myplanet.Data.MyPlanet;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -41,5 +39,8 @@ public interface ApiInterface {
 
     @PUT
     Call<JsonObject> putDoc(@Header("Authorization") String header, @Header("Content-Type") String c, @Url String url, @Body JsonObject s);
+
+    @GET
+    Call<MyPlanet> checkVersion(@Url String serverUrl);
 }
 

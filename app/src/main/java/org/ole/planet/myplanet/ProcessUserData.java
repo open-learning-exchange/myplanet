@@ -1,28 +1,38 @@
 package org.ole.planet.myplanet;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.webkit.URLUtil;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import org.ole.planet.myplanet.Data.Download;
 import org.ole.planet.myplanet.Data.realm_UserModel;
+import org.ole.planet.myplanet.base.PermissionActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.Objects;
 
 import okhttp3.internal.Util;
 
-public abstract class ProcessUserData extends AppCompatActivity implements SuccessListener {
+public abstract class ProcessUserData extends PermissionActivity implements SuccessListener {
     SharedPreferences settings;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
@@ -36,11 +46,66 @@ public abstract class ProcessUserData extends AppCompatActivity implements Succe
         return true;
     }
 
+    public void checkDownloadResult(Download download, ProgressDialog progressDialog) {
+        if (!download.isFailed()) {
+            progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
+            if (download.isCompleteAll()) {
+                progressDialog.dismiss();
+                Utilities.log("File " + download.getFileName());
+                FileUtils.installApk(this, download.getFileName());
+            }
+        } else {
+            progressDialog.dismiss();
+            DialogUtils.showError(progressDialog, download.getMessage());
+        }
+    }
+
+
 
     private void requestFocus(View view) {
         if (view.requestFocus()) {
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         }
+    }
+
+    public void changeLogoColor() {
+        ImageView logo = findViewById(R.id.logoImageView);
+        final int newColor = getResources().getColor(android.R.color.white);
+        int alpha = Math.round(Color.alpha(newColor) * 10);
+        int red = Color.red(newColor);
+        int green = Color.green(newColor);
+        int blue = Color.blue(newColor);
+        int alphaWhite = Color.argb(alpha, red, green, blue);
+        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
+    }
+
+    public String setUrlParts(String url, String password, Context context) {
+        SharedPreferences.Editor editor = settings.edit();
+        Uri uri = Uri.parse(url);
+        String couchdbURL, url_user, url_pwd;
+        if (url.contains("@")) {
+            String[] userinfo = getUserInfo(uri);
+            url_user = userinfo[0];
+            url_pwd = userinfo[1];
+            couchdbURL = url;
+        } else if (TextUtils.isEmpty(password)) {
+            DialogUtils.showAlert(this, "", "Pin is required.");
+            return "";
+        } else {
+            url_user = "satellite";
+            url_pwd = password;
+            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + (uri.getPort() == -1 ? (Objects.equals(uri.getScheme(), "http") ? 80 : 443) : uri.getPort());
+        }
+
+        editor.putString("serverPin", password);
+        saveUrlScheme(editor, uri, url, couchdbURL);
+        editor.putString("url_user", url_user);
+        editor.putString("url_pwd", url_pwd);
+        editor.commit();
+        if (!couchdbURL.endsWith("db")) {
+            couchdbURL += "/db";
+        }
+        return couchdbURL;
     }
 
 
@@ -93,6 +158,15 @@ public abstract class ProcessUserData extends AppCompatActivity implements Succe
         alert11.show();
     }
 
+    public String[] getUserInfo(Uri uri) {
+        String[] ar = {"", ""};
+        String[] info = uri.getUserInfo().split(":");
+        if (info.length > 1) {
+            ar[0] = info[0];
+            ar[1] = info[1];
+        }
+        return ar;
+    }
 
     protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri, String url, String couchdbURL) {
         editor.putString("url_Scheme", uri.getScheme());

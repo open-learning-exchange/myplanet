@@ -82,15 +82,11 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-        requestPermission();
+
         openCallFragment(new DashboardFragment());
     }
 
 
-    public boolean checkPermission(String strPermission) {
-        int result = ContextCompat.checkSelfPermission(this, strPermission);
-        return result == PackageManager.PERMISSION_GRANTED;
-    }
 
 
     private AccountHeader getAccountHeader() {

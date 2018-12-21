@@ -99,15 +99,19 @@ public class DashboardFragment extends BaseContainerFragment {
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         List<realm_myLibrary> db_myLibrary = realm_myLibrary.getMyLibraryByUserId(mRealm, settings);
         count.setText(db_myLibrary.size() + "");
-        TextView[] myLibraryTextViewArray = new TextView[db_myLibrary.size()];
         int itemCnt = 0;
         for (final realm_myLibrary items : db_myLibrary) {
-            setTextViewProperties(myLibraryTextViewArray, itemCnt, items);
-            myLibraryItemClickAction(myLibraryTextViewArray[itemCnt], items);
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
             if ((itemCnt % 2) == 0) {
-                myLibraryTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+                v.setBackgroundResource(R.drawable.light_rect);
             }
-            flexboxLayout.addView(myLibraryTextViewArray[itemCnt], params);
+            ((TextView) v.findViewById(R.id.title)).setText(items.getTitle());
+            (v.findViewById(R.id.detail)).setOnClickListener(vi -> {
+                if (homeItemClickListener != null)
+                    homeItemClickListener.openLibraryDetailFragment(items);
+            });
+            myLibraryItemClickAction(v.findViewById(R.id.title), items);
+            flexboxLayout.addView(v, params);
             itemCnt++;
         }
     }
@@ -161,15 +165,12 @@ public class DashboardFragment extends BaseContainerFragment {
 
     private void handleClick(final String id, String title, final Fragment f, TextView v) {
         v.setText(title);
-        v.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (homeItemClickListener != null) {
-                    Bundle b = new Bundle();
-                    b.putString("id", id);
-                    f.setArguments(b);
-                    homeItemClickListener.openCallFragment(f);
-                }
+        v.setOnClickListener(view -> {
+            if (homeItemClickListener != null) {
+                Bundle b = new Bundle();
+                b.putString("id", id);
+                f.setArguments(b);
+                homeItemClickListener.openCallFragment(f);
             }
         });
     }
@@ -190,12 +191,10 @@ public class DashboardFragment extends BaseContainerFragment {
 
 
     public void myLibraryItemClickAction(TextView textView, final realm_myLibrary items) {
-        textView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (homeItemClickListener != null)
-                    homeItemClickListener.openLibraryDetailFragment(items);
-            }
+        textView.setOnClickListener(v -> {
+            //  if (homeItemClickListener != null)
+            openResource(items);
+            // homeItemClickListener.openLibraryDetailFragment(items);
         });
     }
 

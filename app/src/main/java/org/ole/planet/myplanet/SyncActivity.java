@@ -22,6 +22,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.github.kittinunf.fuel.Fuel;
+import com.github.kittinunf.fuel.core.FuelError;
+import com.github.kittinunf.fuel.core.Handler;
+import com.github.kittinunf.fuel.core.Request;
+import com.github.kittinunf.fuel.core.Response;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.callback.SuccessListener;
@@ -35,6 +40,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,7 +54,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     public Spinner spinner;
     public Switch syncSwitch;
     int convertedDate;
-    SharedPreferences settings;
+    boolean connectionResult;
     Realm mRealm;
     Context context;
     SharedPreferences.Editor editor;
@@ -85,6 +91,35 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         }
     }
 
+
+    public boolean isServerReachable(String processedUrl) throws Exception {
+        progressDialog.setMessage("Connecting to server....");
+        progressDialog.show();
+        Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
+            @Override
+            public void success(Request request, Response response, String s) {
+                try {
+                    progressDialog.dismiss();
+                    List<String> myList = Arrays.asList(s.split(","));
+                    if (myList.size() < 8) {
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
+                    } else {
+                        startSync();
+                    }
+                } catch (Exception e) {
+                }
+            }
+
+            @Override
+            public void failure(Request request, Response response, FuelError fuelError) {
+                alertDialogOkay("Device couldn't reach server. Check and try again");
+                if (mRealm != null)
+                    mRealm.close();
+                progressDialog.dismiss();
+            }
+        });
+        return connectionResult;
+    }
 
     public void declareHideKeyboardElements() {
         constraintLayout = findViewById(R.id.constraintLayout);
@@ -174,44 +209,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         return false;
     }
 
-    public String setUrlParts(String url, String password, Context context) {
-        this.context = context;
-        Uri uri = Uri.parse(url);
-        String couchdbURL, url_user, url_pwd;
-        if (url.contains("@")) {
-            String[] userinfo = getUserInfo(uri);
-            url_user = userinfo[0];
-            url_pwd = userinfo[1];
-            couchdbURL = url;
-        } else if (TextUtils.isEmpty(password)) {
-            DialogUtils.showAlert(this, "", "Pin is required.");
-            return "";
-        } else {
-            url_user = "satellite";
-            url_pwd = password;
-            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + (uri.getPort() == -1 ? (Objects.equals(uri.getScheme(), "http") ? 80 : 443) : uri.getPort());
-        }
-
-        editor.putString("serverPin", password);
-        saveUrlScheme(editor, uri, url, couchdbURL);
-        editor.putString("url_user", url_user);
-        editor.putString("url_pwd", url_pwd);
-        editor.commit();
-        if (!couchdbURL.endsWith("db") && uri.getPort() == -1) {
-            couchdbURL += "/db";
-        }
-        return couchdbURL;
-    }
-
-    private String[] getUserInfo(Uri uri) {
-        String[] ar = {"", ""};
-        String[] info = uri.getUserInfo().split(":");
-        if (info.length > 1) {
-            ar[0] = info[0];
-            ar[1] = info[1];
-        }
-        return ar;
-    }
 
 
     public void startSync() {
