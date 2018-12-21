@@ -32,10 +32,10 @@ public class FileUtils {
     }
 
     public static String getFileExtension(String address) {
-
+        if (TextUtils.isEmpty(address))
+            return "";
         String filenameArray[] = address.split("\\.");
-        String extension = filenameArray[filenameArray.length - 1];
-        return extension;
+        return filenameArray[filenameArray.length - 1];
     }
 
     public static void installApk(AppCompatActivity activity, String file) {
