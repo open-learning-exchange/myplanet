@@ -213,30 +213,24 @@ public class SyncManager {
             if (array_categoryIds.get(x) instanceof JsonNull) {
                 continue;
             }
-            List db_Categrory = null;
-            if (aClass == realm_myLibrary.class || aClass == realm_myCourses.class) {
-                db_Categrory =
-                        realm_myLibrary.getShelfItem(stringArray[0], mRealm.where(aClass)
-                                .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-                                .findAll(), aClass);
-            }
-//            else if (aClass == realm_myCourses.class) {
-//                db_Categrory =
-//                        realm_myCourses.getMyCourseByUserId(stringArray[0], mRealm.where(aClass)
-//                                .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-//                                .findAll());
-//            }
-            else {
-                db_Categrory = mRealm.where(aClass)
-                        .contains("userId", stringArray[0])
-                        .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-                        .findAll();
-            }
-            checkEmptyAndSave(db_Categrory, x, array_categoryIds);
+            checkEmptyAndSave(aClass, x, array_categoryIds);
         }
     }
 
-    private void checkEmptyAndSave(List db_Categrory, int x, JsonArray array_categoryIds) {
+    private void checkEmptyAndSave(Class aClass, int x, JsonArray array_categoryIds) {
+        List db_Categrory = null;
+
+        if (aClass == realm_myLibrary.class || aClass == realm_myCourses.class) {
+            db_Categrory =
+                    realm_myLibrary.getShelfItem(stringArray[0], mRealm.where(aClass)
+                            .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
+                            .findAll(), aClass);
+        } else {
+            db_Categrory = mRealm.where(aClass)
+                    .contains("userId", stringArray[0])
+                    .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
+                    .findAll();
+        }
         if (db_Categrory.isEmpty()) {
             validateDocument(array_categoryIds, x);
         } else {
