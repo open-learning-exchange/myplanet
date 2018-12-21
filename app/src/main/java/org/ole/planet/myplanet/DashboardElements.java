@@ -33,8 +33,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
  */
 
 public abstract class DashboardElements extends AppCompatActivity {
-    private static final int PERMISSION_REQUEST_CODE_FILE = 111;
-    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
+
     public EditText feedbackText;
     public UserProfileDbHandler profileDbHandler;
 
@@ -47,18 +46,6 @@ public abstract class DashboardElements extends AppCompatActivity {
     /**
      * Disables the submit button until the feedback form is complete
      */
-    public void requestPermission(String strPermission, int perCode) {
-        ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
-    }
-
-    public boolean checkPermission(String strPermission) {
-        int result = ContextCompat.checkSelfPermission(this, strPermission);
-        if (result == PackageManager.PERMISSION_GRANTED) {
-            return true;
-        } else {
-            return false;
-        }
-    }
 
 
     public void disableSubmit(MaterialDialog dialog) {
@@ -118,20 +105,8 @@ public abstract class DashboardElements extends AppCompatActivity {
         f.show(getSupportFragmentManager(), "");
     }
 
-    public void requestPermission() {
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) || !checkPermission(Manifest.permission.CAMERA)) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_FILE);
-        }
-    }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            Log.d("Main Activity", "onRequestPermissionsResult: permission granted");
-        } else {
-            Utilities.toast(this, "Download and camera Function will not work, please grant the permission.");
-        }
-    }
+
 
 
 

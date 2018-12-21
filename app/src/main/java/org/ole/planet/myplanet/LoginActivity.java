@@ -1,14 +1,23 @@
 package org.ole.planet.myplanet;
 
+import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -31,11 +40,18 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
+import org.ole.planet.myplanet.Data.Download;
+import org.ole.planet.myplanet.Data.MyPlanet;
 import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.datamanager.ApiClient;
+import org.ole.planet.myplanet.datamanager.ApiInterface;
+import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,13 +59,15 @@ import java.util.List;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
+import retrofit2.Call;
+import retrofit2.Callback;
+
+import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
 
-public class LoginActivity extends SyncActivity {
-    boolean connectionResult;
+public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback {
     EditText serverUrl;
     EditText serverPassword;
-    Fuel ful = new Fuel();
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
@@ -73,48 +91,27 @@ public class LoginActivity extends SyncActivity {
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
         }
+        requestPermission();
+        new Service(this).checkVersion(this, settings);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
-        btnSignIn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                submitForm();
-            }
-        });
+        btnSignIn.setOnClickListener(view -> submitForm());
+        registerReceiver();
     }
 
-    public void changeLogoColor() {
-        ImageView logo = findViewById(R.id.logoImageView);
-        final int newColor = getResources().getColor(android.R.color.white);
-        int alpha = Math.round(Color.alpha(newColor) * 10);
-        int red = Color.red(newColor);
-        int green = Color.green(newColor);
-        int blue = Color.blue(newColor);
-        int alphaWhite = Color.argb(alpha, red, green, blue);
-        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP);
-    }
+
+
 
     public void declareElements() {
-        imgBtnSetting.setOnClickListener(new View.OnClickListener() { //Settings button
-            @Override
-            public void onClick(View view) {
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-                builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
-                        .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
-                        .onPositive(new MaterialDialog.SingleButtonCallback() {
-                            @Override
-                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                continueSync(dialog);
-                            }
-                        }).onNeutral(new MaterialDialog.SingleButtonCallback() {
-                    @Override
-                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                        saveConfigAndContinue(dialog);
-                    }
-                });
-                settingDialog(builder);
-            }
+        //Settings button
+        imgBtnSetting.setOnClickListener(view -> {
+            MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+            builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
+                    .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                    .onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+            settingDialog(builder);
         });
     }
+
 
     private void continueSync(MaterialDialog dialog) {
         String processedUrl = saveConfigAndContinue(dialog);
@@ -134,12 +131,9 @@ public class LoginActivity extends SyncActivity {
         gifDrawable = (GifDrawable) syncIcon.getDrawable();
         gifDrawable.setSpeed(3.0f);
         gifDrawable.stop();
-        syncIcon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                gifDrawable.reset();
-                startUpload();
-            }
+        syncIcon.setOnClickListener(v -> {
+            gifDrawable.reset();
+            startUpload();
         });
         declareHideKeyboardElements();
         inputName = findViewById(R.id.input_name);//editText
@@ -211,40 +205,56 @@ public class LoginActivity extends SyncActivity {
         sync(dialog);
     }
 
-    public boolean isServerReachable(String processedUrl) throws Exception {
-        progressDialog.setMessage("Connecting to server....");
-        progressDialog.show();
-        ful.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
-            @Override
-            public void success(Request request, Response response, String s) {
-                try {
-                    progressDialog.dismiss();
-                    List<String> myList = Arrays.asList(s.split(","));
-                    if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
-                    } else {
-                        startSync();
-                    }
-                } catch (Exception e) {
-                }
-            }
-
-            @Override
-            public void failure(Request request, Response response, FuelError fuelError) {
-                alertDialogOkay("Device couldn't reach server. Check and try again");
-                if (mRealm != null)
-                    mRealm.close();
-                progressDialog.dismiss();
-            }
-        });
-        return connectionResult;
-    }
-
 
 
     @Override
     public void onSuccess(String s) {
         DialogUtils.showSnack(btnSignIn, s);
+    }
+
+    @Override
+    public void onUpdateAvailable(String filePath) {
+        Utilities.toast(this, "Update available " + filePath);
+        new AlertDialog.Builder(this).setTitle("New version of my planet available")
+                .setCancelable(false).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
+            ArrayList url = new ArrayList();
+            url.add(filePath);
+            progressDialog.setMessage("Downloading file...");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+            Utilities.openDownloadService(this, url);
+        }).show();
+    }
+
+    @Override
+    public void onCheckingVersion() {
+        progressDialog.setMessage("Checking version....");
+        progressDialog.show();
+    }
+
+    private void registerReceiver() {
+        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(MESSAGE_PROGRESS);
+        bManager.registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                checkDownloadResult(download, progressDialog);
+            }
+        }
+    };
+
+
+    @Override
+    public void onError(String msg) {
+        Utilities.toast(this, msg);
+        progressDialog.dismiss();
     }
 
     private class MyTextWatcher implements TextWatcher {

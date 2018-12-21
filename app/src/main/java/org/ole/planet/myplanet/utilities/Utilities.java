@@ -4,6 +4,8 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Environment;
 import android.text.TextUtils;
@@ -60,6 +62,10 @@ public class Utilities {
                 settings.getInt("url_Port", 0) + "/";
     }
 
+    public static String getUpdateUrl(SharedPreferences settings) {
+        return settings.getString("url_Scheme", "") + "://" +
+                settings.getString("url_Host", "") + "/versions";
+    }
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
         return getServerUrl(settings) + "_users/" + userId + "/" + imageName;
@@ -138,16 +144,16 @@ public class Utilities {
 //        return link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png");
 //    }
 
-    private static void openIntent(Context context, Intent intent) {
-        intent.putExtra(Intent.EXTRA_SUBJECT, "Open With ..");
-        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        Intent openInent = Intent.createChooser(intent, context.getString(R.string.app_name));
-        try {
-            context.startActivity(openInent);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
-        }
-    }
+//    private static void openIntent(Context context, Intent intent) {
+//        intent.putExtra(Intent.EXTRA_SUBJECT, "Open With ..");
+//        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+//        Intent openInent = Intent.createChooser(intent, context.getString(R.string.app_name));
+//        try {
+//            context.startActivity(openInent);
+//        } catch (ActivityNotFoundException e) {
+//            Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
+//        }
+//    }
 
     public static ChipCloudConfig getCloudConfig() {
         return new ChipCloudConfig()
@@ -189,4 +195,7 @@ public class Utilities {
         }
 
     }
+
+
+
 }
