@@ -83,9 +83,8 @@ public class realm_myCourses extends RealmObject {
     }
 
 
-    public static boolean isMyCourse(String userId, Realm realm) {
-        realm_myCourses courses = realm.where(realm_myCourses.class).equalTo("userId", userId).findFirst();
-        return courses != null;
+    public static boolean isMyCourse(String userId,String courseId, Realm realm) {
+      return realm_myCourses.getMyCourseByUserId(userId, realm.where(realm_myCourses.class).equalTo("courseId", courseId).findAll()).size() > 0;
     }
 
     public static void insertMyCourses(JsonObject doc, Realm mRealm) {
