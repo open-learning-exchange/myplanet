@@ -95,7 +95,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
         progressDialog.show();
-        Utilities.log("Url " + processedUrl);
         Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
             @Override
             public void success(Request request, Response response, String s) {

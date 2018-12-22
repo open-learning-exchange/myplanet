@@ -51,19 +51,13 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
             progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
             if (download.isCompleteAll()) {
                 progressDialog.dismiss();
-                Utilities.log("File " + download.getFileName());
-                try {
-                    FileUtils.installApk(this, download.getFileName());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                FileUtils.installApk(this, download.getFileName());
             }
         } else {
             progressDialog.dismiss();
             DialogUtils.showError(progressDialog, download.getMessage());
         }
     }
-
 
 
     private void requestFocus(View view) {
