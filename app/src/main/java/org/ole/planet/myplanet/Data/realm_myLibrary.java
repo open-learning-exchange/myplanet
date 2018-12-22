@@ -74,7 +74,6 @@ public class realm_myLibrary extends RealmObject {
 
     public static List<realm_myLibrary> getMyLibraryByUserId(String userId, RealmResults<realm_myLibrary> libs) {
         List<realm_myLibrary> libraries = new ArrayList<>();
-        Utilities.log("User id " + userId);
         for (realm_myLibrary item : libs) {
             if (item.getUserId().contains(userId)) {
                 libraries.add(item);
@@ -85,7 +84,6 @@ public class realm_myLibrary extends RealmObject {
 
     public static List<RealmObject> getShelfItem(String userId, RealmResults<RealmObject> libs, Class c) {
         List<RealmObject> libraries = new ArrayList<>();
-        Utilities.log("User id " + userId);
         for (RealmObject item : libs) {
             if (c == realm_myCourses.class ? ((realm_myCourses) item).getUserId().contains(userId) : ((realm_myLibrary) item).getUserId().contains(userId)) {
                 libraries.add(item);

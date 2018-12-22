@@ -110,7 +110,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             courseProgress.setMax(steps.size());
         int i = realm_courseProgress.getCurrentProgress(steps, mRealm, courseId);
         courseProgress.setProgress(i);
-        courseProgress.setVisibility(!currentCourse.getUserId().contains(userModel.getId()) ? View.VISIBLE : View.GONE);
+        courseProgress.setVisibility(currentCourse.getUserId().contains(userModel.getId()) ? View.VISIBLE : View.GONE);
     }
 
     @Override

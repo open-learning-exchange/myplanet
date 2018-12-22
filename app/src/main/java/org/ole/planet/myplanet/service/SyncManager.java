@@ -146,6 +146,7 @@ public class SyncManager {
             object.add("selector", new JsonObject());
             object.addProperty("limit", limit);
             object.addProperty("skip", skip);
+            Utilities.log("Url " + Utilities.getUrl() + "/resources/_find");
             final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
             Response<JsonObject> a = allDocs.execute();
             realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
@@ -180,14 +181,10 @@ public class SyncManager {
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.getId()).execute().body();
-            if (jsonDoc.getAsJsonArray("resourceIds") != null) {
-                for (int i = 0; i < Constants.shelfDataList.size(); i++) {
-                    Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
-                    JsonArray array = jsonDoc.getAsJsonArray(shelfData.key);
-                    memberShelfData(array, shelfData);
-                }
-            } else {
-                Log.e("DB", " BAD Metadata -- Shelf Doc ID " + shelfDoc.getId());
+            for (int i = 0; i < Constants.shelfDataList.size(); i++) {
+                Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
+                JsonArray array = JsonUtils.getJsonArray(shelfData.key, jsonDoc);
+                memberShelfData(array, shelfData);
             }
         } catch (Exception err) {
             err.printStackTrace();
@@ -197,7 +194,8 @@ public class SyncManager {
     private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type);
-            check(stringArray, array, shelfData.aClass);
+            Utilities.log("Type" + shelfData.type);
+            check(array, shelfData.aClass);
         }
     }
 
@@ -208,7 +206,7 @@ public class SyncManager {
     }
 
 
-    private void check(String[] stringArray, JsonArray array_categoryIds, Class aClass) {
+    private void check( JsonArray array_categoryIds, Class aClass) {
         for (int x = 0; x < array_categoryIds.size(); x++) {
             if (array_categoryIds.get(x) instanceof JsonNull) {
                 continue;

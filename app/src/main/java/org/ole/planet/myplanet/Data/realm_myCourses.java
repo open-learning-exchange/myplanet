@@ -5,7 +5,6 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -13,7 +12,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -60,11 +58,12 @@ public class realm_myCourses extends RealmObject {
         realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), JsonUtils.getJsonArray("steps", myCousesDoc), JsonUtils.getJsonArray("steps", myCousesDoc).size(), mRealm);
     }
 
-    public static List<realm_myCourses> getMyByUserId(Realm mRealm, SharedPreferences settings) {
+    public static List<RealmObject> getMyByUserId(Realm mRealm, SharedPreferences settings) {
         RealmResults<realm_myCourses> libs = mRealm.where(realm_myCourses.class).findAll();
-        List<realm_myCourses> libraries = new ArrayList<>();
+        List<RealmObject> libraries = new ArrayList<>();
         for (realm_myCourses item : libs) {
             if (item.getUserId().contains(settings.getString("userId", "--"))) {
+                Utilities.log("My course " + item.getCourseTitle());
                 libraries.add(item);
             }
         }

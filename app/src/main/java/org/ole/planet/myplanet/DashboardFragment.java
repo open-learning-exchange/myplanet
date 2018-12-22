@@ -125,7 +125,7 @@ public class DashboardFragment extends BaseContainerFragment {
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
         List<RealmObject> db_myCourses = new ArrayList<>();
         if (c == realm_myCourses.class) {
-            realm_myCourses.getMyByUserId(mRealm, settings);
+        db_myCourses =     realm_myCourses.getMyByUserId(mRealm, settings);
         } else {
             db_myCourses = mRealm.where(c)
                     .contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
