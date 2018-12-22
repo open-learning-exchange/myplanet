@@ -122,7 +122,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     private void createHashMap(List<realm_submissions> submissions) {
         for (realm_submissions sub : submissions) {
             String id = sub.getParentId();
-            if (sub.getParentId().contains("@")) {
+            if (sub.getParentId() != null && sub.getParentId().contains("@")) {
                 id = sub.getParentId().split("@")[0];
             }
             realm_stepExam survey = mRealm.where(realm_stepExam.class).equalTo("id", id).findFirst();
