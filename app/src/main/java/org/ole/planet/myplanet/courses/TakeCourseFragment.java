@@ -108,7 +108,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
-        int i = realm_courseProgress.getCurrentProgress(steps, mRealm, courseId);
+        int i = realm_courseProgress.getCurrentProgress(steps, mRealm, userModel.getId(),courseId);
         courseProgress.setProgress(i);
         courseProgress.setVisibility(TextUtils.equals(currentCourse.getUserId(), userModel.getId()) ? View.VISIBLE : View.GONE);
     }
@@ -128,6 +128,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             next.setClickable(true);
             next.setColorFilter(getResources().getColor(R.color.md_white_1000));
         }
+        int i = realm_courseProgress.getCurrentProgress(steps, mRealm,userModel.getId(), courseId);
+        courseProgress.setProgress(i);
         tvSteps.setText(String.format("Step %d/%d", position, steps.size()));
     }
 
