@@ -39,6 +39,7 @@ public class FileUtils {
     }
 
     public static void installApk(AppCompatActivity activity, String file) {
+        if (!file.endsWith("apk")) return;
         File toInstall = new File(Utilities.SD_PATH, file);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             Uri apkUri = FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", toInstall);
