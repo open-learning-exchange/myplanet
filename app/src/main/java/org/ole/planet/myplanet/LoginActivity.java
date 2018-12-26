@@ -99,8 +99,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-
-
     public void declareElements() {
         //Settings button
         imgBtnSetting.setOnClickListener(view -> {
@@ -206,17 +204,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-
     @Override
     public void onSuccess(String s) {
         DialogUtils.showSnack(btnSignIn, s);
     }
 
     @Override
-    public void onUpdateAvailable(String filePath) {
+    public void onUpdateAvailable(String filePath, boolean cancelable) {
         Utilities.toast(this, "Update available " + filePath);
         new AlertDialog.Builder(this).setTitle("New version of my planet available")
-                .setCancelable(false).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
+                .setCancelable(cancelable).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
             ArrayList url = new ArrayList();
             url.add(filePath);
             progressDialog.setMessage("Downloading file...");
@@ -249,7 +246,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         }
     };
-
 
 
     @Override

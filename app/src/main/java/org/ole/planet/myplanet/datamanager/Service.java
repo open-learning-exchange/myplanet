@@ -28,12 +28,15 @@ public class Service {
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
-                Utilities.log("Response  " + new Gson().toJson(response.body()));
-                if (response.body() != null && !("v" + VersionUtils.getVersionName(context)).equals(response.body().getLatestapk())) {
-//                if (response.body() != null) {
-                    callback.onUpdateAvailable(response.body().getApkpath());
+                int currentVersion = VersionUtils.getVersionCode(context);
+                if (response.body() != null) {
+                    if (currentVersion < response.body().getMinapkcode())
+                        callback.onUpdateAvailable(response.body().getApkpath(), false);
+                    else if (currentVersion < response.body().getLatestapkcode()) {
+                        callback.onUpdateAvailable(response.body().getApkpath(), true);
+                    }
                 } else {
-                    callback.onError("Version not available");
+                    callback.onError("New version not available");
                 }
             }
 
@@ -45,7 +48,7 @@ public class Service {
     }
 
     public interface CheckVersionCallback {
-        void onUpdateAvailable(String filePath);
+        void onUpdateAvailable(String filePath, boolean cancelable);
 
         void onCheckingVersion();
 
