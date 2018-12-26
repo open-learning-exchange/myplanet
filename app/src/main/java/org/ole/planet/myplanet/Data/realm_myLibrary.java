@@ -552,8 +552,7 @@ public class realm_myLibrary extends RealmObject {
     }
 
     public static JsonArray getMyLibIds(Realm realm, SharedPreferences sharedPreferences) {
-        RealmResults<realm_myLibrary> myLibraries = realm.where(realm_myLibrary.class).isNotEmpty("userId")
-                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        List<realm_myLibrary> myLibraries = getMyLibraryByUserId(realm,sharedPreferences );
 
         JsonArray ids = new JsonArray();
         for (realm_myLibrary lib : myLibraries

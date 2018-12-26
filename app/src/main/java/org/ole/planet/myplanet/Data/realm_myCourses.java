@@ -63,7 +63,6 @@ public class realm_myCourses extends RealmObject {
         List<RealmObject> libraries = new ArrayList<>();
         for (realm_myCourses item : libs) {
             if (item.getUserId().contains(settings.getString("userId", "--"))) {
-                Utilities.log("My course " + item.getCourseTitle());
                 libraries.add(item);
             }
         }
@@ -100,24 +99,22 @@ public class realm_myCourses extends RealmObject {
         course.setUserId(id);
         mRealm.commitTransaction();
     }
-
-    public static String[] getMyCourseIds(Realm mRealm, String userId) {
-        List<realm_myCourses> list = mRealm.where(realm_myCourses.class).equalTo("userId", userId).findAll();
-        String[] myIds = new String[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            myIds[i] = list.get(i).getCourseId();
-        }
-        return myIds;
-    }
+//
+//    public static String[] getMyCourseIds(Realm mRealm, String userId) {
+//        List<realm_myCourses> list = mRealm.where(realm_myCourses.class).equalTo("userId", userId).findAll();
+//        String[] myIds = new String[list.size()];
+//        for (int i = 0; i < list.size(); i++) {
+//            myIds[i] = list.get(i).getCourseId();
+//        }
+//        return myIds;
+//    }
 
     public static JsonArray getMyCourseIds(Realm realm, SharedPreferences sharedPreferences) {
-        RealmResults<realm_myCourses> myCourses = realm.where(realm_myCourses.class).isNotEmpty("userId")
-                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
-
+        List<RealmObject> myCourses = getMyByUserId(realm, sharedPreferences);
         JsonArray ids = new JsonArray();
-        for (realm_myCourses lib : myCourses
+        for (RealmObject lib : myCourses
                 ) {
-            ids.add(lib.getCourseId());
+            ids.add( ((realm_myCourses)lib).getCourseId());
         }
         return ids;
     }

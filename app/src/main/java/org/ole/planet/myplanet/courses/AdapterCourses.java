@@ -94,6 +94,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (map.containsKey(courseList.get(position).getCourseId())) {
                 JsonObject object = map.get(courseList.get(position).getCourseId());
                 showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
+            }else{
+                ((ViewHoldercourse) holder).ratingBar.setRating(0);
             }
             showProgress(position, holder);
         }
