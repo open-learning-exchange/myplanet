@@ -82,6 +82,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         previous = v.findViewById(R.id.previous_step);
         btnAddRemove = v.findViewById(R.id.btn_remove);
         courseProgress = v.findViewById(R.id.course_progress);
+        courseProgress.setOnTouchListener((view, motionEvent) -> true);
     }
 
     @Override
