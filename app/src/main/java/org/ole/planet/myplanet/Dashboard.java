@@ -87,8 +87,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
     }
 
 
-
-
     private AccountHeader getAccountHeader() {
         return new AccountHeaderBuilder()
                 .withActivity(Dashboard.this)
@@ -234,11 +232,16 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
 
     @Override
     public void onBackPressed() {
+        int fragments = getSupportFragmentManager().getBackStackEntryCount();
+
         if (result != null && result.isDrawerOpen()) {
             result.closeDrawer();
+        } else if (fragments == 1) {
+            finish();
         } else {
             super.onBackPressed();
         }
+
     }
 
     @Override
@@ -269,5 +272,6 @@ public class Dashboard extends DashboardElements implements OnHomeItemClickListe
         } else if (f instanceof SurveyFragment) {
             navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
+
     }
 }

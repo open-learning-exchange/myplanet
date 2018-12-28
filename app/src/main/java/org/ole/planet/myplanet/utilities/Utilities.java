@@ -59,10 +59,7 @@ public class Utilities {
                 settings.getInt("url_Port", 0) + "/";
     }
 
-    public static String getUpdateUrl(SharedPreferences settings) {
-        return settings.getString("url_Scheme", "") + "://" +
-                settings.getString("url_Host", "") + "/versions";
-    }
+
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
         return getServerUrl(settings) + "_users/" + userId + "/" + imageName;
@@ -187,6 +184,14 @@ public class Utilities {
             url += "/db";
         }
         return url;
+    }
+
+    public static String getUpdateUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")){
+            url.replace("/db", "");
+        }
+        return url + "/versions";
     }
 
 

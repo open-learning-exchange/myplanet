@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet;
 
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -32,8 +34,11 @@ import java.util.Objects;
 
 import okhttp3.internal.Util;
 
+import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
+
 public abstract class ProcessUserData extends PermissionActivity implements SuccessListener {
     SharedPreferences settings;
+    ProgressDialog progressDialog;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -115,7 +120,19 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         return true;
     }
 
+    public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                checkDownloadResult(download, progressDialog);
+            }
+        }
+    };
+
+
     public void startUpload() {
+
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
