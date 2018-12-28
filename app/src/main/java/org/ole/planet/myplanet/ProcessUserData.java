@@ -113,6 +113,7 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
     }
 
     public void startUpload() {
+
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);

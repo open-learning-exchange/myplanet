@@ -76,6 +76,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save;
+    private boolean isSync = false, isUpload = false;
+    String processedUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,13 +114,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     private void continueSync(MaterialDialog dialog) {
-        String processedUrl = saveConfigAndContinue(dialog);
+        processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
-        try {
-            isServerReachable(processedUrl);
-        } catch (Exception e) {
-            DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
-        }
+        isSync = true;
+        new Service(this).checkVersion(this, settings);
     }
 
 
@@ -131,7 +130,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         gifDrawable.stop();
         syncIcon.setOnClickListener(v -> {
             gifDrawable.reset();
-            startUpload();
+            isUpload = true;
+            new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
         inputName = findViewById(R.id.input_name);//editText
@@ -211,16 +211,22 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onUpdateAvailable(String filePath, boolean cancelable) {
-        Utilities.toast(this, "Update available " + filePath);
-        new AlertDialog.Builder(this).setTitle("New version of my planet available")
-                .setCancelable(cancelable).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
-            ArrayList url = new ArrayList();
-            url.add(filePath);
-            progressDialog.setMessage("Downloading file...");
-            progressDialog.setCancelable(false);
-            progressDialog.show();
-            Utilities.openDownloadService(this, url);
-        }).show();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle("New version of my planet available")
+                .setMessage("Download first to continue.")
+                .setPositiveButton("Upgrade", (dialogInterface, i) -> {
+                    ArrayList url = new ArrayList();
+                    url.add(filePath);
+                    progressDialog.setMessage("Downloading file...");
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
+                    Utilities.openDownloadService(this, url);
+                });
+        if (cancelable) {
+            builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
+                continueSyncProcess();
+            });
+        }
+        builder.show();
     }
 
     @Override
@@ -249,9 +255,23 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     @Override
-    public void onError(String msg) {
+    public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
         progressDialog.dismiss();
+        if (!block)
+            continueSyncProcess();
+    }
+
+    public void continueSyncProcess() {
+        if (isSync) {
+            try {
+                isServerReachable(processedUrl);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (isUpload) {
+            startUpload();
+        }
     }
 
     private class MyTextWatcher implements TextWatcher {
