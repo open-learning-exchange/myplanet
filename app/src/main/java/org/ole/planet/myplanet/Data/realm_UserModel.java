@@ -65,7 +65,10 @@ public class realm_UserModel extends RealmObject {
                     .equalTo("id", JsonUtils.getString("_id", jsonDoc))
                     .findAll();
             if (db_users.isEmpty()) {
-                realm_UserModel user = mRealm.createObject(realm_UserModel.class, JsonUtils.getString("_id", jsonDoc));
+                realm_UserModel user = mRealm.where(realm_UserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
+                if (user == null) {
+                    user = mRealm.createObject(realm_UserModel.class, JsonUtils.getString("_id", jsonDoc));
+                }
                 insertIntoUsers(jsonDoc, user, settings);
             }
         } catch (Exception err) {
