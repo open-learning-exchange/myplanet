@@ -211,16 +211,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onUpdateAvailable(String filePath, boolean cancelable) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle("New version of my planet available")
-                .setMessage("Download first to continue.")
-                .setPositiveButton("Upgrade", (dialogInterface, i) -> {
-                    ArrayList url = new ArrayList();
-                    url.add(filePath);
-                    progressDialog.setMessage("Downloading file...");
-                    progressDialog.setCancelable(false);
-                    progressDialog.show();
-                    Utilities.openDownloadService(this, url);
-                });
+        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this,filePath, progressDialog);
         if (cancelable) {
             builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
                 continueSyncProcess();
@@ -243,15 +234,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                checkDownloadResult(download, progressDialog);
-            }
-        }
-    };
 
 
     @Override
