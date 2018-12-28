@@ -59,7 +59,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     Context context;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
-    ProgressDialog progressDialog;
     private View constraintLayout;
 
     @Override

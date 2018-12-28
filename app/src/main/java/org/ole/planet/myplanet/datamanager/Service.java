@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 
 import org.ole.planet.myplanet.Data.MyPlanet;
 import org.ole.planet.myplanet.LoginActivity;
+import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
@@ -17,10 +18,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 
 public class Service {
-    Context context;
+    private Context context;
+    private SharedPreferences preferences;
 
     public Service(Context context) {
         this.context = context;
+        preferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     public void checkVersion(CheckVersionCallback callback, SharedPreferences settings) {
@@ -28,27 +31,39 @@ public class Service {
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
-                Utilities.log("Response  " + new Gson().toJson(response.body()));
-                if (response.body() != null && !("v" + VersionUtils.getVersionName(context)).equals(response.body().getLatestapk())) {
-//                if (response.body() != null) {
-                    callback.onUpdateAvailable(response.body().getApkpath());
+                if (response.body() != null) {
+                    preferences.edit().putString("versionDetail", new Gson().toJson(response.body()));
+                    preferences.edit().commit();
+                    checkForUpdate(response.body(), callback);
                 } else {
-                    callback.onError("Version not available");
+                    callback.onError("Version not found", true);
                 }
             }
 
             @Override
             public void onFailure(Call<MyPlanet> call, Throwable t) {
-                callback.onError("Connection failed.");
+                callback.onError("Connection failed.", true);
             }
         });
     }
 
+    private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
+        int currentVersion = VersionUtils.getVersionCode(context);
+        if (currentVersion < body.getMinapkcode())
+            callback.onUpdateAvailable(body.getApkpath(), false);
+        else if (currentVersion < body.getLatestapkcode()) {
+            callback.onUpdateAvailable(body.getApkpath(), true);
+        } else {
+            callback.onError("New version not available", false);
+        }
+    }
+
     public interface CheckVersionCallback {
-        void onUpdateAvailable(String filePath);
+        void onUpdateAvailable(String filePath, boolean cancelable);
 
         void onCheckingVersion();
 
-        void onError(String msg);
+        void onError(String msg, boolean blockSync);
+
     }
 }

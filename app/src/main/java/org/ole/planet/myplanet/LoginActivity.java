@@ -76,6 +76,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save;
+    private boolean isSync = false, isUpload = false;
+    String processedUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,14 +93,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
         }
+        if (getIntent().hasExtra("filePath")) {
+            onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
+        }
         requestPermission();
         new Service(this).checkVersion(this, settings);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         registerReceiver();
     }
-
-
 
 
     public void declareElements() {
@@ -114,13 +117,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     private void continueSync(MaterialDialog dialog) {
-        String processedUrl = saveConfigAndContinue(dialog);
+        processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
-        try {
-            isServerReachable(processedUrl);
-        } catch (Exception e) {
-            DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
-        }
+        isSync = true;
+        new Service(this).checkVersion(this, settings);
     }
 
 
@@ -133,7 +133,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         gifDrawable.stop();
         syncIcon.setOnClickListener(v -> {
             gifDrawable.reset();
-            startUpload();
+            isUpload = true;
+            new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
         inputName = findViewById(R.id.input_name);//editText
@@ -206,24 +207,20 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-
     @Override
     public void onSuccess(String s) {
         DialogUtils.showSnack(btnSignIn, s);
     }
 
     @Override
-    public void onUpdateAvailable(String filePath) {
-        Utilities.toast(this, "Update available " + filePath);
-        new AlertDialog.Builder(this).setTitle("New version of my planet available")
-                .setCancelable(false).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
-            ArrayList url = new ArrayList();
-            url.add(filePath);
-            progressDialog.setMessage("Downloading file...");
-            progressDialog.setCancelable(false);
-            progressDialog.show();
-            Utilities.openDownloadService(this, url);
-        }).show();
+    public void onUpdateAvailable(String filePath, boolean cancelable) {
+        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, filePath, progressDialog);
+        if (cancelable) {
+            builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
+                continueSyncProcess();
+            });
+        }
+        builder.show();
     }
 
     @Override
@@ -240,22 +237,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                checkDownloadResult(download, progressDialog);
-            }
-        }
-    };
-
-
-
     @Override
-    public void onError(String msg) {
+    public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
         progressDialog.dismiss();
+        if (!block)
+            continueSyncProcess();
+    }
+
+    public void continueSyncProcess() {
+        if (isSync) {
+            try {
+                isServerReachable(processedUrl);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (isUpload) {
+            startUpload();
+        }
     }
 
     private class MyTextWatcher implements TextWatcher {

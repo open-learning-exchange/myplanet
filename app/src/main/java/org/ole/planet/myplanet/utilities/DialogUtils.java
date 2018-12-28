@@ -85,4 +85,18 @@ public class DialogUtils {
                 .setPositiveButton("Dismiss", null)
                 .show();
     }
+
+    public static AlertDialog.Builder getUpdateDialog(Context context, String filePath, ProgressDialog progressDialog) {
+        return new AlertDialog.Builder(context).setTitle("New version of my planet available")
+                .setMessage("Download first to continue.")
+                .setPositiveButton("Upgrade", (dialogInterface, i) -> {
+                    ArrayList url = new ArrayList();
+                    url.add(filePath);
+                    progressDialog.setMessage("Downloading file...");
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
+                    Utilities.openDownloadService(context, url);
+                });
+
+    }
 }
