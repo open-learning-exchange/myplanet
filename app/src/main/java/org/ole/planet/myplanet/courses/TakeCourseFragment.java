@@ -82,6 +82,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         previous = v.findViewById(R.id.previous_step);
         btnAddRemove = v.findViewById(R.id.btn_remove);
         courseProgress = v.findViewById(R.id.course_progress);
+        courseProgress.setOnTouchListener((view, motionEvent) -> true);
     }
 
     @Override
@@ -108,7 +109,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
-        int i = realm_courseProgress.getCurrentProgress(steps, mRealm, courseId);
+        int i = realm_courseProgress.getCurrentProgress(steps, mRealm, userModel.getId(),courseId);
         courseProgress.setProgress(i);
         courseProgress.setVisibility(currentCourse.getUserId().contains(userModel.getId()) ? View.VISIBLE : View.GONE);
     }
@@ -128,6 +129,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             next.setClickable(true);
             next.setColorFilter(getResources().getColor(R.color.md_white_1000));
         }
+        int i = realm_courseProgress.getCurrentProgress(steps, mRealm,userModel.getId(), courseId);
+        courseProgress.setProgress(i);
         tvSteps.setText(String.format("Step %d/%d", position, steps.size()));
     }
 
