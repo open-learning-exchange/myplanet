@@ -40,8 +40,6 @@ import okhttp3.ResponseBody;
 
 public class UploadManager {
     private DatabaseService dbService;
-    private Context context;
-    private SharedPreferences sharedPreferences;
     private Realm mRealm;
     private static UploadManager instance;
 
@@ -54,10 +52,7 @@ public class UploadManager {
 
 
     public UploadManager(Context context) {
-        this.context = context;
-        sharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
-
     }
 
     public void uploadExamResult(final SuccessListener listener) {

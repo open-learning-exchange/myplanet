@@ -31,7 +31,6 @@ import io.realm.RealmResults;
 public class UploadToShelfService {
 
     private DatabaseService dbService;
-    private Context context;
     private SharedPreferences sharedPreferences;
     private Realm mRealm;
     private static UploadToShelfService instance;
@@ -45,14 +44,12 @@ public class UploadToShelfService {
     }
 
     public UploadToShelfService(Context context) {
-        this.context = context;
         sharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
     }
 
     public void uploadToshelf(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
             RealmResults<realm_UserModel> users = realm.where(realm_UserModel.class).findAll();
