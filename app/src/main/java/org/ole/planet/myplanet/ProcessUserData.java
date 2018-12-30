@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.base.PermissionActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.service.UploadManager;
+import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -136,7 +137,7 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
-        UploadManager.getInstance().uploadToshelf(this);
+        UploadToShelfService.getInstance().uploadToshelf(this);
         UploadManager.getInstance().uploadResourceActivities("");
         UploadManager.getInstance().uploadResourceActivities("sync");
         UploadManager.getInstance().uploadRating(this);

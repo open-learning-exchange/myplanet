@@ -115,22 +115,6 @@ public class UploadManager {
         }, () -> listener.onSuccess("Feedback sync completed successfully"));
     }
 
-    public void uploadToshelf(final SuccessListener listener) {
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-
-        mRealm = dbService.getRealmInstance();
-        mRealm.executeTransactionAsync(realm -> {
-            JsonObject object = getShelfData(realm);
-            try {
-                JsonObject d = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", "")).execute().body();
-                object.addProperty("_rev", JsonUtils.getString("_rev", d));
-                apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), object).execute().body();
-            } catch (Exception e) {
-                listener.onSuccess("Unable to update documents.");
-            }
-
-        }, () -> listener.onSuccess("Sync with server completed successfully"));
-    }
 
     public void uploadUserActivities(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -202,17 +186,4 @@ public class UploadManager {
         });
     }
 
-    public JsonObject getShelfData(Realm realm) {
-        JsonArray myLibs = realm_myLibrary.getMyLibIds(realm, sharedPreferences);
-        JsonArray myCourses = realm_myCourses.getMyCourseIds(realm, sharedPreferences);
-        JsonArray myTeams = realm_myTeams.getMyTeamIds(realm, sharedPreferences);
-        JsonArray myMeetups = realm_meetups.getMyMeetUpIds(realm, sharedPreferences);
-        JsonObject object = new JsonObject();
-        object.addProperty("_id", sharedPreferences.getString("userId", ""));
-        object.add("meetupIds", myMeetups);
-        object.add("resourceIds", myLibs);
-        object.add("courseIds", myCourses);
-        object.add("myTeamIds", myTeams);
-        return object;
-    }
 }

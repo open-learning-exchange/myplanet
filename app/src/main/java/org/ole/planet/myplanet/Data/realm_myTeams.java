@@ -38,9 +38,9 @@ public class realm_myTeams extends RealmObject {
     }
 
 
-    public static JsonArray getMyTeamIds(Realm realm, SharedPreferences sharedPreferences) {
+    public static JsonArray getMyTeamIds(Realm realm, String userId) {
         RealmResults<realm_myTeams> teams = realm.where(realm_myTeams.class).isNotEmpty("userId")
-                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+                .equalTo("userId", userId, Case.INSENSITIVE).findAll();
 
         JsonArray ids = new JsonArray();
         for (realm_myTeams lib : teams

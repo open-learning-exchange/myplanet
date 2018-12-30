@@ -98,7 +98,6 @@ public class SyncManager {
                 isSyncing = true;
                 NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
                 mRealm = dbService.getRealmInstance();
-
                 TransactionSyncManager.syncDb(mRealm, "tablet_users");
                 TransactionSyncManager.syncDb(mRealm, "courses");
                 TransactionSyncManager.syncDb(mRealm, "exams");

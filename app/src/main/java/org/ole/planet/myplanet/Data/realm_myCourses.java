@@ -109,8 +109,8 @@ public class realm_myCourses extends RealmObject {
 //        return myIds;
 //    }
 
-    public static JsonArray getMyCourseIds(Realm realm, SharedPreferences sharedPreferences) {
-        List<RealmObject> myCourses = getMyByUserId(realm, sharedPreferences);
+    public static JsonArray getMyCourseIds(Realm realm,String userId) {
+        List<realm_myCourses> myCourses = getMyCourseByUserId( userId, realm.where(realm_myCourses.class).findAll());
         JsonArray ids = new JsonArray();
         for (RealmObject lib : myCourses
                 ) {
