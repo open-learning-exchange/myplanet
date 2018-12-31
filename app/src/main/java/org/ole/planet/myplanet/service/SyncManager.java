@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.service;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -20,6 +22,7 @@ import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_myTeams;
 import org.ole.planet.myplanet.Data.realm_resourceActivities;
+import org.ole.planet.myplanet.LoginActivity;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
@@ -38,18 +41,22 @@ import io.realm.RealmResults;
 import okhttp3.internal.Util;
 
 public class SyncManager {
+
     static final String PREFS_NAME = "OLE_PLANET";
     private static SyncManager ourInstance;
     private SharedPreferences settings;
     private Realm mRealm;
     private CouchDbProperties properties;
     private Context context;
+    private boolean syncTimeout = false;
     private boolean isSyncing = false;
     private String[] stringArray = new String[4];
     private Document shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
     private UserProfileDbHandler userProfileDbHandler;
+
+    float timeElapsed;
 
     private SyncManager(Context context) {
         this.context = context;
@@ -94,27 +101,58 @@ public class SyncManager {
         Thread td = new Thread(new Runnable() {
             public void run() {
                 try {
+                    Date startDate = new Date();
+
                     isSyncing = true;
+                    syncTimeoutValidation(startDate);
                     NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
+                    syncTimeoutValidation(startDate);
                     mRealm = dbService.getRealmInstance();
+                    syncTimeoutValidation(startDate);
                     properties = dbService.getClouchDbProperties("tablet_users", settings);
+                    syncTimeoutValidation(startDate);
                     TransactionSyncManager.syncDb(mRealm, properties, "users");
+                    syncTimeoutValidation(startDate);
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("courses", settings), "course");
+                    syncTimeoutValidation(startDate);
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("exams", settings), "exams");
+                    syncTimeoutValidation(startDate);
                     resourceTransactionSync();
+                    syncTimeoutValidation(startDate);
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("ratings", settings), "rating");
+                    syncTimeoutValidation(startDate);
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("submissions", settings), "submissions");
+                    syncTimeoutValidation(startDate);
                     myLibraryTransactionSync();
+                    syncTimeoutValidation(startDate);
                     TransactionSyncManager.syncDb(mRealm, dbService.getClouchDbProperties("login_activities", settings), "login");
+                    syncTimeoutValidation(startDate);
                     realm_resourceActivities.onSynced(mRealm, settings);
+                    syncTimeoutValidation(startDate);
+
                 } catch (Exception err) {
-                    handleException(err.getMessage());
+                    if (!syncTimeout) {
+                        handleException(err.getMessage());
+                    } else {
+                        syncTimeout = false;
+                        handleException("Sync took to long to respond");
+                    }
                 } finally {
                     destroy();
                 }
             }
         });
         td.start();
+    }
+
+    private void syncTimeoutValidation(Date startDate) throws Exception {
+        Date endDate = new Date();
+        timeElapsed = (float)((endDate.getTime() - startDate.getTime()) / 1000.0);
+
+        if (timeElapsed > 20) {
+            syncTimeout = true;
+            throw new Exception();
+        }
     }
 
     private void handleException(String message) {
