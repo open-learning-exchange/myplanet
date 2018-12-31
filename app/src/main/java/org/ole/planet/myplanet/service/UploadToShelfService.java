@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.Data.realm_meetups;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_myTeams;
+import org.ole.planet.myplanet.Data.realm_removedLog;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
@@ -22,8 +23,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -78,24 +79,34 @@ public class UploadToShelfService {
         JsonArray myTeams = realm_myTeams.getMyTeamIds(realm, userId);
         JsonArray myMeetups = realm_meetups.getMyMeetUpIds(realm, userId);
 
+        List<String> removedResources = Arrays.asList(realm_removedLog.removedIds(realm, "resources", userId));
+        List<String> removedCourses = Arrays.asList(realm_removedLog.removedIds(realm, "courses", userId));
+
+        JsonArray mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources);
+        JsonArray mergedCoueseIds = mergeJsonArray(myCourses, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses);
 
         JsonObject object = new JsonObject();
+
+
         object.addProperty("_id", sharedPreferences.getString("userId", ""));
-        object.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc)));
-        object.add("resourceIds", mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc)));
-        object.add("courseIds", mergeJsonArray(myCourses, JsonUtils.getJsonArray("courseIds", jsonDoc)));
-        object.add("myTeamIds", mergeJsonArray(myTeams, JsonUtils.getJsonArray("myTeamIds", jsonDoc)));
+        object.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources));
+        object.add("resourceIds", mergedResourceIds);
+        object.add("courseIds", mergedCoueseIds);
+        object.add("myTeamIds", mergeJsonArray(myTeams, JsonUtils.getJsonArray("myTeamIds", jsonDoc), removedResources));
         return object;
     }
 
-    public JsonArray mergeJsonArray(JsonArray array1, JsonArray array2) {
+
+    public JsonArray mergeJsonArray(JsonArray array1, JsonArray array2, List<String> removedIds) {
         JsonArray array = new JsonArray();
         array.addAll(array1);
         for (JsonElement e : array2) {
-           if (!array.contains(e)){
-               array.add(e);
-           }
+            if (!array.contains(e) && !removedIds.contains(e.getAsString())) {
+                array.add(e);
+            }
         }
+
+
         return array;
     }
 }

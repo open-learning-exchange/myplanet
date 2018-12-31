@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_courseSteps;
 import org.ole.planet.myplanet.Data.realm_myCourses;
+import org.ole.planet.myplanet.Data.realm_removedLog;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -173,10 +174,11 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             mRealm.beginTransaction();
         if (currentCourse.getUserId().contains(userModel.getId())) {
             currentCourse.removeUserId(userModel.getId());
+            realm_removedLog.onRemove(mRealm, "courses", userModel.getId(), courseId);
         } else {
             currentCourse.setUserId(userModel.getId());
+            realm_removedLog.onAdd(mRealm, "courses", userModel.getId(), courseId);
         }
-        mRealm.commitTransaction();
         Utilities.toast(getActivity(), "Course " + (currentCourse.getUserId().contains(userModel.getId()) ? " added to" : " removed from ") + " my courses");
         setCourseData();
     }
