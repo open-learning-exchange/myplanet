@@ -28,7 +28,6 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
-import org.lightcouch.CouchDbProperties;
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.callback.SyncListener;
@@ -43,6 +42,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -90,6 +90,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         }
     }
 
+
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
         progressDialog.show();
@@ -118,7 +119,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         });
         return connectionResult;
     }
-
 
     public void declareHideKeyboardElements() {
         constraintLayout = findViewById(R.id.constraintLayout);

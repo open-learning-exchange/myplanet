@@ -26,9 +26,12 @@ import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.base.PermissionActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.service.UploadManager;
+import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.Objects;
 
 import okhttp3.internal.Util;
 
@@ -82,7 +85,6 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
 
     public String setUrlParts(String url, String password, Context context) {
         SharedPreferences.Editor editor = settings.edit();
-
         Uri uri = Uri.parse(url);
         String couchdbURL, url_user, url_pwd;
         if (url.contains("@")) {
@@ -96,15 +98,17 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         } else {
             url_user = "satellite";
             url_pwd = password;
-            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + uri.getPort();
+            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + (uri.getPort() == -1 ? (Objects.equals(uri.getScheme(), "http") ? 80 : 443) : uri.getPort());
         }
-        editor.putString("serverURL", url);
-        editor.putString("couchdbURL", couchdbURL);
+
         editor.putString("serverPin", password);
-        saveUrlScheme(editor, uri);
+        saveUrlScheme(editor, uri, url, couchdbURL);
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        if (!couchdbURL.endsWith("db")) {
+            couchdbURL += "/db";
+        }
         return couchdbURL;
     }
 
@@ -133,7 +137,7 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
-        UploadManager.getInstance().uploadToshelf(this);
+        UploadToShelfService.getInstance().uploadToshelf(this);
         UploadManager.getInstance().uploadResourceActivities("");
         UploadManager.getInstance().uploadResourceActivities("sync");
         UploadManager.getInstance().uploadRating(this);
@@ -170,7 +174,6 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         alert11.show();
     }
 
-
     public String[] getUserInfo(Uri uri) {
         String[] ar = {"", ""};
         String[] info = uri.getUserInfo().split(":");
@@ -181,10 +184,12 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         return ar;
     }
 
-    protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri) {
+    protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri, String url, String couchdbURL) {
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
-        editor.putInt("url_Port", uri.getPort());
+        editor.putInt("url_Port", uri.getPort() == -1 ? (uri.getScheme().equals("http") ? 80 : 443) : uri.getPort());
+        editor.putString("serverURL", url);
+        editor.putString("couchdbURL", couchdbURL);
     }
 
 }

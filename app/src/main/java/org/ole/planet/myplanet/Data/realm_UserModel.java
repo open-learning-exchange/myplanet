@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.Data;
 
 import android.content.SharedPreferences;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -61,19 +62,18 @@ public class realm_UserModel extends RealmObject {
 
     public static void populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
-            RealmResults<realm_UserModel> db_users = mRealm.where(realm_UserModel.class)
-                    .equalTo("id", JsonUtils.getString("_id", jsonDoc))
-                    .findAll();
-            if (db_users.isEmpty()) {
-                realm_UserModel user = mRealm.createObject(realm_UserModel.class, JsonUtils.getString("_id", jsonDoc));
-                insertIntoUsers(jsonDoc, user, settings);
+            realm_UserModel user = mRealm.where(realm_UserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
+            if (user == null) {
+                user = mRealm.createObject(realm_UserModel.class, JsonUtils.getString("_id", jsonDoc));
             }
+            insertIntoUsers(jsonDoc, user, settings);
         } catch (Exception err) {
             err.printStackTrace();
         }
     }
 
     private static void insertIntoUsers(JsonObject jsonDoc, realm_UserModel user, SharedPreferences settings) {
+        Utilities.log("Insert into users " + new Gson().toJson(jsonDoc));
         user.set_rev(JsonUtils.getString("_rev", jsonDoc));
         user.setName(JsonUtils.getString("name", jsonDoc));
         user.setRoles("");

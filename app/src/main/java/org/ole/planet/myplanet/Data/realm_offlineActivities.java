@@ -1,19 +1,9 @@
 package org.ole.planet.myplanet.Data;
 
-import android.text.TextUtils;
-
-import com.github.kittinunf.fuel.android.core.Json;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-
-import org.lightcouch.Response;
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
-
-import java.util.UUID;
-
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.Sort;
@@ -167,10 +157,10 @@ public class realm_offlineActivities extends RealmObject {
         activities.setAndroidId(JsonUtils.getString("androidId", act));
     }
 
-    public void changeRev(Response r) {
-        if (!TextUtils.isEmpty(r.getId())) {
-            this.set_rev(r.getRev());
-            this.set_id(r.getId());
+    public void changeRev(JsonObject r) {
+        if (r != null) {
+            this.set_rev(JsonUtils.getString("_rev", r));
+            this.set_id(JsonUtils.getString("_id", r));
         }
     }
 }

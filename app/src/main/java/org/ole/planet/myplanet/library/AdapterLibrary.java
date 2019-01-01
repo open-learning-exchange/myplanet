@@ -99,6 +99,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
                 JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
                 AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);
+            }else{
+                ((ViewHolderLibrary) holder).ratingBar.setRating(0);
             }
         }
     }

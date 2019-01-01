@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
@@ -45,15 +46,16 @@ public class realm_courseProgress extends RealmObject {
     }
 
     public static HashMap<String, JsonObject> getCourseProgress(Realm mRealm, String userId) {
-        RealmResults<realm_myCourses> r = mRealm.where(realm_myCourses.class).equalTo("userId", userId).findAll();
+        List<realm_myCourses> r = realm_myCourses.getMyCourseByUserId(userId, mRealm.where(realm_myCourses.class).findAll());
 
         HashMap<String, JsonObject> map = new HashMap<>();
         for (realm_myCourses course : r) {
             JsonObject object = new JsonObject();
             List<realm_courseSteps> steps = realm_courseSteps.getSteps(mRealm, course.getCourseId());
             object.addProperty("max", steps.size());
-            object.addProperty("current", getCurrentProgress(steps, mRealm,course.getUserId(), course.getCourseId()));
-            if (realm_myCourses.isMyCourse(userId, mRealm))
+
+            object.addProperty("current", getCurrentProgress(steps, mRealm,userId, course.getCourseId()));
+            if (realm_myCourses.isMyCourse(userId, course.getCourseId(), mRealm))
                 map.put(course.getCourseId(), object);
         }
         return map;
@@ -69,6 +71,7 @@ public class realm_courseProgress extends RealmObject {
         }
         return i;
     }
+
 
     public long getCreatedOn() {
         return createdOn;

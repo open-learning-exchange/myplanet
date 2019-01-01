@@ -3,17 +3,19 @@ package org.ole.planet.myplanet.Data;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
@@ -21,7 +23,7 @@ import io.realm.annotations.PrimaryKey;
 public class realm_myCourses extends RealmObject {
     @PrimaryKey
     private String id;
-    private String userId;
+    private RealmList<String> userId;
     private String courseId;
     private String course_rev;
     private String languageOfInstruction;
@@ -35,14 +37,13 @@ public class realm_myCourses extends RealmObject {
     private Integer numberOfSteps;
 
     public static void insertMyCourses(String userId, JsonObject myCousesDoc, Realm mRealm) {
+        Utilities.log("INSERT COURSE " + new Gson().toJson(myCousesDoc));
         String id = JsonUtils.getString("_id", myCousesDoc);
         realm_myCourses myMyCoursesDB = mRealm.where(realm_myCourses.class).equalTo("id", id).findFirst();
         if (myMyCoursesDB == null) {
             myMyCoursesDB = mRealm.createObject(realm_myCourses.class, id);
         }
-        if (!TextUtils.isEmpty(userId)) {
-            myMyCoursesDB.setUserId(userId);
-        }
+        myMyCoursesDB.setUserId(userId);
         myMyCoursesDB.setCourseId(JsonUtils.getString("_id", myCousesDoc));
         myMyCoursesDB.setCourse_rev(JsonUtils.getString("_rev", myCousesDoc));
         myMyCoursesDB.setLanguageOfInstruction(JsonUtils.getString("languageOfInstruction", myCousesDoc));
@@ -57,9 +58,31 @@ public class realm_myCourses extends RealmObject {
         realm_courseSteps.insertCourseSteps(myMyCoursesDB.getCourseId(), JsonUtils.getJsonArray("steps", myCousesDoc), JsonUtils.getJsonArray("steps", myCousesDoc).size(), mRealm);
     }
 
-    public static boolean isMyCourse(String userId, Realm realm) {
-        realm_myCourses courses = realm.where(realm_myCourses.class).equalTo("userId", userId).findFirst();
-        return courses != null;
+    public static List<RealmObject> getMyByUserId(Realm mRealm, SharedPreferences settings) {
+        RealmResults<realm_myCourses> libs = mRealm.where(realm_myCourses.class).findAll();
+        List<RealmObject> libraries = new ArrayList<>();
+        for (realm_myCourses item : libs) {
+            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
+
+
+    public static List<realm_myCourses> getMyCourseByUserId(String userId, RealmResults<realm_myCourses> libs) {
+        List<realm_myCourses> libraries = new ArrayList<>();
+        for (realm_myCourses item : libs) {
+            if (item.getUserId().contains(userId)) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
+
+
+    public static boolean isMyCourse(String userId,String courseId, Realm realm) {
+      return realm_myCourses.getMyCourseByUserId(userId, realm.where(realm_myCourses.class).equalTo("courseId", courseId).findAll()).size() > 0;
     }
 
     public static void insertMyCourses(JsonObject doc, Realm mRealm) {
@@ -76,24 +99,22 @@ public class realm_myCourses extends RealmObject {
         course.setUserId(id);
         mRealm.commitTransaction();
     }
+//
+//    public static String[] getMyCourseIds(Realm mRealm, String userId) {
+//        List<realm_myCourses> list = mRealm.where(realm_myCourses.class).equalTo("userId", userId).findAll();
+//        String[] myIds = new String[list.size()];
+//        for (int i = 0; i < list.size(); i++) {
+//            myIds[i] = list.get(i).getCourseId();
+//        }
+//        return myIds;
+//    }
 
-    public static String[] getMyCourseIds(Realm mRealm, String userId) {
-        List<realm_myCourses> list = mRealm.where(realm_myCourses.class).equalTo("userId", userId).findAll();
-        String[] myIds = new String[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            myIds[i] = list.get(i).getCourseId();
-        }
-        return myIds;
-    }
-
-    public static JsonArray getMyCourseIds(Realm realm, SharedPreferences sharedPreferences) {
-        RealmResults<realm_myCourses> myCourses = realm.where(realm_myCourses.class).isNotEmpty("userId")
-                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
-
+    public static JsonArray getMyCourseIds(Realm realm,String userId) {
+        List<realm_myCourses> myCourses = getMyCourseByUserId( userId, realm.where(realm_myCourses.class).findAll());
         JsonArray ids = new JsonArray();
-        for (realm_myCourses lib : myCourses
+        for (RealmObject lib : myCourses
                 ) {
-            ids.add(lib.getCourseId());
+            ids.add( ((realm_myCourses)lib).getCourseId());
         }
         return ids;
     }
@@ -106,12 +127,21 @@ public class realm_myCourses extends RealmObject {
         this.id = id;
     }
 
-    public String getUserId() {
+    public RealmList<String> getUserId() {
         return userId;
     }
 
     public void setUserId(String userId) {
-        this.userId = userId;
+        if (this.userId == null) {
+            this.userId = new RealmList<>();
+        }
+
+        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
+            this.userId.add(userId);
+    }
+
+    public void removeUserId(String userId) {
+        this.userId.remove(userId);
     }
 
     public String getCourseId() {

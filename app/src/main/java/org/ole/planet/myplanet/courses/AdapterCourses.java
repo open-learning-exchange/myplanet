@@ -91,15 +91,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     }
                 }
             });
-            if (map.containsKey(courseList.get(position).getCourseId())) {
-                JsonObject object = map.get(courseList.get(position).getCourseId());
-                showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
-            }
-            showProgress(position, holder);
+            showProgressAndRating(position, holder);
+
         }
     }
 
-    private void showProgress(int position, RecyclerView.ViewHolder holder) {
+    private void showProgressAndRating(int position, RecyclerView.ViewHolder holder) {
         if (progressMap.containsKey(courseList.get(position).getCourseId())) {
             JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
             ((ViewHoldercourse) holder).progressBar.setMax(JsonUtils.getInt("max", ob));
@@ -107,6 +104,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.VISIBLE);
         } else {
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.GONE);
+        }
+        if (map.containsKey(courseList.get(position).getCourseId())) {
+            JsonObject object = map.get(courseList.get(position).getCourseId());
+            showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
+        }else{
+            ((ViewHoldercourse) holder).ratingBar.setRating(0);
         }
     }
 

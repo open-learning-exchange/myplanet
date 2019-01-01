@@ -17,6 +17,7 @@ import com.google.gson.Gson;
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.Data.realm_removedLog;
 import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -87,10 +88,12 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
             if (object instanceof realm_myLibrary) {
                 realm_myLibrary myObject = mRealm.where(realm_myLibrary.class).equalTo("resourceId", ((realm_myLibrary) object).getResource_id()).findFirst();
                 realm_myLibrary.createFromResource(myObject, mRealm, model.getId());
+                realm_removedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
                 Utilities.toast(getActivity(), "Added to my library");
             } else {
                 realm_myCourses myObject = realm_myCourses.getMyCourse(mRealm, ((realm_myCourses) object).getCourseId());
                 realm_myCourses.createMyCourse(myObject, mRealm, model.getId());
+                realm_removedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().getId(), myObject.getCourseId());
                 Utilities.toast(getActivity(), "Added to my courses");
                 recyclerView.setAdapter(getAdapter());
             }

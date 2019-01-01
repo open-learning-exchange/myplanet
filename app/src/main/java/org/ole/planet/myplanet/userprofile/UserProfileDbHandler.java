@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.userprofile;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import org.lightcouch.CouchDbProperties;
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
@@ -25,7 +24,6 @@ public class UserProfileDbHandler {
     public static final String KEY_RESOURCE_DOWNLOAD = "download";
     private SharedPreferences settings;
     private Realm mRealm;
-    private CouchDbProperties properties;
     private DatabaseService realmService;
     private String fullName;
 
