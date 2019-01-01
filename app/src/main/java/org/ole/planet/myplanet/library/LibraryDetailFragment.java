@@ -1,12 +1,7 @@
 package org.ole.planet.myplanet.library;
 
-import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.AppCompatRatingBar;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,23 +12,16 @@ import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.Data.realm_myCourses;
+import org.ole.planet.myplanet.Data.realm_removedLog;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_rating;
-import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
-import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
-
 import io.realm.Realm;
-import io.realm.RealmList;
-import io.realm.RealmResults;
 
 
 public class LibraryDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
@@ -126,12 +114,14 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         remove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
-            if (isAdd){
+            if (isAdd) {
                 library.setUserId(profileDbHandler.getUserModel().getId());
-            }else {
+                realm_removedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
+
+            } else {
                 library.removeUserId(profileDbHandler.getUserModel().getId());
+                realm_removedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
             }
-            mRealm.commitTransaction();
             Utilities.toast(getActivity(), "Resource " + (isAdd ? " added to" : " removed from ") + " my library");
             setLibraryData();
         });
