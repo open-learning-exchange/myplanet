@@ -1,26 +1,17 @@
 package org.ole.planet.myplanet.service;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.os.AsyncTask;
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import org.ole.planet.myplanet.Data.realm_courseProgress;
 import org.ole.planet.myplanet.Data.realm_feedback;
-import org.ole.planet.myplanet.Data.realm_meetups;
-import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.Data.realm_myTeams;
 import org.ole.planet.myplanet.Data.realm_offlineActivities;
 import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.Data.realm_resourceActivities;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
@@ -31,12 +22,8 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.IOException;
 import java.util.List;
 
-import io.realm.Case;
 import io.realm.Realm;
-import io.realm.RealmObject;
-import io.realm.RealmQuery;
 import io.realm.RealmResults;
-import okhttp3.ResponseBody;
 
 public class UploadManager {
     private DatabaseService dbService;

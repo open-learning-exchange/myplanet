@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.Data;
 
-import java.util.HashMap;
-
 public class Rows {
     private String id;
 

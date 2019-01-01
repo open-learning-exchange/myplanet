@@ -2,17 +2,13 @@ package org.ole.planet.myplanet.datamanager;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.support.v7.app.AlertDialog;
 
 import com.google.gson.Gson;
 
 import org.ole.planet.myplanet.Data.MyPlanet;
-import org.ole.planet.myplanet.LoginActivity;
 import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
-
-import java.util.ArrayList;
 
 import retrofit2.Call;
 import retrofit2.Callback;

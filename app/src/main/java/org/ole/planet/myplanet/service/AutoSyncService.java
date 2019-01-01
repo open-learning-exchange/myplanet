@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.service;
 
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
@@ -10,10 +8,8 @@ import com.firebase.jobdispatcher.JobService;
 
 import org.ole.planet.myplanet.LoginActivity;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.Service;
-import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;

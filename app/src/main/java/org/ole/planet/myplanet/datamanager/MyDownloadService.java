@@ -7,11 +7,8 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Base64;
-import android.util.Log;
 
 import org.ole.planet.myplanet.Dashboard;
 import org.ole.planet.myplanet.Data.Download;

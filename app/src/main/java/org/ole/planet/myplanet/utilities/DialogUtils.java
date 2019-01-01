@@ -8,7 +8,6 @@ import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
-import android.view.WindowManager;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;

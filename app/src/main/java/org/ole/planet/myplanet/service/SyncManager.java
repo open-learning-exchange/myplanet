@@ -2,11 +2,8 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.telecom.Call;
-import android.util.Base64;
 import android.util.Log;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -34,10 +31,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 
-import javax.net.ssl.SSLException;
-
 import io.realm.Realm;
-import io.realm.RealmResults;
 import retrofit2.Response;
 
 public class SyncManager {

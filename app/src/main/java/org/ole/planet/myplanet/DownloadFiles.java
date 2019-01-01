@@ -8,8 +8,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.realm.RealmResults;
-
 public class DownloadFiles {
 
     public static ArrayList downloadAllFiles(List<realm_myLibrary> db_myLibrary, SharedPreferences settings) {

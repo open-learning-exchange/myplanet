@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.DocumentResponse;

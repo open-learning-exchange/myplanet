@@ -8,7 +8,6 @@ import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.widget.CompoundButton;
 
-
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_answer;
 import org.ole.planet.myplanet.Data.realm_courseProgress;

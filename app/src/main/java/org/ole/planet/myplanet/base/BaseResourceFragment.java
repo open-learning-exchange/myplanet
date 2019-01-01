@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.base;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -33,8 +32,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;

@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.datamanager;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;

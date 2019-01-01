@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.Data;
 
 import com.google.gson.JsonObject;
+
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.Sort;
