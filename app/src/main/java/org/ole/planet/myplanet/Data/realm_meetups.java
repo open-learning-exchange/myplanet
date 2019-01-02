@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.Data;
 
-import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 

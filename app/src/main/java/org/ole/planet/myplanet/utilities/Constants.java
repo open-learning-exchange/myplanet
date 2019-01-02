@@ -2,22 +2,14 @@ package org.ole.planet.myplanet.utilities;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.drawable.Drawable;
 import android.preference.PreferenceManager;
-import android.support.v4.app.Fragment;
 
-import org.ole.planet.myplanet.DashboardFragment;
 import org.ole.planet.myplanet.Data.realm_meetups;
 import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_myTeams;
-import org.ole.planet.myplanet.MyMeetUpsFragment;
-import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.library.MyLibraryFragment;
-import org.ole.planet.myplanet.survey.SurveyFragment;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class Constants {

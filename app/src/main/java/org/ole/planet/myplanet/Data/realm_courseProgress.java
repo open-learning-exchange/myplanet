@@ -1,19 +1,12 @@
 package org.ole.planet.myplanet.Data;
 
-import com.github.kittinunf.fuel.android.core.Json;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
-import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Realm;
-import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_courseProgress extends RealmObject {

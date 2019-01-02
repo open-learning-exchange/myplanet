@@ -1,31 +1,19 @@
 package org.ole.planet.myplanet.base;
 
-import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
-import android.media.Rating;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatRatingBar;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,44 +21,25 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.AuthSessionUpdater;
 import org.ole.planet.myplanet.CSVViewerActivity;
-import org.ole.planet.myplanet.DashboardFragment;
-import org.ole.planet.myplanet.Data.Download;
-import org.ole.planet.myplanet.Data.realm_UserModel;
-import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.Data.realm_stepExam;
-import org.ole.planet.myplanet.Data.realm_submissions;
-import org.ole.planet.myplanet.DownloadFiles;
 import org.ole.planet.myplanet.ExoPlayerVideo;
 import org.ole.planet.myplanet.ImageViewerActivity;
 import org.ole.planet.myplanet.MarkdownViewerActivity;
 import org.ole.planet.myplanet.PDFReaderActivity;
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.SyncActivity;
 import org.ole.planet.myplanet.TextFileViewerActivity;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.courses.AdapterCourses;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
-import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import io.realm.Realm;
 import io.realm.RealmResults;
-import io.realm.Sort;
-
-import static android.content.Context.MODE_PRIVATE;
-import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
 public abstract class BaseContainerFragment extends BaseResourceFragment {
     public TextView timesRated, rating;

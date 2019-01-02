@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -18,11 +17,9 @@ import android.widget.TextView;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 

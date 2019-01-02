@@ -1,15 +1,12 @@
 package org.ole.planet.myplanet.library;
 
 
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.util.ArraySet;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -19,20 +16,15 @@ import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
-
 import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
-import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;

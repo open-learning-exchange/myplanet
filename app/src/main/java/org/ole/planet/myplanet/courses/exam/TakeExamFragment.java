@@ -6,12 +6,10 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.NestedScrollView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -19,8 +17,6 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
-import com.github.kittinunf.fuel.android.core.Json;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -28,7 +24,6 @@ import org.ole.planet.myplanet.Data.realm_answer;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -37,7 +32,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.UUID;
 
 import io.realm.RealmList;
 import io.realm.Sort;

@@ -11,12 +11,10 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_UserModel extends RealmObject {

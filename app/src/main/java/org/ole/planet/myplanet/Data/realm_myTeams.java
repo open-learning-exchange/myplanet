@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.Data;
 
-import android.content.SharedPreferences;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
