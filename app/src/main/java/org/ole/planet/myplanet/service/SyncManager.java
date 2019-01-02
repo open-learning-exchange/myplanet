@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -134,6 +135,7 @@ public class SyncManager {
     private void syncResource(ApiInterface dbClient) throws IOException {
         int skip = 0;
         int limit = 1000;
+        List<String> newIds = new ArrayList<>();
         while (true) {
             JsonObject object = new JsonObject();
             object.add("selector", new JsonObject());
@@ -142,13 +144,15 @@ public class SyncManager {
             Utilities.log("Url " + Utilities.getUrl() + "/resources/_find");
             final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
             Response<JsonObject> a = allDocs.execute();
-            realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
+            List<String> ids = realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
+            newIds.addAll(ids);
             if (a.body().size() < limit) {
                 break;
             } else {
                 skip = skip + limit;
             }
         }
+        realm_myLibrary.removeDeletedResource(newIds, mRealm);
     }
 
 
@@ -199,7 +203,7 @@ public class SyncManager {
     }
 
 
-    private void check( JsonArray array_categoryIds, Class aClass) {
+    private void check(JsonArray array_categoryIds, Class aClass) {
         for (int x = 0; x < array_categoryIds.size(); x++) {
             if (array_categoryIds.get(x) instanceof JsonNull) {
                 continue;
