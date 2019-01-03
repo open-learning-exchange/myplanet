@@ -36,11 +36,9 @@ public class TransactionSyncManager {
                     try {
                         processDoc(apiInterface, doc, realm, table);
                     } catch (Exception e) {
-                        e.printStackTrace();
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
             }
         });
     }
