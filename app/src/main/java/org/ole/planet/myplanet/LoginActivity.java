@@ -86,7 +86,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
-
+        isUpload = false;
         isSync = true;
         new Service(this).checkVersion(this, settings);
     }
@@ -102,6 +102,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         syncIcon.setOnClickListener(v -> {
             gifDrawable.reset();
             isUpload = true;
+            isSync = false;
             new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
