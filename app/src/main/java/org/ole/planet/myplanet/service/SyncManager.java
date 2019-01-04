@@ -4,9 +4,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.Data.DocumentResponse;
 import org.ole.planet.myplanet.Data.Rows;
@@ -89,24 +91,35 @@ public class SyncManager {
 
     private void syncDatabase() {
         Thread td = new Thread(() -> {
-            try {
-                isSyncing = true;
-                NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
-                mRealm = dbService.getRealmInstance();
-                TransactionSyncManager.syncDb(mRealm, "tablet_users");
-                TransactionSyncManager.syncDb(mRealm, "courses");
-                TransactionSyncManager.syncDb(mRealm, "exams");
-                resourceTransactionSync();
-                TransactionSyncManager.syncDb(mRealm, "ratings");
-                TransactionSyncManager.syncDb(mRealm, "submissions");
-                myLibraryTransactionSync();
-                TransactionSyncManager.syncDb(mRealm, "login_activities");
-                realm_resourceActivities.onSynced(mRealm, settings);
-            } catch (Exception err) {
-                handleException(err.getMessage());
-            } finally {
-                destroy();
-            }
+            TransactionSyncManager.authenticate(new TransactionSyncManager.LoginListener() {
+                @Override
+                public void onSuccess() {
+                    try {
+                        isSyncing = true;
+                        NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
+                        mRealm = dbService.getRealmInstance();
+                        TransactionSyncManager.syncDb(mRealm, "tablet_users");
+                        TransactionSyncManager.syncDb(mRealm, "courses");
+                        TransactionSyncManager.syncDb(mRealm, "exams");
+                        resourceTransactionSync();
+                        TransactionSyncManager.syncDb(mRealm, "ratings");
+                        TransactionSyncManager.syncDb(mRealm, "submissions");
+                        myLibraryTransactionSync();
+                        TransactionSyncManager.syncDb(mRealm, "login_activities");
+                        realm_resourceActivities.onSynced(mRealm, settings);
+                    } catch (Exception err) {
+                        // handleException(err.getMessage());
+                    } finally {
+                        destroy();
+                    }
+                }
+
+                @Override
+                public void onFailure(String msg) {
+                    handleException(msg);
+                    destroy();
+                }
+            });
         });
         td.start();
     }
@@ -142,9 +155,11 @@ public class SyncManager {
             Utilities.log("Url " + Utilities.getUrl() + "/resources/_find");
             final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
             Response<JsonObject> a = allDocs.execute();
-            List<String> ids = realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
-            newIds.addAll(ids);
-            if (a.body().size() < limit) {
+            if (a.body() != null && a.body().has("docs")) {
+                List<String> ids = realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
+                newIds.addAll(ids);
+            }
+            if (a.body() == null || a.body().size() < limit) {
                 break;
             } else {
                 skip = skip + limit;
@@ -189,7 +204,6 @@ public class SyncManager {
     private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type);
-            Utilities.log("Type" + shelfData.type);
             check(array, shelfData.aClass);
         }
     }

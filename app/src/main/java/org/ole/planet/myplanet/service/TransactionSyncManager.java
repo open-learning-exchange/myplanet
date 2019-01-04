@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.Data.DocumentResponse;
 import org.ole.planet.myplanet.Data.Rows;
@@ -22,8 +23,42 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.IOException;
 
 import io.realm.Realm;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class TransactionSyncManager {
+    interface LoginListener {
+        void onSuccess();
+
+        void onFailure(String msg);
+    }
+
+    public static void authenticate(LoginListener listener) {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/tablet_users/_all_docs").enqueue(new Callback<DocumentResponse>() {
+            @Override
+            public void onResponse(Call<DocumentResponse> call, Response<DocumentResponse> response) {
+                if (response.code() == 200) {
+                    listener.onSuccess();
+                } else {
+                    JsonParser parser = new JsonParser();
+                    try {
+                        JsonObject ob = parser.parse(response.errorBody().string()).getAsJsonObject();
+                        listener.onFailure(ob.get("reason").getAsString());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<DocumentResponse> call, Throwable t) {
+                listener.onFailure("Connection Failed");
+            }
+        });
+
+    }
 
     public static void syncDb(final Realm mRealm, final String table) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
