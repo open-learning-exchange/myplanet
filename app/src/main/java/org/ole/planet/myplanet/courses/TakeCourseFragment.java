@@ -93,6 +93,11 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             next.setVisibility(View.GONE);
             previous.setVisibility(View.GONE);
         }
+
+        if (mViewPager.getCurrentItem() == 0) {
+            previous.setColorFilter(getResources().getColor(R.color.md_grey_500));
+        }
+
         mViewPager.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), courseId, realm_courseSteps.getStepIds(mRealm, courseId)));
         mViewPager.addOnPageChangeListener(this);
         setCourseData();
@@ -100,7 +105,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         previous.setOnClickListener(this);
         btnAddRemove.setOnClickListener(this);
     }
-
 
     private void setCourseData() {
         tvStepTitle.setText(currentCourse.getCourseTitle());
@@ -154,9 +158,18 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             case R.id.next_step:
                 if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
+                    previous.setColorFilter(getResources().getColor(R.color.md_white_1000));
+                }
+
+                if (mViewPager.getCurrentItem() == steps.size()) {
+                    next.setColorFilter(getResources().getColor(R.color.md_grey_500));
                 }
                 break;
             case R.id.previous_step:
+                if (mViewPager.getCurrentItem() - 1 == 0) {
+                    previous.setColorFilter(getResources().getColor(R.color.md_grey_500));
+                }
+
                 if (isValidClickLeft()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() - 1);
                 }
