@@ -1,16 +1,13 @@
 package org.ole.planet.myplanet.courses;
 
 
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -131,7 +128,7 @@ public class CourseStepFragment extends BaseContainerFragment {
     @Override
     public void setMenuVisibility(final boolean visible) {
         super.setMenuVisibility(visible);
-        if (visible && realm_myCourses.isMyCourse(user.getId(), mRealm)) {
+        if (visible && realm_myCourses.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
             saveCourseProgress();
         }
     }

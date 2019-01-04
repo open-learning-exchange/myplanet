@@ -1,14 +1,8 @@
 package org.ole.planet.myplanet.utilities;
 
-import android.app.Service;
-import android.content.Intent;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.os.IBinder;
-import android.support.annotation.Nullable;
 import android.util.Log;
-
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.io.FileOutputStream;

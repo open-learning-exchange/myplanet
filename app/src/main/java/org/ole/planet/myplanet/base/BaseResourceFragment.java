@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.base;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -32,8 +31,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
-
-import io.realm.RealmResults;
+import java.util.List;
 
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
@@ -49,24 +47,14 @@ public abstract class BaseResourceFragment extends Fragment {
     public static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
     //    public String globalFilePath = Environment.getExternalStorageDirectory() + File.separator + "ole" + File.separator;
-    protected void showDownloadDialog(final RealmResults<realm_myLibrary> db_myLibrary) {
+    protected void showDownloadDialog(final List<realm_myLibrary> db_myLibrary) {
         if (!db_myLibrary.isEmpty()) {
             LayoutInflater inflater = getLayoutInflater();
             convertView = (View) inflater.inflate(R.layout.my_library_alertdialog, null);
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
             alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
             createListView(db_myLibrary);
-            alertDialogBuilder.setPositiveButton(R.string.download_selected, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings));
-                }
-            }).setNeutralButton(R.string.download_all, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings));
-                }
-            }).setNegativeButton(R.string.txt_cancel, null).show();
+            alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadFiles.downloadFiles(db_myLibrary, selectedItemsList, settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadFiles.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null).show();
         }
     }
 
@@ -109,7 +97,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public void onDownloadComplete() {
     }
 
-    public void createListView(RealmResults<realm_myLibrary> db_myLibrary) {
+    public void createListView(List<realm_myLibrary> db_myLibrary) {
         lv = (ListView) convertView.findViewById(R.id.alertDialog_listView);
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < db_myLibrary.size(); i++) {

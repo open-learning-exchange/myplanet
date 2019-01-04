@@ -15,7 +15,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.RadioButton;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
@@ -23,10 +22,7 @@ import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -122,13 +118,17 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     private void createHashMap(List<realm_submissions> submissions) {
         for (realm_submissions sub : submissions) {
             String id = sub.getParentId();
-            if (sub.getParentId().contains("@")) {
+            if (checkParentId(sub.getParentId())) {
                 id = sub.getParentId().split("@")[0];
             }
             realm_stepExam survey = mRealm.where(realm_stepExam.class).equalTo("id", id).findFirst();
             if (survey != null)
                 exams.put(sub.getParentId(), survey);
         }
+    }
+
+    private boolean checkParentId(String parentId) {
+        return parentId != null && parentId.contains("@");
     }
 
     @Override

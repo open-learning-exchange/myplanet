@@ -3,13 +3,11 @@ package org.ole.planet.myplanet.Data;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;

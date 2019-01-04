@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.Data;
 
 import com.google.gson.JsonObject;
 
-import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;

@@ -4,27 +4,22 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
-import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import org.json.JSONStringer;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.SyncActivity;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
-import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
@@ -34,7 +29,7 @@ import io.realm.annotations.PrimaryKey;
 public class realm_myLibrary extends RealmObject {
     @PrimaryKey
     private String id;
-    private String userId;
+    private RealmList<String> userId;
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
     private Boolean resourceOffline = false;
@@ -69,6 +64,54 @@ public class realm_myLibrary extends RealmObject {
     private String stepId;
     private String downloaded;
 
+    public static List<realm_myLibrary> getMyLibraryByUserId(Realm mRealm, SharedPreferences settings) {
+        RealmResults<realm_myLibrary> libs = mRealm.where(realm_myLibrary.class).findAll();
+        return getMyLibraryByUserId(settings.getString("userId", "--"), libs);
+    }
+
+
+    public static List<realm_myLibrary> getMyLibraryByUserId(String userId, RealmResults<realm_myLibrary> libs) {
+        List<realm_myLibrary> libraries = new ArrayList<>();
+        for (realm_myLibrary item : libs) {
+            if (item.getUserId().contains(userId)) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
+
+    public static List<RealmObject> getShelfItem(String userId, RealmResults<RealmObject> libs, Class c) {
+        List<RealmObject> libraries = new ArrayList<>();
+        for (RealmObject item : libs) {
+            if (c == realm_myCourses.class ? ((realm_myCourses) item).getUserId().contains(userId) : ((realm_myLibrary) item).getUserId().contains(userId)) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
+
+    public static String[] getIds(Realm mRealm) {
+        List<realm_myLibrary> list = mRealm.where(realm_myLibrary.class).findAll();
+        String[] ids = new String[list.size()];
+        int i = 0;
+        for (realm_myLibrary library : list
+                ) {
+            ids[i] = (library.getResource_id());
+            i++;
+        }
+        return ids;
+    }
+
+    public static void removeDeletedResource(List<String> newIds, Realm mRealm) {
+        String[] ids = getIds(mRealm);
+        for (String id : ids
+                ) {
+            if (!newIds.contains(id)) {
+                mRealm.where(realm_myLibrary.class).equalTo("resourceId", id).findAll().deleteAllFromRealm();
+            }
+        }
+    }
+
 
     public String getDownloaded() {
         return downloaded;
@@ -89,7 +132,6 @@ public class realm_myLibrary extends RealmObject {
     }
 
     public static void insertMyLibrary(String userId, JsonObject doc, Realm mRealm) {
-        Utilities.log("Insert shelf " + userId);
         insertMyLibrary(userId, "", "", doc, mRealm);
     }
 
@@ -141,7 +183,7 @@ public class realm_myLibrary extends RealmObject {
                 if (entry.getKey().indexOf("/") < 0) {
                     resource.setResourceRemoteAddress(settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + entry.getKey());
                     resource.setResourceLocalAddress(entry.getKey());
-                    resource.setResourceOffline(Utilities.checkFileExist(resource.getResourceRemoteAddress()));
+                    resource.setResourceOffline(FileUtils.checkFileExist(resource.getResourceRemoteAddress()));
                 }
             }
         }
@@ -168,12 +210,25 @@ public class realm_myLibrary extends RealmObject {
     }
 
 
-    public String getUserId() {
+    public RealmList<String> getUserId() {
         return userId;
     }
 
     public void setUserId(String userId) {
-        this.userId = userId;
+        if (this.userId == null) {
+            this.userId = new RealmList<>();
+        }
+
+        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
+            this.userId.add(userId);
+    }
+
+    public String getResourceId() {
+        return resourceId;
+    }
+
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
     }
 
     public String getResourceRemoteAddress() {
@@ -510,16 +565,19 @@ public class realm_myLibrary extends RealmObject {
         this.timesRated = timesRated;
     }
 
-    public static void save(List<JsonObject> allDocs, Realm mRealm) {
+    public static List<String> save(JsonArray allDocs, Realm mRealm) {
+        List<String> list = new ArrayList<>();
         for (int i = 0; i < allDocs.size(); i++) {
-            realm_myLibrary.insertResources(allDocs.get(i), mRealm);
+            JsonObject doc = allDocs.get(i).getAsJsonObject();
+            String id = JsonUtils.getString("_id", doc);
+            list.add(id);
+            realm_myLibrary.insertResources(doc, mRealm);
         }
+        return list;
     }
 
-    public static JsonArray getMyLibIds(Realm realm, SharedPreferences sharedPreferences) {
-        RealmResults<realm_myLibrary> myLibraries = realm.where(realm_myLibrary.class).isNotEmpty("userId")
-                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
-
+    public static JsonArray getMyLibIds(Realm realm, String userId) {
+        List<realm_myLibrary> myLibraries = getMyLibraryByUserId(userId, realm.where(realm_myLibrary.class).findAll());
         JsonArray ids = new JsonArray();
         for (realm_myLibrary lib : myLibraries
                 ) {
@@ -531,5 +589,9 @@ public class realm_myLibrary extends RealmObject {
     @Override
     public String toString() {
         return title;
+    }
+
+    public void removeUserId(String id) {
+        this.userId.remove(id);
     }
 }

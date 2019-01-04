@@ -2,9 +2,6 @@ package org.ole.planet.myplanet.survey;
 
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -14,7 +11,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.Data.realm_examQuestion;
@@ -22,13 +18,11 @@ import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseDialogFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.Sort;
@@ -76,7 +70,7 @@ public class SendSurveyFragment extends BaseDialogFragment {
         realm_submissions sub = mRealm.where(realm_submissions.class)
                 .equalTo("userId", userId)
                 .equalTo("parentId", id)
-                .sort("date", Sort.DESCENDING)
+                .sort("lastUpdateTime", Sort.DESCENDING)
                 .equalTo("status", "pending")
                 .findFirst();
         sub = realm_submissions.createSubmission(sub, questions, mRealm);

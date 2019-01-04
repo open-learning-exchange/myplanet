@@ -1,66 +1,33 @@
 package org.ole.planet.myplanet;
 
-import android.Manifest;
-import android.app.ProgressDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.util.Log;
-import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.URLUtil;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.github.kittinunf.fuel.Fuel;
-import com.github.kittinunf.fuel.core.FuelError;
-import com.github.kittinunf.fuel.core.Handler;
-import com.github.kittinunf.fuel.core.Request;
-import com.github.kittinunf.fuel.core.Response;
 
-import org.ole.planet.myplanet.Data.Download;
-import org.ole.planet.myplanet.Data.MyPlanet;
-import org.ole.planet.myplanet.callback.SuccessListener;
-import org.ole.planet.myplanet.datamanager.ApiClient;
-import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.Service;
-import org.ole.planet.myplanet.service.AutoSyncService;
-import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.DialogUtils;
-import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
-import retrofit2.Call;
-import retrofit2.Callback;
 
 import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
@@ -76,6 +43,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save;
+    private boolean isSync = false, isUpload = false;
+    String processedUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,14 +60,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
         }
+        if (getIntent().hasExtra("filePath")) {
+            onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
+        }
         requestPermission();
         new Service(this).checkVersion(this, settings);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         registerReceiver();
     }
-
-
 
 
     public void declareElements() {
@@ -114,13 +84,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     private void continueSync(MaterialDialog dialog) {
-        String processedUrl = saveConfigAndContinue(dialog);
+        processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
-        try {
-            isServerReachable(processedUrl);
-        } catch (Exception e) {
-            DialogUtils.showAlert(LoginActivity.this, "Unable to sync", "Please enter valid url.");
-        }
+        isUpload = false;
+        isSync = true;
+        new Service(this).checkVersion(this, settings);
     }
 
 
@@ -133,7 +101,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         gifDrawable.stop();
         syncIcon.setOnClickListener(v -> {
             gifDrawable.reset();
-            startUpload();
+            isUpload = true;
+            isSync = false;
+            new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
         inputName = findViewById(R.id.input_name);//editText
@@ -206,24 +176,20 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-
     @Override
     public void onSuccess(String s) {
         DialogUtils.showSnack(btnSignIn, s);
     }
 
     @Override
-    public void onUpdateAvailable(String filePath) {
-        Utilities.toast(this, "Update available " + filePath);
-        new AlertDialog.Builder(this).setTitle("New version of my planet available")
-                .setCancelable(false).setMessage("Download first to continue.").setPositiveButton("Upgrade", (dialogInterface, i) -> {
-            ArrayList url = new ArrayList();
-            url.add(filePath);
-            progressDialog.setMessage("Downloading file...");
-            progressDialog.setCancelable(false);
-            progressDialog.show();
-            Utilities.openDownloadService(this, url);
-        }).show();
+    public void onUpdateAvailable(String filePath, boolean cancelable) {
+        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, filePath, progressDialog);
+        if (cancelable) {
+            builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
+                continueSyncProcess();
+            });
+        }
+        builder.show();
     }
 
     @Override
@@ -240,22 +206,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                checkDownloadResult(download, progressDialog);
-            }
-        }
-    };
-
-
-
     @Override
-    public void onError(String msg) {
+    public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
         progressDialog.dismiss();
+        if (!block)
+            continueSyncProcess();
+    }
+
+    public void continueSyncProcess() {
+        if (isSync) {
+            try {
+                isServerReachable(processedUrl);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (isUpload) {
+            startUpload();
+        }
     }
 
     private class MyTextWatcher implements TextWatcher {

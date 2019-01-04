@@ -2,24 +2,15 @@ package org.ole.planet.myplanet;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.text.TextUtils;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
-import android.webkit.URLUtil;
 import android.widget.ArrayAdapter;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.github.kittinunf.fuel.Fuel;
@@ -28,18 +19,13 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
-import org.lightcouch.CouchDbProperties;
 import org.ole.planet.myplanet.Data.realm_UserModel;
-import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.service.SyncManager;
-import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
-import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,7 +45,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
     Context context;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
-    ProgressDialog progressDialog;
     private View constraintLayout;
 
     @Override
@@ -91,6 +76,7 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         }
     }
 
+
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
         progressDialog.show();
@@ -119,7 +105,6 @@ public abstract class SyncActivity extends ProcessUserData implements SyncListen
         });
         return connectionResult;
     }
-
 
     public void declareHideKeyboardElements() {
         constraintLayout = findViewById(R.id.constraintLayout);

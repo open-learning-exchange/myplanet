@@ -1,15 +1,13 @@
 package org.ole.planet.myplanet.utilities;
 
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -17,17 +15,19 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
 
-import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 import fisk.chipcloud.ChipCloudConfig;
+
+import static android.content.Context.MODE_PRIVATE;
+import static org.ole.planet.myplanet.SyncActivity.PREFS_NAME;
 
 
 public class Utilities {
@@ -37,14 +37,6 @@ public class Utilities {
         Log.d("OLE ", "log: " + message);
     }
 
-    public static String getFileNameFromUrl(String url) {
-        try {
-            return url.substring(url.lastIndexOf("/") + 1);
-        } catch (Exception e) {
-        }
-        return "";
-
-    }
 
     public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
         return getUrl(library.getResource_id(), library.getResourceLocalAddress(), settings);
@@ -52,8 +44,8 @@ public class Utilities {
     }
 
     public static String getUrl(String id, String file, SharedPreferences settings) {
-        return getServerUrl(settings)
-                + "resources/" + id + "/" + file;
+        return getUrl()
+                + "/resources/" + id + "/" + file;
     }
 
     private static String getServerUrl(SharedPreferences settings) {
@@ -62,10 +54,7 @@ public class Utilities {
                 settings.getInt("url_Port", 0) + "/";
     }
 
-    public static String getUpdateUrl(SharedPreferences settings) {
-        return settings.getString("url_Scheme", "") + "://" +
-                settings.getString("url_Host", "") + "/versions";
-    }
+
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
         return getServerUrl(settings) + "_users/" + userId + "/" + imageName;
@@ -92,25 +81,6 @@ public class Utilities {
         context.startService(intent);
     }
 
-    public static File getSDPathFromUrl(String url) {
-        return createFilePath(SD_PATH, getFileNameFromUrl(url));
-    }
-
-    public static boolean checkFileExist(String url) {
-        if (url == null || url.isEmpty())
-            return false;
-        File f = createFilePath(SD_PATH, getFileNameFromUrl(url));
-        return f.exists();
-
-    }
-
-    private static File createFilePath(String folder, String filename) {
-        File f = new File(folder);
-        if (!f.exists())
-            f.mkdirs();
-        Utilities.log("Return file " + folder + "/" + filename);
-        return new File(f, filename);
-    }
 
     public static void toast(Context context, String s) {
         if (context == null) {
@@ -196,6 +166,28 @@ public class Utilities {
 
     }
 
+    public static String getHeader() {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
+                settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
+    }
+
+    public static String getUrl() {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String url = settings.getString("couchdbURL", "");
+        if (!url.endsWith("/db")){
+            url += "/db";
+        }
+        return url;
+    }
+
+    public static String getUpdateUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")){
+            url.replace("/db", "");
+        }
+        return url + "/versions";
+    }
 
 
 }

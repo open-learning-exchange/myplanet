@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.Data;
 
-import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
@@ -59,9 +57,9 @@ public class realm_meetups extends RealmObject {
     }
 
 
-    public static JsonArray getMyMeetUpIds(Realm realm, SharedPreferences sharedPreferences) {
+    public static JsonArray getMyMeetUpIds(Realm realm, String userId) {
         RealmResults<realm_meetups> meetups = realm.where(realm_meetups.class).isNotEmpty("userId")
-                .equalTo("userId", sharedPreferences.getString("userId", "--"), Case.INSENSITIVE).findAll();
+                .equalTo("userId", userId, Case.INSENSITIVE).findAll();
 
         JsonArray ids = new JsonArray();
         for (realm_meetups lib : meetups

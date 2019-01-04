@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet;
 
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.WindowManager;
@@ -24,14 +24,18 @@ import org.ole.planet.myplanet.Data.realm_UserModel;
 import org.ole.planet.myplanet.base.PermissionActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.service.UploadManager;
+import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import okhttp3.internal.Util;
+import java.util.Objects;
+
+import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
 
 public abstract class ProcessUserData extends PermissionActivity implements SuccessListener {
     SharedPreferences settings;
+    ProgressDialog progressDialog;
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -77,7 +81,6 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
 
     public String setUrlParts(String url, String password, Context context) {
         SharedPreferences.Editor editor = settings.edit();
-
         Uri uri = Uri.parse(url);
         String couchdbURL, url_user, url_pwd;
         if (url.contains("@")) {
@@ -91,15 +94,17 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         } else {
             url_user = "satellite";
             url_pwd = password;
-            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + uri.getPort();
+            couchdbURL = uri.getScheme() + "://" + url_user + ":" + url_pwd + "@" + uri.getHost() + ":" + (uri.getPort() == -1 ? (Objects.equals(uri.getScheme(), "http") ? 80 : 443) : uri.getPort());
         }
-        editor.putString("serverURL", url);
-        editor.putString("couchdbURL", couchdbURL);
+
         editor.putString("serverPin", password);
-        saveUrlScheme(editor, uri);
+        saveUrlScheme(editor, uri, url, couchdbURL);
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
         editor.commit();
+        if (!couchdbURL.endsWith("db")) {
+            couchdbURL += "/db";
+        }
         return couchdbURL;
     }
 
@@ -112,11 +117,23 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         return true;
     }
 
+    public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                checkDownloadResult(download, progressDialog);
+            }
+        }
+    };
+
+
     public void startUpload() {
+
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
-        UploadManager.getInstance().uploadToshelf(this);
+        UploadToShelfService.getInstance().uploadToshelf(this);
         UploadManager.getInstance().uploadResourceActivities("");
         UploadManager.getInstance().uploadResourceActivities("sync");
         UploadManager.getInstance().uploadRating(this);
@@ -153,7 +170,6 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         alert11.show();
     }
 
-
     public String[] getUserInfo(Uri uri) {
         String[] ar = {"", ""};
         String[] info = uri.getUserInfo().split(":");
@@ -164,10 +180,12 @@ public abstract class ProcessUserData extends PermissionActivity implements Succ
         return ar;
     }
 
-    protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri) {
+    protected void saveUrlScheme(SharedPreferences.Editor editor, Uri uri, String url, String couchdbURL) {
         editor.putString("url_Scheme", uri.getScheme());
         editor.putString("url_Host", uri.getHost());
-        editor.putInt("url_Port", uri.getPort());
+        editor.putInt("url_Port", uri.getPort() == -1 ? (uri.getScheme().equals("http") ? 80 : 443) : uri.getPort());
+        editor.putString("serverURL", url);
+        editor.putString("couchdbURL", couchdbURL);
     }
 
 }

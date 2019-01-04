@@ -4,7 +4,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.widget.ContentLoadingProgressBar;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -18,11 +17,9 @@ import android.widget.TextView;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -91,15 +88,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     }
                 }
             });
-            if (map.containsKey(courseList.get(position).getCourseId())) {
-                JsonObject object = map.get(courseList.get(position).getCourseId());
-                showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
-            }
-            showProgress(position, holder);
+            showProgressAndRating(position, holder);
+
         }
     }
 
-    private void showProgress(int position, RecyclerView.ViewHolder holder) {
+    private void showProgressAndRating(int position, RecyclerView.ViewHolder holder) {
         if (progressMap.containsKey(courseList.get(position).getCourseId())) {
             JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
             ((ViewHoldercourse) holder).progressBar.setMax(JsonUtils.getInt("max", ob));
@@ -107,6 +101,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.VISIBLE);
         } else {
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.GONE);
+        }
+        if (map.containsKey(courseList.get(position).getCourseId())) {
+            JsonObject object = map.get(courseList.get(position).getCourseId());
+            showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
+        }else{
+            ((ViewHoldercourse) holder).ratingBar.setRating(0);
         }
     }
 

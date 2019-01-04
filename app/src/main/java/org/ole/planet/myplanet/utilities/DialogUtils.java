@@ -8,7 +8,6 @@ import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
 import android.view.View;
-import android.view.WindowManager;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
@@ -84,5 +83,19 @@ public class DialogUtils {
                 .setMessage(message)
                 .setPositiveButton("Dismiss", null)
                 .show();
+    }
+
+    public static AlertDialog.Builder getUpdateDialog(Context context, String filePath, ProgressDialog progressDialog) {
+        return new AlertDialog.Builder(context).setTitle("New version of my planet available")
+                .setMessage("Download first to continue.")
+                .setPositiveButton("Upgrade", (dialogInterface, i) -> {
+                    ArrayList url = new ArrayList();
+                    url.add(filePath);
+                    progressDialog.setMessage("Downloading file...");
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
+                    Utilities.openDownloadService(context, url);
+                });
+
     }
 }

@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.library;
 
 import android.content.Context;
-import android.graphics.Color;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -14,20 +11,17 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
-import android.widget.RatingBar;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.Data.realm_myCourses;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.courses.AdapterCourses;
-import org.ole.planet.myplanet.courses.TakeCourseFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -37,7 +31,6 @@ import java.util.List;
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipListener;
-import io.realm.Realm;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -99,6 +92,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
                 JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
                 AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);
+            }else{
+                ((ViewHolderLibrary) holder).ratingBar.setRating(0);
             }
         }
     }

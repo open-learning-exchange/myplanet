@@ -1,30 +1,20 @@
 package org.ole.planet.myplanet;
 
-import android.Manifest;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.Toast;
 
-import com.afollestad.materialdialogs.DialogAction;
-import com.afollestad.materialdialogs.MaterialDialog;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
@@ -35,7 +25,6 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.Data.realm_stepExam;
-import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.MyCourseFragment;
 import org.ole.planet.myplanet.feedback.FeedbackFragment;
@@ -43,11 +32,8 @@ import org.ole.planet.myplanet.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.library.MyLibraryFragment;
 import org.ole.planet.myplanet.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.survey.SurveyFragment;
-import org.ole.planet.myplanet.teams.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
-import org.ole.planet.myplanet.utilities.Constants;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 

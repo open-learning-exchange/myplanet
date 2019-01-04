@@ -4,8 +4,6 @@ import android.content.SharedPreferences;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
-import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -14,7 +12,6 @@ import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
-import io.realm.Sort;
 import io.realm.annotations.PrimaryKey;
 
 public class realm_resourceActivities extends RealmObject {

@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.service;
 
-import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
@@ -10,15 +8,14 @@ import com.firebase.jobdispatcher.JobService;
 
 import org.ole.planet.myplanet.LoginActivity;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.callback.SyncListener;
-import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 
 
-public class AutoSyncService extends JobService implements SyncListener {
+public class AutoSyncService extends JobService implements SyncListener, Service.CheckVersionCallback {
     SharedPreferences preferences;
 
     @Override
@@ -29,7 +26,7 @@ public class AutoSyncService extends JobService implements SyncListener {
         int syncInterval = preferences.getInt("autoSyncInterval", 15 * 60);
         if ((currentTime - lastSync) > (syncInterval * 1000)) {
             Utilities.toast(this, "Syncing started...");
-            SyncManager.getInstance().start(this);
+            new Service(this).checkVersion(this, preferences);
         }
         return false;
     }
@@ -55,5 +52,24 @@ public class AutoSyncService extends JobService implements SyncListener {
             startActivity(new Intent(this, LoginActivity.class).putExtra("showWifiDialog", true)
                     .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         }
+    }
+
+    @Override
+    public void onUpdateAvailable(String filePath, boolean cancelable) {
+        startActivity(new Intent(this, LoginActivity.class)
+                .putExtra("filePath", filePath)
+                .putExtra("cancelable", cancelable)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
+
+    @Override
+    public void onCheckingVersion() {
+
+    }
+
+    @Override
+    public void onError(String msg, boolean blockSync) {
+        if (!blockSync)
+            SyncManager.getInstance().start(this);
     }
 }
