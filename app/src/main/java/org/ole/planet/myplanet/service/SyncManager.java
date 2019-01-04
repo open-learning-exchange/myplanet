@@ -70,7 +70,7 @@ public class SyncManager {
             if (listener != null) {
                 listener.onSyncStarted();
             }
-            syncDatabase();
+            authenticateAndSync();
         } else {
             Utilities.log("Already Syncing...");
         }
@@ -89,39 +89,38 @@ public class SyncManager {
         }
     }
 
-    private void syncDatabase() {
+    private void authenticateAndSync() {
         Thread td = new Thread(() -> {
-            TransactionSyncManager.authenticate(new TransactionSyncManager.LoginListener() {
-                @Override
-                public void onSuccess() {
-                    try {
-                        isSyncing = true;
-                        NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
-                        mRealm = dbService.getRealmInstance();
-                        TransactionSyncManager.syncDb(mRealm, "tablet_users");
-                        TransactionSyncManager.syncDb(mRealm, "courses");
-                        TransactionSyncManager.syncDb(mRealm, "exams");
-                        resourceTransactionSync();
-                        TransactionSyncManager.syncDb(mRealm, "ratings");
-                        TransactionSyncManager.syncDb(mRealm, "submissions");
-                        myLibraryTransactionSync();
-                        TransactionSyncManager.syncDb(mRealm, "login_activities");
-                        realm_resourceActivities.onSynced(mRealm, settings);
-                    } catch (Exception err) {
-                        // handleException(err.getMessage());
-                    } finally {
-                        destroy();
-                    }
-                }
-
-                @Override
-                public void onFailure(String msg) {
-                    handleException(msg);
-                    destroy();
-                }
-            });
+            if (TransactionSyncManager.authenticate()) {
+                startSync();
+            } else {
+                handleException("Invalid name or password");
+                destroy();
+            }
         });
         td.start();
+    }
+
+    private void startSync() {
+        try {
+            isSyncing = true;
+            NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
+            mRealm = dbService.getRealmInstance();
+            TransactionSyncManager.syncDb(mRealm, "tablet_users");
+            TransactionSyncManager.syncDb(mRealm, "courses");
+            TransactionSyncManager.syncDb(mRealm, "exams");
+            resourceTransactionSync();
+            TransactionSyncManager.syncDb(mRealm, "ratings");
+            TransactionSyncManager.syncDb(mRealm, "submissions");
+            myLibraryTransactionSync();
+            TransactionSyncManager.syncDb(mRealm, "login_activities");
+            realm_resourceActivities.onSynced(mRealm, settings);
+        } catch (Exception err) {
+            err.printStackTrace();
+            handleException(err.getMessage());
+        } finally {
+            destroy();
+        }
     }
 
     private void handleException(String message) {
@@ -155,11 +154,9 @@ public class SyncManager {
             Utilities.log("Url " + Utilities.getUrl() + "/resources/_find");
             final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
             Response<JsonObject> a = allDocs.execute();
-            if (a.body() != null && a.body().has("docs")) {
-                List<String> ids = realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
-                newIds.addAll(ids);
-            }
-            if (a.body() == null || a.body().size() < limit) {
+            List<String> ids = realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
+            newIds.addAll(ids);
+            if (a.body().size() < limit) {
                 break;
             } else {
                 skip = skip + limit;
@@ -173,7 +170,6 @@ public class SyncManager {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
             try {
-                Utilities.log("URL " + Utilities.getUrl());
                 DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/shelf/_all_docs").execute().body();
                 for (int i = 0; i < res.getRows().size(); i++) {
                     shelfDoc = res.getRows().get(i);

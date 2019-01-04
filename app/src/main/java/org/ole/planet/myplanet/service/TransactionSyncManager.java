@@ -28,35 +28,15 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class TransactionSyncManager {
-    interface LoginListener {
-        void onSuccess();
-
-        void onFailure(String msg);
-    }
-
-    public static void authenticate(LoginListener listener) {
+    public static boolean authenticate() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/tablet_users/_all_docs").enqueue(new Callback<DocumentResponse>() {
-            @Override
-            public void onResponse(Call<DocumentResponse> call, Response<DocumentResponse> response) {
-                if (response.code() == 200) {
-                    listener.onSuccess();
-                } else {
-                    JsonParser parser = new JsonParser();
-                    try {
-                        JsonObject ob = parser.parse(response.errorBody().string()).getAsJsonObject();
-                        listener.onFailure(ob.get("reason").getAsString());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            @Override
-            public void onFailure(Call<DocumentResponse> call, Throwable t) {
-                listener.onFailure("Connection Failed");
-            }
-        });
+        try {
+            Response response = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/tablet_users/_all_docs").execute();
+            return response.code() == 200;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
 
     }
 
