@@ -44,8 +44,8 @@ public class Utilities {
     }
 
     public static String getUrl(String id, String file, SharedPreferences settings) {
-        return getServerUrl(settings)
-                + "resources/" + id + "/" + file;
+        return getUrl()
+                + "/resources/" + id + "/" + file;
     }
 
     private static String getServerUrl(SharedPreferences settings) {
