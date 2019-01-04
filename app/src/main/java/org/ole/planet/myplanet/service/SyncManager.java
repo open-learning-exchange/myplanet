@@ -4,9 +4,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.Data.DocumentResponse;
 import org.ole.planet.myplanet.Data.Rows;
@@ -68,7 +70,7 @@ public class SyncManager {
             if (listener != null) {
                 listener.onSyncStarted();
             }
-            syncDatabase();
+            authenticateAndSync();
         } else {
             Utilities.log("Already Syncing...");
         }
@@ -87,28 +89,38 @@ public class SyncManager {
         }
     }
 
-    private void syncDatabase() {
+    private void authenticateAndSync() {
         Thread td = new Thread(() -> {
-            try {
-                isSyncing = true;
-                NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
-                mRealm = dbService.getRealmInstance();
-                TransactionSyncManager.syncDb(mRealm, "tablet_users");
-                TransactionSyncManager.syncDb(mRealm, "courses");
-                TransactionSyncManager.syncDb(mRealm, "exams");
-                resourceTransactionSync();
-                TransactionSyncManager.syncDb(mRealm, "ratings");
-                TransactionSyncManager.syncDb(mRealm, "submissions");
-                myLibraryTransactionSync();
-                TransactionSyncManager.syncDb(mRealm, "login_activities");
-                realm_resourceActivities.onSynced(mRealm, settings);
-            } catch (Exception err) {
-                handleException(err.getMessage());
-            } finally {
+            if (TransactionSyncManager.authenticate()) {
+                startSync();
+            } else {
+                handleException("Invalid name or password");
                 destroy();
             }
         });
         td.start();
+    }
+
+    private void startSync() {
+        try {
+            isSyncing = true;
+            NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
+            mRealm = dbService.getRealmInstance();
+            TransactionSyncManager.syncDb(mRealm, "tablet_users");
+            TransactionSyncManager.syncDb(mRealm, "courses");
+            TransactionSyncManager.syncDb(mRealm, "exams");
+            resourceTransactionSync();
+            TransactionSyncManager.syncDb(mRealm, "ratings");
+            TransactionSyncManager.syncDb(mRealm, "submissions");
+            myLibraryTransactionSync();
+            TransactionSyncManager.syncDb(mRealm, "login_activities");
+            realm_resourceActivities.onSynced(mRealm, settings);
+        } catch (Exception err) {
+            err.printStackTrace();
+            handleException(err.getMessage());
+        } finally {
+            destroy();
+        }
     }
 
     private void handleException(String message) {
@@ -158,7 +170,6 @@ public class SyncManager {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
             try {
-                Utilities.log("URL " + Utilities.getUrl());
                 DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/shelf/_all_docs").execute().body();
                 for (int i = 0; i < res.getRows().size(); i++) {
                     shelfDoc = res.getRows().get(i);
@@ -189,7 +200,6 @@ public class SyncManager {
     private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type);
-            Utilities.log("Type" + shelfData.type);
             check(array, shelfData.aClass);
         }
     }
