@@ -152,6 +152,18 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         Utilities.log("State " + state);
     }
 
+    private void onClickNext() {
+        if (mViewPager.getCurrentItem() == steps.size()) {
+            next.setColorFilter(getResources().getColor(R.color.md_grey_500));
+        }
+    }
+
+    private void onClickPrevious() {
+        if (mViewPager.getCurrentItem() - 1 == 0) {
+            previous.setColorFilter(getResources().getColor(R.color.md_grey_500));
+        }
+    }
+
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
@@ -160,15 +172,11 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
                     previous.setColorFilter(getResources().getColor(R.color.md_white_1000));
                 }
+                onClickNext();
 
-                if (mViewPager.getCurrentItem() == steps.size()) {
-                    next.setColorFilter(getResources().getColor(R.color.md_grey_500));
-                }
                 break;
             case R.id.previous_step:
-                if (mViewPager.getCurrentItem() - 1 == 0) {
-                    previous.setColorFilter(getResources().getColor(R.color.md_grey_500));
-                }
+                onClickPrevious();
 
                 if (isValidClickLeft()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() - 1);
