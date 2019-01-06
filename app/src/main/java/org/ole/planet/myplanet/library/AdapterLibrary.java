@@ -131,7 +131,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        TextView title, desc, rating, timesRated, average, tv_rating;
+        TextView title, desc, rating, timesRated, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;
@@ -149,8 +149,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             average = itemView.findViewById(R.id.average);
             average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
-            tv_rating = itemView.findViewById(R.id.tv_rating);
-//            tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+            rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
