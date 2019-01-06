@@ -98,15 +98,16 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         profileDbHandler.setResourceOpenCount(library);
         onRatingChanged();
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
+        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
+        if(FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")){
+            download.setText("Open Video");
+        }
         setClickListeners();
     }
 
 
     public void setClickListeners() {
-        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
-        if(FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")){
-            download.setText("Open Video");
-        }
+
         download.setOnClickListener(view -> {
             if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
                 Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();
