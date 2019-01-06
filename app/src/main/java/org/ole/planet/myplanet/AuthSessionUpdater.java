@@ -2,18 +2,39 @@ package org.ole.planet.myplanet;
 
 import android.content.SharedPreferences;
 
+import com.google.gson.Gson;
+
 import org.json.JSONObject;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.DataOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class AuthSessionUpdater  {
+public class AuthSessionUpdater {
 
     // Updates Auth Session Token every 15 mins to prevent Timing Out
-    public static void timerSendPostNewAuthSessionID(final SharedPreferences settings) {
+
+    interface AuthCallback {
+        void setAuthSession(Map<String, List<String>> responseHeader);
+
+        void onError(String s);
+    }
+
+    SharedPreferences settings;
+    AuthCallback callback;
+
+    public AuthSessionUpdater(AuthCallback callback, SharedPreferences settings) {
+        this.callback = callback;
+        this.settings = settings;
+        timerSendPostNewAuthSessionID();
+    }
+
+    public void timerSendPostNewAuthSessionID() {
         Timer timer = new Timer();
         TimerTask hourlyTask = new TimerTask() {
             @Override
@@ -27,13 +48,13 @@ public class AuthSessionUpdater  {
     // sendPost() - Meant to get New AuthSession Token for viewing Online resources such as Video, and basically any file.
     // It creates a session of about 20mins after which a new AuthSession Token will be needed.
     // During these 20mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
-    public static void sendPost(final SharedPreferences settings) {
+    public void sendPost(final SharedPreferences settings) {
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     HttpURLConnection conn = (HttpURLConnection) getSessionUrl(settings).openConnection();
-                    conn.setRequestMethod("POST");
+                    conn.setRequestMethod("GET");
                     conn.setRequestProperty("Content-Type", "application/json");
                     conn.setRequestProperty("Accept", "application/json");
                     conn.setDoOutput(true);
@@ -45,9 +66,10 @@ public class AuthSessionUpdater  {
                     os.flush();
                     os.close();
 
-                    new DashboardFragment().setAuthSession(conn.getHeaderFields());
+                    callback.setAuthSession(conn.getHeaderFields());
                     conn.disconnect();
                 } catch (Exception e) {
+                    callback.onError(e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -70,9 +92,10 @@ public class AuthSessionUpdater  {
 
     private static URL getSessionUrl(SharedPreferences settings) {
         try {
-            String pref = settings.getString("couchdbURL", "");
+            String pref = Utilities.getUrl();
             pref += "/_session";
             URL SERVER_URL = new URL(pref);
+            Utilities.log("Url " + SERVER_URL);
             return SERVER_URL;
         } catch (Exception e) {
             e.printStackTrace();

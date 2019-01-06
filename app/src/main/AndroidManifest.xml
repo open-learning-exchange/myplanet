@@ -42,7 +42,7 @@
 
         <service android:name=".datamanager.MyDownloadService" />
 
-        <activity android:name=".ExoPlayerVideo" />
+        <activity android:name=".VideoPlayerActivity" />
         <activity android:name=".ImageViewerActivity" />
         <activity android:name=".TextFileViewerActivity" />
         <activity android:name=".MarkdownViewerActivity" />
