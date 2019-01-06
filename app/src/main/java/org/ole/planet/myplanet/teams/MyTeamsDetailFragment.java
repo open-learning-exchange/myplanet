@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.Data.realm_myTeams;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     Realm mRealm;
     realm_myTeams team;
     Button btnLeave;
+    Button btnInvite;
     ListView lvJoined, lvRequested;
     DatabaseService dbService;
 
@@ -73,12 +75,16 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
         btnLeave.setOnClickListener(this);
+        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
+        btnInvite = v.findViewById(R.id.btn_invite);
+        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
         tvDescription = v.findViewById(R.id.description);
         tvJoined = v.findViewById(R.id.tv_joined);
         tvRequested = v.findViewById(R.id.tv_requested);
         lvJoined = v.findViewById(R.id.list_joined);
         lvRequested = v.findViewById(R.id.list_requested);
         tvTitle = v.findViewById(R.id.title);
+
     }
 
     @Override

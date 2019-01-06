@@ -23,6 +23,7 @@ public class Constants {
     public static final String KEY_SURVEY = "survey";
     public static final String KEY_MEETUPS = "meetup";
     public static final String KEY_TEAMS = "teams";
+    public static final String KEY_DELETE = "delete";
 
     static {
         shelfDataList = new ArrayList<>();
@@ -34,6 +35,10 @@ public class Constants {
         betaList = new ArrayList<>();
         betaList.add(KEY_RATING);
         betaList.add(KEY_EXAM);
+        betaList.add(KEY_TEAMS);
+        betaList.add(KEY_MEETUPS);
+        betaList.add(KEY_SURVEY);
+        betaList.add(KEY_DELETE);
     }
 
     public static class ShelfData {
