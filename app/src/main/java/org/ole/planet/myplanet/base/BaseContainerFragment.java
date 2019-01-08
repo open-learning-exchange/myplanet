@@ -167,7 +167,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         AlertDialog.Builder builderSingle = new AlertDialog.Builder(getActivity());
         builderSingle.setTitle("Select resource to open : ");
 
-        final ArrayAdapter<realm_myLibrary> arrayAdapter = new ArrayAdapter<realm_myLibrary>(getActivity(), android.R.layout.select_dialog_singlechoice, downloadedResources);
+        final ArrayAdapter<realm_myLibrary> arrayAdapter = new ArrayAdapter<realm_myLibrary>(getActivity(), android.R.layout.select_dialog_item, downloadedResources);
         builderSingle.setAdapter(arrayAdapter, (dialogInterface, i) -> {
             realm_myLibrary library = arrayAdapter.getItem(i);
             openResource(library);
@@ -182,7 +182,11 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         } else {
             btnOpen.setVisibility(View.VISIBLE);
             btnOpen.setOnClickListener(view -> {
-                showResourceList(downloadedResources);
+                if (downloadedResources.size() == 1) {
+                    openResource(downloadedResources.get(0));
+                } else {
+                    showResourceList(downloadedResources);
+                }
             });
         }
     }
