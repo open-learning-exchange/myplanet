@@ -19,7 +19,6 @@ import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.AuthSessionUpdater;
 import org.ole.planet.myplanet.CSVViewerActivity;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.ImageViewerActivity;
@@ -37,7 +36,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import io.realm.RealmResults;
 

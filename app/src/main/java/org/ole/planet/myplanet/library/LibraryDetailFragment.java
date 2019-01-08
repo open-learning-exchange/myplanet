@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.library;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.text.InputFilter;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;

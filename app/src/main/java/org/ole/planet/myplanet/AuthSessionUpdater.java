@@ -2,8 +2,6 @@ package org.ole.planet.myplanet;
 
 import android.content.SharedPreferences;
 
-import com.google.gson.Gson;
-
 import org.json.JSONObject;
 import org.ole.planet.myplanet.utilities.Utilities;
 
