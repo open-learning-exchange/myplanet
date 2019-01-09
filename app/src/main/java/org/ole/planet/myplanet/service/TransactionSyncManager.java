@@ -22,8 +22,20 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.IOException;
 
 import io.realm.Realm;
+import retrofit2.Response;
 
 public class TransactionSyncManager {
+    public static boolean authenticate() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        try {
+            Response response = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/tablet_users/_all_docs").execute();
+            return response.code() == 200;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+
+    }
 
     public static void syncDb(final Realm mRealm, final String table) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);

@@ -20,7 +20,11 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+
 import org.ole.planet.myplanet.utilities.Constants;
+
+import org.ole.planet.myplanet.utilities.FileUtils;
+
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
@@ -112,12 +116,16 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         }
 
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
+        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
+        if(FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")){
+            download.setText("Open Video");
+        }
         setClickListeners();
     }
 
 
     public void setClickListeners() {
-        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
+
         download.setOnClickListener(view -> {
             if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
                 Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();

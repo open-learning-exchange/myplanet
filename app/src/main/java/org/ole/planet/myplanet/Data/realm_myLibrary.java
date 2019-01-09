@@ -90,6 +90,28 @@ public class realm_myLibrary extends RealmObject {
         return libraries;
     }
 
+    public static String[] getIds(Realm mRealm) {
+        List<realm_myLibrary> list = mRealm.where(realm_myLibrary.class).findAll();
+        String[] ids = new String[list.size()];
+        int i = 0;
+        for (realm_myLibrary library : list
+                ) {
+            ids[i] = (library.getResource_id());
+            i++;
+        }
+        return ids;
+    }
+
+    public static void removeDeletedResource(List<String> newIds, Realm mRealm) {
+        String[] ids = getIds(mRealm);
+        for (String id : ids
+                ) {
+            if (!newIds.contains(id)) {
+                mRealm.where(realm_myLibrary.class).equalTo("resourceId", id).findAll().deleteAllFromRealm();
+            }
+        }
+    }
+
 
     public String getDownloaded() {
         return downloaded;
@@ -543,10 +565,15 @@ public class realm_myLibrary extends RealmObject {
         this.timesRated = timesRated;
     }
 
-    public static void save(JsonArray allDocs, Realm mRealm) {
+    public static List<String> save(JsonArray allDocs, Realm mRealm) {
+        List<String> list = new ArrayList<>();
         for (int i = 0; i < allDocs.size(); i++) {
-            realm_myLibrary.insertResources(allDocs.get(i).getAsJsonObject(), mRealm);
+            JsonObject doc = allDocs.get(i).getAsJsonObject();
+            String id = JsonUtils.getString("_id", doc);
+            list.add(id);
+            realm_myLibrary.insertResources(doc, mRealm);
         }
+        return list;
     }
 
     public static JsonArray getMyLibIds(Realm realm, String userId) {
