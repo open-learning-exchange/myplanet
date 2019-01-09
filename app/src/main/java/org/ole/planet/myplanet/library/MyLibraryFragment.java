@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.Data.realm_rating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -70,6 +71,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<realm_myLibrary> imp
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay);
         tvAddToLib = getView().findViewById(R.id.tv_add_to_lib);
         tvDelete = getView().findViewById(R.id.tv_delete);
+        tvDelete.setVisibility(Constants.showBetaFeature(Constants.KEY_DELETE, getActivity()) ? View.VISIBLE :View.GONE );
         etSearch = getView().findViewById(R.id.et_search);
         etTags = getView().findViewById(R.id.et_tags);
         imgSearch = getView().findViewById(R.id.img_search);

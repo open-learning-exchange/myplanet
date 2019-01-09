@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.Data.realm_submissions;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.userprofile.AdapterMySubmission;
+import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
 
@@ -80,7 +81,9 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             noSubmission = itemView.findViewById(R.id.tv_no_submissions);
             lastSubDate = itemView.findViewById(R.id.tv_date);
             startSurvey = itemView.findViewById(R.id.start_survey);
+            startSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE :View.GONE );
             sendSurvey = itemView.findViewById(R.id.send_survey);
+            sendSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE :View.GONE );
             sendSurvey.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
