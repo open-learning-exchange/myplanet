@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.Data.realm_meetups;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
     String meetUpId;
     TextView title;
     Button btnLeave;
+    Button btnInvite;
     UserProfileDbHandler profileDbHandler;
     realm_UserModel user;
     ListView listUsers;
@@ -63,7 +65,10 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
         listDesc = v.findViewById(R.id.list_desc);
         listUsers = v.findViewById(R.id.list_users);
         tvJoined = v.findViewById(R.id.tv_joined);
+        btnInvite = v.findViewById(R.id.btn_invite);
+        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
         btnLeave = v.findViewById(R.id.btn_leave);
+        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
         btnLeave.setOnClickListener(this);
         title = v.findViewById(R.id.meetup_title);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.Data.DocumentResponse;
 import org.ole.planet.myplanet.Data.Rows;
@@ -23,8 +22,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.IOException;
 
 import io.realm.Realm;
-import retrofit2.Call;
-import retrofit2.Callback;
 import retrofit2.Response;
 
 public class TransactionSyncManager {

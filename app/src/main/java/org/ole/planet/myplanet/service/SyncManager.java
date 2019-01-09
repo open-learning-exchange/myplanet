@@ -4,11 +4,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.Data.DocumentResponse;
 import org.ole.planet.myplanet.Data.Rows;

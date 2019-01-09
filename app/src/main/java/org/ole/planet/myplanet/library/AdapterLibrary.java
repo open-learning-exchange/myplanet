@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.courses.AdapterCourses;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -87,6 +88,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
+
             ((ViewHolderLibrary) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle(), ratingChangeListener));
 
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
@@ -129,7 +131,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        TextView title, desc, rating, timesRated;
+        TextView title, desc, rating, timesRated, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;
@@ -144,6 +146,10 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ratingBar = itemView.findViewById(R.id.rating_bar);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
+            llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+            average = itemView.findViewById(R.id.average);
+            average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+            rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean b) {

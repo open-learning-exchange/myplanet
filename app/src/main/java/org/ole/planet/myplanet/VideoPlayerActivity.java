@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -23,20 +24,27 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
+import com.google.gson.Gson;
 
-public class ExoPlayerVideo extends AppCompatActivity {
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.List;
+import java.util.Map;
+
+public class VideoPlayerActivity extends AppCompatActivity implements AuthSessionUpdater.AuthCallback {
 
     SimpleExoPlayer exoPlayer;
     SimpleExoPlayerView exoPlayerView;
 
     String auth = "";
     String videoURL = "";
+    SharedPreferences settings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_exo_player_video);
-
+        settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         exoPlayerView = findViewById(R.id.exo_player_simple);
 
         Intent intentExtras = getIntent();
@@ -44,14 +52,28 @@ public class ExoPlayerVideo extends AppCompatActivity {
 
         String videoType = extras.getString("videoType");
         videoURL = extras.getString("videoURL");
+        Utilities.log("Video url " + videoURL);
         auth = extras.getString("Auth");
 
         if (videoType.equals("offline")) {
             prepareExoPlayerFromFileUri(videoURL);
         } else if (videoType.equals("online")) {
-            streamVideoFromUrl(videoURL, auth);
+            new AuthSessionUpdater(this, settings);
         }
 
+    }
+
+
+    public void setAuthSession(Map<String, List<String>> responseHeader) {
+        Utilities.log("Error " + new Gson().toJson(responseHeader));
+        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+        auth = headerauth[0];
+        runOnUiThread(() -> streamVideoFromUrl(videoURL, auth));
+    }
+
+    @Override
+    public void onError(String s) {
+        runOnUiThread(() -> Utilities.toast(VideoPlayerActivity.this, "Connection failed : reason " + s));
     }
 
     public void streamVideoFromUrl(String videoUrl, String auth) {
@@ -103,7 +125,8 @@ public class ExoPlayerVideo extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-
-        exoPlayer.stop();
+        if (exoPlayer != null)
+            exoPlayer.stop();
     }
+
 }

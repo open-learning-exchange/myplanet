@@ -19,15 +19,14 @@ import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.AuthSessionUpdater;
 import org.ole.planet.myplanet.CSVViewerActivity;
 import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.ExoPlayerVideo;
 import org.ole.planet.myplanet.ImageViewerActivity;
 import org.ole.planet.myplanet.MarkdownViewerActivity;
 import org.ole.planet.myplanet.PDFReaderActivity;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.TextFileViewerActivity;
+import org.ole.planet.myplanet.VideoPlayerActivity;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.courses.AdapterCourses;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
@@ -37,7 +36,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import io.realm.RealmResults;
 
@@ -49,7 +47,6 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        AuthSessionUpdater.timerSendPostNewAuthSessionID(settings);
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
@@ -141,17 +138,13 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
     }
 
-    public void setAuthSession(Map<String, List<String>> responseHeader) {
-        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
-        auth = headerauth[0];
-    }
 
     public void playVideo(String videoType, final realm_myLibrary items) {
-        Intent intent = new Intent(getActivity(), ExoPlayerVideo.class);
+        Intent intent = new Intent(getActivity(), VideoPlayerActivity.class);
         Bundle bundle = new Bundle();
         bundle.putString("videoType", videoType);
         if (videoType.equals("online")) {
-            bundle.putString("videoURL", "" + items.getResourceRemoteAddress());
+            bundle.putString("videoURL", "" + Utilities.getUrl(items, settings));
             Log.e("AUTH", "" + auth);
             bundle.putString("Auth", "" + auth);
         } else if (videoType.equals("offline")) {

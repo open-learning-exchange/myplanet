@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +20,11 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+
+import org.ole.planet.myplanet.utilities.Constants;
+
+import org.ole.planet.myplanet.utilities.FileUtils;
+
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
@@ -69,6 +75,9 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     }
 
     private void initView(View v) {
+        TextView average, tv_rating;
+        LinearLayout llRating;
+
         author = v.findViewById(R.id.tv_author);
         title = v.findViewById(R.id.tv_title);
         pubishedBy = v.findViewById(R.id.tv_published);
@@ -80,6 +89,12 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
+        llRating = v.findViewById(R.id.ll_rating);
+        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE :View.GONE );
+        average = v.findViewById(R.id.average);
+        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE :View.GONE );
+        tv_rating = v.findViewById(R.id.tv_rating);
+        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE :View.GONE );
         v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
         initRatingView(v);
     }
@@ -94,14 +109,23 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         license.setText(library.getLinkToLicense());
         resource.setText(realm_myLibrary.listToString(library.getResourceFor()));
         profileDbHandler.setResourceOpenCount(library);
-        onRatingChanged();
+        try {
+            onRatingChanged();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
+        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
+        if(FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")){
+            download.setText("Open Video");
+        }
         setClickListeners();
     }
 
 
     public void setClickListeners() {
-        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
+
         download.setOnClickListener(view -> {
             if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
                 Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();
