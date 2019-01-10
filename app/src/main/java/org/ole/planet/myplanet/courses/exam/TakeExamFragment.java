@@ -125,7 +125,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         if (question.getType().equalsIgnoreCase("select")) {
             listChoices.setVisibility(View.VISIBLE);
             selectQuestion(question);
-        } else if (question.getType().equalsIgnoreCase("input")) {
+        } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea") ) {
             etAnswer.setVisibility(View.VISIBLE);
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
@@ -181,7 +181,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public void onClick(View view) {
         if (view.getId() == R.id.btn_submit) {
             String type = questions.get(currentIndex).getType();
-            if (type.equalsIgnoreCase("input")) {
+            if (type.equalsIgnoreCase("input") || type.equalsIgnoreCase("textarea")) {
                 ans = etAnswer.getText().toString();
             }
             if (showErrorMessage("Please select / write your answer to continue")) {
