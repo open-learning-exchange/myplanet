@@ -181,14 +181,18 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public void onClick(View view) {
         if (view.getId() == R.id.btn_submit) {
             String type = questions.get(currentIndex).getType();
-            if (type.equalsIgnoreCase("input") || type.equalsIgnoreCase("textarea")) {
-                ans = etAnswer.getText().toString();
-            }
+           showTextInput(type);
             if (showErrorMessage("Please select / write your answer to continue")) {
                 return;
             }
             boolean cont = updateAnsDb();
             checkAnsAndContinue(cont);
+        }
+    }
+
+    private void showTextInput(String type) {
+        if (type.equalsIgnoreCase("input") || type.equalsIgnoreCase("textarea")) {
+            ans = etAnswer.getText().toString();
         }
     }
 
