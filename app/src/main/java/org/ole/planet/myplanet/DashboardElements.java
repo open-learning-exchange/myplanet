@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.base.RatingFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.userprofile.SettingActivity;
 import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.DialogUtils;
 
 /**
  * Extra class for excess methods in Dashboard activities
@@ -32,6 +33,7 @@ public abstract class DashboardElements extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
+        DialogUtils.showInfoDialog(this);
     }
 
     /**

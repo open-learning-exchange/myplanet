@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:layout_editor_absoluteY="25dp">
+
+    <RelativeLayout
+        android:layout_width="798dp"
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
+
+        <RadioButton
+            android:id="@+id/btn_radio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignStart="@+id/textView_beta"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="-7dp"
+            android:layout_marginTop="297dp"
+            android:text="Do not show this again"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="400dp" />
+
+        <TextView
+            android:id="@+id/textView_beta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="22dp"
+            android:text="Beta:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+        <TextView
+            android:id="@+id/textView_feedback"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="156dp"
+            android:text="Feedback:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+        <TextView
+            android:id="@+id/textView_details"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="51dp"
+            android:text="My Planet has a few features that are currently in beta. Such as:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+        <TextView
+            android:id="@+id/textView_details4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="185dp"
+            android:text="Please feel free to leave us feedback with the feedback form."
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+        <TextView
+            android:id="@+id/textView_details5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="207dp"
+            android:text="It is located on the side bar (top left) and towards the bottem."
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+        <TextView
+            android:id="@+id/textView_details6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="241dp"
+            android:text="Thank you for using My Planet"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+        <TextView
+            android:id="@+id/textView_details2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="76dp"
+            android:text="Taking tests, ratings, invite or leave teams and meetups, send or take surveys, and deleting resources."
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+        <TextView
+            android:id="@+id/textView_details3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="43dp"
+            android:layout_marginTop="100dp"
+            android:text="You can still use these features if you enable them in the settings. However, they may not work as expected."
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/black"
+            android:textSize="14sp"
+            tools:layout_editor_absoluteX="161dp"
+            tools:layout_editor_absoluteY="298dp" />
+
+    </RelativeLayout>
+</android.support.constraint.ConstraintLayout>

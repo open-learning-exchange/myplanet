@@ -7,10 +7,13 @@ import android.content.Intent;
 import android.provider.Settings;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AlertDialog;
+import android.view.LayoutInflater;
 import android.view.View;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
+import org.ole.planet.myplanet.userprofile.SettingActivity;
 
 import java.util.ArrayList;
 
@@ -97,5 +100,22 @@ public class DialogUtils {
                     Utilities.openDownloadService(context, url);
                 });
 
+    }
+
+    public static void showInfoDialog(final Context context) {
+        LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        String message = "Useful Information";
+        builder.setTitle(message);
+        builder.setView(inflater.inflate(R.layout.dialog_info, null));
+        builder.setPositiveButton("Go to settings", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                context.startActivity(new Intent(context, SettingActivity.class));
+                //d.dismiss();
+            }
+        }).setNegativeButton("Cancel", null);
+        AlertDialog d = builder.create();
+        d.show();
     }
 }
