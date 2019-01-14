@@ -55,10 +55,15 @@
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
-            <WebView
-                android:id="@+id/wv_desc"
+            <!--<WebView-->
+                <!--android:id="@+id/wv_desc"-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="wrap_content" />-->
+
+            <br.tiagohm.markdownview.MarkdownView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:id="@+id/description"
+                android:layout_height="wrap_content"/>
         </LinearLayout>
     </LinearLayout>
 

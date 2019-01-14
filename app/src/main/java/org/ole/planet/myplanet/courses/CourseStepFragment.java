@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import br.tiagohm.markdownview.MarkdownView;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -38,7 +39,8 @@ import io.realm.RealmResults;
 public class CourseStepFragment extends BaseContainerFragment {
 
     TextView tvTitle;
-    WebView wvDesc;
+ //   WebView wvDesc;
+   MarkdownView description;
     String stepId;
     Button btnResource, btnExam, btnOpen;
     DatabaseService dbService;
@@ -72,7 +74,7 @@ public class CourseStepFragment extends BaseContainerFragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_course_step, container, false);
         tvTitle = v.findViewById(R.id.tv_title);
-        wvDesc = v.findViewById(R.id.wv_desc);
+        description = v.findViewById(R.id.description);
         btnExam = v.findViewById(R.id.btn_take_test);
         btnOpen = v.findViewById(R.id.btn_open);
         btnResource = v.findViewById(R.id.btn_resources);
@@ -120,7 +122,8 @@ public class CourseStepFragment extends BaseContainerFragment {
         if (stepExams != null)
             btnExam.setText("Take Test [" + stepExams.size() + "]");
         tvTitle.setText(step.getStepTitle());
-        wvDesc.loadDataWithBaseURL(null, step.getDescription(), "text/html", "utf-8", null);
+      //  wvDesc.loadDataWithBaseURL(null, step.getDescription(), "text/html", "utf-8", null);
+        description.loadMarkdown(step.getDescription());
         setListeners();
 
     }

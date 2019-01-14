@@ -26,6 +26,8 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
+import br.tiagohm.markdownview.MarkdownView;
+import br.tiagohm.markdownview.css.styles.Github;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -33,8 +35,9 @@ import io.realm.RealmResults;
  * A simple {@link Fragment} subclass.
  */
 public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
-    TextView description, subjectLevel, gradeLevel, method, language, noOfExams;
+    TextView  subjectLevel, gradeLevel, method, language, noOfExams;
     LinearLayout llRating;
+    MarkdownView description;
     DatabaseService dbService;
     Realm mRealm;
     realm_myCourses courses;
@@ -93,7 +96,9 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         method.setText(courses.getMethod());
         gradeLevel.setText(courses.getGradeLevel());
         language.setText(courses.getLanguageOfInstruction());
-        description.setText(courses.getDescription());
+        //description.setText(courses.getDescription());
+        description.addStyleSheet(new Github());
+        description.loadMarkdown(courses.getDescription());
         noOfExams.setText(realm_stepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(realm_myLibrary.class)
                 .equalTo("courseId", id)
