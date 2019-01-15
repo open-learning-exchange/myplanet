@@ -96,7 +96,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         method.setText(courses.getMethod());
         gradeLevel.setText(courses.getGradeLevel());
         language.setText(courses.getLanguageOfInstruction());
-        //description.setText(courses.getDescription());
         description.addStyleSheet(new Github());
         description.loadMarkdown(courses.getDescription());
         noOfExams.setText(realm_stepExam.getNoOfExam(mRealm, id) + "");

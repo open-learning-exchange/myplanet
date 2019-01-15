@@ -55,11 +55,6 @@
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
-            <!--<WebView-->
-                <!--android:id="@+id/wv_desc"-->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_height="wrap_content" />-->
-
             <br.tiagohm.markdownview.MarkdownView
                 android:layout_width="match_parent"
                 android:id="@+id/description"
