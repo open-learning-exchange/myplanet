@@ -19,17 +19,17 @@ import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity;
+import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.course.AdapterCourses;
+import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity;
-import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity;
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.ui.course.AdapterCourses;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
