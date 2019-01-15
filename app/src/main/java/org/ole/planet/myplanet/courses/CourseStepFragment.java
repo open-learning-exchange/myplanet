@@ -7,7 +7,6 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -29,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import br.tiagohm.markdownview.MarkdownView;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -38,7 +38,7 @@ import io.realm.RealmResults;
 public class CourseStepFragment extends BaseContainerFragment {
 
     TextView tvTitle;
-    WebView wvDesc;
+   MarkdownView description;
     String stepId;
     Button btnResource, btnExam, btnOpen;
     DatabaseService dbService;
@@ -72,7 +72,7 @@ public class CourseStepFragment extends BaseContainerFragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_course_step, container, false);
         tvTitle = v.findViewById(R.id.tv_title);
-        wvDesc = v.findViewById(R.id.wv_desc);
+        description = v.findViewById(R.id.description);
         btnExam = v.findViewById(R.id.btn_take_test);
         btnOpen = v.findViewById(R.id.btn_open);
         btnResource = v.findViewById(R.id.btn_resources);
@@ -120,7 +120,7 @@ public class CourseStepFragment extends BaseContainerFragment {
         if (stepExams != null)
             btnExam.setText("Take Test [" + stepExams.size() + "]");
         tvTitle.setText(step.getStepTitle());
-        wvDesc.loadDataWithBaseURL(null, step.getDescription(), "text/html", "utf-8", null);
+        description.loadMarkdown(step.getDescription());
         setListeners();
 
     }
@@ -139,14 +139,6 @@ public class CourseStepFragment extends BaseContainerFragment {
                 .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
                 .findAll();
-//        if (offlineResources == null || offlineResources.size() == 0) {
-//            btnResource.setVisibility(View.GONE);
-//        }
-//        btnResource.setOnClickListener(view -> {
-//            if (offlineResources.size() > 0) {
-//                showDownloadDialog(offlineResources);
-//            }
-//        });
         setResourceButton(offlineResources, btnResource);
 
         btnExam.setOnClickListener(view -> {
@@ -164,14 +156,7 @@ public class CourseStepFragment extends BaseContainerFragment {
                 .equalTo("resourceOffline", true)
                 .isNotNull("resourceLocalAddress")
                 .findAll();
-//
-//        if (downloadedResources == null || downloadedResources.size() == 0) {
-//            btnOpen.setVisibility(View.GONE);
-//        } else {
-//            btnOpen.setOnClickListener(view -> {
-//                showResourceList(downloadedResources);
-//            });
-//        }
+
         setOpenResourceButton(downloadedResources, btnOpen);
 
     }
