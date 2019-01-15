@@ -13,14 +13,14 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmCourseStep;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmRemovedLog;
-import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.CustomViewPager;

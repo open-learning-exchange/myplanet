@@ -12,12 +12,12 @@ import android.widget.TextView;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.model.RealmRating;
-import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
+import org.ole.planet.myplanet.model.RealmCourseProgress;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmRating;
 
 import java.util.HashMap;
 import java.util.List;

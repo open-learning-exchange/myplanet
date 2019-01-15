@@ -7,10 +7,10 @@ import android.preference.SwitchPreference;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 
+import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.R;
 
 public class SettingActivity extends AppCompatActivity {
     @Override

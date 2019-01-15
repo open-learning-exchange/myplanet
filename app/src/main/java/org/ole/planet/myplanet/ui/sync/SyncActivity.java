@@ -19,12 +19,12 @@ import com.github.kittinunf.fuel.core.Handler;
 import com.github.kittinunf.fuel.core.Request;
 import com.github.kittinunf.fuel.core.Response;
 
-import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 

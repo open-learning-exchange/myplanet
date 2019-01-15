@@ -13,10 +13,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;

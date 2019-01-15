@@ -14,10 +14,10 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
-import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

@@ -6,10 +6,10 @@ import android.content.SharedPreferences;
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
-import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;

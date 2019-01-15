@@ -14,11 +14,11 @@ import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.ole.planet.myplanet.model.RealmMyTeam;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 

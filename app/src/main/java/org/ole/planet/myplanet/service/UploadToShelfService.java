@@ -8,18 +8,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmMeetup;
-import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.model.RealmMyTeam;
-import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmRemovedLog;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 

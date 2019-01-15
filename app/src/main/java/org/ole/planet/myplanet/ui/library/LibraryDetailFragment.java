@@ -13,18 +13,15 @@ import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.model.RealmRemovedLog;
-import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.utilities.Constants;
-
 import org.ole.planet.myplanet.utilities.FileUtils;
-
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;

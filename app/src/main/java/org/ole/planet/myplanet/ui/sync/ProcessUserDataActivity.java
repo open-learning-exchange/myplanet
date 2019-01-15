@@ -20,10 +20,10 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.model.Download;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.base.PermissionActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.model.Download;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.utilities.DialogUtils;

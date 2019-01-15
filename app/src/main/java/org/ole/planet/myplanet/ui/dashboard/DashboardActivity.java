@@ -24,9 +24,10 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.MyCourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
@@ -34,7 +35,6 @@ import org.ole.planet.myplanet.ui.library.MyLibraryFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 
 import java.util.ArrayList;

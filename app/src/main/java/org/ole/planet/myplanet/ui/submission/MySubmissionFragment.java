@@ -17,11 +17,11 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.RadioButton;
 
+import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 
 import java.util.HashMap;

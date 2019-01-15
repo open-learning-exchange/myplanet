@@ -3,12 +3,12 @@ package org.ole.planet.myplanet.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;

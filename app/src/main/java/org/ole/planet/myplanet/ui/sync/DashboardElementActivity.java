@@ -8,10 +8,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
-import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.rating.RatingFragment;
 
 /**
  * Extra class for excess methods in DashboardActivity activities

@@ -15,19 +15,19 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.base.BaseContainerFragment;
-import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
-import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
+import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 

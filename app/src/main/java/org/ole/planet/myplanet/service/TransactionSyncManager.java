@@ -5,18 +5,18 @@ import android.content.SharedPreferences;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.model.DocumentResponse;
-import org.ole.planet.myplanet.model.RealmRating;
-import org.ole.planet.myplanet.model.RealmSubmission;
-import org.ole.planet.myplanet.model.Rows;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.model.RealmOfflineActivity;
-import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
+import org.ole.planet.myplanet.model.DocumentResponse;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmOfflineActivity;
+import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.model.Rows;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;

@@ -4,9 +4,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
+import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 
 import java.util.ArrayList;

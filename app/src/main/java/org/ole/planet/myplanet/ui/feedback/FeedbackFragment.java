@@ -12,11 +12,11 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
+import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMessage;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 

@@ -10,16 +10,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 

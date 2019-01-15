@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utilities;
 import android.content.SharedPreferences;
 
 import org.json.JSONObject;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.DataOutputStream;
 import java.net.HttpURLConnection;

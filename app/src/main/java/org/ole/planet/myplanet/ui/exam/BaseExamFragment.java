@@ -8,13 +8,13 @@ import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.widget.CompoundButton;
 
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmAnswer;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
+import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmExamQuestion;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 

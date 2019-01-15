@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utilities;
 import android.content.SharedPreferences;
 
 import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;

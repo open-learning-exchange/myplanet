@@ -15,11 +15,11 @@ import android.widget.TextView;
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 

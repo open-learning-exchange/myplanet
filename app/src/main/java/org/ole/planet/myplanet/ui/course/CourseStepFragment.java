@@ -10,19 +10,18 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmCourseStep;
+import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseContainerFragment;
-import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;

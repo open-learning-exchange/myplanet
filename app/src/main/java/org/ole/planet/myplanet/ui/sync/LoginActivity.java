@@ -21,10 +21,10 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 

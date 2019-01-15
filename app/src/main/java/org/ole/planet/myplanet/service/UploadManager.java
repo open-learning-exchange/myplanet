@@ -5,17 +5,17 @@ import android.text.TextUtils;
 
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.datamanager.ApiClient;
+import org.ole.planet.myplanet.datamanager.ApiInterface;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
-import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.callback.SuccessListener;
-import org.ole.planet.myplanet.datamanager.ApiClient;
-import org.ole.planet.myplanet.datamanager.ApiInterface;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 

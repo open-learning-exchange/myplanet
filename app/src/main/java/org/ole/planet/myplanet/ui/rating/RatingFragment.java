@@ -13,12 +13,12 @@ import android.widget.EditText;
 
 import com.google.gson.Gson;
 
-import org.ole.planet.myplanet.model.RealmRating;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;

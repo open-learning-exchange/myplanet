@@ -20,10 +20,10 @@ import android.widget.TextView;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmAnswer;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmSubmission;
-import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
