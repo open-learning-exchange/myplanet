@@ -4,10 +4,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
-import org.ole.planet.myplanet.Data.realm_meetups;
-import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.Data.realm_myTeams;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,10 +27,10 @@ public class Constants {
 
     static {
         shelfDataList = new ArrayList<>();
-        shelfDataList.add(new ShelfData("resourceIds", "resources", "resourceId", realm_myLibrary.class));
-        shelfDataList.add(new ShelfData("meetupIds", "meetups", "meetupId", realm_meetups.class));
-        shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", realm_myCourses.class));
-        shelfDataList.add(new ShelfData("myTeamIds", "teams", "teamId", realm_myTeams.class));
+        shelfDataList.add(new ShelfData("resourceIds", "resources", "resourceId", RealmMyLibrary.class));
+        shelfDataList.add(new ShelfData("meetupIds", "meetups", "meetupId", RealmMeetup.class));
+        shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", RealmMyCourse.class));
+        shelfDataList.add(new ShelfData("myTeamIds", "teams", "teamId", RealmMyTeam.class));
 
         betaList = new ArrayList<>();
         betaList.add(KEY_RATING);

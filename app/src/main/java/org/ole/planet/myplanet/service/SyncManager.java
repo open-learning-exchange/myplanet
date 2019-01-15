@@ -8,20 +8,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.Data.DocumentResponse;
-import org.ole.planet.myplanet.Data.Rows;
-import org.ole.planet.myplanet.Data.realm_meetups;
-import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.Data.realm_myTeams;
-import org.ole.planet.myplanet.Data.realm_resourceActivities;
+import org.ole.planet.myplanet.model.DocumentResponse;
+import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.Rows;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
@@ -112,7 +111,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "submissions");
             myLibraryTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "login_activities");
-            realm_resourceActivities.onSynced(mRealm, settings);
+            RealmResourceActivity.onSynced(mRealm, settings);
         } catch (Exception err) {
             err.printStackTrace();
             handleException(err.getMessage());
@@ -152,7 +151,7 @@ public class SyncManager {
             Utilities.log("Url " + Utilities.getUrl() + "/resources/_find");
             final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
             Response<JsonObject> a = allDocs.execute();
-            List<String> ids = realm_myLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
+            List<String> ids = RealmMyLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
             newIds.addAll(ids);
             if (a.body().size() < limit) {
                 break;
@@ -160,7 +159,7 @@ public class SyncManager {
                 skip = skip + limit;
             }
         }
-        realm_myLibrary.removeDeletedResource(newIds, mRealm);
+        RealmMyLibrary.removeDeletedResource(newIds, mRealm);
     }
 
 
@@ -221,9 +220,9 @@ public class SyncManager {
     private void checkEmptyAndSave(Class aClass, int x, JsonArray array_categoryIds) {
         List db_Categrory = null;
 
-        if (aClass == realm_myLibrary.class || aClass == realm_myCourses.class) {
+        if (aClass == RealmMyLibrary.class || aClass == RealmMyCourse.class) {
             db_Categrory =
-                    realm_myLibrary.getShelfItem(stringArray[0], mRealm.where(aClass)
+                    RealmMyLibrary.getShelfItem(stringArray[0], mRealm.where(aClass)
                             .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
                             .findAll(), aClass);
         } else {
@@ -255,16 +254,16 @@ public class SyncManager {
                                int x, JsonObject resourceDoc) {
         switch (stringArray[2]) {
             case "resources":
-                realm_myLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
+                RealmMyLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":
-                realm_meetups.insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                RealmMeetup.insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
                 break;
             case "courses":
-                realm_myCourses.insertMyCourses(stringArray[0], resourceDoc, mRealm);
+                RealmMyCourse.insertMyCourses(stringArray[0], resourceDoc, mRealm);
                 break;
             case "teams":
-                realm_myTeams.insertMyTeams(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                RealmMyTeam.insertMyTeams(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
                 break;
         }
     }

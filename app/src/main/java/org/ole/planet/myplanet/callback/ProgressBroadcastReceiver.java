@@ -4,9 +4,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import org.ole.planet.myplanet.Data.Download;
+import org.ole.planet.myplanet.model.Download;
 
-import static org.ole.planet.myplanet.Dashboard.MESSAGE_PROGRESS;
+import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 public class ProgressBroadcastReceiver extends BroadcastReceiver {
 
@@ -28,6 +28,5 @@ public class ProgressBroadcastReceiver extends BroadcastReceiver {
 
     public interface OnProgressChange {
         void onProgressChange(String s);
-
     }
 }

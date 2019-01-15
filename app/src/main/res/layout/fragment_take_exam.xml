@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryDark"
 
-    tools:context="org.ole.planet.myplanet.courses.exam.TakeExamFragment">
+    tools:context=".ui.exam.TakeExamFragment">
 
     <LinearLayout
         android:layout_width="match_parent"

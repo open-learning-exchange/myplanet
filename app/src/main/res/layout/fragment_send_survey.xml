@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:padding="@dimen/padding_normal"
     android:layout_height="match_parent"
-    tools:context=".survey.SendSurveyFragment">
+    tools:context=".ui.survey.SendSurveyFragment">
 
     <LinearLayout
         android:layout_width="match_parent"

@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.datamanager;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.Data.DocumentResponse;
-import org.ole.planet.myplanet.Data.MyPlanet;
+import org.ole.planet.myplanet.model.DocumentResponse;
+import org.ole.planet.myplanet.model.MyPlanet;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -25,10 +25,8 @@ public interface ApiInterface {
     @GET
     Call<DocumentResponse> getDocuments(@Header("Authorization") String header, @Url String url);
 
-
     @GET
     Call<JsonObject> getJsonObject(@Header("Authorization") String header, @Url String url);
-
 
     @POST
     Call<JsonObject> findDocs(@Header("Authorization") String header, @Header("Content-Type") String c, @Url String url, @Body JsonObject s);

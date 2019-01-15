@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context="org.ole.planet.myplanet.courses.CourseDetailFragment">
+    tools:context=".ui.course.CourseDetailFragment">
 
     <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"

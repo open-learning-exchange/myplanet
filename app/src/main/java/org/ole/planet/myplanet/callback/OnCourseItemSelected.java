@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.callback;
 
-import org.ole.planet.myplanet.Data.realm_myCourses;
+import org.ole.planet.myplanet.model.RealmMyCourse;
 
 import java.util.List;
 
 public interface OnCourseItemSelected {
-    void onSelectedListChange(List<realm_myCourses> list);
+    void onSelectedListChange(List<RealmMyCourse> list);
 }

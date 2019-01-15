@@ -8,14 +8,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.Data.realm_UserModel;
-import org.ole.planet.myplanet.Data.realm_meetups;
-import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.Data.realm_myTeams;
-import org.ole.planet.myplanet.Data.realm_removedLog;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.SyncActivity;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
@@ -53,8 +53,8 @@ public class UploadToShelfService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            RealmResults<realm_UserModel> users = realm.where(realm_UserModel.class).findAll();
-            for (realm_UserModel model : users) {
+            RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).findAll();
+            for (RealmUserModel model : users) {
                 try {
                     JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.getId()).execute().body();
                     JsonObject object = getShelfData(realm, model.getId(), jsonDoc);
@@ -74,13 +74,13 @@ public class UploadToShelfService {
 
 
     public JsonObject getShelfData(Realm realm, String userId, JsonObject jsonDoc) {
-        JsonArray myLibs = realm_myLibrary.getMyLibIds(realm, userId);
-        JsonArray myCourses = realm_myCourses.getMyCourseIds(realm, userId);
-        JsonArray myTeams = realm_myTeams.getMyTeamIds(realm, userId);
-        JsonArray myMeetups = realm_meetups.getMyMeetUpIds(realm, userId);
+        JsonArray myLibs = RealmMyLibrary.getMyLibIds(realm, userId);
+        JsonArray myCourses = RealmMyCourse.getMyCourseIds(realm, userId);
+        JsonArray myTeams = RealmMyTeam.getMyTeamIds(realm, userId);
+        JsonArray myMeetups = RealmMeetup.getMyMeetUpIds(realm, userId);
 
-        List<String> removedResources = Arrays.asList(realm_removedLog.removedIds(realm, "resources", userId));
-        List<String> removedCourses = Arrays.asList(realm_removedLog.removedIds(realm, "courses", userId));
+        List<String> removedResources = Arrays.asList(RealmRemovedLog.removedIds(realm, "resources", userId));
+        List<String> removedCourses = Arrays.asList(RealmRemovedLog.removedIds(realm, "courses", userId));
 
         JsonArray mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources);
         JsonArray mergedCoueseIds = mergeJsonArray(myCourses, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses);
@@ -105,8 +105,6 @@ public class UploadToShelfService {
                 array.add(e);
             }
         }
-
-
         return array;
     }
 }

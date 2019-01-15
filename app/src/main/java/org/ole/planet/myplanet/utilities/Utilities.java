@@ -14,7 +14,7 @@ import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
-import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
@@ -27,7 +27,7 @@ import java.util.List;
 import fisk.chipcloud.ChipCloudConfig;
 
 import static android.content.Context.MODE_PRIVATE;
-import static org.ole.planet.myplanet.SyncActivity.PREFS_NAME;
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
 
 public class Utilities {
@@ -38,7 +38,7 @@ public class Utilities {
     }
 
 
-    public static String getUrl(realm_myLibrary library, SharedPreferences settings) {
+    public static String getUrl(RealmMyLibrary library, SharedPreferences settings) {
         return getUrl(library.getResource_id(), library.getResourceLocalAddress(), settings);
 
     }
@@ -53,7 +53,6 @@ public class Utilities {
                 settings.getString("url_Host", "") + ":" +
                 settings.getInt("url_Port", 0) + "/";
     }
-
 
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
@@ -88,42 +87,6 @@ public class Utilities {
         }
         Toast.makeText(context, s, Toast.LENGTH_LONG).show();
     }
-
-//
-//    public static void showAlert(Context context, String link) {
-//        File file = Utilities.getSDPathFromUrl(link);
-//        Intent intent = new Intent(Intent.ACTION_VIEW);
-//        if (link.contains("pdf")) {
-//            intent.setDataAndType(Uri.fromFile(file), "application/pdf");
-//        } else if (link.contains("mp3")) {
-//            intent.setDataAndType(Uri.fromFile(file), "audio/*");
-//        } else if (isImage(link)) {
-//            intent.setDataAndType(Uri.fromFile(file), "image/*");
-//        } else if (isVideo(link)) {
-//            intent.setDataAndType(Uri.fromFile(file), "video*/*");
-//        }
-//        openIntent(context, intent);
-////        return null;
-//    }
-
-//    private static boolean isVideo(String link) {
-//        return link.contains(".mp4") || link.contains(".avi");
-//    }
-//
-//    private static boolean isImage(String link) {
-//        return link.contains(".jpg") || link.contains(".jpeg") || link.contains(".png");
-//    }
-
-//    private static void openIntent(Context context, Intent intent) {
-//        intent.putExtra(Intent.EXTRA_SUBJECT, "Open With ..");
-//        intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-//        Intent openInent = Intent.createChooser(intent, context.getString(R.string.app_name));
-//        try {
-//            context.startActivity(openInent);
-//        } catch (ActivityNotFoundException e) {
-//            Toast.makeText(context, "No File reader found. please download the reader from playstore", Toast.LENGTH_SHORT).show();
-//        }
-//    }
 
     public static ChipCloudConfig getCloudConfig() {
         return new ChipCloudConfig()
@@ -175,7 +138,7 @@ public class Utilities {
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String url = settings.getString("couchdbURL", "");
-        if (!url.endsWith("/db")){
+        if (!url.endsWith("/db")) {
             url += "/db";
         }
         return url;
@@ -183,7 +146,7 @@ public class Utilities {
 
     public static String getUpdateUrl(SharedPreferences settings) {
         String url = settings.getString("couchdbURL", "");
-        if (url.endsWith("/db")){
+        if (url.endsWith("/db")) {
             url.replace("/db", "");
         }
         return url + "/versions";
