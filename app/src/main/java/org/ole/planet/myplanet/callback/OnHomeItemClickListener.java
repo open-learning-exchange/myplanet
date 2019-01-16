@@ -2,15 +2,15 @@ package org.ole.planet.myplanet.callback;
 
 import android.support.v4.app.Fragment;
 
-import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.Data.realm_stepExam;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmStepExam;
 
 public interface OnHomeItemClickListener {
     void openCallFragment(Fragment f);
 
-    void openLibraryDetailFragment(realm_myLibrary library);
+    void openLibraryDetailFragment(RealmMyLibrary library);
 
     void showRatingDialog(String resource, String resource_id, String title, OnRatingChangeListener listener);
 
-    void sendSurvey(realm_stepExam current);
+    void sendSurvey(RealmStepExam current);
 }

@@ -26,7 +26,7 @@
         android:theme="@style/MyMaterialTheme"
         tools:replace="android:label">
         <activity
-            android:name=".LoginActivity"
+            android:name=".ui.sync.LoginActivity"
             android:configChanges="orientation|keyboardHidden|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,21 +34,21 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Dashboard"
+            android:name=".ui.dashboard.DashboardActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/title_activity_dashboard"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".PDFReaderActivity" />
+        <activity android:name=".ui.viewer.PDFReaderActivity" />
 
         <service android:name=".datamanager.MyDownloadService" />
 
-        <activity android:name=".VideoPlayerActivity" />
-        <activity android:name=".ImageViewerActivity" />
-        <activity android:name=".TextFileViewerActivity" />
-        <activity android:name=".MarkdownViewerActivity" />
-        <activity android:name=".CSVViewerActivity" />
+        <activity android:name=".ui.viewer.VideoPlayerActivity" />
+        <activity android:name=".ui.viewer.ImageViewerActivity" />
+        <activity android:name=".ui.viewer.TextFileViewerActivity" />
+        <activity android:name=".ui.viewer.MarkdownViewerActivity" />
+        <activity android:name=".ui.viewer.CSVViewerActivity" />
         <activity
-            android:name=".userprofile.SettingActivity"
+            android:name=".ui.SettingActivity"
             android:theme="@style/AppTheme" />
 
         <provider

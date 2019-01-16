@@ -19,17 +19,17 @@ import android.widget.Toast;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.CSVViewerActivity;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.ImageViewerActivity;
-import org.ole.planet.myplanet.MarkdownViewerActivity;
-import org.ole.planet.myplanet.PDFReaderActivity;
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.TextFileViewerActivity;
-import org.ole.planet.myplanet.VideoPlayerActivity;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.courses.AdapterCourses;
-import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.course.AdapterCourses;
+import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity;
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
+import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity;
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity;
+import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity;
+import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -70,14 +70,14 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
     }
 
-    public void openIntent(realm_myLibrary items, Class typeClass) {
+    public void openIntent(RealmMyLibrary items, Class typeClass) {
         Intent fileOpenIntent = new Intent(getActivity(), typeClass);
         fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
         startActivity(fileOpenIntent);
     }
 
 
-    public void openResource(realm_myLibrary items) {
+    public void openResource(RealmMyLibrary items) {
         if (items.getResourceOffline() != null && items.getResourceOffline()) {
             openFileType(items, "offline");
         } else if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
@@ -90,7 +90,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     }
 
 
-    public void checkFileExtension(realm_myLibrary items) {
+    public void checkFileExtension(RealmMyLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
         String extension = filenameArray[filenameArray.length - 1];
         switch (extension) {
@@ -112,7 +112,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
     }
 
-    public void checkMoreFileExtensions(String extension, realm_myLibrary items) {
+    public void checkMoreFileExtensions(String extension, RealmMyLibrary items) {
         switch (extension) {
             case "txt":
                 openIntent(items, TextFileViewerActivity.class);
@@ -130,7 +130,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
     }
 
-    public void openFileType(final realm_myLibrary items, String videotype) {
+    public void openFileType(final RealmMyLibrary items, String videotype) {
         if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
             playVideo(videotype, items);
         } else {
@@ -139,7 +139,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     }
 
 
-    public void playVideo(String videoType, final realm_myLibrary items) {
+    public void playVideo(String videoType, final RealmMyLibrary items) {
         Intent intent = new Intent(getActivity(), VideoPlayerActivity.class);
         Bundle bundle = new Bundle();
         bundle.putString("videoType", videoType);
@@ -155,21 +155,21 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         startActivity(intent);
     }
 
-    public void showResourceList(List<realm_myLibrary> downloadedResources) {
+    public void showResourceList(List<RealmMyLibrary> downloadedResources) {
 
         AlertDialog.Builder builderSingle = new AlertDialog.Builder(getActivity());
         builderSingle.setTitle("Select resource to open : ");
 
-        final ArrayAdapter<realm_myLibrary> arrayAdapter = new ArrayAdapter<realm_myLibrary>(getActivity(), android.R.layout.select_dialog_item, downloadedResources);
+        final ArrayAdapter<RealmMyLibrary> arrayAdapter = new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.select_dialog_item, downloadedResources);
         builderSingle.setAdapter(arrayAdapter, (dialogInterface, i) -> {
-            realm_myLibrary library = arrayAdapter.getItem(i);
+            RealmMyLibrary library = arrayAdapter.getItem(i);
             openResource(library);
         });
         builderSingle.setNegativeButton("Dismiss", null).show();
 
     }
 
-    public void setOpenResourceButton(List<realm_myLibrary> downloadedResources, Button btnOpen) {
+    public void setOpenResourceButton(List<RealmMyLibrary> downloadedResources, Button btnOpen) {
         if (downloadedResources == null || downloadedResources.size() == 0) {
             btnOpen.setVisibility(View.GONE);
         } else {

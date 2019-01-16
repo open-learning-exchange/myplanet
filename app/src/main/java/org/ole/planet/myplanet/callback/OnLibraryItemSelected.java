@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.callback;
 
-import org.ole.planet.myplanet.Data.realm_myLibrary;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 
 import java.util.List;
 
 public interface OnLibraryItemSelected {
-    void onSelectedListChange(List<realm_myLibrary> list);
+    void onSelectedListChange(List<RealmMyLibrary> list);
     void onTagClicked(String text);
 }

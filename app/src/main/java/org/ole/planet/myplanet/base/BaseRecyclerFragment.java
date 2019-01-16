@@ -9,15 +9,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import org.ole.planet.myplanet.Data.realm_UserModel;
-import org.ole.planet.myplanet.Data.realm_myCourses;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
-import org.ole.planet.myplanet.Data.realm_removedLog;
-import org.ole.planet.myplanet.Data.realm_stepExam;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.userprofile.UserProfileDbHandler;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmRemovedLog;
+import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public Realm mRealm;
     public DatabaseService realmService;
     public UserProfileDbHandler profileDbHandler;
-    public realm_UserModel model;
+    public RealmUserModel model;
     public RecyclerView recyclerView;
     TextView tvMessage;
     List<LI> list;
@@ -77,15 +77,15 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public void addToMyList() {
         for (int i = 0; i < selectedItems.size(); i++) {
             RealmObject object = (RealmObject) selectedItems.get(i);
-            if (object instanceof realm_myLibrary) {
-                realm_myLibrary myObject = mRealm.where(realm_myLibrary.class).equalTo("resourceId", ((realm_myLibrary) object).getResource_id()).findFirst();
-                realm_myLibrary.createFromResource(myObject, mRealm, model.getId());
-                realm_removedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
+            if (object instanceof RealmMyLibrary) {
+                RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
+                RealmMyLibrary.createFromResource(myObject, mRealm, model.getId());
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
                 Utilities.toast(getActivity(), "Added to my library");
             } else {
-                realm_myCourses myObject = realm_myCourses.getMyCourse(mRealm, ((realm_myCourses) object).getCourseId());
-                realm_myCourses.createMyCourse(myObject, mRealm, model.getId());
-                realm_removedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().getId(), myObject.getCourseId());
+                RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
+                RealmMyCourse.createMyCourse(myObject, mRealm, model.getId());
+                RealmRemovedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().getId(), myObject.getCourseId());
                 Utilities.toast(getActivity(), "Added to my courses");
                 recyclerView.setAdapter(getAdapter());
             }
@@ -103,17 +103,17 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         if (s.isEmpty()) {
             return getList(c);
         }
-        return mRealm.where(c).contains(c == realm_myLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        return mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
     }
 
-    public List<realm_myLibrary> filterByTag(String[] tags) {
-        List<realm_myLibrary> list = (List<realm_myLibrary>) getList(realm_myLibrary.class);
+    public List<RealmMyLibrary> filterByTag(String[] tags) {
+        List<RealmMyLibrary> list = (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         if (tags.length == 0) {
             return list;
         }
         Arrays.sort(tags);
-        RealmList<realm_myLibrary> libraries = new RealmList<>();
-        for (realm_myLibrary library : list) {
+        RealmList<RealmMyLibrary> libraries = new RealmList<>();
+        for (RealmMyLibrary library : list) {
             if (filter(tags, library)) {
                 libraries.add(library);
             }
@@ -122,7 +122,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
 
     }
 
-    private boolean filter(String[] tags, realm_myLibrary library) {
+    private boolean filter(String[] tags, RealmMyLibrary library) {
         boolean contains = true;
         for (String s : tags) {
             if (!library.getTag().contains(s)) {
@@ -135,7 +135,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
 
 
     public List<LI> getList(Class c) {
-        if (c == realm_stepExam.class) {
+        if (c == RealmStepExam.class) {
             return mRealm.where(c).equalTo("type", "surveys").findAll();
         } else {
             return mRealm.where(c).findAll();

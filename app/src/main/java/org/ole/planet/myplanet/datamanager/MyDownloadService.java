@@ -10,11 +10,11 @@ import android.content.SharedPreferences;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 
-import org.ole.planet.myplanet.Dashboard;
-import org.ole.planet.myplanet.Data.Download;
-import org.ole.planet.myplanet.Data.realm_myLibrary;
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.SyncActivity;
+import org.ole.planet.myplanet.model.Download;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -105,10 +105,6 @@ public class MyDownloadService extends IntentService {
         stopSelf();
     }
 
-//    public String getHeader() {
-//        return "Basic " + Base64.encodeToString((preferences.getString("url_user", "") + ":" +
-//                preferences.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
-//    }
 
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();
@@ -165,7 +161,7 @@ public class MyDownloadService extends IntentService {
     }
 
     private void sendIntent(Download download) {
-        Intent intent = new Intent(Dashboard.MESSAGE_PROGRESS);
+        Intent intent = new Intent(DashboardActivity.MESSAGE_PROGRESS);
         intent.putExtra("download", download);
         LocalBroadcastManager.getInstance(MyDownloadService.this).sendBroadcast(intent);
     }
@@ -205,7 +201,7 @@ public class MyDownloadService extends IntentService {
     private void changeOfflineStatus() {
         final String currentFileName = FileUtils.getFileNameFromUrl(url);
         mRealm.executeTransaction(realm -> {
-            realm_myLibrary obj = realm.where(realm_myLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
+            RealmMyLibrary obj = realm.where(RealmMyLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
             if (obj != null) {
                 obj.setResourceOffline(true);
             }else{

@@ -5,8 +5,8 @@ import android.content.SharedPreferences;
 
 import com.google.gson.Gson;
 
-import org.ole.planet.myplanet.Data.MyPlanet;
-import org.ole.planet.myplanet.SyncActivity;
+import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 

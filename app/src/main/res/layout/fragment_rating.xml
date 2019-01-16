@@ -6,7 +6,7 @@
     android:layout_gravity="center"
     android:foregroundGravity="center"
     android:orientation="vertical"
-    tools:context=".base.RatingFragment">
+    tools:context=".ui.rating.RatingFragment">
 
     <TextView
         android:layout_width="match_parent"
