@@ -149,14 +149,10 @@ public class UploadManager {
             logs = realm.where(RealmApkLog.class).isNull("_rev").findAll();
             for (RealmApkLog act : logs) {
                 try {
-                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/apk_logs", RealmApkLog.serialize(act)).execute().body();
-                    if (object != null) {
-                        act.set_rev(JsonUtils.getString("_rev", object));
-                    }
+                    JsonObject o = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/apk_logs", RealmApkLog.serialize(act)).execute().body();
+                    if (o != null) act.set_rev(JsonUtils.getString("_rev", o));
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
-
             }
         });
     }

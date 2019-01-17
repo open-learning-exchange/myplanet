@@ -54,24 +54,23 @@ public class RealmApkLog extends RealmObject {
     }
 
     public void setError(Throwable e) {
-        StackTraceElement[] arr = e.getStackTrace();
-        String report = e.toString() + "\n\n";
-        report += "--------- Stack trace ---------\n\n";
-        for (int i = 0; i < arr.length; i++) {
-            report += "    " + arr[i].toString() + "\n";
-        }
-        report += "-------------------------------\n\n";
-        report += "--------- Cause ---------\n\n";
+
+        this.error += "--------- Stack trace ---------\n\n";
+        appendReport(e);
+        this.error += "--------- Cause ---------\n\n";
         Throwable cause = e.getCause();
+        appendReport(cause);
+    }
+
+    private void appendReport(Throwable cause) {
         if (cause != null) {
-            report += cause.toString() + "\n\n";
-            arr = cause.getStackTrace();
+            this.error += cause.toString() + "\n\n";
+            StackTraceElement[] arr = cause.getStackTrace();
             for (int i = 0; i < arr.length; i++) {
-                report += "    " + arr[i].toString() + "\n";
+                this.error += "    " + arr[i].toString() + "\n";
             }
         }
-        report += "-------------------------------\n\n";
-        this.error = report;
+        this.error += "-------------------------------\n\n";
     }
 
     public String getPage() {
