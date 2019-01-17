@@ -56,7 +56,7 @@ public class Utilities {
 
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
-        return getServerUrl(settings) + "_users/" + userId + "/" + imageName;
+        return getUrl() + "/_users/" + userId + "/" + imageName;
     }
 
     public static String currentDate() {
