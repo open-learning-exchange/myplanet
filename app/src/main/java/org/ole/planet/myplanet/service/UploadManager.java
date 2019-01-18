@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
@@ -135,6 +136,22 @@ public class UploadManager {
                     }
 
                 } catch (Exception e) {
+                }
+            }
+        });
+    }
+
+    public void uploadCrashLog() {
+        mRealm = dbService.getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm.executeTransactionAsync(realm -> {
+            RealmResults<RealmApkLog> logs;
+            logs = realm.where(RealmApkLog.class).isNull("_rev").findAll();
+            for (RealmApkLog act : logs) {
+                try {
+                    JsonObject o = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/apk_logs", RealmApkLog.serialize(act)).execute().body();
+                    if (o != null) act.set_rev(JsonUtils.getString("_rev", o));
+                } catch (IOException e) {
                 }
             }
         });

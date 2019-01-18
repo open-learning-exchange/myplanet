@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -15,10 +16,16 @@ import com.firebase.jobdispatcher.Lifetime;
 import com.firebase.jobdispatcher.RetryStrategy;
 import com.firebase.jobdispatcher.Trigger;
 
+import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.UUID;
+
+import io.realm.Realm;
 
 public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
     public static FirebaseJobDispatcher dispatcher;
@@ -50,6 +57,7 @@ public class MainApplication extends Application implements Application.Activity
         } else {
             dispatcher.cancelAll();
         }
+        Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
     }
 
@@ -100,4 +108,24 @@ public class MainApplication extends Application implements Application.Activity
         Utilities.log("Destroyed ");
         NotificationUtil.cancellAll(this);
     }
+
+
+    public void handleUncaughtException(Throwable e) {
+        e.printStackTrace();
+        Utilities.log("Handle exception " + e.getMessage());
+        DatabaseService service = new DatabaseService(this);
+        Realm mRealm = service.getRealmInstance();
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
+        log.setPage("");
+        log.setType(RealmApkLog.ERROR_TYPE_CRASH);
+        log.setError(e);
+        mRealm.commitTransaction();
+        Intent homeIntent = new Intent(Intent.ACTION_MAIN);
+        homeIntent.addCategory(Intent.CATEGORY_HOME);
+        homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        startActivity(homeIntent);
+    }
+
 }
