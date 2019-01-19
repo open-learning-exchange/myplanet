@@ -46,6 +46,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    public List<RealmMyCourse> getCourseList() {
+        return courseList;
+    }
+
     public void setProgressMap(HashMap<String, JsonObject> progressMap) {
         this.progressMap = progressMap;
     }

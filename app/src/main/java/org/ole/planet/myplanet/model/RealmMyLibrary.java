@@ -95,7 +95,7 @@ public class RealmMyLibrary extends RealmObject {
         String[] ids = new String[list.size()];
         int i = 0;
         for (RealmMyLibrary library : list
-                ) {
+        ) {
             ids[i] = (library.getResource_id());
             i++;
         }
@@ -105,7 +105,7 @@ public class RealmMyLibrary extends RealmObject {
     public static void removeDeletedResource(List<String> newIds, Realm mRealm) {
         String[] ids = getIds(mRealm);
         for (String id : ids
-                ) {
+        ) {
             if (!newIds.contains(id)) {
                 mRealm.where(RealmMyLibrary.class).equalTo("resourceId", id).findAll().deleteAllFromRealm();
             }
@@ -580,7 +580,7 @@ public class RealmMyLibrary extends RealmObject {
         List<RealmMyLibrary> myLibraries = getMyLibraryByUserId(userId, realm.where(RealmMyLibrary.class).findAll());
         JsonArray ids = new JsonArray();
         for (RealmMyLibrary lib : myLibraries
-                ) {
+        ) {
             ids.add(lib.getId());
         }
         return ids;
