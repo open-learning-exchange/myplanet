@@ -131,7 +131,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             openResource(library);
         });
         boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
-        remove.setText(isAdd ? "Add To My Library" : "Remove");
+        remove.setText(isAdd ? "Add To My Library" : "Remove from myLibrary");
         remove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
