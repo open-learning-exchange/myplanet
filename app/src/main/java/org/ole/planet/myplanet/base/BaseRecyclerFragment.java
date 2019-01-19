@@ -107,7 +107,6 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     }
 
     public List<RealmMyLibrary> filterByTag(String[] tags, String s) {
-        // List<RealmMyLibrary> list = (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         if (tags.length == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
@@ -118,15 +117,12 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         Arrays.sort(tags);
         RealmList<RealmMyLibrary> libraries = new RealmList<>();
         for (RealmMyLibrary library : list) {
-            if (filter(tags, library)) {
-                libraries.add(library);
-            }
+            filter(tags, library, libraries);
         }
         return libraries;
-
     }
 
-    private boolean filter(String[] tags, RealmMyLibrary library) {
+    private void filter(String[] tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
         boolean contains = true;
         for (String s : tags) {
             if (!library.getTag().toString().toLowerCase().contains(s.toLowerCase())) {
@@ -134,7 +130,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
                 break;
             }
         }
-        return contains;
+        if (contains)
+            libraries.add(library);
     }
 
 
