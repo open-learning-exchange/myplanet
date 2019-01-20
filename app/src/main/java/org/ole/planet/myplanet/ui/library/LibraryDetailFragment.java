@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.library;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -23,6 +24,8 @@ import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.Arrays;
 
 import io.realm.Realm;
 
@@ -87,11 +90,11 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
         llRating = v.findViewById(R.id.ll_rating);
-        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE :View.GONE );
+        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
         average = v.findViewById(R.id.average);
-        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE :View.GONE );
+        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
         tv_rating = v.findViewById(R.id.tv_rating);
-        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE :View.GONE );
+        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
         v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
         initRatingView(v);
     }
@@ -114,7 +117,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
         download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
-        if(FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")){
+        if (FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")) {
             download.setText("Open Video");
         }
         setClickListeners();
