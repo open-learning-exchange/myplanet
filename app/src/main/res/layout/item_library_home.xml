@@ -19,7 +19,8 @@
         android:layout_height="match_parent"
         android:id="@+id/title"
         android:text="text"
+        android:layout_gravity="center"
         android:padding="@dimen/padding_normal"
         android:textColor="@color/dialog_sync_labels"
-        android:gravity="center_horizontal" />
+        android:gravity="center" />
 </LinearLayout>
