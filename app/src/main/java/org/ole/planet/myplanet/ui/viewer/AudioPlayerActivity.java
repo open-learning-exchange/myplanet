@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.viewer;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.MenuItem;
 
 import com.example.jean.jcplayer.JcPlayerManagerListener;
 import com.example.jean.jcplayer.general.JcStatus;
@@ -12,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerManagerListener {
@@ -26,10 +28,18 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
         String filePath = getIntent().getStringExtra("TOUCHED_FILE");
         // String title = getIntent().getStringExtra("title");
         jcAudios = new ArrayList<>();
-        jcAudios.add(JcAudio.createFromFilePath(filePath));
-        jcplayer.initPlaylist(jcAudios, this);
+        Utilities.log("File " + String.valueOf(new File(Utilities.SD_PATH, filePath)));
+        jcAudios.add(JcAudio.createFromFilePath(String.valueOf(new File(Utilities.SD_PATH, filePath))));
+        jcplayer.initPlaylist(jcAudios, null);
 
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home){
+            finish();
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

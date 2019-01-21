@@ -127,6 +127,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
                 break;
             case "mp3":
                 openIntent(items, AudioPlayerActivity.class);
+                break;
             default:
                 Toast.makeText(getActivity(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
                 break;

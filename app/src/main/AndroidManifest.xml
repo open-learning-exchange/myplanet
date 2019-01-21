@@ -28,7 +28,8 @@
         android:supportsRtl="true"
         android:theme="@style/MyMaterialTheme"
         tools:replace="android:label">
-        <activity android:name=".ui.viewer.AudioPlayerActivity"></activity>
+        <activity android:name=".ui.viewer.AudioPlayerActivity"
+            ></activity>
         <activity
             android:name=".ui.sync.LoginActivity"
             android:configChanges="orientation|keyboardHidden|screenSize">
