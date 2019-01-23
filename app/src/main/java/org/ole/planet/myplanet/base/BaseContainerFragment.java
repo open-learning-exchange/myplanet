@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity;
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity;
@@ -106,6 +107,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
                 break;
             case "mp4":
                 playVideo("offline", items);
+                break;
             default:
                 checkMoreFileExtensions(extension, items);
                 break;
@@ -122,6 +124,9 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
                 break;
             case "csv":
                 openIntent(items, CSVViewerActivity.class);
+                break;
+            case "mp3":
+                openIntent(items, AudioPlayerActivity.class);
                 break;
             default:
                 Toast.makeText(getActivity(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
