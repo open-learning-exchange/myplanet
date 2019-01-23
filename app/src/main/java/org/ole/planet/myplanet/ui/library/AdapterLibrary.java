@@ -46,6 +46,10 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.ratingChangeListener = ratingChangeListener;
     }
 
+    public List<RealmMyLibrary> getLibraryList() {
+        return libraryList;
+    }
+
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap) {
         this.ratingMap = ratingMap;
         this.context = context;
