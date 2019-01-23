@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
@@ -12,6 +13,9 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.io.File;
 
 /**
  * Extra class for excess methods in DashboardActivity activities
@@ -25,7 +29,9 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
+
     }
+
 
 
     @Override
@@ -62,10 +68,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
         f.setListener(listener);
         f.show(getSupportFragmentManager(), "");
     }
-
-
-
-
 
 
 }

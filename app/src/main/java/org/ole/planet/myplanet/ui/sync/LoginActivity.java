@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -27,6 +28,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.io.File;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
@@ -72,6 +75,18 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         registerReceiver();
     }
 
+    private void clearInternalStorage() {
+        File myDir = new File(Utilities.SD_PATH);
+        if (myDir.isDirectory()) {
+            String[] children = myDir.list();
+            for (int i = 0; i < children.length; i++) {
+                new File(myDir, children[i]).delete();
+            }
+        }
+        Utilities.log("Cleared storage");
+        settings.edit().putBoolean("firstRun", false).commit();
+    }
+
 
     public void declareElements() {
         //Settings button
@@ -90,6 +105,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (TextUtils.isEmpty(processedUrl)) return;
         isUpload = false;
         isSync = true;
+        if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
+            clearInternalStorage();
+        }
         new Service(this).checkVersion(this, settings);
     }
 
