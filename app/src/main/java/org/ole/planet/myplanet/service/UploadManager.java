@@ -120,34 +120,32 @@ public class UploadManager {
 
     public void uploadRating(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();
-        Utilities.log("Upload rating");
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
             final RealmResults<RealmRating> activities = realm.where(RealmRating.class).equalTo("isUpdated", true).findAll();
             for (RealmRating act : activities) {
                 try {
-                    Response<JsonObject> object;
-                    if (TextUtils.isEmpty(act.get_id())) {
-                        Utilities.log("JSON " + RealmRating.serializeRating(act));
-                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
-                    } else {
-                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
-                    }
-
+                    Response<JsonObject> object = getRatingUploadResponse(act, apiInterface);
                     if (object.body() != null) {
                         act.set_id(JsonUtils.getString("_id", object.body()));
                         act.set_rev(JsonUtils.getString("_rev", object.body()));
                         act.setUpdated(false);
-                    }else{
-                        Utilities.log("Upload rating failed " + new Gson().toJson(object));
                     }
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
     }
+
+    private Response<JsonObject> getRatingUploadResponse(RealmRating act, ApiInterface apiInterface) {
+        if (TextUtils.isEmpty(act.get_id())) {
+            return apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
+        } else {
+            return apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
+        }
+    }
+
 
     public void uploadCrashLog() {
         mRealm = dbService.getRealmInstance();
