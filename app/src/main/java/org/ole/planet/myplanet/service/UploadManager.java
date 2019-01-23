@@ -125,7 +125,13 @@ public class UploadManager {
             final RealmResults<RealmRating> activities = realm.where(RealmRating.class).equalTo("isUpdated", true).findAll();
             for (RealmRating act : activities) {
                 try {
-                    Response<JsonObject> object = getRatingUploadResponse(act, apiInterface);
+                    Response<JsonObject> object;
+                    if (TextUtils.isEmpty(act.get_id())) {
+                        Utilities.log("JSON " + RealmRating.serializeRating(act));
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
+                    } else {
+                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
+                    }
                     if (object.body() != null) {
                         act.set_id(JsonUtils.getString("_id", object.body()));
                         act.set_rev(JsonUtils.getString("_rev", object.body()));
@@ -137,15 +143,6 @@ public class UploadManager {
             }
         });
     }
-
-    private Response<JsonObject> getRatingUploadResponse(RealmRating act, ApiInterface apiInterface) {
-        if (TextUtils.isEmpty(act.get_id())) {
-            return apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
-        } else {
-            return apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
-        }
-    }
-
 
     public void uploadCrashLog() {
         mRealm = dbService.getRealmInstance();
