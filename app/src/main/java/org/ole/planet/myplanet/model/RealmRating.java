@@ -170,8 +170,10 @@ public class RealmRating extends RealmObject {
 
     public static JsonObject serializeRating(RealmRating realm_rating) {
         JsonObject ob = new JsonObject();
+        if (realm_rating.get_id()!=null)
         ob.addProperty("_id", realm_rating.get_id());
-        ob.addProperty("_rev", realm_rating.get_rev());
+        if (realm_rating.get_rev()!=null)
+            ob.addProperty("_rev", realm_rating.get_rev());
         ob.add("user", new Gson().fromJson(realm_rating.getUser(), JsonObject.class));
         ob.addProperty("item", realm_rating.getItem());
         ob.addProperty("type", realm_rating.getType());

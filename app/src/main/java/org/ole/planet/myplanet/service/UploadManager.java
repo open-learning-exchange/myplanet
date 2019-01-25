@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service;
 import android.content.Context;
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -25,6 +26,7 @@ import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import retrofit2.Response;
 
 public class UploadManager {
     private DatabaseService dbService;
@@ -123,19 +125,20 @@ public class UploadManager {
             final RealmResults<RealmRating> activities = realm.where(RealmRating.class).equalTo("isUpdated", true).findAll();
             for (RealmRating act : activities) {
                 try {
-                    JsonObject object;
+                    Response<JsonObject> object;
                     if (TextUtils.isEmpty(act.get_id())) {
-                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute().body();
+                        Utilities.log("JSON " + RealmRating.serializeRating(act));
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
                     } else {
-                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute().body();
+                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
                     }
-                    if (object != null) {
-                        act.set_id(JsonUtils.getString("_id", object));
-                        act.set_rev(JsonUtils.getString("_rev", object));
+                    if (object.body() != null) {
+                        act.set_id(JsonUtils.getString("_id", object.body()));
+                        act.set_rev(JsonUtils.getString("_rev", object.body()));
                         act.setUpdated(false);
                     }
-
                 } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         });
