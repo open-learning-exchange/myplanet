@@ -64,20 +64,19 @@ public class MyLibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> impl
     }
 
 
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay);
         tvAddToLib = getView().findViewById(R.id.tv_add_to_lib);
         tvDelete = getView().findViewById(R.id.tv_delete);
-        tvDelete.setVisibility(Constants.showBetaFeature(Constants.KEY_DELETE, getActivity()) ? View.VISIBLE :View.GONE );
+        tvDelete.setVisibility(Constants.showBetaFeature(Constants.KEY_DELETE, getActivity()) ? View.VISIBLE : View.GONE);
         etSearch = getView().findViewById(R.id.et_search);
         etTags = getView().findViewById(R.id.et_tags);
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         tvAddToLib.setOnClickListener(view -> addToMyList());
-        imgSearch.setOnClickListener(view -> adapterLibrary.setLibraryList(search(etSearch.getText().toString(), RealmMyLibrary.class)));
+        imgSearch.setOnClickListener(view -> adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString())));
         etTags.addTextChangedListener(this);
     }
 
@@ -96,7 +95,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> impl
         if (!searchTags.contains(text) && !text.isEmpty())
             searchTags.add(text);
         chipCloud.addChips(searchTags);
-        adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()])));
+        adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString()));
 
     }
 
@@ -108,7 +107,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> impl
     @Override
     public void chipDeleted(int i, String s) {
         searchTags.remove(i);
-        adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()])));
+        adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString()));
 
     }
 
