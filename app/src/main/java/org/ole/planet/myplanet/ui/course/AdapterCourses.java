@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -18,7 +19,10 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.ui.library.AdapterLibrary;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -35,6 +39,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> map;
     private HashMap<String, JsonObject> progressMap;
+    private OnRatingChangeListener ratingChangeListener;
 
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
@@ -44,6 +49,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
+    }
+
+    public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
+        this.ratingChangeListener = ratingChangeListener;
     }
 
     public List<RealmMyCourse> getCourseList() {
@@ -82,6 +91,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (courseList.get(position) != null) {
                 ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
             }
+
+            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
+                ((ViewHoldercourse) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(),ratingChangeListener ));
+            } else {
+                ((ViewHoldercourse) holder).llRating.setOnClickListener(null);
+            }
+
             ((ViewHoldercourse) holder).checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) {
                     Utilities.handleCheck(b, position, (ArrayList) selectedItems, courseList);
@@ -114,7 +130,9 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
         average.setText(String.format("%.2f", object.get("averageRating").getAsFloat()));
         ratingCount.setText(object.get("total").getAsInt() + " total");
-        ratingBar.setRating(object.get("averageRating").getAsFloat());
+        if (object.has("ratingByUser"))
+            ratingBar.setRating(object.get("ratingByUser").getAsInt());
+        else ratingBar.setRating(0);
     }
 
     private void openCourse(RealmMyCourse realm_myCourses) {
@@ -137,6 +155,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         SeekBar progressBar;
+        LinearLayout llRating;
 
         public ViewHoldercourse(View itemView) {
             super(itemView);
@@ -148,6 +167,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ratingBar = itemView.findViewById(R.id.rating_bar);
             subject_level = itemView.findViewById(R.id.subject_level);
             checkBox = itemView.findViewById(R.id.checkbox);
+            llRating = itemView.findViewById(R.id.ll_rating);
             progressBar = itemView.findViewById(R.id.course_progress);
             itemView.setOnClickListener(view -> openCourse(courseList.get(getAdapterPosition())));
         }

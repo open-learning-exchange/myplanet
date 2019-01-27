@@ -90,8 +90,11 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
-
-            ((ViewHolderLibrary) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle(), ratingChangeListener));
+            if(Constants.showBetaFeature(Constants.KEY_RATING, context)){
+                ((ViewHolderLibrary) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle(), ratingChangeListener));
+            }else{
+                ((ViewHolderLibrary) holder).llRating.setOnClickListener(null);
+            }
 
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
                 JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
@@ -145,10 +148,10 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ratingBar = itemView.findViewById(R.id.rating_bar);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
-            llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+           // llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             average = itemView.findViewById(R.id.average);
-            average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
-            rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+           // average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+           // rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) {
                     Utilities.handleCheck(b, getAdapterPosition(), (ArrayList) selectedItems, libraryList);

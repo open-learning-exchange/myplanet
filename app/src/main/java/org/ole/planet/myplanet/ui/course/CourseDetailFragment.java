@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
@@ -40,6 +42,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     DatabaseService dbService;
     Realm mRealm;
     RealmMyCourse courses;
+    RealmUserModel user;
     String id;
     Button btnResources, btnOpen;
 
@@ -63,6 +66,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        user = new UserProfileDbHandler(getActivity()).getUserModel();
         initView(v);
         return v;
     }
@@ -116,7 +120,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.getCourseId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.getCourseId(), user.getId());
         setRatings(object);
     }
 
