@@ -144,7 +144,7 @@ public class UploadManager {
         });
     }
 
-    public void uploadCrashLog() {
+    public void uploadCrashLog(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
@@ -157,7 +157,7 @@ public class UploadManager {
                 } catch (IOException e) {
                 }
             }
-        });
+        }, () -> listener.onSuccess("Crash log uploaded."));
     }
 
     public void uploadResourceActivities(String type) {

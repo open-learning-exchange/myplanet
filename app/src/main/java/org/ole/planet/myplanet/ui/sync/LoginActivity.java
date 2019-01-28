@@ -198,6 +198,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onSuccess(String s) {
+        if (progressDialog.isShowing() && s.contains("Crash"))
+            progressDialog.dismiss();
         DialogUtils.showSnack(btnSignIn, s);
     }
 
