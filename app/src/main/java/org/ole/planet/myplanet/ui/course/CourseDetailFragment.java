@@ -26,9 +26,9 @@ import org.ole.planet.myplanet.utilities.Constants;
 import java.util.List;
 
 import br.tiagohm.markdownview.MarkdownView;
-import br.tiagohm.markdownview.css.styles.Github;
 import io.realm.Realm;
 import io.realm.RealmResults;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -95,7 +95,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         method.setText(courses.getMethod());
         gradeLevel.setText(courses.getGradeLevel());
         language.setText(courses.getLanguageOfInstruction());
-        description.addStyleSheet(new Github());
         description.loadMarkdown(courses.getDescription());
         noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class)
