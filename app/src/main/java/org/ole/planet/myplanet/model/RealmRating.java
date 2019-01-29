@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.SharedPreferences;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -42,18 +44,18 @@ public class RealmRating extends RealmObject {
 
     private String user;
 
-    public static HashMap<String, JsonObject> getRatings(Realm mRealm, String type) {
+    public static HashMap<String, JsonObject> getRatings(Realm mRealm, String type, String userId) {
         RealmResults<RealmRating> r = mRealm.where(RealmRating.class).equalTo("type", type).findAll();
         HashMap<String, JsonObject> map = new HashMap<>();
         for (RealmRating rating : r) {
-            JsonObject object = getRatingsById(mRealm, rating.getType(), rating.getItem());
+            JsonObject object = getRatingsById(mRealm, rating.getType(), rating.getItem(),  userId);
             if (object != null)
                 map.put(rating.getItem(), object);
         }
         return map;
     }
 
-    public static JsonObject getRatingsById(Realm mRealm, String type, String id) {
+    public static JsonObject getRatingsById(Realm mRealm, String type, String id, String userid) {
         RealmResults<RealmRating> r = mRealm.where(RealmRating.class).equalTo("type", type).equalTo("item", id).findAll();
         if (r.size() == 0) {
             return null;
@@ -62,6 +64,10 @@ public class RealmRating extends RealmObject {
         int totalRating = 0;
         for (RealmRating rating : r) {
             totalRating += rating.getRate();
+        }
+        RealmRating ratingObject = mRealm.where(RealmRating.class).equalTo("type", type).equalTo("userId", userid).equalTo("item", id).findFirst();
+        if (ratingObject!=null){
+            object.addProperty("ratingByUser", ratingObject.rate);
         }
         object.addProperty("averageRating", (float) totalRating / r.size());
         object.addProperty("total", r.size());

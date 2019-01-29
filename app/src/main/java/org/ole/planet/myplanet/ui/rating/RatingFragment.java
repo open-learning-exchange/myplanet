@@ -39,8 +39,7 @@ public class RatingFragment extends DialogFragment {
     EditText etComment;
     SharedPreferences settings;
     OnRatingChangeListener listener;
-
-
+    RealmRating previousRating;
     public void setListener(OnRatingChangeListener listener) {
         this.listener = listener;
     }
@@ -80,6 +79,7 @@ public class RatingFragment extends DialogFragment {
         ratingBar = v.findViewById(R.id.rating_bar);
         databaseService = new DatabaseService(getActivity());
         mRealm = databaseService.getRealmInstance();
+
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         return v;
     }
@@ -87,6 +87,13 @@ public class RatingFragment extends DialogFragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        model = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", ""))
+                .findFirst();
+        previousRating =   mRealm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
+        if (previousRating!=null){
+            ratingBar.setRating(previousRating.getRate());
+            etComment.setText(previousRating.getComment());
+        }
         cancel.setOnClickListener(view -> dismiss());
         submit.setOnClickListener(view -> saveRating());
     }
@@ -95,7 +102,6 @@ public class RatingFragment extends DialogFragment {
         final String comment = etComment.getText().toString();
         float rating = ratingBar.getRating();
         mRealm.executeTransactionAsync(realm -> {
-            Utilities.log("User id " + settings.getString("userId", "") );
             RealmRating ratingObject = realm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
             if (ratingObject == null)
                 ratingObject = realm.createObject(RealmRating.class, UUID.randomUUID().toString());
