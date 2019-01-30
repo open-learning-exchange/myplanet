@@ -186,24 +186,6 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:orientation="vertical"
-                    android:layout_height="wrap_content">
-
-                    <TextView
-                        style="@style/HeaderText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Description : " />
-
-                    <br.tiagohm.markdownview.MarkdownView
-                        android:id="@+id/description"
-                        app:escapeHtml="false"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"/>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
                     <TextView
@@ -219,6 +201,26 @@
                         android:padding="@dimen/padding_normal" />
 
                 </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:orientation="horizontal"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        style="@style/HeaderText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:text="Description : " />
+
+                    <br.tiagohm.markdownview.MarkdownView
+                        android:id="@+id/description"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:escapeHtml="false" />
+                </LinearLayout>
+
+
 
             </LinearLayout>
         </LinearLayout>

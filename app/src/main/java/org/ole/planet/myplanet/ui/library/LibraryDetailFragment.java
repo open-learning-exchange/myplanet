@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -37,6 +39,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     DatabaseService dbService;
     Realm mRealm;
     RealmMyLibrary library;
+    RealmUserModel userModel;
 
     public LibraryDetailFragment() {
     }
@@ -62,6 +65,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         View v = inflater.inflate(R.layout.fragment_library_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        userModel = new UserProfileDbHandler(getActivity()).getUserModel();
         Utilities.log("Library id " + libraryId);
         initView(v);
         return v;
@@ -153,7 +157,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.getResource_id());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.getResource_id(), userModel.getId());
         setRatings(object);
     }
 }

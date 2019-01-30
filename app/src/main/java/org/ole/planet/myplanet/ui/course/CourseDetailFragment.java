@@ -21,14 +21,16 @@ import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
 
 import br.tiagohm.markdownview.MarkdownView;
-import br.tiagohm.markdownview.css.styles.Github;
 import io.realm.Realm;
 import io.realm.RealmResults;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -40,6 +42,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     DatabaseService dbService;
     Realm mRealm;
     RealmMyCourse courses;
+    RealmUserModel user;
     String id;
     Button btnResources, btnOpen;
 
@@ -63,6 +66,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        user = new UserProfileDbHandler(getActivity()).getUserModel();
         initView(v);
         return v;
     }
@@ -95,7 +99,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         method.setText(courses.getMethod());
         gradeLevel.setText(courses.getGradeLevel());
         language.setText(courses.getLanguageOfInstruction());
-        description.addStyleSheet(new Github());
         description.loadMarkdown(courses.getDescription());
         noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class)
@@ -116,7 +119,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.getCourseId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.getCourseId(), user.getId());
         setRatings(object);
     }
 

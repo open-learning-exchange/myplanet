@@ -55,7 +55,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> impl
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource");
+        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
         adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
