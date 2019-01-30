@@ -91,12 +91,10 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
 
-            ((ViewHolderLibrary) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(position).getResource_id(), libraryList.get(position).getTitle(), ratingChangeListener));
-
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
                 JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
                 AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);
-            }else{
+            } else {
                 ((ViewHolderLibrary) holder).ratingBar.setRating(0);
             }
         }
@@ -145,16 +143,21 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ratingBar = itemView.findViewById(R.id.rating_bar);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
-            llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+            // llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             average = itemView.findViewById(R.id.average);
-            average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
-            rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+            // average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
+            // rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) {
                     Utilities.handleCheck(b, getAdapterPosition(), (ArrayList) selectedItems, libraryList);
                     listener.onSelectedListChange(selectedItems);
                 }
             });
+            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
+                llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
+            } else {
+                llRating.setOnClickListener(null);
+            }
             flexboxDrawable = itemView.findViewById(R.id.flexbox_drawable);
         }
     }
