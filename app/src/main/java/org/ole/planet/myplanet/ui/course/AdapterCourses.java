@@ -39,6 +39,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> map;
     private HashMap<String, JsonObject> progressMap;
+    private boolean isMyCourse;
     private OnRatingChangeListener ratingChangeListener;
 
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
@@ -150,6 +151,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return courseList.size();
     }
 
+    public void setIsMyCourse(boolean isMyCourseLib) {
+        this.isMyCourse = isMyCourseLib;
+    }
+
     class ViewHoldercourse extends RecyclerView.ViewHolder {
         TextView title, desc, grad_level, subject_level, ratingCount, average;
         CheckBox checkBox;
@@ -169,6 +174,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
             progressBar = itemView.findViewById(R.id.course_progress);
+            checkBox.setVisibility(isMyCourse ? View.GONE : View.VISIBLE);
             itemView.setOnClickListener(view -> openCourse(courseList.get(getAdapterPosition())));
         }
     }

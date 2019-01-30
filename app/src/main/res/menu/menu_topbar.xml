@@ -15,6 +15,17 @@
         android:icon="@drawable/courses"
         android:title="@string/menu_courses" />
 
+    <!--<item-->
+        <!--android:id="@+id/menu_mylibrary"-->
+        <!--android:icon="@drawable/library"-->
+        <!--android:title="@string/txt_myLibrary" />-->
+
+
+    <!--<item-->
+        <!--android:id="@+id/menu_mycourses"-->
+        <!--android:icon="@drawable/courses"-->
+        <!--android:title="@string/txt_myCourses" />-->
+
     <item
         android:id="@+id/menu_survey"
         android:icon="@drawable/survey"
