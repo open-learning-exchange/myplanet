@@ -197,10 +197,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
         return new IDrawerItem[]{
                 changeUX(R.string.menu_myplanet, menuImageList.get(0)),
-                changeUX(R.string.menu_library, menuImageList.get(1)),
-                changeUX(R.string.menu_courses, menuImageList.get(3)),
-                changeUX(R.string.txt_myLibrary, menuImageList.get(2)),
-                changeUX(R.string.txt_myCourses, menuImageList.get(4)),
+                changeUX(R.string.txt_myLibrary, menuImageList.get(1)),
+                changeUX(R.string.txt_myCourses, menuImageList.get(2)),
+                changeUX(R.string.menu_library, menuImageList.get(3)),
+                changeUX(R.string.menu_courses, menuImageList.get(4)),
                 changeUX(R.string.menu_meetups, menuImageList.get(5))
                         .withSelectable(false)
                         .withDisabledIconColor(getResources().getColor(R.color.disable_color))
