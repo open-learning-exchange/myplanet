@@ -59,13 +59,6 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
             isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
         }
     }
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
-        }
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
