@@ -24,8 +24,8 @@
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">My Planet</string>
     <string name="menu_home">Home</string>
-    <string name="menu_library">Library</string>
-    <string name="menu_courses">Courses</string>
+    <string name="menu_library">Our Library</string>
+    <string name="menu_courses">Our Courses</string>
     <string name="menu_meetups">Meetups</string>
     <string name="menu_surveys">Surveys</string>
     <string name="menu_logout">Logout</string>
@@ -65,7 +65,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.2.42</string>
+    <string name="app_version">0.2.44</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>

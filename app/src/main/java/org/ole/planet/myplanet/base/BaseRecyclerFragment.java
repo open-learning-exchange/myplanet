@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.base;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -43,6 +44,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public RecyclerView recyclerView;
     TextView tvMessage;
     List<LI> list;
+    public boolean isMyCourseLib;
 
     public BaseRecyclerFragment() {
     }
@@ -52,12 +54,22 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public abstract RecyclerView.Adapter getAdapter();
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
+        }
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(getLayout(), container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         recyclerView = v.findViewById(R.id.recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        if (v.findViewById(R.id.ll_actions) != null)
+            v.findViewById(R.id.ll_actions).setVisibility(isMyCourseLib ? View.GONE : View.VISIBLE);
         tvMessage = v.findViewById(R.id.tv_message);
         selectedItems = new ArrayList<>();
         list = new ArrayList<>();
@@ -138,6 +150,8 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public List<LI> getList(Class c) {
         if (c == RealmStepExam.class) {
             return mRealm.where(c).equalTo("type", "surveys").findAll();
+        } else if (isMyCourseLib) {
+            return c == RealmMyLibrary.class ? RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll()) : RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
         } else {
             return mRealm.where(c).findAll();
         }
