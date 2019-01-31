@@ -189,10 +189,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private IDrawerItem[] getDrawerItems() {
         ArrayList<Drawable> menuImageList = new ArrayList<>();
         menuImageList.add(getResources().getDrawable(R.drawable.myplanet));
-        menuImageList.add(getResources().getDrawable(R.drawable.library));
-        menuImageList.add(getResources().getDrawable(R.drawable.courses));
-        menuImageList.add(getResources().getDrawable(R.drawable.library));
-        menuImageList.add(getResources().getDrawable(R.drawable.courses));
+        menuImageList.add(getResources().getDrawable(R.drawable.mylibrary));
+        menuImageList.add(getResources().getDrawable(R.drawable.mycourses));
+        menuImageList.add(getResources().getDrawable(R.drawable.ourlibrary));
+        menuImageList.add(getResources().getDrawable(R.drawable.ourcourses));
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
         return new IDrawerItem[]{
