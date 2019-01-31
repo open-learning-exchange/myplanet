@@ -34,7 +34,7 @@ import fisk.chipcloud.ChipDeletedListener;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyLibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TextWatcher {
+public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TextWatcher {
 
     TextView tvAddToLib, tvDelete;
 
@@ -45,8 +45,10 @@ public class MyLibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> impl
     List<String> searchTags;
     ChipCloudConfig config;
 
-    public MyLibraryFragment() {
+    public LibraryFragment() {
     }
+
+
 
     @Override
     public int getLayout() {
@@ -57,6 +59,7 @@ public class MyLibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> impl
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
         adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map);
+        adapterLibrary.setIsMyLibrary(isMyCourseLib);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList();

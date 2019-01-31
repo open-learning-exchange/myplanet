@@ -28,14 +28,15 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.course.MyCourseFragment;
+import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
-import org.ole.planet.myplanet.ui.library.MyLibraryFragment;
+import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 
@@ -98,9 +99,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .addStickyDrawerItems(getDrawerItemsFooter())
                 .withOnDrawerItemClickListener((view, position, drawerItem) -> {
                     if (drawerItem != null) {
-                        if (drawerItem instanceof Nameable) {
+                       // if (drawerItem instanceof Nameable) {
                             menuAction(((Nameable) drawerItem).getName().getTextRes());
-                        }
+                     //   }
                     }
                     return false;
                 })
@@ -114,15 +115,22 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 openCallFragment(new DashboardFragment());
                 break;
             case R.string.menu_library:
-                openCallFragment(new MyLibraryFragment());
+                openCallFragment(new LibraryFragment());
                 break;
             case R.string.menu_meetups:
                 break;
             case R.string.menu_surveys:
+                Utilities.log("Clicked surveys");
                 openCallFragment(new SurveyFragment());
                 break;
             case R.string.menu_courses:
-                openCallFragment(new MyCourseFragment());
+                openCallFragment(new CourseFragment());
+                break;
+            case R.string.txt_myLibrary:
+                openMyFragment(new LibraryFragment());
+                break;
+            case R.string.txt_myCourses:
+                openMyFragment(new CourseFragment());
                 break;
             case R.string.menu_feedback:
                 new FeedbackFragment().show(getSupportFragmentManager(), "");
@@ -132,7 +140,15 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 break;
             default:
                 openCallFragment(new DashboardFragment());
+                break;
         }
+    }
+
+    private void openMyFragment(Fragment f) {
+        Bundle b = new Bundle();
+        b.putBoolean("isMyCourseLib", true);
+        f.setArguments(b);
+        openCallFragment(f, "shelf");
     }
 
 
@@ -142,11 +158,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         profileDbHandler.onDestory();
     }
 
-
     @Override
-    public void openCallFragment(Fragment newfragment) {
+    public void openCallFragment(Fragment f) {
+        openCallFragment(f, "");
+    }
+
+    public void openCallFragment(Fragment newfragment, String tag) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_container, newfragment);
+        fragmentTransaction.replace(R.id.fragment_container, newfragment, tag);
         getSupportFragmentManager().addOnBackStackChangedListener(this);
         fragmentTransaction.addToBackStack("");
         fragmentTransaction.commit();
@@ -178,17 +197,21 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.myplanet));
         menuImageList.add(getResources().getDrawable(R.drawable.library));
         menuImageList.add(getResources().getDrawable(R.drawable.courses));
+        menuImageList.add(getResources().getDrawable(R.drawable.library));
+        menuImageList.add(getResources().getDrawable(R.drawable.courses));
         menuImageList.add(getResources().getDrawable(R.drawable.meetups));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
         return new IDrawerItem[]{
                 changeUX(R.string.menu_myplanet, menuImageList.get(0)),
-                changeUX(R.string.menu_library, menuImageList.get(1)),
-                changeUX(R.string.menu_courses, menuImageList.get(2)),
-                changeUX(R.string.menu_meetups, menuImageList.get(3))
+                changeUX(R.string.txt_myLibrary, menuImageList.get(1)),
+                changeUX(R.string.txt_myCourses, menuImageList.get(2)),
+                changeUX(R.string.menu_library, menuImageList.get(3)),
+                changeUX(R.string.menu_courses, menuImageList.get(4)),
+                changeUX(R.string.menu_meetups, menuImageList.get(5))
                         .withSelectable(false)
                         .withDisabledIconColor(getResources().getColor(R.color.disable_color))
                         .withDisabledTextColor(getResources().getColor(R.color.disable_color)),
-                changeUX(R.string.menu_surveys, menuImageList.get(4)),
+                changeUX(R.string.menu_surveys, menuImageList.get(6)),
         };
     }
 
@@ -229,11 +252,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.menu_library) {
-            openCallFragment(new MyLibraryFragment());
+            openCallFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_courses) {
-            openCallFragment(new MyCourseFragment());
-        } else if (item.getItemId() == R.id.menu_survey) {
-            openCallFragment(new SurveyFragment());
+            openCallFragment(new CourseFragment());
+        } else if (item.getItemId() == R.id.menu_mycourses) {
+            openMyFragment(new CourseFragment());
+        } else if (item.getItemId() == R.id.menu_mylibrary) {
+            openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
         }
@@ -243,16 +268,22 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     @Override
     public void onBackStackChanged() {
-
         Fragment f = (getSupportFragmentManager()).findFragmentById(R.id.fragment_container);
-        if (f instanceof MyCourseFragment) {
-            navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
-        } else if (f instanceof MyLibraryFragment) {
-            navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
+        String fragmentTag = f.getTag();
+        if (f instanceof CourseFragment) {
+            if ("shelf".equals(fragmentTag))
+                navigationView.getMenu().findItem(R.id.menu_mycourses).setChecked(true);
+            else
+                navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
+        } else if (f instanceof LibraryFragment) {
+            if ("shelf".equals(fragmentTag))
+                navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
+            else
+                navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
         } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
         } else if (f instanceof SurveyFragment) {
-            navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
+            // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
 
     }

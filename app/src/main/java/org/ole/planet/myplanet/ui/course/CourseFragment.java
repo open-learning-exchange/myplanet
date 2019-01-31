@@ -26,15 +26,14 @@ import java.util.List;
  * A simple {@link Fragment} subclass.
  */
 
-public class MyCourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected {
+public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected {
 
     TextView tvAddToLib;
 
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
-
-    public MyCourseFragment() {
+    public CourseFragment() {
     }
 
     @Override
@@ -48,6 +47,7 @@ public class MyCourseFragment extends BaseRecyclerFragment<RealmMyCourse> implem
         HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.getId());
         adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map);
         adapterCourses.setProgressMap(progressMap);
+        adapterCourses.setIsMyCourse(isMyCourseLib);
         adapterCourses.setListener(this);
         adapterCourses.setRatingChangeListener(this);
         return adapterCourses;
