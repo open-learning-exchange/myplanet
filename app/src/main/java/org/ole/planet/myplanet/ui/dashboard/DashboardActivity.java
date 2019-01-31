@@ -249,8 +249,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             openCallFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_courses) {
             openCallFragment(new CourseFragment());
-        } else if (item.getItemId() == R.id.menu_survey) {
-            openCallFragment(new SurveyFragment());
+        } else if (item.getItemId() == R.id.menu_mycourses) {
+            openMyFragment(new CourseFragment());
+        } else if (item.getItemId() == R.id.menu_mylibrary) {
+            openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment(new DashboardFragment());
         }
@@ -264,12 +266,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         Fragment f = (getSupportFragmentManager()).findFragmentById(R.id.fragment_container);
         if (f instanceof CourseFragment) {
             navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
+            navigationView.getMenu().findItem(R.id.menu_mycourses).setChecked(true);
         } else if (f instanceof LibraryFragment) {
             navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
+            navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
         } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
-        } else if (f instanceof SurveyFragment) {
-            navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
+        //} else if (f instanceof SurveyFragment) {
+        //    navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
 
     }
