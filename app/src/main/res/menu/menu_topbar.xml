@@ -8,19 +8,19 @@
         android:title="@string/menu_home" />
     <item
         android:id="@+id/menu_mylibrary"
-        android:icon="@drawable/library"
+        android:icon="@drawable/mylibrary"
         android:title="@string/txt_myLibrary" />
     <item
         android:id="@+id/menu_mycourses"
-        android:icon="@drawable/courses"
+        android:icon="@drawable/mycourses"
         android:title="@string/txt_myCourses" />
     <item
         android:id="@+id/menu_library"
-        android:icon="@drawable/library"
+        android:icon="@drawable/ourlibrary"
         android:title="@string/menu_library" />
     <item
         android:id="@+id/menu_courses"
-        android:icon="@drawable/courses"
+        android:icon="@drawable/ourcourses"
         android:title="@string/menu_courses" />
 
    <!-- <item

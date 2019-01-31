@@ -52,11 +52,10 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public abstract int getLayout();
 
     public abstract RecyclerView.Adapter getAdapter();
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
+        if(getArguments()!=null){
             isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
         }
     }
