@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 
@@ -98,9 +99,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .addStickyDrawerItems(getDrawerItemsFooter())
                 .withOnDrawerItemClickListener((view, position, drawerItem) -> {
                     if (drawerItem != null) {
-                        if (drawerItem instanceof Nameable) {
+                       // if (drawerItem instanceof Nameable) {
                             menuAction(((Nameable) drawerItem).getName().getTextRes());
-                        }
+                     //   }
                     }
                     return false;
                 })
@@ -119,6 +120,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.menu_meetups:
                 break;
             case R.string.menu_surveys:
+                Utilities.log("Clicked surveys");
                 openCallFragment(new SurveyFragment());
                 break;
             case R.string.menu_courses:
@@ -138,6 +140,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 break;
             default:
                 openCallFragment(new DashboardFragment());
+                break;
         }
     }
 
