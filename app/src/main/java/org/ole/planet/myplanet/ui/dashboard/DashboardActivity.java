@@ -272,8 +272,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
         } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
-        //} else if (f instanceof SurveyFragment) {
-        //    navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
+        } else if (f instanceof SurveyFragment) {
+           // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
 
     }
