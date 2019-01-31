@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.viewer;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.example.jean.jcplayer.JcPlayerManagerListener;
 import com.example.jean.jcplayer.general.JcStatus;
@@ -31,7 +32,9 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
         Utilities.log("File " + String.valueOf(new File(Utilities.SD_PATH, filePath)));
         jcAudios.add(JcAudio.createFromFilePath(String.valueOf(new File(Utilities.SD_PATH, filePath))));
         jcplayer.initPlaylist(jcAudios, null);
-
+        jcplayer.getRootView().findViewById(R.id.btnNext).setVisibility(View.GONE);
+        jcplayer.getRootView().findViewById(R.id.btnPrev).setVisibility(View.GONE);
+        jcplayer.getRootView().findViewById(R.id.btnRepeatOne).setVisibility(View.GONE);
     }
 
     @Override
