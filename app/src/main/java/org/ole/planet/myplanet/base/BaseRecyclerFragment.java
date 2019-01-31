@@ -60,13 +60,22 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         }
     }
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
+        }
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(getLayout(), container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         recyclerView = v.findViewById(R.id.recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        v.findViewById(R.id.ll_actions).setVisibility(isMyCourseLib ? View.GONE: View.VISIBLE);
+        if (v.findViewById(R.id.ll_actions) != null)
+            v.findViewById(R.id.ll_actions).setVisibility(isMyCourseLib ? View.GONE : View.VISIBLE);
         tvMessage = v.findViewById(R.id.tv_message);
         selectedItems = new ArrayList<>();
         list = new ArrayList<>();
