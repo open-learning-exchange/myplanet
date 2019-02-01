@@ -108,7 +108,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     private void setCourseData() {
         tvStepTitle.setText(currentCourse.getCourseTitle());
-        btnAddRemove.setText(!currentCourse.getUserId().contains(userModel.getId()) ? "Add To My Courses" : "Leave");
+        btnAddRemove.setText(!currentCourse.getUserId().contains(userModel.getId()) ? getString(R.string.add_to_mycourses) : getString(R.string.leave));
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
@@ -196,7 +196,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             currentCourse.setUserId(userModel.getId());
             RealmRemovedLog.onAdd(mRealm, "courses", userModel.getId(), courseId);
         }
-        Utilities.toast(getActivity(), "Course " + (currentCourse.getUserId().contains(userModel.getId()) ? " added to" : " removed from ") + " my courses");
+        Utilities.toast(getActivity(), "Course " + (currentCourse.getUserId().contains(userModel.getId()) ? getString(R.string.added_to) : getString(R.string.removed_from)) + getString(R.string.my_courses));
         setCourseData();
     }
 
