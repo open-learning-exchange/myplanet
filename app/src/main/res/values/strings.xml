@@ -107,7 +107,6 @@
         <item>Advanced</item>
         <item>Expert</item>
     </string-array>
-
     <string-array name="language">
         <item></item>
         <item>English</item>
