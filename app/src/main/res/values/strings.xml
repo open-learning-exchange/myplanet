@@ -65,7 +65,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.2.46</string>
+    <string name="app_version">0.2.47</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -92,6 +92,7 @@
     <string name="your_rating">Your Rating</string>
     <string name="your_comment">Leave your comment</string>
     <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
+    <string name="remove_selected">Remove Selected</string>
     <string name="dismiss">Finish</string>
     <string name="stop_download">Stop Download</string>
     <string name="downloading_file">Downloading file...</string>

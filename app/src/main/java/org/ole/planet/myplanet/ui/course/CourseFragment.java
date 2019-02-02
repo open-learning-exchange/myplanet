@@ -33,6 +33,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
+
     public CourseFragment() {
     }
 
@@ -47,7 +48,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.getId());
         adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map);
         adapterCourses.setProgressMap(progressMap);
-        adapterCourses.setIsMyCourse(isMyCourseLib);
         adapterCourses.setListener(this);
         adapterCourses.setRatingChangeListener(this);
         return adapterCourses;
@@ -56,7 +56,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        tvAddToLib = getView().findViewById(R.id.tv_add_to_course);
+        tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> addToMyList());
         etSearch = getView().findViewById(R.id.et_search);
         getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);

@@ -145,7 +145,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             if (isAdd) {
                 library.setUserId(profileDbHandler.getUserModel().getId());
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
-
             } else {
                 library.removeUserId(profileDbHandler.getUserModel().getId());
                 RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
