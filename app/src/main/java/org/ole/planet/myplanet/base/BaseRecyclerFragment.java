@@ -115,21 +115,22 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
             RealmObject object = (RealmObject) selectedItems.get(i);
-            if (object instanceof RealmMyLibrary) {
-                RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
-                myObject.removeUserId(model.getId());
-                RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
-                Utilities.toast(getActivity(), "Removed from myLibrary");
-            } else {
-                RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
-                myObject.removeUserId(model.getId());
-                RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
-                Utilities.toast(getActivity(), "Removed from myCourse");
-
-            }
+            removeFromShelf(object);
             recyclerView.setAdapter(getAdapter());
+        }
+    }
 
-//            mRealm.commitTransaction();
+    private void removeFromShelf(RealmObject object) {
+        if (object instanceof RealmMyLibrary) {
+            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
+            myObject.removeUserId(model.getId());
+            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
+            Utilities.toast(getActivity(), "Removed from myLibrary");
+        } else {
+            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
+            myObject.removeUserId(model.getId());
+            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
+            Utilities.toast(getActivity(), "Removed from myCourse");
         }
     }
 
