@@ -41,7 +41,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> ratingMap;
     private OnRatingChangeListener ratingChangeListener;
-    private boolean isMyLibrary;
     public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
         this.ratingChangeListener = ratingChangeListener;
     }
@@ -127,10 +126,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return libraryList.size();
     }
 
-    public void setIsMyLibrary(boolean isMyCourseLib) {
-        this.isMyLibrary = isMyCourseLib;
-    }
-
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
         TextView title, desc, rating, timesRated, average;
         CheckBox checkBox;
@@ -162,7 +157,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             } else {
                 llRating.setOnClickListener(null);
             }
-            checkBox.setVisibility(isMyLibrary ? View.GONE : View.VISIBLE);
             flexboxDrawable = itemView.findViewById(R.id.flexbox_drawable);
         }
     }

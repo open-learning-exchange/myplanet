@@ -45,6 +45,7 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     TextView tvMessage;
     List<LI> list;
     public boolean isMyCourseLib;
+    public TextView tvDelete;
 
     public BaseRecyclerFragment() {
     }
@@ -52,10 +53,11 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
     public abstract int getLayout();
 
     public abstract RecyclerView.Adapter getAdapter();
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if(getArguments()!=null){
+        if (getArguments() != null) {
             isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
         }
     }
@@ -67,8 +69,13 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         recyclerView = v.findViewById(R.id.recycler);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        if (v.findViewById(R.id.ll_actions) != null)
-            v.findViewById(R.id.ll_actions).setVisibility(isMyCourseLib ? View.GONE : View.VISIBLE);
+        if (isMyCourseLib) {
+            tvDelete = v.findViewById(R.id.tv_delete);
+            tvDelete.setVisibility(View.VISIBLE);
+            tvDelete.setOnClickListener(view -> deleteSelected());
+            if (v.findViewById(R.id.tv_add) != null)
+                v.findViewById(R.id.tv_add).setVisibility(View.GONE);
+        }
         tvMessage = v.findViewById(R.id.tv_message);
         selectedItems = new ArrayList<>();
         list = new ArrayList<>();
@@ -100,6 +107,29 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
                 Utilities.toast(getActivity(), "Added to my courses");
                 recyclerView.setAdapter(getAdapter());
             }
+        }
+    }
+
+    public void deleteSelected() {
+        for (int i = 0; i < selectedItems.size(); i++) {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            RealmObject object = (RealmObject) selectedItems.get(i);
+            if (object instanceof RealmMyLibrary) {
+                RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
+                myObject.removeUserId(model.getId());
+                RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
+                Utilities.toast(getActivity(), "Removed from myLibrary");
+            } else {
+                RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
+                myObject.removeUserId(model.getId());
+                RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
+                Utilities.toast(getActivity(), "Removed from myCourse");
+
+            }
+            recyclerView.setAdapter(getAdapter());
+
+//            mRealm.commitTransaction();
         }
     }
 
