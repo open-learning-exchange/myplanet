@@ -44,7 +44,7 @@
                 android:drawableStart="@drawable/ic_delete"
                 android:visibility="gone"
                 android:gravity="center"
-                android:text="@string/leave_selected"
+                android:text="@string/remove_selected"
                 android:textColor="@drawable/tv_color"
                 android:textSize="@dimen/text_size_mid" />
         </LinearLayout>
