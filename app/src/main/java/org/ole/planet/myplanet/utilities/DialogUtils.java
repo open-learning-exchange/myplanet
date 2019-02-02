@@ -10,6 +10,7 @@ import android.support.v7.app.AlertDialog;
 import android.view.View;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
 
 import java.util.ArrayList;
@@ -19,17 +20,17 @@ public class DialogUtils {
 
     public static ProgressDialog getProgressDialog(final Context context) {
         final ProgressDialog prgDialog = new ProgressDialog(context);
-        prgDialog.setTitle("Downloading file...");
+        prgDialog.setTitle(context.getString(R.string.downloading_file));
         prgDialog.setMax(100);
         prgDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         prgDialog.setCancelable(false);
-        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Dismiss", new DialogInterface.OnClickListener() {
+        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.dismiss), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 prgDialog.dismiss();
             }
         });
-        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, "Stop Download", new DialogInterface.OnClickListener() {
+        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.stop_download), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 context.stopService(new Intent(context, MyDownloadService.class));
@@ -64,7 +65,7 @@ public class DialogUtils {
                     Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                     context.startActivity(intent);
                 }
-            }).setNegativeButton("Cancel", null);
+            }).setNegativeButton(context.getString(R.string.cancel), null);
             pd.setCancelable(false);
             AlertDialog d = pd.create();
 //            d.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
@@ -81,7 +82,7 @@ public class DialogUtils {
         new AlertDialog.Builder(context)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("Dismiss", null)
+                .setPositiveButton(R.string.dismiss, null)
                 .show();
     }
 

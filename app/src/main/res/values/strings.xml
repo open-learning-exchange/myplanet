@@ -38,7 +38,7 @@
     <string name="title_activity_pdfreader">PDFReaderActivity</string>
     <string name="button_submit">Submit</string>
     <string name="button_cancel">Cancel</string>
-    <string name="download_suggestion">Following Files are not downloaded. Do you want to download them?</string>
+    <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
     <string name="download_selected">Download Selected</string>
     <string name="txt_cancel">Cancel</string>
     <string name="download_all">Download All</string>
@@ -55,7 +55,7 @@
     <string name="submit_new_entry">Submit New Entry</string>
     <string name="your_ans">Your Answer</string>
     <string name="version">Version</string>
-    <string name="leave">Leave</string>
+    <string name="leave">Opt-Out of Course</string>
     <string name="invite_member">Invite Member</string>
     <string name="is_urgent">Is your feedback Urgent?</string>
     <string name="feedback_type">Feedback Type :</string>
@@ -65,7 +65,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.2.45</string>
+    <string name="app_version">0.2.46</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -93,6 +93,14 @@
     <string name="your_comment">Leave your comment</string>
     <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
     <string name="leave_selected">Leave Selected</string>
+    <string name="dismiss">Finish</string>
+    <string name="stop_download">Stop Download</string>
+    <string name="downloading_file">Downloading file...</string>
+    <string name="cancel">Cancel</string>
+    <string name="add_to_mycourses">Add To My Courses</string>
+    <string name="added_to">added to</string>
+    <string name="removed_from">removed from</string>
+    <string name="my_courses">my courses</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -100,7 +108,6 @@
         <item>Advanced</item>
         <item>Expert</item>
     </string-array>
-
     <string-array name="language">
         <item></item>
         <item>English</item>
