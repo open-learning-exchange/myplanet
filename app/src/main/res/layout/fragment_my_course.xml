@@ -43,7 +43,7 @@
                 android:drawableStart="@drawable/ic_delete"
                 android:gravity="center"
                 android:visibility="gone"
-                android:text="@string/leave_selected"
+                android:text="@string/remove_selected"
                 android:textColor="@drawable/tv_color"
                 android:textSize="@dimen/text_size_mid" />
 
