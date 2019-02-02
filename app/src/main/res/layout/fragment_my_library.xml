@@ -20,7 +20,7 @@
             android:padding="@dimen/padding_large">
 
             <TextView
-                android:id="@+id/tv_add_to_lib"
+                android:id="@+id/tv_add"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -32,6 +32,7 @@
                 android:textColor="@drawable/tv_color"
                 android:textSize="@dimen/text_size_mid" />
 
+
             <TextView
                 android:id="@+id/tv_delete"
                 android:layout_width="wrap_content"
@@ -41,9 +42,9 @@
                 android:background="?attr/selectableItemBackground"
                 android:drawablePadding="4dp"
                 android:drawableStart="@drawable/ic_delete"
-                android:enabled="false"
+                android:visibility="gone"
                 android:gravity="center"
-                android:text="@string/delete"
+                android:text="@string/remove_selected"
                 android:textColor="@drawable/tv_color"
                 android:textSize="@dimen/text_size_mid" />
         </LinearLayout>
