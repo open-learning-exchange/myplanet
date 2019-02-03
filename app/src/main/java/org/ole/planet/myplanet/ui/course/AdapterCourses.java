@@ -110,22 +110,25 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     private void showProgressAndRating(int position, RecyclerView.ViewHolder holder) {
+        showProgress(position, holder);
+        if (map.containsKey(courseList.get(position).getCourseId())) {
+            JsonObject object = map.get(courseList.get(position).getCourseId());
+            showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
+        } else {
+            ((ViewHoldercourse) holder).ratingBar.setRating(0);
+        }
+    }
+
+    private void showProgress(int position, RecyclerView.ViewHolder holder) {
         if (progressMap.containsKey(courseList.get(position).getCourseId())) {
             JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
             ((ViewHoldercourse) holder).progressBar.setMax(JsonUtils.getInt("max", ob));
             ((ViewHoldercourse) holder).progressBar.setProgress(JsonUtils.getInt("current", ob));
             if (JsonUtils.getInt("current", ob) < JsonUtils.getInt("max", ob))
                 ((ViewHoldercourse) holder).progressBar.setSecondaryProgress(JsonUtils.getInt("current", ob) + 1);
-
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.VISIBLE);
         } else {
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.GONE);
-        }
-        if (map.containsKey(courseList.get(position).getCourseId())) {
-            JsonObject object = map.get(courseList.get(position).getCourseId());
-            showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
-        } else {
-            ((ViewHoldercourse) holder).ratingBar.setRating(0);
         }
     }
 

@@ -108,15 +108,20 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         }
 
         setCourseData();
+        setListeners();
+        mViewPager.setCurrentItem(position);
+
+    }
+
+    private void setListeners() {
         next.setOnClickListener(this);
         previous.setOnClickListener(this);
         btnAddRemove.setOnClickListener(this);
-
         courseProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                 int currentProgress = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
-                if (b && i <= currentProgress+1){
+                if (b && i <= currentProgress + 1) {
                     mViewPager.setCurrentItem(i);
                 }
             }
@@ -131,9 +136,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
             }
         });
-
-        mViewPager.setCurrentItem(position);
-
     }
 
     private void setCourseData() {
