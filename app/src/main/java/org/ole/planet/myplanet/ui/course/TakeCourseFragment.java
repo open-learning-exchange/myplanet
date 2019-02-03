@@ -111,29 +111,28 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         next.setOnClickListener(this);
         previous.setOnClickListener(this);
         btnAddRemove.setOnClickListener(this);
-//
-//        courseProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-//            @Override
-//            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-//                int currentProgress = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
-//                if (b && i <= currentProgress+1){
-//                    mViewPager.setCurrentItem(i);
-//                }
-//            }
-//
-//            @Override
-//            public void onStartTrackingTouch(SeekBar seekBar) {
-//
-//            }
-//
-//            @Override
-//            public void onStopTrackingTouch(SeekBar seekBar) {
-//
-//            }
-//        });
 
-     //   onPageSelected(position);
+        courseProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                int currentProgress = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
+                if (b && i <= currentProgress+1){
+                    mViewPager.setCurrentItem(i);
+                }
+            }
 
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        mViewPager.setCurrentItem(position);
 
     }
 

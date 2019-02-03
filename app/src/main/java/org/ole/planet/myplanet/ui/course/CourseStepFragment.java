@@ -128,10 +128,11 @@ public class CourseStepFragment extends BaseContainerFragment {
     @Override
     public void setMenuVisibility(final boolean visible) {
         super.setMenuVisibility(visible);
-
-        if (visible && RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
-            saveCourseProgress();
-        }
+        try {
+            if (visible && RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+                saveCourseProgress();
+            }
+        }catch (Exception e){}
     }
 
     private void setListeners() {

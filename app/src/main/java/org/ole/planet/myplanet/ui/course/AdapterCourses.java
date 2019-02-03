@@ -7,6 +7,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -113,7 +114,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
             ((ViewHoldercourse) holder).progressBar.setMax(JsonUtils.getInt("max", ob));
             ((ViewHoldercourse) holder).progressBar.setProgress(JsonUtils.getInt("current", ob));
-            if ( JsonUtils.getInt("current", ob) < JsonUtils.getInt("max", ob))
+            if (JsonUtils.getInt("current", ob) < JsonUtils.getInt("max", ob))
                 ((ViewHoldercourse) holder).progressBar.setSecondaryProgress(JsonUtils.getInt("current", ob) + 1);
 
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.VISIBLE);
@@ -174,28 +175,29 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             llRating = itemView.findViewById(R.id.ll_rating);
             progressBar = itemView.findViewById(R.id.course_progress);
             itemView.setOnClickListener(view -> openCourse(courseList.get(getAdapterPosition()), 0));
-//            progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-//                @Override
-//                public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-//                    if (progressMap.containsKey(courseList.get(getAdapterPosition()).getCourseId())) {
-//                        JsonObject ob = progressMap.get(courseList.get(getAdapterPosition()).getCourseId());
-//                        int current = JsonUtils.getInt("current", ob);
-//                        if (b && i <= current + 1) {
-//                            openCourse(courseList.get(getAdapterPosition()), i);
-//                        }
-//                    }
-//                }
-//
-//                @Override
-//                public void onStartTrackingTouch(SeekBar seekBar) {
-//
-//                }
-//
-//                @Override
-//                public void onStopTrackingTouch(SeekBar seekBar) {
-//
-//                }
-//            });
+
+            progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+                    if (progressMap.containsKey(courseList.get(getAdapterPosition()).getCourseId())) {
+                        JsonObject ob = progressMap.get(courseList.get(getAdapterPosition()).getCourseId());
+                        int current = JsonUtils.getInt("current", ob);
+                        if (b && i <= current + 1) {
+                            openCourse(courseList.get(getAdapterPosition()), seekBar.getProgress());
+                        }
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
         }
     }
 }
