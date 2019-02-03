@@ -20,7 +20,7 @@
             android:padding="@dimen/padding_large">
 
             <TextView
-                android:id="@+id/tv_add_to_course"
+                android:id="@+id/tv_add"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -29,6 +29,21 @@
                 android:drawablePadding="4dp"
                 android:gravity="center"
                 android:text="@string/add_to_mycourse"
+                android:textColor="@drawable/tv_color"
+                android:textSize="@dimen/text_size_mid" />
+
+            <TextView
+                android:id="@+id/tv_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="@dimen/padding_normal"
+                android:background="?attr/selectableItemBackground"
+                android:drawablePadding="4dp"
+                android:drawableStart="@drawable/ic_delete"
+                android:gravity="center"
+                android:visibility="gone"
+                android:text="@string/remove_selected"
                 android:textColor="@drawable/tv_color"
                 android:textSize="@dimen/text_size_mid" />
 

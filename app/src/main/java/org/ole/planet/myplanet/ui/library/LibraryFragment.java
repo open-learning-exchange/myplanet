@@ -36,7 +36,7 @@ import fisk.chipcloud.ChipDeletedListener;
  */
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TextWatcher {
 
-    TextView tvAddToLib, tvDelete;
+    TextView tvAddToLib;
 
     EditText etSearch, etTags;
     ImageView imgSearch;
@@ -59,7 +59,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
         adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map);
-        adapterLibrary.setIsMyLibrary(isMyCourseLib);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList();
@@ -71,9 +70,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay);
-        tvAddToLib = getView().findViewById(R.id.tv_add_to_lib);
-        tvDelete = getView().findViewById(R.id.tv_delete);
-        tvDelete.setVisibility(Constants.showBetaFeature(Constants.KEY_DELETE, getActivity()) ? View.VISIBLE : View.GONE);
+        tvAddToLib = getView().findViewById(R.id.tv_add);
         etSearch = getView().findViewById(R.id.et_search);
         etTags = getView().findViewById(R.id.et_tags);
         imgSearch = getView().findViewById(R.id.img_search);
@@ -103,7 +100,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
     private void changeButtonStatus() {
-        tvDelete.setEnabled(selectedItems.size() > 0);
         tvAddToLib.setEnabled(selectedItems.size() > 0);
     }
 
