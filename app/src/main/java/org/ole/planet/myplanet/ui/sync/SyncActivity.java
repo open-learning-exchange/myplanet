@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.service.SyncManager;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -231,6 +232,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     @Override
     public void onSyncComplete() {
+        DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
         NotificationUtil.cancellAll(this);
     }
