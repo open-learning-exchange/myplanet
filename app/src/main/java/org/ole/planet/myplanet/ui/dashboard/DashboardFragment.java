@@ -99,7 +99,12 @@ public class DashboardFragment extends BaseContainerFragment {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         List<RealmMyLibrary> db_myLibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings);
-        count.setText(db_myLibrary.size() + "");
+        if (db_myLibrary.size() == 0) {
+            count.setVisibility(View.INVISIBLE);
+        }
+        else {
+            count.setText(db_myLibrary.size() + "");
+        }
         int itemCnt = 0;
         for (final RealmMyLibrary items : db_myLibrary) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
@@ -202,11 +207,29 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     public void setCountText(int countText, Class c, View v) {
-        if (c == RealmMyCourse.class)
-            ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
-        else if (c == RealmMeetup.class)
-            ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
-        else if (c == RealmMyTeam.class)
-            ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
+        if (c == RealmMyCourse.class) {
+            if (countText == 0) {
+                v.findViewById(R.id.count_course).setVisibility(View.INVISIBLE);
+            }
+            else {
+                ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
+            }
+        }
+        else if (c == RealmMeetup.class) {
+            if (countText == 0) {
+                v.findViewById(R.id.count_meetup).setVisibility(View.INVISIBLE);
+            }
+            else {
+                ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
+            }
+        }
+        else if (c == RealmMyTeam.class) {
+            if (countText == 0) {
+                v.findViewById(R.id.count_team).setVisibility(View.INVISIBLE);
+            }
+            else {
+                ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
+            }
+        }
     }
 }
