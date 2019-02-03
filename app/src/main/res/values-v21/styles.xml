@@ -8,4 +8,11 @@
         <item name="android:windowSharedElementExitTransition">@android:transition/move</item>
     </style>
 
+
+    <style name="Seekbar" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:secondaryProgressTint">@color/md_blue_500</item>
+        <item name="android:progressBackgroundTint">@color/md_grey_500</item>
+        <item name="android:thumb">@drawable/white_line</item>
+        <item name="tickMark">@drawable/white_line</item>
+    </style>
 </resources>

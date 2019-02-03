@@ -93,8 +93,7 @@
         <item name="colorAccent">@color/colorPrimary</item>
     </style>
 
-    <style name="Seekbar" parent="Base.Widget.AppCompat.SeekBar.Discrete">
-        <item name="tickMark">@drawable/ic_tick</item>
+    <style name="Seekbar" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
     </style>
 
 

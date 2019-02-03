@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -114,6 +113,9 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
             ((ViewHoldercourse) holder).progressBar.setMax(JsonUtils.getInt("max", ob));
             ((ViewHoldercourse) holder).progressBar.setProgress(JsonUtils.getInt("current", ob));
+            if ( JsonUtils.getInt("current", ob) < JsonUtils.getInt("max", ob))
+                ((ViewHoldercourse) holder).progressBar.setSecondaryProgress(JsonUtils.getInt("current", ob) + 1);
+
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.VISIBLE);
         } else {
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.GONE);
@@ -135,11 +137,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         else ratingBar.setRating(0);
     }
 
-    private void openCourse(RealmMyCourse realm_myCourses) {
+    private void openCourse(RealmMyCourse realm_myCourses, int i) {
         if (homeItemClickListener != null) {
             Fragment f = new TakeCourseFragment();
             Bundle b = new Bundle();
             b.putString("id", realm_myCourses.getCourseId());
+            b.putInt("position", i);
             f.setArguments(b);
             homeItemClickListener.openCallFragment(f);
         }
@@ -170,7 +173,29 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
             progressBar = itemView.findViewById(R.id.course_progress);
-            itemView.setOnClickListener(view -> openCourse(courseList.get(getAdapterPosition())));
+            itemView.setOnClickListener(view -> openCourse(courseList.get(getAdapterPosition()), 0));
+//            progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//                @Override
+//                public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+//                    if (progressMap.containsKey(courseList.get(getAdapterPosition()).getCourseId())) {
+//                        JsonObject ob = progressMap.get(courseList.get(getAdapterPosition()).getCourseId());
+//                        int current = JsonUtils.getInt("current", ob);
+//                        if (b && i <= current + 1) {
+//                            openCourse(courseList.get(getAdapterPosition()), i);
+//                        }
+//                    }
+//                }
+//
+//                @Override
+//                public void onStartTrackingTouch(SeekBar seekBar) {
+//
+//                }
+//
+//                @Override
+//                public void onStopTrackingTouch(SeekBar seekBar) {
+//
+//                }
+//            });
         }
     }
 }

@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -127,6 +128,7 @@ public class CourseStepFragment extends BaseContainerFragment {
     @Override
     public void setMenuVisibility(final boolean visible) {
         super.setMenuVisibility(visible);
+
         if (visible && RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
             saveCourseProgress();
         }
