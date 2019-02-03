@@ -55,6 +55,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         super.onCreate(savedInstanceState);
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         editor = settings.edit();
+        requestPermission();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
     }

@@ -68,7 +68,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (getIntent().hasExtra("filePath")) {
             onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
         }
-        requestPermission();
         new Service(this).checkVersion(this, settings);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
