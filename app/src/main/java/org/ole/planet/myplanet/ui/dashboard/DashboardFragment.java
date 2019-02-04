@@ -209,19 +209,19 @@ public class DashboardFragment extends BaseContainerFragment {
     public void setCountText(int countText, Class c, View v) {
         if (c == RealmMyCourse.class) {
             TextView tv_count_course = v.findViewById(R.id.count_course);
-            setCountText(countText, tv_count_course);
+            updateCountText(countText, tv_count_course);
         }
         else if (c == RealmMeetup.class) {
             TextView tv_count_meetup = v.findViewById(R.id.count_meetup);
-            setCountText(countText, tv_count_meetup);
+            updateCountText(countText, tv_count_meetup);
         }
         else if (c == RealmMyTeam.class) {
             TextView tv_count_team = v.findViewById(R.id.count_team);
-            setCountText(countText, tv_count_team);
+            updateCountText(countText, tv_count_team);
         }
     }
 
-    public void setCountText(int countText, TextView tv) {
+    public void updateCountText(int countText, TextView tv) {
         tv.setText(countText + "");
         hideCountIfZero(tv, countText);
     }
