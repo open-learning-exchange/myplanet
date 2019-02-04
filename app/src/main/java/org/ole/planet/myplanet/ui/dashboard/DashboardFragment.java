@@ -208,28 +208,20 @@ public class DashboardFragment extends BaseContainerFragment {
 
     public void setCountText(int countText, Class c, View v) {
         if (c == RealmMyCourse.class) {
-            if (countText == 0) {
-                v.findViewById(R.id.count_course).setVisibility(View.INVISIBLE);
-            }
-            else {
-                ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
-            }
+            ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
+            hideCountIfZero(v.findViewById(R.id.count_course), countText);
         }
         else if (c == RealmMeetup.class) {
-            if (countText == 0) {
-                v.findViewById(R.id.count_meetup).setVisibility(View.INVISIBLE);
-            }
-            else {
-                ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
-            }
+            ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
+            hideCountIfZero(v.findViewById(R.id.count_meetup), countText);
         }
         else if (c == RealmMyTeam.class) {
-            if (countText == 0) {
-                v.findViewById(R.id.count_team).setVisibility(View.INVISIBLE);
-            }
-            else {
-                ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
-            }
+            ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
+            hideCountIfZero(v.findViewById(R.id.count_team), countText);
         }
+    }
+
+    public void hideCountIfZero(View v, int count) {
+        v.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
     }
 }
