@@ -91,7 +91,7 @@ public class DashboardFragment extends BaseContainerFragment {
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
-        showDownloadDialog(getLibraryList());
+        showDownloadDialog(getLibraryList(mRealm));
     }
 
     public void myLibraryDiv(View view) {
@@ -176,19 +176,6 @@ public class DashboardFragment extends BaseContainerFragment {
         });
     }
 
-    private List<RealmMyLibrary> getLibraryList() {
-        RealmResults<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
-        List<RealmMyLibrary> libList = new ArrayList<>();
-        for (RealmMyLibrary item : libraries) {
-            if (item.getUserId().contains(settings.getString("userId", "--"))) {
-                libList.add(item);
-            }
-        }
-        return libList;
-    }
 
 
     public void myLibraryItemClickAction(TextView textView, final RealmMyLibrary items) {

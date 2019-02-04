@@ -78,6 +78,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         tvAddToLib.setOnClickListener(view -> addToMyList());
         imgSearch.setOnClickListener(view -> adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString())));
         etTags.addTextChangedListener(this);
+
     }
 
 

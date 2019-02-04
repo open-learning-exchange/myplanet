@@ -32,6 +32,9 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.realm.Realm;
+import io.realm.RealmResults;
+
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
@@ -119,6 +122,20 @@ public abstract class BaseResourceFragment extends Fragment {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MESSAGE_PROGRESS);
         bManager.registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+    public List<RealmMyLibrary> getLibraryList(Realm mRealm) {
+        RealmResults<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class)
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll();
+        List<RealmMyLibrary> libList = new ArrayList<>();
+        for (RealmMyLibrary item : libraries) {
+            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+                libList.add(item);
+            }
+        }
+        return libList;
     }
 
 
