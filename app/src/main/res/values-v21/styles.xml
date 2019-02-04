@@ -10,9 +10,13 @@
 
 
     <style name="Seekbar" parent="@android:style/Widget.ProgressBar.Horizontal">
-        <item name="android:secondaryProgressTint">@color/md_blue_500</item>
-        <item name="android:progressBackgroundTint">@color/md_grey_500</item>
+        <item name="android:secondaryProgressTint">@color/md_blue_300</item>
+        <item name="android:progressBackgroundTint">@color/md_grey_300</item>
+        <item name="android:progressTint">@color/md_blue_500</item>
         <item name="android:thumb">@drawable/white_line</item>
         <item name="tickMark">@drawable/white_line</item>
+        <item name="android:minHeight">12dip</item>
+        <item name="android:maxHeight">12dip</item>
+
     </style>
 </resources>

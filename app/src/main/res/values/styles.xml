@@ -93,8 +93,11 @@
         <item name="colorAccent">@color/colorPrimary</item>
     </style>
 
-    <style name="Seekbar" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
+    <style name="Seekbar" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:thumb">@drawable/white_line</item>
+        <item name="tickMark">@drawable/white_line</item>
+        <item name="android:minHeight">12dip</item>
+        <item name="android:maxHeight">12dip</item>
     </style>
-
 
 </resources>
