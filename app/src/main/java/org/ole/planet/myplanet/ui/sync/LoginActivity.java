@@ -68,11 +68,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (getIntent().hasExtra("filePath")) {
             onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
         }
-        requestPermission();
         new Service(this).checkVersion(this, settings);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         registerReceiver();
+        if (getIntent().getBooleanExtra("forceSync", false)) {
+            isUpload = false;
+            isSync = true;
+            processedUrl = Utilities.getUrl();
+            new Service(this).checkVersion(this, settings);
+
+        }
     }
 
     private void clearInternalStorage() {
@@ -274,5 +280,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     break;
             }
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mRealm != null && !mRealm.isClosed())
+            mRealm.close();
     }
 }

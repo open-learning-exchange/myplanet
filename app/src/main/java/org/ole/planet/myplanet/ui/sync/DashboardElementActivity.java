@@ -49,6 +49,9 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
             logout();
         } else if (id == R.id.action_setting) {
             startActivity(new Intent(this, SettingActivity.class));
+        }else if(id == R.id.action_sync){
+            startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP));
+            finish();
         }
 
         return super.onOptionsItemSelected(item);
