@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.datamanager;
 
 import android.content.Context;
 
+import org.ole.planet.myplanet.MainApplication;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 

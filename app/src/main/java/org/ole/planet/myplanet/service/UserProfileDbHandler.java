@@ -63,7 +63,7 @@ public class UserProfileDbHandler {
     }
 
     public void onDestory() {
-        if (mRealm != null)
+        if (mRealm != null && !mRealm.isClosed())
             mRealm.close();
     }
 
