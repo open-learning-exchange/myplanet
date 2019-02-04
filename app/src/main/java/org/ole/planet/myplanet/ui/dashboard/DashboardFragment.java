@@ -100,7 +100,7 @@ public class DashboardFragment extends BaseContainerFragment {
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         List<RealmMyLibrary> db_myLibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings);
         if (db_myLibrary.size() == 0) {
-            count.setVisibility(View.INVISIBLE);
+            count.setVisibility(View.GONE);
         }
         else {
             count.setText(db_myLibrary.size() + "");
@@ -208,17 +208,22 @@ public class DashboardFragment extends BaseContainerFragment {
 
     public void setCountText(int countText, Class c, View v) {
         if (c == RealmMyCourse.class) {
-            ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
-            hideCountIfZero(v.findViewById(R.id.count_course), countText);
+            TextView tv_count_course = v.findViewById(R.id.count_course);
+            setCountText(countText, tv_count_course);
         }
         else if (c == RealmMeetup.class) {
-            ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
-            hideCountIfZero(v.findViewById(R.id.count_meetup), countText);
+            TextView tv_count_meetup = v.findViewById(R.id.count_meetup);
+            setCountText(countText, tv_count_meetup);
         }
         else if (c == RealmMyTeam.class) {
-            ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
-            hideCountIfZero(v.findViewById(R.id.count_team), countText);
+            TextView tv_count_team = v.findViewById(R.id.count_team);
+            setCountText(countText, tv_count_team);
         }
+    }
+
+    public void setCountText(int countText, TextView tv) {
+        tv.setText(countText + "");
+        hideCountIfZero(tv, countText);
     }
 
     public void hideCountIfZero(View v, int count) {
