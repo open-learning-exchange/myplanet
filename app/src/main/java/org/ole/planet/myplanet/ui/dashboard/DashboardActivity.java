@@ -155,6 +155,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
         profileDbHandler.onDestory();
     }
 
