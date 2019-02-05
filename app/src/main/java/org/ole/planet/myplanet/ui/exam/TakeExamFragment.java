@@ -116,6 +116,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         if (currentIndex == questions.size() - 1) {
             btnSubmit.setText("Finish");
         }
+        else {
+            btnSubmit.setText("Submit");
+        }
         listChoices.removeAllViews();
         llCheckbox.removeAllViews();
         etAnswer.setVisibility(View.GONE);
