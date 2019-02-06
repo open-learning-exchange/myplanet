@@ -84,6 +84,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         etTags.addTextChangedListener(this);
+        setSearchListener();
+    }
+
+    private void setSearchListener() {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {

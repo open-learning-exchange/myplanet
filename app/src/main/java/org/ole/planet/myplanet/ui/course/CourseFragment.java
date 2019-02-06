@@ -72,6 +72,10 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
 
         });
+        setSearchListener();
+    }
+
+    private void setSearchListener() {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
