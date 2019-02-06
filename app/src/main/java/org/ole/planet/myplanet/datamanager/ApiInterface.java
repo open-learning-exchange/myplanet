@@ -39,5 +39,7 @@ public interface ApiInterface {
 
     @GET
     Call<MyPlanet> checkVersion(@Url String serverUrl);
+    @GET
+    Call<ResponseBody> isPlanetAvailable(@Url String serverUrl);
 }
 
