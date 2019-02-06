@@ -21,8 +21,10 @@ import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +38,7 @@ import fisk.chipcloud.ChipDeletedListener;
  */
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TextWatcher {
 
-    TextView tvAddToLib;
+    TextView tvAddToLib, tvMessage;
 
     EditText etSearch, etTags;
     ImageView imgSearch;
@@ -47,7 +49,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     public LibraryFragment() {
     }
-
 
 
     @Override
@@ -73,11 +74,40 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         tvAddToLib = getView().findViewById(R.id.tv_add);
         etSearch = getView().findViewById(R.id.et_search);
         etTags = getView().findViewById(R.id.et_tags);
+        tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         tvAddToLib.setOnClickListener(view -> addToMyList());
-        imgSearch.setOnClickListener(view -> adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString())));
+        imgSearch.setOnClickListener(view -> {
+            adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString().trim()));
+            showNoData(tvMessage, adapterLibrary.getItemCount());
+            KeyboardUtils.hideSoftKeyboard(getActivity());
+        });
         etTags.addTextChangedListener(this);
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if (!charSequence.toString().isEmpty()) {
+                    String lastChar = charSequence.toString().substring(charSequence.length() - 1);
+                    if (lastChar.equals(" ") || lastChar.equals("\n")) {
+                        adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString().trim()));
+                        etSearch.setText(etSearch.getText().toString().trim());
+                        KeyboardUtils.hideSoftKeyboard(getActivity());
+                        showNoData(tvMessage, adapterLibrary.getItemCount());
+                    }
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
     }
 
 
@@ -96,6 +126,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             searchTags.add(text);
         chipCloud.addChips(searchTags);
         adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString()));
+        showNoData(tvMessage, adapterLibrary.getItemCount());
 
     }
 
@@ -107,7 +138,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     public void chipDeleted(int i, String s) {
         searchTags.remove(i);
         adapterLibrary.setLibraryList(filterByTag(searchTags.toArray(new String[searchTags.size()]), etSearch.getText().toString()));
-
+        showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 
     @Override
@@ -122,6 +153,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             if (lastChar.equals(" ") || lastChar.equals("\n")) {
                 onTagClicked(etTags.getText().toString().trim());
                 etTags.setText("");
+                showNoData(tvMessage, adapterLibrary.getItemCount());
+                KeyboardUtils.hideSoftKeyboard(getActivity());
             }
         }
     }

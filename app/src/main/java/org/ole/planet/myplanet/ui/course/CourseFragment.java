@@ -5,6 +5,9 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -18,6 +21,7 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -28,7 +32,7 @@ import java.util.List;
 
 public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected {
 
-    TextView tvAddToLib;
+    TextView tvAddToLib, tvMessage;
 
     EditText etSearch;
     ImageView imgSearch;
@@ -61,7 +65,37 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         etSearch = getView().findViewById(R.id.et_search);
         getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
         imgSearch = getView().findViewById(R.id.img_search);
-        imgSearch.setOnClickListener(view -> adapterCourses.setCourseList(search(etSearch.getText().toString(), RealmMyCourse.class)));
+        tvMessage = getView().findViewById(R.id.tv_message);
+        imgSearch.setOnClickListener(view -> {
+            adapterCourses.setCourseList(search(etSearch.getText().toString(), RealmMyCourse.class));
+            showNoData(tvMessage, adapterCourses.getItemCount());
+            KeyboardUtils.hideSoftKeyboard(getActivity());
+
+        });
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                if (!charSequence.toString().isEmpty()) {
+                    String lastChar = charSequence.toString().substring(charSequence.length() - 1);
+                    if (lastChar.equals(" ") || lastChar.equals("\n")) {
+                        adapterCourses.setCourseList(search(etSearch.getText().toString().trim(), RealmMyCourse.class));
+                        etSearch.setText(etSearch.getText().toString().trim());
+                        showNoData(tvMessage, adapterCourses.getItemCount());
+                        KeyboardUtils.hideSoftKeyboard(getActivity());
+                    }
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
     }
 
     @Override
