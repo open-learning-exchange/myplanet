@@ -113,9 +113,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     @Override
     public void startExam(RealmExamQuestion question) {
         tvQuestionCount.setText("Question : " + (currentIndex + 1) + "/" + questions.size());
-        if (currentIndex == questions.size() - 1) {
-            btnSubmit.setText("Finish");
-        }
+        setButtonText();
+
         listChoices.removeAllViews();
         llCheckbox.removeAllViews();
         etAnswer.setVisibility(View.GONE);
@@ -138,6 +137,14 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         btnSubmit.setOnClickListener(this);
     }
 
+    public void setButtonText() {
+        if (currentIndex == questions.size() - 1) {
+            btnSubmit.setText("Finish");
+        }
+        else {
+            btnSubmit.setText("Submit");
+        }
+    }
 
     private void showCheckBoxes(RealmExamQuestion question) {
         JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
