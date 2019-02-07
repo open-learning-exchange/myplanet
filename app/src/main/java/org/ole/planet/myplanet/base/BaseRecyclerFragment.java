@@ -187,4 +187,9 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         }
     }
 
+    public void showNoData(View v, int count){
+        v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+        ((TextView)  v).setText("Your search returned no result, please check and try again.");
+    }
+
 }
