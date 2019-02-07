@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model;
 import android.content.SharedPreferences;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -22,7 +24,7 @@ public class RealmUserModel extends RealmObject {
     private String id;
     private String _rev;
     private String name;
-    private String roles;
+    private RealmList<String> roles;
     private Boolean isUserAdmin;
     private int joinDate;
     private String firstName;
@@ -47,7 +49,7 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("_id", getId());
         object.addProperty("_rev", get_rev());
         object.addProperty("name", getName());
-        object.addProperty("roles", getRoles());
+        object.add("roles", getRoles());
         object.addProperty("isUserAdmin", getUserAdmin());
         object.addProperty("joinDate", getJoinDate());
         object.addProperty("firstName", getFirstName());
@@ -74,7 +76,12 @@ public class RealmUserModel extends RealmObject {
         Utilities.log("Insert into users " + new Gson().toJson(jsonDoc));
         user.set_rev(JsonUtils.getString("_rev", jsonDoc));
         user.setName(JsonUtils.getString("name", jsonDoc));
-        user.setRoles("");
+        JsonArray array = JsonUtils.getJsonArray("roles", jsonDoc);
+        RealmList<String> roles = new RealmList<>();
+        for (int i = 0; i < array.size(); i++) {
+            roles.add(JsonUtils.getString(array, i));
+        }
+        user.setRoles(roles);
         user.setUserAdmin(JsonUtils.getBoolean("isUserAdmin", jsonDoc));
         user.setJoinDate(JsonUtils.getInt("joinDate", jsonDoc));
         user.setFirstName(JsonUtils.getString("firstName", jsonDoc));
@@ -92,6 +99,31 @@ public class RealmUserModel extends RealmObject {
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
+    }
+
+    public RealmList<String> getRolesList() {
+        return roles;
+    }
+
+    public JsonArray getRoles() {
+        JsonArray ar = new JsonArray();
+        for (String s : roles
+        ) {
+            ar.add(s);
+        }
+        return ar;
+    }
+
+    public void setRoles(RealmList<String> roles) {
+        this.roles = roles;
+    }
+
+    public boolean isShowTopbar() {
+        return showTopbar;
+    }
+
+    public void setShowTopbar(boolean showTopbar) {
+        this.showTopbar = showTopbar;
     }
 
     public String getPlanetCode() {
@@ -158,13 +190,6 @@ public class RealmUserModel extends RealmObject {
         this.name = name;
     }
 
-    public String getRoles() {
-        return roles;
-    }
-
-    public void setRoles(String roles) {
-        this.roles = roles;
-    }
 
     public Boolean getUserAdmin() {
         return isUserAdmin;

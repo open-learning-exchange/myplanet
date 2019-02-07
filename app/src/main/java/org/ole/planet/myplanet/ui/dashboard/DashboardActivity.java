@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
@@ -48,24 +50,34 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private Drawer result = null;
     private Toolbar mTopToolbar;
     private BottomNavigationView navigationView;
-
+    RealmUserModel user;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
         setSupportActionBar(mTopToolbar);
-        navigationView = findViewById(R.id.top_bar_navigation);
-        BottomNavigationViewHelper.disableShiftMode(navigationView);
-        navigationView.setOnNavigationItemSelectedListener(this);
-        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        getSupportActionBar().setTitle(R.string.app_project_name);
+         user = new UserProfileDbHandler(this).getUserModel();
+
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
+
+        navigationView = findViewById(R.id.top_bar_navigation);
+        BottomNavigationViewHelper.disableShiftMode(navigationView);
+
+
+        if (user.getRolesList().isEmpty()){
+            navigationView.setVisibility(View.GONE);
+            openCallFragment(new FeedbackFragment(), "Feedback");
+            return;
+        }
+        navigationView.setOnNavigationItemSelectedListener(this);
+        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
-        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-        getSupportActionBar().setTitle(R.string.app_project_name);
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 19) {
@@ -75,6 +87,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         openCallFragment(new DashboardFragment());
     }
 
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (user.getRolesList().isEmpty()){
+            menu.findItem(R.id.action_setting).setEnabled(false);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
 
     private AccountHeader getAccountHeader() {
         return new AccountHeaderBuilder()
