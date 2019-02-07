@@ -122,7 +122,9 @@
                         android:layout_weight="1"
                         android:background="@color/bg_white"
                         android:padding="8dp"
-                        android:theme="@style/Seekbar" />
+                        style="@style/Seekbar"
+
+                        />
 
                     <TextView
                         android:id="@+id/tv_percentage_complete"
