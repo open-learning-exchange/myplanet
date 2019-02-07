@@ -11,9 +11,9 @@
         android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/ll_actions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/ll_actions"
             android:layout_gravity="right"
             android:background="@color/colorPrimary"
             android:gravity="right"
@@ -40,17 +40,17 @@
                 android:layout_gravity="center"
                 android:layout_marginStart="@dimen/padding_normal"
                 android:background="?attr/selectableItemBackground"
-                android:drawablePadding="4dp"
                 android:drawableStart="@drawable/ic_delete"
-                android:visibility="gone"
+                android:drawablePadding="4dp"
                 android:gravity="center"
                 android:text="@string/remove_selected"
                 android:textColor="@drawable/tv_color"
-                android:textSize="@dimen/text_size_mid" />
+                android:textSize="@dimen/text_size_mid"
+                android:visibility="gone" />
         </LinearLayout>
 
 
-    <include layout="@layout/layout_search"/>
+        <include layout="@layout/layout_search" />
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -65,7 +65,8 @@
             <TextView
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" />
         </FrameLayout>
 
     </LinearLayout>

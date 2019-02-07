@@ -99,7 +99,12 @@ public class DashboardFragment extends BaseContainerFragment {
         FlexboxLayout flexboxLayout = view.findViewById(R.id.flexboxLayout);
         flexboxLayout.setFlexDirection(FlexDirection.ROW);
         List<RealmMyLibrary> db_myLibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings);
-        count.setText(db_myLibrary.size() + "");
+        if (db_myLibrary.size() == 0) {
+            count.setVisibility(View.GONE);
+        }
+        else {
+            count.setText(db_myLibrary.size() + "");
+        }
         int itemCnt = 0;
         for (final RealmMyLibrary items : db_myLibrary) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
@@ -202,11 +207,26 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     public void setCountText(int countText, Class c, View v) {
-        if (c == RealmMyCourse.class)
-            ((TextView) v.findViewById(R.id.count_course)).setText(countText + "");
-        else if (c == RealmMeetup.class)
-            ((TextView) v.findViewById(R.id.count_meetup)).setText(countText + "");
-        else if (c == RealmMyTeam.class)
-            ((TextView) v.findViewById(R.id.count_team)).setText(countText + "");
+        if (c == RealmMyCourse.class) {
+            TextView tv_count_course = v.findViewById(R.id.count_course);
+            updateCountText(countText, tv_count_course);
+        }
+        else if (c == RealmMeetup.class) {
+            TextView tv_count_meetup = v.findViewById(R.id.count_meetup);
+            updateCountText(countText, tv_count_meetup);
+        }
+        else if (c == RealmMyTeam.class) {
+            TextView tv_count_team = v.findViewById(R.id.count_team);
+            updateCountText(countText, tv_count_team);
+        }
+    }
+
+    public void updateCountText(int countText, TextView tv) {
+        tv.setText(countText + "");
+        hideCountIfZero(tv, countText);
+    }
+
+    public void hideCountIfZero(View v, int count) {
+        v.setVisibility(count == 0 ? View.GONE : View.VISIBLE);
     }
 }
