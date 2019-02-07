@@ -2,10 +2,14 @@ package org.ole.planet.myplanet.utilities;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 
 import org.ole.planet.myplanet.MainApplication;
 
+import java.io.IOException;
 import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +29,18 @@ public class NetworkUtils {
         return mBluetoothAdapter != null && mBluetoothAdapter.isEnabled();
     }
 
+
+    public static boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) MainApplication.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ni = cm.getActiveNetworkInfo();
+        if (ni == null) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+
     public static String getMacAddr() {
         try {
             List<NetworkInterface> all = Collections.list(NetworkInterface.getNetworkInterfaces());
@@ -36,6 +52,7 @@ public class NetworkUtils {
         }
         return "";
     }
+
 
     private static String getAddress(NetworkInterface nif) throws Exception {
         byte[] macBytes = nif.getHardwareAddress();

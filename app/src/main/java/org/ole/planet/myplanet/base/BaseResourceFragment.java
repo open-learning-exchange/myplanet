@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -19,18 +20,24 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.Download;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.DownloadUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import io.realm.Realm;
+import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
@@ -42,18 +49,31 @@ public abstract class BaseResourceFragment extends Fragment {
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
     ListView lv;
     View convertView;
+
     public UserProfileDbHandler profileDbHandler;
     public static String auth = ""; // Main Auth Session Token for any Online File Streaming/ Viewing -- Constantly Updating Every 15 mins
 
     protected void showDownloadDialog(final List<RealmMyLibrary> db_myLibrary) {
-        if (!db_myLibrary.isEmpty()) {
-            LayoutInflater inflater = getLayoutInflater();
-            convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
-            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
-            alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
-            createListView(db_myLibrary);
-            alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, selectedItemsList, settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null).show();
-        }
+        new Service(MainApplication.context).isPlanetAvailable(new Service.PlanetAvailableListener() {
+            @Override
+            public void isAvailable() {
+                if (!db_myLibrary.isEmpty()) {
+                    LayoutInflater inflater = getLayoutInflater();
+                    convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
+                    alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
+                    createListView(db_myLibrary);
+                    alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, selectedItemsList, settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null).show();
+                }
+            }
+
+            @Override
+            public void notAvailable() {
+
+            }
+        });
+
+
     }
 
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -72,10 +92,21 @@ public abstract class BaseResourceFragment extends Fragment {
 
 
     public void startDownload(ArrayList urls) {
-        if (!urls.isEmpty()) {
-            prgDialog.show();
-            Utilities.openDownloadService(getActivity(), urls);
-        }
+        new Service(MainApplication.context).isPlanetAvailable(new Service.PlanetAvailableListener() {
+            @Override
+            public void isAvailable() {
+                if (!urls.isEmpty()) {
+                    prgDialog.show();
+                    Utilities.openDownloadService(getActivity(), urls);
+                }
+            }
+
+            @Override
+            public void notAvailable() {
+                Utilities.toast(getActivity(), "Device not connected to planet.");
+            }
+        });
+
     }
 
     public void setProgress(Download download) {
@@ -119,6 +150,20 @@ public abstract class BaseResourceFragment extends Fragment {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(MESSAGE_PROGRESS);
         bManager.registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+    public List<RealmMyLibrary> getLibraryList(Realm mRealm) {
+        RealmResults<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class)
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll();
+        List<RealmMyLibrary> libList = new ArrayList<>();
+        for (RealmMyLibrary item : libraries) {
+            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+                libList.add(item);
+            }
+        }
+        return libList;
     }
 
 
