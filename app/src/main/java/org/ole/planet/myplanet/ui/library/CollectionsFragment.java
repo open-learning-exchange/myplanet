@@ -43,7 +43,8 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     TextInputLayout tlFilter;
     SwitchCompat switchMany;
     Realm mRealm;
-    static List<RealmTag> list;
+    static List<RealmTag> recentList;
+    List<RealmTag> list;
     List<RealmTag> filteredList;
     TagExpandableAdapter adapter;
     EditText etFilter;
@@ -55,7 +56,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     }
 
     public static CollectionsFragment getInstance(List<RealmTag> l) {
-        list = l;
+        recentList = l;
         return new CollectionsFragment();
     }
 
@@ -90,6 +91,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
         setListAdapter();
         setListeners();
     }
@@ -135,14 +137,15 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     }
 
     private void setListAdapter() {
-        if (list.isEmpty())
-            list = mRealm.where(RealmTag.class).findAll();
+        list = mRealm.where(RealmTag.class).findAll();
+        if (recentList.isEmpty()){
+            recentList = list;
+        }
         List<RealmTag> allTags = mRealm.where(RealmTag.class).findAll();
         HashMap<String, List<RealmTag>> childMap = new HashMap<>();
         createChildMap(childMap, allTags);
         listTag.setGroupIndicator(null);
-        list = switchMany.isChecked() ? list : mRealm.where(RealmTag.class).findAll();
-        adapter = new TagExpandableAdapter(getActivity(), list, childMap);
+        adapter = new TagExpandableAdapter(getActivity(), switchMany.isChecked() ? recentList : list, childMap);
 
         adapter.setClickListener(this);
         listTag.setAdapter(adapter);
@@ -172,7 +175,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         //  adapter.setTagList(list);
         adapter.setSelectMultiple(b);
-        adapter.setTagList(b ? list : mRealm.where(RealmTag.class).findAll());
+        adapter.setTagList(b ? recentList : list);
         listTag.setAdapter(adapter);
         btnOk.setVisibility(b ? View.VISIBLE : View.GONE);
     }
