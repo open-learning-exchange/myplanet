@@ -17,12 +17,14 @@ import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import io.realm.Case;
@@ -148,15 +150,15 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         return mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
     }
 
-    public List<RealmMyLibrary> filterByTag(String[] tags, String s) {
-        if (tags.length == 0 && s.isEmpty()) {
+    public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
+        if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
-        if (tags.length == 0) {
+        if (tags.size() == 0) {
             return list;
         }
-        Arrays.sort(tags);
+
         RealmList<RealmMyLibrary> libraries = new RealmList<>();
         for (RealmMyLibrary library : list) {
             filter(tags, library, libraries);
@@ -164,10 +166,10 @@ public abstract class BaseRecyclerFragment<LI> extends android.support.v4.app.Fr
         return libraries;
     }
 
-    private void filter(String[] tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
+    private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
         boolean contains = true;
-        for (String s : tags) {
-            if (!library.getTag().toString().toLowerCase().contains(s.toLowerCase())) {
+        for (RealmTag s : tags) {
+            if (!library.getTag().toString().toLowerCase().contains(s.get_id())) {
                 contains = false;
                 break;
             }
