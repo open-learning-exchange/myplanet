@@ -97,7 +97,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     private void setListeners() {
         btnOk.setOnClickListener(view -> {
             Utilities.log("Selected tags size " + adapter.getSelectedItemsList().size());
-            if (listener!=null){
+            if (listener != null) {
                 listener.onOkClicked(adapter.getSelectedItemsList());
                 dismiss();
             }
@@ -122,12 +122,12 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     private void filterTags(String charSequence) {
         filteredList.clear();
-        if(charSequence.isEmpty()){
+        if (charSequence.isEmpty()) {
             adapter.setTagList(list);
             return;
         }
         for (RealmTag t : list) {
-            if (t.getName().toLowerCase().contains(charSequence.toLowerCase())){
+            if (t.getName().toLowerCase().contains(charSequence.toLowerCase())) {
                 filteredList.add(t);
             }
         }
@@ -138,9 +138,17 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         if (list.isEmpty())
             list = mRealm.where(RealmTag.class).findAll();
         List<RealmTag> allTags = mRealm.where(RealmTag.class).findAll();
-        HashMap<String, RealmTag> map = RealmTag.getListAsMap(allTags);
         HashMap<String, List<RealmTag>> childMap = new HashMap<>();
+        createChildMap(childMap, allTags);
+        listTag.setGroupIndicator(null);
+        list = switchMany.isChecked() ? list : mRealm.where(RealmTag.class).findAll();
+        adapter = new TagExpandableAdapter(getActivity(), list, childMap);
 
+        adapter.setClickListener(this);
+        listTag.setAdapter(adapter);
+    }
+
+    private void createChildMap(HashMap<String, List<RealmTag>> childMap, List<RealmTag> allTags) {
         for (RealmTag t : allTags) {
             for (String s : t.getAttachedTo()) {
                 List<RealmTag> l = new ArrayList<>();
@@ -151,24 +159,20 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
                 childMap.put(s, l);
             }
         }
-
-
-        listTag.setGroupIndicator(null);
-        adapter = new TagExpandableAdapter(getActivity(), list, childMap);
-        adapter.setClickListener(this);
-        listTag.setAdapter(adapter);
     }
 
     @Override
     public void onTagClicked(RealmTag tag) {
-        if (listener!=null)
-            listener.onTagClicked(tag);
+        if (listener != null)
+            listener.onTagSelected(tag);
         dismiss();
     }
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+        //  adapter.setTagList(list);
         adapter.setSelectMultiple(b);
+        adapter.setTagList(b ? list : mRealm.where(RealmTag.class).findAll());
         listTag.setAdapter(adapter);
         btnOk.setVisibility(b ? View.VISIBLE : View.GONE);
     }

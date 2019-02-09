@@ -144,6 +144,14 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
     @Override
+    public void onTagSelected(RealmTag tag) {
+        List<RealmTag> li = new ArrayList<>();
+        li.add(tag);
+        adapterLibrary.setLibraryList(filterByTag(li, etSearch.getText().toString()));
+        showNoData(tvMessage, adapterLibrary.getItemCount());
+    }
+
+    @Override
     public void onOkClicked(List<RealmTag> list) {
         for (RealmTag tag : list) {
             onTagClicked(tag);

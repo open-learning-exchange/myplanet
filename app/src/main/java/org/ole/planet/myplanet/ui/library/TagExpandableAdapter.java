@@ -2,18 +2,15 @@ package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
 import android.support.v7.widget.AppCompatImageView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,17 +89,13 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     @Override
     public View getGroupView(final int groupPosition, final boolean isExpanded, View convertView, ViewGroup parent) {
         String headerTitle = tagList.get(groupPosition).getName();
-        if (convertView == null) {
-            LayoutInflater inflater = LayoutInflater.from(context);
-            convertView = inflater.inflate(R.layout.row_adapter_navigation_parent, parent, false);
-        }
-
+        convertView = inflateView(parent, R.layout.row_adapter_navigation_parent);
         AppCompatImageView ivIndicator = convertView.findViewById(R.id.iv_indicators);
         TextView drawerTitle = convertView.findViewById(R.id.tv_drawer_title);
 
         TextView nonChildTitle = convertView.findViewById(R.id.tv_drawer_title_1);
         nonChildTitle.setText(headerTitle);
-        createCheckbox(convertView, groupPosition);
+        createCheckbox(convertView, tagList.get(groupPosition));
         drawerTitle.setText(headerTitle);
 
 
@@ -116,36 +109,26 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
             nonChildTitle.setOnClickListener(null);
             nonChildTitle.setVisibility(View.GONE);
             ivIndicator.setVisibility(View.VISIBLE);
-            if (isExpanded) {
-                ivIndicator.setImageResource(R.drawable.ic_keyboard_arrow_up_black_24dp);
-            } else {
-                ivIndicator.setImageResource(R.drawable.ic_keyboard_arrow_down_black_24dp);
-            }
+            setExpandedIcon(isExpanded, ivIndicator);
             drawerTitle.setOnClickListener(v -> clickListener.onTagClicked(tagList.get(groupPosition)));
         }
         return convertView;
     }
 
-    private void createCheckbox(View convertView, int groupPosition) {
-        CheckBox checkBox = convertView.findViewById(R.id.checkbox);
-        checkBox.setVisibility(isSelectMultiple ? View.VISIBLE : View.GONE);
-        checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
-            if (selectedItemsList.contains(tagList.get(groupPosition))) {
-                selectedItemsList.remove(tagList.get(groupPosition));
-            } else {
-                selectedItemsList.add(tagList.get(groupPosition));
-            }
-        });
+    private void setExpandedIcon(boolean isExpanded, AppCompatImageView ivIndicator) {
+        if (isExpanded) {
+            ivIndicator.setImageResource(R.drawable.ic_keyboard_arrow_up_black_24dp);
+        } else {
+            ivIndicator.setImageResource(R.drawable.ic_keyboard_arrow_down_black_24dp);
+        }
     }
 
-    @Override
-    public View getChildView(final int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
-        RealmTag tag = (RealmTag) getChild(groupPosition, childPosition);
-        if (convertView == null) {
-            LayoutInflater inflater = LayoutInflater.from(context);
-            convertView = inflater.inflate(R.layout.row_adapter_navigation_child, parent, false);
-        }
-        TextView tvDrawerTitle = convertView.findViewById(R.id.tv_drawer_title);
+    private View inflateView(ViewGroup parent, int layout) {
+        LayoutInflater inflater = LayoutInflater.from(context);
+        return inflater.inflate(layout, parent, false);
+    }
+
+    private void createCheckbox(View convertView, RealmTag tag) {
         CheckBox checkBox = convertView.findViewById(R.id.checkbox);
         checkBox.setVisibility(isSelectMultiple ? View.VISIBLE : View.GONE);
         checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
@@ -155,6 +138,23 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
                 selectedItemsList.add(tag);
             }
         });
+    }
+
+    @Override
+    public View getChildView(final int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+        RealmTag tag = (RealmTag) getChild(groupPosition, childPosition);
+        convertView = inflateView(parent, R.layout.row_adapter_navigation_child);
+        TextView tvDrawerTitle = convertView.findViewById(R.id.tv_drawer_title);
+//        CheckBox checkBox = convertView.findViewById(R.id.checkbox);
+//        checkBox.setVisibility(isSelectMultiple ? View.VISIBLE : View.GONE);
+//        checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
+//            if (selectedItemsList.contains(tag)) {
+//                selectedItemsList.remove(tag);
+//            } else {
+//                selectedItemsList.add(tag);
+//            }
+//        });
+        createCheckbox(convertView, tag);
         tvDrawerTitle.setText(tag.getName());
         tvDrawerTitle.setOnClickListener(v -> {
             if (clickListener != null) {
