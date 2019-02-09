@@ -11,6 +11,7 @@
     <android.support.design.widget.TextInputLayout
         android:layout_width="0dp"
         android:id="@+id/tl_tags"
+        android:visibility="gone"
         android:layout_height="wrap_content"
         android:layout_weight="1">
 
@@ -18,6 +19,7 @@
             android:id="@+id/et_tags"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:hint="Filter Labels" />
 
         <com.google.android.flexbox.FlexboxLayout

@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
@@ -76,6 +77,8 @@ public class TransactionSyncManager {
             RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
         } else if (type.equals("login_activities")) {
             RealmOfflineActivity.insertOfflineActivities(mRealm, jsonDoc);
+        } else if (type.equals("tags")) {
+            RealmTag.insertTags(mRealm, jsonDoc);
         }
     }
 
