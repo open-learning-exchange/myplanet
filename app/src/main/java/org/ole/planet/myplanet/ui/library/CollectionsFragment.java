@@ -138,12 +138,14 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     private void setListAdapter() {
         list = mRealm.where(RealmTag.class).findAll();
-        if (recentList.isEmpty()){
+        if (recentList.isEmpty()) {
             recentList = list;
         }
         List<RealmTag> allTags = mRealm.where(RealmTag.class).findAll();
         HashMap<String, List<RealmTag>> childMap = new HashMap<>();
-        createChildMap(childMap, allTags);
+        for (RealmTag t : allTags) {
+            createChildMap(childMap, t);
+        }
         listTag.setGroupIndicator(null);
         adapter = new TagExpandableAdapter(getActivity(), switchMany.isChecked() ? recentList : list, childMap);
 
@@ -151,17 +153,16 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         listTag.setAdapter(adapter);
     }
 
-    private void createChildMap(HashMap<String, List<RealmTag>> childMap, List<RealmTag> allTags) {
-        for (RealmTag t : allTags) {
-            for (String s : t.getAttachedTo()) {
-                List<RealmTag> l = new ArrayList<>();
-                if (childMap.containsKey(s)) {
-                    l = childMap.get(s);
-                }
-                l.add(t);
-                childMap.put(s, l);
+    private void createChildMap(HashMap<String, List<RealmTag>> childMap, RealmTag t) {
+        for (String s : t.getAttachedTo()) {
+            List<RealmTag> l = new ArrayList<>();
+            if (childMap.containsKey(s)) {
+                l = childMap.get(s);
             }
+            l.add(t);
+            childMap.put(s, l);
         }
+
     }
 
     @Override
