@@ -89,11 +89,6 @@ public class SyncManager {
     private void authenticateAndSync() {
         Thread td = new Thread(() -> {
             if (TransactionSyncManager.authenticate()) {
-                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-                if (wifiInfo.getSupplicantState() == SupplicantState.COMPLETED) {
-                    settings.edit().putString("LastWifiSSID", wifiInfo.getSSID()).commit();
-                }
                 startSync();
             } else {
                 handleException("Invalid name or password");
@@ -105,6 +100,11 @@ public class SyncManager {
 
     private void startSync() {
         try {
+            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            if (wifiInfo.getSupplicantState() == SupplicantState.COMPLETED) {
+                settings.edit().putString("LastWifiSSID", wifiInfo.getSSID()).commit();
+            }
             isSyncing = true;
             NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
             mRealm = dbService.getRealmInstance();
