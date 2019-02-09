@@ -2,6 +2,9 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.wifi.SupplicantState;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.util.Log;
 
 import com.google.gson.JsonArray;
@@ -55,9 +58,9 @@ public class SyncManager {
     }
 
     public static SyncManager getInstance() {
-     //   if (ourInstance == null) {
-            ourInstance = new SyncManager(MainApplication.context);
-       // }
+        //   if (ourInstance == null) {
+        ourInstance = new SyncManager(MainApplication.context);
+        // }
         return ourInstance;
     }
 
@@ -86,6 +89,11 @@ public class SyncManager {
     private void authenticateAndSync() {
         Thread td = new Thread(() -> {
             if (TransactionSyncManager.authenticate()) {
+                WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+                WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+                if (wifiInfo.getSupplicantState() == SupplicantState.COMPLETED) {
+                    settings.edit().putString("LastWifiSSID", wifiInfo.getSSID()).commit();
+                }
                 startSync();
             } else {
                 handleException("Invalid name or password");
