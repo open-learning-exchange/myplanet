@@ -58,7 +58,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
         }
         if (id == R.id.menu_goOnline) {
             wifiStatusSwitch();
-            return true;
         } else if (id == R.id.menu_logout) {
             logout();
         } else if (id == R.id.action_setting) {
