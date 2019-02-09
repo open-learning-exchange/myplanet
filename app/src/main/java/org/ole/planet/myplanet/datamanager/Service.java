@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 
@@ -43,6 +44,25 @@ public class Service {
         });
     }
 
+    public void isPlanetAvailable(PlanetAvailableListener callback){
+        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+        retrofitInterface.isPlanetAvailable(Utilities.getUrl()).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
+                if (callback!=null && response.code() == 200){
+                    callback.isAvailable();
+                }else{
+                    callback.notAvailable();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.notAvailable();
+            }
+        });
+    }
+
     private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
         int currentVersion = VersionUtils.getVersionCode(context);
         if (currentVersion < body.getMinapkcode())
@@ -60,6 +80,10 @@ public class Service {
         void onCheckingVersion();
 
         void onError(String msg, boolean blockSync);
+    }
 
+    public interface PlanetAvailableListener{
+        void isAvailable();
+        void notAvailable();
     }
 }
