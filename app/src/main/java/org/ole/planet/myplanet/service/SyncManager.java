@@ -109,6 +109,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "exams");
             resourceTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "ratings");
+            TransactionSyncManager.syncDb(mRealm, "tags");
             TransactionSyncManager.syncDb(mRealm, "submissions");
             myLibraryTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "login_activities");

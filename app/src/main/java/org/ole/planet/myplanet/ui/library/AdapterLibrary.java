@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -41,6 +42,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> ratingMap;
     private OnRatingChangeListener ratingChangeListener;
+    private HashMap<String, RealmTag> tagMap;
+    private HashMap<String, RealmTag> tagMapWithName;
+
     public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
         this.ratingChangeListener = ratingChangeListener;
     }
@@ -49,12 +53,18 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return libraryList;
     }
 
-    public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap) {
+    public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, HashMap<String, RealmTag> tagMap) {
         this.ratingMap = ratingMap;
         this.context = context;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
-
+        this.tagMap = tagMap;
+        this.tagMapWithName = new HashMap<>();
+        for (String key : tagMap.keySet()
+        ) {
+            RealmTag tag = tagMap.get(key);
+            this.tagMapWithName.put(tag.getName(), tag);
+        }
         config = Utilities.getCloudConfig()
                 .selectMode(ChipCloud.SelectMode.single);
         if (context instanceof OnHomeItemClickListener) {
@@ -111,12 +121,14 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
 
         for (String s : libraryList.get(position).getTag()) {
-            chipCloud.addChip(s);
-            chipCloud.setListener((i, b, b1) -> {
-                if (b1 && listener != null) {
-                    listener.onTagClicked(chipCloud.getLabel(i));
-                }
-            });
+            if (tagMap.containsKey(s)) {
+                chipCloud.addChip(tagMap.get(s));
+                chipCloud.setListener((i, b, b1) -> {
+                    if (b1 && listener != null) {
+                        listener.onTagClicked(tagMapWithName.get(chipCloud.getLabel(i)));
+                    }
+                });
+            }
         }
 
     }
@@ -142,10 +154,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ratingBar = itemView.findViewById(R.id.rating_bar);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
-            // llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             average = itemView.findViewById(R.id.average);
-            // average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
-            // rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, context) ? View.VISIBLE :View.GONE );
             checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) {
                     Utilities.handleCheck(b, getAdapterPosition(), (ArrayList) selectedItems, libraryList);
