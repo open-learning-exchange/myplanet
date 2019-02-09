@@ -77,14 +77,18 @@ public class SyncManager {
         NotificationUtil.cancel(context, 111);
         isSyncing = false;
         ourInstance = null;
+        try{
+            mRealm.close();
+            td.stop();
+        }catch (Exception e){}
         settings.edit().putLong("LastSync", new Date().getTime()).commit();
         if (listener != null) {
             listener.onSyncComplete();
         }
     }
-
+    Thread td;
     private void authenticateAndSync() {
-        Thread td = new Thread(() -> {
+         td = new Thread(() -> {
             if (TransactionSyncManager.authenticate()) {
                 startSync();
             } else {
