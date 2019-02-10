@@ -168,6 +168,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             handler.onLogin();
             handler.onDestory();
             Intent dashboard = new Intent(getApplicationContext(), DashboardActivity.class);
+            dashboard.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(dashboard);
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
