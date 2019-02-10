@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 public abstract class PermissionActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE_FILE = 111;
     private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
+
     public boolean checkPermission(String strPermission) {
         int result = ContextCompat.checkSelfPermission(this, strPermission);
         return result == PackageManager.PERMISSION_GRANTED;
@@ -16,10 +17,6 @@ public abstract class PermissionActivity extends AppCompatActivity {
 
     public void requestPermission(String strPermission, int perCode) {
         ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
-    }
-
-    public void requestWifiPermission( int perCode) {
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_NETWORK_STATE}, perCode);
     }
 
     public void requestPermission() {

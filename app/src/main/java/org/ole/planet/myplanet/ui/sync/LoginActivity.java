@@ -115,10 +115,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage();
         }
-
-        if (!checkPermission(Manifest.permission.CHANGE_WIFI_STATE)) {
-            requestWifiPermission(125);
-        }
         new Service(this).checkVersion(this, settings);
     }
 
