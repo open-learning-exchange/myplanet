@@ -22,6 +22,12 @@ public class NetworkUtils {
         return mng != null && mng.isWifiEnabled();
     }
 
+    public static boolean isWifiConnected() {
+        ConnectivityManager connManager = (ConnectivityManager) MainApplication.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        return mWifi.isConnected();
+    }
+
     public static boolean isWifiBluetoothEnabled() {
         return isBluetoothEnabled() || isWifiEnabled();
     }

@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.base;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -60,6 +61,24 @@ public abstract class BaseResourceFragment extends Fragment {
         public void onReceive(Context context, Intent intent) {
             Utilities.log("Broad cast received");
             showDownloadDialog(getLibraryList(new DatabaseService(context).getRealmInstance()));
+        }
+    };
+
+    BroadcastReceiver stateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            new AlertDialog.Builder(getActivity())
+                    .setMessage("Do you want to stay online?")
+                    .setPositiveButton("Yes", null)
+                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            WifiManager wifi = (WifiManager) MainApplication.context.getSystemService(Context.WIFI_SERVICE);
+                            if (wifi != null)
+                                wifi.setWifiEnabled(false);
+                        }
+                    })
+                    .show();
         }
     };
 
@@ -163,6 +182,10 @@ public abstract class BaseResourceFragment extends Fragment {
         IntentFilter intentFilter2 = new IntentFilter();
         intentFilter2.addAction("ACTION_NETWORK_CHANGED");
         LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(receiver, intentFilter2);
+
+        IntentFilter intentFilter3 = new IntentFilter();
+        intentFilter3.addAction("SHOW_WIFI_ALERT");
+        LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(stateReceiver, intentFilter3);
     }
 
     public List<RealmMyLibrary> getLibraryList(Realm mRealm) {
@@ -193,6 +216,7 @@ public abstract class BaseResourceFragment extends Fragment {
         super.onPause();
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(receiver);
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(broadcastReceiver);
+        LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(stateReceiver);
 
     }
 
