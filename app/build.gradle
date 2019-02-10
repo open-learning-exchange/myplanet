@@ -7,8 +7,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 254
-        versionName "0.2.54"
+        versionCode 256
+        versionName "0.2.56"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -72,8 +72,8 @@ dependencies {
     implementation 'com.mikepenz:octicons-typeface:3.0.0.1@aar'
     implementation 'de.hdodenhof:circleimageview:2.2.0'
     implementation 'com.mikepenz:itemanimators:1.0.2@aar'
-    implementation ('com.github.jeancsanchez:JcPlayer:2.6.13'){
-        exclude group:'com.android.support.constraint'
+    implementation('com.github.jeancsanchez:JcPlayer:2.6.13') {
+        exclude group: 'com.android.support.constraint'
     }
     implementation 'com.mikepenz:crossfader:1.5.1@aar'
     implementation 'com.mikepenz:crossfadedrawerlayout:1.0.1@aar'
@@ -97,6 +97,7 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'com.github.fiskurgit:ChipCloud:3.0.5'
+
 }
 realm {
     syncEnabled = true
