@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
@@ -113,6 +114,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         isSync = true;
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage();
+        }
+
+        if (!checkPermission(Manifest.permission.CHANGE_WIFI_STATE)) {
+            requestWifiPermission(125);
         }
         new Service(this).checkVersion(this, settings);
     }

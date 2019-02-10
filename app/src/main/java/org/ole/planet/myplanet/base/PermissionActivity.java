@@ -18,6 +18,10 @@ public abstract class PermissionActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
     }
 
+    public void requestWifiPermission( int perCode) {
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_WIFI_STATE, Manifest.permission.CHANGE_NETWORK_STATE}, perCode);
+    }
+
     public void requestPermission() {
         if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) || !checkPermission(Manifest.permission.CAMERA)) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA}, PERMISSION_REQUEST_CODE_FILE);

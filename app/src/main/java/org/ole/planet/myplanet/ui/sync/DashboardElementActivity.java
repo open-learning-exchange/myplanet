@@ -8,9 +8,11 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.ActionMenuItemView;
 import android.util.Log;
@@ -18,6 +20,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -53,9 +56,9 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.menu_profile) {
-            return true;
-        }
+//        if (id == R.id.menu_profile) {
+//            return true;
+//        }
         if (id == R.id.menu_goOnline) {
             wifiStatusSwitch();
         } else if (id == R.id.menu_logout) {
@@ -81,7 +84,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
             Toast.makeText(this, "Wifi is turned Off. Saving battery power", Toast.LENGTH_LONG).show();
-
         } else {
             wifi.setWifiEnabled(true);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
@@ -92,10 +94,16 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
     }
 
     private void connectToWifi() {
-
-        //Todo Connnect to Wifi with the SSID
-        Log.e("Wifi", "First Sync Wifi name is " + settings.getString("LastWifiSSID", ""));
-
+        String ssid = settings.getString("LastWifiSSID", "");
+        WifiManager wifiManager = (WifiManager) MainApplication.context.getSystemService(WIFI_SERVICE);
+        int netId = -1;
+        for (WifiConfiguration tmp : wifiManager.getConfiguredNetworks())
+            if (tmp.SSID.equals("\"" + ssid + "\"")) {
+                netId = tmp.networkId;
+                wifiManager.enableNetwork(netId, true);
+            }
+        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_NETWORK_CHANGED"));
+        Toast.makeText(this, "Connected to " + ssid, Toast.LENGTH_LONG).show();
     }
 
 
