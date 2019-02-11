@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
 
@@ -94,16 +95,20 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
     }
 
     private void connectToWifi() {
-        String ssid = settings.getString("LastWifiSSID", "");
+        int id = settings.getInt("LastWifiID", -1);
+        Utilities.log("LAST SSID " + id);
         WifiManager wifiManager = (WifiManager) MainApplication.context.getSystemService(WIFI_SERVICE);
         int netId = -1;
-        for (WifiConfiguration tmp : wifiManager.getConfiguredNetworks())
-            if (tmp.SSID.equals("\"" + ssid + "\"")) {
+        for (WifiConfiguration tmp : wifiManager.getConfiguredNetworks()) {
+            if (tmp.networkId > -1 && tmp.networkId == id) {
                 netId = tmp.networkId;
                 wifiManager.enableNetwork(netId, true);
+                Toast.makeText(this, "Connected to " + netId, Toast.LENGTH_LONG).show();
+                LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_NETWORK_CHANGED"));
+                break;
             }
-        LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_NETWORK_CHANGED"));
-        Toast.makeText(this, "Connected to " + ssid, Toast.LENGTH_LONG).show();
+            Utilities.log("SSID " + tmp.SSID);
+        }
     }
 
 

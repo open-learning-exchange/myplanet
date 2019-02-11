@@ -90,7 +90,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 new File(myDir, children[i]).delete();
             }
         }
-        Utilities.log("Cleared storage");
         settings.edit().putBoolean("firstRun", false).commit();
     }
 

@@ -29,7 +29,7 @@ public class Service {
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
-                preferences.edit().putString("LastWifiSSID", NetworkUtils.getCurrentSsid(context)).commit();
+                preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).commit();
                 if (response.body() != null) {
                     preferences.edit().putString("versionDetail", new Gson().toJson(response.body()));
                     preferences.edit().commit();
