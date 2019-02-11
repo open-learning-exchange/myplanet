@@ -138,6 +138,7 @@ public class Utilities {
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String url = settings.getString("couchdbURL", "");
+        Utilities.log("URL " + url);
         if (!url.endsWith("/db")) {
             url += "/db";
         }
@@ -151,6 +152,5 @@ public class Utilities {
         }
         return url + "/versions";
     }
-
 
 }
