@@ -99,6 +99,10 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
         Utilities.log("LAST SSID " + id);
         WifiManager wifiManager = (WifiManager) MainApplication.context.getSystemService(WIFI_SERVICE);
         int netId = -1;
+        if (wifiManager == null){
+            Utilities.toast(this, "Unable to connect to planet wifi.");
+            return;
+        }
         for (WifiConfiguration tmp : wifiManager.getConfiguredNetworks()) {
             if (tmp.networkId > -1 && tmp.networkId == id) {
                 netId = tmp.networkId;
