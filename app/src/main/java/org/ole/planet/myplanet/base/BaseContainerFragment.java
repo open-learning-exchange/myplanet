@@ -73,7 +73,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
     public void openIntent(RealmMyLibrary items, Class typeClass) {
         Intent fileOpenIntent = new Intent(getActivity(), typeClass);
-        fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        fileOpenIntent.putExtra("TOUCHED_FILE", items.getId() + "/" + items.getResourceLocalAddress());
         startActivity(fileOpenIntent);
     }
 

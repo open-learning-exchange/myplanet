@@ -10,6 +10,8 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
+import java.io.IOException;
+
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -39,6 +41,7 @@ public class Service {
 
             @Override
             public void onFailure(Call<MyPlanet> call, Throwable t) {
+                t.printStackTrace();
                 callback.onError("Connection failed.", true);
             }
         });
@@ -52,6 +55,11 @@ public class Service {
                 if (callback!=null && response.code() == 200){
                     callback.isAvailable();
                 }else{
+                    try {
+                        Utilities.log("ERROR " + response.errorBody().string());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     callback.notAvailable();
                 }
             }

@@ -42,20 +42,28 @@ public class FileUtils {
     }
 
     public static File getSDPathFromUrl(String url) {
-        return createFilePath(SD_PATH, getFileNameFromUrl(url));
+        return createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
     }
 
     public static boolean checkFileExist(String url) {
         if (url == null || url.isEmpty())
             return false;
-        File f = createFilePath(SD_PATH, getFileNameFromUrl(url));
+        File f = createFilePath(SD_PATH + "/" + getIdFromUrl(url), getIdFromUrl(url) + "/" + getFileNameFromUrl(url));
         return f.exists();
-
     }
 
     public static String getFileNameFromUrl(String url) {
         try {
             return url.substring(url.lastIndexOf("/") + 1);
+        } catch (Exception e) {
+        }
+        return "";
+    }
+
+    public static String getIdFromUrl(String url) {
+        try {
+            String[] sp = url.replaceAll("://", "").split("/");
+            return sp[3];
         } catch (Exception e) {
         }
         return "";
