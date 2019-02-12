@@ -114,7 +114,7 @@
     <string name="select_many_collections">Select Many Collections</string>
     <string name="collections">Collections</string>
     <string name="ok">OK</string>
-    <string name="inactive_message">User not activated, please contact administrator or manager to activate their account.</string>
+    <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
