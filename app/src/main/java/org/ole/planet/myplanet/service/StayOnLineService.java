@@ -9,14 +9,17 @@ import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 public class StayOnLineService extends JobService {
 
     @Override
     public boolean onStartJob(JobParameters job) {
-        if (NetworkUtils.isWifiConnected())
-            LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("SHOW_WIFI_ALERT"));
+        if (Constants.showBetaFeature(Constants.KEY_SYNC, this)) {
+            if (NetworkUtils.isWifiConnected())
+                LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("SHOW_WIFI_ALERT"));
+        }
         return false;
     }
 

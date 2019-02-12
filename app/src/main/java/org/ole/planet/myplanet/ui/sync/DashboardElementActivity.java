@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
@@ -52,6 +53,12 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
         return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.menu_goOnline).setVisible(Constants.showBetaFeature(Constants.KEY_SYNC, this));
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -99,7 +106,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
         Utilities.log("LAST SSID " + id);
         WifiManager wifiManager = (WifiManager) MainApplication.context.getSystemService(WIFI_SERVICE);
         int netId = -1;
-        if (wifiManager == null){
+        if (wifiManager == null) {
             Utilities.toast(this, "Unable to connect to planet wifi.");
             return;
         }
@@ -114,7 +121,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
             Utilities.log("SSID " + tmp.SSID);
         }
     }
-
 
     public void logout() {
         profileDbHandler.onLogout();

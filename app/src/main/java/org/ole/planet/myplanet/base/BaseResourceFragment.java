@@ -89,7 +89,7 @@ public abstract class BaseResourceFragment extends Fragment {
                 if (!db_myLibrary.isEmpty()) {
                     LayoutInflater inflater = getLayoutInflater();
                     convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
-                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getContext());
+                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
                     alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
                     createListView(db_myLibrary);
                     alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, selectedItemsList, settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null).show();
