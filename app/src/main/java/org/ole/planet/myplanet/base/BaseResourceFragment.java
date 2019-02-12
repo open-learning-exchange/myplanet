@@ -92,7 +92,7 @@ public abstract class BaseResourceFragment extends Fragment {
 
 
     public void startDownload(ArrayList urls) {
-        new Service(MainApplication.context).isPlanetAvailable(new Service.PlanetAvailableListener() {
+        new Service(getActivity()).isPlanetAvailable(new Service.PlanetAvailableListener() {
             @Override
             public void isAvailable() {
                 if (!urls.isEmpty()) {

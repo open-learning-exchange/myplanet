@@ -51,6 +51,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private Toolbar mTopToolbar;
     private BottomNavigationView navigationView;
     RealmUserModel user;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,7 +60,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         setSupportActionBar(mTopToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
-         user = new UserProfileDbHandler(this).getUserModel();
+        user = new UserProfileDbHandler(this).getUserModel();
 
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
@@ -68,9 +69,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         BottomNavigationViewHelper.disableShiftMode(navigationView);
 
 
-        if (user.getRolesList().isEmpty()){
+        if (user.getRolesList().isEmpty()) {
             navigationView.setVisibility(View.GONE);
-            openCallFragment(new FeedbackFragment(), "Feedback");
+            openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
         }
         navigationView.setOnNavigationItemSelectedListener(this);
@@ -90,7 +91,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (user.getRolesList().isEmpty()){
+        if (user.getRolesList().isEmpty()) {
             menu.findItem(R.id.action_setting).setEnabled(false);
         }
         return super.onPrepareOptionsMenu(menu);
@@ -119,9 +120,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .addStickyDrawerItems(getDrawerItemsFooter())
                 .withOnDrawerItemClickListener((view, position, drawerItem) -> {
                     if (drawerItem != null) {
-                       // if (drawerItem instanceof Nameable) {
-                            menuAction(((Nameable) drawerItem).getName().getTextRes());
-                     //   }
+                        // if (drawerItem instanceof Nameable) {
+                        menuAction(((Nameable) drawerItem).getName().getTextRes());
+                        //   }
                     }
                     return false;
                 })
