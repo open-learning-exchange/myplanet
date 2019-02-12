@@ -11,11 +11,11 @@ import android.net.NetworkInfo;
 import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.ActionMenuItemView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -94,10 +94,12 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
             Toast.makeText(this, "Wifi is turned Off. Saving battery power", Toast.LENGTH_LONG).show();
         } else {
             wifi.setWifiEnabled(true);
+            Toast.makeText(this, "Turning on Wifi. Please wait...", Toast.LENGTH_LONG).show();
+            (new Handler()).postDelayed(this::connectToWifi, 5000);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
-            Toast.makeText(this, "Wifi is turned On. Turn off later to save battery power", Toast.LENGTH_LONG).show();
-            connectToWifi();
+
+
         }
     }
 
@@ -110,16 +112,18 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
             Utilities.toast(this, "Unable to connect to planet wifi.");
             return;
         }
+
         for (WifiConfiguration tmp : wifiManager.getConfiguredNetworks()) {
             if (tmp.networkId > -1 && tmp.networkId == id) {
                 netId = tmp.networkId;
                 wifiManager.enableNetwork(netId, true);
-                Toast.makeText(this, "Connected to " + netId, Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "You are now connected " + netId, Toast.LENGTH_SHORT).show();
                 LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_NETWORK_CHANGED"));
                 break;
             }
             Utilities.log("SSID " + tmp.SSID);
         }
+
     }
 
     public void logout() {
