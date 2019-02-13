@@ -3,11 +3,15 @@ package org.ole.planet.myplanet.ui.viewer;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -16,6 +20,7 @@ import android.widget.TextView;
 
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 public class WebViewActivity extends AppCompatActivity {
 
@@ -36,6 +41,18 @@ public class WebViewActivity extends AppCompatActivity {
         title = getIntent().getStringExtra("title");
         link = getIntent().getStringExtra("link");
         wv = findViewById(R.id.wv);
+
+        CookieSyncManager.createInstance(this);
+        CookieManager cookieManager = CookieManager.getInstance();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.removeAllCookies(aBoolean -> {
+
+            });
+        }else{
+            cookieManager.removeAllCookie();
+        }
+
+
         tv_title = (findViewById(R.id.web_title));
         tv_source = (findViewById(R.id.web_source));
         if (!TextUtils.isEmpty(title)) {
@@ -76,6 +93,15 @@ public class WebViewActivity extends AppCompatActivity {
                 super.onPageStarted(view, url, favicon);
                 Uri i = Uri.parse(url);
                 tv_source.setText(i.getHost());
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                Utilities.log("Url " +url);
+                if (url.endsWith("/eng/")) {
+                    finish();
+                }
+                super.onPageFinished(view, url);
             }
         });
 
