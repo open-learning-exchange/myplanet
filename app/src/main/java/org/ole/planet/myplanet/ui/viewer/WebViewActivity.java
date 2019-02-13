@@ -22,6 +22,8 @@ public class WebViewActivity extends AppCompatActivity {
     ProgressBar pBar;
     boolean fromDeepLink = false;
     String link;
+    WebView wv;
+    TextView tv_title, tv_source;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,9 +35,9 @@ public class WebViewActivity extends AppCompatActivity {
 
         title = getIntent().getStringExtra("title");
         link = getIntent().getStringExtra("link");
-        final WebView wv = findViewById(R.id.wv);
-        final TextView tv_title = (findViewById(R.id.news_title));
-        final TextView tv_source = (findViewById(R.id.news_source));
+        wv = findViewById(R.id.wv);
+        tv_title = (findViewById(R.id.web_title));
+        tv_source = (findViewById(R.id.web_source));
         if (!TextUtils.isEmpty(title)) {
             tv_title.setText(title);
         }
@@ -43,6 +45,14 @@ public class WebViewActivity extends AppCompatActivity {
         pBar = findViewById(R.id.pBar);
         pBar.setMax(100);
         pBar.setProgress(0);
+        setListeners();
+        wv.getSettings().setJavaScriptEnabled(true);
+        wv.loadUrl(link);
+        findViewById(R.id.finish).setOnClickListener(v -> finish());
+
+    }
+
+    private void setListeners() {
 
         wv.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -68,11 +78,6 @@ public class WebViewActivity extends AppCompatActivity {
                 tv_source.setText(i.getHost());
             }
         });
-
-
-        wv.getSettings().setJavaScriptEnabled(true);
-        wv.loadUrl(link);
-        findViewById(R.id.finish).setOnClickListener(v -> finish());
 
     }
 
