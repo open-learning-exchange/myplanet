@@ -137,12 +137,15 @@ public class Utilities {
 
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String url = settings.getString("couchdbURL", "");
-        Utilities.log("URL " + url);
-        if (!url.endsWith("/db")) {
-            url += "/db";
+        if (settings.contains("couchdbURL")) {
+            String url = settings.getString("couchdbURL", "");
+
+            if (!url.endsWith("/db")) {
+                url += "/db";
+            }
+            return url;
         }
-        return url;
+        return "";
     }
 
     public static String getUpdateUrl(SharedPreferences settings) {

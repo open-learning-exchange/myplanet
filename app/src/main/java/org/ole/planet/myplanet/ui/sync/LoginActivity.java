@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
+import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -80,6 +81,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
 
         }
+        findViewById(R.id.become_member).setOnClickListener(v -> {
+            if (!Utilities.getUrl().isEmpty())
+                startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
+                        .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
+        });
     }
 
     private void clearInternalStorage() {
