@@ -81,27 +81,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
 
         }
+
+    }
+
+
+
+    public void declareElements() {
         findViewById(R.id.become_member).setOnClickListener(v -> {
             if (!Utilities.getUrl().isEmpty())
                 startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
                         .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
         });
-    }
-
-    private void clearInternalStorage() {
-        File myDir = new File(Utilities.SD_PATH);
-        if (myDir.isDirectory()) {
-            String[] children = myDir.list();
-            for (int i = 0; i < children.length; i++) {
-                new File(myDir, children[i]).delete();
-            }
-        }
-        settings.edit().putBoolean("firstRun", false).commit();
-    }
-
-
-    public void declareElements() {
-        //Settings button
         imgBtnSetting.setOnClickListener(view -> {
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
             builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
