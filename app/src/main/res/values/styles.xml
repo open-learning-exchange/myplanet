@@ -1,14 +1,6 @@
 <resources>
     <!-- Toolbar -->
-    <style name="HeaderBar">
-        <item name="android:background">#303F9F</item>
 
-    </style>
-
-    <style name="overFlowMenuStyle" parent="Widget.AppCompat.PopupMenu.Overflow">
-        <item name="overlapAnchor">false</item>
-        <!--<item name="android:dropDownVerticalOffset">5dp</item>-->
-    </style>
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
@@ -42,10 +34,6 @@
         <item name="android:textColor">@color/red</item>
         <item name="android:textSize">12sp</item>
     </style>
-
-    <style name="MyMaterialTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <style name="MyMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
     <style name="CustomTheme" parent="MaterialDrawerTheme.TranslucentStatus">
         <!-- ...and here we setting appcompat’s color theme attrs -->

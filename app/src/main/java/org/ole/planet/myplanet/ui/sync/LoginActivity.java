@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
@@ -89,7 +90,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 new File(myDir, children[i]).delete();
             }
         }
-        Utilities.log("Cleared storage");
         settings.edit().putBoolean("firstRun", false).commit();
     }
 

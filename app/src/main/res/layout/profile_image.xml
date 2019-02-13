@@ -1,7 +1,0 @@
-<de.hdodenhof.circleimageview.CircleImageView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/profile_image"
-    android:layout_width="0dp"
-    android:layout_height="45dp"
-    android:layout_weight="1"
-    android:paddingRight="50dp"
-    android:src="@drawable/profile" />

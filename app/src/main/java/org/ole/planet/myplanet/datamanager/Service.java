@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
@@ -30,6 +31,7 @@ public class Service {
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
+                preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).commit();
                 if (response.body() != null) {
                     preferences.edit().putString("versionDetail", new Gson().toJson(response.body()));
                     preferences.edit().commit();
@@ -47,19 +49,14 @@ public class Service {
         });
     }
 
-    public void isPlanetAvailable(PlanetAvailableListener callback){
+    public void isPlanetAvailable(PlanetAvailableListener callback) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.isPlanetAvailable(Utilities.getUrl()).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
-                if (callback!=null && response.code() == 200){
+                if (callback != null && response.code() == 200) {
                     callback.isAvailable();
                 }else{
-                    try {
-                        Utilities.log("ERROR " + response.errorBody().string());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
                     callback.notAvailable();
                 }
             }
@@ -90,8 +87,9 @@ public class Service {
         void onError(String msg, boolean blockSync);
     }
 
-    public interface PlanetAvailableListener{
+    public interface PlanetAvailableListener {
         void isAvailable();
+
         void notAvailable();
     }
 }
