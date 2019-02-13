@@ -19,6 +19,7 @@ import com.firebase.jobdispatcher.Trigger;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.service.AutoSyncService;
+import org.ole.planet.myplanet.service.StayOnLineService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -53,18 +54,19 @@ public class MainApplication extends Application implements Application.Activity
         preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
             dispatcher.cancelAll();
-            createJob(preferences.getInt("autoSyncInterval", 15 * 60));
+            createJob(preferences.getInt("autoSyncInterval", 15 * 60), AutoSyncService.class);
         } else {
             dispatcher.cancelAll();
         }
+        createJob(5 * 60, StayOnLineService.class);
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
     }
 
-    public void createJob(int sec) {
+    public void createJob(int sec, Class jobClass) {
         Utilities.log("Create job");
         Job myJob = dispatcher.newJobBuilder()
-                .setService(AutoSyncService.class)
+                .setService(jobClass)
                 .setTag("ole")
                 .setRecurring(true)
                 .setLifetime(Lifetime.FOREVER)
