@@ -125,7 +125,7 @@ public class MainApplication extends Application implements Application.Activity
         RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
         if (model!=null){
             log.setParentCode(model.getParentCode());
-            log.setPlanetCode(model.getPlanetCode());
+            log.setCreatedOn(model.getPlanetCode());
         }
         log.setPage("");
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);
