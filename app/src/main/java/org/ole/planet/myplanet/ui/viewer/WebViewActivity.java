@@ -42,17 +42,7 @@ public class WebViewActivity extends AppCompatActivity {
         link = getIntent().getStringExtra("link");
         wv = findViewById(R.id.wv);
 
-        CookieSyncManager.createInstance(this);
-        CookieManager cookieManager = CookieManager.getInstance();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            cookieManager.removeAllCookies(aBoolean -> {
-
-            });
-        }else{
-            cookieManager.removeAllCookie();
-        }
-
-
+        clearCookie();
         tv_title = (findViewById(R.id.web_title));
         tv_source = (findViewById(R.id.web_source));
         if (!TextUtils.isEmpty(title)) {
@@ -66,15 +56,50 @@ public class WebViewActivity extends AppCompatActivity {
         wv.getSettings().setJavaScriptEnabled(true);
         wv.loadUrl(link);
         findViewById(R.id.finish).setOnClickListener(v -> finish());
+        setWebClient();
+    }
 
+    private void setWebClient() {
+
+        wv.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                Utilities.log("Url " + url);
+                if (url.endsWith("/eng/")) {
+                    finish();
+                }
+                Uri i = Uri.parse(url);
+                tv_source.setText(i.getHost());
+            }
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+            }
+        });
+    }
+
+
+    private void clearCookie() {
+        CookieSyncManager.createInstance(this);
+        CookieManager cookieManager = CookieManager.getInstance();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            cookieManager.removeAllCookies(aBoolean -> {
+            });
+        }else{
+            cookieManager.removeAllCookie();
+        }
     }
 
     private void setListeners() {
-
         wv.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 (WebViewActivity.this).setProgress(newProgress);
+                Utilities.log("Url " + view.getUrl() );
+                if (view.getUrl().endsWith("/eng/")) {
+                    finish();
+                }
                 pBar.incrementProgressBy(newProgress);
                 if (newProgress == 100 && pBar.isShown()) pBar.setVisibility(View.GONE);
             }
@@ -86,24 +111,6 @@ public class WebViewActivity extends AppCompatActivity {
             }
         });
 
-        wv.setWebViewClient(new WebViewClient() {
-
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
-                Uri i = Uri.parse(url);
-                tv_source.setText(i.getHost());
-            }
-
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                Utilities.log("Url " +url);
-                if (url.endsWith("/eng/")) {
-                    finish();
-                }
-                super.onPageFinished(view, url);
-            }
-        });
 
     }
 

@@ -79,26 +79,22 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             isSync = true;
             processedUrl = Utilities.getUrl();
             new Service(this).checkVersion(this, settings);
-
         }
 
     }
 
 
-
     public void declareElements() {
         findViewById(R.id.become_member).setOnClickListener(v -> {
-            if (!Utilities.getUrl().isEmpty())
+            if (!Utilities.getUrl().isEmpty()) {
                 startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
                         .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
+            } else {
+                Utilities.toast(this, "Please enter server url first.");
+                settingDialog();
+            }
         });
-        imgBtnSetting.setOnClickListener(view -> {
-            MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-            builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
-                    .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
-                    .onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
-            settingDialog(builder);
-        });
+        imgBtnSetting.setOnClickListener(view -> settingDialog());
     }
 
 
@@ -171,7 +167,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
     }
 
-    public void settingDialog(MaterialDialog.Builder builder) {
+    public void settingDialog() {
+        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+        builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
+                .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
+                .onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
