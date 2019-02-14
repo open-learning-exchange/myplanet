@@ -99,6 +99,7 @@
     <string name="select_many_collections">Select Many Collections</string>
     <string name="collections">Collections</string>
     <string name="ok">OK</string>
+    <string name="archive_mycourse">Archive myCourse</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
