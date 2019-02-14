@@ -18,8 +18,10 @@ import com.firebase.jobdispatcher.Trigger;
 
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmApkLog;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.service.StayOnLineService;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -120,6 +122,11 @@ public class MainApplication extends Application implements Application.Activity
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
+        RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
+        if (model!=null){
+            log.setParentCode(model.getParentCode());
+            log.setCreatedOn(model.getPlanetCode());
+        }
         log.setPage("");
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);
         log.setError(e);
