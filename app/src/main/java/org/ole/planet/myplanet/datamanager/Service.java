@@ -51,7 +51,7 @@ public class Service {
 
     public void isPlanetAvailable(PlanetAvailableListener callback) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-        retrofitInterface.isPlanetAvailable(Utilities.getUrl()).enqueue(new Callback<ResponseBody>() {
+        retrofitInterface.isPlanetAvailable(Utilities.getUpdateUrl(preferences)).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
                 if (callback != null && response.code() == 200) {
