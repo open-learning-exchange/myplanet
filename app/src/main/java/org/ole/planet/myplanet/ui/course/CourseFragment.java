@@ -9,6 +9,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -26,6 +27,8 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import java.util.HashMap;
 import java.util.List;
 
+import io.realm.RealmObject;
+
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -37,6 +40,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
+    Button btnRemove;
 
     public CourseFragment() {
     }
@@ -63,9 +67,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> addToMyList());
         etSearch = getView().findViewById(R.id.et_search);
+        btnRemove = getView().findViewById(R.id.btn_remove);
         getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
-        if (isMyCourseLib)
+        if (isMyCourseLib){
             tvDelete.setText(R.string.archive_mycourse);
+            btnRemove.setVisibility(View.VISIBLE);
+        }
         imgSearch = getView().findViewById(R.id.img_search);
         tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch.setOnClickListener(view -> {
@@ -75,7 +82,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
         });
         setSearchListener();
+        btnRemove.setOnClickListener(V ->{
+            deleteSelected(true);
+        });
     }
+
+
 
     private void setSearchListener() {
         etSearch.addTextChangedListener(new TextWatcher() {

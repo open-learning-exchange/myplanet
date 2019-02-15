@@ -140,7 +140,12 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     private void setCourseData() {
         tvStepTitle.setText(currentCourse.getCourseTitle());
-        btnAddRemove.setText(!currentCourse.getUserId().contains(userModel.getId()) ? getString(R.string.add_to_mycourses) : getString(R.string.leave));
+        if (!currentCourse.getUserId().contains(userModel.getId())) {
+            btnAddRemove.setVisibility(View.VISIBLE);
+            btnAddRemove.setText(getString(R.string.add_to_mycourses));
+        } else {
+            btnAddRemove.setVisibility(View.GONE);
+        }
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
