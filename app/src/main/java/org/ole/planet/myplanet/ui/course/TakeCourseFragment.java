@@ -46,7 +46,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     RealmMyCourse currentCourse;
     List<RealmCourseStep> steps;
     Button btnAddRemove;
-    ImageView next, previous;
+    TextView next, previous;
     RealmUserModel userModel;
     int position = 0;
 
@@ -104,7 +104,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         mViewPager.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), courseId, RealmCourseStep.getStepIds(mRealm, courseId)));
         mViewPager.addOnPageChangeListener(this);
         if (mViewPager.getCurrentItem() == 0) {
-            previous.setColorFilter(getResources().getColor(R.color.md_grey_500));
+            previous.setTextColor(getResources().getColor(R.color.md_grey_500));
         }
 
         setCourseData();
@@ -164,7 +164,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 changeNextButtonState(position);
         } else {
             next.setClickable(true);
-            next.setColorFilter(getResources().getColor(R.color.md_white_1000));
+            next.setTextColor(getResources().getColor(R.color.md_white_1000));
             tvStepTitle.setText(currentCourse.getCourseTitle());
         }
         int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
@@ -177,9 +177,9 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     private void changeNextButtonState(int position) {
         if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
             next.setClickable(true);
-            next.setColorFilter(getResources().getColor(R.color.md_white_1000));
+            next.setTextColor(getResources().getColor(R.color.md_white_1000));
         } else {
-            next.setColorFilter(getResources().getColor(R.color.md_grey_500));
+            next.setTextColor(getResources().getColor(R.color.md_grey_500));
             next.setClickable(false);
         }
     }
@@ -191,13 +191,13 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     private void onClickNext() {
         if (mViewPager.getCurrentItem() == steps.size()) {
-            next.setColorFilter(getResources().getColor(R.color.md_grey_500));
+            next.setTextColor(getResources().getColor(R.color.md_grey_500));
         }
     }
 
     private void onClickPrevious() {
         if (mViewPager.getCurrentItem() - 1 == 0) {
-            previous.setColorFilter(getResources().getColor(R.color.md_grey_500));
+            previous.setTextColor(getResources().getColor(R.color.md_grey_500));
         }
     }
 
@@ -207,7 +207,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             case R.id.next_step:
                 if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
-                    previous.setColorFilter(getResources().getColor(R.color.md_white_1000));
+                    previous.setTextColor(getResources().getColor(R.color.md_white_1000));
                 }
                 onClickNext();
                 break;
