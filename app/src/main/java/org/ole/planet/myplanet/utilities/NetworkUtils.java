@@ -5,7 +5,9 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.text.TextUtils;
 
 import org.ole.planet.myplanet.MainApplication;
 
@@ -20,6 +22,12 @@ public class NetworkUtils {
         return mng != null && mng.isWifiEnabled();
     }
 
+    public static boolean isWifiConnected() {
+        ConnectivityManager connManager = (ConnectivityManager) MainApplication.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        return mWifi.isConnected();
+    }
+
     public static boolean isWifiBluetoothEnabled() {
         return isBluetoothEnabled() || isWifiEnabled();
     }
@@ -29,6 +37,21 @@ public class NetworkUtils {
         return mBluetoothAdapter != null && mBluetoothAdapter.isEnabled();
     }
 
+    public static int getCurrentNetworkId(Context context) {
+        int ssid = -1;
+        ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (networkInfo.isConnected()) {
+            final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            final WifiInfo connectionInfo = wifiManager.getConnectionInfo();
+            if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.getSSID())) {
+                ssid = connectionInfo.getNetworkId();
+
+            }
+
+        }
+        return ssid;
+    }
 
     public static boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) MainApplication.context.getSystemService(Context.CONNECTIVITY_SERVICE);

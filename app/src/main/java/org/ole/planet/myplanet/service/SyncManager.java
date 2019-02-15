@@ -2,6 +2,9 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.wifi.SupplicantState;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.util.Log;
 
 import com.google.gson.JsonArray;
@@ -55,9 +58,9 @@ public class SyncManager {
     }
 
     public static SyncManager getInstance() {
-     //   if (ourInstance == null) {
-            ourInstance = new SyncManager(MainApplication.context);
-       // }
+        //   if (ourInstance == null) {
+        ourInstance = new SyncManager(MainApplication.context);
+        // }
         return ourInstance;
     }
 
@@ -77,18 +80,21 @@ public class SyncManager {
         NotificationUtil.cancel(context, 111);
         isSyncing = false;
         ourInstance = null;
-        try{
-            mRealm.close();
-            td.stop();
-        }catch (Exception e){}
         settings.edit().putLong("LastSync", new Date().getTime()).commit();
         if (listener != null) {
             listener.onSyncComplete();
         }
+        try {
+            mRealm.close();
+            td.stop();
+        } catch (Exception e) {
+        }
     }
+
     Thread td;
+
     private void authenticateAndSync() {
-         td = new Thread(() -> {
+        td = new Thread(() -> {
             if (TransactionSyncManager.authenticate()) {
                 startSync();
             } else {
@@ -101,6 +107,11 @@ public class SyncManager {
 
     private void startSync() {
         try {
+            WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            if (wifiInfo.getSupplicantState() == SupplicantState.COMPLETED) {
+                settings.edit().putString("LastWifiSSID", wifiInfo.getSSID()).commit();
+            }
             isSyncing = true;
             NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
             mRealm = dbService.getRealmInstance();

@@ -32,7 +32,7 @@ import java.util.List;
 
 public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected {
 
-    TextView tvAddToLib, tvMessage;
+    TextView tvAddToLib, tvMessage ;
 
     EditText etSearch;
     ImageView imgSearch;
@@ -64,6 +64,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         tvAddToLib.setOnClickListener(view -> addToMyList());
         etSearch = getView().findViewById(R.id.et_search);
         getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
+        if (isMyCourseLib)
+            tvDelete.setText(R.string.archive_mycourse);
         imgSearch = getView().findViewById(R.id.img_search);
         tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch.setOnClickListener(view -> {

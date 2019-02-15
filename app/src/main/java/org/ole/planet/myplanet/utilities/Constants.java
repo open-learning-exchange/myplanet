@@ -19,7 +19,7 @@ public class Constants {
     public static final String KEY_COURSE = "course";
     public static final String KEY_EXAM = "exam";
     public static final String KEY_RESOURCE = "resource";
-    public static final String KEY_FEEDBACK = "feedback";
+    public static final String KEY_SYNC = "sync";
     public static final String KEY_SURVEY = "survey";
     public static final String KEY_MEETUPS = "meetup";
     public static final String KEY_TEAMS = "teams";
@@ -39,6 +39,8 @@ public class Constants {
         betaList.add(KEY_MEETUPS);
         betaList.add(KEY_SURVEY);
         betaList.add(KEY_DELETE);
+        betaList.add(KEY_DELETE);
+        betaList.add(KEY_SYNC);
     }
 
     public static class ShelfData {
