@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,7 +59,20 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         requestPermission();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
+
     }
+
+    public void clearInternalStorage() {
+        File myDir = new File(Utilities.SD_PATH);
+        if (myDir.isDirectory()) {
+            String[] children = myDir.list();
+            for (int i = 0; i < children.length; i++) {
+                new File(myDir, children[i]).delete();
+            }
+        }
+        settings.edit().putBoolean("firstRun", false).commit();
+    }
+
 
 
     public void sync(MaterialDialog dialog) {
