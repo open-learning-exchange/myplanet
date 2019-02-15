@@ -42,7 +42,7 @@
     <string name="email">Email</string>
     <string name="documents">Documents</string>
     <string name="your_ans">Your Answer</string>
-    <string name="leave">Opt-Out of Course</string>
+    <string name="leave">Delete myCourse</string>
     <string name="invite_member">Invite Member</string>
     <string name="is_urgent">Is your feedback Urgent?</string>
     <string name="feedback_type">Feedback Type :</string>

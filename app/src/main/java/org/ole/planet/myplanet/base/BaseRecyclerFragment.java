@@ -13,18 +13,19 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmAnswer;
+import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import io.realm.Case;
@@ -74,7 +75,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete);
             tvDelete.setVisibility(View.VISIBLE);
-            tvDelete.setOnClickListener(view -> deleteSelected());
+            tvDelete.setOnClickListener(view -> deleteSelected(false));
             if (v.findViewById(R.id.tv_add) != null)
                 v.findViewById(R.id.tv_add).setVisibility(View.GONE);
         }
@@ -114,13 +115,27 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    public void deleteSelected() {
+    public void deleteSelected(boolean deleteProgress) {
         for (int i = 0; i < selectedItems.size(); i++) {
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
             RealmObject object = (RealmObject) selectedItems.get(i);
+            deleteCourseProgress(deleteProgress, object);
             removeFromShelf(object);
             recyclerView.setAdapter(getAdapter());
+        }
+    }
+
+    private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {
+        if (deleteProgress && object instanceof RealmMyCourse) {
+            mRealm.where(RealmCourseProgress.class).equalTo("courseId", ((RealmMyCourse) object).getCourseId()).findAll().deleteAllFromRealm();
+            List<RealmStepExam> examList = mRealm.where(RealmStepExam.class).equalTo("courseId", ((RealmMyCourse) object).getCourseId()).findAll();
+            for (RealmStepExam exam : examList) {
+                mRealm.where(RealmSubmission.class)
+                        .equalTo("parentId", exam.getId())
+                        .notEqualTo("type", "survey")
+                        .equalTo("uploaded", false).findAll().deleteAllFromRealm();
+            }
         }
     }
 
@@ -191,9 +206,9 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    public void showNoData(View v, int count){
+    public void showNoData(View v, int count) {
         v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-        ((TextView)  v).setText("Your search returned no result, please check and try again.");
+        ((TextView) v).setText("Your search returned no result, please check and try again.");
     }
 
 }

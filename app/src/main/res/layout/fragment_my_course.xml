@@ -19,6 +19,17 @@
             android:gravity="right"
             android:padding="@dimen/padding_large">
 
+
+            <Button
+                android:id="@+id/btn_remove"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone"
+                android:layout_margin="@dimen/padding_small"
+                android:text="@string/leave"
+                android:theme="@style/AccentButton" />
+
             <TextView
                 android:id="@+id/tv_add"
                 android:layout_width="wrap_content"
