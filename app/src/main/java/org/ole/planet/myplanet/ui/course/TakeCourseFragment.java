@@ -165,6 +165,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         } else {
             next.setClickable(true);
             next.setColorFilter(getResources().getColor(R.color.md_white_1000));
+            tvStepTitle.setText(currentCourse.getCourseTitle());
         }
         int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
         if (i < steps.size())

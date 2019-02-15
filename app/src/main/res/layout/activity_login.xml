@@ -180,6 +180,15 @@
                         android:text="@string/btn_sign_in"
                         android:textColor="@android:color/white"
                         android:textSize="12sp" />
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_margin="@dimen/padding_normal"
+                        android:theme="@style/PrimaryFlatButton"
+                        android:id="@+id/become_member"
+                        android:text="Become a member"
+                        android:layout_height="wrap_content" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

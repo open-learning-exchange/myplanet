@@ -3,11 +3,15 @@ package org.ole.planet.myplanet.model;
 import com.google.gson.JsonObject;
 
 import io.realm.RealmObject;
+import io.realm.annotations.Ignore;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmApkLog extends RealmObject {
+    @Ignore
     public static final String ERROR_TYPE_EXCEPTION = "exception";
+    @Ignore
     public static final String ERROR_TYPE_CRASH = "crash";
+    @Ignore
     public static final String ERROR_TYPE_ANR = "AnR";
     @PrimaryKey
     private String id;
@@ -15,10 +19,28 @@ public class RealmApkLog extends RealmObject {
     private String _rev;
     private String error;
     private String page;
-
+    private String parentCode;
+    private String createdOn;
     public String getId() {
         return id;
     }
+
+    public String getParentCode() {
+        return parentCode;
+    }
+
+    public void setParentCode(String parentCode) {
+        this.parentCode = parentCode;
+    }
+
+    public String getCreatedOn() {
+        return createdOn;
+    }
+
+    public void setCreatedOn(String createdOn) {
+        this.createdOn = createdOn;
+    }
+
 
     public void setId(String id) {
         this.id = id;
@@ -50,6 +72,8 @@ public class RealmApkLog extends RealmObject {
         object.addProperty("type", log.getType());
         object.addProperty("error", log.getError());
         object.addProperty("page", log.getPage());
+        object.addProperty("createdOn", log.getCreatedOn());
+        object.addProperty("parentCode", log.getParentCode());
         return object;
     }
 
