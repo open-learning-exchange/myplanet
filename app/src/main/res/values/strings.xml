@@ -52,7 +52,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.2.62</string>
+    <string name="app_version">0.2.63</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -99,6 +99,7 @@
     <string name="select_many_collections">Select Many Collections</string>
     <string name="collections">Collections</string>
     <string name="ok">OK</string>
+    <string name="archive_mycourse">Archive myCourse</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
