@@ -94,6 +94,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             f.show(getChildFragmentManager(), "");
         });
         setSearchListener();
+        showNoData(tvMessage, adapterLibrary.getItemCount());
+
     }
 
     private void setSearchListener() {
