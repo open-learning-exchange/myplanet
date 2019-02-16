@@ -24,6 +24,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
@@ -50,7 +51,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save;
-    private boolean isSync = false, isUpload = false;
+    private boolean isSync = false, isUpload = false, forceSync = false;
     String processedUrl;
 
     @Override
@@ -70,16 +71,18 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (getIntent().hasExtra("filePath")) {
             onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
         }
-        new Service(this).checkVersion(this, settings);
+
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         registerReceiver();
-        if (getIntent().getBooleanExtra("forceSync", false)) {
+        forceSync = getIntent().getBooleanExtra("forceSync", false);
+        if (forceSync) {
             isUpload = false;
-            isSync = true;
+            isSync = false;
             processedUrl = Utilities.getUrl();
-            new Service(this).checkVersion(this, settings);
+            // new Service(this).checkVersion(this, settings);
         }
+        new Service(this).checkVersion(this, settings);
 
     }
 
@@ -249,6 +252,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         } else if (isUpload) {
             startUpload();
+        } else if (forceSync) {
+            try {
+                isServerReachable(processedUrl);
+                startUpload();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
