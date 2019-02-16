@@ -7,6 +7,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -38,7 +39,6 @@ public class SendSurveyFragment extends BaseDialogFragment {
 
     public SendSurveyFragment() {
     }
-
 
 
     @Override
@@ -95,18 +95,20 @@ public class SendSurveyFragment extends BaseDialogFragment {
         ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<RealmUserModel>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
-        listView.setOnItemClickListener((adapterView, view, i, l) -> {
-            String itemSelected = ((TextView) view).getText().toString();
-            if (selectedItemsList.contains(itemSelected)) {
-                selectedItemsList.remove(itemSelected);
-            } else {
-                selectedItemsList.add(i);
-            }
-        });
+        listView.setOnItemClickListener(this::onItemClick);
     }
 
     @Override
     protected String getKey() {
         return "surveyId";
+    }
+
+    private void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+        String itemSelected = ((TextView) view).getText().toString();
+        if (selectedItemsList.contains(itemSelected)) {
+            selectedItemsList.remove(itemSelected);
+        } else {
+            selectedItemsList.add(i);
+        }
     }
 }
