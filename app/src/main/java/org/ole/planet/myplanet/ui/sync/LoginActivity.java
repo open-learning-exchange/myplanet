@@ -244,21 +244,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void continueSyncProcess() {
-        if (isSync) {
-            try {
+        try {
+            if (isSync) {
                 isServerReachable(processedUrl);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else if (isUpload) {
-            startUpload();
-        } else if (forceSync) {
-            try {
+            } else if (isUpload) {
+                startUpload();
+            } else if (forceSync) {
                 isServerReachable(processedUrl);
                 startUpload();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Exception e) {
         }
     }
 
