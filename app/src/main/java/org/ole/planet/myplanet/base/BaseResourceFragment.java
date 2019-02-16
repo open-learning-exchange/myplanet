@@ -169,7 +169,6 @@ public abstract class BaseResourceFragment extends Fragment {
             } else {
                 selectedItemsList.add(i);
             }
-            Toast.makeText(getContext(), "Clicked on  : " + itemSelected + "Number " + i, Toast.LENGTH_SHORT).show();
         });
     }
 
