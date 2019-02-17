@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.Download;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.DownloadUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -50,8 +51,8 @@ public abstract class BaseResourceFragment extends Fragment {
     public static SharedPreferences settings;
     static ProgressDialog prgDialog;
     public OnHomeItemClickListener homeItemClickListener;
-    ArrayList<Integer> selectedItemsList = new ArrayList<>();
-    ListView lv;
+//    ArrayList<Integer> selectedItemsList = new ArrayList<>();
+    CheckboxListView lv;
     View convertView;
 
     public UserProfileDbHandler profileDbHandler;
@@ -92,7 +93,7 @@ public abstract class BaseResourceFragment extends Fragment {
                     AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
                     alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
                     createListView(db_myLibrary);
-                    alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, selectedItemsList, settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null).show();
+                    alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null).show();
                 }
             }
 
@@ -162,14 +163,14 @@ public abstract class BaseResourceFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setAdapter(adapter);
-        lv.setOnItemClickListener((adapterView, view, i, l) -> {
-            String itemSelected = ((TextView) view).getText().toString();
-            if (selectedItemsList.contains(itemSelected)) {
-                selectedItemsList.remove(itemSelected);
-            } else {
-                selectedItemsList.add(i);
-            }
-        });
+//        lv.setOnItemClickListener((adapterView, view, i, l) -> {
+//            String itemSelected = ((TextView) view).getText().toString();
+//            if (selectedItemsList.contains(itemSelected)) {
+//                selectedItemsList.remove(itemSelected);
+//            } else {
+//                selectedItemsList.add(i);
+//            }
+//        });
     }
 
 
