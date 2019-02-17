@@ -78,7 +78,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         super.onActivityCreated(savedInstanceState);
         initExam();
         questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
-        tvQuestionCount.setText("Question : " + currentIndex +" /" + questions.size());
+        boolean hasQuestions = questions.size() > 0;
+        tvQuestionCount.setText("Question : " + (hasQuestions ? "1" : currentIndex) +" /" + questions.size());
         if (!isMySurvey)
             sub = mRealm.where(RealmSubmission.class)
                     .equalTo("userId", user.getId())
@@ -86,7 +87,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
                     .sort("startTime", Sort.DESCENDING)
                     .equalTo("status", "pending")
                     .findFirst();
-        if (questions.size() > 0) {
+        if (hasQuestions) {
             createSubmission();
             Utilities.log("Current index " + currentIndex);
             startExam(questions.get(currentIndex));
