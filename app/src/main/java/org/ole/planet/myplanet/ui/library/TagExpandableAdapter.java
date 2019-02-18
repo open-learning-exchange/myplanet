@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -30,19 +31,20 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     private HashMap<String, List<RealmTag>> childMap;
 
 
-    public ArrayList<RealmTag> getSelectedItemsList() {
-        return selectedItemsList;
-    }
+//    public ArrayList<RealmTag> getSelectedItemsList() {
+//        return selectedItemsList;
+//    }
 
     public void setSelectMultiple(boolean selectMultiple) {
         isSelectMultiple = selectMultiple;
 
     }
 
-    public TagExpandableAdapter(Context context, List<RealmTag> tagList, HashMap<String, List<RealmTag>> childMap) {
+    public TagExpandableAdapter(Context context, List<RealmTag> tagList, HashMap<String, List<RealmTag>> childMap, ArrayList<RealmTag> selectedItemsList) {
         this.context = context;
         this.tagList = tagList;
         this.childMap = childMap;
+        this.selectedItemsList = selectedItemsList;
     }
 
     @Override
@@ -131,12 +133,9 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     private void createCheckbox(View convertView, RealmTag tag) {
         CheckBox checkBox = convertView.findViewById(R.id.checkbox);
         checkBox.setVisibility(isSelectMultiple ? View.VISIBLE : View.GONE);
+        checkBox.setChecked(selectedItemsList.contains(tag));
         checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
-            if (selectedItemsList.contains(tag)) {
-                selectedItemsList.remove(tag);
-            } else {
-                selectedItemsList.add(tag);
-            }
+            clickListener.onTagSelected(tag);
         });
     }
 
@@ -181,5 +180,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     public interface OnClickTagItem {
         void onTagClicked(RealmTag tag);
 
+        void onTagSelected(RealmTag tags);
     }
 }
