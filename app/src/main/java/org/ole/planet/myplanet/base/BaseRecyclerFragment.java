@@ -124,6 +124,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             deleteCourseProgress(deleteProgress, object);
             removeFromShelf(object);
             recyclerView.setAdapter(getAdapter());
+            showNoData(tvMessage, getAdapter().getItemCount());
         }
     }
 
@@ -214,8 +215,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     }
 
     public void showNoData(View v, int count) {
+        if (v == null)
+            return;
         v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-        ((TextView) v).setText("Your search returned no result, please check and try again.");
+        ((TextView) v).setText("No data available, please check and try again.");
     }
 
 }
