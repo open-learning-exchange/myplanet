@@ -32,6 +32,7 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -165,14 +166,20 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (s.isEmpty()) {
             return getList(c);
         }
-        return mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        return c == RealmMyLibrary.class ? (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li) : (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
     }
 
     public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
+
+
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
+        if (isMyCourseLib)
+            list =  RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
+
         if (tags.size() == 0) {
             return list;
         }
