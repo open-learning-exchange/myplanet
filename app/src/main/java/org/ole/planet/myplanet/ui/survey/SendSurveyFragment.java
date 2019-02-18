@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -31,10 +32,10 @@ import io.realm.Sort;
  */
 public class SendSurveyFragment extends BaseDialogFragment {
 
-    ListView listView;
+    CheckboxListView listView;
     Realm mRealm;
     DatabaseService dbService;
-    ArrayList<Integer> selectedItemsList = new ArrayList<>();
+//    ArrayList<Integer> selectedItemsList = new ArrayList<>();
 
     public SendSurveyFragment() {
     }
@@ -82,7 +83,7 @@ public class SendSurveyFragment extends BaseDialogFragment {
         List<RealmUserModel> users = mRealm.where(RealmUserModel.class).findAll();
         initListView(users);
         getView().findViewById(R.id.send_survey).setOnClickListener(view -> {
-            for (int i = 0; i < selectedItemsList.size(); i++) {
+            for (int i = 0; i < listView.getSelectedItemsList().size(); i++) {
                 RealmUserModel u = users.get(i);
                 createSurveySubmission(u.getId());
             }
@@ -95,14 +96,15 @@ public class SendSurveyFragment extends BaseDialogFragment {
         ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<RealmUserModel>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
-        listView.setOnItemClickListener((adapterView, view, i, l) -> {
-            String itemSelected = ((TextView) view).getText().toString();
-            if (selectedItemsList.contains(itemSelected)) {
-                selectedItemsList.remove(itemSelected);
-            } else {
-                selectedItemsList.add(i);
-            }
-        });
+//        listView.setOnItemClickListener((adapterView, view, i, l) -> {
+//            String itemSelected = ((TextView) view).getText().toString();
+//            if (selectedItemsList.contains(itemSelected)) {
+//                selectedItemsList.remove(itemSelected);
+//            } else {
+//                selectedItemsList.add(i);
+//            }
+//        });
+
     }
 
     @Override

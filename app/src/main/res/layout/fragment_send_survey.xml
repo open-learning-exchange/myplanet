@@ -17,7 +17,7 @@
         android:padding="@dimen/padding_normal"
         android:layout_height="wrap_content" />
 
-        <ListView
+        <org.ole.planet.myplanet.utilities.CheckboxListView
             android:id="@+id/list_users"
             android:padding="@dimen/padding_normal"
             android:layout_width="match_parent"
