@@ -4,6 +4,7 @@ package org.ole.planet.myplanet.ui.course;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmCourseStep;
+import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
@@ -23,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;
@@ -117,12 +120,21 @@ public class CourseStepFragment extends BaseContainerFragment {
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");
-        if (stepExams != null)
-            btnExam.setText("Take Test [" + stepExams.size() + "]");
+
+        Utilities.log("CourseStepFragment, hasSteps = " + (stepExams != null && stepExams.size() > 0));
+
+        if (stepExams != null && stepExams.size() > 0) {
+            RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", stepExams.get(0).getId()).findAll();
+            Utilities.log("CourseStepFragment, hasQuestions = " + (questions != null && questions.size() > 0));
+            if (questions != null && questions.size() > 0) {
+                btnExam.setText("Take Test [" + stepExams.size() + "]");
+                btnExam.setVisibility(View.VISIBLE);
+            }
+
+        }
         tvTitle.setText(step.getStepTitle());
         description.loadMarkdown(step.getDescription());
         setListeners();
-
     }
 
     @Override
@@ -132,7 +144,8 @@ public class CourseStepFragment extends BaseContainerFragment {
             if (visible && RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
                 saveCourseProgress();
             }
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 
     private void setListeners() {
