@@ -85,6 +85,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         btnRemove.setOnClickListener(V ->{
             deleteSelected(true);
         });
+        showNoData(tvMessage, adapterCourses.getItemCount());
     }
 
 
