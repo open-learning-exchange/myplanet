@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
+import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
@@ -79,6 +80,9 @@ public class TransactionSyncManager {
             RealmOfflineActivity.insertOfflineActivities(mRealm, jsonDoc);
         } else if (type.equals("tags")) {
             RealmTag.insertTags(mRealm, jsonDoc);
+        } else if (type.equals("achievements")) {
+            Utilities.log("insert achievement");
+            RealmAchievement.insertAchievement(mRealm, jsonDoc);
         }
     }
 

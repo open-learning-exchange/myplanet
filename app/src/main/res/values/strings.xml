@@ -101,6 +101,8 @@
     <string name="ok">OK</string>
     <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
     <string name="archive_mycourse">Archive myCourse</string>
+    <string name="menu_achievement">Achievement</string>
+    <string name="edit_achievement">Edit Achievement</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
