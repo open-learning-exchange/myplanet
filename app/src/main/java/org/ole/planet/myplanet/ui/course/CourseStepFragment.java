@@ -120,6 +120,13 @@ public class CourseStepFragment extends BaseContainerFragment {
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");
+        hideTestIfNoQuestion();
+        tvTitle.setText(step.getStepTitle());
+        description.loadMarkdown(step.getDescription());
+        setListeners();
+    }
+
+    private void hideTestIfNoQuestion() {
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
@@ -128,9 +135,6 @@ public class CourseStepFragment extends BaseContainerFragment {
                 btnExam.setVisibility(View.VISIBLE);
             }
         }
-        tvTitle.setText(step.getStepTitle());
-        description.loadMarkdown(step.getDescription());
-        setListeners();
     }
 
     @Override
