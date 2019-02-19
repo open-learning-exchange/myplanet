@@ -7,10 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.xilingyuli.markdown.MarkDownController;
-import com.xilingyuli.markdown.MarkDownEditorView;
-import com.xilingyuli.markdown.OnPreInsertListener;
-import com.xilingyuli.markdown.ToolsAdapter;
 
 import org.ole.planet.myplanet.R;
 
@@ -21,7 +17,6 @@ import br.tiagohm.markdownview.MarkdownView;
  */
 public class EditAchievementFragment extends Fragment  {
 
-    ToolsAdapter toolsAdapter;
     public EditAchievementFragment() {
         // Required empty public constructor
     }

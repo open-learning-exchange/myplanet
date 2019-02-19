@@ -7,6 +7,7 @@
 
     <TextView
         android:layout_width="0dp"
+        android:minWidth="200dp"
         android:layout_weight="1"
         android:id="@+id/tv_title"
         android:padding="@dimen/padding_normal"

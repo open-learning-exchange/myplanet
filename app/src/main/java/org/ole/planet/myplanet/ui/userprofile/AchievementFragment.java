@@ -92,42 +92,49 @@ public class AchievementFragment extends BaseContainerFragment {
             tvPurpose.setText(achievement.getPurpose());
             tvAchievement.setText(achievement.getAchievementsHeader());
             llAchievement.removeAllViews();
-            View v =  LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
             for (String s : achievement.getAchievements()
             ) {
-                TextView tv = v.findViewById(R.id.tv_title);
-                Button btn = v.findViewById(R.id.btn_attachment);
-                JsonElement ob = new Gson().fromJson(s, JsonElement.class);
-                if (ob instanceof JsonObject) {
-                    tv.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
-                    btn.setVisibility(View.VISIBLE);
-                    JsonArray array = ((JsonObject) ob).getAsJsonArray("resources");
-                    ArrayList<RealmMyLibrary> libraries = new ArrayList<>();
-                    for (JsonElement e : array
-                    ) {
-                        String id = e.getAsJsonObject().get("_id").getAsString();
-                        RealmMyLibrary li = mRealm.where(RealmMyLibrary.class).equalTo("id", id).findFirst();
-                        if (li != null)
-                            libraries.add(li);
-                    }
-
-                    btn.setOnClickListener(view -> {
-                        if (libraries.isEmpty()){
-                            showDownloadDialog(libraries);
-                        }else {
-                            showResourceList(libraries);
-                        }
-                    });
-                } else {
-                    btn.setVisibility(View.GONE);
-                    tv.setText(ob.getAsString());
-                }
-                llAchievement.addView(v);
+                createView(v,s);
             }
             rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
             rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getOtherInfo()));
         } else {
             //   llData.setVisibility(View.GONE);
         }
+    }
+
+    private void createView(View v, String s) {
+        TextView tv = v.findViewById(R.id.tv_title);
+        Button btn = v.findViewById(R.id.btn_attachment);
+        JsonElement ob = new Gson().fromJson(s, JsonElement.class);
+        if (ob instanceof JsonObject) {
+            tv.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+            btn.setVisibility(View.VISIBLE);
+            ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
+            btn.setOnClickListener(view -> {
+                if (libraries.isEmpty()) {
+                    showDownloadDialog(libraries);
+                } else {
+                    showResourceList(libraries);
+                }
+            });
+        } else {
+            btn.setVisibility(View.GONE);
+            tv.setText(ob.getAsString());
+        }
+        llAchievement.addView(v);
+    }
+
+    private ArrayList<RealmMyLibrary> getList(JsonArray array) {
+        ArrayList<RealmMyLibrary> libraries = new ArrayList<>();
+        for (JsonElement e : array
+        ) {
+            String id = e.getAsJsonObject().get("_id").getAsString();
+            RealmMyLibrary li = mRealm.where(RealmMyLibrary.class).equalTo("id", id).findFirst();
+            if (li != null)
+                libraries.add(li);
+        }
+        return libraries;
     }
 }
