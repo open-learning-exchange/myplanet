@@ -119,7 +119,7 @@ public class RealmAchievement extends RealmObject {
             achievements = new RealmList<String>();
         }
         for (JsonElement el : ac) {
-            String achi = el.getAsString();
+            String achi = new Gson().toJson(el);
             if (!achievements.contains(achi))
                 achievements.add(achi);
         }

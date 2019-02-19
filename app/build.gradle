@@ -97,6 +97,7 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'com.github.fiskurgit:ChipCloud:3.0.5'
+    implementation 'com.github.xilingyuli:MarkDownEditor:master-SNAPSHOT'
 
 }
 realm {

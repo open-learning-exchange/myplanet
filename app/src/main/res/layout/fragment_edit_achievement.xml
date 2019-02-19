@@ -5,10 +5,136 @@
     android:layout_height="match_parent"
     tools:context=".ui.userprofile.EditAchievementFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+
+    <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+
+            <LinearLayout
+                android:id="@+id/ll_actions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:background="@color/colorPrimary"
+                android:gravity="right"
+                android:orientation="horizontal"
+                android:padding="@dimen/padding_large">
+
+                <TextView
+                    android:id="@+id/tv_first_name"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btn_edit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:drawableLeft="@drawable/ic_edit"
+                    android:drawablePadding="@dimen/padding_normal"
+                    android:text="@string/edit_achievement"
+                    android:theme="@style/AccentButton" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:orientation="vertical">
+
+                <android.support.design.widget.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:padding="@dimen/padding_normal"
+                    android:layout_height="wrap_content">
+
+                    <EditText
+                        android:id="@+id/et_purpose"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="100dp"
+                        android:layout_gravity="center"
+                        android:hint="My Purpose - What are your educational and professional ambitions?"
+                        android:textSize="20sp" />
+
+                </android.support.design.widget.TextInputLayout>
+
+                <android.support.design.widget.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:padding="@dimen/padding_normal"
+                    android:layout_height="wrap_content">
+
+                    <EditText
+                        android:id="@+id/et_goals"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:minHeight="100dp"
+                        android:hint="My Goals - What are your goals for next 10 years?"
+                        android:textSize="20sp" />
+
+                </android.support.design.widget.TextInputLayout>
+
+                <android.support.design.widget.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:padding="@dimen/padding_normal"
+                    android:layout_height="wrap_content">
+
+                    <EditText
+                        android:id="@+id/et_achievement"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:minHeight="100dp"
+                        android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
+                        android:textSize="20sp" />
+
+                </android.support.design.widget.TextInputLayout>
+
+
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:padding="@dimen/padding_small"
+                    android:tooltipText="Add any materials demonstrating your achievements below"
+                    android:layout_height="wrap_content"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:text="Enter an Achievement"
+                        android:padding="@dimen/padding_small"
+                        android:theme="@style/PrimaryFlatButton"
+                        android:layout_height="wrap_content" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:padding="@dimen/padding_small"
+                    android:tooltipText="Add any materials demonstrating your achievements below"
+                    android:layout_height="wrap_content"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:text="Add Personal Information Achievement"
+                        android:padding="@dimen/padding_small"
+                        android:theme="@style/PrimaryFlatButton"
+                        android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+
+        </LinearLayout>
+
+    </android.support.v4.widget.NestedScrollView>
+
 
 </FrameLayout>
