@@ -65,7 +65,7 @@ public class DashboardFragment extends BaseContainerFragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         profileDbHandler = new UserProfileDbHandler(getActivity());
         declareElements(view);
-        fullName = profileDbHandler.getUserModel().getName();
+        fullName = profileDbHandler.getUserModel().getFullName();
         txtFullName.setText(fullName);
         ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
         RealmUserModel model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
