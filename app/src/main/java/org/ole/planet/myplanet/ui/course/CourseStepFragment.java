@@ -120,17 +120,13 @@ public class CourseStepFragment extends BaseContainerFragment {
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");
-
-        Utilities.log("CourseStepFragment, hasSteps = " + (stepExams != null && stepExams.size() > 0));
-
         if (stepExams != null && stepExams.size() > 0) {
-            RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", stepExams.get(0).getId()).findAll();
-            Utilities.log("CourseStepFragment, hasQuestions = " + (questions != null && questions.size() > 0));
+            String first_step_id = stepExams.get(0).getId();
+            RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
             if (questions != null && questions.size() > 0) {
                 btnExam.setText("Take Test [" + stepExams.size() + "]");
                 btnExam.setVisibility(View.VISIBLE);
             }
-
         }
         tvTitle.setText(step.getStepTitle());
         description.loadMarkdown(step.getDescription());
