@@ -10,8 +10,6 @@ import android.view.ViewGroup;
 
 import org.ole.planet.myplanet.R;
 
-import br.tiagohm.markdownview.MarkdownView;
-
 /**
  * A simple {@link Fragment} subclass.
  */
