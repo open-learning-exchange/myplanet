@@ -18,11 +18,9 @@ android {
             }
         }
     }
-
     signingConfigs {
         release
     }
-
     buildTypes {
         release {
             minifyEnabled false
@@ -30,7 +28,6 @@ android {
             signingConfig signingConfigs.release
         }
     }
-
 
     def isRunningOnTravis = System.getenv("CI") == "true"
     if (isRunningOnTravis) {
@@ -50,6 +47,7 @@ android {
         exclude 'META-INF/notice.txt'
         exclude 'META-INF/ASL2.0'
     }
+
     lintOptions {
         abortOnError false
     }
@@ -57,8 +55,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
         sourceCompatibility JavaVersion.VERSION_1_8
     }
-
-
 
     buildToolsVersion '28.0.3'
 }
@@ -116,7 +112,6 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'com.github.fiskurgit:ChipCloud:3.0.5'
-
 }
 realm {
     syncEnabled = true
