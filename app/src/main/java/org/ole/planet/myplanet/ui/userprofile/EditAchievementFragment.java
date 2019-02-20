@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.userprofile;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.text.Editable;
@@ -12,13 +13,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -34,6 +40,8 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.List;
 
+import fisk.chipcloud.ChipCloud;
+import fisk.chipcloud.ChipCloudConfig;
 import io.realm.Realm;
 
 /**
@@ -46,7 +54,9 @@ public class EditAchievementFragment extends BaseContainerFragment {
     Realm mRealm;
     RealmUserModel user;
     RealmAchievement achievement;
-    JsonArray otherInfoArray, attachmentArray, resourceArray;
+    LinearLayout llachievement, llOthers;
+    JsonArray otherInfoArray, achievementArray, resourceArray;
+    CheckBox checkBox;
 
     public EditAchievementFragment() {
         // Required empty public constructor
@@ -59,35 +69,84 @@ public class EditAchievementFragment extends BaseContainerFragment {
         View v = inflater.inflate(R.layout.fragment_edit_achievement, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
+        achievementArray = new JsonArray();
         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        if (achievement == null)
-            achievement = mRealm.createObject(RealmAchievement.class,user.getId() + "@" + user.getPlanetCode());
-        otherInfoArray = new JsonArray();
-        attachmentArray = new JsonArray();
-        resourceArray = new JsonArray();
         etGoals = v.findViewById(R.id.et_goals);
+        llachievement = v.findViewById(R.id.ll_attachment);
+        llOthers = v.findViewById(R.id.ll_other_info);
         etPurpose = v.findViewById(R.id.et_purpose);
         etAchievement = v.findViewById(R.id.et_achievement);
         btnAddAchievement = v.findViewById(R.id.btn_achievement);
         btnOther = v.findViewById(R.id.btn_other);
         btnUpdate = v.findViewById(R.id.btn_update);
         btnCancel = v.findViewById(R.id.btn_cancel);
+        checkBox = v.findViewById(R.id.cb_send_to_nation);
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        if (achievement == null) {
+            achievementArray = new JsonArray();
+            otherInfoArray = new JsonArray();
+            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
+        } else {
+            achievementArray = achievement.getAchievementsArray();
+            otherInfoArray = achievement.getOtherInfoArray();
+            etAchievement.setText(achievement.getAchievementsHeader());
+            etPurpose.setText(achievement.getPurpose());
+            etGoals.setText(achievement.getGoals());
+        }
+
+        resourceArray = new JsonArray();
+
         btnUpdate.setOnClickListener(view -> {
             String goals = etGoals.getText().toString();
             String purpose = etPurpose.getText().toString();
-            String achievement = etAchievement.getText().toString();
-
+            String achie = etAchievement.getText().toString();
+            achievement.setAchievementsHeader(achie);
+            achievement.setGoals(goals);
+            achievement.setPurpose(purpose);
+            achievement.setAchievements(achievementArray);
+            achievement.setSendToNation(checkBox.isChecked() + "");
+            achievement.setOtherInfo(otherInfoArray);
+            getActivity().onBackPressed();
         });
         btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
         btnAddAchievement.setOnClickListener(vi -> {
-            showAddAttachmentAlert();
+            showAddachievementAlert();
         });
         btnOther.setOnClickListener(view -> {
             showOtherInfoDialog();
         });
         return v;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        showAchievementAndInfo();
+    }
+
+    private void showAchievementAndInfo() {
+        ChipCloudConfig config = Utilities.getCloudConfig()
+                .selectMode(ChipCloud.SelectMode.single);
+        llOthers.removeAllViews();
+        llachievement.removeAllViews();
+        for (JsonElement e : achievementArray) {
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_attachement, null);
+            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("description").getAsString());
+            FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox);
+            flexboxLayout.removeAllViews();
+            final ChipCloud chipCloud = new ChipCloud(getActivity(), flexboxLayout, config);
+            for (JsonElement element : e.getAsJsonObject().getAsJsonArray("resources")) {
+                chipCloud.addChip(element.getAsJsonObject().get("title").getAsString());
+            }
+            llachievement.addView(v);
+        }
+
+        for (JsonElement e : otherInfoArray) {
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_other_info, null);
+            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("type").getAsString() + " : " + e.getAsJsonObject().get("description").getAsString());
+            llOthers.addView(v);
+        }
     }
 
     private void showOtherInfoDialog() {
@@ -107,12 +166,13 @@ public class EditAchievementFragment extends BaseContainerFragment {
                     }
                     JsonObject ob = new JsonObject();
                     ob.addProperty("type", type);
-                    ob.addProperty("type", type);
+                    ob.addProperty("description", desc);
                     otherInfoArray.add(ob);
+                    showAchievementAndInfo();
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    private void showAddAttachmentAlert() {
+    private void showAddachievementAlert() {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_add_attachment, null);
         Button btnAddResource = v.findViewById(R.id.btn_add_resources);
         EditText etDescription = v.findViewById(R.id.et_desc);
@@ -131,7 +191,8 @@ public class EditAchievementFragment extends BaseContainerFragment {
                     JsonObject object = new JsonObject();
                     object.addProperty("description", desc);
                     object.add("resources", resourceArray);
-                    attachmentArray.add(object);
+                    achievementArray.add(object);
+                    showAchievementAndInfo();
                 }).setNegativeButton("Cancel", null).show();
     }
 
@@ -153,8 +214,8 @@ public class EditAchievementFragment extends BaseContainerFragment {
         builder.setView(v);
         builder.setPositiveButton("Ok", (dialogInterface, i) -> {
             ArrayList<Integer> items = lv.getSelectedItemsList();
-            for (int ii :items
-                 ) {
+            for (int ii : items
+            ) {
                 resourceArray.add(list.get(ii).serializeResource());
             }
         }).setNegativeButton("Cancel", null).show();

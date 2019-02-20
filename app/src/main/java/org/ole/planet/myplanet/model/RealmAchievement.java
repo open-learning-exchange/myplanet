@@ -99,9 +99,7 @@ public class RealmAchievement extends RealmObject {
     }
 
     public void setOtherInfo(JsonArray of) {
-        if (this.otherInfo == null) {
-            otherInfo = new RealmList<String>();
-        }
+        otherInfo = new RealmList<String>();
         for (JsonElement el : of
         ) {
             String e = new Gson().toJson(el);
@@ -114,10 +112,28 @@ public class RealmAchievement extends RealmObject {
         return achievements;
     }
 
-    public void setAchievements(JsonArray ac) {
-        if (this.achievements == null) {
-            achievements = new RealmList<String>();
+    public JsonArray getAchievementsArray() {
+        JsonArray array = new JsonArray();
+        for (String s : achievements
+        ) {
+            JsonElement ob = new Gson().fromJson(s, JsonElement.class);
+            array.add(ob);
         }
+        return array;
+    }
+
+    public JsonArray getOtherInfoArray() {
+        JsonArray array = new JsonArray();
+        for (String s : otherInfo
+        ) {
+            JsonElement ob = new Gson().fromJson(s, JsonElement.class);
+            array.add(ob);
+        }
+        return array;
+    }
+
+    public void setAchievements(JsonArray ac) {
+        achievements = new RealmList<String>();
         for (JsonElement el : ac) {
             String achi = new Gson().toJson(el);
             if (!achievements.contains(achi))

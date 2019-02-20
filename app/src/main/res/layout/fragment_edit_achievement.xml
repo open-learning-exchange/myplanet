@@ -101,11 +101,19 @@
                 </android.support.design.widget.TextInputLayout>
 
 
+
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
                     android:text="Add any materials demonstrating your achievements below" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:id="@+id/ll_attachment"
+                    android:orientation="vertical"
+                    android:layout_height="wrap_content"/>
 
                 <Button
                     android:layout_width="wrap_content"
@@ -119,7 +127,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
-                    android:text="Add any materials demonstrating your achievements below" />
+                    android:text="Add related educational and employment history below" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:id="@+id/ll_other_info"
+                    android:orientation="vertical"
+                    android:layout_height="wrap_content"/>
+
 
                 <Button
                     android:layout_width="wrap_content"
@@ -129,6 +144,16 @@
 
                     android:text="Add Personal Information Achievement"
                     android:theme="@style/PrimaryButton" />
+
+                <CheckBox
+                    android:layout_width="match_parent"
+                    android:padding="@dimen/padding_normal"
+                    android:layout_gravity="center"
+                    android:id="@+id/cb_send_to_nation"
+                    android:text="Allow your achievements to be shared with the nation"
+                    android:textSize="@dimen/text_size_large"
+                    android:layout_height="wrap_content" />
+
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

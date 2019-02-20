@@ -107,6 +107,7 @@ public class AchievementFragment extends BaseContainerFragment {
     private void createView(View v, String s) {
         TextView tv = v.findViewById(R.id.tv_title);
         Button btn = v.findViewById(R.id.btn_attachment);
+        llAchievement.removeAllViews();
         JsonElement ob = new Gson().fromJson(s, JsonElement.class);
         if (ob instanceof JsonObject) {
             tv.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
