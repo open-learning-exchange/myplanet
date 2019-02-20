@@ -103,6 +103,8 @@
     <string name="archive_mycourse">Archive myCourse</string>
     <string name="menu_achievement">Achievement</string>
     <string name="edit_achievement">Edit Achievement</string>
+    <string name="add_resources">Add Resources</string>
+    <string name="description">Description  *</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -118,5 +120,15 @@
         <item>Español</item>
         <item>عربى</item>
         <item>Somali</item>
+    </string-array>
+    
+    <string-array name="info_type">
+        <item>Languages</item>
+        <item>Education</item>
+        <item>Employment History</item>
+        <item>Badges</item>
+        <item>Certificates</item>
+        <item>Internships</item>
+        <item>Awards</item>
     </string-array>
 </resources>

@@ -52,6 +52,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
+                android:padding="@dimen/padding_large"
                 android:orientation="vertical">
 
                 <android.support.design.widget.TextInputLayout
@@ -109,7 +110,8 @@
                 <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
+                    android:padding="@dimen/padding_normal"
+                    android:id="@+id/btn_achievement"
                     android:text="Enter an Achievement"
                     android:theme="@style/PrimaryButton" />
 
@@ -122,9 +124,31 @@
                 <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
+                    android:padding="@dimen/padding_normal"
+                    android:id="@+id/btn_other"
+
                     android:text="Add Personal Information Achievement"
                     android:theme="@style/PrimaryButton" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="left">
+
+                    <Button
+                        android:id="@+id/btn_update"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/button_update"
+                        android:theme="@style/PrimaryButton" />
+
+                    <Button
+                        android:id="@+id/btn_cancel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/button_cancel"
+                        android:theme="@style/AccentButton" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
