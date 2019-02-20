@@ -43,7 +43,6 @@ android {
     }
 
     def isRunningOnTravis = System.getenv("CI") == "true"
-
     if (isRunningOnTravis) {
         // configure keystore
         signingConfigs.release.storeFile = file("../myPlanet.keystore")
@@ -51,6 +50,7 @@ android {
         signingConfigs.release.keyAlias = System.getenv("keystore_alias")
         signingConfigs.release.keyPassword = System.getenv("keystore_alias_password")
     }
+
     buildToolsVersion '28.0.3'
 }
 
