@@ -18,6 +18,16 @@ android {
             }
         }
     }
+
+    def isRunningOnTravis = System.getenv("CI") == "true"
+    if (isRunningOnTravis) {
+        // configure keystore
+        signingConfigs.release.storeFile = file("myPlanet.keystore")
+        signingConfigs.release.storePassword = System.getenv("keystore_password")
+        signingConfigs.release.keyAlias = System.getenv("keystore_alias")
+        signingConfigs.release.keyPassword = System.getenv("keystore_alias_password")
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -42,14 +52,7 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
     }
 
-    def isRunningOnTravis = System.getenv("CI") == "true"
-    if (isRunningOnTravis) {
-        // configure keystore
-        signingConfigs.release.storeFile = file("myPlanet.keystore")
-        signingConfigs.release.storePassword = System.getenv("keystore_password")
-        signingConfigs.release.keyAlias = System.getenv("keystore_alias")
-        signingConfigs.release.keyPassword = System.getenv("keystore_alias_password")
-    }
+
 
     buildToolsVersion '28.0.3'
 }
