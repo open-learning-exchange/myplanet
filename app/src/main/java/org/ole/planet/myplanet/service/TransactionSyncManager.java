@@ -63,6 +63,8 @@ public class TransactionSyncManager {
                 RealmMyCourse.insertMyCourses(jsonDoc, mRealm);
             } else if (type.equals("exams")) {
                 RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
+            } else if (type.equals("achievements")) {
+                RealmAchievement.insertAchievement(mRealm, jsonDoc);
             }
             checkDoc(jsonDoc, mRealm, type);
         }
@@ -80,9 +82,6 @@ public class TransactionSyncManager {
             RealmOfflineActivity.insertOfflineActivities(mRealm, jsonDoc);
         } else if (type.equals("tags")) {
             RealmTag.insertTags(mRealm, jsonDoc);
-        } else if (type.equals("achievements")) {
-            Utilities.log("insert achievement");
-            RealmAchievement.insertAchievement(mRealm, jsonDoc);
         }
     }
 
