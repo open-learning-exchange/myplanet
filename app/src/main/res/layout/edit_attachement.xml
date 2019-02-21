@@ -47,6 +47,7 @@
                 android:layout_gravity="center"
                 android:layout_height="wrap_content"
                 android:text="Edit"
+                android:visibility="gone"
                 android:theme="@style/PrimaryFlatButton" />
 
             <ImageView

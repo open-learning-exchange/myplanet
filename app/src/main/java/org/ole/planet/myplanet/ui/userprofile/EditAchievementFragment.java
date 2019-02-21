@@ -139,12 +139,26 @@ public class EditAchievementFragment extends BaseContainerFragment {
             for (JsonElement element : e.getAsJsonObject().getAsJsonArray("resources")) {
                 chipCloud.addChip(element.getAsJsonObject().get("title").getAsString());
             }
+            v.findViewById(R.id.iv_delete).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    achievementArray.remove(e);
+                    showAchievementAndInfo();
+                }
+            });
             llachievement.addView(v);
         }
 
         for (JsonElement e : otherInfoArray) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_other_info, null);
             ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("type").getAsString() + " : " + e.getAsJsonObject().get("description").getAsString());
+            v.findViewById(R.id.iv_delete).setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    otherInfoArray.remove(e);
+                    showAchievementAndInfo();
+                }
+            });
             llOthers.addView(v);
         }
     }
