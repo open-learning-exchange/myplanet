@@ -83,14 +83,14 @@ public class UserProfileFragment extends Fragment {
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
                 View v = getLayoutInflater().inflate(R.layout.row_stat, parent, false);
-                return new ViewHolderStat(v);
+                return new AdapterOtherInfo.ViewHolderOtherInfo(v);
             }
 
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                if (holder instanceof ViewHolderStat) {
-                    ((ViewHolderStat) holder).key.setText(keys.get(position));
-                    ((ViewHolderStat) holder).value.setText(map.get(keys.get(position)));
+                if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
+                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(keys.get(position));
+                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(map.get(keys.get(position)));
                     if (position % 2 == 0) {
                         holder.itemView.setBackgroundColor(getResources().getColor(R.color.bg_white));
                         holder.itemView.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
@@ -105,14 +105,4 @@ public class UserProfileFragment extends Fragment {
         });
     }
 
-
-    class ViewHolderStat extends RecyclerView.ViewHolder {
-        TextView key, value;
-
-        public ViewHolderStat(View itemView) {
-            super(itemView);
-            key = itemView.findViewById(R.id.key);
-            value = itemView.findViewById(R.id.value);
-        }
-    }
 }

@@ -47,7 +47,7 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
         return list.size();
     }
 
-    class ViewHolderOtherInfo extends RecyclerView.ViewHolder{
+  public static  class ViewHolderOtherInfo extends RecyclerView.ViewHolder{
         TextView tvTitle, tvDescription;
         public ViewHolderOtherInfo(View itemView) {
             super(itemView);

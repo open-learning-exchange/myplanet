@@ -71,16 +71,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         achievementArray = new JsonArray();
         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        etGoals = v.findViewById(R.id.et_goals);
-        llachievement = v.findViewById(R.id.ll_attachment);
-        llOthers = v.findViewById(R.id.ll_other_info);
-        etPurpose = v.findViewById(R.id.et_purpose);
-        etAchievement = v.findViewById(R.id.et_achievement);
-        btnAddAchievement = v.findViewById(R.id.btn_achievement);
-        btnOther = v.findViewById(R.id.btn_other);
-        btnUpdate = v.findViewById(R.id.btn_update);
-        btnCancel = v.findViewById(R.id.btn_cancel);
-        checkBox = v.findViewById(R.id.cb_send_to_nation);
+        createView(v);
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         if (achievement == null) {
@@ -93,10 +84,15 @@ public class EditAchievementFragment extends BaseContainerFragment {
             etAchievement.setText(achievement.getAchievementsHeader());
             etPurpose.setText(achievement.getPurpose());
             etGoals.setText(achievement.getGoals());
+            checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
 
         resourceArray = new JsonArray();
+        setListeners();
+        return v;
+    }
 
+    private void setListeners() {
         btnUpdate.setOnClickListener(view -> {
             String goals = etGoals.getText().toString();
             String purpose = etPurpose.getText().toString();
@@ -116,13 +112,27 @@ public class EditAchievementFragment extends BaseContainerFragment {
         btnOther.setOnClickListener(view -> {
             showOtherInfoDialog();
         });
-        return v;
+    }
+
+    private void createView(View v) {
+        etGoals = v.findViewById(R.id.et_goals);
+        llachievement = v.findViewById(R.id.ll_attachment);
+        llOthers = v.findViewById(R.id.ll_other_info);
+        etPurpose = v.findViewById(R.id.et_purpose);
+        etAchievement = v.findViewById(R.id.et_achievement);
+        btnAddAchievement = v.findViewById(R.id.btn_achievement);
+        btnOther = v.findViewById(R.id.btn_other);
+        btnUpdate = v.findViewById(R.id.btn_update);
+        btnCancel = v.findViewById(R.id.btn_cancel);
+        checkBox = v.findViewById(R.id.cb_send_to_nation);
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         showAchievementAndInfo();
+        showOtherInfo();
+
     }
 
     private void showAchievementAndInfo() {
@@ -139,25 +149,22 @@ public class EditAchievementFragment extends BaseContainerFragment {
             for (JsonElement element : e.getAsJsonObject().getAsJsonArray("resources")) {
                 chipCloud.addChip(element.getAsJsonObject().get("title").getAsString());
             }
-            v.findViewById(R.id.iv_delete).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    achievementArray.remove(e);
-                    showAchievementAndInfo();
-                }
+            v.findViewById(R.id.iv_delete).setOnClickListener(view -> {
+                achievementArray.remove(e);
+                showAchievementAndInfo();
             });
             llachievement.addView(v);
         }
 
+    }
+
+    private void showOtherInfo() {
         for (JsonElement e : otherInfoArray) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_other_info, null);
             ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("type").getAsString() + " : " + e.getAsJsonObject().get("description").getAsString());
-            v.findViewById(R.id.iv_delete).setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    otherInfoArray.remove(e);
-                    showAchievementAndInfo();
-                }
+            v.findViewById(R.id.iv_delete).setOnClickListener(view -> {
+                otherInfoArray.remove(e);
+                showAchievementAndInfo();
             });
             llOthers.addView(v);
         }

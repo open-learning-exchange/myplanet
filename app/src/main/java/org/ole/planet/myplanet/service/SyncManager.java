@@ -127,7 +127,6 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "login_activities");
             RealmResourceActivity.onSynced(mRealm, settings);
         } catch (Exception err) {
-            err.printStackTrace();
             handleException(err.getMessage());
         } finally {
             destroy();
