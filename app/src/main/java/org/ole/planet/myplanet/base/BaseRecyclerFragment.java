@@ -210,10 +210,17 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (c == RealmStepExam.class) {
             return mRealm.where(c).equalTo("type", "surveys").findAll();
         } else if (isMyCourseLib) {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll()) : RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
+            return getMyLibItems(c);
         } else {
             return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).findAll());
         }
+    }
+
+    private List<LI> getMyLibItems(Class c) {
+        if (c == RealmMyLibrary.class)
+            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
+        else
+            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
     }
 
     public void showNoData(View v, int count) {
