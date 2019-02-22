@@ -24,15 +24,12 @@ import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.Service;
-import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
-import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.io.File;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
@@ -74,7 +71,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             isUpload = false;
             isSync = false;
             processedUrl = Utilities.getUrl();
-            // new Service(this).checkVersion(this, settings);
         }
         if (getIntent().hasExtra("filePath")) {
             onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
