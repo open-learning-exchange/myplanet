@@ -24,18 +24,8 @@ public class DialogUtils {
         prgDialog.setMax(100);
         prgDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         prgDialog.setCancelable(false);
-        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.dismiss), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                prgDialog.dismiss();
-            }
-        });
-        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.stop_download), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                context.stopService(new Intent(context, MyDownloadService.class));
-            }
-        });
+        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.dismiss), (dialogInterface, i) -> prgDialog.dismiss());
+        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.stop_download), (dialogInterface, i) -> context.stopService(new Intent(context, MyDownloadService.class)));
         return prgDialog;
     }
 
@@ -58,13 +48,10 @@ public class DialogUtils {
             message += NetworkUtils.isWifiEnabled() ? "Wifi " : "";
             message += " is on please turn of to save battery";
             pd.setMessage(message);
-            pd.setPositiveButton("Go to settings", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    MainApplication.syncFailedCount = 0;
-                    Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-                    context.startActivity(intent);
-                }
+            pd.setPositiveButton("Go to settings", (dialogInterface, i) -> {
+                MainApplication.syncFailedCount = 0;
+                Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+                context.startActivity(intent);
             }).setNegativeButton(context.getString(R.string.cancel), null);
             pd.setCancelable(false);
             AlertDialog d = pd.create();

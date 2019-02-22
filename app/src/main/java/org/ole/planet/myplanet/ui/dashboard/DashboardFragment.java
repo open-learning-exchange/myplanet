@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ import io.realm.RealmResults;
 public class DashboardFragment extends BaseContainerFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    TextView txtFullName, txtVisits, tv_surveys, tv_submission;
+    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -75,6 +76,7 @@ public class DashboardFragment extends BaseContainerFragment {
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         int noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
         (view.findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
+
         return view;
     }
 
@@ -83,9 +85,11 @@ public class DashboardFragment extends BaseContainerFragment {
         txtVisits = view.findViewById(R.id.txtVisits);
         tv_surveys = view.findViewById(R.id.tv_surveys);
         tv_submission = view.findViewById(R.id.tv_submission);
+        tv_achievement = view.findViewById(R.id.tv_achievement);
         tv_surveys.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey")));
         tv_submission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
-        view.findViewById(R.id.tv_achievement).setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
+        tv_achievement.setVisibility(Constants.showBetaFeature(Constants.KEY_ACHIEVEMENT, getActivity()) ? View.VISIBLE : View.GONE);
+        tv_achievement.setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
         view.findViewById(R.id.ll_user).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
@@ -94,6 +98,7 @@ public class DashboardFragment extends BaseContainerFragment {
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
         showDownloadDialog(getLibraryList(mRealm));
+
     }
 
     public void myLibraryDiv(View view) {
@@ -103,8 +108,7 @@ public class DashboardFragment extends BaseContainerFragment {
         List<RealmMyLibrary> db_myLibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings);
         if (db_myLibrary.size() == 0) {
             count.setVisibility(View.GONE);
-        }
-        else {
+        } else {
             count.setText(db_myLibrary.size() + "");
         }
         int itemCnt = 0;
@@ -184,7 +188,6 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
 
-
     public void myLibraryItemClickAction(TextView textView, final RealmMyLibrary items) {
         textView.setOnClickListener(v -> openResource(items));
     }
@@ -199,12 +202,10 @@ public class DashboardFragment extends BaseContainerFragment {
         if (c == RealmMyCourse.class) {
             TextView tv_count_course = v.findViewById(R.id.count_course);
             updateCountText(countText, tv_count_course);
-        }
-        else if (c == RealmMeetup.class) {
+        } else if (c == RealmMeetup.class) {
             TextView tv_count_meetup = v.findViewById(R.id.count_meetup);
             updateCountText(countText, tv_count_meetup);
-        }
-        else if (c == RealmMyTeam.class) {
+        } else if (c == RealmMyTeam.class) {
             TextView tv_count_team = v.findViewById(R.id.count_team);
             updateCountText(countText, tv_count_team);
         }

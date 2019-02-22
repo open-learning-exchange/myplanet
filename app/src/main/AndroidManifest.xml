@@ -19,6 +19,7 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
 
     <application xmlns:tools="http://schemas.android.com/tools"
         android:name=".MainApplication"
@@ -28,9 +29,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/MyMaterialTheme"
-        tools:replace="android:label">
-        <activity android:name=".ui.viewer.AudioPlayerActivity"
-            ></activity>
+        tools:replace="android:label"
+       >
+        <activity android:name=".ui.viewer.AudioPlayerActivity"></activity>
         <activity
             android:name=".ui.sync.LoginActivity"
             android:configChanges="orientation|keyboardHidden|screenSize">
@@ -82,9 +83,8 @@
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
             </intent-filter>
         </service>
-        <activity
-            android:name=".ui.viewer.WebViewActivity"
-          />
+
+        <activity android:name=".ui.viewer.WebViewActivity" />
 
     </application>
 

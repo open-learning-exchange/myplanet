@@ -16,14 +16,13 @@ public class Constants {
     public static List<ShelfData> shelfDataList;
     public static List<String> betaList;
     public static final String KEY_RATING = "rating";
-    public static final String KEY_COURSE = "course";
     public static final String KEY_EXAM = "exam";
-    public static final String KEY_RESOURCE = "resource";
     public static final String KEY_SYNC = "sync";
     public static final String KEY_SURVEY = "survey";
     public static final String KEY_MEETUPS = "meetup";
     public static final String KEY_TEAMS = "teams";
     public static final String KEY_DELETE = "delete";
+    public static final String KEY_ACHIEVEMENT = "achievement";
 
     static {
         shelfDataList = new ArrayList<>();
@@ -39,8 +38,8 @@ public class Constants {
         betaList.add(KEY_MEETUPS);
         betaList.add(KEY_SURVEY);
         betaList.add(KEY_DELETE);
-        betaList.add(KEY_DELETE);
         betaList.add(KEY_SYNC);
+        betaList.add(KEY_ACHIEVEMENT);
     }
 
     public static class ShelfData {
