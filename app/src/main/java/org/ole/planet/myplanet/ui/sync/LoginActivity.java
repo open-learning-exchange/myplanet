@@ -68,9 +68,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
         }
-        if (getIntent().hasExtra("filePath")) {
-            onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
-        }
 
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
@@ -82,7 +79,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             processedUrl = Utilities.getUrl();
             // new Service(this).checkVersion(this, settings);
         }
-        new Service(this).checkVersion(this, settings);
+        if (getIntent().hasExtra("filePath")) {
+            onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
+        }
+        else{
+            new Service(this).checkVersion(this, settings);
+        }
+
 
     }
 
@@ -212,6 +215,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onUpdateAvailable(String filePath, boolean cancelable) {
+
         AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, filePath, progressDialog);
         if (cancelable) {
             builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
