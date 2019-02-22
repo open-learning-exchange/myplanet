@@ -49,6 +49,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     TagExpandableAdapter adapter;
     EditText etFilter;
     Button btnOk;
+    private ArrayList<RealmTag> selectedItemsList = new ArrayList<>();
 
     TagClickListener listener;
 
@@ -98,9 +99,9 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     private void setListeners() {
         btnOk.setOnClickListener(view -> {
-            Utilities.log("Selected tags size " + adapter.getSelectedItemsList().size());
+            Utilities.log("Selected tags size " + selectedItemsList);
             if (listener != null) {
-                listener.onOkClicked(adapter.getSelectedItemsList());
+                listener.onOkClicked(selectedItemsList);
                 dismiss();
             }
         });
@@ -147,7 +148,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
             createChildMap(childMap, t);
         }
         listTag.setGroupIndicator(null);
-        adapter = new TagExpandableAdapter(getActivity(), switchMany.isChecked() ? recentList : list, childMap);
+        adapter = new TagExpandableAdapter(getActivity(), switchMany.isChecked() ? recentList : list, childMap, selectedItemsList);
 
         adapter.setClickListener(this);
         listTag.setAdapter(adapter);
@@ -170,6 +171,15 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         if (listener != null)
             listener.onTagSelected(tag);
         dismiss();
+    }
+
+    @Override
+    public void onTagSelected(RealmTag tag) {
+        if (selectedItemsList.contains(tag)) {
+            selectedItemsList.remove(tag);
+        } else {
+            selectedItemsList.add(tag);
+        }
     }
 
     @Override

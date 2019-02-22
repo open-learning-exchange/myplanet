@@ -31,7 +31,7 @@
                     android:layout_height="@dimen/image_size_home_card"
                     android:layout_marginLeft="16dp"
                     android:layout_marginRight="16dp"
-                    app:srcCompat="@drawable/courses" />
+                    app:srcCompat="@drawable/mycourses" />
 
 
                 <TextView

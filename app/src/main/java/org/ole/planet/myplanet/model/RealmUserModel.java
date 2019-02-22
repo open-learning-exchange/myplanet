@@ -190,6 +190,10 @@ public class RealmUserModel extends RealmObject {
         this.name = name;
     }
 
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
+
 
     public Boolean getUserAdmin() {
         return isUserAdmin;
