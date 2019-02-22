@@ -65,10 +65,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         save = findViewById(R.id.save);
         declareElements();
         declareMoreElements();
-        if (getIntent().getBooleanExtra("showWifiDialog", false)) {
-            DialogUtils.showWifiSettingDialog(this);
-        }
-
+        showWifiDialog();
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         registerReceiver();
@@ -81,12 +78,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         if (getIntent().hasExtra("filePath")) {
             onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
-        }
-        else{
+        } else {
             new Service(this).checkVersion(this, settings);
         }
+    }
 
-
+    private void showWifiDialog() {
+        if (getIntent().getBooleanExtra("showWifiDialog", false)) {
+            DialogUtils.showWifiSettingDialog(this);
+        }
     }
 
 
