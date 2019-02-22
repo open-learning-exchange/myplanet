@@ -52,7 +52,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.2.76</string>
+    <string name="app_version">0.2.77</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -101,6 +101,10 @@
     <string name="ok">OK</string>
     <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
     <string name="archive_mycourse">Archive myCourse</string>
+    <string name="menu_achievement">Achievements</string>
+    <string name="edit_achievement">Edit Achievement</string>
+    <string name="add_resources">Add Resources</string>
+    <string name="description">Description  *</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -116,5 +120,15 @@
         <item>Español</item>
         <item>عربى</item>
         <item>Somali</item>
+    </string-array>
+    
+    <string-array name="info_type">
+        <item>Languages</item>
+        <item>Education</item>
+        <item>Employment History</item>
+        <item>Badges</item>
+        <item>Certificates</item>
+        <item>Internships</item>
+        <item>Awards</item>
     </string-array>
 </resources>

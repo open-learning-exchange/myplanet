@@ -36,7 +36,7 @@ public class RealmMyLibrary extends RealmObject {
     private String resourceId;
     private String _rev;
     private boolean need_optimization;
-    private String Publisher;
+    private String publisher;
     private String linkToLicense;
     private String addedBy;
     private String uploadDate;
@@ -79,6 +79,7 @@ public class RealmMyLibrary extends RealmObject {
         }
         return libraries;
     }
+
 
     public static List<RealmObject> getShelfItem(String userId, RealmResults<RealmObject> libs, Class c) {
         List<RealmObject> libraries = new ArrayList<>();
@@ -192,7 +193,7 @@ public class RealmMyLibrary extends RealmObject {
         resource.setUploadDate(JsonUtils.getString("uploadDate", doc));
         resource.setYear(JsonUtils.getString("year", doc));
         resource.setAddedBy(JsonUtils.getString("addedBy", doc));
-        resource.setPublisher(JsonUtils.getString("Publisher", doc));
+        resource.setPublisher(JsonUtils.getString("publisher", doc));
         resource.setLinkToLicense(JsonUtils.getString("linkToLicense", doc));
         resource.setOpenWith(JsonUtils.getString("openWith", doc));
         resource.setArticleDate(JsonUtils.getString("articleDate", doc));
@@ -209,6 +210,53 @@ public class RealmMyLibrary extends RealmObject {
         resource.setLanguages(JsonUtils.getJsonArray("languages", doc), resource);
     }
 
+
+    public JsonObject serializeResource() {
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", id);
+        object.addProperty("_rev", _rev);
+        object.addProperty("_rev", _rev);
+        object.addProperty("need_optimization", need_optimization);
+
+        object.add("resourceFor", getArray(resourceFor));
+        object.addProperty("publisher", publisher);
+        object.addProperty("linkToLicense", linkToLicense);
+        object.addProperty("addedBy", addedBy);
+        object.addProperty("uploadDate", uploadDate);
+        object.addProperty("openWith", openWith);
+        object.add("subject", getArray(subject));
+        object.addProperty("kind", kind);
+        object.addProperty("medium", medium);
+        object.addProperty("language", language);
+        object.addProperty("author", author);
+        object.addProperty("sum", sum);
+        object.addProperty("createdDate", uploadDate);
+        object.add("level", getArray(level));
+        object.add("languages", getArray(languages));
+        object.add("tag", getArray(tag));
+        object.addProperty("timesRated", timesRated);
+        object.addProperty("year", year);
+        object.addProperty("title", title);
+        object.addProperty("averageRating", averageRating);
+        object.addProperty("filename", filename);
+        object.addProperty("mediaType", mediaType);
+        object.addProperty("description", description);
+        JsonObject ob  = new JsonObject();
+        ob.add(resourceLocalAddress, new JsonObject());
+        object.add("_attachments", ob);
+        return object;
+    }
+
+    public JsonArray getArray(RealmList<String> ar) {
+        JsonArray sub = new JsonArray();
+        if (ar != null) {
+            for (String s : ar
+            ) {
+                sub.add(s);
+            }
+        }
+        return sub;
+    }
 
     public RealmList<String> getUserId() {
         return userId;
@@ -422,11 +470,11 @@ public class RealmMyLibrary extends RealmObject {
     }
 
     public String getPublisher() {
-        return Publisher;
+        return publisher;
     }
 
     public void setPublisher(String publisher) {
-        Publisher = publisher;
+        publisher = publisher;
     }
 
     public String getLinkToLicense() {
