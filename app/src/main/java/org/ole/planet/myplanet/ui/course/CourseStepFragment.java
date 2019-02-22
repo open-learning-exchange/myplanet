@@ -10,12 +10,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmCourseStep;
+import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
@@ -117,12 +117,21 @@ public class CourseStepFragment extends BaseContainerFragment {
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null)
             btnResource.setText("Resources [" + resources.size() + "]");
-        if (stepExams != null)
-            btnExam.setText("Take Test [" + stepExams.size() + "]");
+        hideTestIfNoQuestion();
         tvTitle.setText(step.getStepTitle());
         description.loadMarkdown(step.getDescription());
         setListeners();
+    }
 
+    private void hideTestIfNoQuestion() {
+        if (stepExams != null && stepExams.size() > 0) {
+            String first_step_id = stepExams.get(0).getId();
+            RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
+            if (questions != null && questions.size() > 0) {
+                btnExam.setText("Take Test [" + stepExams.size() + "]");
+                btnExam.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     @Override
@@ -132,7 +141,8 @@ public class CourseStepFragment extends BaseContainerFragment {
             if (visible && RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
                 saveCourseProgress();
             }
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 
     private void setListeners() {
