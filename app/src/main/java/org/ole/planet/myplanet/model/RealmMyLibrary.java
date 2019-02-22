@@ -81,6 +81,17 @@ public class RealmMyLibrary extends RealmObject {
     }
 
 
+    public static List<RealmMyLibrary> getOurLibrary(String userId, List<RealmMyLibrary> libs) {
+        List<RealmMyLibrary> libraries = new ArrayList<>();
+        for (RealmMyLibrary item : libs) {
+            if (!item.getUserId().contains(userId)) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
+
+
     public static List<RealmObject> getShelfItem(String userId, RealmResults<RealmObject> libs, Class c) {
         List<RealmObject> libraries = new ArrayList<>();
         for (RealmObject item : libs) {
@@ -241,7 +252,7 @@ public class RealmMyLibrary extends RealmObject {
         object.addProperty("filename", filename);
         object.addProperty("mediaType", mediaType);
         object.addProperty("description", description);
-        JsonObject ob  = new JsonObject();
+        JsonObject ob = new JsonObject();
         ob.add(resourceLocalAddress, new JsonObject());
         object.add("_attachments", ob);
         return object;

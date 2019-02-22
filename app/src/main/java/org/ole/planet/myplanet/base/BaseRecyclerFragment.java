@@ -106,6 +106,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 RealmMyLibrary.createFromResource(myObject, mRealm, model.getId());
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
                 Utilities.toast(getActivity(), "Added to my library");
+                recyclerView.setAdapter(getAdapter());
             } else {
                 RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
                 RealmMyCourse.createMyCourse(myObject, mRealm, model.getId());
@@ -178,8 +179,9 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
 
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
         if (isMyCourseLib)
-            list =  RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
-
+            list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
+        else
+            list = RealmMyLibrary.getOurLibrary(model.getId(), list);
         if (tags.size() == 0) {
             return list;
         }
@@ -210,7 +212,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         } else if (isMyCourseLib) {
             return c == RealmMyLibrary.class ? RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll()) : RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
         } else {
-            return mRealm.where(c).findAll();
+            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).findAll());
         }
     }
 
