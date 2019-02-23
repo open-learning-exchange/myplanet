@@ -182,22 +182,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
         serverUrl.setText(settings.getString("serverURL", ""));
         serverPassword.setText(settings.getString("serverPin", ""));
-        serverUrl.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                //action before text change
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                //action after text change
-            }
-        });
+        serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         dialog.show();
         sync(dialog);
     }
@@ -212,7 +197,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onUpdateAvailable(String filePath, boolean cancelable) {
-
         AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, filePath, progressDialog);
         if (cancelable) {
             builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
@@ -268,8 +252,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
         }
 
-        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            //action on or during text change
+        public void onTextChanged(CharSequence s, int i, int i1, int i2) {
+            if (view.getId() == R.id.input_server_url)
+                positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
+
         }
 
         public void afterTextChanged(Editable editable) {
@@ -280,6 +266,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 case R.id.input_password:
                     validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
                     break;
+
                 default:
                     break;
             }
