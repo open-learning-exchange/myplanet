@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.provider.Settings;
 
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
@@ -123,7 +124,7 @@ public class MainApplication extends Application implements Application.Activity
             mRealm.beginTransaction();
         RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
         RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
-        if (model!=null){
+        if (model != null) {
             log.setParentCode(model.getParentCode());
             log.setCreatedOn(model.getPlanetCode());
         }

@@ -54,7 +54,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
             progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
             if (download.isCompleteAll()) {
                 progressDialog.dismiss();
-                FileUtils.installApk(this, download.getFileName());
+                FileUtils.installApk(this, download.getFileUrl());
             }
         } else {
             progressDialog.dismiss();

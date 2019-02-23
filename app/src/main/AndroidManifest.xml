@@ -29,8 +29,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/MyMaterialTheme"
-        tools:replace="android:label"
-       >
+        tools:replace="android:label">
         <activity android:name=".ui.viewer.AudioPlayerActivity"></activity>
         <activity
             android:name=".ui.sync.LoginActivity"

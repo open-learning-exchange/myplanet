@@ -21,6 +21,7 @@ public class Download implements Parcelable {
     private boolean completeAll;
     private boolean failed;
     private String message;
+    private String fileUrl;
 
     public Download() {
 
@@ -34,6 +35,15 @@ public class Download implements Parcelable {
         completeAll = in.readByte() != 0;
         failed = in.readByte() != 0;
         message = in.readString();
+        fileUrl = in.readString();
+    }
+
+    public String getFileUrl() {
+        return fileUrl;
+    }
+
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
     }
 
     public String getMessage() {
@@ -107,5 +117,6 @@ public class Download implements Parcelable {
         dest.writeByte((byte) (completeAll ? 1 : 0));
         dest.writeByte((byte) (failed ? 1 : 0));
         dest.writeString(message);
+        dest.writeString(fileUrl);
     }
 }

@@ -78,9 +78,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             new Service(this).checkVersion(this, settings);
         }
-
-
-       // FileUtils.installApk(this, "/storage/emulated/0/ole/myPlanet.apk");
     }
 
     private void showWifiDialog() {
