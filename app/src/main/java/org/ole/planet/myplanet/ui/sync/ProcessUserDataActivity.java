@@ -152,7 +152,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
 
     public void saveUserInfoPref(SharedPreferences settings, String password, RealmUserModel user) {
         this.settings = settings;
-        Utilities.log("UserId " + user.getId());
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("userId", user.getId());
         editor.putString("name", user.getName());
