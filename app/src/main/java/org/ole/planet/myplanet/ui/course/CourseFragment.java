@@ -79,7 +79,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             adapterCourses.setCourseList(search(etSearch.getText().toString(), RealmMyCourse.class));
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
-
         });
         setSearchListener();
         btnRemove.setOnClickListener(V ->{

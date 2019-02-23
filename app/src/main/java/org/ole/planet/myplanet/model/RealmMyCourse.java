@@ -79,9 +79,19 @@ public class RealmMyCourse extends RealmObject {
         return libraries;
     }
 
+    public static List<RealmMyCourse> getOurCourse(String userId, List<RealmMyCourse> libs) {
+        List<RealmMyCourse> libraries = new ArrayList<>();
+        for (RealmMyCourse item : libs) {
+            if (!item.getUserId().contains(userId)) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
+    }
 
-    public static boolean isMyCourse(String userId,String courseId, Realm realm) {
-      return RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse.class).equalTo("courseId", courseId).findAll()).size() > 0;
+
+    public static boolean isMyCourse(String userId, String courseId, Realm realm) {
+        return RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse.class).equalTo("courseId", courseId).findAll()).size() > 0;
     }
 
     public static void insertMyCourses(JsonObject doc, Realm mRealm) {
@@ -108,12 +118,12 @@ public class RealmMyCourse extends RealmObject {
 //        return myIds;
 //    }
 
-    public static JsonArray getMyCourseIds(Realm realm,String userId) {
-        List<RealmMyCourse> myCourses = getMyCourseByUserId( userId, realm.where(RealmMyCourse.class).findAll());
+    public static JsonArray getMyCourseIds(Realm realm, String userId) {
+        List<RealmMyCourse> myCourses = getMyCourseByUserId(userId, realm.where(RealmMyCourse.class).findAll());
         JsonArray ids = new JsonArray();
         for (RealmObject lib : myCourses
-                ) {
-            ids.add( ((RealmMyCourse)lib).getCourseId());
+        ) {
+            ids.add(((RealmMyCourse) lib).getCourseId());
         }
         return ids;
     }
