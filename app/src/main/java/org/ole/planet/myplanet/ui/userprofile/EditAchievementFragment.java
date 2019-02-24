@@ -1,12 +1,15 @@
 package org.ole.planet.myplanet.ui.userprofile;
 
 
+import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.AppCompatTextView;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -38,7 +41,10 @@ import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
@@ -49,15 +55,16 @@ import io.realm.Realm;
  */
 public class EditAchievementFragment extends BaseContainerFragment {
 
-    EditText etPurpose, etGoals, etAchievement;
+    EditText etPurpose, etGoals, etAchievement, etName, etMiddleName, etLastName, etBirthPlace;
     Button btnAddAchievement, btnOther, btnUpdate, btnCancel;
+    TextView tvDob;
     Realm mRealm;
     RealmUserModel user;
     RealmAchievement achievement;
     LinearLayout llachievement, llOthers;
-    JsonArray otherInfoArray, achievementArray, resourceArray;
+    JsonArray referenceArray, achievementArray, resourceArray;
     CheckBox checkBox;
-
+    String dob = "";
     public EditAchievementFragment() {
         // Required empty public constructor
     }
@@ -71,22 +78,42 @@ public class EditAchievementFragment extends BaseContainerFragment {
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         achievementArray = new JsonArray();
         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
+        if (achievement == null) {
+            achievement = mRealm.createObject(RealmAchievement.class, (user.getId() + "@" + user.getPlanetCode()));
+        }
         createView(v);
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         if (achievement == null) {
             achievementArray = new JsonArray();
-            otherInfoArray = new JsonArray();
+            referenceArray = new JsonArray();
             achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
         } else {
             achievementArray = achievement.getAchievementsArray();
-            otherInfoArray = achievement.getOtherInfoArray();
+            referenceArray = achievement.getreferencesArray();
             etAchievement.setText(achievement.getAchievementsHeader());
             etPurpose.setText(achievement.getPurpose());
             etGoals.setText(achievement.getGoals());
             checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
-
+        etName.setText(user.getFirstName());
+        etMiddleName.setText(user.getMiddleName());
+        etLastName.setText(user.getLastName());
+        etBirthPlace.setText(user.getBirthPlace());
+        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : user.getDob());
+        tvDob.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Calendar now = Calendar.getInstance();
+                DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
+                    dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
+                    tvDob.setText(dob);
+                }, now.get(Calendar.YEAR),
+                        now.get(Calendar.MONTH),
+                        now.get(Calendar.DAY_OF_MONTH));
+                dpd.show();
+            }
+        });
         resourceArray = new JsonArray();
         setListeners();
         return v;
@@ -97,12 +124,16 @@ public class EditAchievementFragment extends BaseContainerFragment {
             String goals = etGoals.getText().toString();
             String purpose = etPurpose.getText().toString();
             String achie = etAchievement.getText().toString();
+            user.setFirstName(etName.getText().toString());
+            user.setMiddleName(etMiddleName.getText().toString());
+            user.setLastName(etLastName.getText().toString());
+            user.setBirthPlace(etBirthPlace.getText().toString());
             achievement.setAchievementsHeader(achie);
             achievement.setGoals(goals);
             achievement.setPurpose(purpose);
             achievement.setAchievements(achievementArray);
             achievement.setSendToNation(checkBox.isChecked() + "");
-            achievement.setOtherInfo(otherInfoArray);
+            achievement.setreferences(referenceArray);
             getActivity().onBackPressed();
         });
         btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
@@ -110,7 +141,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
             showAddachievementAlert();
         });
         btnOther.setOnClickListener(view -> {
-            showOtherInfoDialog();
+            showreferenceDialog();
         });
     }
 
@@ -120,6 +151,11 @@ public class EditAchievementFragment extends BaseContainerFragment {
         llOthers = v.findViewById(R.id.ll_other_info);
         etPurpose = v.findViewById(R.id.et_purpose);
         etAchievement = v.findViewById(R.id.et_achievement);
+        etName = v.findViewById(R.id.et_fname);
+        etMiddleName = v.findViewById(R.id.et_mname);
+        etLastName = v.findViewById(R.id.et_lname);
+        etBirthPlace = v.findViewById(R.id.et_birthplace);
+        tvDob = v.findViewById(R.id.txt_dob);
         btnAddAchievement = v.findViewById(R.id.btn_achievement);
         btnOther = v.findViewById(R.id.btn_other);
         btnUpdate = v.findViewById(R.id.btn_update);
@@ -131,7 +167,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         showAchievementAndInfo();
-        showOtherInfo();
+        showreference();
 
     }
 
@@ -142,7 +178,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
         llachievement.removeAllViews();
         for (JsonElement e : achievementArray) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_attachement, null);
-            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("description").getAsString());
+            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("title").getAsString());
             FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox);
             flexboxLayout.removeAllViews();
             final ChipCloud chipCloud = new ChipCloud(getActivity(), flexboxLayout, config);
@@ -158,45 +194,66 @@ public class EditAchievementFragment extends BaseContainerFragment {
 
     }
 
-    private void showOtherInfo() {
-        for (JsonElement e : otherInfoArray) {
+    private void showreference() {
+        for (JsonElement e : referenceArray) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_other_info, null);
-            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("type").getAsString() + " : " + e.getAsJsonObject().get("description").getAsString());
+            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("name").getAsString());
             v.findViewById(R.id.iv_delete).setOnClickListener(view -> {
-                otherInfoArray.remove(e);
+                referenceArray.remove(e);
                 showAchievementAndInfo();
             });
             llOthers.addView(v);
         }
     }
 
-    private void showOtherInfoDialog() {
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_other_info, null);
-        Spinner spnType = v.findViewById(R.id.spn_type);
-        EditText etDesc = v.findViewById(R.id.et_description);
+    private void showreferenceDialog() {
+        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_reference, null);
+        EditText etName = v.findViewById(R.id.et_name);
+        EditText etRelation = v.findViewById(R.id.et_relationship);
+        EditText etPhone = v.findViewById(R.id.et_phone);
+        EditText etEmail = v.findViewById(R.id.et_email);
         new AlertDialog.Builder(getActivity())
                 .setTitle("Add Other Information")
                 .setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
-                    String type = spnType.getSelectedItem().toString();
-                    String desc = etDesc.getText().toString();
-                    if (desc.isEmpty()) {
-                        Utilities.toast(getActivity(), "Description is required.");
+                    String name = etName.getText().toString();
+                    String relation = etRelation.getText().toString();
+                    String phone = etPhone.getText().toString();
+                    String email = etEmail.getText().toString();
+                    if (name.isEmpty()) {
+                        Utilities.toast(getActivity(), "Name is required.");
                         return;
                     }
                     JsonObject ob = new JsonObject();
-                    ob.addProperty("type", type);
-                    ob.addProperty("description", desc);
-                    otherInfoArray.add(ob);
-                    showAchievementAndInfo();
+                    ob.addProperty("name", name);
+                    ob.addProperty("phone", phone);
+                    ob.addProperty("relationship", relation);
+                    ob.addProperty("email", email);
+                    referenceArray.add(ob);
+                    showreference();
                 }).setNegativeButton("Cancel", null).show();
     }
+
+    String date = "";
 
     private void showAddachievementAlert() {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_add_attachment, null);
         Button btnAddResource = v.findViewById(R.id.btn_add_resources);
         EditText etDescription = v.findViewById(R.id.et_desc);
+        EditText etTitle = v.findViewById(R.id.et_title);
+        AppCompatTextView tvDate = v.findViewById(R.id.tv_date);
+        tvDate.setOnClickListener(view -> {
+            Calendar now = Calendar.getInstance();
+            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
+                date = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
+                tvDate.setText(date);
+            }, now.get(Calendar.YEAR),
+                    now.get(Calendar.MONTH),
+                    now.get(Calendar.DAY_OF_MONTH));
+            dpd.getDatePicker().setMaxDate(now.getTimeInMillis());
+            dpd.show();
+        });
         resourceArray = new JsonArray();
         btnAddResource.setOnClickListener(view -> showRecourseListDialog(resourceArray));
         new AlertDialog.Builder(getActivity()).setTitle("Add Achievement")
@@ -205,12 +262,15 @@ public class EditAchievementFragment extends BaseContainerFragment {
                 .setCancelable(false)
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String desc = etDescription.getText().toString();
-                    if (desc.isEmpty()) {
-                        Toast.makeText(getActivity(), "Description is required", Toast.LENGTH_SHORT).show();
+                    String title = etTitle.getText().toString();
+                    if (title.isEmpty()) {
+                        Toast.makeText(getActivity(), "Title is required", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     JsonObject object = new JsonObject();
                     object.addProperty("description", desc);
+                    object.addProperty("title", title);
+                    object.addProperty("date", date);
                     object.add("resources", resourceArray);
                     achievementArray.add(object);
                     showAchievementAndInfo();
