@@ -8,6 +8,7 @@ import android.os.StatFs;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.webkit.MimeTypeMap;
 
 import org.ole.planet.myplanet.BuildConfig;
 
@@ -79,12 +80,13 @@ public class FileUtils {
     public static void installApk(AppCompatActivity activity, String file) {
         try {
             if (!file.endsWith("apk")) return;
-            File toInstall = new File(Utilities.SD_PATH, file);
+            File toInstall = FileUtils.getSDPathFromUrl(file);
+            toInstall.setReadable(true, false);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 Uri apkUri = FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", toInstall);
                 Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-                intent.setData(apkUri);
                 intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intent.setData(apkUri);
                 activity.startActivity(intent);
             } else {
                 Uri apkUri = Uri.fromFile(toInstall);
@@ -94,7 +96,22 @@ public class FileUtils {
                 activity.startActivity(intent);
             }
         } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
+
+    private static String getMimeType(String url) {
+        String type = null;
+        String extension = MimeTypeMap.getFileExtensionFromUrl(url);
+        if (extension != null) {
+            MimeTypeMap mime = MimeTypeMap.getSingleton();
+            type = mime.getMimeTypeFromExtension(extension);
+        }
+        return type;
+    }
+
+    public static void install(AppCompatActivity activity, String file) {
+
     }
 
 }

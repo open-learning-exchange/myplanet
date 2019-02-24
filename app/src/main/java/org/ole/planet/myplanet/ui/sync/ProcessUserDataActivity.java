@@ -54,7 +54,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
             progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
             if (download.isCompleteAll()) {
                 progressDialog.dismiss();
-                FileUtils.installApk(this, download.getFileName());
+                FileUtils.installApk(this, download.getFileUrl());
             }
         } else {
             progressDialog.dismiss();
@@ -152,7 +152,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
 
     public void saveUserInfoPref(SharedPreferences settings, String password, RealmUserModel user) {
         this.settings = settings;
-        Utilities.log("UserId " + user.getId());
         SharedPreferences.Editor editor = settings.edit();
         editor.putString("userId", user.getId());
         editor.putString("name", user.getName());

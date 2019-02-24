@@ -78,7 +78,7 @@ public class MyDownloadService extends IntentService {
 
     private void initDownload() {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-        request = retrofitInterface.downloadFile( Utilities.getHeader(), url);
+        request = retrofitInterface.downloadFile(Utilities.getHeader(), url);
         try {
             Response r = request.execute();
             if (r.code() == 200) {
@@ -87,7 +87,7 @@ public class MyDownloadService extends IntentService {
                     downloadFile(responseBody);
                 }
             } else {
-                downloadFiled(r.code() == 404 ? "File Not found " :  "Connection failed");
+                downloadFiled(r.code() == 404 ? "File Not found " : "Connection failed");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -146,10 +146,10 @@ public class MyDownloadService extends IntentService {
     }
 
     private void closeStreams(OutputStream output, InputStream bis) throws IOException {
-        onDownloadComplete();
         output.flush();
         output.close();
         bis.close();
+        onDownloadComplete();
     }
 
     private void sendNotification(Download download) {
@@ -170,6 +170,7 @@ public class MyDownloadService extends IntentService {
         changeOfflineStatus();
         Download download = new Download();
         download.setFileName(FileUtils.getFileNameFromUrl(url));
+        download.setFileUrl(url);
         download.setProgress(100);
         if (currentIndex == urls.size() - 1) {
             completeAll = true;
@@ -204,7 +205,7 @@ public class MyDownloadService extends IntentService {
             RealmMyLibrary obj = realm.where(RealmMyLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
             if (obj != null) {
                 obj.setResourceOffline(true);
-            }else{
+            } else {
                 Utilities.log("object Is null");
             }
         });
