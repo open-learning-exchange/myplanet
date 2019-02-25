@@ -68,7 +68,6 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
     String dob = "";
 
     public EditAchievementFragment() {
-        // Required empty public constructor
     }
 
 
@@ -86,6 +85,8 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
         createView(v);
         initializeData();
         setListeners();
+        showAchievementAndInfo();
+        showreference();
         return v;
     }
 
@@ -165,12 +166,6 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
 
     }
 
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        showAchievementAndInfo();
-        showreference();
-    }
 
     private void showAchievementAndInfo() {
         ChipCloudConfig config = Utilities.getCloudConfig()
