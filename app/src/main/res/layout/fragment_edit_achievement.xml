@@ -135,7 +135,7 @@
                             android:id="@+id/et_birthplace"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/last_name" />
+                            android:hint="@string/birth_place" />
 
                     </android.support.design.widget.TextInputLayout>
 

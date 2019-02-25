@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -53,7 +54,7 @@ import io.realm.Realm;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class EditAchievementFragment extends BaseContainerFragment {
+public class EditAchievementFragment extends BaseContainerFragment implements DatePickerDialog.OnDateSetListener {
 
     EditText etPurpose, etGoals, etAchievement, etName, etMiddleName, etLastName, etBirthPlace;
     Button btnAddAchievement, btnOther, btnUpdate, btnCancel;
@@ -122,10 +123,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
         btnOther.setOnClickListener(view -> showreferenceDialog());
         tvDob.setOnClickListener(view -> {
             Calendar now = Calendar.getInstance();
-            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
-                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-                tvDob.setText(dob);
-            }, now.get(Calendar.YEAR),
+            DatePickerDialog dpd = new DatePickerDialog(getActivity(), this, now.get(Calendar.YEAR),
                     now.get(Calendar.MONTH),
                     now.get(Calendar.DAY_OF_MONTH));
             dpd.show();
@@ -309,4 +307,9 @@ public class EditAchievementFragment extends BaseContainerFragment {
     }
 
 
+    @Override
+    public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
+        dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
+        tvDob.setText(dob);
+    }
 }

@@ -109,6 +109,7 @@
     <string name="name">Name *</string>
     <string name="relationship">Relationship</string>
     <string name="date">Date</string>
+    <string name="birth_place">Birth Place</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

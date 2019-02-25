@@ -96,8 +96,8 @@ public class RealmUserModel extends RealmObject {
         user.setIterations(JsonUtils.getString("iterations", jsonDoc));
         user.setDerived_key(JsonUtils.getString("derived_key", jsonDoc));
         user.setSalt(JsonUtils.getString("salt", jsonDoc));
-        user.setDob(JsonUtils.getString("birthplace", jsonDoc));
-        user.setBirthPlace(JsonUtils.getString("birthDate", jsonDoc));
+        user.setDob(JsonUtils.getString("birthDate", jsonDoc));
+        user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
