@@ -54,18 +54,8 @@ import io.realm.Realm;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class EditAchievementFragment extends BaseContainerFragment implements DatePickerDialog.OnDateSetListener {
+public class EditAchievementFragment extends BaseAchievementFragment implements DatePickerDialog.OnDateSetListener {
 
-    EditText etPurpose, etGoals, etAchievement, etName, etMiddleName, etLastName, etBirthPlace;
-    Button btnAddAchievement, btnOther, btnUpdate, btnCancel;
-    TextView tvDob;
-    Realm mRealm;
-    RealmUserModel user;
-    RealmAchievement achievement;
-    LinearLayout llachievement, llOthers;
-    JsonArray referenceArray, achievementArray, resourceArray;
-    CheckBox checkBox;
-    String dob = "";
 
     public EditAchievementFragment() {
     }
@@ -85,25 +75,6 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
         showAchievementAndInfo();
         showreference();
         return v;
-    }
-
-    private void initializeData() {
-        if (achievement == null) {
-            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
-        } else {
-            achievementArray = achievement.getAchievementsArray();
-            referenceArray = achievement.getreferencesArray();
-            etAchievement.setText(achievement.getAchievementsHeader());
-            etPurpose.setText(achievement.getPurpose());
-            etGoals.setText(achievement.getGoals());
-            checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
-        }
-        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : user.getDob());
-        resourceArray = new JsonArray();
-        etName.setText(user.getFirstName());
-        etMiddleName.setText(user.getMiddleName());
-        etLastName.setText(user.getLastName());
-        etBirthPlace.setText(user.getBirthPlace());
     }
 
     private void setListeners() {
