@@ -65,6 +65,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
     JsonArray referenceArray, achievementArray, resourceArray;
     CheckBox checkBox;
     String dob = "";
+
     public EditAchievementFragment() {
         // Required empty public constructor
     }
@@ -82,6 +83,12 @@ public class EditAchievementFragment extends BaseContainerFragment {
             achievement = mRealm.createObject(RealmAchievement.class, (user.getId() + "@" + user.getPlanetCode()));
         }
         createView(v);
+        initializeData();
+        setListeners();
+        return v;
+    }
+
+    private void initializeData() {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         if (achievement == null) {
@@ -96,53 +103,49 @@ public class EditAchievementFragment extends BaseContainerFragment {
             etGoals.setText(achievement.getGoals());
             checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
+        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : user.getDob());
+        resourceArray = new JsonArray();
         etName.setText(user.getFirstName());
         etMiddleName.setText(user.getMiddleName());
         etLastName.setText(user.getLastName());
         etBirthPlace.setText(user.getBirthPlace());
-        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : user.getDob());
-        tvDob.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Calendar now = Calendar.getInstance();
-                DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
-                    dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-                    tvDob.setText(dob);
-                }, now.get(Calendar.YEAR),
-                        now.get(Calendar.MONTH),
-                        now.get(Calendar.DAY_OF_MONTH));
-                dpd.show();
-            }
-        });
-        resourceArray = new JsonArray();
-        setListeners();
-        return v;
     }
 
     private void setListeners() {
         btnUpdate.setOnClickListener(view -> {
-            String goals = etGoals.getText().toString();
-            String purpose = etPurpose.getText().toString();
-            String achie = etAchievement.getText().toString();
-            user.setFirstName(etName.getText().toString());
-            user.setMiddleName(etMiddleName.getText().toString());
-            user.setLastName(etLastName.getText().toString());
-            user.setBirthPlace(etBirthPlace.getText().toString());
-            achievement.setAchievementsHeader(achie);
-            achievement.setGoals(goals);
-            achievement.setPurpose(purpose);
-            achievement.setAchievements(achievementArray);
-            achievement.setSendToNation(checkBox.isChecked() + "");
-            achievement.setreferences(referenceArray);
+            setUserInfo();
+            setAchievementInfo();
             getActivity().onBackPressed();
         });
         btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
-        btnAddAchievement.setOnClickListener(vi -> {
-            showAddachievementAlert();
+        btnAddAchievement.setOnClickListener(vi -> showAddachievementAlert());
+        btnOther.setOnClickListener(view -> showreferenceDialog());
+        tvDob.setOnClickListener(view -> {
+            Calendar now = Calendar.getInstance();
+            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
+                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
+                tvDob.setText(dob);
+            }, now.get(Calendar.YEAR),
+                    now.get(Calendar.MONTH),
+                    now.get(Calendar.DAY_OF_MONTH));
+            dpd.show();
         });
-        btnOther.setOnClickListener(view -> {
-            showreferenceDialog();
-        });
+    }
+
+    private void setAchievementInfo() {
+        achievement.setAchievementsHeader(etAchievement.getText().toString());
+        achievement.setGoals(etGoals.getText().toString());
+        achievement.setPurpose(etPurpose.getText().toString());
+        achievement.setAchievements(achievementArray);
+        achievement.setSendToNation(checkBox.isChecked() + "");
+        achievement.setreferences(referenceArray);
+    }
+
+    private void setUserInfo() {
+        user.setFirstName(etName.getText().toString());
+        user.setMiddleName(etMiddleName.getText().toString());
+        user.setLastName(etLastName.getText().toString());
+        user.setBirthPlace(etBirthPlace.getText().toString());
     }
 
     private void createView(View v) {
@@ -161,6 +164,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
         btnUpdate = v.findViewById(R.id.btn_update);
         btnCancel = v.findViewById(R.id.btn_cancel);
         checkBox = v.findViewById(R.id.cb_send_to_nation);
+
     }
 
     @Override
@@ -168,7 +172,6 @@ public class EditAchievementFragment extends BaseContainerFragment {
         super.onActivityCreated(savedInstanceState);
         showAchievementAndInfo();
         showreference();
-
     }
 
     private void showAchievementAndInfo() {
@@ -225,14 +228,18 @@ public class EditAchievementFragment extends BaseContainerFragment {
                         Utilities.toast(getActivity(), "Name is required.");
                         return;
                     }
-                    JsonObject ob = new JsonObject();
-                    ob.addProperty("name", name);
-                    ob.addProperty("phone", phone);
-                    ob.addProperty("relationship", relation);
-                    ob.addProperty("email", email);
-                    referenceArray.add(ob);
-                    showreference();
+                    saveReference(name, relation, phone, email);
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void saveReference(String name, String relation, String phone, String email) {
+        JsonObject ob = new JsonObject();
+        ob.addProperty("name", name);
+        ob.addProperty("phone", phone);
+        ob.addProperty("relationship", relation);
+        ob.addProperty("email", email);
+        referenceArray.add(ob);
+        showreference();
     }
 
     String date = "";
@@ -255,7 +262,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
             dpd.show();
         });
         resourceArray = new JsonArray();
-        btnAddResource.setOnClickListener(view -> showRecourseListDialog(resourceArray));
+        btnAddResource.setOnClickListener(view -> showResourseListDialog(resourceArray));
         new AlertDialog.Builder(getActivity()).setTitle("Add Achievement")
                 .setIcon(R.drawable.ic_edit)
                 .setView(v)
@@ -267,18 +274,21 @@ public class EditAchievementFragment extends BaseContainerFragment {
                         Toast.makeText(getActivity(), "Title is required", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    JsonObject object = new JsonObject();
-                    object.addProperty("description", desc);
-                    object.addProperty("title", title);
-                    object.addProperty("date", date);
-                    object.add("resources", resourceArray);
-                    achievementArray.add(object);
-                    showAchievementAndInfo();
+                    saveAchievement(desc, title);
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    private void showRecourseListDialog(JsonArray resourceArray) {
+    private void saveAchievement(String desc, String title) {
+        JsonObject object = new JsonObject();
+        object.addProperty("description", desc);
+        object.addProperty("title", title);
+        object.addProperty("date", date);
+        object.add("resources", resourceArray);
+        achievementArray.add(object);
+        showAchievementAndInfo();
+    }
 
+    private void showResourseListDialog(JsonArray resourceArray) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Select resources : ");
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
