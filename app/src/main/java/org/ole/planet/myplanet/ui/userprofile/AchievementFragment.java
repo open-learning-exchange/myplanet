@@ -84,7 +84,6 @@ public class AchievementFragment extends BaseContainerFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         RealmAchievement achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        Utilities.log("User id " + user.getId());
         tvFirstName.setText(user.getFirstName());
         tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
         if (achievement != null) {

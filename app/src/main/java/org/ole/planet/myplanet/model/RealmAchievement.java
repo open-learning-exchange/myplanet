@@ -14,9 +14,10 @@ import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmAchievement extends RealmObject {
-    private RealmList<String> references;
 
     private RealmList<String> achievements;
+
+    private RealmList<String> references;
 
     private String purpose;
 
@@ -40,6 +41,27 @@ public class RealmAchievement extends RealmObject {
         object.add("references", sub.getreferencesArray());
         object.add("achievements", sub.getAchievementsArray());
         return object;
+    }
+
+    public void setAchievements(RealmList<String> achievements) {
+        this.achievements = achievements;
+    }
+
+    public RealmList<String> getReferences() {
+        return references;
+    }
+
+    public void setReferences(RealmList<String> references) {
+        this.references = references;
+    }
+
+    public static JsonObject createReference(String name, String relation, String phone, String email) {
+        JsonObject ob = new JsonObject();
+        ob.addProperty("name", name);
+        ob.addProperty("phone", phone);
+        ob.addProperty("relationship", relation);
+        ob.addProperty("email", email);
+        return ob;
     }
 
     public String getPurpose() {
@@ -109,15 +131,6 @@ public class RealmAchievement extends RealmObject {
         return references;
     }
 
-    public void setreferences(JsonArray of) {
-        references = new RealmList<String>();
-        for (JsonElement el : of
-        ) {
-            String e = new Gson().toJson(el);
-            if (!references.contains(e))
-                references.add(e);
-        }
-    }
 
     public RealmList<String> getAchievements() {
         return achievements;
@@ -149,6 +162,16 @@ public class RealmAchievement extends RealmObject {
             String achi = new Gson().toJson(el);
             if (!achievements.contains(achi))
                 achievements.add(achi);
+        }
+    }
+
+    public void setreferences(JsonArray of) {
+        references = new RealmList<String>();
+        for (JsonElement el : of) {
+            Utilities.log("Set references");
+            String e = new Gson().toJson(el);
+            if (!references.contains(e))
+                references.add(e);
         }
     }
 }

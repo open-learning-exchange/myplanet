@@ -80,7 +80,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
         achievementArray = new JsonArray();
         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
         if (achievement == null) {
-            achievement = mRealm.createObject(RealmAchievement.class, (user.getId() + "@" + user.getPlanetCode()));
+            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
         }
         createView(v);
         initializeData();
@@ -89,12 +89,9 @@ public class EditAchievementFragment extends BaseContainerFragment {
     }
 
     private void initializeData() {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
         if (achievement == null) {
             achievementArray = new JsonArray();
             referenceArray = new JsonArray();
-            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
         } else {
             achievementArray = achievement.getAchievementsArray();
             referenceArray = achievement.getreferencesArray();
@@ -113,9 +110,12 @@ public class EditAchievementFragment extends BaseContainerFragment {
 
     private void setListeners() {
         btnUpdate.setOnClickListener(view -> {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
             setUserInfo();
             setAchievementInfo();
             getActivity().onBackPressed();
+            mRealm.commitTransaction();
         });
         btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
         btnAddAchievement.setOnClickListener(vi -> showAddachievementAlert());
@@ -137,8 +137,8 @@ public class EditAchievementFragment extends BaseContainerFragment {
         achievement.setGoals(etGoals.getText().toString());
         achievement.setPurpose(etPurpose.getText().toString());
         achievement.setAchievements(achievementArray);
-        achievement.setSendToNation(checkBox.isChecked() + "");
         achievement.setreferences(referenceArray);
+        achievement.setSendToNation(checkBox.isChecked() + "");
     }
 
     private void setUserInfo() {
@@ -228,19 +228,11 @@ public class EditAchievementFragment extends BaseContainerFragment {
                         Utilities.toast(getActivity(), "Name is required.");
                         return;
                     }
-                    saveReference(name, relation, phone, email);
+                    referenceArray.add(RealmAchievement.createReference(name, relation, phone, email));
+                    showreference();
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    private void saveReference(String name, String relation, String phone, String email) {
-        JsonObject ob = new JsonObject();
-        ob.addProperty("name", name);
-        ob.addProperty("phone", phone);
-        ob.addProperty("relationship", relation);
-        ob.addProperty("email", email);
-        referenceArray.add(ob);
-        showreference();
-    }
 
     String date = "";
 
@@ -315,5 +307,6 @@ public class EditAchievementFragment extends BaseContainerFragment {
             }
         }).setNegativeButton("Cancel", null).show();
     }
+
 
 }
