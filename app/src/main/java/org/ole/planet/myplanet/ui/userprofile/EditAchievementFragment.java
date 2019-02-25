@@ -177,7 +177,6 @@ public class EditAchievementFragment extends BaseContainerFragment {
     private void showAchievementAndInfo() {
         ChipCloudConfig config = Utilities.getCloudConfig()
                 .selectMode(ChipCloud.SelectMode.single);
-        llOthers.removeAllViews();
         llachievement.removeAllViews();
         for (JsonElement e : achievementArray) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_attachement, null);
@@ -198,6 +197,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
     }
 
     private void showreference() {
+        llOthers.removeAllViews();
         for (JsonElement e : referenceArray) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_other_info, null);
             ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("name").getAsString());
@@ -249,18 +249,7 @@ public class EditAchievementFragment extends BaseContainerFragment {
         Button btnAddResource = v.findViewById(R.id.btn_add_resources);
         EditText etDescription = v.findViewById(R.id.et_desc);
         EditText etTitle = v.findViewById(R.id.et_title);
-        AppCompatTextView tvDate = v.findViewById(R.id.tv_date);
-        tvDate.setOnClickListener(view -> {
-            Calendar now = Calendar.getInstance();
-            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
-                date = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-                tvDate.setText(date);
-            }, now.get(Calendar.YEAR),
-                    now.get(Calendar.MONTH),
-                    now.get(Calendar.DAY_OF_MONTH));
-            dpd.getDatePicker().setMaxDate(now.getTimeInMillis());
-            dpd.show();
-        });
+        initAchievementDatePicker(v);
         resourceArray = new JsonArray();
         btnAddResource.setOnClickListener(view -> showResourseListDialog(resourceArray));
         new AlertDialog.Builder(getActivity()).setTitle("Add Achievement")
@@ -276,6 +265,21 @@ public class EditAchievementFragment extends BaseContainerFragment {
                     }
                     saveAchievement(desc, title);
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void initAchievementDatePicker(View v) {
+        AppCompatTextView tvDate = v.findViewById(R.id.tv_date);
+        tvDate.setOnClickListener(view -> {
+            Calendar now = Calendar.getInstance();
+            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
+                date = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
+                tvDate.setText(date);
+            }, now.get(Calendar.YEAR),
+                    now.get(Calendar.MONTH),
+                    now.get(Calendar.DAY_OF_MONTH));
+            dpd.getDatePicker().setMaxDate(now.getTimeInMillis());
+            dpd.show();
+        });
     }
 
     private void saveAchievement(String desc, String title) {

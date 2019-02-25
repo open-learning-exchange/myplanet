@@ -92,10 +92,11 @@ public class AchievementFragment extends BaseContainerFragment {
             tvPurpose.setText(achievement.getPurpose());
             tvAchievement.setText(achievement.getAchievementsHeader());
             llAchievement.removeAllViews();
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
             for (String s : achievement.getAchievements()
             ) {
+                View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
                 createView(v, s);
+                llAchievement.addView(v);
             }
             rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
             rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
@@ -109,7 +110,6 @@ public class AchievementFragment extends BaseContainerFragment {
         TextView date = v.findViewById(R.id.tv_date);
         TextView description = v.findViewById(R.id.tv_description);
         Button btn = v.findViewById(R.id.btn_attachment);
-        llAchievement.removeAllViews();
         JsonElement ob = new Gson().fromJson(s, JsonElement.class);
         if (ob instanceof JsonObject) {
             description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
@@ -128,7 +128,6 @@ public class AchievementFragment extends BaseContainerFragment {
             btn.setVisibility(View.GONE);
             title.setText(ob.getAsString());
         }
-        llAchievement.addView(v);
     }
 
     private ArrayList<RealmMyLibrary> getList(JsonArray array) {

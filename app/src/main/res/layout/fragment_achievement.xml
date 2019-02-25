@@ -104,8 +104,11 @@
                     android:orientation="vertical"
                     android:paddingLeft="@dimen/padding_normal"
                     android:paddingRight="@dimen/padding_normal"
-
                     />
+
+                <TextView
+                    style="@style/Header"
+                    android:text="References" />
 
                 <android.support.v7.widget.RecyclerView
                     android:id="@+id/rv_other_info"
