@@ -79,9 +79,6 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         achievementArray = new JsonArray();
         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        if (achievement == null) {
-            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
-        }
         createView(v);
         initializeData();
         setListeners();
@@ -92,8 +89,7 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
 
     private void initializeData() {
         if (achievement == null) {
-            achievementArray = new JsonArray();
-            referenceArray = new JsonArray();
+            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
         } else {
             achievementArray = achievement.getAchievementsArray();
             referenceArray = achievement.getreferencesArray();
