@@ -111,6 +111,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         user.setFirstName(etName.getText().toString());
         user.setMiddleName(etMiddleName.getText().toString());
         user.setLastName(etLastName.getText().toString());
+        user.setDob(tvDob.getText().toString());
         user.setBirthPlace(etBirthPlace.getText().toString());
     }
 
