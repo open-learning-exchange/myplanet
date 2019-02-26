@@ -271,7 +271,6 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
 
     @Override
     public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
-        dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-        tvDob.setText(dob);
+        tvDob.setText(String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2));
     }
 }
