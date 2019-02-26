@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -150,9 +151,12 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
 
     private void showDatePickerDialog() {
         Calendar now = Calendar.getInstance();
-        DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
-            dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-            tvBirthDate.setText(dob);
+        DatePickerDialog dpd = new DatePickerDialog(getActivity(), new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
+                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
+                tvBirthDate.setText(dob);
+            }
         }, now.get(Calendar.YEAR),
                 now.get(Calendar.MONTH),
                 now.get(Calendar.DAY_OF_MONTH));

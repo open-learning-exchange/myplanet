@@ -39,6 +39,7 @@ public class RealmUserModel extends RealmObject {
     private String derived_key;
     private String salt;
     private String dob;
+    private String birthPlace;
     private String communityName;
     private String userImage;
     private boolean showTopbar;
@@ -96,9 +97,18 @@ public class RealmUserModel extends RealmObject {
         user.setDerived_key(JsonUtils.getString("derived_key", jsonDoc));
         user.setSalt(JsonUtils.getString("salt", jsonDoc));
         user.setDob(JsonUtils.getString("birthDate", jsonDoc));
+        user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
+    }
+
+    public String getBirthPlace() {
+        return birthPlace;
+    }
+
+    public void setBirthPlace(String birthPlace) {
+        this.birthPlace = birthPlace;
     }
 
     public RealmList<String> getRolesList() {

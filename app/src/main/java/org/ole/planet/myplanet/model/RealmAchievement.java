@@ -14,9 +14,10 @@ import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmAchievement extends RealmObject {
-    private RealmList<String> otherInfo;
 
     private RealmList<String> achievements;
+
+    private RealmList<String> references;
 
     private String purpose;
 
@@ -37,9 +38,30 @@ public class RealmAchievement extends RealmObject {
         object.addProperty("goals", sub.getGoals());
         object.addProperty("purpose", sub.getPurpose());
         object.addProperty("achievementsHeader", sub.getAchievementsHeader());
-        object.add("otherInfo", sub.getOtherInfoArray());
+        object.add("references", sub.getreferencesArray());
         object.add("achievements", sub.getAchievementsArray());
         return object;
+    }
+
+    public void setAchievements(RealmList<String> achievements) {
+        this.achievements = achievements;
+    }
+
+    public RealmList<String> getReferences() {
+        return references;
+    }
+
+    public void setReferences(RealmList<String> references) {
+        this.references = references;
+    }
+
+    public static JsonObject createReference(String name, String relation, String phone, String email) {
+        JsonObject ob = new JsonObject();
+        ob.addProperty("name", name);
+        ob.addProperty("phone", phone);
+        ob.addProperty("relationship", relation);
+        ob.addProperty("email", email);
+        return ob;
     }
 
     public String getPurpose() {
@@ -100,24 +122,15 @@ public class RealmAchievement extends RealmObject {
         achievement.setPurpose(JsonUtils.getString("purpose", act));
         achievement.setGoals(JsonUtils.getString("goals", act));
         achievement.setAchievementsHeader(JsonUtils.getString("achievementsHeader", act));
-        achievement.setOtherInfo(JsonUtils.getJsonArray("otherInfo", act));
+        achievement.setreferences(JsonUtils.getJsonArray("references", act));
         achievement.setAchievements(JsonUtils.getJsonArray("achievements", act));
 
     }
 
-    public RealmList<String> getOtherInfo() {
-        return otherInfo;
+    public RealmList<String> getreferences() {
+        return references;
     }
 
-    public void setOtherInfo(JsonArray of) {
-        otherInfo = new RealmList<String>();
-        for (JsonElement el : of
-        ) {
-            String e = new Gson().toJson(el);
-            if (!otherInfo.contains(e))
-                otherInfo.add(e);
-        }
-    }
 
     public RealmList<String> getAchievements() {
         return achievements;
@@ -133,9 +146,9 @@ public class RealmAchievement extends RealmObject {
         return array;
     }
 
-    public JsonArray getOtherInfoArray() {
+    public JsonArray getreferencesArray() {
         JsonArray array = new JsonArray();
-        for (String s : otherInfo
+        for (String s : references
         ) {
             JsonElement ob = new Gson().fromJson(s, JsonElement.class);
             array.add(ob);
@@ -149,6 +162,16 @@ public class RealmAchievement extends RealmObject {
             String achi = new Gson().toJson(el);
             if (!achievements.contains(achi))
                 achievements.add(achi);
+        }
+    }
+
+    public void setreferences(JsonArray of) {
+        references = new RealmList<String>();
+        for (JsonElement el : of) {
+            Utilities.log("Set references");
+            String e = new Gson().toJson(el);
+            if (!references.contains(e))
+                references.add(e);
         }
     }
 }

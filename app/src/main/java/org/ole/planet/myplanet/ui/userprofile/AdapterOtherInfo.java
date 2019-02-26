@@ -35,10 +35,14 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderOtherInfo){
+        if (holder instanceof ViewHolderOtherInfo) {
             JsonObject object = new Gson().fromJson(list.get(position), JsonObject.class);
-            ((ViewHolderOtherInfo) holder).tvTitle.setText(JsonUtils.getString("type", object));
-            ((ViewHolderOtherInfo) holder).tvDescription.setText(JsonUtils.getString("description", object));
+            String res = JsonUtils.getString("name", object) + "\n" +
+                    JsonUtils.getString("relationship", object) + "\n" +
+                    JsonUtils.getString("phone", object) + "\n" +
+                    JsonUtils.getString("email", object) + "\n";
+            ((ViewHolderOtherInfo) holder).tvDescription.setText(res);
+//            ((ViewHolderOtherInfo) holder).tvDescription.setText(JsonUtils.getString("description", object));
         }
     }
 
@@ -47,12 +51,14 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
         return list.size();
     }
 
-  public static  class ViewHolderOtherInfo extends RecyclerView.ViewHolder{
+    public static class ViewHolderOtherInfo extends RecyclerView.ViewHolder {
         TextView tvTitle, tvDescription;
+
         public ViewHolderOtherInfo(View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tv_title);
             tvDescription = itemView.findViewById(R.id.tv_description);
+            tvTitle.setVisibility(View.GONE);
         }
     }
 }

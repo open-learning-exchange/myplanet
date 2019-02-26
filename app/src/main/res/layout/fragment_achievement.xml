@@ -97,15 +97,18 @@
 
                 <LinearLayout
                     android:id="@+id/ll_achievement"
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:paddingLeft="@dimen/padding_normal"
                     android:paddingRight="@dimen/padding_normal"
-
                     />
+
+                <TextView
+                    style="@style/Header"
+                    android:text="References" />
 
                 <android.support.v7.widget.RecyclerView
                     android:id="@+id/rv_other_info"

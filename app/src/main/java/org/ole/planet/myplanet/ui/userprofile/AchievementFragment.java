@@ -84,7 +84,6 @@ public class AchievementFragment extends BaseContainerFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         RealmAchievement achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        Utilities.log("User id " + user.getId());
         tvFirstName.setText(user.getFirstName());
         tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
         if (achievement != null) {
@@ -92,25 +91,29 @@ public class AchievementFragment extends BaseContainerFragment {
             tvPurpose.setText(achievement.getPurpose());
             tvAchievement.setText(achievement.getAchievementsHeader());
             llAchievement.removeAllViews();
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
             for (String s : achievement.getAchievements()
             ) {
-                createView(v,s);
+                View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
+                createView(v, s);
+                llAchievement.addView(v);
             }
             rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
-            rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getOtherInfo()));
+            rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
         } else {
             //   llData.setVisibility(View.GONE);
         }
     }
 
     private void createView(View v, String s) {
-        TextView tv = v.findViewById(R.id.tv_title);
+        TextView title = v.findViewById(R.id.tv_title);
+        TextView date = v.findViewById(R.id.tv_date);
+        TextView description = v.findViewById(R.id.tv_description);
         Button btn = v.findViewById(R.id.btn_attachment);
-        llAchievement.removeAllViews();
         JsonElement ob = new Gson().fromJson(s, JsonElement.class);
         if (ob instanceof JsonObject) {
-            tv.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+            description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+            date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
+            title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
             btn.setVisibility(View.VISIBLE);
             ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
             btn.setOnClickListener(view -> {
@@ -122,9 +125,8 @@ public class AchievementFragment extends BaseContainerFragment {
             });
         } else {
             btn.setVisibility(View.GONE);
-            tv.setText(ob.getAsString());
+            title.setText(ob.getAsString());
         }
-        llAchievement.addView(v);
     }
 
     private ArrayList<RealmMyLibrary> getList(JsonArray array) {

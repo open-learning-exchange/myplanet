@@ -10,25 +10,12 @@
         android:padding="@dimen/padding_normal">
 
         <EditText
-            android:id="@+id/et_title"
+            android:id="@+id/et_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/title" />
+            android:hint="@string/name" />
+
     </android.support.design.widget.TextInputLayout>
-
-
-    <TextView
-        android:id="@+id/tv_date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:background="?attr/selectableItemBackground"
-        android:drawableRight="@drawable/ic_date"
-        android:foregroundGravity="center"
-        android:gravity="center_vertical"
-        android:padding="@dimen/padding_normal"
-        android:text="@string/date"
-        android:textSize="@dimen/text_size_mid" />
 
     <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
@@ -36,16 +23,37 @@
         android:padding="@dimen/padding_normal">
 
         <EditText
-            android:id="@+id/et_desc"
+            android:id="@+id/et_relationship"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/description" />
+            android:hint="@string/relationship" />
+
     </android.support.design.widget.TextInputLayout>
 
-    <Button
-        android:id="@+id/btn_add_resources"
-        android:layout_width="wrap_content"
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/add_resources"
-        android:theme="@style/PrimaryFlatButton" />
+        android:padding="@dimen/padding_normal">
+
+        <EditText
+            android:id="@+id/et_phone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/phone_number" />
+
+    </android.support.design.widget.TextInputLayout>
+
+    <android.support.design.widget.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_normal">
+
+        <EditText
+            android:id="@+id/et_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/email" />
+
+    </android.support.design.widget.TextInputLayout>
+
 </LinearLayout>
