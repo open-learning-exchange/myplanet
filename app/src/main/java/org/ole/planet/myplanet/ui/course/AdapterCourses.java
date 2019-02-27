@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.course;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -178,6 +179,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             llRating = itemView.findViewById(R.id.ll_rating);
             progressBar = itemView.findViewById(R.id.course_progress);
             itemView.setOnClickListener(view -> openCourse(courseList.get(getAdapterPosition()), 0));
+
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
+                progressBar.setScaleY(0.3f);
+            }
 
             progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
