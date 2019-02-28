@@ -260,31 +260,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         builder.setTitle("Select resources : ");
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.my_library_alertdialog, null);
-
-        CheckboxListView lv = v.findViewById(R.id.alertDialog_listView);
-        ArrayList<String> names = new ArrayList<>();
-        ArrayList<Integer> selected = new ArrayList();
-        for (int i = 0; i < list.size(); i++) {
-            names.add(list.get(i).getTitle());
-            if (prevList.contains(list.get(i).getTitle()))
-                selected.add(i);
-        }
-
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {
-            @NonNull
-            @Override
-            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-                CheckedTextView textView = (CheckedTextView) LayoutInflater.from(getActivity()).inflate(R.layout.rowlayout, parent, false);
-                textView.setText(getItem(position));
-                textView.setChecked(lv.getSelectedItemsList().contains(position));
-                lv.setItemChecked(position, lv.getSelectedItemsList().contains(position));
-                return textView;
-            }
-        };
-        lv.setSelectedItemsList(selected);
-        lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        lv.setAdapter(adapter);
-
+        CheckboxListView lv = createResourceList(v, list, prevList);
         builder.setView(v);
         builder.setPositiveButton("Ok", (dialogInterface, i) -> {
             ArrayList<Integer> items = lv.getSelectedItemsList();
@@ -294,6 +270,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
             }
         }).setNegativeButton("Cancel", null).show();
     }
+
 
 
     @Override
