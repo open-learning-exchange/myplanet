@@ -48,4 +48,21 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         etBirthPlace.setText(user.getBirthPlace());
     }
 
+
+    public void setUserInfo() {
+        user.setFirstName(etName.getText().toString());
+        user.setMiddleName(etMiddleName.getText().toString());
+        user.setLastName(etLastName.getText().toString());
+        user.setDob(tvDob.getText().toString());
+        user.setBirthPlace(etBirthPlace.getText().toString());
+    }
+
+    public void setAchievementInfo() {
+        achievement.setAchievementsHeader(etAchievement.getText().toString());
+        achievement.setGoals(etGoals.getText().toString());
+        achievement.setPurpose(etPurpose.getText().toString());
+        achievement.setAchievements(achievementArray);
+        achievement.setreferences(referenceArray);
+        achievement.setSendToNation(checkBox.isChecked() + "");
+    }
 }

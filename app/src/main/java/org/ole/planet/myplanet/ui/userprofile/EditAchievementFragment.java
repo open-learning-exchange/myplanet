@@ -11,7 +11,6 @@ import android.support.v7.widget.AppCompatTextView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckedTextView;
@@ -90,22 +89,6 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         });
     }
 
-    private void setAchievementInfo() {
-        achievement.setAchievementsHeader(etAchievement.getText().toString());
-        achievement.setGoals(etGoals.getText().toString());
-        achievement.setPurpose(etPurpose.getText().toString());
-        achievement.setAchievements(achievementArray);
-        achievement.setreferences(referenceArray);
-        achievement.setSendToNation(checkBox.isChecked() + "");
-    }
-
-    private void setUserInfo() {
-        user.setFirstName(etName.getText().toString());
-        user.setMiddleName(etMiddleName.getText().toString());
-        user.setLastName(etLastName.getText().toString());
-        user.setDob(tvDob.getText().toString());
-        user.setBirthPlace(etBirthPlace.getText().toString());
-    }
 
     private void createView(View v) {
         etGoals = v.findViewById(R.id.et_goals);
@@ -174,30 +157,31 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         EditText etRelation = v.findViewById(R.id.et_relationship);
         EditText etPhone = v.findViewById(R.id.et_phone);
         EditText etEmail = v.findViewById(R.id.et_email);
-        if (object != null) {
-            etName.setText(object.get("name").getAsString());
-            etPhone.setText(object.get("phone").getAsString());
-            etRelation.setText(object.get("relationship").getAsString());
-            etEmail.setText(object.get("email").getAsString());
-        }
+        setPrevReference(etName, etEmail, etRelation, etPhone, object);
         new AlertDialog.Builder(getActivity())
                 .setTitle("Add Other Information")
                 .setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String name = etName.getText().toString();
-                    String relation = etRelation.getText().toString();
-                    String phone = etPhone.getText().toString();
-                    String email = etEmail.getText().toString();
                     if (name.isEmpty()) {
                         Utilities.toast(getActivity(), "Name is required.");
                         return;
                     }
                     if (object != null)
                         referenceArray.remove(object);
-                    referenceArray.add(RealmAchievement.createReference(name, relation, phone, email));
+                    referenceArray.add(RealmAchievement.createReference(name, etRelation, etPhone, etEmail));
                     showreference();
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void setPrevReference(EditText etName, EditText etEmail, EditText etRelation, EditText etPhone, JsonObject object) {
+        if (object != null) {
+            etName.setText(object.get("name").getAsString());
+            etPhone.setText(object.get("phone").getAsString());
+            etRelation.setText(object.get("relationship").getAsString());
+            etEmail.setText(object.get("email").getAsString());
+        }
     }
 
 
@@ -211,19 +195,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         AppCompatTextView tvDate = v.findViewById(R.id.tv_date);
         initAchievementDatePicker(tvDate);
         resourceArray = new JsonArray();
-        List<String> prevList = new ArrayList<>();
-        if (object != null) {
-            etTitle.setText(object.get("title").getAsString());
-            etDescription.setText(object.get("description").getAsString());
-            tvDate.setText(object.get("date").getAsString());
-            JsonArray array = object.getAsJsonArray("resources");
-            date = object.get("date").getAsString();
-            for (JsonElement o : array
-            ) {
-                prevList.add(o.getAsJsonObject().get("title").getAsString());
-            }
-            resourceArray = object.getAsJsonArray("resources");
-        }
+        List<String> prevList = setUpOldAchievement(object, etDescription, etTitle, tvDate);
         btnAddResource.setOnClickListener(view -> showResourseListDialog(prevList));
         new AlertDialog.Builder(getActivity()).setTitle("Add Achievement")
                 .setIcon(R.drawable.ic_edit)
@@ -240,6 +212,23 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
                         achievementArray.remove(object);
                     saveAchievement(desc, title);
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    private List<String> setUpOldAchievement(JsonObject object, EditText etDescription, EditText etTitle, AppCompatTextView tvDate) {
+        List<String> prevList = new ArrayList<>();
+        if (object != null) {
+            etTitle.setText(object.get("title").getAsString());
+            etDescription.setText(object.get("description").getAsString());
+            tvDate.setText(object.get("date").getAsString());
+            JsonArray array = object.getAsJsonArray("resources");
+            date = object.get("date").getAsString();
+            for (JsonElement o : array
+            ) {
+                prevList.add(o.getAsJsonObject().get("title").getAsString());
+            }
+            resourceArray = object.getAsJsonArray("resources");
+        }
+        return prevList;
     }
 
     private void initAchievementDatePicker(TextView tvDate) {
@@ -288,7 +277,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
                 CheckedTextView textView = (CheckedTextView) LayoutInflater.from(getActivity()).inflate(R.layout.rowlayout, parent, false);
                 textView.setText(getItem(position));
                 textView.setChecked(lv.getSelectedItemsList().contains(position));
-                lv.setItemChecked(position,lv.getSelectedItemsList().contains(position));
+                lv.setItemChecked(position, lv.getSelectedItemsList().contains(position));
                 return textView;
             }
         };
