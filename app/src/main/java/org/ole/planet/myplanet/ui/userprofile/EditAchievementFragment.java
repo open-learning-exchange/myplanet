@@ -157,7 +157,8 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         EditText etRelation = v.findViewById(R.id.et_relationship);
         EditText etPhone = v.findViewById(R.id.et_phone);
         EditText etEmail = v.findViewById(R.id.et_email);
-        setPrevReference(etName, etEmail, etRelation, etPhone, object);
+        EditText[] ar = {etName, etPhone, etEmail, etRelation};
+        setPrevReference(ar, object);
         new AlertDialog.Builder(getActivity())
                 .setTitle("Add Other Information")
                 .setIcon(R.drawable.ic_edit)
@@ -175,12 +176,12 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    private void setPrevReference(EditText etName, EditText etEmail, EditText etRelation, EditText etPhone, JsonObject object) {
+    private void setPrevReference(EditText[] ar, JsonObject object) {
         if (object != null) {
-            etName.setText(object.get("name").getAsString());
-            etPhone.setText(object.get("phone").getAsString());
-            etRelation.setText(object.get("relationship").getAsString());
-            etEmail.setText(object.get("email").getAsString());
+            ar[0].setText(object.get("name").getAsString());
+            ar[1].setText(object.get("phone").getAsString());
+            ar[2].setText(object.get("email").getAsString());
+            ar[3].setText(object.get("relationship").getAsString());
         }
     }
 
