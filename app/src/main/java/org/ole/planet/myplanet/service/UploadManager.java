@@ -27,6 +27,8 @@ import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
 import retrofit2.Response;
 
 public class UploadManager {
@@ -71,7 +73,7 @@ public class UploadManager {
                     if (TextUtils.isEmpty(sub.get_id())) {
                         apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute().body();
                     } else {
-                        apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), RealmAchievement.serialize(sub)).execute().body();
+                        apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), RealmAchievement.serialize(sub)).execute();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
