@@ -2,26 +2,21 @@ package org.ole.planet.myplanet.ui.userprofile;
 
 
 import android.app.DatePickerDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatTextView;
-import android.text.Editable;
-import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
+import android.widget.CheckedTextView;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,11 +27,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -45,11 +38,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
-import io.realm.Realm;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -87,8 +78,8 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
             mRealm.commitTransaction();
         });
         btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
-        btnAddAchievement.setOnClickListener(vi -> showAddachievementAlert());
-        btnOther.setOnClickListener(view -> showreferenceDialog());
+        btnAddAchievement.setOnClickListener(vi -> showAddachievementAlert(null));
+        btnOther.setOnClickListener(view -> showreferenceDialog(null));
         tvDob.setOnClickListener(view -> {
             Calendar now = Calendar.getInstance();
             DatePickerDialog dpd = new DatePickerDialog(getActivity(), this, now.get(Calendar.YEAR),
@@ -98,22 +89,6 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         });
     }
 
-    private void setAchievementInfo() {
-        achievement.setAchievementsHeader(etAchievement.getText().toString());
-        achievement.setGoals(etGoals.getText().toString());
-        achievement.setPurpose(etPurpose.getText().toString());
-        achievement.setAchievements(achievementArray);
-        achievement.setreferences(referenceArray);
-        achievement.setSendToNation(checkBox.isChecked() + "");
-    }
-
-    private void setUserInfo() {
-        user.setFirstName(etName.getText().toString());
-        user.setMiddleName(etMiddleName.getText().toString());
-        user.setLastName(etLastName.getText().toString());
-        user.setDob(tvDob.getText().toString());
-        user.setBirthPlace(etBirthPlace.getText().toString());
-    }
 
     private void createView(View v) {
         etGoals = v.findViewById(R.id.et_goals);
@@ -152,6 +127,9 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
                 achievementArray.remove(e);
                 showAchievementAndInfo();
             });
+            v.findViewById(R.id.edit).setOnClickListener(V -> {
+                showAddachievementAlert(e.getAsJsonObject());
+            });
             llachievement.addView(v);
         }
 
@@ -164,47 +142,62 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
             ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("name").getAsString());
             v.findViewById(R.id.iv_delete).setOnClickListener(view -> {
                 referenceArray.remove(e);
-                showAchievementAndInfo();
+                showreference();
+            });
+            v.findViewById(R.id.edit).setOnClickListener(vi -> {
+                showreferenceDialog(e.getAsJsonObject());
             });
             llOthers.addView(v);
         }
     }
 
-    private void showreferenceDialog() {
+    private void showreferenceDialog(JsonObject object) {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_reference, null);
         EditText etName = v.findViewById(R.id.et_name);
         EditText etRelation = v.findViewById(R.id.et_relationship);
         EditText etPhone = v.findViewById(R.id.et_phone);
         EditText etEmail = v.findViewById(R.id.et_email);
+        EditText[] ar = {etName, etPhone, etEmail, etRelation};
+        setPrevReference(ar, object);
         new AlertDialog.Builder(getActivity())
                 .setTitle("Add Other Information")
                 .setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String name = etName.getText().toString();
-                    String relation = etRelation.getText().toString();
-                    String phone = etPhone.getText().toString();
-                    String email = etEmail.getText().toString();
                     if (name.isEmpty()) {
                         Utilities.toast(getActivity(), "Name is required.");
                         return;
                     }
-                    referenceArray.add(RealmAchievement.createReference(name, relation, phone, email));
+                    if (object != null)
+                        referenceArray.remove(object);
+                    referenceArray.add(RealmAchievement.createReference(name, etRelation, etPhone, etEmail));
                     showreference();
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void setPrevReference(EditText[] ar, JsonObject object) {
+        if (object != null) {
+            ar[0].setText(object.get("name").getAsString());
+            ar[1].setText(object.get("phone").getAsString());
+            ar[2].setText(object.get("email").getAsString());
+            ar[3].setText(object.get("relationship").getAsString());
+        }
     }
 
 
     String date = "";
 
-    private void showAddachievementAlert() {
+    private void showAddachievementAlert(JsonObject object) {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_add_attachment, null);
         Button btnAddResource = v.findViewById(R.id.btn_add_resources);
         EditText etDescription = v.findViewById(R.id.et_desc);
         EditText etTitle = v.findViewById(R.id.et_title);
-        initAchievementDatePicker(v);
+        AppCompatTextView tvDate = v.findViewById(R.id.tv_date);
+        initAchievementDatePicker(tvDate);
         resourceArray = new JsonArray();
-        btnAddResource.setOnClickListener(view -> showResourseListDialog(resourceArray));
+        List<String> prevList = setUpOldAchievement(object, etDescription, etTitle, tvDate);
+        btnAddResource.setOnClickListener(view -> showResourseListDialog(prevList));
         new AlertDialog.Builder(getActivity()).setTitle("Add Achievement")
                 .setIcon(R.drawable.ic_edit)
                 .setView(v)
@@ -216,12 +209,30 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
                         Toast.makeText(getActivity(), "Title is required", Toast.LENGTH_SHORT).show();
                         return;
                     }
+                    if (object != null)
+                        achievementArray.remove(object);
                     saveAchievement(desc, title);
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    private void initAchievementDatePicker(View v) {
-        AppCompatTextView tvDate = v.findViewById(R.id.tv_date);
+    private List<String> setUpOldAchievement(JsonObject object, EditText etDescription, EditText etTitle, AppCompatTextView tvDate) {
+        List<String> prevList = new ArrayList<>();
+        if (object != null) {
+            etTitle.setText(object.get("title").getAsString());
+            etDescription.setText(object.get("description").getAsString());
+            tvDate.setText(object.get("date").getAsString());
+            JsonArray array = object.getAsJsonArray("resources");
+            date = object.get("date").getAsString();
+            for (JsonElement o : array
+            ) {
+                prevList.add(o.getAsJsonObject().get("title").getAsString());
+            }
+            resourceArray = object.getAsJsonArray("resources");
+        }
+        return prevList;
+    }
+
+    private void initAchievementDatePicker(TextView tvDate) {
         tvDate.setOnClickListener(view -> {
             Calendar now = Calendar.getInstance();
             DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
@@ -245,29 +256,22 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         showAchievementAndInfo();
     }
 
-    private void showResourseListDialog(JsonArray resourceArray) {
+    private void showResourseListDialog(List<String> prevList) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("Select resources : ");
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.my_library_alertdialog, null);
-
-        CheckboxListView lv = v.findViewById(R.id.alertDialog_listView);
-        ArrayList<String> names = new ArrayList<>();
-        for (int i = 0; i < list.size(); i++) {
-            names.add(list.get(i).getTitle());
-        }
-        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
-        lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
-        lv.setAdapter(adapter);
+        CheckboxListView lv = createResourceList(v, list, prevList);
         builder.setView(v);
         builder.setPositiveButton("Ok", (dialogInterface, i) -> {
             ArrayList<Integer> items = lv.getSelectedItemsList();
-            for (int ii : items
-            ) {
+            resourceArray = new JsonArray();
+            for (int ii : items) {
                 resourceArray.add(list.get(ii).serializeResource());
             }
         }).setNegativeButton("Cancel", null).show();
     }
+
 
 
     @Override

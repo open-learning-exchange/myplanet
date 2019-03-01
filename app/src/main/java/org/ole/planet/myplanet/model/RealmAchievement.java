@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.widget.EditText;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -55,12 +57,12 @@ public class RealmAchievement extends RealmObject {
         this.references = references;
     }
 
-    public static JsonObject createReference(String name, String relation, String phone, String email) {
+    public static JsonObject createReference(String name, EditText relation, EditText phone, EditText email) {
         JsonObject ob = new JsonObject();
         ob.addProperty("name", name);
-        ob.addProperty("phone", phone);
-        ob.addProperty("relationship", relation);
-        ob.addProperty("email", email);
+        ob.addProperty("phone", phone.getText().toString());
+        ob.addProperty("relationship", relation.getText().toString());
+        ob.addProperty("email", email.getText().toString());
         return ob;
     }
 
