@@ -15,7 +15,6 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
     public CheckboxListView(Context context, AttributeSet attrs) {
         super(context, attrs);
         setOnItemClickListener(this);
-
     }
 
     public CheckboxListView(Context context, AttributeSet attrs, int defStyleAttr) {
@@ -29,17 +28,21 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
     }
 
 
+    public void setSelectedItemsList(ArrayList<Integer> selectedItemsList) {
+        this.selectedItemsList = selectedItemsList;
+    }
+
     public ArrayList<Integer> getSelectedItemsList() {
         return selectedItemsList;
     }
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        String itemSelected = ((TextView) view).getText().toString();
-        if (selectedItemsList.contains(itemSelected)) {
-            selectedItemsList.remove(itemSelected);
+       // String itemSelected = ((TextView) view).getText().toString();
+        if (selectedItemsList.contains((Integer) i)) {
+            selectedItemsList.remove((Integer) i);
         } else {
-            selectedItemsList.add(i);
+            selectedItemsList.add((Integer) i);
         }
     }
 }
