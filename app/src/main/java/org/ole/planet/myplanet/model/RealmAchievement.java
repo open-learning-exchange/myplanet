@@ -37,6 +37,7 @@ public class RealmAchievement extends RealmObject {
     public static JsonObject serialize(RealmAchievement sub) {
         JsonObject object = new JsonObject();
         object.addProperty("_id", sub.get_id());
+        object.addProperty("_rev", sub.get_rev());
         object.addProperty("goals", sub.getGoals());
         object.addProperty("purpose", sub.getPurpose());
         object.addProperty("achievementsHeader", sub.getAchievementsHeader());
