@@ -19,6 +19,16 @@
             android:gravity="right"
             android:padding="@dimen/padding_large">
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:textColor="@color/md_white_1000"
+                android:textSize="@dimen/text_size_mid"
+                android:padding="@dimen/padding_normal"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:id="@+id/tv_selected"
+                android:layout_height="wrap_content" />
+
             <Button
                 android:layout_width="wrap_content"
                 android:text="@string/collections"
