@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service;
 import android.content.Context;
 import android.text.TextUtils;
 
+import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -70,11 +71,10 @@ public class UploadManager {
             List<RealmAchievement> list = realm.where(RealmAchievement.class).findAll();
             for (RealmAchievement sub : list) {
                 try {
-                    if (TextUtils.isEmpty(sub.get_id())) {
-                        apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute().body();
-                    } else {
-                        apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), RealmAchievement.serialize(sub)).execute();
-                    }
+
+                    JsonObject ob = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), RealmAchievement.serialize(sub)).execute().body();
+                    if (ob == null)
+                        apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

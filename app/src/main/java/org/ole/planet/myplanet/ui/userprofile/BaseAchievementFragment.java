@@ -45,7 +45,10 @@ public class BaseAchievementFragment extends BaseContainerFragment {
 
     public void initializeData() {
         if (achievement == null) {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
             achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
+            return;
         } else {
             achievementArray = achievement.getAchievementsArray();
             referenceArray = achievement.getreferencesArray();
@@ -61,6 +64,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         etLastName.setText(user.getLastName());
         etBirthPlace.setText(user.getBirthPlace());
     }
+
     public CheckboxListView createResourceList(View v, List<RealmMyLibrary> list, List<String> prevList) {
 
         CheckboxListView lv = v.findViewById(R.id.alertDialog_listView);
@@ -88,7 +92,6 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         lv.setAdapter(adapter);
         return lv;
     }
-
 
 
     public void setUserInfo() {
