@@ -71,10 +71,10 @@ public class UploadManager {
             List<RealmAchievement> list = realm.where(RealmAchievement.class).findAll();
             for (RealmAchievement sub : list) {
                 try {
-
                     JsonObject ob = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), RealmAchievement.serialize(sub)).execute().body();
-                    if (ob == null)
-                        apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute();
+                    if (ob == null){
+                        ResponseBody re = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute().errorBody();
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

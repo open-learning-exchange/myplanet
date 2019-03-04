@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model;
 
+import android.text.TextUtils;
 import android.widget.EditText;
 
 import com.google.gson.Gson;
@@ -37,6 +38,7 @@ public class RealmAchievement extends RealmObject {
     public static JsonObject serialize(RealmAchievement sub) {
         JsonObject object = new JsonObject();
         object.addProperty("_id", sub.get_id());
+        if (!TextUtils.isEmpty(sub.get_rev()))
         object.addProperty("_rev", sub.get_rev());
         object.addProperty("goals", sub.getGoals());
         object.addProperty("purpose", sub.getPurpose());
