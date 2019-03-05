@@ -51,6 +51,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     List<RealmTag> searchTags;
     ChipCloudConfig config;
     Button clearTags;
+
     public LibraryFragment() {
     }
 
@@ -79,7 +80,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         tvAddToLib = getView().findViewById(R.id.tv_add);
         etSearch = getView().findViewById(R.id.et_search);
         etTags = getView().findViewById(R.id.et_tags);
-        clearTags =getView().findViewById(R.id.btn_clear_tags);
+        clearTags = getView().findViewById(R.id.btn_clear_tags);
         tvSelected = getView().findViewById(R.id.tv_selected);
         tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch = getView().findViewById(R.id.img_search);
@@ -98,11 +99,15 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
         setSearchListener();
         showNoData(tvMessage, adapterLibrary.getItemCount());
-        clearTags.setOnClickListener(vi->{
+        clearTagsButton();
+    }
+
+    private void clearTagsButton() {
+        clearTags.setOnClickListener(vi -> {
             searchTags.clear();
             etSearch.setText("");
             tvSelected.setText("");
-            adapterLibrary.setLibraryList(filterByTag(searchTags,""));
+            adapterLibrary.setLibraryList(filterByTag(searchTags, ""));
             showNoData(tvMessage, adapterLibrary.getItemCount());
         });
     }
