@@ -19,21 +19,29 @@
             android:gravity="right"
             android:padding="@dimen/padding_large">
 
-            <TextView
+            <Button
+                android:id="@+id/btn_clear_tags"
                 android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/clear_tags"
                 android:textColor="@color/md_white_1000"
-                android:textSize="@dimen/text_size_mid"
-                android:padding="@dimen/padding_normal"
+                android:theme="@style/PrimaryFlatButton" />
+
+            <TextView
+                android:id="@+id/tv_selected"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:id="@+id/tv_selected"
-                android:layout_height="wrap_content" />
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/md_white_1000"
+                android:textSize="@dimen/text_size_mid" />
 
             <Button
-                android:layout_width="wrap_content"
-                android:text="@string/collections"
                 android:id="@+id/btn_collections"
-                android:layout_height="wrap_content" />
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/collections" />
 
             <TextView
                 android:id="@+id/tv_add"

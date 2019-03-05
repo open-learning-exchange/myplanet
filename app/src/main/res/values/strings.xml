@@ -110,6 +110,7 @@
     <string name="relationship">Relationship</string>
     <string name="date">Date</string>
     <string name="birth_place">Birth Place</string>
+    <string name="clear_tags">Clear</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

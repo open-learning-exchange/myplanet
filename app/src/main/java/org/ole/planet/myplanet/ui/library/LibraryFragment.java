@@ -9,6 +9,7 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -49,7 +50,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     FlexboxLayout flexBoxTags;
     List<RealmTag> searchTags;
     ChipCloudConfig config;
-
+    Button clearTags;
     public LibraryFragment() {
     }
 
@@ -78,6 +79,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         tvAddToLib = getView().findViewById(R.id.tv_add);
         etSearch = getView().findViewById(R.id.et_search);
         etTags = getView().findViewById(R.id.et_tags);
+        clearTags =getView().findViewById(R.id.btn_clear_tags);
         tvSelected = getView().findViewById(R.id.tv_selected);
         tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch = getView().findViewById(R.id.img_search);
@@ -96,7 +98,13 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
         setSearchListener();
         showNoData(tvMessage, adapterLibrary.getItemCount());
-
+        clearTags.setOnClickListener(vi->{
+            searchTags.clear();
+            etSearch.setText("");
+            tvSelected.setText("");
+            adapterLibrary.setLibraryList(filterByTag(searchTags,""));
+            showNoData(tvMessage, adapterLibrary.getItemCount());
+        });
     }
 
     private void setSearchListener() {
