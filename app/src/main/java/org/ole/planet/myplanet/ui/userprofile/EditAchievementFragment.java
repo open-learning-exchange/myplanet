@@ -63,8 +63,10 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         createView(v);
         initializeData();
         setListeners();
-        showAchievementAndInfo();
-        showreference();
+
+        if (achievementArray != null) showAchievementAndInfo();
+
+        if (referenceArray != null)showreference();
         return v;
     }
 
@@ -137,6 +139,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
 
     private void showreference() {
         llOthers.removeAllViews();
+
         for (JsonElement e : referenceArray) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_other_info, null);
             ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("name").getAsString());
@@ -171,6 +174,8 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
                     }
                     if (object != null)
                         referenceArray.remove(object);
+                    if (referenceArray == null)
+                        referenceArray = new JsonArray();
                     referenceArray.add(RealmAchievement.createReference(name, etRelation, etPhone, etEmail));
                     showreference();
                 }).setNegativeButton("Cancel", null).show();
@@ -271,7 +276,6 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
             }
         }).setNegativeButton("Cancel", null).show();
     }
-
 
 
     @Override
