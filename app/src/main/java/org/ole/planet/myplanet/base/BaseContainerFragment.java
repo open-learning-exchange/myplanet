@@ -165,7 +165,19 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         AlertDialog.Builder builderSingle = new AlertDialog.Builder(getActivity());
         builderSingle.setTitle("Select resource to open : ");
 
-        final ArrayAdapter<RealmMyLibrary> arrayAdapter = new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.select_dialog_item, downloadedResources);
+        final ArrayAdapter<RealmMyLibrary> arrayAdapter = new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.select_dialog_item, downloadedResources) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                if (convertView == null)
+                    convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.select_dialog_item, parent, false);
+                TextView tv = (TextView) convertView;
+                RealmMyLibrary library = getItem(position);
+                tv.setCompoundDrawablesWithIntrinsicBounds(0,0,(library.getResourceOffline()? R.drawable.ic_eye : R.drawable.ic_download),  0);
+                tv.setText(library.getTitle());
+                return tv;
+            }
+        };
         builderSingle.setAdapter(arrayAdapter, (dialogInterface, i) -> {
             RealmMyLibrary library = arrayAdapter.getItem(i);
             openResource(library);
