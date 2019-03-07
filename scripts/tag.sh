@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Tag last commit as 'latest'.
 
 if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
@@ -9,7 +10,7 @@ if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
       PACKAGE_VERSION=$(sed -n 's/.*name="app_version">\([^"]*\).*<\/string>/\1/p' < app/src/main/res/values/strings.xml)
       git push -d release latest
       git tag -d latest
-      git tag -a v${PACKAGE_VERSION} -m "This is the latest version pushed to the master branch."
+      git tag -a v${PACKAGE_VERSION} -m "$TRAVIS_COMMIT_MESSAGE"
       git push release --tags
       echo -e "Done with tags.\n"
     fi
