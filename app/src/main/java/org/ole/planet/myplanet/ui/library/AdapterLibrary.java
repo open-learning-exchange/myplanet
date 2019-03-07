@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -99,7 +100,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
-
+            ((ViewHolderLibrary) holder).ivDownloaded.setImageResource(libraryList.get(position).getResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
                 JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
                 AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);
@@ -144,7 +145,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;
         LinearLayout llRating;
-
+        ImageView ivDownloaded;
         public ViewHolderLibrary(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);
@@ -154,6 +155,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ratingBar = itemView.findViewById(R.id.rating_bar);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
+            ivDownloaded = itemView.findViewById(R.id.iv_downloaded);
             average = itemView.findViewById(R.id.average);
             checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) {

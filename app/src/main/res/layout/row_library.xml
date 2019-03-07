@@ -54,6 +54,13 @@
 
         </LinearLayout>
 
+        <ImageView
+            android:layout_width="wrap_content"
+            android:id="@+id/iv_downloaded"
+            android:layout_gravity="center"
+            android:layout_margin="@dimen/padding_small"
+            android:layout_height="wrap_content" />
+
         <LinearLayout
             android:id="@+id/ll_rating"
             android:layout_width="wrap_content"

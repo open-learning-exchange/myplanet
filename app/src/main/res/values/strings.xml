@@ -52,7 +52,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.2.88</string>
+    <string name="app_version">0.2.91</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -110,6 +110,7 @@
     <string name="relationship">Relationship</string>
     <string name="date">Date</string>
     <string name="birth_place">Birth Place</string>
+    <string name="clear_tags">Clear</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
