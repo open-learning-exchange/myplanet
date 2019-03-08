@@ -668,4 +668,8 @@ public class RealmMyLibrary extends RealmObject {
     public void removeUserId(String id) {
         this.userId.remove(id);
     }
+
+    public boolean needToUpdate() {
+    return !getResourceOffline() || !(TextUtils.equals(get_rev(), getDownloadedRev()));
+    }
 }

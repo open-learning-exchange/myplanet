@@ -203,7 +203,7 @@ public abstract class BaseResourceFragment extends Fragment {
         List<RealmMyLibrary> libraries = new ArrayList<>();
         for (RealmMyLibrary lib : l) {
             if (lib.getResourceLocalAddress() != null) {
-                if (!lib.getResourceOffline() || !(TextUtils.equals(lib.get_rev(), lib.getDownloadedRev()))) {
+                if (lib.needToUpdate()) {
                     libraries.add(lib);
                 }
             }
