@@ -65,7 +65,7 @@ public class FileUtils {
         try {
             String[] sp = url.substring(url.indexOf("resources/") ).split("/");
             Utilities.log("Id "+ sp[1]);
-            return sp[0];
+            return sp[1];
         } catch (Exception e) {
         }
         return "";
