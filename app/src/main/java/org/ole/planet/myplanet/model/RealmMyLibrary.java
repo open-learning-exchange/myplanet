@@ -310,7 +310,8 @@ public class RealmMyLibrary extends RealmObject {
     public Boolean getResourceOffline() {
         return resourceOffline;
     }
-    public Boolean isResourceOffline(){
+
+    public Boolean isResourceOffline() {
         return resourceOffline && TextUtils.equals(_rev, downloadedRev);
     }
 
@@ -670,6 +671,6 @@ public class RealmMyLibrary extends RealmObject {
     }
 
     public boolean needToUpdate() {
-    return !getResourceOffline() || !(TextUtils.equals(get_rev(), getDownloadedRev()));
+        return (getResourceLocalAddress() != null) && !getResourceOffline() || !(TextUtils.equals(get_rev(), getDownloadedRev()));
     }
 }
