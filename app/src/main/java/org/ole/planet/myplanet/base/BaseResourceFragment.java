@@ -189,10 +189,19 @@ public abstract class BaseResourceFragment extends Fragment {
     }
 
     public List<RealmMyLibrary> getLibraryList(Realm mRealm) {
-        RealmResults<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+//        RealmResults<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class)
+//                .equalTo("resourceOffline", false)
+//                .isNotNull("resourceLocalAddress")
+//                .findAll();
+        RealmResults<RealmMyLibrary> l = mRealm.where(RealmMyLibrary.class).findAll();
+        List<RealmMyLibrary> libraries = new ArrayList<>();
+        for (RealmMyLibrary lib:l) {
+            if (lib.getResourceLocalAddress()!=null){
+                if (!lib.getResourceOffline() || !(TextUtils.equals(lib.get_rev(), lib.getDownloadedRev()))){
+                    libraries.add(lib);
+                }
+            }
+        }
         List<RealmMyLibrary> libList = new ArrayList<>();
         for (RealmMyLibrary item : libraries) {
             if (item.getUserId().contains(settings.getString("userId", "--"))) {

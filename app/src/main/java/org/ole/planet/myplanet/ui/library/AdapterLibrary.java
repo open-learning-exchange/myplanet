@@ -100,7 +100,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
-            ((ViewHolderLibrary) holder).ivDownloaded.setImageResource(libraryList.get(position).getResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
+            ((ViewHolderLibrary) holder).ivDownloaded.setImageResource(libraryList.get(position).isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
             if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
                 JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
                 AdapterCourses.showRating(object, ((ViewHolderLibrary) holder).rating, ((ViewHolderLibrary) holder).timesRated, ((ViewHolderLibrary) holder).ratingBar);

@@ -49,7 +49,7 @@ public class FileUtils {
     public static boolean checkFileExist(String url) {
         if (url == null || url.isEmpty())
             return false;
-        File f = createFilePath(SD_PATH + "/" + getIdFromUrl(url), getIdFromUrl(url) + "/" + getFileNameFromUrl(url));
+        File f = createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
         return f.exists();
     }
 
@@ -63,8 +63,9 @@ public class FileUtils {
 
     public static String getIdFromUrl(String url) {
         try {
-            String[] sp = url.replaceAll("://", "").split("/");
-            return sp[3];
+            String[] sp = url.substring(url.indexOf("resources/") ).split("/");
+            Utilities.log("Id "+ sp[1]);
+            return sp[0];
         } catch (Exception e) {
         }
         return "";
