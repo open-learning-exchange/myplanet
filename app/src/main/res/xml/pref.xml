@@ -8,6 +8,9 @@
         android:key="beta_function"
         android:defaultValue="false"
         />
+    <PreferenceCategory android:dependency="beta_function"
+        android:title="Beta Functionality"
+        >
     <SwitchPreference android:title="Beta Function for Course"
         android:key="beta_course"
         android:defaultValue="true"
@@ -29,4 +32,5 @@
         android:key="beta_rating"
         android:defaultValue="false"
         />
+    </PreferenceCategory>
 </PreferenceScreen>
