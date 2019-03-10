@@ -60,7 +60,7 @@ public class UploadManager {
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
         try {
             JsonObject postJSON = new JsonObject();
-            postJSON.addProperty("last_synced", pref.getLong("lastSynced", 0));
+            postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
             postJSON.addProperty("version", VersionUtils.getVersionCode(context));
             apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", postJSON).enqueue(new Callback<JsonObject>() {
                 @Override

@@ -141,7 +141,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     // Converts OS date to human date
     private String convertDate() {
         // Context goes here
-        long lastSynced = settings.getLong("lastSynced", 0);
+        long lastSynced = settings.getLong("LastSync", 0);
         if (lastSynced == 0) {
             return "Last Sync Date: Never";
         }
@@ -244,7 +244,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public void onSyncComplete() {
         DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
-        editor.putLong("lastSynced", System.currentTimeMillis()).apply();
         NotificationUtil.cancellAll(this);
     }
 
