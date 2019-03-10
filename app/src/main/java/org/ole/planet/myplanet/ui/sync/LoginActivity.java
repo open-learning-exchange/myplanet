@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
@@ -41,7 +42,8 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback {
     EditText serverUrl;
     EditText serverPassword;
-    private EditText inputName, inputPassword;
+    private EditText inputName;
+    TextInputEditText inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
     private ImageButton imgBtnSetting;
