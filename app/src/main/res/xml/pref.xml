@@ -24,4 +24,9 @@
         android:key="beta_survey"
         android:defaultValue="false"
         />
+
+    <SwitchPreference android:title="Beta Function for Rating"
+        android:key="beta_rating"
+        android:defaultValue="false"
+        />
 </PreferenceScreen>
