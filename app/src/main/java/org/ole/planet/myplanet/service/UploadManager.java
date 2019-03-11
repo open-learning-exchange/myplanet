@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
@@ -57,7 +58,7 @@ public class UploadManager {
 
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         try {
             JsonObject postJSON = new JsonObject();
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
