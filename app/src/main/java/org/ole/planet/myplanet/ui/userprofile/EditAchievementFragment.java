@@ -87,6 +87,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
             DatePickerDialog dpd = new DatePickerDialog(getActivity(), this, now.get(Calendar.YEAR),
                     now.get(Calendar.MONTH),
                     now.get(Calendar.DAY_OF_MONTH));
+            dpd.getDatePicker().setMaxDate(Calendar.getInstance().getTimeInMillis());
             dpd.show();
         });
     }

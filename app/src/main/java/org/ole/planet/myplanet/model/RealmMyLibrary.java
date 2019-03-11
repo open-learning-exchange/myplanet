@@ -35,6 +35,7 @@ public class RealmMyLibrary extends RealmObject {
     private Boolean resourceOffline = false;
     private String resourceId;
     private String _rev;
+    private String downloadedRev;
     private boolean need_optimization;
     private String publisher;
     private String linkToLicense;
@@ -310,6 +311,10 @@ public class RealmMyLibrary extends RealmObject {
         return resourceOffline;
     }
 
+    public Boolean isResourceOffline() {
+        return resourceOffline && TextUtils.equals(_rev, downloadedRev);
+    }
+
     public void setResourceOffline(Boolean resourceOffline) {
         this.resourceOffline = resourceOffline;
     }
@@ -384,6 +389,17 @@ public class RealmMyLibrary extends RealmObject {
         return subject;
     }
 
+    public void setUserId(RealmList<String> userId) {
+        this.userId = userId;
+    }
+
+    public String getDownloadedRev() {
+        return downloadedRev;
+    }
+
+    public void setDownloadedRev(String downloadedRev) {
+        this.downloadedRev = downloadedRev;
+    }
 
     public String getSubjectsAsString() {
         String str = "";
@@ -652,5 +668,9 @@ public class RealmMyLibrary extends RealmObject {
 
     public void removeUserId(String id) {
         this.userId.remove(id);
+    }
+
+    public boolean needToUpdate() {
+        return (getResourceLocalAddress() != null) && !getResourceOffline() || !(TextUtils.equals(get_rev(), getDownloadedRev()));
     }
 }
