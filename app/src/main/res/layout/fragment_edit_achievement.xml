@@ -205,7 +205,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
-                    android:text="Enter an Achievement"
+                    android:text="@string/add_an_achievement"
                     android:theme="@style/PrimaryButton" />
 
                 <TextView
@@ -227,7 +227,7 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
 
-                    android:text="Enter a reference"
+                    android:text="@string/add_a_reference"
                     android:theme="@style/PrimaryButton" />
 
                 <CheckBox
