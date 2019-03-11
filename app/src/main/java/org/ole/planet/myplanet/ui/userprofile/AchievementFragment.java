@@ -45,7 +45,7 @@ public class AchievementFragment extends BaseContainerFragment {
     TextView tvGoal, tvAchievement, tvPurpose, tvName, tvFirstName;
     RecyclerView rvOther;
     Realm mRealm;
-    LinearLayout llAchievement, llData;
+    LinearLayout llAchievement;
     RealmUserModel user;
     OnHomeItemClickListener listener;
 
@@ -108,7 +108,6 @@ public class AchievementFragment extends BaseContainerFragment {
         TextView title = v.findViewById(R.id.tv_title);
         TextView date = v.findViewById(R.id.tv_date);
         TextView description = v.findViewById(R.id.tv_description);
-//        Button btn = v.findViewById(R.id.btn_attachment);
         LinearLayout llRow = v.findViewById(R.id.ll_row);
         LinearLayout llDesc = v.findViewById(R.id.ll_desc);
         FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox_resources);
@@ -122,32 +121,28 @@ public class AchievementFragment extends BaseContainerFragment {
                 llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
                 title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
             });
-            for (RealmMyLibrary lib : libraries
-            ) {
-                Button b = (Button) LayoutInflater.from(getActivity()).inflate(R.layout.layout_button_primary, null);
-                b.setText(lib.getTitle());
-                b.setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
-
-                b.setOnClickListener(view -> {
-                    if (lib.isResourceOffline()) {
-                        openResource(lib);
-                    } else {
-                        ArrayList<String> a = new ArrayList<>();
-                        a.add(lib.getResourceRemoteAddress());
-                        startDownload(a);
-                    }
-                });
-                flexboxLayout.addView(b);
-            }
-//            btn.setOnClickListener(view -> {
-//                if (libraries.isEmpty()) {
-//                    showDownloadDialog(libraries);
-//                } else {
-//                    showResourceList(libraries);
-//                }
-//            });
+           showResourceButtons(flexboxLayout, libraries);
         } else {
             v.setVisibility(View.GONE);
+        }
+    }
+
+    private void showResourceButtons(FlexboxLayout flexboxLayout, ArrayList<RealmMyLibrary> libraries) {
+        for (RealmMyLibrary lib : libraries
+        ) {
+            Button b = (Button) LayoutInflater.from(getActivity()).inflate(R.layout.layout_button_primary, null);
+            b.setText(lib.getTitle());
+            b.setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
+            b.setOnClickListener(view -> {
+                if (lib.isResourceOffline()) {
+                    openResource(lib);
+                } else {
+                    ArrayList<String> a = new ArrayList<>();
+                    a.add(lib.getResourceRemoteAddress());
+                    startDownload(a);
+                }
+            });
+            flexboxLayout.addView(b);
         }
     }
 
