@@ -42,8 +42,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback {
     EditText serverUrl;
     EditText serverPassword;
-    private EditText inputName;
-    TextInputEditText inputPassword;
+    private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
     private ImageButton imgBtnSetting;

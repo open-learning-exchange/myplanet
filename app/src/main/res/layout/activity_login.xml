@@ -149,7 +149,7 @@
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:passwordToggleEnabled="true">
 
-                        <android.support.design.widget.TextInputEditText
+                        <EditText
                             android:id="@+id/input_password"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
