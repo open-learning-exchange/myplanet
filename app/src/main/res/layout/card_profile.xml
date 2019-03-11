@@ -37,6 +37,16 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/txtRole"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="4dp"
+                android:text="@string/learner"
+                android:textColor="@color/textColorPrimary" />
+
+            <TextView
                 android:id="@+id/txtVisits"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

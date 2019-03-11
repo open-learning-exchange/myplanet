@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="profile_card">200dp</dimen>
+    <dimen name="profile_card">150dp</dimen>
 
 </resources>
