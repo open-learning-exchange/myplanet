@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:layout_gravity="center"
     android:padding="@dimen/padding_normal">
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/ll_row"
+        android:layout_gravity="center"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content">
 
         <TextView
@@ -14,6 +18,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:drawableRight="@drawable/ic_down"
+            android:textColor="@color/md_black_1000"
             android:padding="@dimen/padding_normal"
             android:textSize="@dimen/text_size_mid" />
 
@@ -22,23 +28,41 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:textColor="@color/md_black_1000"
             android:padding="@dimen/padding_normal"
             android:textSize="@dimen/text_size_mid" />
 
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tv_description"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <Button
-        android:id="@+id/btn_attachment"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="View Attachment"
-        android:theme="@style/AccentButton"
-        android:visibility="gone" />
+        android:id="@+id/ll_desc"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        android:gravity="center"
+        android:orientation="vertical"
+        >
+
+        <TextView
+            android:id="@+id/tv_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/flexbox_resources"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:flexWrap="wrap" />
+    </LinearLayout>
+
+    <!--<Button-->
+        <!--android:id="@+id/btn_attachment"-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="View Attachment"-->
+        <!--android:theme="@style/AccentButton"-->
+        <!--android:visibility="gone" />-->
 
 </LinearLayout>
