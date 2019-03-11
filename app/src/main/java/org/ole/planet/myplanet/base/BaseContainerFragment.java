@@ -79,7 +79,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
 
     public void openResource(RealmMyLibrary items) {
-        if (items.getResourceOffline() != null && items.getResourceOffline()) {
+        if (items.getResourceOffline() != null && items.isResourceOffline()) {
             openFileType(items, "offline");
         } else if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
             openFileType(items, "online");
@@ -173,7 +173,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.select_dialog_item, parent, false);
                 TextView tv = (TextView) convertView;
                 RealmMyLibrary library = getItem(position);
-                tv.setCompoundDrawablesWithIntrinsicBounds(0,0,(library.getResourceOffline()? R.drawable.ic_eye : R.drawable.ic_download),  0);
+                tv.setCompoundDrawablesWithIntrinsicBounds(0,0,(library.isResourceOffline()? R.drawable.ic_eye : R.drawable.ic_download),  0);
                 tv.setText(library.getTitle());
                 return tv;
             }
