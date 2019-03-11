@@ -5,12 +5,14 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:layout_gravity="center"
+    android:gravity="start"
     android:padding="@dimen/padding_normal">
 
     <LinearLayout
         android:id="@+id/ll_row"
         android:layout_width="wrap_content"
-        android:gravity="left"
+        android:gravity="start"
+        android:layout_gravity="center"
         android:layout_height="wrap_content">
 
         <TextView
@@ -39,7 +41,7 @@
         android:id="@+id/ll_desc"
         android:layout_gravity="center"
         android:visibility="gone"
-        android:gravity="left"
+        android:gravity="start"
         android:orientation="vertical"
         >
 
