@@ -112,7 +112,7 @@
     <string name="birth_place">Birth Place</string>
     <string name="clear_tags">Clear</string>
     <string name="add_an_achievement">Add an Achievement</string>
-    <string name="add_a_reference">Add a reference</string>
+    <string name="add_a_reference">Add a Reference</string>
     <string name="learner">Learner</string>
     <string-array name="level">
         <item></item>
