@@ -147,7 +147,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
-                        app:passwordToggleDrawable="@drawable/passwordtoggle"
                         app:passwordToggleEnabled="true">
 
                         <EditText
