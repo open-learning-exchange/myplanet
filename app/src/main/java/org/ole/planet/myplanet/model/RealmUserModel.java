@@ -8,8 +8,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.apache.commons.lang3.StringUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.picketbox.util.StringUtil;
 
 import java.util.Map;
 import java.util.Set;
@@ -126,6 +128,11 @@ public class RealmUserModel extends RealmObject {
 
     public void setRoles(RealmList<String> roles) {
         this.roles = roles;
+    }
+
+    public String getRoleAsString() {
+        String s = StringUtils.join(getRolesList(), ",");
+        return s;
     }
 
     public boolean isShowTopbar() {

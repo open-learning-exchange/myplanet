@@ -70,6 +70,7 @@
                             android:id="@+id/et_fname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:enabled="false"
                             android:hint="@string/first_name" />
 
                     </android.support.design.widget.TextInputLayout>
@@ -84,6 +85,7 @@
                             android:id="@+id/et_mname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:enabled="false"
                             android:hint="@string/middle_name" />
 
                     </android.support.design.widget.TextInputLayout>
@@ -98,6 +100,7 @@
                             android:id="@+id/et_lname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:enabled="false"
                             android:hint="@string/last_name" />
 
                     </android.support.design.widget.TextInputLayout>
@@ -119,6 +122,7 @@
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:drawableRight="@drawable/ic_date"
+                        android:enabled="false"
                         android:foregroundGravity="center"
                         android:gravity="center_vertical"
                         android:padding="@dimen/padding_normal"
@@ -135,6 +139,7 @@
                             android:id="@+id/et_birthplace"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:enabled="false"
                             android:hint="@string/birth_place" />
 
                     </android.support.design.widget.TextInputLayout>
@@ -205,7 +210,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
-                    android:text="Enter an Achievement"
+                    android:text="@string/add_an_achievement"
                     android:theme="@style/PrimaryButton" />
 
                 <TextView
@@ -227,7 +232,7 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
 
-                    android:text="Enter a reference"
+                    android:text="@string/add_a_reference"
                     android:theme="@style/PrimaryButton" />
 
                 <CheckBox

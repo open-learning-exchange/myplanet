@@ -47,7 +47,7 @@ import io.realm.RealmResults;
 public class DashboardFragment extends BaseContainerFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement;
+    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -74,6 +74,7 @@ public class DashboardFragment extends BaseContainerFragment {
         ImageView imageView = view.findViewById(R.id.imageView);
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
+        txtRole.setText(model.getRoleAsString());
         int noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
         (view.findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
 
@@ -83,6 +84,7 @@ public class DashboardFragment extends BaseContainerFragment {
     private void declareElements(View view) {
         txtFullName = view.findViewById(R.id.txtFullName);
         txtVisits = view.findViewById(R.id.txtVisits);
+        txtRole = view.findViewById(R.id.txtRole);
         tv_surveys = view.findViewById(R.id.tv_surveys);
         tv_submission = view.findViewById(R.id.tv_submission);
         tv_achievement = view.findViewById(R.id.tv_achievement);

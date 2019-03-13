@@ -4,9 +4,33 @@
         android:key="show_topbar"
         android:defaultValue="true"
         />
-
     <SwitchPreference android:title="Beta Functionality"
         android:key="beta_function"
         android:defaultValue="false"
         />
+    <PreferenceCategory android:dependency="beta_function"
+        android:title="Beta Functionality"
+        >
+    <SwitchPreference android:title="Beta Function for Course"
+        android:key="beta_course"
+        android:defaultValue="true"
+        />
+    <SwitchPreference android:title="Beta Function for WiFi Switch"
+        android:key="beta_wifi_switch"
+        android:defaultValue="false"
+        />
+    <SwitchPreference android:title="Beta Function for Achievement"
+        android:key="beta_achievement"
+        android:defaultValue="false"
+        />
+    <SwitchPreference android:title="Beta Function for Survey"
+        android:key="beta_survey"
+        android:defaultValue="false"
+        />
+
+    <SwitchPreference android:title="Beta Function for Rating"
+        android:key="beta_rating"
+        android:defaultValue="false"
+        />
+    </PreferenceCategory>
 </PreferenceScreen>
