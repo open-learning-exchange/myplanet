@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.service;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import org.json.JSONObject;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
@@ -20,8 +24,10 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,13 +36,14 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.Callback;
 import retrofit2.Response;
 
 public class UploadManager {
     private DatabaseService dbService;
     private Realm mRealm;
     private static UploadManager instance;
-
+    Context context;
     public static UploadManager getInstance() {
         if (instance == null) {
             instance = new UploadManager(MainApplication.context);
@@ -46,6 +53,30 @@ public class UploadManager {
 
     public UploadManager(Context context) {
         dbService = new DatabaseService(context);
+        this.context = context;
+    }
+
+    public void uploadActivities(SuccessListener listener) {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        SharedPreferences pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        try {
+            JsonObject postJSON = new JsonObject();
+            postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
+            postJSON.addProperty("version", VersionUtils.getVersionCode(context));
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", postJSON).enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                    if (listener != null) {
+                       listener.onSuccess("Myplanet activities uploaded successfully");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                    Log.e("UploadManager", t.getMessage());
+                }
+            });
+        }catch (Exception e) {e.printStackTrace();}
     }
 
     public void uploadExamResult(final SuccessListener listener) {
