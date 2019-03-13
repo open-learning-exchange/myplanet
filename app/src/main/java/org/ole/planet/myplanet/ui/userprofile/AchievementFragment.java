@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -44,7 +45,7 @@ public class AchievementFragment extends BaseContainerFragment {
     TextView tvGoal, tvAchievement, tvPurpose, tvName, tvFirstName;
     RecyclerView rvOther;
     Realm mRealm;
-    LinearLayout llAchievement, llData;
+    LinearLayout llAchievement;
     RealmUserModel user;
     OnHomeItemClickListener listener;
 
@@ -99,33 +100,49 @@ public class AchievementFragment extends BaseContainerFragment {
             }
             rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
             rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
-        } else {
-            //   llData.setVisibility(View.GONE);
         }
+
     }
 
     private void createView(View v, String s) {
         TextView title = v.findViewById(R.id.tv_title);
         TextView date = v.findViewById(R.id.tv_date);
         TextView description = v.findViewById(R.id.tv_description);
-        Button btn = v.findViewById(R.id.btn_attachment);
+        LinearLayout llRow = v.findViewById(R.id.ll_row);
+        LinearLayout llDesc = v.findViewById(R.id.ll_desc);
+        FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox_resources);
         JsonElement ob = new Gson().fromJson(s, JsonElement.class);
         if (ob instanceof JsonObject) {
             description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
             date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
             title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
-            btn.setVisibility(View.VISIBLE);
             ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
-            btn.setOnClickListener(view -> {
-                if (libraries.isEmpty()) {
-                    showDownloadDialog(libraries);
+            llRow.setOnClickListener(view -> {
+                llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+                title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
+            });
+           showResourceButtons(flexboxLayout, libraries);
+        } else {
+            v.setVisibility(View.GONE);
+        }
+    }
+
+    private void showResourceButtons(FlexboxLayout flexboxLayout, ArrayList<RealmMyLibrary> libraries) {
+        for (RealmMyLibrary lib : libraries
+        ) {
+            Button b = (Button) LayoutInflater.from(getActivity()).inflate(R.layout.layout_button_primary, null);
+            b.setText(lib.getTitle());
+            b.setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
+            b.setOnClickListener(view -> {
+                if (lib.isResourceOffline()) {
+                    openResource(lib);
                 } else {
-                    showResourceList(libraries);
+                    ArrayList<String> a = new ArrayList<>();
+                    a.add(lib.getResourceRemoteAddress());
+                    startDownload(a);
                 }
             });
-        } else {
-            btn.setVisibility(View.GONE);
-            title.setText(ob.getAsString());
+            flexboxLayout.addView(b);
         }
     }
 

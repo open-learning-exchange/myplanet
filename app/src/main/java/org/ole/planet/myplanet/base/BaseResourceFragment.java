@@ -51,7 +51,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public static SharedPreferences settings;
     static ProgressDialog prgDialog;
     public OnHomeItemClickListener homeItemClickListener;
-//    ArrayList<Integer> selectedItemsList = new ArrayList<>();
+    //    ArrayList<Integer> selectedItemsList = new ArrayList<>();
     CheckboxListView lv;
     View convertView;
 
@@ -182,24 +182,31 @@ public abstract class BaseResourceFragment extends Fragment {
         IntentFilter intentFilter2 = new IntentFilter();
         intentFilter2.addAction("ACTION_NETWORK_CHANGED");
         LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(receiver, intentFilter2);
-
         IntentFilter intentFilter3 = new IntentFilter();
         intentFilter3.addAction("SHOW_WIFI_ALERT");
         LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(stateReceiver, intentFilter3);
     }
 
     public List<RealmMyLibrary> getLibraryList(Realm mRealm) {
-        RealmResults<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+        RealmResults<RealmMyLibrary> l = mRealm.where(RealmMyLibrary.class).findAll();
         List<RealmMyLibrary> libList = new ArrayList<>();
+        List<RealmMyLibrary> libraries = getLibraries(l);
         for (RealmMyLibrary item : libraries) {
             if (item.getUserId().contains(settings.getString("userId", "--"))) {
                 libList.add(item);
             }
         }
         return libList;
+    }
+
+    private List<RealmMyLibrary> getLibraries(RealmResults<RealmMyLibrary> l) {
+        List<RealmMyLibrary> libraries = new ArrayList<>();
+        for (RealmMyLibrary lib : l) {
+                if (lib.needToUpdate()) {
+                    libraries.add(lib);
+                }
+        }
+        return libraries;
     }
 
 

@@ -120,7 +120,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         }
 
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
-        download.setText(library.getResourceOffline() == null || library.getResourceOffline() ? "Open Resource " : "Download Resource");
+        download.setText(library.getResourceOffline() == null || library.isResourceOffline() ? "Open Resource " : "Download Resource");
         if (FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")) {
             download.setText("Open Video");
         }

@@ -140,6 +140,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         UploadManager.getInstance().uploadResourceActivities("sync");
         UploadManager.getInstance().uploadRating(this);
         UploadManager.getInstance().uploadCrashLog(this);
+        UploadManager.getInstance().uploadActivities(this);
 
         Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
     }
@@ -160,6 +161,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         editor.putString("lastName", user.getLastName());
         editor.putString("middleName", user.getMiddleName());
         editor.putBoolean("isUserAdmin", user.getUserAdmin());
+        editor.putLong("lastLogin", System.currentTimeMillis());
         editor.commit();
     }
 

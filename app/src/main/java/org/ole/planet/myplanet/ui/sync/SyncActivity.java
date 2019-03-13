@@ -74,7 +74,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
 
-
     public void sync(MaterialDialog dialog) {
         spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
@@ -133,23 +132,20 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     private void dateCheck(MaterialDialog dialog) {
-        convertedDate = convertDate();
         // Check if the user never synced
-        if (convertedDate == 0) {
-            syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
-            syncDate.setText("Last Sync Date: Never");
-        } else {
-            syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
-            syncDate.setText("Last Sync Date: " + convertedDate);
-        }
-        // Init spinner dropdown items
+        syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
+        syncDate.setText("Last Sync Date: " + convertDate());
         syncDropdownAdd();
     }
 
     // Converts OS date to human date
-    private int convertDate() {
+    private String convertDate() {
         // Context goes here
-        return 0; // <=== modify this when implementing this method
+        long lastSynced = settings.getLong("LastSync", 0);
+        if (lastSynced == 0) {
+            return "Last Sync Date: Never";
+        }
+        return Utilities.getRelativeTime(lastSynced); // <=== modify this when implementing this method
     }
 
     // Create items in the spinner
@@ -211,7 +207,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         mRealm.close();
         return false;
     }
-
 
 
     public void startSync() {
