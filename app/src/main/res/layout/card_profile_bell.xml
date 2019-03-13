@@ -9,7 +9,14 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="@dimen/profile_card"
+            android:layout_height="@dimen/profile_card"
+            android:padding="@dimen/padding_normal"
+            android:src="@mipmap/ic_launcher" />
 
         <LinearLayout
             android:id="@+id/ll_user"
@@ -17,24 +24,6 @@
             android:layout_height="wrap_content"
             android:background="@color/colorPrimary"
             android:orientation="vertical">
-
-            <ImageView
-                android:id="@+id/imageView"
-                android:layout_width="@dimen/profile_card"
-                android:layout_height="@dimen/profile_card"
-                android:padding="@dimen/padding_normal"
-                android:src="@mipmap/ic_launcher" />
-
-            <TextView
-                android:id="@+id/txtFullName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/padding_small"
-                android:text="Leonard Maximus Mensah"
-                android:textAlignment="center"
-                android:textColor="@color/textColorPrimary"
-                android:textSize="18sp"
-                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/txtRole"
@@ -55,6 +44,17 @@
                 android:padding="4dp"
                 android:text="10 Visits"
                 android:textColor="@color/textColorPrimary" />
+
+            <TextView
+                android:id="@+id/txtFullName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
+                android:text="Leonard Maximus Mensah"
+                android:textAlignment="center"
+                android:textColor="@color/textColorPrimary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
