@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 import android.preference.SwitchPreference;
@@ -11,6 +12,8 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
+
+import static org.ole.planet.myplanet.base.BaseResourceFragment.settings;
 
 public class SettingActivity extends AppCompatActivity {
     @Override
@@ -48,6 +51,15 @@ public class SettingActivity extends AppCompatActivity {
             p.setChecked(user.getShowTopbar());
             p.setOnPreferenceChangeListener((preference, o) -> {
                 profileDbHandler.changeTopbarSetting((boolean) o);
+                return true;
+            });
+
+            SwitchPreference theme = (SwitchPreference) findPreference("bell_theme");
+            theme.setChecked(settings.getBoolean("bell_theme", true));
+            theme.setOnPreferenceChangeListener((preference, o) -> {
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putBoolean("bell_theme",(boolean) o );
+                editor.commit();
                 return true;
             });
 
