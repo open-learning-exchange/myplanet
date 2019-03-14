@@ -66,12 +66,10 @@ public class DashboardFragment extends BaseContainerFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view;
-        if(settings.getBoolean("bell_theme", true)){
+        if(settings.getBoolean("bell_theme", false)){
             view = inflater.inflate(R.layout.fragment_home_bell, container, false);
-            Log.e("Check","true");
         }else{
             view = inflater.inflate(R.layout.fragment_home, container, false);
-            Log.e("Check","false");
         }
         profileDbHandler = new UserProfileDbHandler(getActivity());
         declareElements(view);
