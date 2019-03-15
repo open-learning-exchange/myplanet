@@ -53,15 +53,15 @@ public class SettingActivity extends AppCompatActivity {
                 profileDbHandler.changeTopbarSetting((boolean) o);
                 return true;
             });
-
-            SwitchPreference theme = (SwitchPreference) findPreference("bell_theme");
-            theme.setChecked(settings.getBoolean("bell_theme", false));
-            theme.setOnPreferenceChangeListener((preference, o) -> {
-                SharedPreferences.Editor editor = settings.edit();
-                editor.putBoolean("bell_theme",(boolean) o );
-                editor.commit();
-                return true;
-            });
+//
+//            SwitchPreference theme = (SwitchPreference) findPreference("bell_theme");
+//            theme.setChecked(settings.getBoolean("bell_theme", false));
+//            theme.setOnPreferenceChangeListener((preference, o) -> {
+//                SharedPreferences.Editor editor = settings.edit();
+//                editor.putBoolean("bell_theme",(boolean) o );
+//                editor.commit();
+//                return true;
+//            });
 
         }
 
