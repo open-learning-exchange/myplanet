@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -64,7 +66,12 @@ public class DashboardFragment extends BaseContainerFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
+        View view;
+        if(PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false)){
+            view = inflater.inflate(R.layout.fragment_home_bell, container, false);
+        }else{
+            view = inflater.inflate(R.layout.fragment_home, container, false);
+        }
         profileDbHandler = new UserProfileDbHandler(getActivity());
         declareElements(view);
         fullName = profileDbHandler.getUserModel().getFullName();

@@ -4,6 +4,10 @@
         android:key="show_topbar"
         android:defaultValue="true"
         />
+    <SwitchPreference android:title="BeLL Dashboard Theme"
+        android:key="bell_theme"
+        android:defaultValue="false"
+        />
     <SwitchPreference android:title="Beta Functionality"
         android:key="beta_function"
         android:defaultValue="false"
