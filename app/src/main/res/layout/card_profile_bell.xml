@@ -8,7 +8,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:gravity="center|left"
         android:orientation="horizontal"
         android:weightSum="6">
@@ -33,7 +33,7 @@
         <LinearLayout
             android:id="@+id/ll_user"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_weight="3.5"
             android:gravity="center|left"
             android:orientation="vertical"
@@ -93,12 +93,14 @@
 
         <ScrollView
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="2.5">
+            android:layout_height="match_parent"
+            android:layout_weight="2.5"
+            android:padding="@dimen/padding_small">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:orientation="vertical">
                 <!-- TODO: change back color to md_black_1000 -->
                 <TextView
@@ -144,6 +146,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:textAlignment="textEnd">
 
 
@@ -161,12 +164,12 @@
 
                     <ImageView
                         android:id="@+id/img_survey_warn"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
                         android:layout_gravity="center"
                         android:layout_margin="4dp"
                         android:src="@drawable/ic_warn"
-                        android:visibility="gone" />
+                        android:visibility="invisible" />
 
                 </LinearLayout>
 
