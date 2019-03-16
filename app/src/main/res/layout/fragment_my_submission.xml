@@ -86,6 +86,16 @@
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp" />
 
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Submitted by"
+                android:id="@+id/submitted_by"
+                android:textColor="@color/md_black_1000"
+                android:textSize="18sp" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

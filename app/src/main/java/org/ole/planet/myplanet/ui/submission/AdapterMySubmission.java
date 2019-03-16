@@ -10,6 +10,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.google.gson.JsonObject;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmStepExam;
@@ -48,6 +52,14 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
         if (holder instanceof ViewHolderMySurvey) {
             ((ViewHolderMySurvey) holder).status.setText(list.get(position).getStatus());
             ((ViewHolderMySurvey) holder).date.setText(Utilities.formatDate(list.get(position).getStartTime()));
+            ((ViewHolderMySurvey) holder).submitted_by.setVisibility(View.VISIBLE);
+            try {
+                JSONObject ob = new JSONObject(list.get(position).getUser());
+                ((ViewHolderMySurvey) holder).submitted_by.setText(ob.optString("name"));
+            } catch (JSONException e) {
+                ((ViewHolderMySurvey) holder).submitted_by.setVisibility(View.GONE);
+                e.printStackTrace();
+            }
             if (examHashMap.containsKey(list.get(position).getParentId()))
                 ((ViewHolderMySurvey) holder).title.setText(examHashMap.get(list.get(position).getParentId()).getName());
             holder.itemView.setOnClickListener(view -> {
@@ -60,7 +72,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     private void openSubmissionDetail(OnHomeItemClickListener listener, String id) {
-        if (listener!=null){
+        if (listener != null) {
 
         }
     }
@@ -87,13 +99,15 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     class ViewHolderMySurvey extends RecyclerView.ViewHolder {
-        TextView title, status, date;
+        TextView title, status, date, submitted_by;
 
         public ViewHolderMySurvey(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);
             status = itemView.findViewById(R.id.status);
             date = itemView.findViewById(R.id.date);
+            submitted_by = itemView.findViewById(R.id.submitted_by);
+
         }
     }
 }
