@@ -73,7 +73,6 @@ public class UploadManager {
             postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
             postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
             postJSON.addProperty("time", new Date().getTime());
-
             apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", postJSON).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -84,7 +83,6 @@ public class UploadManager {
 
                 @Override
                 public void onFailure(Call<JsonObject> call, Throwable t) {
-                    Log.e("UploadManager", t.getMessage());
                 }
             });
         }catch (Exception e) {e.printStackTrace();}
