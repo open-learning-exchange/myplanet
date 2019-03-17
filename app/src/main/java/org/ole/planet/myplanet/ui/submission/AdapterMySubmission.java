@@ -56,8 +56,8 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
             try {
                 JSONObject ob = new JSONObject(list.get(position).getUser());
                 ((ViewHolderMySurvey) holder).submitted_by.setText(ob.optString("name"));
-            } catch (JSONException e) {
-                ((ViewHolderMySurvey) holder).submitted_by.setVisibility(View.GONE);
+            } catch (Exception e) {
+                ((ViewHolderMySurvey) holder).submitted_by.setText("Unknown");
                 e.printStackTrace();
             }
             if (examHashMap.containsKey(list.get(position).getParentId()))
