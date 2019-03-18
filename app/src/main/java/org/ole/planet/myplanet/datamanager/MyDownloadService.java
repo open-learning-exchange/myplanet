@@ -77,6 +77,7 @@ public class MyDownloadService extends IntentService {
     }
 
     private void initDownload() {
+        Utilities.log("File url " + url);
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         request = retrofitInterface.downloadFile(Utilities.getHeader(), url);
         try {
@@ -167,7 +168,8 @@ public class MyDownloadService extends IntentService {
     }
 
     private void onDownloadComplete() {
-        changeOfflineStatus();
+        if (outputFile.length() > 0)
+            changeOfflineStatus();
         Download download = new Download();
         download.setFileName(FileUtils.getFileNameFromUrl(url));
         download.setFileUrl(url);

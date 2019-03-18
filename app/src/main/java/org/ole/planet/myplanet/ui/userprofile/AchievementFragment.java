@@ -138,7 +138,7 @@ public class AchievementFragment extends BaseContainerFragment {
                     openResource(lib);
                 } else {
                     ArrayList<String> a = new ArrayList<>();
-                    a.add(lib.getResourceRemoteAddress());
+                    a.add(Utilities.getUrl(lib, settings));
                     startDownload(a);
                 }
             });
