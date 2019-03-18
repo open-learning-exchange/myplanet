@@ -73,6 +73,14 @@ public class DialogUtils {
                 .show();
     }
 
+    public static AlertDialog getAlertDialog(Context context, String title, View v){
+     return    new AlertDialog.Builder(context)
+                .setTitle(title)
+                .setIcon(R.drawable.ic_edit)
+                .setView(v)
+                .setPositiveButton("Submit", null).setNegativeButton("Cancel", null).show();
+    }
+
     public static AlertDialog.Builder getUpdateDialog(Context context, String filePath, ProgressDialog progressDialog) {
         return new AlertDialog.Builder(context).setTitle("New version of my planet available")
                 .setMessage("Download first to continue.")
