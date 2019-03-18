@@ -5,6 +5,7 @@ import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatTextView;
@@ -66,7 +67,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
 
         if (achievementArray != null) showAchievementAndInfo();
 
-        if (referenceArray != null)showreference();
+        if (referenceArray != null) showreference();
         return v;
     }
 
@@ -158,19 +159,23 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
     private void showreferenceDialog(JsonObject object) {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_reference, null);
         EditText etName = v.findViewById(R.id.et_name);
+        TextInputLayout tlName = v.findViewById(R.id.tl_name);
         EditText etRelation = v.findViewById(R.id.et_relationship);
         EditText etPhone = v.findViewById(R.id.et_phone);
         EditText etEmail = v.findViewById(R.id.et_email);
         EditText[] ar = {etName, etPhone, etEmail, etRelation};
         setPrevReference(ar, object);
-        new AlertDialog.Builder(getActivity())
+        AlertDialog d = new AlertDialog.Builder(getActivity())
                 .setTitle("Add Other Information")
                 .setIcon(R.drawable.ic_edit)
                 .setView(v)
-                .setPositiveButton("Submit", (dialogInterface, i) -> {
+                .setPositiveButton("Submit", null).setNegativeButton("Cancel", null).show();
+
+        d.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
                     String name = etName.getText().toString();
                     if (name.isEmpty()) {
-                        Utilities.toast(getActivity(), "Name is required.");
+                        tlName.setError("Name is required.");
                         return;
                     }
                     if (object != null)
@@ -179,8 +184,10 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
                         referenceArray = new JsonArray();
                     referenceArray.add(RealmAchievement.createReference(name, etRelation, etPhone, etEmail));
                     showreference();
-                }).setNegativeButton("Cancel", null).show();
+                    d.dismiss();
+                });
     }
+
 
     private void setPrevReference(EditText[] ar, JsonObject object) {
         if (object != null) {
