@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
+import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -165,12 +166,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         EditText etEmail = v.findViewById(R.id.et_email);
         EditText[] ar = {etName, etPhone, etEmail, etRelation};
         setPrevReference(ar, object);
-        AlertDialog d = new AlertDialog.Builder(getActivity())
-                .setTitle("Add Other Information")
-                .setIcon(R.drawable.ic_edit)
-                .setView(v)
-                .setPositiveButton("Submit", null).setNegativeButton("Cancel", null).show();
-
+        AlertDialog d = DialogUtils.getAlertDialog(getActivity(), "Add Reference", v);
         d.getButton(AlertDialog.BUTTON_POSITIVE)
                 .setOnClickListener(view -> {
                     String name = etName.getText().toString();
