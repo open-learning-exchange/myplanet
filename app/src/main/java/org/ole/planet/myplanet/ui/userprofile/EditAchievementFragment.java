@@ -65,9 +65,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         createView(v);
         initializeData();
         setListeners();
-
         if (achievementArray != null) showAchievementAndInfo();
-
         if (referenceArray != null) showreference();
         return v;
     }
@@ -86,9 +84,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         btnOther.setOnClickListener(view -> showreferenceDialog(null));
         tvDob.setOnClickListener(view -> {
             Calendar now = Calendar.getInstance();
-            DatePickerDialog dpd = new DatePickerDialog(getActivity(), this, now.get(Calendar.YEAR),
-                    now.get(Calendar.MONTH),
-                    now.get(Calendar.DAY_OF_MONTH));
+            DatePickerDialog dpd = new DatePickerDialog(getActivity(), this, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
             dpd.getDatePicker().setMaxDate(Calendar.getInstance().getTimeInMillis());
             dpd.show();
         });
@@ -167,21 +163,20 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         EditText[] ar = {etName, etPhone, etEmail, etRelation};
         setPrevReference(ar, object);
         AlertDialog d = DialogUtils.getAlertDialog(getActivity(), "Add Reference", v);
-        d.getButton(AlertDialog.BUTTON_POSITIVE)
-                .setOnClickListener(view -> {
-                    String name = etName.getText().toString();
-                    if (name.isEmpty()) {
-                        tlName.setError("Name is required.");
-                        return;
-                    }
-                    if (object != null)
-                        referenceArray.remove(object);
-                    if (referenceArray == null)
-                        referenceArray = new JsonArray();
-                    referenceArray.add(RealmAchievement.createReference(name, etRelation, etPhone, etEmail));
-                    showreference();
-                    d.dismiss();
-                });
+        d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            String name = etName.getText().toString();
+            if (name.isEmpty()) {
+                tlName.setError("Name is required.");
+                return;
+            }
+            if (object != null)
+                referenceArray.remove(object);
+            if (referenceArray == null)
+                referenceArray = new JsonArray();
+            referenceArray.add(RealmAchievement.createReference(name, etRelation, etPhone, etEmail));
+            showreference();
+            d.dismiss();
+        });
     }
 
 
@@ -207,10 +202,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         resourceArray = new JsonArray();
         List<String> prevList = setUpOldAchievement(object, etDescription, etTitle, tvDate);
         btnAddResource.setOnClickListener(view -> showResourseListDialog(prevList));
-        new AlertDialog.Builder(getActivity()).setTitle("Add Achievement")
-                .setIcon(R.drawable.ic_edit)
-                .setView(v)
-                .setCancelable(false)
+        new AlertDialog.Builder(getActivity()).setTitle("Add Achievement").setIcon(R.drawable.ic_edit).setView(v).setCancelable(false)
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String desc = etDescription.getText().toString();
                     String title = etTitle.getText().toString();
