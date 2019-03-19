@@ -7,6 +7,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.text.TextUtils;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -93,4 +94,14 @@ public class NetworkUtils {
         }
         return res1.toString();
     }
+
+    public static String getDeviceName() {
+        String manufacturer = Build.MANUFACTURER;
+        String model = Build.MODEL;
+        if (model.startsWith(manufacturer)) {
+            return model.toUpperCase();
+        }
+        return manufacturer.toUpperCase() + " " + model;
+    }
+
 }

@@ -24,12 +24,15 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 
 import io.realm.Realm;
@@ -58,11 +61,18 @@ public class UploadManager {
 
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
         SharedPreferences pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         try {
             JsonObject postJSON = new JsonObject();
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
             postJSON.addProperty("version", VersionUtils.getVersionCode(context));
+            postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
+            postJSON.addProperty("parentCode", model.getParentCode());
+            postJSON.addProperty("createdOn", model.getPlanetCode());
+            postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
+            postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
+            postJSON.addProperty("time", new Date().getTime());
             apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", postJSON).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -73,7 +83,6 @@ public class UploadManager {
 
                 @Override
                 public void onFailure(Call<JsonObject> call, Throwable t) {
-                    Log.e("UploadManager", t.getMessage());
                 }
             });
         }catch (Exception e) {e.printStackTrace();}
