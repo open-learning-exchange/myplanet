@@ -119,6 +119,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         String level = spnLvl.getSelectedItem().toString();
         String lang = spnLang.getSelectedItem().toString();
         final JsonObject user = new JsonObject();
+        user.addProperty("name", fname + " " + lname);
         user.addProperty("firstName", fname);
         user.addProperty("middleName", mName);
         user.addProperty("lastName", lname);
@@ -136,7 +137,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         submissions.setUser(user.toString());
-        submissions.setStatus("completed");
+        submissions.setStatus("complete");
         mRealm.commitTransaction();
         dismiss();
     }

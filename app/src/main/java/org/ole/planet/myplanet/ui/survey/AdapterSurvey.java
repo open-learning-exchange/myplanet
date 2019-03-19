@@ -11,6 +11,7 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission;
@@ -51,11 +52,16 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ViewHolderSurvey ho = (ViewHolderSurvey) holder;
             ho.title.setText(examList.get(position).getName());
             ho.startSurvey.setOnClickListener(view -> AdapterMySubmission.openSurvey(listener, examList.get(position).getId(), false));
+
+            List<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", examList.get(position).getId()).findAll();
+            if (questions.size() == 0) {
+                ho.sendSurvey.setVisibility(View.GONE);
+                ho.startSurvey.setVisibility(View.GONE);
+            }
             String noOfSubmission = RealmSubmission.getNoOfSubmissionByUser(examList.get(position).getId(), userId, mRealm);
             String subDate = RealmSubmission.getRecentSubmissionDate(examList.get(position).getId(), userId, mRealm);
             ho.noSubmission.setText(noOfSubmission);
             ho.lastSubDate.setText(subDate);
-
         }
     }
 
@@ -76,14 +82,13 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             noSubmission = itemView.findViewById(R.id.tv_no_submissions);
             lastSubDate = itemView.findViewById(R.id.tv_date);
             startSurvey = itemView.findViewById(R.id.start_survey);
-            startSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE :View.GONE );
             sendSurvey = itemView.findViewById(R.id.send_survey);
-            sendSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE :View.GONE );
+            startSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
+            sendSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
             sendSurvey.setOnClickListener(view -> {
                 RealmStepExam current = examList.get(getAdapterPosition());
                 if (listener != null)
                     listener.sendSurvey(current);
-
             });
         }
     }
