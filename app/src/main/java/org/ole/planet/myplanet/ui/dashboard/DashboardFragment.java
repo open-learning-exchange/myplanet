@@ -123,13 +123,9 @@ public class DashboardFragment extends BaseContainerFragment {
         int itemCnt = 0;
         for (final RealmMyLibrary items : db_myLibrary) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
-            if ((itemCnt % 2) == 0) {
-                v.setBackgroundResource(R.drawable.light_rect);
-                ((TextView) v.findViewById(R.id.title)).setTextColor(getResources().getColor(R.color.md_black_1000));
-            }else{
-               v.setBackgroundColor(getResources().getColor(Constants.COLOR_MAP.get(RealmMyLibrary.class)));
-                ((TextView) v.findViewById(R.id.title)).setTextColor(getResources().getColor(R.color.md_white_1000));
-            }
+            setTextColor((v.findViewById(R.id.title)), itemCnt, RealmMyLibrary.class);
+            v.setBackgroundColor(getResources().getColor((itemCnt % 2) == 0 ? R.color.md_white_1000 : Constants.COLOR_MAP.get(RealmMyLibrary.class)));
+
             ((TextView) v.findViewById(R.id.title)).setText(items.getTitle());
             (v.findViewById(R.id.detail)).setOnClickListener(vi -> {
                 if (homeItemClickListener != null)
@@ -160,15 +156,19 @@ public class DashboardFragment extends BaseContainerFragment {
         int itemCnt = 0;
         for (final RealmObject items : db_myCourses) {
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
-            if ((itemCnt % 2) == 0) {
-                myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
-                myCoursesTextViewArray[itemCnt].setTextScaleX(R.color.md_black_1000);
-            }else{
-                myCoursesTextViewArray[itemCnt].setBackgroundColor(getResources().getColor(Constants.COLOR_MAP.get(c)));
-                myCoursesTextViewArray[itemCnt].setTextColor(getResources().getColor(R.color.md_white_1000));
-            }
+            setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c);
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
+        }
+    }
+
+    private void setTextColor(TextView textView, int itemCnt, Class c) {
+        if ((itemCnt % 2) == 0) {
+            textView.setBackgroundResource(R.drawable.light_rect);
+            textView.setTextColor(getResources().getColor(R.color.md_black_1000));
+        } else {
+            textView.setBackgroundColor(getResources().getColor(Constants.COLOR_MAP.get(c)));
+            textView.setTextColor(getResources().getColor(R.color.md_white_1000));
         }
     }
 
