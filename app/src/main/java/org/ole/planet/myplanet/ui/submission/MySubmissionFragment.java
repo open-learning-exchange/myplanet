@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -43,7 +44,6 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     HashMap<String, RealmStepExam> exams;
     List<RealmSubmission> submissions;
     RealmUserModel user;
-
     public static Fragment newInstance(String type) {
         MySubmissionFragment fragment = new MySubmissionFragment();
         Bundle b = new Bundle();
@@ -148,7 +148,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         if (type.equals("survey")) {
             q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey");
         } else if (type.equals("survey_submission")) {
-            q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("type", "survey");
+            q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).notEqualTo("status", "pending").equalTo("type", "survey");
         } else {
             q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).notEqualTo("type", "survey");
         }

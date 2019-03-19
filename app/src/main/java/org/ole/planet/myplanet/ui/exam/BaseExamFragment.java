@@ -132,7 +132,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         } else {
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
-            sub.setStatus("completed");
+            sub.setStatus("complete");
             mRealm.commitTransaction();
             Utilities.toast(getActivity(), "Thank you for taking this survey.");
             getActivity().onBackPressed();

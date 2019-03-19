@@ -102,6 +102,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         sub = RealmSubmission.createSubmission(sub, questions, mRealm);
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
+        sub.setStatus("pending");
         sub.setType(type);
         sub.setStartTime(new Date().getTime());
         if (sub.getAnswers() != null) {

@@ -37,7 +37,7 @@ public class RealmExamQuestion extends RealmObject {
             myQuestion.setExamId(examId);
             myQuestion.setBody(JsonUtils.getString("body", question));
             myQuestion.setType(JsonUtils.getString("type", question));
-            myQuestion.setHeader(JsonUtils.getString("header", question));
+            myQuestion.setHeader(JsonUtils.getString("title", question));
             myQuestion.setMarks(JsonUtils.getString("marks", question));
             myQuestion.setChoices(new Gson().toJson(JsonUtils.getJsonArray("choices", question)));
             boolean isMultipleChoice = question.has("correctChoice") && JsonUtils.getString("type", question).startsWith("select");
