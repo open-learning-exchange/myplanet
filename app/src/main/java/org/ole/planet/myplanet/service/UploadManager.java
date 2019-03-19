@@ -69,7 +69,7 @@ public class UploadManager {
             postJSON.addProperty("version", VersionUtils.getVersionCode(context));
             postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
             postJSON.addProperty("parentCode", model.getParentCode());
-            postJSON.addProperty("createdOn", model.getCommunityName());
+            postJSON.addProperty("createdOn", model.getPlanetCode());
             postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
             postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
             postJSON.addProperty("time", new Date().getTime());
