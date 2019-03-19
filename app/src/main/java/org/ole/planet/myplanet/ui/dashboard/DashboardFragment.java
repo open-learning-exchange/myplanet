@@ -67,9 +67,9 @@ public class DashboardFragment extends BaseContainerFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view;
-        if(PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false)){
+        if (PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false)) {
             view = inflater.inflate(R.layout.fragment_home_bell, container, false);
-        }else{
+        } else {
             view = inflater.inflate(R.layout.fragment_home, container, false);
         }
         profileDbHandler = new UserProfileDbHandler(getActivity());
@@ -125,6 +125,10 @@ public class DashboardFragment extends BaseContainerFragment {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
             if ((itemCnt % 2) == 0) {
                 v.setBackgroundResource(R.drawable.light_rect);
+                ((TextView) v.findViewById(R.id.title)).setTextColor(getResources().getColor(R.color.md_black_1000));
+            }else{
+               v.setBackgroundColor(getResources().getColor(Constants.COLOR_MAP.get(RealmMyLibrary.class)));
+                ((TextView) v.findViewById(R.id.title)).setTextColor(getResources().getColor(R.color.md_white_1000));
             }
             ((TextView) v.findViewById(R.id.title)).setText(items.getTitle());
             (v.findViewById(R.id.detail)).setOnClickListener(vi -> {
@@ -155,9 +159,13 @@ public class DashboardFragment extends BaseContainerFragment {
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
         for (final RealmObject items : db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, items);
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
             if ((itemCnt % 2) == 0) {
                 myCoursesTextViewArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+                myCoursesTextViewArray[itemCnt].setTextScaleX(R.color.md_black_1000);
+            }else{
+                myCoursesTextViewArray[itemCnt].setBackgroundColor(getResources().getColor(Constants.COLOR_MAP.get(c)));
+                myCoursesTextViewArray[itemCnt].setTextColor(getResources().getColor(R.color.md_white_1000));
             }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
@@ -165,13 +173,11 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
 
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, final RealmObject obj) {
+    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, final RealmObject obj, Class c) {
         textViewArray[itemCnt] = new TextView(getContext());
         textViewArray[itemCnt].setPadding(20, 10, 20, 10);
-        textViewArray[itemCnt].setBackgroundResource(R.drawable.dark_rect);
         textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-        textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.dialog_sync_labels));
         if (obj instanceof RealmMyLibrary) {
             textViewArray[itemCnt].setText(((RealmMyLibrary) obj).getTitle());
         } else if (obj instanceof RealmMyCourse) {
