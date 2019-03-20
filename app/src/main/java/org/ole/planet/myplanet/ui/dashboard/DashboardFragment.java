@@ -124,7 +124,9 @@ public class DashboardFragment extends BaseContainerFragment {
         for (final RealmMyLibrary items : db_myLibrary) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
             setTextColor((v.findViewById(R.id.title)), itemCnt, RealmMyLibrary.class);
-            v.setBackgroundColor(getResources().getColor((itemCnt % 2) == 0 ? R.color.md_white_1000 : Constants.COLOR_MAP.get(RealmMyLibrary.class)));
+            int color = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(RealmMyLibrary.class) : R.color.md_grey_400;
+
+            v.setBackgroundColor(getResources().getColor((itemCnt % 2) == 0 ? R.color.md_white_1000 : color));
 
             ((TextView) v.findViewById(R.id.title)).setText(items.getTitle());
             (v.findViewById(R.id.detail)).setOnClickListener(vi -> {
@@ -163,12 +165,12 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     private void setTextColor(TextView textView, int itemCnt, Class c) {
+        int color = getResources().getColor(PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(c) : R.color.md_grey_400);
+        textView.setTextColor(getResources().getColor(R.color.md_black_1000));
         if ((itemCnt % 2) == 0) {
             textView.setBackgroundResource(R.drawable.light_rect);
-            textView.setTextColor(getResources().getColor(R.color.md_black_1000));
         } else {
-            textView.setBackgroundColor(getResources().getColor(Constants.COLOR_MAP.get(c)));
-            textView.setTextColor(getResources().getColor(R.color.md_white_1000));
+            textView.setBackgroundColor(color);
         }
     }
 

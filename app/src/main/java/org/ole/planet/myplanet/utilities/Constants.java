@@ -32,10 +32,10 @@ public class Constants {
         shelfDataList.add(new ShelfData("meetupIds", "meetups", "meetupId", RealmMeetup.class));
         shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", RealmMyCourse.class));
         shelfDataList.add(new ShelfData("myTeamIds", "teams", "teamId", RealmMyTeam.class));
-        COLOR_MAP.put(RealmMyLibrary.class, R.color.md_red_500);
-        COLOR_MAP.put(RealmMyCourse.class, R.color.md_amber_700);
-        COLOR_MAP.put(RealmMyTeam.class, R.color.md_green_700);
-        COLOR_MAP.put(RealmMeetup.class, R.color.md_purple_500);
+        COLOR_MAP.put(RealmMyLibrary.class, R.color.md_red_200);
+        COLOR_MAP.put(RealmMyCourse.class, R.color.md_amber_200);
+        COLOR_MAP.put(RealmMyTeam.class, R.color.md_green_200);
+        COLOR_MAP.put(RealmMeetup.class, R.color.md_purple_200);
     }
 
     public static class ShelfData {
