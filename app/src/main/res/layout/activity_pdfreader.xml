@@ -1,22 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context="org.ole.planet.myplanet.ui.viewer.PDFReaderActivity">
+
 
     <TextView
         android:id="@+id/pdfFileName"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:gravity="center_horizontal"
-        android:paddingTop="20dp"
-        android:text="File name" />
+        android:paddingTop="@dimen/padding_large"
+        android:textColor="@color/md_black_1000"
+        android:textSize="@dimen/text_size_large"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/custom_border">
+        android:layout_height="0dp"
+        android:background="@drawable/custom_border"
+        android:weightSum="1">
 
         <com.github.barteksc.pdfviewer.PDFView
             android:id="@+id/pdfView"
@@ -25,4 +30,4 @@
 
     </LinearLayout>
 
-</RelativeLayout>
+</LinearLayout>
