@@ -4,12 +4,14 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class Constants {
@@ -23,23 +25,17 @@ public class Constants {
     public static final String KEY_TEAMS = "key_teams";
     public static final String KEY_DELETE = "key_delete";
     public static final String KEY_ACHIEVEMENT = "beta_achievement";
-
+    public static final HashMap<Class, Integer> COLOR_MAP = new HashMap<>();
     static {
         shelfDataList = new ArrayList<>();
         shelfDataList.add(new ShelfData("resourceIds", "resources", "resourceId", RealmMyLibrary.class));
         shelfDataList.add(new ShelfData("meetupIds", "meetups", "meetupId", RealmMeetup.class));
         shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", RealmMyCourse.class));
         shelfDataList.add(new ShelfData("myTeamIds", "teams", "teamId", RealmMyTeam.class));
-//
-//        betaList = new ArrayList<>();
-//        betaList.add(KEY_RATING);
-//        betaList.add(KEY_EXAM);
-//        betaList.add(KEY_TEAMS);
-//        betaList.add(KEY_MEETUPS);
-//        betaList.add(KEY_SURVEY);
-//        betaList.add(KEY_DELETE);
-//        betaList.add(KEY_SYNC);
-//        betaList.add(KEY_ACHIEVEMENT);
+        COLOR_MAP.put(RealmMyLibrary.class, R.color.md_red_200);
+        COLOR_MAP.put(RealmMyCourse.class, R.color.md_amber_200);
+        COLOR_MAP.put(RealmMyTeam.class, R.color.md_green_200);
+        COLOR_MAP.put(RealmMeetup.class, R.color.md_purple_200);
     }
 
     public static class ShelfData {
