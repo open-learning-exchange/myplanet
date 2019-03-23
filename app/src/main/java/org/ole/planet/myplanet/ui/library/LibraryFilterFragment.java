@@ -48,8 +48,6 @@ public class LibraryFilterFragment extends BottomSheetDialogFragment {
         listSub = v.findViewById(R.id.list_sub);
         listMedium = v.findViewById(R.id.list_medium);
         listLevel = v.findViewById(R.id.list_level);
-        v.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
-
         return v;
     }
 
