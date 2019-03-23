@@ -23,10 +23,13 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -127,6 +130,40 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             recyclerView.setAdapter(getAdapter());
             showNoData(tvMessage, getAdapter().getItemCount());
         }
+    }
+
+    public String[] getLanguages() {
+        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            list.add(li.getLanguage());
+        }
+        return  list.toArray(new String[0]);
+    }
+   public String[] getLevels() {
+        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            list.addAll(li.getLevel());
+        }
+       return  list.toArray(new String[0]);
+    }
+   public String[] getMediums() {
+        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            list.add(li.getMediaType());
+        }
+       return  list.toArray(new String[0]);
+    }
+
+   public String[] getSubjects() {
+        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            list.addAll(li.getSubject());
+        }
+       return  list.toArray(new String[0]);
     }
 
     private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {

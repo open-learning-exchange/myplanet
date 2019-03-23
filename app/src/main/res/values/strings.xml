@@ -114,6 +114,7 @@
     <string name="add_an_achievement">Add an Achievement</string>
     <string name="add_a_reference">Add a Reference</string>
     <string name="learner">Learner</string>
+    <string name="show_filter">Show Filter</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -130,7 +131,7 @@
         <item>عربى</item>
         <item>Somali</item>
     </string-array>
-    
+
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

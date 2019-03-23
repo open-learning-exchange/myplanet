@@ -69,6 +69,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList<>();
+
         return adapterLibrary;
     }
 
@@ -100,7 +101,20 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         setSearchListener();
         showNoData(tvMessage, adapterLibrary.getItemCount());
         clearTagsButton();
+        getView().findViewById(R.id.show_filter).setOnClickListener(v -> {
+            LibraryFilterFragment f = new LibraryFilterFragment();
+            Bundle b = new Bundle();
+            Utilities.log(getMediums().length + "");
+            b.putStringArray("languages",getLanguages() );
+            b.putStringArray("subjects", getSubjects());
+            b.putStringArray("mediums", getMediums());
+            b.putStringArray("levels",getLevels() );
+            f.setArguments(b);
+            f.show(getChildFragmentManager(), "");
+        });
     }
+
+
 
     private void clearTagsButton() {
         clearTags.setOnClickListener(vi -> {
