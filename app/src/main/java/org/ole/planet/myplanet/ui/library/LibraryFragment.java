@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
+import org.ole.planet.myplanet.callback.OnFilterListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
@@ -39,7 +41,7 @@ import fisk.chipcloud.ChipDeletedListener;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener {
+public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
 
     TextView tvAddToLib, tvMessage, tvSelected;
 
@@ -60,7 +62,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     public int getLayout() {
         return R.layout.fragment_my_library;
     }
-
     @Override
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
@@ -86,6 +87,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
+        initArrays();
+
         tvAddToLib.setOnClickListener(view -> addToMyList());
         imgSearch.setOnClickListener(view -> {
             adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
@@ -103,17 +106,17 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         clearTagsButton();
         getView().findViewById(R.id.show_filter).setOnClickListener(v -> {
             LibraryFilterFragment f = new LibraryFilterFragment();
-            Bundle b = new Bundle();
-            Utilities.log(getMediums().length + "");
-            b.putStringArray("languages",getLanguages() );
-            b.putStringArray("subjects", getSubjects());
-            b.putStringArray("mediums", getMediums());
-            b.putStringArray("levels",getLevels() );
-            f.setArguments(b);
+            f.setListener(this);
             f.show(getChildFragmentManager(), "");
         });
     }
 
+    private void initArrays() {
+        subjects = new String[0];
+        languages = new String[0];
+        levels = new String[0];
+        mediums = new String[0];
+    }
 
 
     private void clearTagsButton() {
@@ -212,4 +215,35 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
 
+    @Override
+    public void filter(String[] subjects, String[] languages, String[] mediums, String[] levels) {
+        this.subjects = subjects;
+        this.languages = languages;
+        this.mediums = mediums;
+        this.levels = levels;
+        Utilities.log("Filter " + new Gson().toJson(subjects));
+        Utilities.log("Filter " + new Gson().toJson(languages));
+        Utilities.log("Filter " + new Gson().toJson(mediums));
+        Utilities.log("Filter " + new Gson().toJson(levels));
+    }
+
+    @Override
+    public Map<String, String[]> getData() {
+        Map<String, String[]> b = new HashMap<>();
+        b.put("languages", getLanguages());
+        b.put("subjects", getSubjects());
+        b.put("mediums", getMediums());
+        b.put("levels", getLevels());
+        return b;
+    }
+
+    @Override
+    public Map<String, String[]> getSelectedFilter() {
+        Map<String, String[]> b = new HashMap<>();
+        b.put("languages", languages);
+        b.put("subjects", subjects);
+        b.put("mediums", mediums);
+        b.put("levels", levels);
+        return b;
+    }
 }

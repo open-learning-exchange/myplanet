@@ -5,44 +5,77 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/md_white_1000"
     android:layout_height="match_parent"
-    app:layout_behavior="@string/bottom_sheet_behavior"
+    android:padding="@dimen/padding_normal"
+    android:orientation="vertical"
     tools:context=".ui.library.LibraryFilterFragment">
-
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_gravity="right"
+        android:gravity="right"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:layout_width="@dimen/_40dp"
+            android:src="@drawable/close_x"
+            android:layout_gravity="right"
+            android:id="@+id/iv_close"
+            android:layout_height="@dimen/_40dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal">
 
 
-        <org.ole.planet.myplanet.utilities.CheckboxListView
+
+        <ListView
             android:id="@+id/list_sub"
             android:layout_width="0dp"
             android:choiceMode="multipleChoice"
             android:layout_height="match_parent"
             android:layout_weight="1" />
-
-        <org.ole.planet.myplanet.utilities.CheckboxListView
+        <View
+            android:layout_width="1dp"
+            android:background="@color/md_grey_200"
+            android:layout_height="match_parent"/>
+        <ListView
             android:id="@+id/list_lang"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:choiceMode="multipleChoice"
             android:layout_weight="1" />
+        <View
+            android:layout_width="1dp"
+            android:background="@color/md_grey_200"
 
-        <org.ole.planet.myplanet.utilities.CheckboxListView
+            android:layout_height="match_parent"/>
+
+        <ListView
             android:id="@+id/list_medium"
             android:layout_width="0dp"
             android:choiceMode="multipleChoice"
             android:layout_height="match_parent"
             android:layout_weight="1" />
+        <View
+            android:layout_width="1dp"
+            android:background="@color/md_grey_200"
+            android:layout_height="match_parent"/>
 
-        <org.ole.planet.myplanet.utilities.CheckboxListView
+        <ListView
             android:id="@+id/list_level"
             android:layout_width="0dp"
             android:choiceMode="multipleChoice"
             android:layout_height="match_parent"
             android:layout_weight="1" />
 
+
+    </LinearLayout>
 
     </LinearLayout>
 

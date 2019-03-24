@@ -51,6 +51,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public static SharedPreferences settings;
     static ProgressDialog prgDialog;
     public OnHomeItemClickListener homeItemClickListener;
+
     //    ArrayList<Integer> selectedItemsList = new ArrayList<>();
     CheckboxListView lv;
     View convertView;

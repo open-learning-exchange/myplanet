@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,7 +41,7 @@ import io.realm.RealmResults;
 import static android.content.Context.MODE_PRIVATE;
 
 public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment implements OnRatingChangeListener {
-
+    public String[] subjects, languages, mediums, levels;
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
     public List<LI> selectedItems;
@@ -136,34 +137,38 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
-            list.add(li.getLanguage());
+            if (!TextUtils.isEmpty(li.getLanguage()))
+                list.add(li.getLanguage());
         }
-        return  list.toArray(new String[0]);
+        return list.toArray(new String[0]);
     }
-   public String[] getLevels() {
+
+    public String[] getLevels() {
         List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
             list.addAll(li.getLevel());
         }
-       return  list.toArray(new String[0]);
+        return list.toArray(new String[0]);
     }
-   public String[] getMediums() {
+
+    public String[] getMediums() {
         List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
-            list.add(li.getMediaType());
+            if (!TextUtils.isEmpty(li.getMediaType()))
+                list.add(li.getMediaType());
         }
-       return  list.toArray(new String[0]);
+        return list.toArray(new String[0]);
     }
 
-   public String[] getSubjects() {
+    public String[] getSubjects() {
         List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
             list.addAll(li.getSubject());
         }
-       return  list.toArray(new String[0]);
+        return list.toArray(new String[0]);
     }
 
     private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {
