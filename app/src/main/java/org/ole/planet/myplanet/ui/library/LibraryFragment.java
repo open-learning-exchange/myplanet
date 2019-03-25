@@ -40,10 +40,7 @@ import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
 
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getLanguages;
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getMediums;
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.*;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -236,9 +233,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public Map<String, Set<String>> getData() {
         Map<String, Set<String>> b = new HashMap<>();
-        b.put("languages", getLanguages(adapterLibrary.getLibraryList()));
+        b.put("languages", getArrayList(adapterLibrary.getLibraryList(), "languages"));
         b.put("subjects", getSubjects(adapterLibrary.getLibraryList()));
-        b.put("mediums", getMediums(adapterLibrary.getLibraryList()));
+        b.put("mediums", getArrayList(adapterLibrary.getLibraryList(), "mediums"));
         b.put("levels", getLevels(adapterLibrary.getLibraryList()));
         return b;
     }

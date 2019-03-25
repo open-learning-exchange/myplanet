@@ -178,9 +178,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         return c == RealmMyLibrary.class ? (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li) : (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
     }
 
-    public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s){
+    public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
         return applyFilter(fbt(tags, s));
     }
+
     public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
@@ -217,23 +218,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
-            boolean sub = l.getSubject().containsAll(subjects);
-            boolean lev = l.getLevel().containsAll(levels);
-            boolean lan = languages.contains(l.getLanguage());
-            boolean med = mediums.contains(l.getMediaType());
-            if (subjects.isEmpty())
-                sub = true;
-            if (levels.isEmpty())
-                lev = true;
-            if (languages.isEmpty())
-                lan = true;
-            if (mediums.isEmpty())
-                med = true;
+            boolean sub = subjects.isEmpty() || l.getSubject().containsAll(subjects);
+            boolean lev = levels.isEmpty() || l.getLevel().containsAll(levels);
+            boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
+            boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
             if (sub && lev && lan && med)
                 newList.add(l);
         }
-        Utilities.log("List size " + newList.size());
-
         return newList;
     }
 

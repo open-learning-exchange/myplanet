@@ -1,81 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="@color/md_white_1000"
     android:layout_height="match_parent"
-    android:padding="@dimen/padding_normal"
+    android:background="@color/md_white_1000"
     android:orientation="vertical"
+    android:padding="@dimen/padding_normal"
     tools:context=".ui.library.LibraryFilterFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="match_parent">
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_gravity="right"
-        android:gravity="right"
-        android:layout_height="wrap_content">
-        <ImageView
-            android:layout_width="@dimen/_40dp"
-            android:src="@drawable/close_x"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_gravity="right"
-            android:id="@+id/iv_close"
-            android:layout_height="@dimen/_40dp" />
-    </LinearLayout>
+            android:gravity="right">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal">
+            <ImageView
+                android:id="@+id/iv_close"
+                android:layout_width="@dimen/_40dp"
+                android:layout_height="@dimen/_40dp"
+                android:layout_gravity="right"
+                android:src="@drawable/close_x" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                style="@style/HeaderText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/subjects" />
+
+            <TextView
+                style="@style/HeaderText"
+                android:layout_width="0dp"
+
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/languages" />
+
+            <TextView
+                style="@style/HeaderText"
+                android:layout_width="0dp"
+
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/mediums" />
+
+            <TextView
+                style="@style/HeaderText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+
+                android:text="@string/levels" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
 
 
+            <ListView
+                android:id="@+id/list_sub"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:choiceMode="multipleChoice" />
 
-        <ListView
-            android:id="@+id/list_sub"
-            android:layout_width="0dp"
-            android:choiceMode="multipleChoice"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
-        <View
-            android:layout_width="1dp"
-            android:background="@color/md_grey_200"
-            android:layout_height="match_parent"/>
-        <ListView
-            android:id="@+id/list_lang"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:choiceMode="multipleChoice"
-            android:layout_weight="1" />
-        <View
-            android:layout_width="1dp"
-            android:background="@color/md_grey_200"
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/md_grey_200" />
 
-            android:layout_height="match_parent"/>
+            <ListView
+                android:id="@+id/list_lang"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:choiceMode="multipleChoice" />
 
-        <ListView
-            android:id="@+id/list_medium"
-            android:layout_width="0dp"
-            android:choiceMode="multipleChoice"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
-        <View
-            android:layout_width="1dp"
-            android:background="@color/md_grey_200"
-            android:layout_height="match_parent"/>
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/md_grey_200" />
 
-        <ListView
-            android:id="@+id/list_level"
-            android:layout_width="0dp"
-            android:choiceMode="multipleChoice"
-            android:layout_height="match_parent"
-            android:layout_weight="1" />
+            <ListView
+                android:id="@+id/list_medium"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:choiceMode="multipleChoice" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/md_grey_200" />
+
+            <ListView
+                android:id="@+id/list_level"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:choiceMode="multipleChoice" />
 
 
-    </LinearLayout>
+        </LinearLayout>
 
     </LinearLayout>
 

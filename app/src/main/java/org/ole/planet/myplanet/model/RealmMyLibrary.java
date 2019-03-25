@@ -676,14 +676,14 @@ public class RealmMyLibrary extends RealmObject {
     }
 
 
-    public static Set<String> getLanguages(List<RealmMyLibrary> libraries) {
-        Set<String> list = new HashSet<>();
-        for (RealmMyLibrary li : libraries) {
-            if (!TextUtils.isEmpty(li.getLanguage()))
-                list.add(li.getLanguage());
-        }
-        return list;
-    }
+//    public static Set<String> getLanguages(List<RealmMyLibrary> libraries) {
+//        Set<String> list = new HashSet<>();
+//        for (RealmMyLibrary li : libraries) {
+//            if (!TextUtils.isEmpty(li.getLanguage()))
+//                list.add(li.getLanguage());
+//        }
+//        return list;
+//    }
 
     public static Set<String> getLevels(List<RealmMyLibrary> libraries) {
         Set<String> list = new HashSet<>();
@@ -693,11 +693,12 @@ public class RealmMyLibrary extends RealmObject {
         return list;
     }
 
-    public static Set<String> getMediums(List<RealmMyLibrary> libraries) {
+    public static Set<String> getArrayList(List<RealmMyLibrary> libraries, String type) {
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
-            if (!TextUtils.isEmpty(li.getMediaType()))
-                list.add(li.getMediaType());
+            String s = type.equals("mediums")? li.getMediaType() : li.getLanguage();
+            if (!TextUtils.isEmpty(s))
+                list.add(s);
         }
         return list;
     }
