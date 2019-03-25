@@ -31,8 +31,10 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
@@ -62,6 +64,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     public int getLayout() {
         return R.layout.fragment_my_library;
     }
+
     @Override
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
@@ -112,10 +115,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
     private void initArrays() {
-        subjects = new String[0];
-        languages = new String[0];
-        levels = new String[0];
-        mediums = new String[0];
+        subjects = new HashSet<>();
+        languages = new HashSet<>();
+        levels = new HashSet<>();
+        mediums = new HashSet<>();
     }
 
 
@@ -216,16 +219,16 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
 
     @Override
-    public void filter(String[] subjects, String[] languages, String[] mediums, String[] levels) {
+    public void filter(Set<String> subjects, Set<String> languages, Set<String> mediums, Set<String> levels) {
         this.subjects = subjects;
         this.languages = languages;
         this.mediums = mediums;
         this.levels = levels;
-        Utilities.log("Filter " + new Gson().toJson(subjects));
-        Utilities.log("Filter " + new Gson().toJson(languages));
-        Utilities.log("Filter " + new Gson().toJson(mediums));
-        Utilities.log("Filter " + new Gson().toJson(levels));
+        adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
+    //    recyclerView.setAdapter(adapterLibrary);
+      //  showNoData(tvMessage, adapterLibrary.getItemCount());
     }
+
 
     @Override
     public Map<String, String[]> getData() {
@@ -238,8 +241,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
     @Override
-    public Map<String, String[]> getSelectedFilter() {
-        Map<String, String[]> b = new HashMap<>();
+    public Map<String, Set<String>> getSelectedFilter() {
+        Map<String, Set<String>> b = new HashMap<>();
         b.put("languages", languages);
         b.put("subjects", subjects);
         b.put("mediums", mediums);

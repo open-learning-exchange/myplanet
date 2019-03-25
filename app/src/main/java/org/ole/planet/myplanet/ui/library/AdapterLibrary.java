@@ -75,6 +75,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     public void setLibraryList(List<RealmMyLibrary> libraryList) {
+        Utilities.log("Set lib list");
         this.libraryList = libraryList;
         notifyDataSetChanged();
     }

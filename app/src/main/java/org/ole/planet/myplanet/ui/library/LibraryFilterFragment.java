@@ -79,10 +79,10 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
         subjects = listener.getData().get("subjects");
         mediums = listener.getData().get("mediums");
         levels = listener.getData().get("levels");
-        selectedLvls = new HashSet<>(Arrays.asList(listener.getSelectedFilter().get("levels")));
-        selectedSubs = new HashSet<>(Arrays.asList(listener.getSelectedFilter().get("subjects")));
-        selectedMeds = new HashSet<>(Arrays.asList(listener.getSelectedFilter().get("mediums")));
-        selectedLang = new HashSet<>(Arrays.asList(listener.getSelectedFilter().get("languages")));
+        selectedLvls = listener.getSelectedFilter().get("levels");
+        selectedSubs = listener.getSelectedFilter().get("subjects");
+        selectedMeds = listener.getSelectedFilter().get("mediums");
+        selectedLang = listener.getSelectedFilter().get("languages");
         setAdapter(listLevel, levels, selectedLvls);
         setAdapter(listLang, languages, selectedLang);
         setAdapter(listMedium, mediums, selectedMeds);
@@ -92,7 +92,7 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
     private void setAdapter(ListView listView, String[] arr, Set<String> set) {
         listView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(new ArrayAdapter<String>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr));
-        for (int i = 0 ; i < arr.length; i++) {
+        for (int i = 0; i < arr.length; i++) {
             listView.setItemChecked(i, set.contains(arr[i]));
         }
     }
@@ -110,12 +110,8 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
                 addToList(s, selectedLvls);
             else if (id == R.id.list_medium)
                 addToList(s, selectedMeds);
-            String[] subs = selectedSubs.toArray(new String[0]);
-            String[] langs = selectedLang.toArray(new String[0]);
-            String[] meds = selectedMeds.toArray(new String[0]);
-            String[] lvls = selectedLvls.toArray(new String[0]);
-            listener.filter(subs, langs, meds, lvls);
-            //  initList();
+            listener.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls);
+              initList();
         }
     }
 

@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +42,7 @@ import io.realm.RealmResults;
 import static android.content.Context.MODE_PRIVATE;
 
 public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment implements OnRatingChangeListener {
-    public String[] subjects, languages, mediums, levels;
+    public Set<String> subjects, languages, mediums, levels;
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
     public List<LI> selectedItems;
@@ -243,10 +244,43 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 break;
             }
         }
-        if (contains)
+
+
+        boolean sub = library.getSubject().containsAll(subjects);
+        boolean lev = library.getLevel().containsAll(levels);
+        boolean lan = languages.contains(library.getLanguage());
+        boolean med = mediums.contains(library.getMediaType());
+        if (subjects.isEmpty())
+            sub = true;
+        if (levels.isEmpty())
+            lev= true;
+        if (languages.isEmpty())
+            lan= true;
+        if (mediums.isEmpty())
+            med= true;
+        Utilities.log("Apply filter" + (sub && lev && lan && med));
+        if (sub && lev && lan && med && contains)
             libraries.add(library);
     }
 
+//
+//    public List<RealmMyLibrary> applyFilter() {
+//        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+//        List<RealmMyLibrary> newList = new ArrayList<>();
+//        Utilities.log("Apply filter");
+//        for (RealmMyLibrary l : libraries) {
+//            boolean sub = l.getSubject().containsAll(subjects);
+//            boolean lev = l.getLevel().containsAll(levels);
+//            boolean lan = languages.contains(l.getLanguage());
+//            boolean med = mediums.contains(l.getMediaType());
+//            Utilities.log("Apply filter" + (sub && lev && lan && med));
+//            if (sub && lev && lan && med)
+//                newList.add(l);
+//        }
+//        Utilities.log("List size " + newList.size());
+//
+//        return newList;
+//    }
 
     public List<LI> getList(Class c) {
         if (c == RealmStepExam.class) {
