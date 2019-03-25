@@ -218,14 +218,18 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
-            boolean sub = subjects.isEmpty() || l.getSubject().containsAll(subjects);
-            boolean lev = levels.isEmpty() || l.getLevel().containsAll(levels);
-            boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
-            boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
-            if (sub && lev && lan && med)
+            if(isValidFilter(l))
                 newList.add(l);
         }
         return newList;
+    }
+
+    private boolean isValidFilter(RealmMyLibrary l) {
+        boolean sub = subjects.isEmpty() || l.getSubject().containsAll(subjects);
+        boolean lev = levels.isEmpty() || l.getLevel().containsAll(levels);
+        boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
+        boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
+        return  (sub && lev && lan && med);
     }
 
     public List<LI> getList(Class c) {
