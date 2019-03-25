@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -36,7 +37,7 @@ import java.util.Set;
 public class LibraryFilterFragment extends DialogFragment implements AdapterView.OnItemClickListener {
 
     ListView listSub, listLang, listMedium, listLevel;
-    String[] languages, subjects, mediums, levels;
+    Set<String> languages, subjects, mediums, levels;
     OnFilterListener listener;
     Set<String> selectedLang = new HashSet<>();
     Set<String> selectedSubs = new HashSet<>();
@@ -89,11 +90,12 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
         setAdapter(listSub, subjects, selectedSubs);
     }
 
-    private void setAdapter(ListView listView, String[] arr, Set<String> set) {
+    private void setAdapter(ListView listView, Set<String> ar, Set<String> set) {
+        ArrayList<String> arr = new ArrayList<>(ar);
         listView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(new ArrayAdapter<String>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr));
-        for (int i = 0; i < arr.length; i++) {
-            listView.setItemChecked(i, set.contains(arr[i]));
+        for (int i = 0; i < arr.size(); i++) {
+            listView.setItemChecked(i, set.contains(arr.get(i)));
         }
     }
 
@@ -111,7 +113,7 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
             else if (id == R.id.list_medium)
                 addToList(s, selectedMeds);
             listener.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls);
-              initList();
+            initList();
         }
     }
 

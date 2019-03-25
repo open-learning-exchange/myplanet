@@ -75,7 +75,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     public void setLibraryList(List<RealmMyLibrary> libraryList) {
-        Utilities.log("Set lib list");
         this.libraryList = libraryList;
         notifyDataSetChanged();
     }
@@ -94,6 +93,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof ViewHolderLibrary) {
+            Utilities.log("On bind " + position);
             ((ViewHolderLibrary) holder).title.setText((position + 1) + ". " + libraryList.get(position).getTitle());
             ((ViewHolderLibrary) holder).desc.setText(libraryList.get(position).getDescription());
             ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + " Total");

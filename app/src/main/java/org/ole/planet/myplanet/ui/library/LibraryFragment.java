@@ -195,7 +195,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         li.add(tag);
         tvSelected.setText("Selected : " + tag.getName());
         adapterLibrary.setLibraryList(filterByTag(li, etSearch.getText().toString()));
-
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 
@@ -225,18 +224,17 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         this.mediums = mediums;
         this.levels = levels;
         adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
-    //    recyclerView.setAdapter(adapterLibrary);
-      //  showNoData(tvMessage, adapterLibrary.getItemCount());
+        showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 
 
     @Override
-    public Map<String, String[]> getData() {
-        Map<String, String[]> b = new HashMap<>();
-        b.put("languages", getLanguages());
-        b.put("subjects", getSubjects());
-        b.put("mediums", getMediums());
-        b.put("levels", getLevels());
+    public Map<String, Set<String>> getData() {
+        Map<String, Set<String>> b = new HashMap<>();
+        b.put("languages", getLanguages(adapterLibrary.getLibraryList()));
+        b.put("subjects", getSubjects(adapterLibrary.getLibraryList()));
+        b.put("mediums", getMediums(adapterLibrary.getLibraryList()));
+        b.put("levels", getLevels(adapterLibrary.getLibraryList()));
         return b;
     }
 

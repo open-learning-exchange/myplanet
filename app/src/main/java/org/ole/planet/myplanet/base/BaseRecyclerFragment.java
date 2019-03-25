@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -134,42 +135,38 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    public String[] getLanguages() {
-        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+    public Set<String> getLanguages(List<RealmMyLibrary> libraries) {
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
             if (!TextUtils.isEmpty(li.getLanguage()))
                 list.add(li.getLanguage());
         }
-        return list.toArray(new String[0]);
+        return list;
     }
 
-    public String[] getLevels() {
-        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+    public Set<String> getLevels(List<RealmMyLibrary> libraries) {
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
             list.addAll(li.getLevel());
         }
-        return list.toArray(new String[0]);
+        return list;
     }
 
-    public String[] getMediums() {
-        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+    public Set<String> getMediums(List<RealmMyLibrary> libraries) {
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
             if (!TextUtils.isEmpty(li.getMediaType()))
                 list.add(li.getMediaType());
         }
-        return list.toArray(new String[0]);
+        return list;
     }
 
-    public String[] getSubjects() {
-        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
+    public Set<String> getSubjects(List<RealmMyLibrary> libraries) {
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
             list.addAll(li.getSubject());
         }
-        return list.toArray(new String[0]);
+        return list;
     }
 
     private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {
@@ -214,12 +211,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         return c == RealmMyLibrary.class ? (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li) : (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
     }
 
-    public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
+    public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s){
+        return applyFilter(fbt(tags, s));
+    }
+    public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
-
-
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
         if (isMyCourseLib)
             list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
@@ -244,43 +242,34 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 break;
             }
         }
-
-
-        boolean sub = library.getSubject().containsAll(subjects);
-        boolean lev = library.getLevel().containsAll(levels);
-        boolean lan = languages.contains(library.getLanguage());
-        boolean med = mediums.contains(library.getMediaType());
-        if (subjects.isEmpty())
-            sub = true;
-        if (levels.isEmpty())
-            lev= true;
-        if (languages.isEmpty())
-            lan= true;
-        if (mediums.isEmpty())
-            med= true;
-        Utilities.log("Apply filter" + (sub && lev && lan && med));
-        if (sub && lev && lan && med && contains)
+        if (contains)
             libraries.add(library);
     }
 
-//
-//    public List<RealmMyLibrary> applyFilter() {
+
+    public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
 //        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
-//        List<RealmMyLibrary> newList = new ArrayList<>();
-//        Utilities.log("Apply filter");
-//        for (RealmMyLibrary l : libraries) {
-//            boolean sub = l.getSubject().containsAll(subjects);
-//            boolean lev = l.getLevel().containsAll(levels);
-//            boolean lan = languages.contains(l.getLanguage());
-//            boolean med = mediums.contains(l.getMediaType());
-//            Utilities.log("Apply filter" + (sub && lev && lan && med));
-//            if (sub && lev && lan && med)
-//                newList.add(l);
-//        }
-//        Utilities.log("List size " + newList.size());
-//
-//        return newList;
-//    }
+        List<RealmMyLibrary> newList = new ArrayList<>();
+        for (RealmMyLibrary l : libraries) {
+            boolean sub = l.getSubject().containsAll(subjects);
+            boolean lev = l.getLevel().containsAll(levels);
+            boolean lan = languages.contains(l.getLanguage());
+            boolean med = mediums.contains(l.getMediaType());
+            if (subjects.isEmpty())
+                sub = true;
+            if (levels.isEmpty())
+                lev = true;
+            if (languages.isEmpty())
+                lan = true;
+            if (mediums.isEmpty())
+                med = true;
+            if (sub && lev && lan && med)
+                newList.add(l);
+        }
+        Utilities.log("List size " + newList.size());
+
+        return newList;
+    }
 
     public List<LI> getList(Class c) {
         if (c == RealmStepExam.class) {
