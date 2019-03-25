@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -673,4 +674,40 @@ public class RealmMyLibrary extends RealmObject {
     public boolean needToUpdate() {
         return (getResourceLocalAddress() != null) && !getResourceOffline() || !(TextUtils.equals(get_rev(), getDownloadedRev()));
     }
+
+
+    public static Set<String> getLanguages(List<RealmMyLibrary> libraries) {
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            if (!TextUtils.isEmpty(li.getLanguage()))
+                list.add(li.getLanguage());
+        }
+        return list;
+    }
+
+    public static Set<String> getLevels(List<RealmMyLibrary> libraries) {
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            list.addAll(li.getLevel());
+        }
+        return list;
+    }
+
+    public static Set<String> getMediums(List<RealmMyLibrary> libraries) {
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            if (!TextUtils.isEmpty(li.getMediaType()))
+                list.add(li.getMediaType());
+        }
+        return list;
+    }
+
+    public static Set<String> getSubjects(List<RealmMyLibrary> libraries) {
+        Set<String> list = new HashSet<>();
+        for (RealmMyLibrary li : libraries) {
+            list.addAll(li.getSubject());
+        }
+        return list;
+    }
+
 }

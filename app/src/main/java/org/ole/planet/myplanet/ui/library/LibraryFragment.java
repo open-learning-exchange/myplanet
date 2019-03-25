@@ -40,6 +40,11 @@ import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
 
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getLanguages;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getMediums;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
+
 /**
  * A simple {@link Fragment} subclass.
  */

@@ -135,39 +135,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    public Set<String> getLanguages(List<RealmMyLibrary> libraries) {
-        Set<String> list = new HashSet<>();
-        for (RealmMyLibrary li : libraries) {
-            if (!TextUtils.isEmpty(li.getLanguage()))
-                list.add(li.getLanguage());
-        }
-        return list;
-    }
-
-    public Set<String> getLevels(List<RealmMyLibrary> libraries) {
-        Set<String> list = new HashSet<>();
-        for (RealmMyLibrary li : libraries) {
-            list.addAll(li.getLevel());
-        }
-        return list;
-    }
-
-    public Set<String> getMediums(List<RealmMyLibrary> libraries) {
-        Set<String> list = new HashSet<>();
-        for (RealmMyLibrary li : libraries) {
-            if (!TextUtils.isEmpty(li.getMediaType()))
-                list.add(li.getMediaType());
-        }
-        return list;
-    }
-
-    public Set<String> getSubjects(List<RealmMyLibrary> libraries) {
-        Set<String> list = new HashSet<>();
-        for (RealmMyLibrary li : libraries) {
-            list.addAll(li.getSubject());
-        }
-        return list;
-    }
 
     private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {
         if (deleteProgress && object instanceof RealmMyCourse) {
@@ -248,7 +215,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
 
 
     public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
-//        List<RealmMyLibrary> libraries = ((AdapterLibrary) getAdapter()).getLibraryList();
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
             boolean sub = l.getSubject().containsAll(subjects);
