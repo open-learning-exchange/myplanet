@@ -11,7 +11,7 @@ import java.util.ArrayList;
 
 public class CheckboxListView extends ListView implements AdapterView.OnItemClickListener {
     ArrayList<Integer> selectedItemsList = new ArrayList<>();
-
+    ArrayList<String> selectedItems = new ArrayList<>();
     public CheckboxListView(Context context, AttributeSet attrs) {
         super(context, attrs);
         setOnItemClickListener(this);

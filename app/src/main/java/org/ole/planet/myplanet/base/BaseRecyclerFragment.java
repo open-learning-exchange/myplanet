@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,10 +24,15 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -37,7 +43,7 @@ import io.realm.RealmResults;
 import static android.content.Context.MODE_PRIVATE;
 
 public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment implements OnRatingChangeListener {
-
+    public Set<String> subjects, languages, mediums, levels;
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
     public List<LI> selectedItems;
@@ -129,6 +135,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
+
     private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {
         if (deleteProgress && object instanceof RealmMyCourse) {
             mRealm.where(RealmCourseProgress.class).equalTo("courseId", ((RealmMyCourse) object).getCourseId()).findAll().deleteAllFromRealm();
@@ -172,11 +179,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     }
 
     public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
+        return applyFilter(fbt(tags, s));
+    }
+
+    public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
-
-
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
         if (isMyCourseLib)
             list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
@@ -205,6 +214,23 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             libraries.add(library);
     }
 
+
+    public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
+        List<RealmMyLibrary> newList = new ArrayList<>();
+        for (RealmMyLibrary l : libraries) {
+            if(isValidFilter(l))
+                newList.add(l);
+        }
+        return newList;
+    }
+
+    private boolean isValidFilter(RealmMyLibrary l) {
+        boolean sub = subjects.isEmpty() || l.getSubject().containsAll(subjects);
+        boolean lev = levels.isEmpty() || l.getLevel().containsAll(levels);
+        boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
+        boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
+        return  (sub && lev && lan && med);
+    }
 
     public List<LI> getList(Class c) {
         if (c == RealmStepExam.class) {

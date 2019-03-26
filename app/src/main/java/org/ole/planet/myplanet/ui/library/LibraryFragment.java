@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
+import org.ole.planet.myplanet.callback.OnFilterListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -30,16 +31,21 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
 
+import static org.ole.planet.myplanet.model.RealmMyLibrary.*;
+
 /**
  * A simple {@link Fragment} subclass.
  */
-public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener {
+public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
 
     TextView tvAddToLib, tvMessage, tvSelected;
 
@@ -69,6 +75,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList<>();
+
         return adapterLibrary;
     }
 
@@ -85,6 +92,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
+        initArrays();
+
         tvAddToLib.setOnClickListener(view -> addToMyList());
         imgSearch.setOnClickListener(view -> {
             adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
@@ -100,7 +109,20 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         setSearchListener();
         showNoData(tvMessage, adapterLibrary.getItemCount());
         clearTagsButton();
+        getView().findViewById(R.id.show_filter).setOnClickListener(v -> {
+            LibraryFilterFragment f = new LibraryFilterFragment();
+            f.setListener(this);
+            f.show(getChildFragmentManager(), "");
+        });
     }
+
+    private void initArrays() {
+        subjects = new HashSet<>();
+        languages = new HashSet<>();
+        levels = new HashSet<>();
+        mediums = new HashSet<>();
+    }
+
 
     private void clearTagsButton() {
         clearTags.setOnClickListener(vi -> {
@@ -175,7 +197,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         li.add(tag);
         tvSelected.setText("Selected : " + tag.getName());
         adapterLibrary.setLibraryList(filterByTag(li, etSearch.getText().toString()));
-
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 
@@ -198,4 +219,34 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
 
+    @Override
+    public void filter(Set<String> subjects, Set<String> languages, Set<String> mediums, Set<String> levels) {
+        this.subjects = subjects;
+        this.languages = languages;
+        this.mediums = mediums;
+        this.levels = levels;
+        adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
+        showNoData(tvMessage, adapterLibrary.getItemCount());
+    }
+
+
+    @Override
+    public Map<String, Set<String>> getData() {
+        Map<String, Set<String>> b = new HashMap<>();
+        b.put("languages", getArrayList(adapterLibrary.getLibraryList(), "languages"));
+        b.put("subjects", getSubjects(adapterLibrary.getLibraryList()));
+        b.put("mediums", getArrayList(adapterLibrary.getLibraryList(), "mediums"));
+        b.put("levels", getLevels(adapterLibrary.getLibraryList()));
+        return b;
+    }
+
+    @Override
+    public Map<String, Set<String>> getSelectedFilter() {
+        Map<String, Set<String>> b = new HashMap<>();
+        b.put("languages", languages);
+        b.put("subjects", subjects);
+        b.put("mediums", mediums);
+        b.put("levels", levels);
+        return b;
+    }
 }

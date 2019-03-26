@@ -51,6 +51,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public static SharedPreferences settings;
     static ProgressDialog prgDialog;
     public OnHomeItemClickListener homeItemClickListener;
+
     //    ArrayList<Integer> selectedItemsList = new ArrayList<>();
     CheckboxListView lv;
     View convertView;
@@ -163,14 +164,6 @@ public abstract class BaseResourceFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setAdapter(adapter);
-//        lv.setOnItemClickListener((adapterView, view, i, l) -> {
-//            String itemSelected = ((TextView) view).getText().toString();
-//            if (selectedItemsList.contains(itemSelected)) {
-//                selectedItemsList.remove(itemSelected);
-//            } else {
-//                selectedItemsList.add(i);
-//            }
-//        });
     }
 
 
