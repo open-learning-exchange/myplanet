@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
@@ -47,6 +48,8 @@ public class UploadManager {
     private Realm mRealm;
     private static UploadManager instance;
     Context context;
+    SharedPreferences pref;
+
     public static UploadManager getInstance() {
         if (instance == null) {
             instance = new UploadManager(MainApplication.context);
@@ -57,27 +60,19 @@ public class UploadManager {
     public UploadManager(Context context) {
         dbService = new DatabaseService(context);
         this.context = context;
+        pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        SharedPreferences pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         try {
-            JsonObject postJSON = new JsonObject();
-            postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
-            postJSON.addProperty("version", VersionUtils.getVersionCode(context));
-            postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
-            postJSON.addProperty("parentCode", model.getParentCode());
-            postJSON.addProperty("createdOn", model.getPlanetCode());
-            postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
-            postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
-            postJSON.addProperty("time", new Date().getTime());
-            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", postJSON).enqueue(new Callback<JsonObject>() {
+
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getMyPlanetActivities(context, pref, model)).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     if (listener != null) {
-                       listener.onSuccess("Myplanet activities uploaded successfully");
+                        listener.onSuccess("Myplanet activities uploaded successfully");
                     }
                 }
 
@@ -85,7 +80,8 @@ public class UploadManager {
                 public void onFailure(Call<JsonObject> call, Throwable t) {
                 }
             });
-        }catch (Exception e) {e.printStackTrace();}
+        } catch (Exception e) {
+        }
     }
 
     public void uploadExamResult(final SuccessListener listener) {
@@ -112,7 +108,7 @@ public class UploadManager {
             for (RealmAchievement sub : list) {
                 try {
                     JsonObject ob = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), RealmAchievement.serialize(sub)).execute().body();
-                    if (ob == null){
+                    if (ob == null) {
                         ResponseBody re = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute().errorBody();
                     }
                 } catch (IOException e) {

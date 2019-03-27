@@ -1,5 +1,15 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import com.google.gson.JsonObject;
+
+import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.VersionUtils;
+
+import java.util.Date;
+
 public class MyPlanet {
     private String planetVersion;
 
@@ -74,5 +84,22 @@ public class MyPlanet {
     @Override
     public String toString() {
         return "ClassPojo [planetVersion = " + planetVersion + ", latestapk = " + latestapk + ", minapk = " + minapk + ", apkpath = " + apkpath + ", appname = " + appname + "]";
+    }
+
+    public static JsonObject getMyPlanetActivities(Context context, SharedPreferences pref, RealmUserModel model){
+        JsonObject postJSON = new JsonObject();
+        postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
+        postJSON.addProperty("version", VersionUtils.getVersionCode(context));
+        postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
+        postJSON.addProperty("parentCode", model.getParentCode());
+        postJSON.addProperty("createdOn", model.getPlanetCode());
+        postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
+        postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
+        postJSON.addProperty("time", new Date().getTime());
+        JsonObject gps = new JsonObject();
+        gps.addProperty("latitude", pref.getString("last_lat", ""));
+        gps.addProperty("longitude", pref.getString("last_lng", ""));
+        postJSON.add("gps", gps);
+        return postJSON;
     }
 }
