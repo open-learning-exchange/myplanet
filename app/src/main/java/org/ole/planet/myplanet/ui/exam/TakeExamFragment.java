@@ -234,8 +234,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         answer.setPassed(que.getCorrectChoice().contains(ans.toLowerCase()));
         answer.setGrade(1);
         int mistake = answer.getMistakes();
-        String[] selectedAns = listAns.values().toArray(new String[listAns.keySet().size()]);
-        String[] correctChoices = que.getCorrectChoice().toArray(new String[que.getCorrectChoice().size()]);
+        String[] selectedAns = listAns.values().toArray(new String[0]);
+        String[] correctChoices = que.getCorrectChoice().toArray(new String[0]);
         if (!isEqual(selectedAns, correctChoices)) {
             mistake++;
         } else {
@@ -249,12 +249,13 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public boolean isEqual(String[] ar1, String[] ar2) {
         Arrays.sort(ar1);
         Arrays.sort(ar2);
-        for (int i = 0; i < ar2.length; i++) {
-            if (!ar1[i].equalsIgnoreCase(ar2[i]))
-                return false;
-        }
+       return Arrays.equals(ar1, ar2);
+//        for (int i = 0; i < ar2.length; i++) {
+//            if (!ar1[i].equalsIgnoreCase(ar2[i]))
+//                return false;
+//        }
 
-        return true;
+     //   return true;
     }
 
     private void startTransaction() {
