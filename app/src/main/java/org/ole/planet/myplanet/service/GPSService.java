@@ -58,7 +58,7 @@ public class GPSService extends Service implements LocationListener {
     }
 
     @SuppressLint("MissingPermission")
-    public Location getLocation() {
+    private Location getLocation() {
         try {
 
             if (!isGPSEnabled) {
@@ -66,18 +66,7 @@ public class GPSService extends Service implements LocationListener {
             } else {
                 this.canGetLocation = true;
                 if (location == null) {
-                    locationManager.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER,
-                            MIN_TIME_BW_UPDATES,
-                            MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
-                    if (locationManager != null) {
-                        location = locationManager
-                                .getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        if (location != null) {
-                            latitude = location.getLatitude();
-                            longitude = location.getLongitude();
-                        }
-                    }
+                   getLastKnownLocation();
                 }
             }
 
@@ -86,6 +75,22 @@ public class GPSService extends Service implements LocationListener {
         }
 
         return location;
+    }
+
+    @SuppressLint("MissingPermission")
+    private void getLastKnownLocation() {
+        locationManager.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                MIN_TIME_BW_UPDATES,
+                MIN_DISTANCE_CHANGE_FOR_UPDATES, this);
+        if (locationManager != null) {
+            location = locationManager
+                    .getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            if (location != null) {
+                latitude = location.getLatitude();
+                longitude = location.getLongitude();
+            }
+        }
     }
 
     public void stopUsingGPS() {
