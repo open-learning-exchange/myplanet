@@ -73,6 +73,8 @@ public class UploadManager {
             postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
             postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
             postJSON.addProperty("time", new Date().getTime());
+            postJSON.addProperty("latitude", pref.getString("last_lat", ""));
+            postJSON.addProperty("longitude", pref.getString("last_lng", ""));
             apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", postJSON).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
