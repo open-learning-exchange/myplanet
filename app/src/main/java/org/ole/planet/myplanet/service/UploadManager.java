@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
@@ -66,20 +67,8 @@ public class UploadManager {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
         try {
-            JsonObject postJSON = new JsonObject();
-            postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
-            postJSON.addProperty("version", VersionUtils.getVersionCode(context));
-            postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
-            postJSON.addProperty("parentCode", model.getParentCode());
-            postJSON.addProperty("createdOn", model.getPlanetCode());
-            postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
-            postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
-            postJSON.addProperty("time", new Date().getTime());
-            JsonObject gps = new JsonObject();
-            gps.addProperty("latitude", pref.getString("last_lat", ""));
-            gps.addProperty("longitude", pref.getString("last_lng", ""));
-            postJSON.add("gps", gps);
-            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", postJSON).enqueue(new Callback<JsonObject>() {
+
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getMyPlanetActivities(context, pref, model)).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     if (listener != null) {
@@ -88,9 +77,11 @@ public class UploadManager {
                 }
 
                 @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) { }
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                }
             });
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
     }
 
     public void uploadExamResult(final SuccessListener listener) {
