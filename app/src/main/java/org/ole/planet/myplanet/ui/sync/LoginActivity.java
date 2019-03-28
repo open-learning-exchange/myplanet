@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -59,15 +60,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         changeLogoColor();
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
-        imgBtnSetting = findViewById(R.id.imgBtnSetting);
-        save = findViewById(R.id.save);
         declareElements();
         declareMoreElements();
         showWifiDialog();
-        btnSignIn = findViewById(R.id.btn_signin); //buttons
-        btnSignIn.setOnClickListener(view -> submitForm());
+        if (settings.getBoolean(Constants.KEY_LOGIN, false)){
+            openDashboard();
+            return;
+        }
+
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         if (forceSync) {
@@ -91,6 +91,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     public void declareElements() {
+        inputLayoutName = findViewById(R.id.input_layout_name);
+        inputLayoutPassword = findViewById(R.id.input_layout_password);
+        imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        save = findViewById(R.id.save);
+        btnSignIn = findViewById(R.id.btn_signin); //buttons
+        btnSignIn.setOnClickListener(view -> submitForm());
         findViewById(R.id.become_member).setOnClickListener(v -> {
             if (!Utilities.getUrl().isEmpty()) {
                 startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
@@ -159,18 +165,18 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             editor.putString("loginUserName", inputName.getText().toString());
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
-        editor.commit();
         if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), this)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             UserProfileDbHandler handler = new UserProfileDbHandler(this);
             handler.onLogin();
             handler.onDestory();
-            Intent dashboard = new Intent(getApplicationContext(), DashboardActivity.class);
-            dashboard.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(dashboard);
+            openDashboard();
+            editor.putBoolean(Constants.KEY_LOGIN, true).commit();
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
         }
+        editor.commit();
+
     }
 
     public void settingDialog() {

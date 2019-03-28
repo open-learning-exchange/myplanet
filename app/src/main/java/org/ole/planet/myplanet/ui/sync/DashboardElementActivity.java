@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -128,11 +129,28 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
 
     public void logout() {
         profileDbHandler.onLogout();
-        Intent loginscreen = new Intent(this, LoginActivity.class);
-        loginscreen.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
+        Intent loginscreen = new Intent(this, LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(loginscreen);
+        doubleBackToExitPressedOnce = true;
         this.finish();
     }
+
+
+
+    boolean doubleBackToExitPressedOnce;
+
+    @Override
+    public void finish() {
+        if (doubleBackToExitPressedOnce) {
+            super.finish();
+        } else {
+            this.doubleBackToExitPressedOnce = true;
+            Toast.makeText(this, "Press BACK again to exit", Toast.LENGTH_SHORT).show();
+            new Handler().postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
+        }
+    }
+
 
     public void showRatingDialog(String type, String resource_id, String title, OnRatingChangeListener listener) {
         RatingFragment f = RatingFragment.newInstance(type, resource_id, title);
