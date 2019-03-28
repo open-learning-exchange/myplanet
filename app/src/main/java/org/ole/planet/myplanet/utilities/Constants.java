@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class Constants {
+    public static final String KEY_LOGIN = "isLoggedIn" ;
     public static List<ShelfData> shelfDataList;
     public static List<String> betaList;
     public static final String KEY_RATING = "beta_rating";
