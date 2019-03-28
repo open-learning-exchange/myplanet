@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.Download;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UploadToShelfService;
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -60,6 +61,12 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
             progressDialog.dismiss();
             DialogUtils.showError(progressDialog, download.getMessage());
         }
+    }
+
+    public void openDashboard() {
+        Intent dashboard = new Intent(getApplicationContext(), DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(dashboard);
+        finish();
     }
 
 

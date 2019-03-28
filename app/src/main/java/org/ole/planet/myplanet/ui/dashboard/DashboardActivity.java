@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -108,6 +109,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .withDividerBelowHeader(false)
                 .build();
     }
+
+
 
     private void createDrawer() {
         com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);

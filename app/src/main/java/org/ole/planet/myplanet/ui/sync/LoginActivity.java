@@ -88,12 +88,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         new GPSService(this);
     }
 
-    private void openDashboard() {
-        Intent dashboard = new Intent(getApplicationContext(), DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(dashboard);
-        finish();
-    }
-
     private void showWifiDialog() {
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
