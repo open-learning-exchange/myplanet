@@ -60,10 +60,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         changeLogoColor();
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
-        imgBtnSetting = findViewById(R.id.imgBtnSetting);
-        save = findViewById(R.id.save);
         declareElements();
         declareMoreElements();
         showWifiDialog();
@@ -71,8 +67,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             openDashboard();
             return;
         }
-        btnSignIn = findViewById(R.id.btn_signin); //buttons
-        btnSignIn.setOnClickListener(view -> submitForm());
+
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         if (forceSync) {
@@ -96,6 +91,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     public void declareElements() {
+        inputLayoutName = findViewById(R.id.input_layout_name);
+        inputLayoutPassword = findViewById(R.id.input_layout_password);
+        imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        save = findViewById(R.id.save);
+        btnSignIn = findViewById(R.id.btn_signin); //buttons
+        btnSignIn.setOnClickListener(view -> submitForm());
         findViewById(R.id.become_member).setOnClickListener(v -> {
             if (!Utilities.getUrl().isEmpty()) {
                 startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
