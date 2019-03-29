@@ -51,13 +51,12 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 
 
-public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener, FragmentManager.OnBackStackChangedListener {
+public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
 
     AccountHeader headerResult;
     private Drawer result = null;
     private Toolbar mTopToolbar, bellToolbar;
-    private BottomNavigationView navigationView;
     RealmUserModel user;
 
     @Override
@@ -111,36 +110,15 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                switch (tab.getPosition()) {
-                    case 0:
-                        openCallFragment(new BellDashboardFragment());
-                        break;
-                    case 1:
-                        openCallFragment(new LibraryFragment());
-                        break;
-                    case 2:
-                        openCallFragment(new CourseFragment());
-                        break;
-                    case 3:
-                        openCallFragment(new SurveyFragment());
-                        break;
-                    case 4:
-                        new FeedbackFragment().show(getSupportFragmentManager(), "feedback");
-                        break;
-                    case 5:
-                        logout();
-                        break;
-                }
+                onClickTabItems(tab.getPosition());
             }
 
             @Override
             public void onTabUnselected(TabLayout.Tab tab) {
-
             }
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
-
             }
         });
 
@@ -246,14 +224,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         openCallFragment(f, "");
     }
 
-    public void openCallFragment(Fragment newfragment, String tag) {
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_container, newfragment, tag);
-        getSupportFragmentManager().addOnBackStackChangedListener(this);
-        fragmentTransaction.addToBackStack("");
-        fragmentTransaction.commit();
-    }
-
     @Override
     public void openLibraryDetailFragment(RealmMyLibrary library) {
         Fragment f = new LibraryDetailFragment();
@@ -350,25 +320,4 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
 
-    @Override
-    public void onBackStackChanged() {
-        Fragment f = (getSupportFragmentManager()).findFragmentById(R.id.fragment_container);
-        String fragmentTag = f.getTag();
-        if (f instanceof CourseFragment) {
-            if ("shelf".equals(fragmentTag))
-                navigationView.getMenu().findItem(R.id.menu_mycourses).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
-        } else if (f instanceof LibraryFragment) {
-            if ("shelf".equals(fragmentTag))
-                navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
-        } else if (f instanceof DashboardFragment) {
-            navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
-        } else if (f instanceof SurveyFragment) {
-            // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
-        }
-
-    }
 }
