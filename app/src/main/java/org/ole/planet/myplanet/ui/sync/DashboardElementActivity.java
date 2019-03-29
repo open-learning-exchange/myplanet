@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
@@ -12,6 +13,7 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.SwitchPreference;
 import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
@@ -46,13 +48,27 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
         settings = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-
     }
 
 
+    @SuppressLint("RestrictedApi")
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
+        ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        MenuItem item = menu.findItem(R.id.menu_goOnline);
+        if(wifi.getWifiState()!=WifiManager.WIFI_STATE_DISABLED) {
+            Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
+            resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.material_drawer_selected), PorterDuff.Mode.SRC_ATOP);
+            item.setIcon(resIcon);
+        }else{
+            Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
+            resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
+            item.setIcon(resIcon);
+        }
+
         return true;
     }
 
@@ -83,11 +99,11 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
 
     @SuppressLint("RestrictedApi")
     private void wifiStatusSwitch() {
-        ActionMenuItemView goOnline = findViewById(R.id.menu_goOnline);
-        Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        ActionMenuItemView goOnline = findViewById(R.id.menu_goOnline);
+        Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
         if (mWifi.isConnected()) {
             wifi.setWifiEnabled(false);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
@@ -97,10 +113,8 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
             wifi.setWifiEnabled(true);
             Toast.makeText(this, "Turning on Wifi. Please wait...", Toast.LENGTH_LONG).show();
             (new Handler()).postDelayed(this::connectToWifi, 5000);
-            resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
+            resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.material_drawer_selected), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
-
-
         }
     }
 
