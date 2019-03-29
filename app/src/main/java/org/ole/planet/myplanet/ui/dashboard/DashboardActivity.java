@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
@@ -88,7 +89,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
 
-        openCallFragment(new DashboardFragment());
+        openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                new BellDashboardFragment() : new DashboardFragment());
     }
 
 
@@ -109,7 +111,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .withDividerBelowHeader(false)
                 .build();
     }
-
 
 
     private void createDrawer() {
@@ -138,8 +139,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
-                openCallFragment(new DashboardFragment());
-                break;
+                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                        new BellDashboardFragment() : new DashboardFragment());                break;
             case R.string.menu_library:
                 openCallFragment(new LibraryFragment());
                 break;
@@ -165,7 +166,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 logout();
                 break;
             default:
-                openCallFragment(new DashboardFragment());
+                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                        new BellDashboardFragment() : new DashboardFragment());
                 break;
         }
     }
@@ -287,8 +289,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         } else if (item.getItemId() == R.id.menu_mylibrary) {
             openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_home) {
-            openCallFragment(new DashboardFragment());
-        }
+            openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                    new BellDashboardFragment() : new DashboardFragment());        }
         return true;
     }
 

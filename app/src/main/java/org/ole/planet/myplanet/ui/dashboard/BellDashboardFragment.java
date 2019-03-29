@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import io.realm.Case;
@@ -46,10 +47,10 @@ import io.realm.RealmResults;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DashboardFragment extends BaseContainerFragment {
+public class BellDashboardFragment extends BaseContainerFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole;
+    TextView txtFullName, txtVisits, tvCommunityName, tvDate, txtRole;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -60,19 +61,13 @@ public class DashboardFragment extends BaseContainerFragment {
     private UserProfileDbHandler profileDbHandler;
 
 
-    public DashboardFragment() {
-    }
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view;
-        if (PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false)) {
-            view = inflater.inflate(R.layout.fragment_home_bell, container, false);
-        } else {
-            view = inflater.inflate(R.layout.fragment_home, container, false);
-        }
+        view = inflater.inflate(R.layout.fragment_home_bell, container, false);
         profileDbHandler = new UserProfileDbHandler(getActivity());
+        ((DashboardActivity)getActivity()).getSupportActionBar().hide();
         declareElements(view);
         fullName = profileDbHandler.getUserModel().getFullName();
         txtFullName.setText(fullName);
@@ -82,23 +77,20 @@ public class DashboardFragment extends BaseContainerFragment {
         Utilities.loadImage(model.getUserImage(), imageView);
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         txtRole.setText(model.getRoleAsString());
-        int noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
-        (view.findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
+        tvCommunityName.setText(model.getCommunityName());
+        tvDate.setText(Utilities.formatDate(new Date().getTime()));
+//        int noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
+//        (view.findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
 
         return view;
     }
 
     private void declareElements(View view) {
-        txtFullName = view.findViewById(R.id.txtFullName);
-        txtVisits = view.findViewById(R.id.txtVisits);
-        txtRole = view.findViewById(R.id.txtRole);
-        tv_surveys = view.findViewById(R.id.tv_surveys);
-        tv_submission = view.findViewById(R.id.tv_submission);
-        tv_achievement = view.findViewById(R.id.tv_achievement);
-        tv_surveys.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey")));
-        tv_submission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
-        tv_achievement.setVisibility(Constants.showBetaFeature(Constants.KEY_ACHIEVEMENT, getActivity()) ? View.VISIBLE : View.GONE);
-        tv_achievement.setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
+        txtFullName = view.findViewById(R.id.txt_full_name);
+        txtVisits = view.findViewById(R.id.txt_visits);
+        tvCommunityName = view.findViewById(R.id.txt_community_name);
+        tvDate = view.findViewById(R.id.txt_date);
+        txtRole = view.findViewById(R.id.txt_role);
         view.findViewById(R.id.ll_user).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
@@ -165,7 +157,7 @@ public class DashboardFragment extends BaseContainerFragment {
     }
 
     private void setTextColor(TextView textView, int itemCnt, Class c) {
-      //  int color = getResources().getColor(PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(c) : R.color.md_grey_400);
+        //  int color = getResources().getColor(PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(c) : R.color.md_grey_400);
         textView.setTextColor(getResources().getColor(R.color.md_black_1000));
         if ((itemCnt % 2) == 0) {
             textView.setBackgroundResource(R.drawable.light_rect);

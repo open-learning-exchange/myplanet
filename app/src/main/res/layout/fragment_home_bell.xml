@@ -19,8 +19,8 @@
             <include
                 layout="@layout/card_profile_bell"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_height="wrap_content"
+              />
 
             <include
                 layout="@layout/home_card_library"
@@ -42,6 +42,13 @@
 
             <include
                 layout="@layout/home_card_meetups"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                android:layout_weight="1" />
+
+            <include
+                layout="@layout/home_card_mylife"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1" />

@@ -3,188 +3,154 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardElevation="4dp"
-    app:cardUseCompatPadding="true">
+    app:cardElevation="2dp"
+    app:cardUseCompatPadding="true"
+    app:contentPadding="@dimen/eight_dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center|left"
-        android:orientation="horizontal"
-        android:weightSum="6">
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
 
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
-
-            <de.hdodenhof.circleimageview.CircleImageView
-                android:id="@+id/imageView"
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:layout_weight="2"
-                android:padding="@dimen/padding_small"
-                android:src="@drawable/profile"
-                app:civ_border_color="@color/colorPrimaryDark"
-                app:civ_border_width="2dp" />
-        </LinearLayout>
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/imageView"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:src="@drawable/profile"
+            app:civ_border_color="@color/colorPrimaryDark"
+            app:civ_border_width="2dp" />
 
         <LinearLayout
             android:id="@+id/ll_user"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="3.5"
-            android:gravity="center|left"
-            android:orientation="vertical"
-            android:padding="@dimen/padding_small">
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/txt_community_name"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp"
+                    android:padding="@dimen/padding_normal"                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/txt_date"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp"
+                    android:padding="@dimen/padding_normal"                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:layout_weight="1"
+                    android:gravity="right" />
+
+            </LinearLayout>
+
 
             <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:layout_height="wrap_content">
 
                 <TextView
-                    android:id="@+id/txtFullName"
-                    android:layout_width="match_parent"
+                    android:id="@+id/txt_full_name"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
-                    android:text="Leonard Maximus Mensah"
-                    android:textAlignment="viewStart"
+                    android:layout_weight="1"
                     android:textColor="@color/md_black_1000"
-                    android:textSize="24sp"
-                    android:textStyle="bold" />
+                    android:textSize="18sp"
+                    android:padding="@dimen/padding_normal"
+                    android:text="" />
 
                 <TextView
-                    android:id="@+id/txtSeporator"
-                    android:layout_width="match_parent"
+                    android:id="@+id/txt_role"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:padding="@dimen/padding_small"
-                    android:text=" - "
-                    android:textAlignment="viewStart"
-                    android:textColor="@color/md_black_1000"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/txtRole"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
+                    android:layout_gravity="center_vertical"
                     android:gravity="center"
-                    android:padding="4dp"
-                    android:text="@string/learner"
+                    android:paddingLeft="@dimen/padding_large"
                     android:textColor="@color/md_black_1000" />
+
             </LinearLayout>
 
             <TextView
-                android:id="@+id/txtVisits"
+                android:id="@+id/txt_visits"
                 android:layout_width="match_parent"
+                android:textColor="@color/md_black_1000"
+                android:textSize="18sp"
+                android:paddingLeft="@dimen/padding_normal"
+                android:paddingRight="@dimen/padding_normal"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:gravity="center"
-                android:padding="@dimen/padding_small"
-                android:text="10 Visits"
-                android:textAlignment="viewStart"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp" />
+                android:gravity="start"
+                />
 
         </LinearLayout>
 
-        <ScrollView
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="2.5"
-            android:padding="@dimen/padding_small">
+        <!--<LinearLayout-->
+        <!--android:id="@+id/ll_user"-->
+        <!--android:layout_width="0dp"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_weight="3.5"-->
+        <!--android:gravity="center|left"-->
+        <!--android:orientation="vertical"-->
+        <!--android:padding="@dimen/padding_small">-->
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:orientation="vertical">
-                <!-- TODO: change back color to md_black_1000 -->
-                <TextView
-                    android:id="@+id/tv_submission"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingRight="@dimen/padding_small"
-                    android:text="@string/submission"
-                    android:textAlignment="textEnd"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="12sp" />
+        <!--<LinearLayout-->
+        <!--android:layout_width="wrap_content"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:orientation="horizontal">-->
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingRight="@dimen/padding_small"
-                    android:text="@string/calendar"
-                    android:textAlignment="viewEnd"
-                    android:textColor="@color/disable_color"
-                    android:textSize="18sp"
-                    android:visibility="gone" />
+        <!--<TextView-->
+        <!--android:id="@+id/txtFullName"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:padding="@dimen/padding_small"-->
+        <!--android:text="Leonard Maximus Mensah"-->
+        <!--android:textAlignment="viewStart"-->
+        <!--android:textColor="@color/md_black_1000"-->
+        <!--android:textSize="24sp"-->
+        <!--android:textStyle="bold" />-->
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingRight="@dimen/padding_small"
-                    android:text="@string/email"
-                    android:textAlignment="textEnd"
-                    android:textColor="@color/disable_color"
-                    android:textSize="12sp" />
+        <!--<TextView-->
+        <!--android:id="@+id/txtSeporator"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_gravity="center"-->
+        <!--android:padding="@dimen/padding_small"-->
+        <!--android:text=" - "-->
+        <!--android:textColor="@color/md_black_1000"-->
+        <!--android:textStyle="bold" />-->
 
-                <TextView
-                    android:id="@+id/tv_achievement"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingRight="@dimen/padding_small"
-                    android:text="@string/menu_achievement"
-                    android:textAlignment="textEnd"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="12sp" />
+        <!--<TextView-->
+        <!--android:id="@+id/txtRole"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_gravity="center"-->
+        <!--android:gravity="center"-->
+        <!--android:padding="4dp"-->
+        <!--android:text="@string/learner"-->
+        <!--android:textColor="@color/md_black_1000" />-->
+        <!--</LinearLayout>-->
 
+        <!--<TextView-->
+        <!--android:id="@+id/txtVisits"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:layout_gravity="center"-->
+        <!--android:gravity="center"-->
+        <!--android:padding="@dimen/padding_small"-->
+        <!--android:text="10 Visits"-->
+        <!--android:textColor="@color/md_black_1000"-->
+        <!--android:textSize="18sp" />-->
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:textAlignment="textEnd">
+        <!--</LinearLayout>-->
 
-
-                    <TextView
-                        android:id="@+id/tv_surveys"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:background="?attr/selectableItemBackground"
-                        android:paddingRight="@dimen/padding_small"
-                        android:text="@string/menu_surveys"
-                        android:textAlignment="textEnd"
-                        android:textColor="@color/md_black_1000"
-                        android:textSize="12sp" />
-
-                    <ImageView
-                        android:id="@+id/img_survey_warn"
-                        android:layout_width="10dp"
-                        android:layout_height="10dp"
-                        android:layout_gravity="center"
-                        android:layout_margin="4dp"
-                        android:src="@drawable/ic_warn"
-                        android:visibility="invisible" />
-
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingRight="@dimen/padding_small"
-                    android:text="@string/documents"
-                    android:textAlignment="textEnd"
-                    android:textColor="@color/disable_color"
-                    android:textSize="18sp"
-                    android:visibility="gone" />
-
-            </LinearLayout>
-        </ScrollView>
     </LinearLayout>
 
 </android.support.v7.widget.CardView>
