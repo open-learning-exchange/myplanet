@@ -29,6 +29,15 @@ android:
   - addon-google_apis-google-19
   - sys-img-armeabi-v7a-addon-google_apis-google-$ANDROID_API_LEVEL
   - sys-img-armeabi-v7a-addon-google_apis-google-$EMULATOR_API_LEVEL
+  - build-tools-27.0.3
+  - android-26
+  - android-25
+  - android-24
+  - android-23
+  - android-22
+  - sys-img-armeabi-v7a-android-22
+  - extra-android-support
+  - extra-android-m2repository
   licenses:
   - android-sdk-preview-license-.+
   - android-sdk-license-.+
@@ -39,6 +48,15 @@ before_install:
 - mkdir "$ANDROID_HOME/licenses" || true
 - chmod +x gradlew - yes | sdkmanager "platforms;android-28"
 - "./gradlew dependencies || true"
+install:
+- echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2"
+- echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
+- echo y | android update sdk -u -a -t tools
+- echo y | android update sdk -u -a -t platform-tools
+- echo y | android update sdk -u -a -t build-tools-27.0.1
+- echo y | android update sdk -u -a -t android-27
+- echo y | android update sdk -u -a -t extra-google-m2repository
+- echo y | android update sdk -u -a -t extra-android-m2repository
 before_script:
 - echo no | android create avd --force -n test -t android-21 --abi armeabi-v7a
 - emulator -avd test -no-skin -no-audio -no-window &
