@@ -59,12 +59,11 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
         WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         MenuItem item = menu.findItem(R.id.menu_goOnline);
+        Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
         if(wifi.getWifiState()!=WifiManager.WIFI_STATE_DISABLED) {
-            Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.material_drawer_selected), PorterDuff.Mode.SRC_ATOP);
             item.setIcon(resIcon);
         }else{
-            Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
             item.setIcon(resIcon);
         }
