@@ -8,7 +8,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -18,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.TableLayout;
 import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
@@ -34,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
@@ -52,7 +56,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     AccountHeader headerResult;
     private Drawer result = null;
-    private Toolbar mTopToolbar;
+    private Toolbar mTopToolbar, bellToolbar;
     private BottomNavigationView navigationView;
     RealmUserModel user;
 
@@ -61,18 +65,17 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
+        bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         user = new UserProfileDbHandler(this).getUserModel();
-
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
-
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
 
-
+        findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
         if (user.getRolesList().isEmpty()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
@@ -88,9 +91,59 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
+        topbarSetting();
 
         openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
                 new BellDashboardFragment() : new DashboardFragment());
+    }
+
+    private void topbarSetting() {
+        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
+            bellToolbar.setVisibility(View.VISIBLE);
+            mTopToolbar.setVisibility(View.GONE);
+            navigationView.setVisibility(View.GONE);
+        } else {
+            bellToolbar.setVisibility(View.GONE);
+            mTopToolbar.setVisibility(View.VISIBLE);
+            navigationView.setVisibility(View.VISIBLE);
+        }
+        TabLayout tabLayout = findViewById(R.id.tab_layout);
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                switch (tab.getPosition()) {
+                    case 0:
+                        openCallFragment(new BellDashboardFragment());
+                        break;
+                    case 1:
+                        openCallFragment(new LibraryFragment());
+                        break;
+                    case 2:
+                        openCallFragment(new CourseFragment());
+                        break;
+                    case 3:
+                        openCallFragment(new SurveyFragment());
+                        break;
+                    case 4:
+                        new FeedbackFragment().show(getSupportFragmentManager(), "feedback");
+                        break;
+                    case 5:
+                        logout();
+                        break;
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
+
     }
 
 
@@ -140,7 +193,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
                 openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                        new BellDashboardFragment() : new DashboardFragment());                break;
+                        new BellDashboardFragment() : new DashboardFragment());
+                break;
             case R.string.menu_library:
                 openCallFragment(new LibraryFragment());
                 break;
@@ -290,7 +344,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                    new BellDashboardFragment() : new DashboardFragment());        }
+                    new BellDashboardFragment() : new DashboardFragment());
+        }
         return true;
     }
 

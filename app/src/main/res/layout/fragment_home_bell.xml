@@ -6,15 +6,12 @@
     tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardFragment">
 
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="8dp">
+         >
+
 
             <include
                 layout="@layout/card_profile_bell"
@@ -55,5 +52,4 @@
 
         </LinearLayout>
 
-    </LinearLayout>
 </FrameLayout>
