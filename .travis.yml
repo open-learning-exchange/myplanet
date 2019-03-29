@@ -65,9 +65,9 @@ before_script:
 script:
 - "./gradlew clean build connectedCheck -PdisablePreDex --stacktrace"
 before_deploy:
-- cp $TRAVIS_BUILD_DIR/.keystore $HOME
+- cp $TRAVIS_BUILD_DIR/my_planet.keystore $HOME
 - cd app/build/outputs/apk/
-- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/keystore.jks -storepass $storepass -keypass $keypass app-release-unsigned.apk my_planet
+- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/my_planet -storepass $storepass -keypass $keypass app-release-unsigned.apk my_planet
 # Verification
 - jarsigner -verify app-release-unsigned.apk
 - "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 app-release-unsigned.apk myPlanet.apk"
