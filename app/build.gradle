@@ -30,13 +30,13 @@ android {
     }
 
     def isRunningOnTravis = System.getenv("CI") == "true"
-    if (isRunningOnTravis) {
+    /*if (isRunningOnTravis) {
         // configure keystore
-        signingConfigs.release.storeFile = file("../myPlanet.keystore")
+        signingConfigs.release.storeFile = file("../my_Planet")
         signingConfigs.release.storePassword = System.getenv("keystore_password")
         signingConfigs.release.keyAlias = System.getenv("keystore_alias")
         signingConfigs.release.keyPassword = System.getenv("keystore_alias_password")
-    }
+    }*/
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'META-INF/LICENSE'
