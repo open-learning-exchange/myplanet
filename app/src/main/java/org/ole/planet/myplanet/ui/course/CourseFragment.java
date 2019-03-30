@@ -102,7 +102,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                     String lastChar = charSequence.toString().substring(charSequence.length() - 1);
                     if (lastChar.equals(" ") || lastChar.equals("\n")) {
                         adapterCourses.setCourseList(search(etSearch.getText().toString().trim(), RealmMyCourse.class));
-                        etSearch.setText(etSearch.getText().toString().trim());
+//                        etSearch.setText(etSearch.getText().toString().trim());
+                        etSearch.setText("");
                         showNoData(tvMessage, adapterCourses.getItemCount());
                         KeyboardUtils.hideSoftKeyboard(getActivity());
                     }
