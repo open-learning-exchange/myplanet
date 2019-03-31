@@ -103,29 +103,33 @@ public class AchievementFragment extends BaseContainerFragment {
     }
 
     private void createView(View v, String s) {
+        JsonElement ob = new Gson().fromJson(s, JsonElement.class);
+        if (ob instanceof JsonObject) {
+            populateAchievementList(ob, v);
+        } else {
+            v.setVisibility(View.GONE);
+        }
+    }
+
+    private void populateAchievementList(JsonElement ob, View v) {
         TextView title = v.findViewById(R.id.tv_title);
         TextView date = v.findViewById(R.id.tv_date);
         TextView description = v.findViewById(R.id.tv_description);
         LinearLayout llRow = v.findViewById(R.id.ll_row);
         LinearLayout llDesc = v.findViewById(R.id.ll_desc);
         FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox_resources);
-        JsonElement ob = new Gson().fromJson(s, JsonElement.class);
-        if (ob instanceof JsonObject) {
-            description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
-            date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
-            title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
-            ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
-            if (!JsonUtils.getString("description", ob.getAsJsonObject()).isEmpty() && libraries.size() > 0) {
-                llRow.setOnClickListener(view -> {
-                    llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-                    title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
-                });
-                showResourceButtons(flexboxLayout, libraries);
-            }else{
-                title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            }
-        } else {
-            v.setVisibility(View.GONE);
+        description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+        date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
+        title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
+        ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
+        if (!JsonUtils.getString("description", ob.getAsJsonObject()).isEmpty() && libraries.size() > 0) {
+            llRow.setOnClickListener(view -> {
+                llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+                title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
+            });
+            showResourceButtons(flexboxLayout, libraries);
+        }else{
+            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }
     }
 
