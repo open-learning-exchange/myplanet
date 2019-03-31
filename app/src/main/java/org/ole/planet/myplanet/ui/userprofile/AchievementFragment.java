@@ -92,8 +92,7 @@ public class AchievementFragment extends BaseContainerFragment {
             tvPurpose.setText(achievement.getPurpose());
             tvAchievement.setText(achievement.getAchievementsHeader());
             llAchievement.removeAllViews();
-            for (String s : achievement.getAchievements()
-            ) {
+            for (String s : achievement.getAchievements()) {
                 View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
                 createView(v, s);
                 llAchievement.addView(v);
@@ -101,7 +100,6 @@ public class AchievementFragment extends BaseContainerFragment {
             rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
             rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
         }
-
     }
 
     private void createView(View v, String s) {
@@ -117,11 +115,15 @@ public class AchievementFragment extends BaseContainerFragment {
             date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
             title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
             ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
-            llRow.setOnClickListener(view -> {
-                llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-                title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
-            });
-           showResourceButtons(flexboxLayout, libraries);
+            if (!JsonUtils.getString("description", ob.getAsJsonObject()).isEmpty() && libraries.size() > 0) {
+                llRow.setOnClickListener(view -> {
+                    llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+                    title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
+                });
+                showResourceButtons(flexboxLayout, libraries);
+            }else{
+                title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            }
         } else {
             v.setVisibility(View.GONE);
         }
