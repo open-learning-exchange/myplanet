@@ -147,7 +147,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.menu_meetups:
                 break;
             case R.string.menu_surveys:
-                Utilities.log("Clicked surveys");
                 openCallFragment(new SurveyFragment());
                 break;
             case R.string.menu_courses:
