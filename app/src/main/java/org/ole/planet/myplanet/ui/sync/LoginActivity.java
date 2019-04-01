@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -136,6 +137,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
+        TextView txtVersion = findViewById(R.id.lblVersion);
+        txtVersion.setText(getResources().getText(R.string.version)+" "+getResources().getText(R.string.app_version));
         inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
