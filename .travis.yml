@@ -47,8 +47,8 @@ android:
   - android-sdk-license-.+
   - google-gdk-license-.+
 before_install:
-- openssl aes-256-cbc -K $encrypted_aaf4a3063d98_key -iv $encrypted_aaf4a3063d98_iv
-  -in my_planet.enc -out my_planet -d
+#- openssl aes-256-cbc -K $encrypted_aaf4a3063d98_key -iv $encrypted_aaf4a3063d98_iv
+#  -in my_planet.enc -out my_planet -d
 - mkdir "$ANDROID_HOME/licenses" || true
 - chmod +x gradlew - yes | sdkmanager "platforms;android-28"
 - "./gradlew dependencies || true"
@@ -68,16 +68,17 @@ before_script:
 - adb shell input keyevent 82 &
 script:
 - "./gradlew clean build connectedCheck -PdisablePreDex --stacktrace"
-before_deploy:
-- cp $TRAVIS_BUILD_DIR/my_planet $HOME
-- cd app/build/outputs/apk/
-# - jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/my_planet -storepass 'oleoleole' -keypass 'oleoleole' app-release-unsigned.apk my_planet
-# Verification
-# - jarsigner -verify app-release-unsigned.apk
-- "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 app-release-unsigned.apk myPlanet.apk"
+#before_deploy:
+#- cp $TRAVIS_BUILD_DIR/my_planet $HOME
+#- cd app/build/outputs/apk/
+#- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/my_planet -storepass 'oleoleole' -keypass 'oleoleole' app-release-unsigned.apk my_planet
+## Verification
+#- jarsigner -verify app-release-unsigned.apk
+#- "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 app-release-unsigned.apk myPlanet.apk"
+
 deploy:
   provider: releases
-  file: app/build/outputs/apk/*
+  file: app/build/outputs/apk/release/*
   skip_cleanup: true
   on:
     repo: open-learning-exchange/myplanet
