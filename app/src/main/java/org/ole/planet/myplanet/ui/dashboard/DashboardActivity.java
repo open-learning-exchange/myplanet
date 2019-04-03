@@ -6,8 +6,11 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -17,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.TableLayout;
 import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
@@ -33,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
@@ -46,13 +51,12 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 
 
-public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener, FragmentManager.OnBackStackChangedListener {
+public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
 
     AccountHeader headerResult;
     private Drawer result = null;
-    private Toolbar mTopToolbar;
-    private BottomNavigationView navigationView;
+    private Toolbar mTopToolbar, bellToolbar;
     RealmUserModel user;
 
     @Override
@@ -60,18 +64,17 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
+        bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
         user = new UserProfileDbHandler(this).getUserModel();
-
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
-
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
 
-
+        findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
         if (user.getRolesList().isEmpty()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
@@ -87,8 +90,38 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
+        topbarSetting();
 
-        openCallFragment(new DashboardFragment());
+        openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                new BellDashboardFragment() : new DashboardFragment());
+    }
+
+    private void topbarSetting() {
+        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
+            bellToolbar.setVisibility(View.VISIBLE);
+            mTopToolbar.setVisibility(View.GONE);
+            navigationView.setVisibility(View.GONE);
+        } else {
+            bellToolbar.setVisibility(View.GONE);
+            mTopToolbar.setVisibility(View.VISIBLE);
+            navigationView.setVisibility(View.VISIBLE);
+        }
+        TabLayout tabLayout = findViewById(R.id.tab_layout);
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                onClickTabItems(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
+        });
+
     }
 
 
@@ -109,7 +142,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .withDividerBelowHeader(false)
                 .build();
     }
-
 
 
     private void createDrawer() {
@@ -138,7 +170,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
-                openCallFragment(new DashboardFragment());
+                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                        new BellDashboardFragment() : new DashboardFragment());
                 break;
             case R.string.menu_library:
                 openCallFragment(new LibraryFragment());
@@ -164,7 +197,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 logout();
                 break;
             default:
-                openCallFragment(new DashboardFragment());
+                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                        new BellDashboardFragment() : new DashboardFragment());
                 break;
         }
     }
@@ -187,14 +221,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     public void openCallFragment(Fragment f) {
         openCallFragment(f, "");
-    }
-
-    public void openCallFragment(Fragment newfragment, String tag) {
-        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_container, newfragment, tag);
-        getSupportFragmentManager().addOnBackStackChangedListener(this);
-        fragmentTransaction.addToBackStack("");
-        fragmentTransaction.commit();
     }
 
     @Override
@@ -286,31 +312,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         } else if (item.getItemId() == R.id.menu_mylibrary) {
             openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_home) {
-            openCallFragment(new DashboardFragment());
+            openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+                    new BellDashboardFragment() : new DashboardFragment());
         }
         return true;
     }
 
 
-    @Override
-    public void onBackStackChanged() {
-        Fragment f = (getSupportFragmentManager()).findFragmentById(R.id.fragment_container);
-        String fragmentTag = f.getTag();
-        if (f instanceof CourseFragment) {
-            if ("shelf".equals(fragmentTag))
-                navigationView.getMenu().findItem(R.id.menu_mycourses).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
-        } else if (f instanceof LibraryFragment) {
-            if ("shelf".equals(fragmentTag))
-                navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
-        } else if (f instanceof DashboardFragment) {
-            navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
-        } else if (f instanceof SurveyFragment) {
-            // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
-        }
-
-    }
 }
