@@ -52,7 +52,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.3.14</string>
+    <string name="app_version">0.3.20</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -119,6 +119,14 @@
     <string name="mediums">Mediums</string>
     <string name="levels">Levels</string>
     <string name="languages">Languages</string>
+    <string name="txt_myLife">myLife</string>
+    <string name="achievements">Achievements</string>
+    <string name="messeges">Messeges</string>
+    <string name="contacts">Contacts</string>
+    <string name="news">News</string>
+    <string name="dictionaries">Dictionaries</string>
+    <string name="maps">Maps</string>
+    <string name="help_wanted">Help Wanted</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

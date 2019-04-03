@@ -175,7 +175,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             return getList(c);
         }
         List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
-        return c == RealmMyLibrary.class ? (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li) : (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
+        if (c == RealmMyLibrary.class) {
+            return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
+        } else if (c == RealmMyCourse.class && isMyCourseLib) {
+            return (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
+        } else {
+            return (List<LI>) RealmMyCourse.getOurCourse(model.getId(), (List<RealmMyCourse>) li);
+        }
     }
 
     public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
