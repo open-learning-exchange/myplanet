@@ -71,9 +71,9 @@ script:
 before_deploy:
 - cp $TRAVIS_BUILD_DIR/my_planet $HOME
 - cd app/build/outputs/apk/
-- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/my_planet -storepass 'oleoleole' -keypass 'oleoleole' app-release-unsigned.apk my_planet
+# - jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/my_planet -storepass 'oleoleole' -keypass 'oleoleole' app-release-unsigned.apk my_planet
 # Verification
-- jarsigner -verify app-release-unsigned.apk
+# - jarsigner -verify app-release-unsigned.apk
 - "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 app-release-unsigned.apk myPlanet.apk"
 deploy:
   provider: releases
