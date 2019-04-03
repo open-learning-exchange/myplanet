@@ -75,6 +75,7 @@ script:
 ## Verification
 #- jarsigner -verify app-release-unsigned.apk
 #- "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 app-release-unsigned.apk myPlanet.apk"
+
 deploy:
   provider: releases
   file: app/build/outputs/apk/release/*
