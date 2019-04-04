@@ -74,6 +74,7 @@ before_script:
 before_deploy:
 - cp $TRAVIS_BUILD_DIR/myPlanet.jks $HOME
 - cd app/build/outputs/apk/
+- ls
 - jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/myPlanet.jks -storepass $storepass -keypass $keypass app-release-unsigned myplanet
 # Verification
 - jarsigner -verify app-release-unsigned
