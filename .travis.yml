@@ -73,15 +73,15 @@ before_script:
 - adb shell input keyevent 82 &
 before_deploy:
 - cp $TRAVIS_BUILD_DIR/myPlanet.jks $HOME
-- cd app/build/outputs/apk/
+- cd app/build/outputs/apk/release
 - ls
-- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/myPlanet.jks -storepass $storepass -keypass $keypass platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk myplanet
+- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/myPlanet.jks -storepass $storepass -keypass $keypass myPlanet.apk myplanet
 # Verification
-- jarsigner -verify app-release-unsigned
-- "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 app-release-unsigned.apk myPlanet.apk"
+- jarsigner -verify myPlanet
+- "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 myPlanet.apk myPlanet-release.apk"
 deploy:
   provider: releases
-  file: myPlanet.apk
+  file: myPlanet-release.apk
   skip_cleanup: true
   on:
     repo: open-learning-exchange/myplanet
