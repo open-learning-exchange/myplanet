@@ -28,6 +28,10 @@ public class Service {
 
     public void checkVersion(CheckVersionCallback callback, SharedPreferences settings) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+        if (settings.getString("couchdbURL", "").isEmpty()){
+            callback.onError("Config not awailable.", true);
+            return;
+        }
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {

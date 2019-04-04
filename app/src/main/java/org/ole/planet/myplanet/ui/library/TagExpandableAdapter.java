@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -29,7 +28,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     private boolean isSelectMultiple = false;
     private ArrayList<RealmTag> selectedItemsList = new ArrayList<>();
     private HashMap<String, List<RealmTag>> childMap;
-
 
 //    public ArrayList<RealmTag> getSelectedItemsList() {
 //        return selectedItemsList;
@@ -135,7 +133,7 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
         checkBox.setVisibility(isSelectMultiple ? View.VISIBLE : View.GONE);
         checkBox.setChecked(selectedItemsList.contains(tag));
         checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
-            clickListener.onTagSelected(tag);
+            clickListener.onCheckboxTagSelected(tag);
         });
     }
 
@@ -180,6 +178,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     public interface OnClickTagItem {
         void onTagClicked(RealmTag tag);
 
-        void onTagSelected(RealmTag tags);
+        void onCheckboxTagSelected(RealmTag tags);
     }
 }

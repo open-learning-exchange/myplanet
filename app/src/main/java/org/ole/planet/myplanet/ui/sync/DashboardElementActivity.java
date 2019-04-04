@@ -13,6 +13,10 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
+import android.support.design.widget.BottomNavigationView;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.menu.ActionMenuItemView;
@@ -25,8 +29,14 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.course.CourseFragment;
+import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
+import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
+import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
+import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -36,7 +46,8 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
  * Extra class for excess methods in DashboardActivity activities
  */
 
-public abstract class DashboardElementActivity extends AppCompatActivity {
+public abstract class DashboardElementActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
+    public BottomNavigationView navigationView;
 
     public UserProfileDbHandler profileDbHandler;
     private SharedPreferences settings;
@@ -49,12 +60,45 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
 
     }
 
+    public void onClickTabItems(int position) {
+        switch (position) {
+            case 0:
+                openCallFragment(new BellDashboardFragment(), "dashboard");
+                break;
+            case 1:
+                openCallFragment(new LibraryFragment(), "library");
+                break;
+            case 2:
+                openCallFragment(new CourseFragment(), "course");
+                break;
+            case 3:
+                openCallFragment(new SurveyFragment(), "survey");
+                break;
+            case 4:
+                new FeedbackFragment().show(getSupportFragmentManager(), "feedback");
+                break;
+            case 5:
+                logout();
+                break;
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
         return true;
     }
+
+
+    public void openCallFragment(Fragment newfragment, String tag) {
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, newfragment, tag);
+        getSupportFragmentManager().addOnBackStackChangedListener(this);
+        fragmentTransaction.addToBackStack("");
+        fragmentTransaction.commit();
+    }
+
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
@@ -139,7 +183,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
     }
 
 
-
     boolean doubleBackToExitPressedOnce;
 
     @Override
@@ -160,5 +203,26 @@ public abstract class DashboardElementActivity extends AppCompatActivity {
         f.show(getSupportFragmentManager(), "");
     }
 
+    @Override
+    public void onBackStackChanged() {
+        Fragment f = (getSupportFragmentManager()).findFragmentById(R.id.fragment_container);
+        String fragmentTag = f.getTag();
+        if (f instanceof CourseFragment) {
+            if ("shelf".equals(fragmentTag))
+                navigationView.getMenu().findItem(R.id.menu_mycourses).setChecked(true);
+            else
+                navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
+        } else if (f instanceof LibraryFragment) {
+            if ("shelf".equals(fragmentTag))
+                navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
+            else
+                navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
+        } else if (f instanceof DashboardFragment) {
+            navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
+        } else if (f instanceof SurveyFragment) {
+            // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
+        }
+
+    }
 
 }
