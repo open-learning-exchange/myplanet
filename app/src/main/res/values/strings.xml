@@ -52,7 +52,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.3.21</string>
+    <string name="app_version">0.3.22</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -62,6 +62,7 @@
     <string name="phone_number">Phone Number</string>
     <string name="language">Language</string>
     <string name="last_name">Last Name</string>
+    <string name="version">Version</string>
     <string name="middle_name">Middle Name</string>
     <string name="first_name">First Name</string>
     <string name="search">Search...</string>
