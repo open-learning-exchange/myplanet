@@ -195,6 +195,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     public void onTagSelected(RealmTag tag) {
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
+        searchTags = li;
         tvSelected.setText("Selected : " + tag.getName());
         adapterLibrary.setLibraryList(filterByTag(li, etSearch.getText().toString()));
         showNoData(tvMessage, adapterLibrary.getItemCount());
