@@ -18,6 +18,7 @@ android {
             }
         }
     }
+    /*
     signingConfigs {
         release {
             storeFile rootProject.file('myPlanet.jks')
@@ -26,16 +27,17 @@ android {
             keyPassword 'myplanet'
         }
     }
+    */
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            //signingConfig signingConfigs.release
         }
         debug {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            //signingConfig signingConfigs.release
         }
     }
 
