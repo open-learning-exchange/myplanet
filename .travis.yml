@@ -77,7 +77,7 @@ before_deploy:
 - ls
 - jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/myPlanet.jks -storepass $storepass -keypass $keypass myPlanet.apk myplanet
 # Verification
-- jarsigner -verify myPlanet.apk
+#- jarsigner -verify myPlanet.apk
 - "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 myPlanet.apk myPlanet-release.apk"
 deploy:
   provider: releases
