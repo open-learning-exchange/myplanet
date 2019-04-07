@@ -86,6 +86,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
                     .sort("startTime", Sort.DESCENDING)
                     .equalTo("status", "pending")
                     .findFirst();
+//        Utilities.log("Ans size "  + sub.getAnswers().size());
         if (questions.size() > 0) {
             createSubmission();
             Utilities.log("Current index " + currentIndex);
@@ -133,6 +134,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
         etAnswer.setText("");
         ans = "";
+        listAns.clear();
         header.setText(question.getHeader());
         body.setText(question.getBody());
         btnSubmit.setOnClickListener(this);
@@ -249,6 +251,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public boolean isEqual(String[] ar1, String[] ar2) {
         Arrays.sort(ar1);
         Arrays.sort(ar2);
+        Utilities.log(Arrays.toString(ar1) + " " + Arrays.toString(ar2));
        return Arrays.equals(ar1, ar2);
 //        for (int i = 0; i < ar2.length; i++) {
 //            if (!ar1[i].equalsIgnoreCase(ar2[i]))
@@ -273,6 +276,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+        Utilities.log("b = " + b);
         if (b) {
             addAnswer(compoundButton);
         } else if (compoundButton.getTag() != null) {
