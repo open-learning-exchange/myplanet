@@ -90,4 +90,4 @@ deploy:
     tags: true
     jdk: oraclejdk8
 after_success:
-    - sh scripts/tag.sh
+- sh scripts/tag.sh

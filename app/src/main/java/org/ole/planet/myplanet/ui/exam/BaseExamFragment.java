@@ -100,15 +100,12 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             saveCourseProgress();
             new AlertDialog.Builder(getActivity())
                     .setTitle("Thank you for taking this " + type + ". We wish you all the best")
-                    .setPositiveButton("Finish", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            getActivity().onBackPressed();
-                            try {
-                                CameraUtils.CapturePhoto(BaseExamFragment.this);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                    .setPositiveButton("Finish", (dialogInterface, i) -> {
+                        getActivity().onBackPressed();
+                        try {
+                            CameraUtils.CapturePhoto(BaseExamFragment.this);
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
                     }).show();
         }
