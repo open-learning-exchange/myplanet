@@ -79,7 +79,7 @@ before_deploy:
 # Verification
 #- jarsigner -verify myPlanet.apk
 - "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 myPlanet.apk myPlanet-release.apk"
-- sha256sum myPlanet-release.apk | awk '{print $1;}' > myPlanet.apk.sha256
+- sha256sum myPlanet-release.apk > myPlanet.apk.sha256
 
 deploy:
   provider: releases
