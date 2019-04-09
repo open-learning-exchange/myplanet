@@ -85,7 +85,7 @@ deploy:
   provider: releases
   api_key:
     secure: rsZw8MbCWO+Omm/X2Lk4Fs1lrWnDgDPLdVbt5mlMyNSd6SQfOVgtqy7xG2Q/kFLvAeOYaOeBC5xwWTFYzJ3FHXVwZsimuBVFml8/dmDV0qFOUgj/9aIjiB65c/kXDwoPUnU8fuvxT62HbTneAcofmTluccNfF9CXcmtbUgrpxm4naLEUGm0+0jkTsP1NQoKdIOFRaDEoPqYR7QBgv9IvsZJqZNwfxrOGsWSnmsjsbdwQawRGhRhshIjovK7xrVgZmsiovBYQand6+I8LtgZMNSRR1FgwZF1kiyfi7VTQdQFqLLhyEW5C2nu/1NxaAucwiQ3sL3bRSgvFIFe7DPU18bV/MiGWaBmGXt4rucWKEQjDG8X2w1qpexoNjGg88+KFnqVk0Mw4KvlmkFjbn5zRN7hZtuAavlABlQ/5DH6CC2y/KQyUi/e2Gh8Y71HbHbTUjufF+dR9eutcta8Jsqs8l2nYuxY7BvT1pqGbVwsgWudLNIOL1WoqpUn24lSzX4r2a76XQwhh5IBA03qfdoLEQ4lxJci1qI5lDY+LQhVYdHwRg8frwwLDc/Z8/vGHRikkxYDF//PzZJrXCe6UBq/JwWcdD3dyEeSYdbuCevNUIMF5+psEzALPJN3dwJ5jBQDKpyrLAxzCYZMdnDErWH0OaTqzauwnNNWNe8iWANRApGw=
-  file: myPlanet*
+  file: *
   skip_cleanup: true
   on:
     repo: open-learning-exchange/myplanet
