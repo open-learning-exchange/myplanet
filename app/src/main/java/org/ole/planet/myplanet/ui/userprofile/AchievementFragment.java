@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -48,7 +49,7 @@ public class AchievementFragment extends BaseContainerFragment {
     LinearLayout llAchievement;
     RealmUserModel user;
     OnHomeItemClickListener listener;
-
+    RealmAchievement achievement;
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -78,13 +79,14 @@ public class AchievementFragment extends BaseContainerFragment {
             if (listener != null)
                 listener.openCallFragment(new EditAchievementFragment());
         });
+
         return v;
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        RealmAchievement achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
+         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
         tvFirstName.setText(user.getFirstName());
         tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
         if (achievement != null) {
@@ -92,8 +94,7 @@ public class AchievementFragment extends BaseContainerFragment {
             tvPurpose.setText(achievement.getPurpose());
             tvAchievement.setText(achievement.getAchievementsHeader());
             llAchievement.removeAllViews();
-            for (String s : achievement.getAchievements()
-            ) {
+            for (String s : achievement.getAchievements()) {
                 View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
                 createView(v, s);
                 llAchievement.addView(v);
@@ -101,30 +102,74 @@ public class AchievementFragment extends BaseContainerFragment {
             rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
             rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
         }
-
     }
 
     private void createView(View v, String s) {
+        JsonElement ob = new Gson().fromJson(s, JsonElement.class);
+        if (ob instanceof JsonObject) {
+            populateAchievementList(ob, v);
+        } else {
+            v.setVisibility(View.GONE);
+        }
+    }
+
+    private void populateAchievementList(JsonElement ob, View v) {
         TextView title = v.findViewById(R.id.tv_title);
         TextView date = v.findViewById(R.id.tv_date);
         TextView description = v.findViewById(R.id.tv_description);
         LinearLayout llRow = v.findViewById(R.id.ll_row);
         LinearLayout llDesc = v.findViewById(R.id.ll_desc);
         FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox_resources);
-        JsonElement ob = new Gson().fromJson(s, JsonElement.class);
-        if (ob instanceof JsonObject) {
-            description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
-            date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
-            title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
-            ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
+        description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+        date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
+        title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
+        ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
+        if (!JsonUtils.getString("description", ob.getAsJsonObject()).isEmpty() && libraries.size() > 0) {
             llRow.setOnClickListener(view -> {
                 llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
                 title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
             });
-           showResourceButtons(flexboxLayout, libraries);
-        } else {
-            v.setVisibility(View.GONE);
+            showResourceButtons(flexboxLayout, libraries);
+        }else{
+            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            createAchievementList();
+            rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
+            rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
         }
+        mRealm.addChangeListener(realm -> {
+            if (llAchievement!=null)
+            llAchievement.removeAllViews();
+            createAchievementList();
+        });
+    }
+
+
+    private void createAchievementList() {
+        for (String s : achievement.getAchievements()) {
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
+            TextView title = v.findViewById(R.id.tv_title);
+            TextView date = v.findViewById(R.id.tv_date);
+            TextView description = v.findViewById(R.id.tv_description);
+            LinearLayout llRow = v.findViewById(R.id.ll_row);
+            LinearLayout llDesc = v.findViewById(R.id.ll_desc);
+            FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox_resources);
+            JsonElement ob = new Gson().fromJson(s, JsonElement.class);
+            if (ob instanceof JsonObject) {
+                description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+                date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
+                title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
+                ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
+                llRow.setOnClickListener(view -> {
+                    llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+                    title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
+                });
+                showResourceButtons(flexboxLayout, libraries);
+            } else {
+                v.setVisibility(View.GONE);
+            }
+            llAchievement.addView(v);
+        }
+
     }
 
     private void showResourceButtons(FlexboxLayout flexboxLayout, ArrayList<RealmMyLibrary> libraries) {

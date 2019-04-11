@@ -19,6 +19,9 @@
             app:elevation="4dp"
             app:popupTheme="@style/CustomTheme" />
 
+        <include layout="@layout/app_bar_bell"/>
+
+
         <android.support.design.widget.BottomNavigationView
             android:id="@+id/top_bar_navigation"
             android:layout_width="match_parent"

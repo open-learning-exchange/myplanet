@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.library;
 
 
-import android.nfc.Tag;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
@@ -25,14 +24,11 @@ import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.realm.Realm;
-import io.realm.RealmList;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -58,6 +54,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     public static CollectionsFragment getInstance(List<RealmTag> l) {
         recentList = l;
+        Utilities.log(recentList.size() + " len");
         return new CollectionsFragment();
     }
 
@@ -99,7 +96,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     private void setListeners() {
         btnOk.setOnClickListener(view -> {
-            Utilities.log("Selected tags size " + selectedItemsList);
             if (listener != null) {
                 listener.onOkClicked(selectedItemsList);
                 dismiss();
@@ -139,17 +135,17 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     private void setListAdapter() {
         list = mRealm.where(RealmTag.class).findAll();
-        if (recentList.isEmpty()) {
-            recentList = list;
-        }
+        selectedItemsList = (ArrayList<RealmTag>) recentList;
+//        if (recentList.isEmpty()) {
+//            recentList = list;
+//        }
         List<RealmTag> allTags = mRealm.where(RealmTag.class).findAll();
         HashMap<String, List<RealmTag>> childMap = new HashMap<>();
         for (RealmTag t : allTags) {
             createChildMap(childMap, t);
         }
         listTag.setGroupIndicator(null);
-        adapter = new TagExpandableAdapter(getActivity(), switchMany.isChecked() ? recentList : list, childMap, selectedItemsList);
-
+        adapter = new TagExpandableAdapter(getActivity(),  list, childMap, selectedItemsList);
         adapter.setClickListener(this);
         listTag.setAdapter(adapter);
     }
@@ -174,7 +170,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     }
 
     @Override
-    public void onTagSelected(RealmTag tag) {
+    public void onCheckboxTagSelected(RealmTag tag) {
         if (selectedItemsList.contains(tag)) {
             selectedItemsList.remove(tag);
         } else {
@@ -182,11 +178,12 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         }
     }
 
+
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         //  adapter.setTagList(list);
         adapter.setSelectMultiple(b);
-        adapter.setTagList(b ? recentList : list);
+        adapter.setTagList(list);
         listTag.setAdapter(adapter);
         btnOk.setVisibility(b ? View.VISIBLE : View.GONE);
     }

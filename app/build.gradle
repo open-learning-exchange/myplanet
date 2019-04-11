@@ -7,8 +7,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 314
-        versionName "0.3.14"
+        versionCode 331
+        versionName "0.3.31"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -18,25 +18,17 @@ android {
             }
         }
     }
-    signingConfigs {
-        release
-    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+        }
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
-    def isRunningOnTravis = System.getenv("CI") == "true"
-    if (isRunningOnTravis) {
-        // configure keystore
-        signingConfigs.release.storeFile = file("../myPlanet.keystore")
-        signingConfigs.release.storePassword = System.getenv("keystore_password")
-        signingConfigs.release.keyAlias = System.getenv("keystore_alias")
-        signingConfigs.release.keyPassword = System.getenv("keystore_alias_password")
-    }
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
         exclude 'META-INF/LICENSE'
