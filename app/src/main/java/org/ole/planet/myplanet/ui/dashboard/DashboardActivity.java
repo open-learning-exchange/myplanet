@@ -99,16 +99,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void topbarSetting() {
-        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
-            bellToolbar.setVisibility(View.VISIBLE);
-            mTopToolbar.setVisibility(View.GONE);
-            navigationView.setVisibility(View.GONE);
-
-        } else {
-            bellToolbar.setVisibility(View.GONE);
-            mTopToolbar.setVisibility(View.VISIBLE);
-            navigationView.setVisibility(View.VISIBLE);
-        }
+        changeUITheme();
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -125,7 +116,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             }
         });
         for (int i = 0; i < tabLayout.getTabCount(); i++) {
-            View  v =  LayoutInflater.from(this).inflate(R.layout.custom_tab,null);
+            View v = LayoutInflater.from(this).inflate(R.layout.custom_tab, null);
             TextView title = v.findViewById(R.id.title);
             ImageView icon = v.findViewById(R.id.icon);
             title.setText(tabLayout.getTabAt(i).getText());
@@ -134,6 +125,19 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             tabLayout.getTabAt(i).setCustomView(v);
         }
 
+    }
+
+    private void changeUITheme() {
+        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
+            bellToolbar.setVisibility(View.VISIBLE);
+            mTopToolbar.setVisibility(View.GONE);
+            navigationView.setVisibility(View.GONE);
+
+        } else {
+            bellToolbar.setVisibility(View.GONE);
+            mTopToolbar.setVisibility(View.VISIBLE);
+            navigationView.setVisibility(View.VISIBLE);
+        }
     }
 
 
