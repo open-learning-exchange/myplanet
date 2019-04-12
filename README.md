@@ -28,11 +28,15 @@ Open the takeout repository on Android Studio. Click on `Build` to sync and buil
 As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to run and test the application will be on the 10-inch tablet emulator (unless you have an actual 10-inch tablet):
 
 1. If you have completed the First Steps, then you have already enabled virtualization on your device.
-2. After opening and syncing the takeout project in Android Studio, click on `Run`. 
-3. At the bottom of the dialog, click on `Add New Virtual Device`.
-4. Choose `Tablet` and then choose the `10.1" WXGA Tablet` (1280 x 800 mdpi).
-5. Choose API level according to the latest release (25 or greater) and continue.
-6. Verify the configuration and click finish.
+2. After opening the takeout project in Android Studio, sync it by going to `file/sync project with gradle files`.
+
+<img width="507" alt="Screen Shot 2019-04-11 at 11 04 15 PM" src="https://user-images.githubusercontent.com/29234807/56009589-4c8ec280-5cae-11e9-9907-908e61c5a8c6.png">
+
+3. Once syncing is over, click on `Run`.
+4. At the bottom of the dialog, click on `Add New Virtual Device`.
+5. Choose `Tablet` and then choose the `10.1" WXGA Tablet` (1280 x 800 mdpi).
+6. Choose API level according to the latest release (25 or greater) and continue.
+7. Verify the configuration and click finish.
 
 Your device should configure and the application will run on the virtual device.
 
