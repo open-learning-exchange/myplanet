@@ -4,24 +4,25 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/md_grey_500"
-    android:orientation="vertical">
+    android:orientation="horizontal">
 
-    <ImageView
-        android:layout_width="@dimen/menu_item_icon_size"
-        android:layout_height="@dimen/menu_item_icon_size"
-        android:layout_gravity="right"
-        android:id="@+id/detail"
-        android:layout_margin="@dimen/padding_small"
-        app:srcCompat="@drawable/ic_more" />
+
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="match_parent"
         android:id="@+id/title"
-
         android:text="text"
         android:layout_gravity="center"
         android:padding="@dimen/padding_normal"
         android:textColor="@color/dialog_sync_labels"
         android:gravity="center" />
+    <ImageView
+        android:layout_width="@dimen/menu_item_icon_size"
+        android:layout_height="@dimen/menu_item_icon_size"
+        android:layout_gravity="top"
+        android:id="@+id/detail"
+        android:layout_margin="@dimen/padding_small"
+        app:srcCompat="@drawable/ic_more" />
 </LinearLayout>

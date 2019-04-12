@@ -15,8 +15,8 @@
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imageView"
-            android:layout_width="96dp"
-            android:layout_height="96dp"
+            android:layout_width="@dimen/_60dp"
+            android:layout_height="@dimen/_60dp"
             android:src="@drawable/profile"
             app:civ_border_color="@color/colorPrimaryDark"
             app:civ_border_width="2dp" />
@@ -34,21 +34,27 @@
 
                 <TextView
                     android:id="@+id/txt_community_name"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="18sp"
-                    android:padding="@dimen/padding_normal"                    android:layout_width="0dp"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1" />
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_normal"
+                    android:textStyle="bold"
+
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="16sp" />
 
                 <TextView
                     android:id="@+id/txt_date"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="18sp"
-                    android:padding="@dimen/padding_normal"                    android:layout_width="0dp"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"
                     android:layout_weight="1"
-                    android:gravity="right" />
+                    android:gravity="right"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="16sp"
+
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
@@ -62,11 +68,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="18sp"
                     android:paddingLeft="@dimen/padding_normal"
                     android:paddingRight="@dimen/padding_normal"
-                    android:text="" />
+                    android:text=""
+
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/txtRole"
@@ -75,21 +83,23 @@
                     android:layout_gravity="center_vertical"
                     android:gravity="center"
                     android:paddingLeft="@dimen/padding_large"
-                    android:textColor="@color/md_black_1000" />
+
+                    android:textColor="@color/md_black_1000"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
             <TextView
                 android:id="@+id/txtVisits"
                 android:layout_width="match_parent"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp"
-                android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="start"
-                />
+                android:paddingLeft="@dimen/padding_normal"
+                android:paddingRight="@dimen/padding_normal"
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
