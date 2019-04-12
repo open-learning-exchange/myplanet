@@ -75,16 +75,16 @@ public class Service {
     private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
         int currentVersion = VersionUtils.getVersionCode(context);
         if (currentVersion < body.getMinapkcode())
-            callback.onUpdateAvailable(body.getApkpath(), false);
+            callback.onUpdateAvailable(body, false);
         else if (currentVersion < body.getLatestapkcode()) {
-            callback.onUpdateAvailable(body.getApkpath(), true);
+            callback.onUpdateAvailable(body, true);
         } else {
             callback.onError("New version not available", false);
         }
     }
 
     public interface CheckVersionCallback {
-        void onUpdateAvailable(String filePath, boolean cancelable);
+        void onUpdateAvailable(MyPlanet info, boolean cancelable);
 
         void onCheckingVersion();
 

@@ -9,6 +9,7 @@ import com.firebase.jobdispatcher.JobService;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -55,9 +56,9 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     }
 
     @Override
-    public void onUpdateAvailable(String filePath, boolean cancelable) {
+    public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         startActivity(new Intent(this, LoginActivity.class)
-                .putExtra("filePath", filePath)
+                .putExtra("versionInfo", info)
                 .putExtra("cancelable", cancelable)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
     }
