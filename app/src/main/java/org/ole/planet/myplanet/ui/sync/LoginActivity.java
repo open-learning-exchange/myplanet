@@ -26,6 +26,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
@@ -64,7 +65,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         declareElements();
         declareMoreElements();
         showWifiDialog();
-        if (settings.getBoolean(Constants.KEY_LOGIN, false)){
+        if (settings.getBoolean(Constants.KEY_LOGIN, false)) {
             openDashboard();
             return;
         }
@@ -76,8 +77,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             isSync = false;
             processedUrl = Utilities.getUrl();
         }
-        if (getIntent().hasExtra("filePath")) {
-            onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
+        if (getIntent().hasExtra("versionInfo")) {
+            onUpdateAvailable((MyPlanet) getIntent().getSerializableExtra("versionInfo"), getIntent().getBooleanExtra("cancelable", false));
         } else {
             new Service(this).checkVersion(this, settings);
         }
@@ -138,7 +139,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
         declareHideKeyboardElements();
         TextView txtVersion = findViewById(R.id.lblVersion);
-        txtVersion.setText(getResources().getText(R.string.version)+" "+getResources().getText(R.string.app_version));
+        txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
         inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
@@ -208,8 +209,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     @Override
-    public void onUpdateAvailable(String filePath, boolean cancelable) {
-        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, filePath, progressDialog);
+    public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
+        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
         if (cancelable) {
             builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
                 continueSyncProcess();

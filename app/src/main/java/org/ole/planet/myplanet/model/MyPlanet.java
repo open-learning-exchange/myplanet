@@ -8,9 +8,10 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class MyPlanet {
+public class MyPlanet  implements Serializable {
     private String planetVersion;
 
     private String latestapk;
@@ -24,6 +25,8 @@ public class MyPlanet {
     private String apkpath;
 
     private String appname;
+
+    private String localapkpath;
 
     public String getPlanetVersion() {
         return planetVersion;
@@ -81,9 +84,17 @@ public class MyPlanet {
         this.latestapkcode = latestapkcode;
     }
 
+    public String getLocalapkpath() {
+        return localapkpath;
+    }
+
+    public void setLocalapkpath(String localapkpath) {
+        this.localapkpath = localapkpath;
+    }
+
     @Override
     public String toString() {
-        return "ClassPojo [planetVersion = " + planetVersion + ", latestapk = " + latestapk + ", minapk = " + minapk + ", apkpath = " + apkpath + ", appname = " + appname + "]";
+        return appname;
     }
 
     public static JsonObject getMyPlanetActivities(Context context, SharedPreferences pref, RealmUserModel model){
