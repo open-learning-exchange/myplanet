@@ -88,6 +88,7 @@ deploy:
   file_glob : true
   file: ./*
   skip_cleanup: true
+  prerelease: true
   on:
     repo: open-learning-exchange/myplanet
     tags: true
