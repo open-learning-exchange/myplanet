@@ -14,6 +14,7 @@
         android:elevation="2dp"
         android:orientation="horizontal"
         android:paddingLeft="40dp"
+        android:focusableInTouchMode="true"
         android:paddingRight="40dp"
         android:weightSum="10"
         app:layout_constraintBottom_toBottomOf="parent"
