@@ -25,6 +25,7 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.service.GPSService;
@@ -61,6 +62,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
         changeLogoColor();
         declareElements();
         declareMoreElements();
@@ -215,6 +217,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
                 continueSyncProcess();
             });
+        }else{
+            if (!mRealm.isInTransaction()){
+                mRealm.beginTransaction();
+                mRealm.deleteAll();
+                mRealm.commitTransaction();
+            }
         }
         builder.show();
     }
