@@ -178,7 +178,7 @@
 
                     <TextView
                         android:id="@+id/method"
-                        android:layout_width="match_parent"b
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_normal" />
 
