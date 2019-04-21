@@ -36,6 +36,7 @@ public class MainApplication extends Application implements Application.Activity
     public static Context context;
     SharedPreferences preferences;
     public static int syncFailedCount = 0;
+    public static boolean isCollectionSwitchOn = false;
 
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {

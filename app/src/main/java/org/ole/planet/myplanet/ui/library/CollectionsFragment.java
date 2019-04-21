@@ -17,6 +17,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -54,7 +55,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     public static CollectionsFragment getInstance(List<RealmTag> l) {
         recentList = l;
-        Utilities.log(recentList.size() + " len");
         return new CollectionsFragment();
     }
 
@@ -89,7 +89,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-
         setListAdapter();
         setListeners();
     }
@@ -145,9 +144,10 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
             createChildMap(childMap, t);
         }
         listTag.setGroupIndicator(null);
-        adapter = new TagExpandableAdapter(getActivity(),  list, childMap, selectedItemsList);
+        adapter = new TagExpandableAdapter(getActivity(), list, childMap, selectedItemsList);
         adapter.setClickListener(this);
         listTag.setAdapter(adapter);
+        switchMany.setChecked(MainApplication.isCollectionSwitchOn);
     }
 
     private void createChildMap(HashMap<String, List<RealmTag>> childMap, RealmTag t) {
@@ -182,6 +182,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         //  adapter.setTagList(list);
+        MainApplication.isCollectionSwitchOn = b;
         adapter.setSelectMultiple(b);
         adapter.setTagList(list);
         listTag.setAdapter(adapter);
