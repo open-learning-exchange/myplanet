@@ -10,6 +10,7 @@
 
     <TextView
         android:id="@+id/tv_title"
+        android:visibility="gone"
         style="@style/Header" />
 
     <TextView

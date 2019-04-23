@@ -58,7 +58,7 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tv_title);
             tvDescription = itemView.findViewById(R.id.tv_description);
-            tvTitle.setVisibility(View.GONE);
+          //  tvTitle.setVisibility(View.GONE);
         }
     }
 }
