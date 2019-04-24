@@ -37,8 +37,9 @@
 
         <ImageView
             android:id="@+id/iv_setting"
-            android:layout_width="@dimen/_20dp"
-            android:layout_height="@dimen/_20dp"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="match_parent"
+            android:padding="@dimen/padding_small"
             android:layout_gravity="center"
             android:tint="@color/md_white_1000"
             app:srcCompat="@drawable/settings" />
