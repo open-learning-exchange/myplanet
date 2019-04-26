@@ -137,13 +137,21 @@
         <item>Expert</item>
     </string-array>
     <string-array name="language">
-        <item></item>
         <item>English</item>
         <item>नेपाली</item>
         <item>Français</item>
         <item>Español</item>
         <item>عربى</item>
         <item>Somali</item>
+    </string-array>
+
+    <string-array name="language_keys">
+        <item>en</item>
+        <item>ne</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>ar</item>
+        <item>so</item>
     </string-array>
 
     <string-array name="info_type">

@@ -52,7 +52,7 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.3.47</string>
+    <string name="app_version">0.3.48</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -135,8 +135,8 @@
         <item>Advanced</item>
         <item>Expert</item>
     </string-array>
+
     <string-array name="language">
-        <item></item>
         <item>English</item>
         <item>नेपाली</item>
         <item>Français</item>
@@ -144,8 +144,8 @@
         <item>عربى</item>
         <item>Somali</item>
     </string-array>
+
     <string-array name="language_keys">
-        <item>en</item>
         <item>en</item>
         <item>ne</item>
         <item>fr</item>
