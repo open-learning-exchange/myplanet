@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.service.StayOnLineService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -37,6 +38,11 @@ public class MainApplication extends Application implements Application.Activity
     SharedPreferences preferences;
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
+    }
 
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
     <string name="app_project_name">My Planet</string>
@@ -143,15 +144,6 @@
         <item>Español</item>
         <item>عربى</item>
         <item>Somali</item>
-    </string-array>
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
     </string-array>
 
     <string-array name="info_type">

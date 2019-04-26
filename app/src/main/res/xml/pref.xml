@@ -4,6 +4,12 @@
         android:key="show_topbar"
         android:defaultValue="true"
         />
+
+    <ListPreference android:title="@string/language"
+        android:entries="@array/language"
+        android:key="app_language"
+        android:entryValues="@array/language_keys"
+        />
     <SwitchPreference android:title="BeLL Dashboard Theme"
         android:key="bell_theme"
         android:defaultValue="false"
@@ -23,6 +29,7 @@
         android:key="beta_wifi_switch"
         android:defaultValue="false"
         />
+
     <SwitchPreference android:title="Beta Function for Achievement"
         android:key="beta_achievement"
         android:defaultValue="false"
