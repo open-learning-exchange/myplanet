@@ -106,7 +106,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             f.setListener(LibraryFragment.this);
             f.show(getChildFragmentManager(), "");
         });
-        setSearchListener();
+        //setSearchListener();
         showNoData(tvMessage, adapterLibrary.getItemCount());
         clearTagsButton();
         getView().findViewById(R.id.show_filter).setOnClickListener(v -> {
