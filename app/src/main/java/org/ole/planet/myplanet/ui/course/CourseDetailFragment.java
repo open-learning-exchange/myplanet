@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
@@ -89,7 +91,12 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
         llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
+        // v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
+        v.findViewById(R.id.rating_bar).setOnTouchListener((v1, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP)
+                homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this);
+            return true;
+        });
         initRatingView(v);
     }
 

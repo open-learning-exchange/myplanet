@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -99,7 +100,13 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
         tv_rating = v.findViewById(R.id.tv_rating);
         tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
+        //  v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
+        v.findViewById(R.id.rating_bar).setOnTouchListener((v1, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP) {
+                homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
+            }
+            return true;
+        });
         initRatingView(v);
     }
 

@@ -6,6 +6,7 @@ import android.support.v7.widget.AppCompatRatingBar;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -147,6 +148,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         FlexboxLayout flexboxDrawable;
         LinearLayout llRating;
         ImageView ivDownloaded;
+
         public ViewHolderLibrary(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);
@@ -165,7 +167,12 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
             if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
-                llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
+                //  llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
+                ratingBar.setOnTouchListener((v1, event) -> {
+                    if (event.getAction() == MotionEvent.ACTION_UP)
+                        homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
+                    return true;
+                });
             } else {
                 llRating.setOnClickListener(null);
             }
