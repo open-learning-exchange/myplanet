@@ -77,6 +77,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        initRatingView("course", courses.getCourseId(), courses.getCourseTitle(), this);
         setCourseData();
     }
 
@@ -91,7 +92,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
         llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        initRatingView(v,"course", courses.getCourseId(), courses.getCourseTitle(), this);
     }
 
 

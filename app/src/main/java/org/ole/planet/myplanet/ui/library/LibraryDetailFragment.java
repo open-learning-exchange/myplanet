@@ -75,6 +75,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        initRatingView("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
         setLibraryData();
     }
 
@@ -96,7 +97,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
         TextView tv_rating = v.findViewById(R.id.tv_rating);
         tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        initRatingView(v,"resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
     }
 
     private void setLibraryData() {

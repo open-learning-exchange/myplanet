@@ -60,10 +60,10 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
     }
 
-    public void initRatingView(View v, String type, String id, String title, OnRatingChangeListener listener) {
-        timesRated = v.findViewById(R.id.times_rated);
-        rating = v.findViewById(R.id.tv_rating);
-        ratingBar = v.findViewById(R.id.rating_bar);
+    public void initRatingView( String type, String id, String title, OnRatingChangeListener listener) {
+        timesRated = getView().findViewById(R.id.times_rated);
+        rating = getView().findViewById(R.id.tv_rating);
+        ratingBar = getView().findViewById(R.id.rating_bar);
         ratingBar.setOnTouchListener((vi, e) -> {
             if (e.getAction() == MotionEvent.ACTION_UP)
                 homeItemClickListener.showRatingDialog(type, id, title, listener);
