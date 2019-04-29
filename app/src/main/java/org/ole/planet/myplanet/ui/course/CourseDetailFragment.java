@@ -68,6 +68,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        courses = mRealm.where(RealmMyCourse.class).equalTo("courseId", id).findFirst();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         initView(v);
         return v;
@@ -76,7 +77,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        courses = mRealm.where(RealmMyCourse.class).equalTo("courseId", id).findFirst();
         setCourseData();
     }
 
@@ -91,13 +91,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
         llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        // v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
-        v.findViewById(R.id.rating_bar).setOnTouchListener((v1, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_UP)
-                homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this);
-            return true;
-        });
-        initRatingView(v);
+        initRatingView(v,"course", courses.getCourseId(), courses.getCourseTitle(), this);
     }
 
 

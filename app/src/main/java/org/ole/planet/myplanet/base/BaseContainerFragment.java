@@ -10,6 +10,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -21,9 +22,11 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
+import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity;
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
@@ -57,10 +60,15 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
     }
 
-    public void initRatingView(View v) {
+    public void initRatingView(View v, String type, String id, String title, OnRatingChangeListener listener) {
         timesRated = v.findViewById(R.id.times_rated);
         rating = v.findViewById(R.id.tv_rating);
         ratingBar = v.findViewById(R.id.rating_bar);
+        ratingBar.setOnTouchListener((vi, e) -> {
+            if (e.getAction() == MotionEvent.ACTION_UP)
+                homeItemClickListener.showRatingDialog(type, id, title, listener);
+            return true;
+        });
     }
 
     @Override
@@ -173,7 +181,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.select_dialog_item, parent, false);
                 TextView tv = (TextView) convertView;
                 RealmMyLibrary library = getItem(position);
-                tv.setCompoundDrawablesWithIntrinsicBounds(0,0,(library.isResourceOffline()? R.drawable.ic_eye : R.drawable.ic_download),  0);
+                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0, (library.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
                 tv.setText(library.getTitle());
                 return tv;
             }

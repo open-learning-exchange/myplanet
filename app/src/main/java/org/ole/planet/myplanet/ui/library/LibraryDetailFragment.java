@@ -67,7 +67,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         userModel = new UserProfileDbHandler(getActivity()).getUserModel();
-        Utilities.log("Library id " + libraryId);
+        library = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", libraryId).findFirst();
         initView(v);
         return v;
     }
@@ -75,7 +75,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        library = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", libraryId).findFirst();
         setLibraryData();
     }
 
@@ -97,11 +96,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
         TextView tv_rating = v.findViewById(R.id.tv_rating);
         tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        v.findViewById(R.id.rating_bar).setOnTouchListener((vi, e) -> {
-            if (e.getAction() == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
-            return true;
-        });
-        initRatingView(v);
+        initRatingView(v,"resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
     }
 
     private void setLibraryData() {
