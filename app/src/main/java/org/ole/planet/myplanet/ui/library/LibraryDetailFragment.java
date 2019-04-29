@@ -80,9 +80,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     }
 
     private void initView(View v) {
-        TextView average, tv_rating;
-        LinearLayout llRating;
-
         author = v.findViewById(R.id.tv_author);
         title = v.findViewById(R.id.tv_title);
         pubishedBy = v.findViewById(R.id.tv_published);
@@ -94,17 +91,14 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-        llRating = v.findViewById(R.id.ll_rating);
+        LinearLayout llRating = v.findViewById(R.id.ll_rating);
         llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        average = v.findViewById(R.id.average);
+        TextView average = v.findViewById(R.id.average);
         average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        tv_rating = v.findViewById(R.id.tv_rating);
+        TextView tv_rating = v.findViewById(R.id.tv_rating);
         tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        //  v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
-        v.findViewById(R.id.rating_bar).setOnTouchListener((v1, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_UP) {
-                homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
-            }
+        v.findViewById(R.id.rating_bar).setOnTouchListener((vi, e) -> {
+            if (e.getAction() == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
             return true;
         });
         initRatingView(v);
