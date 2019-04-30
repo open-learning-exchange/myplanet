@@ -174,6 +174,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (s.isEmpty()) {
             return getList(c);
         }
+        //List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
         List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
         if (c == RealmMyLibrary.class) {
             return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
