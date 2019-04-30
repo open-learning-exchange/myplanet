@@ -80,7 +80,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
-        setSearchListener();
+       // setSearchListener();
         btnRemove.setOnClickListener(V ->{
             deleteSelected(true);
         });
