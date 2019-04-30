@@ -209,6 +209,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_update"
+                android:textColor="@color/md_white_1000"
                 android:theme="@style/PrimaryButton" />
 
             <Button
@@ -216,6 +217,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_cancel"
+                android:textColor="@color/md_white_1000"
                 android:theme="@style/AccentButton" />
 
         </LinearLayout>

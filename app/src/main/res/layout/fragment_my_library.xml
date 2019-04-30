@@ -33,13 +33,15 @@
                 android:id="@+id/btn_collections"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/collections" />
+                android:text="@string/collections"
+                android:textColor="@color/md_white_1000" />
 
             <Button
                 android:id="@+id/show_filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/show_filter"
+                android:textColor="@color/md_white_1000"
                 android:theme="@style/PrimaryFlatButton" />
 
 

@@ -46,6 +46,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="right"
                         android:text="@string/download"
+                        android:textColor="@color/md_white_1000"
                         android:theme="@style/PrimaryButton" />
 
                     <Button
@@ -53,6 +54,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/btn_remove_lib"
+                        android:textColor="@color/md_white_1000"
                         android:theme="@style/AccentButton" />
 
                 </LinearLayout>

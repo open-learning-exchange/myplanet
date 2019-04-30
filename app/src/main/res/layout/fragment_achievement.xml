@@ -44,6 +44,7 @@
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:text="@string/edit_achievement"
+                    android:textColor="@color/md_white_1000"
                     android:theme="@style/AccentButton" />
 
 
