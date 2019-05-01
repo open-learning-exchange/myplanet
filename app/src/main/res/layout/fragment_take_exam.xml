@@ -116,6 +116,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"
                     android:layout_margin="@dimen/padding_large"
+                    android:background="@color/md_grey_500"
                     android:padding="@dimen/padding_normal"
                     android:text="Submit Answer"
                     android:textColor="@color/md_white_1000"

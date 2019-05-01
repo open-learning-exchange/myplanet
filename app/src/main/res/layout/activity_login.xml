@@ -191,6 +191,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
+                        android:background="@color/md_grey_500"
                         android:text="Become a member"
                         android:textColor="@color/md_white_1000"
                         android:theme="@style/PrimaryFlatButton" />

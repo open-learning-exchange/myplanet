@@ -65,14 +65,17 @@
                 android:id="@+id/send_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@color/md_grey_500"
                 android:text="Send Survey"
                 android:textColor="@color/md_white_1000"
-                android:theme="@style/PrimaryButton" />
+                android:theme="@style/PrimaryButton"
+                android:layout_marginRight="10dp"/>
 
             <Button
                 android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@color/md_grey_500"
                 android:text="Take Survey"
                 android:textColor="@color/md_white_1000"
                 android:theme="@style/PrimaryButton" />

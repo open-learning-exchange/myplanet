@@ -20,14 +20,17 @@
                 android:id="@+id/btn_open"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@color/md_grey_500"
                 android:text="Open Resource"
                 android:textColor="@color/md_white_1000"
-                android:theme="@style/PrimaryButton" />
+                android:theme="@style/PrimaryButton"
+                android:layout_marginRight="10dp"/>
 
             <Button
                 android:id="@+id/btn_resources"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@color/md_grey_500"
                 android:text="Download Resources"
                 android:textColor="@color/md_white_1000"
                 android:theme="@style/PrimaryButton" />
