@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.UUID;
 
+import io.realm.Realm;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
@@ -129,7 +130,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         new AlertDialog.Builder(this).setTitle("Login As Guest")
                 .setView(v)
                 .setPositiveButton("Login", (dialogInterface, i) -> {
-                    if (mRealm.isEmpty()){
+                    if (mRealm.isEmpty()) {
                         alertDialogOkay("Server not configured properly. Connect this device with Planet server");
                         return;
                     }
@@ -138,16 +139,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         Utilities.toast(this, "Username cannot be empty");
                         return;
                     }
-                    JsonObject object = new JsonObject();
-                    object.addProperty("_id", "guest_" + username);
-                    object.addProperty("name", username);
-                    object.addProperty("firstName", username);
-                    JsonArray rolesArray = new JsonArray();
-                    rolesArray.add("guest");
-                    object.add("roles", rolesArray);
-                    if (!mRealm.isInTransaction())
-                        mRealm.beginTransaction();
-                    RealmUserModel model = RealmUserModel.populateUsersTable(object, mRealm, settings);
+                    RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
                     if (model == null) {
                         Utilities.toast(this, "Unable to login");
                     } else {

@@ -45,6 +45,19 @@ public class RealmUserModel extends RealmObject {
     private String userImage;
     private boolean showTopbar;
 
+    public static RealmUserModel createGuestUser(String username, Realm mRealm, SharedPreferences settings) {
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", "guest_" + username);
+        object.addProperty("name", username);
+        object.addProperty("firstName", username);
+        JsonArray rolesArray = new JsonArray();
+        rolesArray.add("guest");
+        object.add("roles", rolesArray);
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        return RealmUserModel.populateUsersTable(object, mRealm, settings);
+    }
+
 
     public JsonObject serialize() {
         JsonObject object = new JsonObject();
