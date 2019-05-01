@@ -115,6 +115,8 @@
     <string name="add_an_achievement">Add an Achievement</string>
     <string name="add_a_reference">Add a Reference</string>
     <string name="learner">Learner</string>
+    <string name="enter_username">Enter Username</string>
+
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
     <string name="mediums">Mediums</string>
@@ -128,6 +130,7 @@
     <string name="dictionaries">Dictionaries</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
+    <string name="btn_guest_login">Login As Guest</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

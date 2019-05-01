@@ -11,7 +11,6 @@ import com.google.gson.JsonParser;
 import org.apache.commons.lang3.StringUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-import org.picketbox.util.StringUtil;
 
 import java.util.Map;
 import java.util.Set;
@@ -63,16 +62,18 @@ public class RealmUserModel extends RealmObject {
         return object;
     }
 
-    public static void populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
+    public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
             if (user == null) {
                 user = mRealm.createObject(RealmUserModel.class, JsonUtils.getString("_id", jsonDoc));
             }
             insertIntoUsers(jsonDoc, user, settings);
+            return user;
         } catch (Exception err) {
             err.printStackTrace();
         }
+        return null;
     }
 
     private static void insertIntoUsers(JsonObject jsonDoc, RealmUserModel user, SharedPreferences settings) {
