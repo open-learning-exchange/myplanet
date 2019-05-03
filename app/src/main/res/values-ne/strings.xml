@@ -73,6 +73,8 @@
     <string name="language_with_colon">Language :</string>
     <string name="subject">Subject/s :</string>
     <string name="license">License :</string>
+    <string name="enter_username">Enter Username</string>
+
     <string name="type">Type :</string>
     <string name="resource">Resource :</string>
     <string name="your_rating">Your Rating</string>
@@ -128,6 +130,7 @@
     <string name="dictionaries">Dictionaries</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
+    <string name="btn_guest_login">Login As Guest</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

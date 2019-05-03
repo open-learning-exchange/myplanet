@@ -97,8 +97,13 @@ public class UserProfileDbHandler {
     }
 
     public void setResourceOpenCount(RealmMyLibrary item) {
+        RealmUserModel model = getUserModel();
+        if (model.getId().startsWith("guest")) {
+
+            return;
+        }
         mRealm.beginTransaction();
-        RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser());
+        RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser(model));
         offlineActivities.setType(KEY_RESOURCE_OPEN);
         offlineActivities.setTitle(item.getTitle());
         offlineActivities.setResourceId(item.getResource_id());
@@ -107,9 +112,8 @@ public class UserProfileDbHandler {
     }
 
 
-    private RealmResourceActivity createResourceUser() {
+    private RealmResourceActivity createResourceUser(RealmUserModel model) {
         RealmResourceActivity offlineActivities = mRealm.createObject(RealmResourceActivity.class, UUID.randomUUID().toString());
-        RealmUserModel model = getUserModel();
         offlineActivities.setUser(model.getName());
         offlineActivities.setParentCode(model.getParentCode());
         offlineActivities.setCreatedOn(model.getPlanetCode());

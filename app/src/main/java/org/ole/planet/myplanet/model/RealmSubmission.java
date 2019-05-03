@@ -111,6 +111,8 @@ public class RealmSubmission extends RealmObject {
 
     public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm) throws IOException {
         JsonObject object;
+        if (sub.getUserId().startsWith("guest"))
+            return;
         if (TextUtils.isEmpty(sub.get_id())) {
             object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub)).execute().body();
         } else {

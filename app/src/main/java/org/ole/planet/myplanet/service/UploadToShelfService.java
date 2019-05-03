@@ -56,6 +56,8 @@ public class UploadToShelfService {
             RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).findAll();
             for (RealmUserModel model : users) {
                 try {
+                    if (model.getId().startsWith("guest"))
+                        continue;
                     JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.getId()).execute().body();
                     JsonObject object = getShelfData(realm, model.getId(), jsonDoc);
                     Utilities.log("JSON " + new Gson().toJson(jsonDoc));
