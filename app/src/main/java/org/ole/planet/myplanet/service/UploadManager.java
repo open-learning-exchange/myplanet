@@ -72,7 +72,7 @@ public class UploadManager {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     if (listener != null) {
-                        listener.onSuccess("Myplanet activities uploaded successfully");
+                        listener.onSuccess("My planet activities uploaded successfully");
                     }
                 }
 
@@ -107,6 +107,8 @@ public class UploadManager {
             List<RealmAchievement> list = realm.where(RealmAchievement.class).findAll();
             for (RealmAchievement sub : list) {
                 try {
+                    if (sub.get_id().startsWith("guest"))
+                        continue;
                     JsonObject ob = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), RealmAchievement.serialize(sub)).execute().body();
                     if (ob == null) {
                         ResponseBody re = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute().errorBody();
@@ -126,6 +128,8 @@ public class UploadManager {
                     .isNull("_id").findAll();
             for (RealmCourseProgress sub : data) {
                 try {
+                    if (sub.getUserId().startsWith("guest"))
+                        continue;
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/courses_progress", RealmCourseProgress.serializeProgress(sub)).execute().body();
                     if (object != null) {
                         sub.set_id(JsonUtils.getString("_id", object));
@@ -166,6 +170,8 @@ public class UploadManager {
                     .isNull("_rev").equalTo("type", "login").findAll();
             for (RealmOfflineActivity act : activities) {
                 try {
+                    if (act.getUserId().startsWith("guest"))
+                        continue;
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/login_activities", RealmOfflineActivity.serializeLoginActivities(act)).execute().body();
                     act.changeRev(object);
                 } catch (IOException e) {
@@ -183,6 +189,8 @@ public class UploadManager {
             final RealmResults<RealmRating> activities = realm.where(RealmRating.class).equalTo("isUpdated", true).findAll();
             for (RealmRating act : activities) {
                 try {
+                    if (act.getUserId().startsWith("guest"))
+                        continue;
                     Response<JsonObject> object;
                     if (TextUtils.isEmpty(act.get_id())) {
                         Utilities.log("JSON " + RealmRating.serializeRating(act));

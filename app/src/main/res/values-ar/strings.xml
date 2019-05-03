@@ -128,6 +128,7 @@
     <string name="dictionaries">Dictionaries</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
+    <string name="btn_guest_login">Login As Guest</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -152,6 +153,7 @@
         <item>ar</item>
         <item>so</item>
     </string-array>
+    <string name="enter_username">Enter Username</string>
 
     <string-array name="info_type">
         <item>Languages</item>

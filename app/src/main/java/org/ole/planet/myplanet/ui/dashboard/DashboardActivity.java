@@ -66,18 +66,22 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
+
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        user = new UserProfileDbHandler(this).getUserModel();
+        if (user.getId().startsWith("guest")){
+            getTheme().applyStyle(R.style.GuestStyle, true);
+        }
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
-        user = new UserProfileDbHandler(this).getUserModel();
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         navigationView = findViewById(R.id.top_bar_navigation);
