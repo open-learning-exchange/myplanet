@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -66,7 +67,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         userModel = new UserProfileDbHandler(getActivity()).getUserModel();
-        Utilities.log("Library id " + libraryId);
+        library = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", libraryId).findFirst();
         initView(v);
         return v;
     }
@@ -74,14 +75,11 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        library = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", libraryId).findFirst();
+        initRatingView("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
         setLibraryData();
     }
 
     private void initView(View v) {
-        TextView average, tv_rating;
-        LinearLayout llRating;
-
         author = v.findViewById(R.id.tv_author);
         title = v.findViewById(R.id.tv_title);
         pubishedBy = v.findViewById(R.id.tv_published);
@@ -93,14 +91,12 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-        llRating = v.findViewById(R.id.ll_rating);
+        LinearLayout llRating = v.findViewById(R.id.ll_rating);
         llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        average = v.findViewById(R.id.average);
+        TextView average = v.findViewById(R.id.average);
         average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        tv_rating = v.findViewById(R.id.tv_rating);
+        TextView tv_rating = v.findViewById(R.id.tv_rating);
         tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this));
-        initRatingView(v);
     }
 
     private void setLibraryData() {
