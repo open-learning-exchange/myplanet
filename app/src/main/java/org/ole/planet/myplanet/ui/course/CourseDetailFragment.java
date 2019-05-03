@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
@@ -66,6 +68,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+        courses = mRealm.where(RealmMyCourse.class).equalTo("courseId", id).findFirst();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         initView(v);
         return v;
@@ -74,7 +77,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        courses = mRealm.where(RealmMyCourse.class).equalTo("courseId", id).findFirst();
+        initRatingView("course", courses.getCourseId(), courses.getCourseTitle(), this);
         setCourseData();
     }
 
@@ -89,8 +92,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
         llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        v.findViewById(R.id.ll_rating).setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courses.getCourseId(), courses.getCourseTitle(), CourseDetailFragment.this));
-        initRatingView(v);
     }
 
 
