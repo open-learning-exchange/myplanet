@@ -12,6 +12,7 @@
         android:layout_height="399dp"
         android:background="@color/bg_white"
         android:baselineAligned="false"
+        android:focusableInTouchMode="true"
         android:elevation="2dp"
         android:orientation="horizontal"
         android:weightSum="10"
@@ -124,13 +125,15 @@
                         android:id="@+id/input_layout_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:hint="@string/hint_name"
+                        app:hintAnimationEnabled="true"
+                        app:hintEnabled="true"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
 
                         <EditText
                             android:id="@+id/input_name"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/hint_name"
                             android:singleLine="true"
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray" />
@@ -140,6 +143,9 @@
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:hint="@string/hint_password"
+                        app:hintAnimationEnabled="true"
+                        app:hintEnabled="true"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:passwordToggleEnabled="true">
 
@@ -147,7 +153,6 @@
                             android:id="@+id/input_password"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/hint_password"
                             android:inputType="textPassword"
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray" />
@@ -171,6 +176,15 @@
                         android:background="@color/colorPrimary"
                         android:text="@string/btn_sign_in"
                         android:textColor="@android:color/white" />
+
+                    <Button
+                        android:id="@+id/btn_guest_login"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/btn_guest_login"
+                        android:theme="@style/PrimaryFlatButton"
+                        android:textSize="14sp" />
 
                     <Button
                         android:layout_width="wrap_content"

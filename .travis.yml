@@ -75,11 +75,11 @@ before_deploy:
 - cp $TRAVIS_BUILD_DIR/myPlanet.jks $HOME
 - cd app/build/outputs/apk/release
 - ls
-- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/myPlanet.jks -storepass $storepass -keypass $keypass myPlanet.apk myplanet
+- jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore $HOME/myPlanet.jks -storepass $storepass -keypass $keypass myPlanet-build.apk myplanet
 # Verification
 #- jarsigner -verify myPlanet.apk
-- "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 myPlanet.apk myPlanet-release.apk"
-- sha256sum myPlanet-release.apk > myPlanet.apk.sha256
+- "${ANDROID_HOME}/build-tools/24.0.2/zipalign -v 4 myPlanet-build.apk myPlanet.apk"
+- sha256sum myPlanet.apk > myPlanet.apk.sha256
 
 deploy:
   provider: releases
@@ -88,6 +88,7 @@ deploy:
   file_glob : true
   file: ./*
   skip_cleanup: true
+  prerelease: true
   on:
     repo: open-learning-exchange/myplanet
     tags: true

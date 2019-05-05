@@ -7,15 +7,17 @@ import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 
 
-public class AutoSyncService extends JobService implements SyncListener, Service.CheckVersionCallback {
+public class AutoSyncService extends JobService implements SyncListener, Service.CheckVersionCallback, SuccessListener {
     SharedPreferences preferences;
 
     @Override
@@ -55,9 +57,9 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     }
 
     @Override
-    public void onUpdateAvailable(String filePath, boolean cancelable) {
+    public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         startActivity(new Intent(this, LoginActivity.class)
-                .putExtra("filePath", filePath)
+                .putExtra("versionInfo", info)
                 .putExtra("cancelable", cancelable)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
     }
@@ -69,7 +71,23 @@ public class AutoSyncService extends JobService implements SyncListener, Service
 
     @Override
     public void onError(String msg, boolean blockSync) {
-        if (!blockSync)
+        if (!blockSync){
             SyncManager.getInstance().start(this);
+            UploadManager.getInstance().uploadUserActivities(this);
+            UploadManager.getInstance().uploadExamResult(this);
+            UploadManager.getInstance().uploadFeedback(this);
+            UploadManager.getInstance().uploadAchievement();
+            UploadToShelfService.getInstance().uploadToshelf(this);
+            UploadManager.getInstance().uploadResourceActivities("");
+            UploadManager.getInstance().uploadResourceActivities("sync");
+            UploadManager.getInstance().uploadRating(this);
+            UploadManager.getInstance().uploadCrashLog(this);
+            UploadManager.getInstance().uploadActivities(this);
+        }
+    }
+
+    @Override
+    public void onSuccess(String s) {
+
     }
 }

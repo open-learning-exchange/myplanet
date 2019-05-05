@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -12,6 +13,7 @@ import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
 import android.widget.Button;
@@ -23,9 +25,14 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
@@ -36,6 +43,9 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 
+import java.util.UUID;
+
+import io.realm.Realm;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
@@ -47,7 +57,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     EditText serverPassword;
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
-    private Button btnSignIn;
+    private Button btnSignIn, btnGuestLogin;
     private ImageButton imgBtnSetting;
     private View positiveAction;
     private GifDrawable gifDrawable;
@@ -60,11 +70,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
         changeLogoColor();
         declareElements();
         declareMoreElements();
         showWifiDialog();
-        if (settings.getBoolean(Constants.KEY_LOGIN, false)){
+        if (settings.getBoolean(Constants.KEY_LOGIN, false)) {
             openDashboard();
             return;
         }
@@ -76,8 +87,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             isSync = false;
             processedUrl = Utilities.getUrl();
         }
-        if (getIntent().hasExtra("filePath")) {
-            onUpdateAvailable(getIntent().getStringExtra("filePath"), getIntent().getBooleanExtra("cancelable", false));
+        if (getIntent().hasExtra("versionInfo")) {
+            onUpdateAvailable((MyPlanet) getIntent().getSerializableExtra("versionInfo"), getIntent().getBooleanExtra("cancelable", false));
         } else {
             new Service(this).checkVersion(this, settings);
         }
@@ -95,6 +106,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        btnGuestLogin = findViewById(R.id.btn_guest_login);
         save = findViewById(R.id.save);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
@@ -108,6 +120,35 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         });
         imgBtnSetting.setOnClickListener(view -> settingDialog());
+        btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
+    }
+
+    private void showGuestLoginDialog() {
+        editor = settings.edit();
+        View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
+        TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
+        new AlertDialog.Builder(this).setTitle("Login As Guest")
+                .setView(v)
+                .setPositiveButton("Login", (dialogInterface, i) -> {
+                    if (mRealm.isEmpty()) {
+                        alertDialogOkay("Server not configured properly. Connect this device with Planet server");
+                        return;
+                    }
+                    String username = etUserName.getText().toString().toLowerCase();
+                    if (username.isEmpty()) {
+                        Utilities.toast(this, "Username cannot be empty");
+                        return;
+                    }
+                    RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+                    if (model == null) {
+                        Utilities.toast(this, "Unable to login");
+                    } else {
+                        editor.putBoolean(Constants.KEY_LOGIN, true).commit();
+                        saveUserInfoPref(settings, "", model);
+                        openDashboard();
+                    }
+                    mRealm.commitTransaction();
+                }).setNegativeButton("Cancel", null).show();
     }
 
 
@@ -138,7 +179,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
         declareHideKeyboardElements();
         TextView txtVersion = findViewById(R.id.lblVersion);
-        txtVersion.setText(getResources().getText(R.string.version)+" "+getResources().getText(R.string.app_version));
+        txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
         inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
@@ -208,12 +249,18 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     @Override
-    public void onUpdateAvailable(String filePath, boolean cancelable) {
-        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, filePath, progressDialog);
+    public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
+        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
         if (cancelable) {
             builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
                 continueSyncProcess();
             });
+        } else {
+            if (!mRealm.isInTransaction()) {
+                mRealm.beginTransaction();
+                mRealm.deleteAll();
+                mRealm.commitTransaction();
+            }
         }
         builder.show();
     }

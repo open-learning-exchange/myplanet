@@ -12,6 +12,7 @@ import android.view.View;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
+import org.ole.planet.myplanet.model.MyPlanet;
 
 import java.util.ArrayList;
 
@@ -73,25 +74,32 @@ public class DialogUtils {
                 .show();
     }
 
-    public static AlertDialog getAlertDialog(Context context, String title, View v){
-     return    new AlertDialog.Builder(context)
+    public static AlertDialog getAlertDialog(Context context, String title, View v) {
+        return new AlertDialog.Builder(context)
                 .setTitle(title)
                 .setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton("Submit", null).setNegativeButton("Cancel", null).show();
     }
 
-    public static AlertDialog.Builder getUpdateDialog(Context context, String filePath, ProgressDialog progressDialog) {
+    public static AlertDialog.Builder getUpdateDialog(Context context, MyPlanet info, ProgressDialog progressDialog) {
         return new AlertDialog.Builder(context).setTitle("New version of my planet available")
                 .setMessage("Download first to continue.")
+                .setNeutralButton("Upgrade(Local)", (dialogInterface, i) -> {
+                    startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), progressDialog);
+                })
                 .setPositiveButton("Upgrade", (dialogInterface, i) -> {
-                    ArrayList url = new ArrayList();
-                    url.add(filePath);
-                    progressDialog.setMessage("Downloading file...");
-                    progressDialog.setCancelable(false);
-                    progressDialog.show();
-                    Utilities.openDownloadService(context, url);
+                    startDownloadUpdate(context, info.getApkpath(), progressDialog);
                 });
 
+    }
+
+    private static void startDownloadUpdate(Context context, String path, ProgressDialog progressDialog) {
+        ArrayList url = new ArrayList();
+        url.add(path);
+        progressDialog.setMessage("Downloading file...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        Utilities.openDownloadService(context, url);
     }
 }

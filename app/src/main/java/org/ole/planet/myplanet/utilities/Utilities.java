@@ -156,4 +156,13 @@ public class Utilities {
         return url + "/versions";
     }
 
+    public static String getApkUpdateUrl(String path) {
+        SharedPreferences preferences = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String url = preferences.getString("couchdbURL", "");
+        if (url.endsWith("/db")) {
+            url.replace("/db", "");
+        }
+        return url + path;
+    }
+
 }

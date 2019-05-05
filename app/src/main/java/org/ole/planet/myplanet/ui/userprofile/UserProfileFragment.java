@@ -90,6 +90,7 @@ public class UserProfileFragment extends Fragment {
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
                     ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(keys.get(position));
+                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setVisibility(View.VISIBLE);
                     ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(map.get(keys.get(position)));
                     if (position % 2 == 0) {
                         holder.itemView.setBackgroundColor(getResources().getColor(R.color.bg_white));

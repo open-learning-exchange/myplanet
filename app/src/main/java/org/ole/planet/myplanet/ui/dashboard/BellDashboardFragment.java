@@ -80,6 +80,7 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
 //            startActivity(new Intent(getActivity(), SettingActivity.class));
 //        });
         initView(view);
+        view.findViewById(R.id.ll_achievement).setOnClickListener(v->homeItemClickListener.openCallFragment(new AchievementFragment()));
     }
 
 }

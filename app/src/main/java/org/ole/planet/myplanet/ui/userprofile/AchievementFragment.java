@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.base.BaseResourceFragment;
@@ -50,6 +51,7 @@ public class AchievementFragment extends BaseContainerFragment {
     RealmUserModel user;
     OnHomeItemClickListener listener;
     RealmAchievement achievement;
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -65,8 +67,8 @@ public class AchievementFragment extends BaseContainerFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_achievement, container, false);
-        mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        user = new UserProfileDbHandler(getActivity()).getUserModel();
+        mRealm = new DatabaseService(MainApplication.context).getRealmInstance();
+        user = new UserProfileDbHandler(MainApplication.context).getUserModel();
         rvOther = v.findViewById(R.id.rv_other_info);
         tvGoal = v.findViewById(R.id.tv_goals);
         tvName = v.findViewById(R.id.tv_name);
@@ -86,7 +88,7 @@ public class AchievementFragment extends BaseContainerFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
+        achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
         tvFirstName.setText(user.getFirstName());
         tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
         if (achievement != null) {
@@ -95,12 +97,12 @@ public class AchievementFragment extends BaseContainerFragment {
             tvAchievement.setText(achievement.getAchievementsHeader());
             llAchievement.removeAllViews();
             for (String s : achievement.getAchievements()) {
-                View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
+                View v = LayoutInflater.from(MainApplication.context).inflate(R.layout.row_achievement, null);
                 createView(v, s);
                 llAchievement.addView(v);
             }
-            rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
-            rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
+            rvOther.setLayoutManager(new LinearLayoutManager(MainApplication.context));
+            rvOther.setAdapter(new AdapterOtherInfo(MainApplication.context, achievement.getreferences()));
         }
     }
 
@@ -130,15 +132,15 @@ public class AchievementFragment extends BaseContainerFragment {
                 title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
             });
             showResourceButtons(flexboxLayout, libraries);
-        }else{
+        } else {
             title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             createAchievementList();
-            rvOther.setLayoutManager(new LinearLayoutManager(getActivity()));
-            rvOther.setAdapter(new AdapterOtherInfo(getActivity(), achievement.getreferences()));
+            rvOther.setLayoutManager(new LinearLayoutManager(MainApplication.context));
+            rvOther.setAdapter(new AdapterOtherInfo(MainApplication.context, achievement.getreferences()));
         }
         mRealm.addChangeListener(realm -> {
-            if (llAchievement!=null)
-            llAchievement.removeAllViews();
+            if (llAchievement != null)
+                llAchievement.removeAllViews();
             createAchievementList();
         });
     }
@@ -146,7 +148,7 @@ public class AchievementFragment extends BaseContainerFragment {
 
     private void createAchievementList() {
         for (String s : achievement.getAchievements()) {
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_achievement, null);
+            View v = LayoutInflater.from(MainApplication.context).inflate(R.layout.row_achievement, null);
             TextView title = v.findViewById(R.id.tv_title);
             TextView date = v.findViewById(R.id.tv_date);
             TextView description = v.findViewById(R.id.tv_description);
@@ -175,7 +177,7 @@ public class AchievementFragment extends BaseContainerFragment {
     private void showResourceButtons(FlexboxLayout flexboxLayout, ArrayList<RealmMyLibrary> libraries) {
         for (RealmMyLibrary lib : libraries
         ) {
-            Button b = (Button) LayoutInflater.from(getActivity()).inflate(R.layout.layout_button_primary, null);
+            Button b = (Button) LayoutInflater.from(MainApplication.context).inflate(R.layout.layout_button_primary, null);
             b.setText(lib.getTitle());
             b.setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
             b.setOnClickListener(view -> {

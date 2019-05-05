@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -15,12 +16,14 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TableLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
@@ -46,6 +49,7 @@ import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -60,15 +64,24 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     RealmUserModel user;
 
     @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(LocaleHelper.onAttach(base));
+
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        user = new UserProfileDbHandler(this).getUserModel();
+        if (user.getId().startsWith("guest")){
+            getTheme().applyStyle(R.style.GuestStyle, true);
+        }
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
-        user = new UserProfileDbHandler(this).getUserModel();
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         navigationView = findViewById(R.id.top_bar_navigation);
@@ -97,15 +110,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void topbarSetting() {
-        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
-            bellToolbar.setVisibility(View.VISIBLE);
-            mTopToolbar.setVisibility(View.GONE);
-            navigationView.setVisibility(View.GONE);
-        } else {
-            bellToolbar.setVisibility(View.GONE);
-            mTopToolbar.setVisibility(View.VISIBLE);
-            navigationView.setVisibility(View.VISIBLE);
-        }
+        changeUITheme();
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -121,7 +126,29 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             public void onTabReselected(TabLayout.Tab tab) {
             }
         });
+        for (int i = 0; i < tabLayout.getTabCount(); i++) {
+            View v = LayoutInflater.from(this).inflate(R.layout.custom_tab, null);
+            TextView title = v.findViewById(R.id.title);
+            ImageView icon = v.findViewById(R.id.icon);
+            title.setText(tabLayout.getTabAt(i).getText());
+            icon.setImageResource(R.drawable.ic_home);
+            icon.setImageDrawable(tabLayout.getTabAt(i).getIcon());
+            tabLayout.getTabAt(i).setCustomView(v);
+        }
 
+    }
+
+    private void changeUITheme() {
+        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
+            bellToolbar.setVisibility(View.VISIBLE);
+            mTopToolbar.setVisibility(View.GONE);
+            navigationView.setVisibility(View.GONE);
+
+        } else {
+            bellToolbar.setVisibility(View.GONE);
+            mTopToolbar.setVisibility(View.VISIBLE);
+            navigationView.setVisibility(View.VISIBLE);
+        }
     }
 
 

@@ -12,6 +12,7 @@
         android:layout_height="wrap_content"
         android:baselineAligned="false"
         android:elevation="2dp"
+        android:focusableInTouchMode="true"
         android:orientation="horizontal"
         android:paddingLeft="40dp"
         android:paddingRight="40dp"
@@ -104,8 +105,8 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
                     android:background="@null"
-                    android:paddingRight="10dp"
                     android:paddingTop="6dp"
+                    android:paddingRight="10dp"
                     app:srcCompat="@drawable/ic_settings_black_24dp" />
 
             </RelativeLayout>
@@ -129,13 +130,15 @@
                         android:id="@+id/input_layout_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
+                        android:hint="@string/hint_name"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+                        app:hintAnimationEnabled="true"
+                        app:hintEnabled="true">
 
                         <EditText
                             android:id="@+id/input_name"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/hint_name"
                             android:singleLine="true"
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray"
@@ -146,14 +149,16 @@
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:hint="@string/hint_password"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+                        app:hintAnimationEnabled="true"
+                        app:hintEnabled="true"
                         app:passwordToggleEnabled="true">
 
                         <EditText
                             android:id="@+id/input_password"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/hint_password"
                             android:inputType="textPassword"
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray"
@@ -181,13 +186,22 @@
                         android:textSize="12sp" />
 
                     <Button
+                        android:id="@+id/btn_guest_login"
                         android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/btn_guest_login"
+                        android:theme="@style/PrimaryFlatButton"
+                        android:textSize="14sp" />
+
+                    <Button
+                        android:id="@+id/become_member"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:id="@+id/become_member"
                         android:text="Become a member"
-                        android:layout_height="wrap_content" />
+                        android:theme="@style/PrimaryFlatButton" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

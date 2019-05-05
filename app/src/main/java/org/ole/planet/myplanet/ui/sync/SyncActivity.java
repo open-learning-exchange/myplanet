@@ -46,7 +46,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     int convertedDate;
     boolean connectionResult;
     Realm mRealm;
-    Context context;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
     private View constraintLayout;
@@ -56,6 +55,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         super.onCreate(savedInstanceState);
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         editor = settings.edit();
+        mRealm = new DatabaseService(this).getRealmInstance();
+
         requestPermission();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
@@ -171,13 +172,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     public boolean authenticateUser(SharedPreferences settings, String username, String password, Context context) {
         this.settings = settings;
-        this.context = context;
         AndroidDecrypter decrypt = new AndroidDecrypter();
-        mRealm = new DatabaseService(context).getRealmInstance();
-        ;
-        if (mRealm.isEmpty()) {
+        if ( mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");
-            mRealm.close();
             return false;
         } else {
             return checkName(username, password, decrypt);
@@ -195,16 +192,13 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             for (RealmUserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
                     saveUserInfoPref(settings, password, user);
-                    mRealm.close();
                     return true;
                 }
             }
         } catch (Exception err) {
             err.printStackTrace();
-            mRealm.close();
             return false;
         }
-        mRealm.close();
         return false;
     }
 
@@ -220,7 +214,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
         if (isUrlValid(url))
-            processedUrl = setUrlParts(url, pin, context);
+            processedUrl = setUrlParts(url, pin, this);
         return processedUrl;
     }
 

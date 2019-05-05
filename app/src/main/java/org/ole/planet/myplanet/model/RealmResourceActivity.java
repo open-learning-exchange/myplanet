@@ -133,6 +133,9 @@ public class RealmResourceActivity extends RealmObject {
             Utilities.log("User is null");
             return;
         }
+        if (user.getId().startsWith("guest")){
+            return;
+        }
         RealmResourceActivity activities = mRealm.createObject(RealmResourceActivity.class, UUID.randomUUID().toString());
         activities.setUser(user.getName());
         activities.set_rev(null);

@@ -37,8 +37,7 @@ public class Service {
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).commit();
                 if (response.body() != null) {
-                    preferences.edit().putString("versionDetail", new Gson().toJson(response.body()));
-                    preferences.edit().commit();
+                    preferences.edit().putString("versionDetail", new Gson().toJson(response.body())).commit();
                     checkForUpdate(response.body(), callback);
                 } else {
                     callback.onError("Version not found", true);
@@ -75,16 +74,16 @@ public class Service {
     private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
         int currentVersion = VersionUtils.getVersionCode(context);
         if (currentVersion < body.getMinapkcode())
-            callback.onUpdateAvailable(body.getApkpath(), false);
+            callback.onUpdateAvailable(body, false);
         else if (currentVersion < body.getLatestapkcode()) {
-            callback.onUpdateAvailable(body.getApkpath(), true);
+            callback.onUpdateAvailable(body, true);
         } else {
             callback.onError("New version not available", false);
         }
     }
 
     public interface CheckVersionCallback {
-        void onUpdateAvailable(String filePath, boolean cancelable);
+        void onUpdateAvailable(MyPlanet info, boolean cancelable);
 
         void onCheckingVersion();
 

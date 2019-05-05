@@ -60,6 +60,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         }
 
         try {
+            Utilities.log(new File(Utilities.SD_PATH, fileName).getAbsolutePath());
             pdfView.fromFile(new File(Utilities.SD_PATH, fileName))
                     .defaultPage(0)
                     .enableAnnotationRendering(true)
@@ -77,6 +78,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
 
     @Override
     public void loadComplete(int nbPages) {
+        Utilities.log("load complete");
         totalPages = nbPages;
     }
 

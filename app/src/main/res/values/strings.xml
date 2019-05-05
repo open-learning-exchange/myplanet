@@ -52,7 +52,6 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
-    <string name="app_version">0.3.31</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
@@ -128,6 +127,8 @@
     <string name="dictionaries">Dictionaries</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
+    <string name="btn_guest_login">Login As Guest</string>
+    <string name="enter_username">Enter Username</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -135,14 +136,23 @@
         <item>Advanced</item>
         <item>Expert</item>
     </string-array>
+
     <string-array name="language">
-        <item></item>
         <item>English</item>
         <item>नेपाली</item>
         <item>Français</item>
         <item>Español</item>
         <item>عربى</item>
         <item>Somali</item>
+    </string-array>
+
+    <string-array name="language_keys">
+        <item>en</item>
+        <item>ne</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>ar</item>
+        <item>so</item>
     </string-array>
 
     <string-array name="info_type">

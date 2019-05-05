@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">My Planet</string>
+    <string name="app_project_name">My Planet</string>
+    <string name="action_settings">Settings</string>
+    <string name="hint_name">Username</string>
+    <string name="hint_password">Password</string>
+    <string name="btn_sign_in">Sign In</string>
+    <string name="btn_sync">Sync</string>
+    <string name="btn_sync_save">Save</string>
+    <string name="btn_sync_cancel">Cancel</string>
+    <string name="err_msg_name">Enter your username</string>
+    <string name="err_msg_password">Enter the password</string>
+    <string name="err_msg_login">Username and/or password do not match</string>
+    <string name="hint_serverURl">Planet Server Address</string>
+    <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
+    <string name="title_activity_dashboard">Dashboard</string>
+    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_library">Our Library</string>
+    <string name="menu_courses">Our Courses</string>
+    <string name="menu_meetups">Meetups</string>
+    <string name="menu_surveys">Surveys</string>
+    <string name="menu_logout">Logout</string>
+    <string name="menu_feedback">Feedback</string>
+    <string name="system_name">My Planet</string>
+    <string name="txt_myLibrary">myLibrary</string>
+    <string name="txt_myCourses">myCourses</string>
+    <string name="txt_myMeetups">myMeetups</string>
+    <string name="txt_myTeams">myTeams</string>
+    <string name="button_submit">Submit</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
+    <string name="download_selected">Download Selected</string>
+    <string name="txt_cancel">Cancel</string>
+    <string name="download_all">Download All</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="add_to_mycourse">Add to my courses</string>
+    <string name="add_to_mylib">Add To myLibrary</string>
+    <string name="step">step</string>
+    <string name="submission">Submissions</string>
+    <string name="calendar">Calendar</string>
+    <string name="email">Email</string>
+    <string name="documents">Documents</string>
+    <string name="your_ans">Your Answer</string>
+    <string name="leave">Delete myCourse</string>
+    <string name="invite_member">Invite Member</string>
+    <string name="is_urgent">Is your feedback Urgent?</string>
+    <string name="feedback_type">Feedback Type :</string>
+    <string name="suggestion">Suggestion</string>
+    <string name="no">No</string>
+    <string name="yes">Yes</string>
+    <string name="question">Question</string>
+    <string name="bug">Bug</string>
+    <string name="your_feedback">Your Feedback *</string>
+    <string name="button_update">Update</string>
+    <string name="level">Level</string>
+    <string name="male">Male</string>
+    <string name="female">Female</string>
+    <string name="gender">Gender</string>
+    <string name="birth_date">Birth Date</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="language">Language</string>
+    <string name="last_name">Last Name</string>
+    <string name="version">Version</string>
+    <string name="middle_name">Middle Name</string>
+    <string name="first_name">First Name</string>
+    <string name="search">Search...</string>
+    <string name="btn_remove_lib">Remove</string>
+    <string name="download">Download</string>
+    <string name="published_by">Published By:</string>
+    <string name="author">Author:</string>
+    <string name="language_with_colon">Language :</string>
+    <string name="subject">Subject/s :</string>
+    <string name="license">License :</string>
+    <string name="type">Type :</string>
+    <string name="resource">Resource :</string>
+    <string name="your_rating">Your Rating</string>
+    <string name="your_comment">Leave your comment</string>
+    <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
+    <string name="sync_now">Sync Now</string>
+    <string name="logout">Logout</string>
+    <string name="settings">Settings</string>
+    <string name="change_password">Change Password</string>
+    <string name="edit_profile">Edit Profile</string>
+    <string name="view_profile">View Profile</string>
+    <string name="alerts">Alerts</string>
+    <string name="profile">Profile</string>
+    <string name="user">User</string>
+    <string name="remove_selected">Remove Selected</string>
+    <string name="dismiss">Finish</string>
+    <string name="stop_download">Stop Download</string>
+    <string name="downloading_file">Downloading file...</string>
+    <string name="cancel">Cancel</string>
+    <string name="add_to_mycourses">Add To My Courses</string>
+    <string name="added_to">added to</string>
+    <string name="removed_from">removed from</string>
+    <string name="my_courses">my courses</string>
+    <string name="filter_collections">Filter Collections</string>
+    <string name="select_many_collections">Select Many Collections</string>
+    <string name="collections">Collections</string>
+    <string name="ok">OK</string>
+    <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
+    <string name="archive_mycourse">Archive myCourse</string>
+    <string name="menu_achievement">Achievements</string>
+    <string name="edit_achievement">Edit Achievement</string>
+    <string name="add_resources">Add Resources</string>
+    <string name="description">Description</string>
+    <string name="title">Title *</string>
+    <string name="name">Name *</string>
+    <string name="relationship">Relationship</string>
+    <string name="date">Date</string>
+    <string name="birth_place">Birth Place</string>
+    <string name="clear_tags">Clear</string>
+    <string name="add_an_achievement">Add an Achievement</string>
+    <string name="add_a_reference">Add a Reference</string>
+    <string name="learner">Learner</string>
+    <string name="show_filter">Show Filter</string>
+    <string name="subjects">Subjects</string>
+    <string name="mediums">Mediums</string>
+    <string name="levels">Levels</string>
+    <string name="languages">Languages</string>
+    <string name="txt_myLife">myLife</string>
+    <string name="achievements">Achievements</string>
+    <string name="messeges">Messeges</string>
+    <string name="contacts">Contacts</string>
+    <string name="news">News</string>
+    <string name="dictionaries">Dictionaries</string>
+    <string name="maps">Maps</string>
+    <string name="enter_username">Enter Username</string>
+    <string name="help_wanted">Help Wanted</string>
+    <string name="btn_guest_login">Login As Guest</string>
+    <string-array name="level">
+        <item></item>
+        <item>Beginner</item>
+        <item>Intermediate</item>
+        <item>Advanced</item>
+        <item>Expert</item>
+    </string-array>
+    <string-array name="language">
+        <item>English</item>
+        <item>नेपाली</item>
+        <item>Français</item>
+        <item>Español</item>
+        <item>عربى</item>
+        <item>Somali</item>
+    </string-array>
+
+    <string-array name="language_keys">
+        <item>en</item>
+        <item>ne</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>ar</item>
+        <item>so</item>
+    </string-array>
+
+    <string-array name="info_type">
+        <item>Languages</item>
+        <item>Education</item>
+        <item>Employment History</item>
+        <item>Badges</item>
+        <item>Certificates</item>
+        <item>Internships</item>
+        <item>Awards</item>
+    </string-array>
+</resources>

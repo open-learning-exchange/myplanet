@@ -106,7 +106,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             f.setListener(LibraryFragment.this);
             f.show(getChildFragmentManager(), "");
         });
-        setSearchListener();
+        //setSearchListener();
         showNoData(tvMessage, adapterLibrary.getItemCount());
         clearTagsButton();
         getView().findViewById(R.id.show_filter).setOnClickListener(v -> {
@@ -129,6 +129,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             searchTags.clear();
             etSearch.setText("");
             tvSelected.setText("");
+            this.levels.clear();
+            this.mediums.clear();
+            this.subjects.clear();
+            this.languages.clear();
             adapterLibrary.setLibraryList(filterByTag(searchTags, ""));
             showNoData(tvMessage, adapterLibrary.getItemCount());
         });
