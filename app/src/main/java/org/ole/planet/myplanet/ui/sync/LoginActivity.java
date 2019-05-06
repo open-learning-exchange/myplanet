@@ -143,11 +143,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     if (model == null) {
                         Utilities.toast(this, "Unable to login");
                     } else {
-                        editor.putBoolean(Constants.KEY_LOGIN, true).commit();
                         saveUserInfoPref(settings, "", model);
-                        openDashboard();
+                       onLogin();
                     }
-                    mRealm.commitTransaction();
+                 //   mRealm.commitTransaction();
                 }).setNegativeButton("Cancel", null).show();
     }
 
@@ -211,16 +210,20 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), this)) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-            UserProfileDbHandler handler = new UserProfileDbHandler(this);
-            handler.onLogin();
-            handler.onDestory();
-            openDashboard();
-            editor.putBoolean(Constants.KEY_LOGIN, true).commit();
+            onLogin();
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
         }
         editor.commit();
 
+    }
+
+    private void onLogin() {
+        UserProfileDbHandler handler = new UserProfileDbHandler(this);
+        handler.onLogin();
+        handler.onDestory();
+        editor.putBoolean(Constants.KEY_LOGIN, true).commit();
+        openDashboard();
     }
 
     public void settingDialog() {
