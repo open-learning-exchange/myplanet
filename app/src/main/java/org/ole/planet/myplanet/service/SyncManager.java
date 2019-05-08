@@ -7,6 +7,7 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -197,6 +198,7 @@ public class SyncManager {
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.getId()).execute().body();
+            Utilities.log(new Gson().toJson(jsonDoc));
             for (int i = 0; i < Constants.shelfDataList.size(); i++) {
                 Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
                 JsonArray array = JsonUtils.getJsonArray(shelfData.key, jsonDoc);
@@ -210,7 +212,7 @@ public class SyncManager {
     private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type);
-            check(array, shelfData.aClass);
+            check(array);
         }
     }
 
@@ -221,33 +223,12 @@ public class SyncManager {
     }
 
 
-    private void check(JsonArray array_categoryIds, Class aClass) {
+    private void check(JsonArray array_categoryIds) {
         for (int x = 0; x < array_categoryIds.size(); x++) {
             if (array_categoryIds.get(x) instanceof JsonNull) {
                 continue;
             }
-            checkEmptyAndSave(aClass, x, array_categoryIds);
-        }
-    }
-
-    private void checkEmptyAndSave(Class aClass, int x, JsonArray array_categoryIds) {
-        List db_Categrory = null;
-
-        if (aClass == RealmMyLibrary.class || aClass == RealmMyCourse.class) {
-            db_Categrory =
-                    RealmMyLibrary.getShelfItem(stringArray[0], mRealm.where(aClass)
-                            .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-                            .findAll(), aClass);
-        } else {
-            db_Categrory = mRealm.where(aClass)
-                    .contains("userId", stringArray[0])
-                    .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-                    .findAll();
-        }
-        if (db_Categrory.isEmpty()) {
             validateDocument(array_categoryIds, x);
-        } else {
-            Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
         }
     }
 

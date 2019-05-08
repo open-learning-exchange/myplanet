@@ -144,9 +144,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         Utilities.toast(this, "Unable to login");
                     } else {
                         saveUserInfoPref(settings, "", model);
-                       onLogin();
+                        onLogin();
                     }
-                 //   mRealm.commitTransaction();
+                    //   mRealm.commitTransaction();
                 }).setNegativeButton("Cancel", null).show();
     }
 

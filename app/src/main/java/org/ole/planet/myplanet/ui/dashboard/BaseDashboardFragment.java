@@ -46,7 +46,8 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             100
     );
     public UserProfileDbHandler profileDbHandler;
-    void onLoaded(View v){
+
+    void onLoaded(View v) {
         txtFullName = v.findViewById(R.id.txtFullName);
         txtVisits = v.findViewById(R.id.txtVisits);
         txtRole = v.findViewById(R.id.txtRole);
@@ -98,6 +99,8 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         List<RealmObject> db_myCourses;
         if (c == RealmMyCourse.class) {
             db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
+        } else if (c == RealmMyTeam.class) {
+            db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
         } else {
             db_myCourses = mRealm.where(c)
                     .contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
