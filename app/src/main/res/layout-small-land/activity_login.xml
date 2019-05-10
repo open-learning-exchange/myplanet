@@ -62,6 +62,16 @@
                     android:textSize="5sp"
                     android:textStyle="bold" />
 
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_gravity="center"
+                    android:id="@+id/btn_lang"
+                    android:text="@string/language"
+                    android:entries="@array/language"
+                    android:theme="@style/PrimaryFlatButton"
+                    android:padding="@dimen/padding_normal"
+                    android:layout_height="wrap_content"/>
+
                 <TextView
                     android:id="@+id/lblVersion"
                     android:layout_width="match_parent"
