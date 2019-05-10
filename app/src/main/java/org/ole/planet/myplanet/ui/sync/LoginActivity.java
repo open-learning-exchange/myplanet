@@ -10,6 +10,8 @@ import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -32,10 +34,12 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
+import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
@@ -43,6 +47,7 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -69,17 +74,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+        if (getIntent().getBooleanExtra("isChild", false)) {
+            setContentView(R.layout.activity_child_login);
+        } else {
+            setContentView(R.layout.activity_login);
+        }
 
         changeLogoColor();
         declareElements();
         declareMoreElements();
         showWifiDialog();
-        if (settings.getBoolean(Constants.KEY_LOGIN, false)) {
-            openDashboard();
-            return;
-        }
-
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         if (forceSync) {
@@ -93,6 +97,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
         }
         new GPSService(this);
+        if (getIntent().getBooleanExtra("isChild", false)) {
+            setUpChildMode();
+        }
+    }
+
+    private void setUpChildMode() {
+        RecyclerView rvTeams = findViewById(R.id.rv_teams);
+        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).findAll();
+        rvTeams.setLayoutManager(new GridLayoutManager(this,3));
+        rvTeams.setAdapter(new AdapterTeam(this, teams));
     }
 
     private void showWifiDialog() {
