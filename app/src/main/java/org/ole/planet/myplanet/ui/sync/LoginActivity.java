@@ -188,6 +188,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
+        setUplanguageButton();
+        if (settings.getBoolean("saveUsernameAndPassword", false)) {
+            inputName.setText(settings.getString("loginUserName", ""));
+            inputPassword.setText(settings.getString("loginUserPassword", ""));
+            save.setChecked(true);
+        }
+    }
+
+    private void setUplanguageButton() {
         Button btnlang = findViewById(R.id.btn_lang);
         String[] languageKey = getResources().getStringArray(R.array.language_keys);
         String[] languages = getResources().getStringArray(R.array.language);
@@ -206,12 +215,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     }).setNegativeButton("Cancel", null)
                     .show();
         });
-
-        if (settings.getBoolean("saveUsernameAndPassword", false)) {
-            inputName.setText(settings.getString("loginUserName", ""));
-            inputPassword.setText(settings.getString("loginUserPassword", ""));
-            save.setChecked(true);
-        }
     }
 
 
