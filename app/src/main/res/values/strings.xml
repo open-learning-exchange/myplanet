@@ -129,6 +129,7 @@
     <string name="help_wanted">Help Wanted</string>
     <string name="btn_guest_login">Login As Guest</string>
     <string name="enter_username">Enter Username</string>
+    <string name="login">Login</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

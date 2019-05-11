@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.content.LocalBroadcastManager;
@@ -18,10 +19,12 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,11 +47,11 @@ import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-
 import java.util.List;
-import java.util.UUID;
+import java.util.Arrays;
 
 import io.realm.Realm;
 import pl.droidsonroids.gif.GifDrawable;
@@ -57,7 +60,7 @@ import pl.droidsonroids.gif.GifImageButton;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 
-public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback {
+public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback,AdapterTeam.OnUserSelectedListener {
     EditText serverUrl;
     EditText serverPassword;
     private EditText inputName, inputPassword;
@@ -74,7 +77,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getIntent().getBooleanExtra("isChild", false)) {
+        if (settings.getBoolean("isChild", false)) {
             setContentView(R.layout.activity_child_login);
         } else {
             setContentView(R.layout.activity_login);
@@ -97,16 +100,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
         }
         new GPSService(this);
-        if (getIntent().getBooleanExtra("isChild", false)) {
+        if (settings.getBoolean("isChild", false)) {
             setUpChildMode();
         }
-    }
-
-    private void setUpChildMode() {
-        RecyclerView rvTeams = findViewById(R.id.rv_teams);
-        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).findAll();
-        rvTeams.setLayoutManager(new GridLayoutManager(this,3));
-        rvTeams.setAdapter(new AdapterTeam(this, teams));
     }
 
     private void showWifiDialog() {
@@ -197,12 +193,33 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-
+        setUplanguageButton();
         if (settings.getBoolean("saveUsernameAndPassword", false)) {
             inputName.setText(settings.getString("loginUserName", ""));
             inputPassword.setText(settings.getString("loginUserPassword", ""));
             save.setChecked(true);
         }
+    }
+
+    private void setUplanguageButton() {
+        Button btnlang = findViewById(R.id.btn_lang);
+        String[] languageKey = getResources().getStringArray(R.array.language_keys);
+        String[] languages = getResources().getStringArray(R.array.language);
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
+        btnlang.setText(languages[index]);
+        btnlang.setOnClickListener(view -> {
+            new AlertDialog.Builder(this)
+                    .setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null)
+                    .setPositiveButton("OK", (dialog, whichButton) -> {
+                        dialog.dismiss();
+                        int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                        String lang = languageKey[selectedPosition];
+                        LocaleHelper.setLocale(LoginActivity.this, lang);
+                        recreate();
+                    }).setNegativeButton("Cancel", null)
+                    .show();
+        });
     }
 
 
@@ -317,6 +334,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         } catch (Exception e) {
         }
+    }
+
+    @Override
+    public void onSelectedUser(RealmUserModel userModel) {
+        EditText et = new EditText(this);
+        et.setPadding(8,8,8,8);
+        new AlertDialog.Builder(this).setView(et).setTitle("Please enter you password").setPositiveButton(R.string.login, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                String password = et.getText().toString();
+                if (authenticateUser(settings, userModel.getName(), password, LoginActivity.this)) {
+                    Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+                    onLogin();
+                } else {
+                    alertDialogOkay(getString(R.string.err_msg_login));
+                }
+            }
+        }).setNegativeButton(R.string.cancel, null).show();
     }
 
     private class MyTextWatcher implements TextWatcher {

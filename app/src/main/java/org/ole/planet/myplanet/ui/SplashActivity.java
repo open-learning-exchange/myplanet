@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.utilities.Constants;
 public class SplashActivity extends AppCompatActivity {
     RadioButton rbChild, rbNormal;
     Button getStarted;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,6 +32,9 @@ public class SplashActivity extends AppCompatActivity {
             return;
         }
 
-        getStarted.setOnClickListener(view -> startActivity(new Intent(SplashActivity.this, LoginActivity.class).putExtra("isChild", rbChild.isChecked())));
+        getStarted.setOnClickListener(view -> {
+            settings.edit().putBoolean("isChild", rbChild.isChecked()).commit();
+            startActivity(new Intent(SplashActivity.this, LoginActivity.class).putExtra("isChild", rbChild.isChecked()));
+        });
     }
 }

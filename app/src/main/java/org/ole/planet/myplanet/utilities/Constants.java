@@ -13,11 +13,11 @@ import org.ole.planet.myplanet.model.RealmMyTeam;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Constants {
     public static final String KEY_LOGIN = "isLoggedIn" ;
     public static List<ShelfData> shelfDataList;
-    public static List<String> betaList;
     public static final String KEY_RATING = "beta_rating";
     public static final String KEY_EXAM = "beta_course";
     public static final String KEY_SYNC = "beta_wifi_switch";

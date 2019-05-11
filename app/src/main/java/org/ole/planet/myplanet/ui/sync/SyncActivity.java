@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -22,8 +24,10 @@ import com.github.kittinunf.fuel.core.Response;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
+import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
@@ -91,6 +95,14 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             spinner.setVisibility(View.GONE);
             intervalLabel.setVisibility(View.GONE);
         }
+    }
+
+
+    public void setUpChildMode() {
+        RecyclerView rvTeams = findViewById(R.id.rv_teams);
+        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).findAll();
+        rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
+        rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
     }
 
 
@@ -172,7 +184,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public boolean authenticateUser(SharedPreferences settings, String username, String password, Context context) {
         this.settings = settings;
         AndroidDecrypter decrypt = new AndroidDecrypter();
-        if ( mRealm.isEmpty()) {
+        if (mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");
             return false;
         } else {
@@ -237,6 +249,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public void onSyncComplete() {
         DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
+        if (settings.getBoolean("isChild", false)) {
+            runOnUiThread(() -> setUpChildMode());
+        }
         NotificationUtil.cancellAll(this);
     }
 
