@@ -71,6 +71,7 @@
                     android:id="@+id/btn_lang"
                     android:entries="@array/language"
                     android:text="@string/language"
+                    android:textColor="@android:color/white"
                     android:theme="@style/PrimaryFlatButton"
                     android:padding="@dimen/padding_normal"
                     android:layout_height="wrap_content"/>
