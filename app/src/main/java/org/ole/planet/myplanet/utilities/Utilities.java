@@ -19,10 +19,12 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 
+import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import fisk.chipcloud.ChipCloudConfig;
 
@@ -71,6 +73,16 @@ public class Utilities {
         SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
         String datetime = dateformat.format(date);
         return datetime;
+    }
+
+    public static String getformatedDate(String stringDate, String pattern) {
+        try {
+            Date date = new SimpleDateFormat(pattern, Locale.getDefault()).parse(stringDate);
+            return formatDate(date.getTime());
+        }catch (Exception e) {
+            e.printStackTrace();
+            return "N/A";
+        }
     }
 
 

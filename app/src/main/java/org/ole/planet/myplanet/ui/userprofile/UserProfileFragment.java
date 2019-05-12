@@ -7,6 +7,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,7 +67,8 @@ public class UserProfileFragment extends Fragment {
         RealmUserModel model = mRealm.copyToRealmOrUpdate(handler.getUserModel());
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
-        ((TextView) v.findViewById(R.id.txt_dob)).setText(Utilities.checkNA(model.getDob()));
+        String dob = TextUtils.isEmpty(model.getDob())? "N/A" : Utilities.getformatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        ((TextView) v.findViewById(R.id.txt_dob)).setText(dob);
         Utilities.loadImage(model.getUserImage(), (ImageView) v.findViewById(R.id.image));
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
         map.put("Community Name", Utilities.checkNA(model.getCommunityName()));
