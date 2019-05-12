@@ -60,7 +60,7 @@ import pl.droidsonroids.gif.GifImageButton;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 
-public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback,AdapterTeam.OnUserSelectedListener {
+public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     EditText serverUrl;
     EditText serverPassword;
     private EditText inputName, inputPassword;
@@ -77,12 +77,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (settings.getBoolean("isChild", false)) {
-            setContentView(R.layout.activity_child_login);
-        } else {
-            setContentView(R.layout.activity_login);
-        }
-
+        setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         changeLogoColor();
         declareElements();
         declareMoreElements();
@@ -100,9 +95,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
         }
         new GPSService(this);
-        if (settings.getBoolean("isChild", false)) {
             setUpChildMode();
-        }
     }
 
     private void showWifiDialog() {
@@ -339,17 +332,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     public void onSelectedUser(RealmUserModel userModel) {
         EditText et = new EditText(this);
-        et.setPadding(8,8,8,8);
-        new AlertDialog.Builder(this).setView(et).setTitle("Please enter you password").setPositiveButton(R.string.login, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                String password = et.getText().toString();
-                if (authenticateUser(settings, userModel.getName(), password, LoginActivity.this)) {
-                    Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
-                    onLogin();
-                } else {
-                    alertDialogOkay(getString(R.string.err_msg_login));
-                }
+        et.setPadding(8, 8, 8, 8);
+        new AlertDialog.Builder(this).setView(et).setTitle("Please enter your password").setPositiveButton(R.string.login, (dialogInterface, i) -> {
+            String password = et.getText().toString();
+            if (authenticateUser(settings, userModel.getName(), password, LoginActivity.this)) {
+                Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+                onLogin();
+            } else {
+                alertDialogOkay(getString(R.string.err_msg_login));
             }
         }).setNegativeButton(R.string.cancel, null).show();
     }

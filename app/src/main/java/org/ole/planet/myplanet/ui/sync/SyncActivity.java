@@ -99,6 +99,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
 
     public void setUpChildMode() {
+        if (!settings.getBoolean("isChild", false))
+            return;
         RecyclerView rvTeams = findViewById(R.id.rv_teams);
         TextView tvNodata = findViewById(R.id.tv_nodata);
 

@@ -60,7 +60,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private void showUserList(RealmMyTeam realmMyTeam) {
 
         List<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", realmMyTeam.getUserId().toArray(new String[0])).findAll();
-        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<RealmUserModel>(context, android.R.layout.select_dialog_singlechoice, users);
+        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<RealmUserModel>(context, android.R.layout.simple_list_item_1, users);
 
         new AlertDialog.Builder(context)
                 .setTitle("Select User To Login")
