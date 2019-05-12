@@ -44,7 +44,7 @@ import io.realm.RealmResults;
 public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
-    public TextView intervalLabel;
+    public TextView intervalLabel, tvNodata;
     public Spinner spinner;
     public Switch syncSwitch;
     int convertedDate;
@@ -100,9 +100,17 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     public void setUpChildMode() {
         RecyclerView rvTeams = findViewById(R.id.rv_teams);
+        TextView tvNodata = findViewById(R.id.tv_nodata);
+
         List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).findAll();
         rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
         rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
+        if (teams.size() > 0){
+            tvNodata.setVisibility(View.GONE);
+        }else{
+            tvNodata.setText("No teams available");
+            tvNodata.setVisibility(View.GONE);
+        }
     }
 
 
