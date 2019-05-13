@@ -4,6 +4,7 @@ package org.ole.planet.myplanet.ui.team;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmObject;
 import io.realm.RealmResults;
 import okhttp3.internal.Util;
 
@@ -41,7 +43,9 @@ import okhttp3.internal.Util;
  */
 public class MyTeamsDetailFragment extends Fragment implements View.OnClickListener {
 
-    TextView tvTitle, tvDescription, tvJoined, tvRequested, tvCourses;
+    TextView tvTitle, tvDescription;
+
+    //tvJoined, tvRequested, tvCourses;
     UserProfileDbHandler profileDbHandler;
     RealmUserModel user;
     String teamId;
@@ -49,9 +53,12 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     RealmMyTeam team;
     Button btnLeave;
     Button btnInvite;
-    ListView lvJoined, lvRequested, lvCourses;
+    //ListView lvJoined, lvRequested, lvCourses;
+    ListView listContent;
+    TabLayout tabLayout;
     DatabaseService dbService;
     OnHomeItemClickListener homeItemClickListener;
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -88,16 +95,18 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
         btnLeave.setOnClickListener(this);
-        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
+        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnInvite = v.findViewById(R.id.btn_invite);
-        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
+        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         tvDescription = v.findViewById(R.id.description);
-        tvJoined = v.findViewById(R.id.tv_joined);
-        tvRequested = v.findViewById(R.id.tv_requested);
-        tvCourses= v.findViewById(R.id.tv_courses);
-        lvJoined = v.findViewById(R.id.list_joined);
-        lvCourses= v.findViewById(R.id.list_courses);
-        lvRequested = v.findViewById(R.id.list_requested);
+        tabLayout = v.findViewById(R.id.tab_layout);
+//        tvJoined = v.findViewById(R.id.tv_joined);
+//        tvRequested = v.findViewById(R.id.tv_requested);
+//        tvCourses= v.findViewById(R.id.tv_courses);
+//        lvJoined = v.findViewById(R.id.list_joined);
+//        lvCourses= v.findViewById(R.id.list_courses);
+//        lvRequested = v.findViewById(R.id.list_requested);
+        listContent = v.findViewById(R.id.list_content);
         tvTitle = v.findViewById(R.id.title);
 
     }
@@ -113,20 +122,57 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         String[] ids = team.getUserId().toArray(new String[0]);
         RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", ids).findAll();
 
-        String[] courseIds = team.getCourses().toArray(new String[0]);
-        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", courseIds).findAll();
-
-
-        lvJoined.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, users));
-        tvJoined.setText(String.format("Joined Members : (%s)", users.size() == 0 ? "(0)\nNo members has joined this meet up" : users.size()));
+//
+//        lvJoined.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, users));
+//        tvJoined.setText(String.format("Joined Members : (%s)", users.size() == 0 ? "(0)\nNo members has joined this meet up" : users.size()));
 
         tvTitle.setText(team.getName());
         tvDescription.setText(team.getDescription());
+        List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
+        String[] courseIds = team.getCourses().toArray(new String[0]);
+        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", courseIds).findAll();
+        tabLayout.getTabAt(2).setText(String.format("Courses : (%s)", courses.size()));
 
-        tvCourses.setText(String.format("Courses : (%s)", courses.size() == 0 ? "(0)\nNo courses " : courses.size()));
-        lvCourses.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
-        lvCourses.setOnItemClickListener((adapterView, view, i, l) -> {
-            if (homeItemClickListener!=null){
+        setListContent(tabLayout.getTabAt(0), String.format("Joined Members : (%s)", users.size()), users);
+        tabLayout.getTabAt(1).setText(String.format("Requested Members : (%s)", reqUsers.size()));
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                Utilities.log("On tab selected " + tab.getPosition());
+                if (tab.getPosition() == 0) {
+                    setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
+                } else if (tab.getPosition() == 1) {
+                    setListContent(tab, String.format("Requested Members : (%s)", reqUsers.size()), reqUsers);
+                } else {
+                    setCourseList(tab,courses);
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
+
+//        tvCourses.setText(String.format("Courses : (%s)", courses.size() == 0 ? "(0)\nNo courses " : courses.size()));
+//        lvCourses.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
+//
+//        tvRequested.setText(String.format("Requested Members : %s", reqUsers.size() == 0 ? "(0)\nThere are no requests to join this team.\n" +
+//                "\n" : reqUsers.size()));
+//        lvRequested.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, reqUsers));
+
+    }
+
+    private void setCourseList(TabLayout.Tab tab, RealmResults<RealmMyCourse> courses) {
+        tab.setText(String.format("Courses : (%s)", courses.size()));
+        listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
+        listContent.setOnItemClickListener((adapterView, view, i, l) -> {
+            if (homeItemClickListener != null) {
                 Bundle b = new Bundle();
                 TakeCourseFragment f = new TakeCourseFragment();
                 b.putString("id", courses.get(i).getCourseId());
@@ -134,11 +180,12 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                 homeItemClickListener.openCallFragment(f);
             }
         });
-        List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
-        tvRequested.setText(String.format("Requested Members : %s", reqUsers.size() == 0 ? "(0)\nThere are no requests to join this team.\n" +
-                "\n" : reqUsers.size()));
-        lvRequested.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, reqUsers));
+    }
 
+    private void setListContent(TabLayout.Tab tab, String s, List<RealmUserModel> data) {
+        tab.setText(s);
+        listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, data));
+        listContent.setOnItemClickListener(null);
     }
 
 
