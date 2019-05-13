@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
@@ -67,7 +68,7 @@ public class UserProfileFragment extends Fragment {
         RealmUserModel model = mRealm.copyToRealmOrUpdate(handler.getUserModel());
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
-        String dob = TextUtils.isEmpty(model.getDob())? "N/A" : Utilities.getformatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        String dob = TextUtils.isEmpty(model.getDob())? "N/A" : TimeUtils.getformatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         ((TextView) v.findViewById(R.id.txt_dob)).setText(dob);
         Utilities.loadImage(model.getUserImage(), (ImageView) v.findViewById(R.id.image));
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();

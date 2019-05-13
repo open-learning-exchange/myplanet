@@ -75,16 +75,6 @@ public class Utilities {
         return datetime;
     }
 
-    public static String getformatedDate(String stringDate, String pattern) {
-        try {
-            Date date = new SimpleDateFormat(pattern, Locale.getDefault()).parse(stringDate);
-            return formatDate(date.getTime());
-        }catch (Exception e) {
-            e.printStackTrace();
-            return "N/A";
-        }
-    }
-
 
     public static void openDownloadService(Context context, ArrayList urls) {
         Intent intent = new Intent(context, MyDownloadService.class);
