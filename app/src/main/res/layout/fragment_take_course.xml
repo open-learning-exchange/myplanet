@@ -74,7 +74,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/btn_remove_lib"
-                        android:theme="@style/AccentButton" />
+                        style="@style/GreyButtons"
+                        />
 
                     <TextView
                         android:id="@+id/previous_step"

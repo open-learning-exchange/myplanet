@@ -21,14 +21,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Open Resource"
-                android:theme="@style/PrimaryButton" />
+                android:layout_marginRight="10dp"
+                style="@style/GreyButtons"
+                />
 
             <Button
                 android:id="@+id/btn_resources"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Download Resources"
-                android:theme="@style/PrimaryButton" />
+                style="@style/GreyButtons"
+                />
 
             <Button
                 android:id="@+id/btn_take_test"

@@ -90,6 +90,13 @@
         <item name="colorAccent">@color/colorPrimary</item>
     </style>
 
+
+    <style name="GreyButtons" parent="Theme.AppCompat">
+        <item name="android:textColor">@color/md_white_1000</item>
+        <item name="android:background">@color/md_grey_500</item>
+        <item name="colorControlHighlight">@color/disable_color</item>
+    </style>
+
     <style name="Seekbar" parent="@android:style/Widget.ProgressBar.Horizontal">
         <item name="android:thumb">@drawable/white_line</item>
         <item name="tickMark">@drawable/white_line</item>

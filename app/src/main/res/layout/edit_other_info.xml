@@ -25,7 +25,8 @@
             android:layout_gravity="center"
             android:text="Edit"
             android:visibility="visible"
-            android:theme="@style/PrimaryFlatButton" />
+            style="@style/GreyButtons"
+            />
 
         <ImageView
             android:id="@+id/iv_delete"

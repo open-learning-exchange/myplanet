@@ -187,11 +187,11 @@
 
                     <Button
                         android:id="@+id/btn_guest_login"
+                        style="@style/GreyButtons"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="@string/btn_guest_login"
-                        android:theme="@style/PrimaryFlatButton"
                         android:textSize="14sp" />
 
                     <Button
@@ -201,7 +201,8 @@
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
                         android:text="Become a member"
-                        android:theme="@style/PrimaryFlatButton" />
+                        style="@style/GreyButtons"
+                        />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

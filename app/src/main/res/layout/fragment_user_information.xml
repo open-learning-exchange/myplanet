@@ -209,14 +209,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_update"
-                android:theme="@style/PrimaryButton" />
+                android:layout_marginRight="10dp"
+                style="@style/GreyButtons"
+                />
 
             <Button
                 android:id="@+id/btn_cancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_cancel"
-                android:theme="@style/AccentButton" />
+                style="@style/GreyButtons"
+                />
 
         </LinearLayout>
 
