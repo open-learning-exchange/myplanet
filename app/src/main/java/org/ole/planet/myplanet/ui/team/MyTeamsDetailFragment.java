@@ -45,7 +45,6 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
 
     TextView tvTitle, tvDescription;
 
-    //tvJoined, tvRequested, tvCourses;
     UserProfileDbHandler profileDbHandler;
     RealmUserModel user;
     String teamId;
@@ -53,7 +52,6 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     RealmMyTeam team;
     Button btnLeave;
     Button btnInvite;
-    //ListView lvJoined, lvRequested, lvCourses;
     ListView listContent;
     TabLayout tabLayout;
     DatabaseService dbService;
@@ -100,15 +98,8 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         tvDescription = v.findViewById(R.id.description);
         tabLayout = v.findViewById(R.id.tab_layout);
-//        tvJoined = v.findViewById(R.id.tv_joined);
-//        tvRequested = v.findViewById(R.id.tv_requested);
-//        tvCourses= v.findViewById(R.id.tv_courses);
-//        lvJoined = v.findViewById(R.id.list_joined);
-//        lvCourses= v.findViewById(R.id.list_courses);
-//        lvRequested = v.findViewById(R.id.list_requested);
         listContent = v.findViewById(R.id.list_content);
         tvTitle = v.findViewById(R.id.title);
-
     }
 
     @Override
@@ -119,53 +110,30 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     }
 
     private void setTeamList() {
-        String[] ids = team.getUserId().toArray(new String[0]);
-        RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", ids).findAll();
-
-//
-//        lvJoined.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, users));
-//        tvJoined.setText(String.format("Joined Members : (%s)", users.size() == 0 ? "(0)\nNo members has joined this meet up" : users.size()));
-
-        tvTitle.setText(team.getName());
-        tvDescription.setText(team.getDescription());
+        RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", team.getUserId().toArray(new String[0])).findAll();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
-        String[] courseIds = team.getCourses().toArray(new String[0]);
-        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", courseIds).findAll();
+        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         tabLayout.getTabAt(2).setText(String.format("Courses : (%s)", courses.size()));
-
         setListContent(tabLayout.getTabAt(0), String.format("Joined Members : (%s)", users.size()), users);
         tabLayout.getTabAt(1).setText(String.format("Requested Members : (%s)", reqUsers.size()));
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                Utilities.log("On tab selected " + tab.getPosition());
-                if (tab.getPosition() == 0) {
+                if (tab.getPosition() == 0)
                     setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
-                } else if (tab.getPosition() == 1) {
+                else if (tab.getPosition() == 1)
                     setListContent(tab, String.format("Requested Members : (%s)", reqUsers.size()), reqUsers);
-                } else {
-                    setCourseList(tab,courses);
-                }
+                else setCourseList(tab, courses);
             }
 
             @Override
             public void onTabUnselected(TabLayout.Tab tab) {
-
             }
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
-
             }
         });
-
-//        tvCourses.setText(String.format("Courses : (%s)", courses.size() == 0 ? "(0)\nNo courses " : courses.size()));
-//        lvCourses.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
-//
-//        tvRequested.setText(String.format("Requested Members : %s", reqUsers.size() == 0 ? "(0)\nThere are no requests to join this team.\n" +
-//                "\n" : reqUsers.size()));
-//        lvRequested.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, reqUsers));
-
     }
 
     private void setCourseList(TabLayout.Tab tab, RealmResults<RealmMyCourse> courses) {
@@ -190,7 +158,8 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
 
 
     private void setUpTeamsData() {
-
+        tvTitle.setText(team.getName());
+        tvDescription.setText(team.getDescription());
     }
 
     @Override
