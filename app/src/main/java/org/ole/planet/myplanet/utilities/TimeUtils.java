@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utilities;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 public class TimeUtils {
 
@@ -22,6 +23,16 @@ public class TimeUtils {
         Date d = new Date(date);
         SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa");
         return dateformat.format(d);
+    }
+
+    public static String getformatedDate(String stringDate, String pattern) {
+        try {
+            Date date = new SimpleDateFormat(pattern, Locale.getDefault()).parse(stringDate);
+            return getFormatedDate(date.getTime());
+        }catch (Exception e) {
+            e.printStackTrace();
+            return "N/A";
+        }
     }
 
 }

@@ -70,7 +70,7 @@ public class UserProfileDbHandler {
     private RealmOfflineActivity createUser() {
         RealmOfflineActivity offlineActivities = mRealm.createObject(RealmOfflineActivity.class, UUID.randomUUID().toString());
         RealmUserModel model = getUserModel();
-        offlineActivities.setUserId(settings.getString("userId", ""));
+        offlineActivities.setUserId(model.getId());
         offlineActivities.setUserName(model.getName());
         offlineActivities.setParentCode(model.getParentCode());
         offlineActivities.setCreatedOn(model.getPlanetCode());
@@ -86,7 +86,7 @@ public class UserProfileDbHandler {
         RealmUserModel m = getUserModel();
 
         RealmResults<RealmOfflineActivity> db_users = mRealm.where(RealmOfflineActivity.class)
-                .equalTo("userName", m.getName())
+                .equalTo("userId", m.getId())
                 .equalTo("type", KEY_LOGIN)
                 .findAll();
         if (!db_users.isEmpty()) {
@@ -99,7 +99,6 @@ public class UserProfileDbHandler {
     public void setResourceOpenCount(RealmMyLibrary item) {
         RealmUserModel model = getUserModel();
         if (model.getId().startsWith("guest")) {
-
             return;
         }
         mRealm.beginTransaction();

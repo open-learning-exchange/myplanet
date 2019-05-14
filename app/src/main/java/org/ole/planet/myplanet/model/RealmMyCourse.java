@@ -241,4 +241,8 @@ public class RealmMyCourse extends RealmObject {
         this.numberOfSteps = numberOfSteps;
     }
 
+    @Override
+    public String toString() {
+        return courseTitle;
+    }
 }
