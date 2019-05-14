@@ -104,11 +104,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 ((ViewHoldercourse) holder).llRating.setOnClickListener(null);
             }
 
-            ((ViewHoldercourse) holder).checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
+            ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
+                boolean isChecked = ((CheckBox)view).isChecked();
+                Utilities.handleCheck(isChecked, position, (ArrayList) selectedItems, courseList);
                 if (listener != null) {
-                    Utilities.handleCheck(b, position, (ArrayList) selectedItems, courseList);
                     listener.onSelectedListChange(selectedItems);
                 }
+                notifyDataSetChanged();
             });
             showProgressAndRating(position, holder);
 
