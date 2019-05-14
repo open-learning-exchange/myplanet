@@ -154,6 +154,9 @@
         <item>so</item>
     </string-array>
     <string name="enter_username">Enter Username</string>
+    <string name="joined_members">Joined Members</string>
+    <string name="requested_member">Requested Member</string>
+    <string name="courses">Courses</string>
 
     <string-array name="info_type">
         <item>Languages</item>
