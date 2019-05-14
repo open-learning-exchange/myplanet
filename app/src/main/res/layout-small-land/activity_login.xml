@@ -67,6 +67,7 @@
                     android:layout_gravity="center"
                     android:id="@+id/btn_lang"
                     android:text="@string/language"
+                    android:textColor="@android:color/white"
                     android:entries="@array/language"
                     android:theme="@style/PrimaryFlatButton"
                     android:padding="@dimen/padding_normal"
