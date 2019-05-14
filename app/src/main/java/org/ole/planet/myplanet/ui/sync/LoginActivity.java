@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.content.LocalBroadcastManager;
@@ -16,10 +17,12 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,9 +43,11 @@ import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 
+import java.util.Arrays;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -144,9 +149,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         Utilities.toast(this, "Unable to login");
                     } else {
                         saveUserInfoPref(settings, "", model);
-                       onLogin();
+                        onLogin();
                     }
-                 //   mRealm.commitTransaction();
+                    //   mRealm.commitTransaction();
                 }).setNegativeButton("Cancel", null).show();
     }
 
@@ -183,12 +188,33 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-
+        setUplanguageButton();
         if (settings.getBoolean("saveUsernameAndPassword", false)) {
             inputName.setText(settings.getString("loginUserName", ""));
             inputPassword.setText(settings.getString("loginUserPassword", ""));
             save.setChecked(true);
         }
+    }
+
+    private void setUplanguageButton() {
+        Button btnlang = findViewById(R.id.btn_lang);
+        String[] languageKey = getResources().getStringArray(R.array.language_keys);
+        String[] languages = getResources().getStringArray(R.array.language);
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
+        btnlang.setText(languages[index]);
+        btnlang.setOnClickListener(view -> {
+            new AlertDialog.Builder(this)
+                    .setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null)
+                    .setPositiveButton("OK", (dialog, whichButton) -> {
+                        dialog.dismiss();
+                        int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                        String lang = languageKey[selectedPosition];
+                        LocaleHelper.setLocale(LoginActivity.this, lang);
+                        recreate();
+                    }).setNegativeButton("Cancel", null)
+                    .show();
+        });
     }
 
 

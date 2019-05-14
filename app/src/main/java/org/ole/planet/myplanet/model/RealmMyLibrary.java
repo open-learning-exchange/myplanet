@@ -97,11 +97,22 @@ public class RealmMyLibrary extends RealmObject {
     public static List<RealmObject> getShelfItem(String userId, RealmResults<RealmObject> libs, Class c) {
         List<RealmObject> libraries = new ArrayList<>();
         for (RealmObject item : libs) {
-            if (c == RealmMyCourse.class ? ((RealmMyCourse) item).getUserId().contains(userId) : ((RealmMyLibrary) item).getUserId().contains(userId)) {
+            if (containsId(item, c ,userId)) {
                 libraries.add(item);
             }
         }
         return libraries;
+    }
+
+    private static boolean containsId(RealmObject item, Class c,String userId) {
+        if (c == RealmMyCourse.class){
+           return ((RealmMyCourse) item).getUserId().contains(userId);
+        }else if(c == RealmMyLibrary.class ){
+            return ((RealmMyLibrary) item).getUserId().contains(userId);
+        }else if(c == RealmMyTeam.class){
+            return ((RealmMyTeam)item).getUserId().contains(userId);
+        }
+        return false;
     }
 
     public static String[] getIds(Realm mRealm) {
