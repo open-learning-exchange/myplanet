@@ -105,8 +105,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
 
             ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
-                boolean isChecked = ((CheckBox)view).isChecked();
-                Utilities.handleCheck(isChecked, position, (ArrayList) selectedItems, courseList);
+                Utilities.handleCheck(((CheckBox)view).isChecked(), position, (ArrayList) selectedItems, courseList);
                 if (listener != null) {
                     listener.onSelectedListChange(selectedItems);
                 }
