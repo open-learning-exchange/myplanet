@@ -101,8 +101,9 @@
 
                 <pl.droidsonroids.gif.GifImageButton
                     android:id="@+id/syncIcon"
-                    android:layout_width="10dp"
-                    android:layout_height="10dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_alignParentLeft="true"
                     android:background="@null"
                     android:scaleType="fitCenter" />
 
