@@ -109,6 +109,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
         imgBtnSetting.setOnClickListener(view -> settingDialog());
         btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
+        switchChildMode = findViewById(R.id.switch_child_mode);
+        switchChildMode.setChecked(settings.getBoolean("isChild", false));
+        switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
+            settings.edit().putBoolean("isChild", b).commit();
+            recreate();
+        });
     }
 
     private void showGuestLoginDialog() {
@@ -177,12 +183,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             inputPassword.setText(settings.getString("loginUserPassword", ""));
             save.setChecked(true);
         }
-        switchChildMode = findViewById(R.id.switch_child_mode);
-        switchChildMode.setChecked(settings.getBoolean("isChild", false));
-        switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
-            settings.edit().putBoolean("isChild", b).commit();
-            recreate();
-        });
     }
 
     private void setUplanguageButton() {
@@ -317,7 +317,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             } else if (forceSync) {
                 isServerReachable(processedUrl);
                 startUpload();
-
             }
         } catch (Exception e) {
         }
