@@ -13,6 +13,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -22,6 +23,7 @@ import android.webkit.URLUtil;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Spinner;
@@ -73,7 +75,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private CheckBox save;
     private boolean isSync = false, isUpload = false, forceSync = false;
     String processedUrl;
-
+    private SwitchCompat switchChildMode;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -192,6 +194,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             inputPassword.setText(settings.getString("loginUserPassword", ""));
             save.setChecked(true);
         }
+        switchChildMode = findViewById(R.id.switch_child_mode);
+        switchChildMode.setChecked(settings.getBoolean("isChild", false));
+        switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
+            settings.edit().putBoolean("isChild", b).commit();
+            recreate();
+        });
     }
 
     private void setUplanguageButton() {

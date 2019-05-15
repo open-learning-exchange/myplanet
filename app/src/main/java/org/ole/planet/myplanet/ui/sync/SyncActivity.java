@@ -52,7 +52,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     Realm mRealm;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
-    private View constraintLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -146,8 +145,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     public void declareHideKeyboardElements() {
-        constraintLayout = findViewById(R.id.constraintLayout);
-        constraintLayout.setOnTouchListener((view, ev) -> {
+        findViewById(R.id.constraintLayout).setOnTouchListener((view, ev) -> {
             hideKeyboard(view);
             return false;
         });
