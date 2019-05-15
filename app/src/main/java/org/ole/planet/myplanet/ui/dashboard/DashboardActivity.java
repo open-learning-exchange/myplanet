@@ -123,6 +123,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
+                onClickTabItems(tab.getPosition());
             }
         });
         for (int i = 0; i < tabLayout.getTabCount(); i++) {
