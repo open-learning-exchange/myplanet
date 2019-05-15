@@ -98,6 +98,8 @@ public class MyDownloadService extends IntentService {
     }
 
     private void downloadFiled(String message) {
+        notificationBuilder.setContentText(message);
+        notificationManager.notify(0, notificationBuilder.build());
         Download d = new Download();
         completeAll = false;
         d.setFailed(true);
