@@ -114,6 +114,7 @@
                 <pl.droidsonroids.gif.GifImageButton
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
+                    android:layout_alignParentLeft="true"
                     android:layout_height="30dp"
                     android:layout_marginLeft="10dp"
                     android:layout_marginTop="5dp"
