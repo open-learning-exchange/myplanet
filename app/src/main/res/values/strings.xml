@@ -129,6 +129,8 @@
     <string name="help_wanted">Help Wanted</string>
     <string name="btn_guest_login">Login As Guest</string>
     <string name="enter_username">Enter Username</string>
+    <string name="login">Login</string>
+    <string name="child_mode">Child Mode</string>
     <string name="joined_members">Joined Members</string>
     <string name="requested_member">Requested Member</string>
     <string name="courses">Courses</string>

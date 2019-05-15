@@ -64,15 +64,27 @@
 
 
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/btn_lang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:entries="@array/language"
+                    android:padding="@dimen/padding_normal"
                     android:text="@string/language"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/md_white_1000"
+                    android:theme="@style/PrimaryFlatButton" />
+
+
+                <android.support.v7.widget.SwitchCompat
+                    android:id="@+id/switch_child_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
                     android:theme="@style/PrimaryFlatButton"
                     android:padding="@dimen/padding_normal"
-                    android:layout_height="wrap_content"/>
+                    android:text="@string/child_mode"
+                    android:textColor="@color/md_white_1000" />
 
                 <TextView
                     android:id="@+id/lblVersion"

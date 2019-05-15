@@ -168,4 +168,6 @@
         <item>Internships</item>
         <item>Awards</item>
     </string-array>
+    <string name="login">Login</string>
+    <string name="child_mode">Child Mode</string>
 </resources>
