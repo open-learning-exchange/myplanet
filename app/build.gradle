@@ -7,8 +7,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 362
-        versionName "0.3.62"
+        versionCode 365
+        versionName "0.3.65"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true

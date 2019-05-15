@@ -71,6 +71,7 @@
                     android:entries="@array/language"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/language"
+                    android:textColor="@color/md_white_1000"
                     android:theme="@style/PrimaryFlatButton" />
 
 
@@ -80,6 +81,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
+                    android:theme="@style/PrimaryFlatButton"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/child_mode"
                     android:textColor="@color/md_white_1000" />

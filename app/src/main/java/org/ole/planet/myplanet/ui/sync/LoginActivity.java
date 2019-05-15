@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.Manifest;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -11,8 +10,6 @@ import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -20,42 +17,28 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
-import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
-import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.List;
 import java.util.Arrays;
-
-import io.realm.Realm;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
@@ -317,6 +300,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
+        if (msg.startsWith("Config")){
+            settingDialog();
+        }
         progressDialog.dismiss();
         if (!block)
             continueSyncProcess();

@@ -69,6 +69,7 @@
                     android:entries="@array/language"
                     android:text="@string/language"
                     android:theme="@style/PrimaryFlatButton"
+                    android:textColor="@color/md_white_1000"
                     android:padding="@dimen/padding_normal"
                     android:layout_height="wrap_content"/>
 
