@@ -75,10 +75,10 @@
     <string name="subject">Maado/Maadooyin:</string>
     <string name="license">Ruqsada:</string>
     <string name="type">Nuuca:</string>
-    <string name="resource">Resource :</string>
-    <string name="your_rating">Your Rating</string>
-    <string name="your_comment">Leave your comment</string>
-    <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
+    <string name="resource">Agabka:</string>
+    <string name="your_rating">Codeyntaada</string>
+    <string name="your_comment">Faalo Reeb</string>
+    <string name="show_top_nav">Muuji Baarka Hagaha ugu Sarreeya ee Dashboard</string>
     <string name="sync_now">Sync Now</string>
     <string name="logout">Logout</string>
     <string name="settings">Settings</string>
