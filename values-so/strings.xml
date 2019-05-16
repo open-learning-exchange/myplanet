@@ -55,7 +55,7 @@
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
-    <string name="level">Level</string>
+    <string name="level">Heerka</string>
     <string name="male">Lab</string>
     <string name="female">Dhadig</string>
     <string name="gender">Jinsiga</string>
@@ -68,7 +68,7 @@
     <string name="first_name">Magaca hore</string>
     <string name="search">Search...</string>
     <string name="btn_remove_lib">Saar/tuur</string>
-    <string name="download">Download</string>
+    <string name="download">Dajin</string>
     <string name="published_by">Daabacay:</string>
     <string name="author">Qoraa:</string>
     <string name="language_with_colon">Luuqada:</string>
@@ -97,14 +97,14 @@
     <string name="added_to">lagu daray</string>
     <string name="removed_from">laga saaray</string>
     <string name="my_courses">cashiradeyda</string>
-    <string name="filter_collections">Filter Collections</string>
-    <string name="select_many_collections">Select Many Collections</string>
-    <string name="collections">Collections</string>
-    <string name="ok">OK</string>
+    <string name="filter_collections">Xulashada Ururka</string>
+    <string name="select_many_collections">Xulo ururo badan</string>
+    <string name="collections">Ururo</string>
+    <string name="ok">Hagaag</string>
     <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
     <string name="archive_mycourse">Archive myCourse</string>
-    <string name="menu_achievement">Achievements</string>
-    <string name="edit_achievement">Edit Achievement</string>
+    <string name="menu_achievement">Guulaha</string>
+    <string name="edit_achievement">Wax ka bal Guusha</string>
     <string name="add_resources">Add Resources</string>
     <string name="description">Description</string>
     <string name="title">Title *</string>
@@ -119,7 +119,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Levels</string>
+    <string name="levels">Heerarka</string>
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
     <string name="achievements">Achievements</string>
@@ -159,6 +159,6 @@
         <item>Badges</item>
         <item>Certificates</item>
         <item>Internships</item>
-        <item>Awards</item>
+        <item>Abaal Marino</item>
     </string-array>
 </resources>
