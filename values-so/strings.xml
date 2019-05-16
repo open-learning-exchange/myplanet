@@ -153,9 +153,9 @@
         <item>so</item>
     </string-array>
     <string-array name="info_type">
-        <item>Languages</item>
-        <item>Education</item>
-        <item>Employment History</item>
+        <item>Luuqado</item>
+        <item>Waxbarsho</item>
+        <item>Taarikhda Shaqaleysiinta</item>
         <item>Badges</item>
         <item>Certificates</item>
         <item>Internships</item>
