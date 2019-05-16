@@ -5,7 +5,7 @@
     <string name="app_project_name">My Planet</string>
     <string name="action_settings">Habeynta</string>
     <string name="hint_name">Magaca isticmaalaha</string>
-    <string name="hint_password">Password</string>
+    <string name="hint_password">Furaha sirta ah</string>
     <string name="btn_sign_in">Sign In</string>
     <string name="btn_sync">Sync</string>
     <string name="btn_sync_save">Save</string>
@@ -56,10 +56,10 @@
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
     <string name="level">Level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
-    <string name="gender">Gender</string>
-    <string name="birth_date">Birth Date</string>
+    <string name="male">Lab</string>
+    <string name="female">Dhadig</string>
+    <string name="gender">Jinsiga</string>
+    <string name="birth_date">Taariikhda dhalashada</string>
     <string name="phone_number">Phone Number</string>
     <string name="language">Language</string>
     <string name="last_name">Last Name</string>
