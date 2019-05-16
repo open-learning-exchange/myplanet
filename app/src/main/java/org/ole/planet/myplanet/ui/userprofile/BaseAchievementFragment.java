@@ -24,6 +24,8 @@ import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
+import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +59,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
             etGoals.setText(achievement.getGoals());
             checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
-        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : user.getDob());
+        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         resourceArray = new JsonArray();
         etName.setText(user.getFirstName());
         etMiddleName.setText(user.getMiddleName());

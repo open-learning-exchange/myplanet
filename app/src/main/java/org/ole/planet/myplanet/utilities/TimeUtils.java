@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.utilities;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class TimeUtils {
 
@@ -11,6 +13,7 @@ public class TimeUtils {
         try {
             Date d = new Date(date);
             SimpleDateFormat f = new SimpleDateFormat("EEEE, MMM dd, yyyy");
+            f.setTimeZone(TimeZone.getTimeZone("UTC"));
             return f.format(d);
         } catch (Exception e) {
             Utilities.log("Exception : " + e.getMessage());
@@ -25,14 +28,31 @@ public class TimeUtils {
         return dateformat.format(d);
     }
 
-    public static String getformatedDate(String stringDate, String pattern) {
+    public static String getFormatedDate(String stringDate, String pattern) {
         try {
-            Date date = new SimpleDateFormat(pattern, Locale.getDefault()).parse(stringDate);
+            SimpleDateFormat sf = new SimpleDateFormat(pattern, Locale.getDefault());
+            sf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date date = sf.parse(stringDate);
             return getFormatedDate(date.getTime());
         }catch (Exception e) {
             e.printStackTrace();
             return "N/A";
         }
     }
+
+
+    public static String currentDate() {
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
+        String datetime = dateformat.format(c.getTime());
+        return datetime;
+    }
+
+    public static String formatDate(long date) {
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
+        String datetime = dateformat.format(date);
+        return datetime;
+    }
+
 
 }

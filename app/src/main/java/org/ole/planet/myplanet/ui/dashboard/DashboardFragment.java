@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -70,7 +71,7 @@ public class DashboardFragment extends BaseDashboardFragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         declareElements(view);
         onLoaded(view);
-        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(TimeUtils.currentDate());
         return view;
     }
 

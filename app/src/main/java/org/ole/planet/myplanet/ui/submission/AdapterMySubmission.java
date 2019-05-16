@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
@@ -51,7 +52,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMySurvey) {
             ((ViewHolderMySurvey) holder).status.setText(list.get(position).getStatus());
-            ((ViewHolderMySurvey) holder).date.setText(Utilities.formatDate(list.get(position).getStartTime()));
+            ((ViewHolderMySurvey) holder).date.setText(TimeUtils.getFormatedDate(list.get(position).getStartTime()));
             ((ViewHolderMySurvey) holder).submitted_by.setVisibility(View.VISIBLE);
             try {
                 JSONObject ob = new JSONObject(list.get(position).getUser());
