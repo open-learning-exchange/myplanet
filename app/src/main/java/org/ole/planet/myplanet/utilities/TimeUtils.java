@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utilities;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -25,7 +26,7 @@ public class TimeUtils {
         return dateformat.format(d);
     }
 
-    public static String getformatedDate(String stringDate, String pattern) {
+    public static String getFormatedDate(String stringDate, String pattern) {
         try {
             Date date = new SimpleDateFormat(pattern, Locale.getDefault()).parse(stringDate);
             return getFormatedDate(date.getTime());
@@ -34,5 +35,20 @@ public class TimeUtils {
             return "N/A";
         }
     }
+
+
+    public static String currentDate() {
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
+        String datetime = dateformat.format(c.getTime());
+        return datetime;
+    }
+
+    public static String formatDate(long date) {
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
+        String datetime = dateformat.format(date);
+        return datetime;
+    }
+
 
 }
