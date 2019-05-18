@@ -62,42 +62,36 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
         }
     }
-    List<RealmUserModel> users;
+    private List<RealmUserModel> users;
     private void showUserList(RealmMyTeam realmMyTeam) {
         View view = LayoutInflater.from(context).inflate(R.layout.layout_user_list,null);
         EditText etSearch = view.findViewById(R.id.et_search);
         ListView lv = view.findViewById(R.id.list_user);
         users = mRealm.where(RealmUserModel.class).in("id", realmMyTeam.getUserId().toArray(new String[0])).findAll();
-        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, users);
-        lv.setAdapter(adapter);
+        setListAdapter(lv,users);
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) { }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 users = mRealm.where(RealmUserModel.class).in("id", realmMyTeam.getUserId().toArray(new String[0])).contains("name", charSequence.toString()).findAll();
-                ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, users);
-                lv.setAdapter(adapter);
-
-            }
+                setListAdapter(lv,users);
+                }
 
             @Override
-            public void afterTextChanged(Editable editable) {
-
-            }
+            public void afterTextChanged(Editable editable) { }
         });
         lv.setOnItemClickListener((adapterView, view1, i, l) -> {
             if (listener != null)
                 listener.onSelectedUser(users.get(i));
         });
-        new AlertDialog.Builder(context)
-                .setTitle("Select User To Login")
-                .setView(view)
-                .setNegativeButton("Dismiss", null)
-                .show();
+        new AlertDialog.Builder(context).setTitle("Select User To Login").setView(view).setNegativeButton("Dismiss", null).show();
+    }
+
+    private void setListAdapter(ListView lv, List<RealmUserModel> users) {
+        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, users);
+        lv.setAdapter(adapter);
     }
 
     @Override
