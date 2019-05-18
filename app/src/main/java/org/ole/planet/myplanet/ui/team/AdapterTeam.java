@@ -8,7 +8,11 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -58,16 +62,19 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void showUserList(RealmMyTeam realmMyTeam) {
-
+        View view = LayoutInflater.from(context).inflate(R.layout.fragment_user_list,null);
+        EditText etSearch = view.findViewById(R.id.et_search);
+        ListView lv = view.findViewById(R.id.list_user);
         List<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", realmMyTeam.getUserId().toArray(new String[0])).findAll();
-        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<RealmUserModel>(context, android.R.layout.simple_list_item_1, users);
-
+        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(context, android.R.layout.simple_list_item_1, users);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener((adapterView, view1, i, l) -> {
+            if (listener != null)
+                listener.onSelectedUser(users.get(i));
+        });
         new AlertDialog.Builder(context)
                 .setTitle("Select User To Login")
-                .setAdapter(adapter, (dialogInterface, i) -> {
-                    if (listener!=null)
-                        listener.onSelectedUser(users.get(i));
-                })
+                .setView(view)
                 .setNegativeButton("Dismiss", null)
                 .show();
     }
