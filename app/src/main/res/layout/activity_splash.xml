@@ -48,18 +48,17 @@
                     android:id="@+id/normal_login"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:checked="true"
                     android:padding="@dimen/padding_normal"
                     android:text="Normal Mode"
-                    android:checked="true"
-                    android:textColor="@color/md_white_1000"
-                    />
+                    android:textColor="@color/md_white_1000" />
 
                 <RadioButton
                     android:id="@+id/child_login"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Child Mode"
                     android:padding="@dimen/padding_normal"
+                    android:text="@string/child_mode"
                     android:textColor="@color/md_white_1000" />
             </RadioGroup>
 
@@ -71,7 +70,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="GET STARTED"
+            android:text="@string/get_started"
             android:textColor="@color/md_white_1000"
             android:theme="@style/PrimaryFlatButton" />
 

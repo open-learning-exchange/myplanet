@@ -167,5 +167,6 @@
         <item>Awards</item>
     </string-array>
     <string name="login">Login</string>
-    <string name="child_mode">Child Mode</string>
+    <string name="child_mode">Easy Mode</string>
+    <string name="get_started">GET STARTED</string>
 </resources>

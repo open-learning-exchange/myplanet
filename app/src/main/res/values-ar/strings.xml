@@ -130,7 +130,7 @@
     <string name="help_wanted">Help Wanted</string>
     <string name="btn_guest_login">Login As Guest</string>
     <string name="login">Login</string>
-    <string name="child_mode">Child Mode</string>
+    <string name="child_mode">Easy Mode</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -159,6 +159,7 @@
     <string name="joined_members">Joined Members</string>
     <string name="requested_member">Requested Member</string>
     <string name="courses">Courses</string>
+    <string name="get_started">GET STARTED</string>
 
     <string-array name="info_type">
         <item>Languages</item>
