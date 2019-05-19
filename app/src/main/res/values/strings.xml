@@ -134,6 +134,8 @@
     <string name="joined_members">Joined Members</string>
     <string name="requested_member">Requested Member</string>
     <string name="courses">Courses</string>
+    <string name="enter_message_here">Enter message here</string>
+    <string name="what_would">What would you like to share?</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

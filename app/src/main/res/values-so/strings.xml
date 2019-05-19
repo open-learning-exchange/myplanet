@@ -169,4 +169,6 @@
     </string-array>
     <string name="login">Login</string>
     <string name="child_mode">Child Mode</string>
+    <string name="enter_message_here">Enter message here</string>
+    <string name="what_would">What would you like to share?</string>
 </resources>
