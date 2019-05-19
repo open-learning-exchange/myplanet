@@ -324,9 +324,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onSelectedUser(RealmUserModel userModel) {
-        EditText et = new EditText(this);
-        et.setPadding(8, 8, 8, 8);
-        new AlertDialog.Builder(this).setView(et).setTitle("Please enter your password").setPositiveButton(R.string.login, (dialogInterface, i) -> {
+        View v = getLayoutInflater().inflate(R.layout.layout_child_login,null);
+        EditText et = v.findViewById(R.id.et_child_password);
+        new AlertDialog.Builder(this).setView(v).setTitle("Please enter your password").setPositiveButton(R.string.login, (dialogInterface, i) -> {
             String password = et.getText().toString();
             if (authenticateUser(settings, userModel.getName(), password, LoginActivity.this)) {
                 Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
