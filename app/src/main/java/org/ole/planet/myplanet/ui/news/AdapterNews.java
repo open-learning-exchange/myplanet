@@ -52,11 +52,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(list.get(position).getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-                        if (!mRealm.isInTransaction())
-                            mRealm.beginTransaction();
-                        list.get(position).deleteFromRealm();
-                        mRealm.commitTransaction();
-                        notifyDataSetChanged();
+                        deletePost(position);
                     }).setNegativeButton(R.string.cancel, null).show());
 
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> {
@@ -67,18 +63,30 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         .setView(v)
                         .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
                             String s = et.getText().toString();
-                            if (s.isEmpty()) {
-                                Utilities.toast(context, "Please enter message");
-                                return;
-                            }
-                            if (!mRealm.isInTransaction())
-                                mRealm.beginTransaction();
-                            list.get(position).setMessage(s);
-                            mRealm.commitTransaction();
-                            notifyDataSetChanged();
+                            editPost(s, position);
                         }).setNegativeButton(R.string.cancel, null).show();
             });
         }
+    }
+
+    private void deletePost(int position) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        list.get(position).deleteFromRealm();
+        mRealm.commitTransaction();
+        notifyDataSetChanged();
+    }
+
+    private void editPost(String s, int position) {
+        if (s.isEmpty()) {
+            Utilities.toast(context, "Please enter message");
+            return;
+        }
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        list.get(position).setMessage(s);
+        mRealm.commitTransaction();
+        notifyDataSetChanged();
     }
 
     @Override
