@@ -7,7 +7,7 @@
 
     <android.support.design.widget.TextInputLayout
         android:layout_width="match_parent"
-        android:hint="@string/enter_username"
+        android:hint="@string/what_would"
         android:id="@+id/tl_input"
         android:layout_height="wrap_content">
 

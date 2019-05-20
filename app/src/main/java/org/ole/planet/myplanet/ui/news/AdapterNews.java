@@ -60,10 +60,11 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     }).setNegativeButton(R.string.cancel, null).show());
 
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> {
-                View v = LayoutInflater.from(context).inflate(R.layout.alert_guest_login, null);
+                View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
                 EditText et = v.findViewById(R.id.et_input);
+                et.setText(list.get(position).getMessage());
                 new AlertDialog.Builder(context).setTitle(R.string.edit_post).setIcon(R.drawable.ic_edit)
-                        .setView(et)
+                        .setView(v)
                         .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
                             String s = et.getText().toString();
                             if (s.isEmpty()) {
