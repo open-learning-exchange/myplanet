@@ -1,26 +1,36 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
+
+import io.realm.Realm;
 
 public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmNews> list;
+    private Realm mRealm;
 
-    public AdapterNews(Context context, List<RealmNews> list) {
+    public AdapterNews(Context context, List<RealmNews> list, Realm mRealm) {
         this.context = context;
         this.list = list;
+        this.mRealm = mRealm;
     }
 
     @NonNull
@@ -32,15 +42,50 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof ViewHolderNews) {
+            RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
+            if (userModel != null) {
+                ((ViewHolderNews) holder).tvName.setText(userModel.getName());
+                Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
+            }
+            ((ViewHolderNews) holder).tvMessage.setText(list.get(position).getMessage());
+            ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(list.get(position).getTime()));
+            ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
+                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                        if (!mRealm.isInTransaction())
+                            mRealm.beginTransaction();
+                        list.get(position).deleteFromRealm();
+                        mRealm.commitTransaction();
+                        notifyDataSetChanged();
+                    }).setNegativeButton(R.string.cancel, null).show());
 
+            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> {
+                View v = LayoutInflater.from(context).inflate(R.layout.alert_guest_login, null);
+                EditText et = v.findViewById(R.id.et_input);
+                new AlertDialog.Builder(context).setTitle(R.string.edit_post).setIcon(R.drawable.ic_edit)
+                        .setView(et)
+                        .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
+                            String s = et.getText().toString();
+                            if (s.isEmpty()) {
+                                Utilities.toast(context, "Please enter message");
+                                return;
+                            }
+                            if (!mRealm.isInTransaction())
+                                mRealm.beginTransaction();
+                            list.get(position).setMessage(s);
+                            mRealm.commitTransaction();
+                            notifyDataSetChanged();
+                        }).setNegativeButton(R.string.cancel, null).show();
+            });
+        }
     }
 
     @Override
     public int getItemCount() {
-        return 0;
+        return list.size();
     }
 
-    class ViewHolderNews extends RecyclerView.ViewHolder{
+    class ViewHolderNews extends RecyclerView.ViewHolder {
         TextView tvName, tvDate, tvMessage;
         ImageView imgEdit, imgDelete, imgUser;
 
@@ -50,8 +95,8 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             tvName = itemView.findViewById(R.id.tv_name);
             tvMessage = itemView.findViewById(R.id.tv_message);
             imgDelete = itemView.findViewById(R.id.img_delete);
-            imgEdit= itemView.findViewById(R.id.img_edit);
-            imgUser= itemView.findViewById(R.id.img_user);
+            imgEdit = itemView.findViewById(R.id.img_edit);
+            imgUser = itemView.findViewById(R.id.img_user);
 
         }
     }

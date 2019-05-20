@@ -161,6 +161,8 @@
     <string name="courses">Courses</string>
     <string name="enter_message_here">Enter message here</string>
     <string name="what_would">What would you like to share?</string>
+    <string name="delete_record">Are you sure you want to delete the following ?</string>
+    <string name="edit_post">Edit Post</string>
 
     <string-array name="info_type">
         <item>Languages</item>

@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardElevation="2dp"
+    app:contentPadding="@dimen/padding_small"
     app:cardUseCompatPadding="true">
 
 
@@ -14,6 +15,9 @@
         <ImageView
             android:id="@+id/img_user"
             android:layout_width="@dimen/_60dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ole_logo"
+            android:padding="@dimen/padding_small"
             android:layout_height="@dimen/_60dp" />
 
         <LinearLayout

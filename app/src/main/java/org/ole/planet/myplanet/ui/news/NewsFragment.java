@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.Sort;
 
 public class NewsFragment extends Fragment {
 
@@ -52,15 +54,18 @@ public class NewsFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmNews> list = mRealm.where(RealmNews.class).findAll();
-        rvNews.setAdapter(new AdapterNews(getActivity(), list));
+        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).findAll();
+        rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rvNews.setAdapter(new AdapterNews(getActivity(), list, mRealm));
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
             if (message.isEmpty()) {
                 tlMessage.setError("Please enter message");
                 return;
             }
+            etMessage.setText("");
             RealmNews.createNews(message, mRealm, user);
+          //  rvNews.getAdapter().notifyDataSetChanged();
         });
     }
 }
