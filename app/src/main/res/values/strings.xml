@@ -130,7 +130,7 @@
     <string name="btn_guest_login">Login As Guest</string>
     <string name="enter_username">Enter Username</string>
     <string name="login">Login</string>
-    <string name="child_mode">Child Mode</string>
+    <string name="child_mode">Easy Mode</string>
     <string name="joined_members">Joined Members</string>
     <string name="requested_member">Requested Member</string>
     <string name="courses">Courses</string>
@@ -139,6 +139,7 @@
     <string name="our_news">Our News</string>
     <string name="delete_record">Are you sure you want to delete the following ?</string>
     <string name="edit_post">Edit Post</string>
+    <string name="get_started">GET STARTED</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
