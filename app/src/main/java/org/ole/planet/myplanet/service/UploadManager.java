@@ -196,7 +196,6 @@ public class UploadManager {
                         continue;
                     Response<JsonObject> object;
                     if (TextUtils.isEmpty(act.get_id())) {
-                        Utilities.log("JSON " + RealmRating.serializeRating(act));
                         object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
                     } else {
                         object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
@@ -207,7 +206,6 @@ public class UploadManager {
                         act.setUpdated(false);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
         });
@@ -219,7 +217,6 @@ public class UploadManager {
         RealmUserModel userModel = new UserProfileDbHandler(context).getUserModel();
         mRealm.executeTransactionAsync(realm -> {
             final RealmResults<RealmNews> activities = realm.where(RealmNews.class).isNull("_id").or().isEmpty("_id").findAll();
-            Utilities.log("NEWS SIZE " + activities.size());
             for (RealmNews act : activities) {
                 try {
                     if (act.getUserId().startsWith("guest"))
@@ -231,14 +228,11 @@ public class UploadManager {
                     } else {
                         object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), RealmNews.serializeNews(act, userModel)).execute();
                     }
-                    Utilities.log("Object " + object);
                     if (object.body() != null) {
                         act.set_id(JsonUtils.getString("_id", object.body()));
                         act.set_rev(JsonUtils.getString("_rev", object.body()));
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                } catch (Exception e) {}
             }
         });
     }
