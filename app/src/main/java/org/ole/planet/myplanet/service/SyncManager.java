@@ -124,6 +124,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "achievements");
             TransactionSyncManager.syncDb(mRealm, "tags");
             TransactionSyncManager.syncDb(mRealm, "submissions");
+            TransactionSyncManager.syncDb(mRealm, "news");
             myLibraryTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "login_activities");
             RealmResourceActivity.onSynced(mRealm, settings);

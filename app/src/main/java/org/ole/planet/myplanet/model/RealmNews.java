@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -31,16 +32,16 @@ public class RealmNews extends RealmObject {
     private String _id;
     private String _rev;
     private String userId;
+    private String user;
     private String message;
     private long time;
     private String createdOn;
     private String parentCode;
 
-    public static void insertNews(String id, JsonObject doc, Realm mRealm) {
-        Utilities.log("Insert my team");
-        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
+    public static void insertNews(Realm mRealm, JsonObject doc) {
+        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", JsonUtils.getString("_id", doc)).findFirst();
         if (news == null) {
-            news = mRealm.createObject(RealmNews.class, id);
+            news = mRealm.createObject(RealmNews.class, JsonUtils.getString("_id", doc));
         }
         news.setMessage(JsonUtils.getString("message", doc));
         news.set_rev(JsonUtils.getString("_rev", doc));
@@ -49,10 +50,34 @@ public class RealmNews extends RealmObject {
         news.setCreatedOn(JsonUtils.getString("createdOn", doc));
         news.setParentCode(JsonUtils.getString("parentCode", doc));
         JsonObject user = JsonUtils.getJsonObject("user", doc);
+        news.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", doc)));
         news.setUserId(JsonUtils.getString("_id", user));
     }
 
-    public static RealmNews createNews(String message, Realm mRealm, RealmUserModel user){
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public static JsonObject serializeNews(RealmNews news, RealmUserModel user) {
+        JsonObject object = new JsonObject();
+        object.addProperty("message", news.getMessage());
+        if (news.get_id()!=null)
+            object.addProperty("_id", news.get_id());
+        if (news.get_rev()!=null)
+            object.addProperty("_rev", news.get_rev());
+        object.addProperty("time", news.getTime());
+        object.addProperty("createdOn", news.getCreatedOn());
+        object.addProperty("parentCode", news.getParentCode());
+        object.add("user",new Gson().fromJson(news.getUser(), JsonObject.class));
+      //  object.add("user", user.serialize());
+        return object;
+    }
+
+    public static RealmNews createNews(String message, Realm mRealm, RealmUserModel user) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmNews news = mRealm.createObject(RealmNews.class, UUID.randomUUID().toString());
@@ -61,6 +86,7 @@ public class RealmNews extends RealmObject {
         news.setCreatedOn(user.getPlanetCode());
         news.setParentCode(user.getParentCode());
         news.setUserId(user.getId());
+        news.setUser(new Gson().toJson(user.serialize()));
         mRealm.commitTransaction();
         return news;
     }

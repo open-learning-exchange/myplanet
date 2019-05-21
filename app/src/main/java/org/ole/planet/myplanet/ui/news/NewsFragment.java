@@ -65,7 +65,7 @@ public class NewsFragment extends Fragment {
             }
             etMessage.setText("");
             RealmNews.createNews(message, mRealm, user);
-          //  rvNews.getAdapter().notifyDataSetChanged();
+            rvNews.getAdapter().notifyDataSetChanged();
         });
     }
 }

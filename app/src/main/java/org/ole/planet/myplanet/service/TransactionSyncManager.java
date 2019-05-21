@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
@@ -82,6 +83,8 @@ public class TransactionSyncManager {
             RealmOfflineActivity.insertOfflineActivities(mRealm, jsonDoc);
         } else if (type.equals("tags")) {
             RealmTag.insertTags(mRealm, jsonDoc);
+        } else if (type.equals("news")) {
+            RealmNews.insertNews(mRealm, jsonDoc);
         }
     }
 

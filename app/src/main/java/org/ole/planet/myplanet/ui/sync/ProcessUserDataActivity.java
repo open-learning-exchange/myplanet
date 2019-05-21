@@ -145,6 +145,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         UploadToShelfService.getInstance().uploadToshelf(this);
         UploadManager.getInstance().uploadResourceActivities("");
         UploadManager.getInstance().uploadResourceActivities("sync");
+        UploadManager.getInstance().uploadNews();
         UploadManager.getInstance().uploadRating(this);
         UploadManager.getInstance().uploadCrashLog(this);
         UploadManager.getInstance().uploadActivities(this);
