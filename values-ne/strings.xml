@@ -9,7 +9,7 @@
     <string name="btn_sign_in">साईन इन</string>
     <string name="btn_sync">Sync</string>
     <string name="btn_sync_save">सुरक्षित गर्नुहोस्</string>
-    <string name="btn_sync_cancel">Cancel</string>
+    <string name="btn_sync_cancel">रद्द</string>
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">Username and/or password do not match</string>
@@ -17,12 +17,12 @@
     <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">My Planet</string>
-    <string name="menu_home">गृहपृष्ठ</string>
+    <string name="menu_home">गृह</string>
     <string name="menu_library">हाम्रो पुस्तकालय</string>
     <string name="menu_courses">हाम्रो पाठ्यक्रमहरू</string>
     <string name="menu_meetups">भेलाहरू</string>
     <string name="menu_surveys">सर्वेक्षणहरू</string>
-    <string name="menu_logout">बाहिरिनुहाेस्</string>
+    <string name="menu_logout">बाहिरिनु</string>
     <string name="menu_feedback">प्रतिकृया</string>
     <string name="system_name">My Planet</string>
     <string name="txt_myLibrary">मेरो पुस्तकालय</string>
@@ -30,10 +30,10 @@
     <string name="txt_myMeetups">मेरो भेलाहरू</string>
     <string name="txt_myTeams">मेरो समूहहरू</string>
     <string name="button_submit">बुझाउनुहाेस्</string>
-    <string name="button_cancel">रद्द गर्नुहोस्</string>
+    <string name="button_cancel">रद्द</string>
     <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
     <string name="download_selected">Download Selected</string>
-    <string name="txt_cancel">रद्द गर्नुहोस्</string>
+    <string name="txt_cancel">रद्द</string>
     <string name="download_all">Download All</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="add_to_mycourse">Add to my courses</string>
@@ -80,7 +80,7 @@
     <string name="your_comment">Leave your comment</string>
     <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
     <string name="sync_now">Sync Now</string>
-    <string name="logout">बाहिरिनुहाेस्</string>
+    <string name="logout">बाहिरिनु</string>
     <string name="settings">Settings</string>
     <string name="change_password">पासवर्ड परिवर्तन</string>
     <string name="edit_profile">Edit Profile</string>
@@ -92,7 +92,7 @@
     <string name="dismiss">समाप्त</string>
     <string name="stop_download">Stop Download</string>
     <string name="downloading_file">Downloading file...</string>
-    <string name="cancel">रद्द गर्नुहोस्</string>
+    <string name="cancel">रद्द</string>
     <string name="add_to_mycourses">मेराे पाठ्यक्रममा थप्नु</string>
     <string name="added_to">added to</string>
     <string name="removed_from">removed from</string>
@@ -122,11 +122,11 @@
     <string name="levels">तहहरू</string>
     <string name="languages">भाषाहरू</string>
     <string name="txt_myLife">मेराे जिवन</string>
-    <string name="achievements">Achievements</string>
+    <string name="achievements">उपलब्धिहरू</string>
     <string name="messeges">Messeges</string>
     <string name="contacts">समपर्कहरु</string>
     <string name="news">समाचारहरू</string>
-    <string name="dictionaries">Dictionaries</string>
+    <string name="dictionaries">शब्दकोषहरू</string>
     <string name="maps">नक्साहरू</string>
     <string name="help_wanted">Help Wanted</string>
     <string-array name="level">
@@ -157,7 +157,7 @@
         <item>शिक्षा</item>
         <item>Employment History</item>
         <item>Badges</item>
-        <item>Certificates</item>
+        <item>प्रमाणपत्रहरू</item>
         <item>Internships</item>
         <item>Awards</item>
     </string-array>
