@@ -72,7 +72,7 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/get_started"
             android:textColor="@color/md_white_1000"
-            android:theme="@style/PrimaryFlatButton" />
+            style="@style/BlueButton" />
 
 
     </LinearLayout>

@@ -84,6 +84,18 @@
         <item name="colorControlHighlight">@color/colorPrimary</item>
     </style>
 
+    <style name="BlueButton" parent="Theme.AppCompat">
+        <item name="android:textColor">@color/md_white_1000</item>
+        <item name="android:background">@color/colorPrimaryDark</item>
+        <item name="colorControlHighlight">@color/colorPrimary</item>
+    </style>
+
+    <style name="GreyButtons" parent="Theme.AppCompat">
+        <item name="android:textColor">@color/md_white_1000</item>
+        <item name="android:background">@color/md_grey_500</item>
+        <item name="colorControlHighlight">@color/disable_color</item>
+    </style>
+
     <style name="PrimaryFlatButton" parent="Theme.AppCompat.Light">
         <item name="android:buttonStyle">@style/Widget.AppCompat.Button.Borderless</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
