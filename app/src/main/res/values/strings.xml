@@ -139,6 +139,7 @@
     <string name="our_news">Our News</string>
     <string name="delete_record">Are you sure you want to delete the following ?</string>
     <string name="edit_post">Edit Post</string>
+    <string name="search_user">Search user</string>
     <string name="get_started">GET STARTED</string>
     <string-array name="level">
         <item></item>
