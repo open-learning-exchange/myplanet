@@ -45,6 +45,7 @@ public class RealmTag extends RealmObject {
     }
 
 
+
     public String getId() {
         return id;
     }
@@ -105,6 +106,8 @@ public class RealmTag extends RealmObject {
         tag.setName(JsonUtils.getString("name", act));
         tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act));
     }
+
+
 
     private void setAttachedTo(JsonArray attachedTo) {
         this.attachedTo = new RealmList<>();

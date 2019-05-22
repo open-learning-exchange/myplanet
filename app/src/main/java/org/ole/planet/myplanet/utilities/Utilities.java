@@ -105,6 +105,8 @@ public class Utilities {
     public static void loadImage(String userImage, ImageView imageView) {
         if (!TextUtils.isEmpty(userImage)) {
             Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+        }else{
+            imageView.setImageResource(R.drawable.ole_logo);
         }
     }
 
