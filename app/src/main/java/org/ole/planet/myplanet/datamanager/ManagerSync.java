@@ -80,4 +80,5 @@ public class ManagerSync {
         return (jsonDoc.get("isUserAdmin").getAsBoolean() || isManager);
     }
 
+
 }

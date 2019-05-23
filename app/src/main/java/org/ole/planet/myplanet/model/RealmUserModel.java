@@ -335,6 +335,13 @@ public class RealmUserModel extends RealmObject {
         this.showTopbar = showTopbar;
     }
 
+    public boolean isManager() {
+        JsonArray roles = getRoles();
+        boolean isManager = roles.toString().toLowerCase().contains("manager");
+        return (getUserAdmin() || isManager);
+    }
+
+
     @Override
     public String toString() {
         return " - " + name;
