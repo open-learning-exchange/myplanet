@@ -165,6 +165,7 @@
     <string name="delete_record">Are you sure you want to delete the following ?</string>
     <string name="edit_post">Edit Post</string>
     <string name="get_started">GET STARTED</string>
+    <string name="enter_password">Enter Password</string>
 
     <string-array name="info_type">
         <item>Languages</item>

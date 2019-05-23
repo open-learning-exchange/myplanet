@@ -1,47 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <SwitchPreference android:title="@string/show_top_nav"
+    <SwitchPreference
+        android:defaultValue="true"
         android:key="show_topbar"
-        android:defaultValue="true"
-        />
+        android:title="@string/show_top_nav" />
 
-    <ListPreference android:title="@string/language"
+    <ListPreference
         android:entries="@array/language"
-        android:key="app_language"
         android:entryValues="@array/language_keys"
-        />
-    <SwitchPreference android:title="BeLL Dashboard Theme"
+        android:key="app_language"
+        android:title="@string/language" />
+    <SwitchPreference
+        android:defaultValue="false"
         android:key="bell_theme"
+        android:title="BeLL Dashboard Theme" />
+    <SwitchPreference
         android:defaultValue="false"
-        />
-    <SwitchPreference android:title="Beta Functionality"
         android:key="beta_function"
-        android:defaultValue="false"
-        />
-    <PreferenceCategory android:dependency="beta_function"
-        android:title="Beta Functionality"
-        >
-    <SwitchPreference android:title="Beta Function for Course"
-        android:key="beta_course"
-        android:defaultValue="true"
-        />
-    <SwitchPreference android:title="Beta Function for WiFi Switch"
-        android:key="beta_wifi_switch"
-        android:defaultValue="false"
-        />
+        android:title="Beta Functionality" />
 
-    <SwitchPreference android:title="Beta Function for Achievement"
-        android:key="beta_achievement"
-        android:defaultValue="false"
-        />
-    <SwitchPreference android:title="Beta Function for Survey"
-        android:key="beta_survey"
-        android:defaultValue="false"
-        />
+    <PreferenceCategory android:title="Manager Mode">
 
-    <SwitchPreference android:title="Beta Function for Rating"
-        android:key="beta_rating"
-        android:defaultValue="false"
-        />
+        <Preference
+            android:key="add_manager"
+            android:title="Add Manager Account" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:dependency="beta_function"
+        android:title="Beta Functionality">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_course"
+            android:title="Beta Function for Course" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_wifi_switch"
+            android:title="Beta Function for WiFi Switch" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_achievement"
+            android:title="Beta Function for Achievement" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_survey"
+            android:title="Beta Function for Survey" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_rating"
+            android:title="Beta Function for Rating" />
     </PreferenceCategory>
 </PreferenceScreen>
