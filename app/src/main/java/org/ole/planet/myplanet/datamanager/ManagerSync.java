@@ -21,6 +21,9 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.IOException;
 
 import io.realm.Realm;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
@@ -43,29 +46,42 @@ public class ManagerSync {
 
     public void login(String userName, String password, SyncListener listener) {
         listener.onSyncStarted();
+        Utilities.log(Utilities.getUrl() + "org.couchdb.user:" +  userName);
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        mRealm.executeTransactionAsync(realm -> {
-            try {
-                JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:" + userName)).execute().body();
+
+        apiInterface.getJsonObject("Basic " + Base64.encodeToString((userName + ":" +
+                password).getBytes(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:" + userName)).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                Utilities.log("Started");
+                JsonObject jsonDoc =  response.body();
+                Utilities.log("JSON " + jsonDoc );
                 if (jsonDoc != null) {
                     AndroidDecrypter decrypt = new AndroidDecrypter();
                     String derivedKey = jsonDoc.get("derived_key").getAsString();
                     String salt = jsonDoc.get("salt").getAsString();
                     if (decrypt.AndroidDecrypter(userName, password, derivedKey, salt)) {
-                        checkManagerAndInsert(jsonDoc, realm,listener);
+                        checkManagerAndInsert(jsonDoc, mRealm,listener);
                     }else{
                         listener.onSyncFailed("Name or password is incorrect.");
                     }
                 } else {
                     listener.onSyncFailed("Name or password is incorrect.");
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+
             }
         });
+
     }
 
     private void checkManagerAndInsert(JsonObject jsonDoc, Realm realm, SyncListener listener) {
+        Utilities.log("Check manager and insert");
+
         if (isManager(jsonDoc)) {
             RealmUserModel.populateUsersTable(jsonDoc, realm, settings);
             listener.onSyncComplete();

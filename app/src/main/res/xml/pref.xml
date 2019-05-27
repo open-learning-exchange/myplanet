@@ -19,13 +19,14 @@
         android:key="beta_function"
         android:title="Beta Functionality" />
 
-    <PreferenceCategory android:title="Manager Mode">
+    <!--<PreferenceCategory android:title="Manager Mode"-->
+        <!--&gt;-->
 
-        <Preference
-            android:key="add_manager"
-            android:title="Add Manager Account" />
+        <!--<Preference-->
+            <!--android:key="add_manager"-->
+            <!--android:title="Add Manager Account" />-->
 
-    </PreferenceCategory>
+    <!--</PreferenceCategory>-->
 
     <PreferenceCategory
         android:dependency="beta_function"

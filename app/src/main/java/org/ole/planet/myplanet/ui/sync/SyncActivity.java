@@ -24,6 +24,7 @@ import com.github.kittinunf.fuel.core.Response;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
@@ -106,9 +107,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).findAll();
         rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
         rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
-        if (teams.size() > 0){
+        if (teams.size() > 0) {
             tvNodata.setVisibility(View.GONE);
-        }else{
+        } else {
             tvNodata.setText("No teams available");
             tvNodata.setVisibility(View.VISIBLE);
         }
@@ -189,20 +190,20 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         editor.commit();
     }
 
-    public boolean authenticateUser(SharedPreferences settings, String username, String password, Context context) {
+    public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode ) {
         this.settings = settings;
-        AndroidDecrypter decrypt = new AndroidDecrypter();
         if (mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");
             return false;
         } else {
-            return checkName(username, password, decrypt);
+            return checkName(username, password, isManagerMode);
         }
     }
 
     @Nullable
-    private Boolean checkName(String username, String password, AndroidDecrypter decrypt) {
+    private Boolean checkName(String username, String password, boolean isManagerMode) {
         try {
+            AndroidDecrypter decrypt = new AndroidDecrypter();
             RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class)
                     .equalTo("name", username)
                     .findAll();
@@ -210,6 +211,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 mRealm.beginTransaction();
             for (RealmUserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
+                    if (isManagerMode && !user.isManager())
+                        return false;
                     saveUserInfoPref(settings, password, user);
                     return true;
                 }

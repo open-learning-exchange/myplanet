@@ -195,9 +195,21 @@
                         android:layout_height="wrap_content"
                         android:alpha="0.7"
                         android:fontFamily="sans-serif"
-                        android:text="Save Username and Password"
+                        android:text="@string/save_username_and_password"
                         android:textColor="@color/material_drawer_dark_background"
                         android:textSize="12sp" />
+
+
+                    <CheckBox
+                        android:id="@+id/manager_login"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.7"
+                        android:fontFamily="sans-serif"
+                        android:text="@string/managerial_login"
+                        android:textColor="@color/material_drawer_dark_background"
+                        android:textSize="12sp" />
+
 
                     <Button
                         android:id="@+id/btn_signin"

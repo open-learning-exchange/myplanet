@@ -84,11 +84,11 @@ public class SettingActivity extends AppCompatActivity {
                 return true;
             });
 
-            Preference preference = findPreference("add_manager");
-            preference.setOnPreferenceClickListener(preference1 -> {
-                managerLogin();
-                return false;
-            });
+//            Preference preference = findPreference("add_manager");
+//            preference.setOnPreferenceClickListener(preference1 -> {
+//                managerLogin();
+//                return false;
+//            });
 
 
 

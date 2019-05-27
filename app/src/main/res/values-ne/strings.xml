@@ -176,4 +176,6 @@
     <string name="our_news">Our News</string>
     <string name="get_started">GET STARTED</string>
     <string name="enter_password">Enter Password</string>
+    <string name="managerial_login">Managerial Login</string>
+    <string name="save_username_and_password">Save Username and Password</string>
 </resources>

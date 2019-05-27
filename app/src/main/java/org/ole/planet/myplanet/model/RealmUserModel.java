@@ -45,6 +45,27 @@ public class RealmUserModel extends RealmObject {
     private String userImage;
     private boolean showTopbar;
 
+    public JsonObject serialize() {
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", getId());
+        object.addProperty("_rev", get_rev());
+        object.addProperty("name", getName());
+        object.add("roles", getRoles());
+        object.addProperty("isUserAdmin", getUserAdmin());
+        object.addProperty("joinDate", getJoinDate());
+        object.addProperty("firstName", getFirstName());
+        object.addProperty("lastName", getLastName());
+        object.addProperty("middleName", getMiddleName());
+        object.addProperty("email", getEmail());
+        object.addProperty("phoneNumber", getPhoneNumber());
+        object.addProperty("birthPlace", getBirthPlace());
+        object.addProperty("derived_key", getDerived_key());
+        object.addProperty("salt", getSalt());
+        object.addProperty("password_scheme", getPassword_scheme());
+        return object;
+    }
+
+
     public static RealmUserModel createGuestUser(String username, Realm mRealm, SharedPreferences settings) {
         JsonObject object = new JsonObject();
         object.addProperty("_id", "guest_" + username);
@@ -59,21 +80,6 @@ public class RealmUserModel extends RealmObject {
     }
 
 
-    public JsonObject serialize() {
-        JsonObject object = new JsonObject();
-        object.addProperty("_id", getId());
-        object.addProperty("_rev", get_rev());
-        object.addProperty("name", getName());
-        object.add("roles", getRoles());
-        object.addProperty("isUserAdmin", getUserAdmin());
-        object.addProperty("joinDate", getJoinDate());
-        object.addProperty("firstName", getFirstName());
-        object.addProperty("lastName", getLastName());
-        object.addProperty("middleName", getMiddleName());
-        object.addProperty("email", getEmail());
-        object.addProperty("phoneNumber", getPhoneNumber());
-        return object;
-    }
 
     public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
