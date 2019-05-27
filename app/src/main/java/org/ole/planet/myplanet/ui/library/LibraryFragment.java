@@ -102,7 +102,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
         //  etTags.addTextChangedListener(this);
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
-            CollectionsFragment f = CollectionsFragment.getInstance(searchTags);
+            CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "resources");
             f.setListener(LibraryFragment.this);
             f.show(getChildFragmentManager(), "");
         });

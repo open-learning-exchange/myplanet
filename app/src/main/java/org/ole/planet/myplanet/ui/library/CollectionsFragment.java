@@ -46,6 +46,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     TagExpandableAdapter adapter;
     EditText etFilter;
     Button btnOk;
+    String dbType;
     private ArrayList<RealmTag> selectedItemsList = new ArrayList<>();
 
     TagClickListener listener;
@@ -53,9 +54,13 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     public CollectionsFragment() {
     }
 
-    public static CollectionsFragment getInstance(List<RealmTag> l) {
+    public static CollectionsFragment getInstance(List<RealmTag> l, String dbType) {
         recentList = l;
-        return new CollectionsFragment();
+        CollectionsFragment f = new CollectionsFragment();
+        Bundle b = new Bundle();
+        b.putString("dbType", dbType);
+        f.setArguments(b);
+        return f;
     }
 
 
@@ -67,6 +72,8 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setStyle(DialogFragment.STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog_NoActionBar_MinWidth);
+        if (getArguments()!=null)
+            dbType = getArguments().getString("dbType");
     }
 
     @Override
@@ -133,7 +140,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     }
 
     private void setListAdapter() {
-        list = mRealm.where(RealmTag.class).findAll();
+        list = mRealm.where(RealmTag.class).equalTo("db", dbType).findAll();
         selectedItemsList = (ArrayList<RealmTag>) recentList;
 //        if (recentList.isEmpty()) {
 //            recentList = list;
