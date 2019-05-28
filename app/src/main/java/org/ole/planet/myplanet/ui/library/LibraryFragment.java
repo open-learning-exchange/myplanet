@@ -70,8 +70,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
-        HashMap<String, RealmTag> tagMap = RealmTag.getListAsMap(mRealm.where(RealmTag.class).findAll());
-        adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, tagMap);
+       // HashMap<String, RealmTag> tagMap = RealmTag.getListAsMap(mRealm.where(RealmTag.class).findAll());
+        adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, mRealm);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList<>();
