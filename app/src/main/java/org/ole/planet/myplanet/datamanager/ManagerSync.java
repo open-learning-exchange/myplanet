@@ -73,7 +73,7 @@ public class ManagerSync {
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
-
+                listener.onSyncFailed("Server not reachable.");
             }
         });
 
