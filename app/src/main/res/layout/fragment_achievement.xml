@@ -44,7 +44,8 @@
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:text="@string/edit_achievement"
-                    android:theme="@style/AccentButton" />
+                    android:padding="@dimen/padding_normal"
+                    style="@style/GreyButtons" />
 
 
             </LinearLayout>
