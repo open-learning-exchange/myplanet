@@ -140,7 +140,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     }
 
     private void setListAdapter() {
-        list = mRealm.where(RealmTag.class).equalTo("db", dbType).findAll();
+        list = mRealm.where(RealmTag.class).equalTo("db", dbType).isNotEmpty("name").findAll();
         selectedItemsList = (ArrayList<RealmTag>) recentList;
 //        if (recentList.isEmpty()) {
 //            recentList = list;
