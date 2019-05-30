@@ -174,8 +174,8 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (s.isEmpty()) {
             return getList(c);
         }
-        //List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
-        List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        List<LI> li = getData(s,c);
+
         if (c == RealmMyLibrary.class) {
             return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
         } else if (c == RealmMyCourse.class && isMyCourseLib) {
@@ -183,6 +183,28 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         } else {
             return (List<LI>) RealmMyCourse.getOurCourse(model.getId(), (List<RealmMyCourse>) li);
         }
+    }
+
+    private List<LI> getData(String s, Class c) {
+        List<LI> li = new ArrayList<>();
+        if (!s.contains(" ")){
+            li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        }
+        else{
+            String[] query = s.split(" ");
+            List<LI> data = mRealm.where(c).findAll();
+            for (LI l : data){
+                String title = c == RealmMyLibrary.class ? ((RealmMyLibrary)l).getTitle() : ((RealmMyCourse)l).getCourseTitle();
+                for (String q: query) {
+                    Utilities.log(q + " " + title);
+                    if(title.toLowerCase().contains(q.toLowerCase())){
+                        li.add(l);
+                        break;
+                    }
+                }
+            }
+        }
+        return li;
     }
 
     public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
@@ -193,7 +215,8 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
-        List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
+//        List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
+        List<RealmMyLibrary> list = (List<RealmMyLibrary>) getData(s, RealmMyLibrary.class);
         if (isMyCourseLib)
             list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
         else
@@ -225,7 +248,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
-            if(isValidFilter(l))
+            if (isValidFilter(l))
                 newList.add(l);
         }
         return newList;
@@ -236,7 +259,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         boolean lev = levels.isEmpty() || l.getLevel().containsAll(levels);
         boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
         boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
-        return  (sub && lev && lan && med);
+        return (sub && lev && lan && med);
     }
 
     public List<LI> getList(Class c) {
