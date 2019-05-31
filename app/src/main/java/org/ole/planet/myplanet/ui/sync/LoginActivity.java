@@ -259,7 +259,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
                 @Override
                 public void onSyncFailed(String msg) {
-                    Utilities.log("On failed");
+                    Utilities.toast(LoginActivity.this,msg);
                     progressDialog.dismiss();
                 }
             });
