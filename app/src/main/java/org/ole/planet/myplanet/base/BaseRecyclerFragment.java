@@ -172,14 +172,14 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             String[] query = s.split(" ");
             List<LI> data = mRealm.where(c).findAll();
             for (LI l : data) {
-                String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
-               searchAndAddToList(l, title, query, li);
+               searchAndAddToList(l, c, query, li);
             }
         }
         return li;
     }
 
-    private void searchAndAddToList(LI l, String title, String[] query, List<LI> li) {
+    private void searchAndAddToList(LI l, Class c, String[] query, List<LI> li) {
+        String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
         for (String q : query) {
             if (title.toLowerCase().contains(q.toLowerCase())) {
                 li.add(l);
