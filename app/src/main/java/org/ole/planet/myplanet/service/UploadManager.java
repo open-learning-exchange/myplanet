@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
@@ -67,6 +68,8 @@ public class UploadManager {
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        if (model.isManager())
+            return;
         try {
             apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getMyPlanetActivities(context, pref, model)).enqueue(new Callback<JsonObject>() {
                 @Override
@@ -167,6 +170,9 @@ public class UploadManager {
     public void uploadUserActivities(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
+        RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        if (model.isManager())
+            return;
         mRealm.executeTransactionAsync(realm -> {
             final RealmResults<RealmOfflineActivity> activities = realm.where(RealmOfflineActivity.class)
                     .isNull("_rev").equalTo("type", "login").findAll();
@@ -231,7 +237,8 @@ public class UploadManager {
                         act.set_id(JsonUtils.getString("_id", object.body()));
                         act.set_rev(JsonUtils.getString("_rev", object.body()));
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
         });
     }

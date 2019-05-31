@@ -39,6 +39,7 @@ public class TransactionSyncManager {
         return false;
     }
 
+
     public static void syncDb(final Realm mRealm, final String table) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
 

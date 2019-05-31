@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
     android:id="@+id/constraintLayout"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/darkblue_gradient">
 
@@ -12,8 +12,8 @@
         android:layout_height="399dp"
         android:background="@color/bg_white"
         android:baselineAligned="false"
-        android:focusableInTouchMode="true"
         android:elevation="2dp"
+        android:focusableInTouchMode="true"
         android:orientation="horizontal"
         android:weightSum="10"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -63,28 +63,27 @@
                     android:textStyle="bold" />
 
 
-
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/btn_lang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:entries="@array/language"
+                    android:padding="@dimen/padding_normal"
                     android:text="@string/language"
                     android:textColor="@android:color/white"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:padding="@dimen/padding_normal"
-                    android:layout_height="wrap_content"/>
+                    android:theme="@style/PrimaryFlatButton" />
 
 
                 <android.support.v7.widget.SwitchCompat
-                    android:layout_width="wrap_content"
-                    android:text="@string/child_mode"
-                    android:layout_gravity="center"
                     android:id="@+id/switch_child_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:gravity="center"
                     android:padding="@dimen/padding_normal"
-                    android:textColor="@color/md_white_1000"
-                    android:layout_height="wrap_content" />
+                    android:text="@string/child_mode"
+                    android:textColor="@color/md_white_1000" />
 
                 <TextView
                     android:id="@+id/lblVersion"
@@ -115,8 +114,8 @@
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginLeft="10dp"
                     android:layout_alignParentLeft="true"
+                    android:layout_marginLeft="10dp"
                     android:layout_marginTop="15dp"
                     android:background="@null"
                     android:scaleType="fitCenter" />
@@ -127,8 +126,8 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
                     android:background="@null"
-                    android:paddingRight="10dp"
                     android:paddingTop="10dp"
+                    android:paddingRight="10dp"
                     app:srcCompat="@drawable/ic_settings_black_36dp" />
 
             </RelativeLayout>
@@ -151,9 +150,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/hint_name"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
-                        app:hintEnabled="true"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
+                        app:hintEnabled="true">
 
                         <EditText
                             android:id="@+id/input_name"
@@ -169,9 +168,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/hint_password"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
                         app:hintEnabled="true"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:passwordToggleEnabled="true">
 
                         <EditText
@@ -189,7 +188,17 @@
                         android:layout_height="wrap_content"
                         android:alpha="0.7"
                         android:fontFamily="sans-serif"
-                        android:text="Save Username and Password"
+                        android:text="@string/save_username_and_password"
+                        android:textColor="@color/material_drawer_dark_background"
+                        android:textSize="12sp" />
+
+                    <CheckBox
+                        android:id="@+id/manager_login"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.7"
+                        android:fontFamily="sans-serif"
+                        android:text="@string/managerial_login"
                         android:textColor="@color/material_drawer_dark_background"
                         android:textSize="12sp" />
 
@@ -208,17 +217,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="@string/btn_guest_login"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:theme="@style/PrimaryFlatButton" />
 
                     <Button
+                        android:id="@+id/become_member"
                         android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:id="@+id/become_member"
                         android:text="Become a member"
-                        android:layout_height="wrap_content" />
+                        android:theme="@style/PrimaryFlatButton" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

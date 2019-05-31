@@ -23,9 +23,13 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.SyncListener;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -39,6 +43,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
+
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
@@ -55,10 +60,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-    private CheckBox save;
+    private CheckBox save, managerialLogin;
     private boolean isSync = false, isUpload = false, forceSync = false;
     String processedUrl;
     private SwitchCompat switchChildMode;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,7 +86,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
         }
         new GPSService(this);
-            setUpChildMode();
+        setUpChildMode();
     }
 
     private void showWifiDialog() {
@@ -96,6 +102,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         btnGuestLogin = findViewById(R.id.btn_guest_login);
         save = findViewById(R.id.save);
+        managerialLogin = findViewById(R.id.manager_login);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         findViewById(R.id.become_member).setOnClickListener(v -> {
@@ -223,13 +230,47 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             editor.putString("loginUserName", inputName.getText().toString());
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
-        if (authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), this)) {
+        boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), managerialLogin.isChecked());
+
+
+        if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             onLogin();
+        } else if (managerialLogin.isChecked()) {
+            ManagerSync.getInstance().login(inputName.getText().toString(), inputPassword.getText().toString(), new SyncListener() {
+                @Override
+                public void onSyncStarted() {
+                    progressDialog.setMessage("Please wait....");
+                    progressDialog.show();
+                }
+
+                @Override
+                public void onSyncComplete() {
+                    progressDialog.dismiss();
+                    Utilities.log("on complete");
+                    boolean log = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), true);
+                    if (log){
+                        Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+                        onLogin();
+                    }else{
+                        alertDialogOkay(getString(R.string.err_msg_login));
+                    }
+                }
+
+                @Override
+                public void onSyncFailed(String msg) {
+                    Utilities.toast(LoginActivity.this,msg);
+                    progressDialog.dismiss();
+                }
+            });
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
         }
         editor.commit();
+
+    }
+
+    private void managerLogin() {
 
     }
 
@@ -300,7 +341,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
-        if (msg.startsWith("Config")){
+        if (msg.startsWith("Config")) {
             settingDialog();
         }
         progressDialog.dismiss();
@@ -324,11 +365,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onSelectedUser(RealmUserModel userModel) {
-        View v = getLayoutInflater().inflate(R.layout.layout_child_login,null);
+        View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
         EditText et = v.findViewById(R.id.et_child_password);
         new AlertDialog.Builder(this).setView(v).setTitle("Please enter your password").setPositiveButton(R.string.login, (dialogInterface, i) -> {
             String password = et.getText().toString();
-            if (authenticateUser(settings, userModel.getName(), password, LoginActivity.this)) {
+            if (authenticateUser(settings, userModel.getName(), password, false)) {
                 Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
                 onLogin();
             } else {

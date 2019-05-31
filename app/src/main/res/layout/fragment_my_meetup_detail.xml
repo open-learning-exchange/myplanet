@@ -48,8 +48,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/invite_member"
+                        android:padding="@dimen/padding_normal"
                         android:textColor="@color/md_white_1000"
-                        android:theme="@style/PrimaryFlatButton" />
+                        style="@style/BlueButton"
+                        android:layout_marginRight="10dp"/>
 
 
                     <Button
@@ -57,7 +59,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/leave"
-                        android:theme="@style/AccentButton" />
+                        android:padding="@dimen/padding_normal"
+                        style="@style/GreyButtons" />
 
                 </LinearLayout>
 

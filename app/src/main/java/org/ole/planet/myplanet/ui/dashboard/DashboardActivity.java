@@ -87,7 +87,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         BottomNavigationViewHelper.disableShiftMode(navigationView);
 
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if (user.getRolesList().isEmpty()) {
+        if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
