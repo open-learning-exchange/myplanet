@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +13,6 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.model.RealmAnswer;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -24,21 +22,16 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -94,8 +87,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         profileDbHandler = new UserProfileDbHandler(getActivity());
         model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
         recyclerView.setAdapter(getAdapter());
-        if (isMyCourseLib)
-            showDownloadDialog(getLibraryList(mRealm));
+        if (isMyCourseLib) showDownloadDialog(getLibraryList(mRealm));
         return v;
     }
 
@@ -174,11 +166,12 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (s.isEmpty()) {
             return getList(c);
         }
-        List<LI> li = getData(s,c);
-
-        if (c == RealmMyLibrary.class) {
-            return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
-        } else if (c == RealmMyCourse.class && isMyCourseLib) {
+        List<LI> li = getData(s, c);
+//        if (c == RealmMyLibrary.class) {
+////            return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
+////        } else
+////
+        if (c == RealmMyCourse.class && isMyCourseLib) {
             return (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
         } else {
             return (List<LI>) RealmMyCourse.getOurCourse(model.getId(), (List<RealmMyCourse>) li);
@@ -187,17 +180,15 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
 
     private List<LI> getData(String s, Class c) {
         List<LI> li = new ArrayList<>();
-        if (!s.contains(" ")){
+        if (!s.contains(" ")) {
             li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
-        }
-        else{
+        } else {
             String[] query = s.split(" ");
             List<LI> data = mRealm.where(c).findAll();
-            for (LI l : data){
-                String title = c == RealmMyLibrary.class ? ((RealmMyLibrary)l).getTitle() : ((RealmMyCourse)l).getCourseTitle();
-                for (String q: query) {
-                    Utilities.log(q + " " + title);
-                    if(title.toLowerCase().contains(q.toLowerCase())){
+            for (LI l : data) {
+                String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
+                for (String q : query) {
+                    if (title.toLowerCase().contains(q.toLowerCase())) {
                         li.add(l);
                         break;
                     }
@@ -207,24 +198,14 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         return li;
     }
 
-    public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
-        return applyFilter(fbt(tags, s));
-    }
-
     public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
-//        List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
         List<RealmMyLibrary> list = (List<RealmMyLibrary>) getData(s, RealmMyLibrary.class);
-        if (isMyCourseLib)
-            list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
-        else
-            list = RealmMyLibrary.getOurLibrary(model.getId(), list);
-        if (tags.size() == 0) {
-            return list;
-        }
-
+        if (isMyCourseLib) list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
+        else list = RealmMyLibrary.getOurLibrary(model.getId(), list);
+        if (tags.size() == 0) return list;
         RealmList<RealmMyLibrary> libraries = new RealmList<>();
         for (RealmMyLibrary library : list) {
             filter(tags, library, libraries);
@@ -240,16 +221,14 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 break;
             }
         }
-        if (contains)
-            libraries.add(library);
+        if (contains) libraries.add(library);
     }
 
 
     public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
-            if (isValidFilter(l))
-                newList.add(l);
+            if (isValidFilter(l)) newList.add(l);
         }
         return newList;
     }
