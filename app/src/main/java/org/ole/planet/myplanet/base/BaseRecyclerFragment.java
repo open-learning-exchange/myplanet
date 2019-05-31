@@ -40,10 +40,9 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
     public List<LI> selectedItems;
-    public Realm mRealm;
     public DatabaseService realmService;
     public UserProfileDbHandler profileDbHandler;
-    public RealmUserModel model;
+
     public RecyclerView recyclerView;
     TextView tvMessage;
     List<LI> list;
@@ -141,19 +140,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    private void removeFromShelf(RealmObject object) {
-        if (object instanceof RealmMyLibrary) {
-            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
-            Utilities.toast(getActivity(), "Removed from myLibrary");
-        } else {
-            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
-            Utilities.toast(getActivity(), "Removed from myCourse");
-        }
-    }
 
 
     @Override
@@ -187,15 +173,19 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             List<LI> data = mRealm.where(c).findAll();
             for (LI l : data) {
                 String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
-                for (String q : query) {
-                    if (title.toLowerCase().contains(q.toLowerCase())) {
-                        li.add(l);
-                        break;
-                    }
-                }
+               searchAndAddToList(l, title, query, li);
             }
         }
         return li;
+    }
+
+    private void searchAndAddToList(LI l, String title, String[] query, List<LI> li) {
+        for (String q : query) {
+            if (title.toLowerCase().contains(q.toLowerCase())) {
+                li.add(l);
+                break;
+            }
+        }
     }
 
     public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
