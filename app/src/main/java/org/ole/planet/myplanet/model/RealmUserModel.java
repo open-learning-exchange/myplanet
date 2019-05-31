@@ -344,7 +344,7 @@ public class RealmUserModel extends RealmObject {
     public boolean isManager() {
         JsonArray roles = getRoles();
         boolean isManager = roles.toString().toLowerCase().contains("manager");
-        return (getUserAdmin() || isManager);
+        return (isManager);
     }
 
 
