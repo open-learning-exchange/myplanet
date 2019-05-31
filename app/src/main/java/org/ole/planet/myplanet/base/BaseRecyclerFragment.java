@@ -152,12 +152,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (s.isEmpty()) {
             return getList(c);
         }
-        List<LI> li = getData(s, c);
-//        if (c == RealmMyLibrary.class) {
-////            return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
-////        } else
-////
-        if (c == RealmMyCourse.class && isMyCourseLib) {
+        List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
+        if (c == RealmMyLibrary.class) {
+            return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
+        } else if (c == RealmMyCourse.class && isMyCourseLib) {
             return (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
         } else {
             return (List<LI>) RealmMyCourse.getOurCourse(model.getId(), (List<RealmMyCourse>) li);
@@ -204,14 +202,20 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     }
 
     private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
-        boolean contains = true;
-        for (RealmTag s : tags) {
-            if (!library.getTag().toString().toLowerCase().contains(s.get_id())) {
-                contains = false;
-                break;
-            }
+//        for (RealmTag s : tags) {
+//            if (!library.getTag().toString().toLowerCase().contains(s.get_id())) {
+//                contains = false;
+//                break;
+//            }
+//        }
+
+        for (RealmTag tg : tags){
+            Utilities.log(tg.getName() + " "+ tg.getTagId() + tg.getDb());
+            long count = mRealm.where(RealmTag.class).equalTo("db","resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.getId()).count();
+            Utilities.log("Count " + count);
+            if (count > 0)
+                libraries.add(library);
         }
-        if (contains) libraries.add(library);
     }
 
 

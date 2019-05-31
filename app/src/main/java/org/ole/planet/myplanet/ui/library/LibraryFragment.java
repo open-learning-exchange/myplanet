@@ -70,8 +70,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
-        HashMap<String, RealmTag> tagMap = RealmTag.getListAsMap(mRealm.where(RealmTag.class).findAll());
-        adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, tagMap);
+       // HashMap<String, RealmTag> tagMap = RealmTag.getListAsMap(mRealm.where(RealmTag.class).findAll());
+        adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, mRealm);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
         searchTags = new ArrayList<>();
@@ -102,7 +102,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
         //  etTags.addTextChangedListener(this);
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
-            CollectionsFragment f = CollectionsFragment.getInstance(searchTags);
+            CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "resources");
             f.setListener(LibraryFragment.this);
             f.show(getChildFragmentManager(), "");
         });
