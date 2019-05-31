@@ -29,7 +29,10 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.Download;
+import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmRemovedLog;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
@@ -42,6 +45,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmObject;
 import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
@@ -51,10 +55,11 @@ public abstract class BaseResourceFragment extends Fragment {
     public static SharedPreferences settings;
     static ProgressDialog prgDialog;
     public OnHomeItemClickListener homeItemClickListener;
-
+    public RealmUserModel model;
     //    ArrayList<Integer> selectedItemsList = new ArrayList<>();
     CheckboxListView lv;
     View convertView;
+    public Realm mRealm;
 
     public UserProfileDbHandler profileDbHandler;
     public static String auth = "";
@@ -72,13 +77,10 @@ public abstract class BaseResourceFragment extends Fragment {
             new AlertDialog.Builder(getActivity())
                     .setMessage("Do you want to stay online?")
                     .setPositiveButton("Yes", null)
-                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialogInterface, int i) {
-                            WifiManager wifi = (WifiManager) MainApplication.context.getSystemService(Context.WIFI_SERVICE);
-                            if (wifi != null)
-                                wifi.setWifiEnabled(false);
-                        }
+                    .setNegativeButton("No", (dialogInterface, i) -> {
+                        WifiManager wifi = (WifiManager) MainApplication.context.getSystemService(Context.WIFI_SERVICE);
+                        if (wifi != null)
+                            wifi.setWifiEnabled(false);
                     })
                     .show();
         }
@@ -219,6 +221,21 @@ public abstract class BaseResourceFragment extends Fragment {
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(stateReceiver);
 
     }
+
+    public void removeFromShelf(RealmObject object) {
+        if (object instanceof RealmMyLibrary) {
+            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
+            myObject.removeUserId(model.getId());
+            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
+            Utilities.toast(getActivity(), "Removed from myLibrary");
+        } else {
+            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
+            myObject.removeUserId(model.getId());
+            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
+            Utilities.toast(getActivity(), "Removed from myCourse");
+        }
+    }
+
 
     @Override
     public void onResume() {
