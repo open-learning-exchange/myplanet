@@ -216,7 +216,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             if (count > 0)
                 libraries.add(library);
         }
-        if (contains) libraries.add(library);
+        //if (contains) libraries.add(library);
     }
 
 
