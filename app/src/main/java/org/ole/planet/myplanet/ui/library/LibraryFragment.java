@@ -70,11 +70,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
-        HashMap<String, RealmTag> tagMap = RealmTag.getListAsMap(mRealm.where(RealmTag.class).findAll());
-        adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, tagMap);
+        adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, mRealm);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
-
         return adapterLibrary;
     }
 
@@ -96,13 +94,13 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
         tvAddToLib.setOnClickListener(view -> addToMyList());
         imgSearch.setOnClickListener(view -> {
-            adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
+            adapterLibrary.setLibraryList(applyFilter(fbt(searchTags, etSearch.getText().toString().trim())));
             showNoData(tvMessage, adapterLibrary.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         //  etTags.addTextChangedListener(this);
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
-            CollectionsFragment f = CollectionsFragment.getInstance(searchTags);
+            CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "resources");
             f.setListener(LibraryFragment.this);
             f.show(getChildFragmentManager(), "");
         });
@@ -133,7 +131,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             this.mediums.clear();
             this.subjects.clear();
             this.languages.clear();
-            adapterLibrary.setLibraryList(filterByTag(searchTags, ""));
+            adapterLibrary.setLibraryList(applyFilter(fbt(searchTags, "")));
             showNoData(tvMessage, adapterLibrary.getItemCount());
         });
     }
@@ -150,7 +148,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 if (!charSequence.toString().isEmpty()) {
                     String lastChar = charSequence.toString().substring(charSequence.length() - 1);
                     if (lastChar.equals(" ") || lastChar.equals("\n")) {
-                        adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
+                        adapterLibrary.setLibraryList(applyFilter(fbt(searchTags, etSearch.getText().toString().trim())));
                         etSearch.setText(etSearch.getText().toString().trim());
                         KeyboardUtils.hideSoftKeyboard(getActivity());
                         showNoData(tvMessage, adapterLibrary.getItemCount());
@@ -180,20 +178,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         if (!searchTags.contains(realmTag))
             searchTags.add(realmTag);
         chipCloud.addChips(searchTags);
-        adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString()));
-        showTagText(searchTags);
+        adapterLibrary.setLibraryList(applyFilter(fbt(searchTags, etSearch.getText().toString())));
+        showTagText(searchTags, tvSelected);
         showNoData(tvMessage, adapterLibrary.getItemCount());
 
     }
 
-    void showTagText(List<RealmTag> list) {
-        StringBuilder selected = new StringBuilder("Selected : ");
-        for (RealmTag tags :
-                list) {
-            selected.append(tags.getName()).append(",");
-        }
-        tvSelected.setText(selected.subSequence(0, selected.length() - 2));
-    }
 
     @Override
     public void onTagSelected(RealmTag tag) {
@@ -201,7 +191,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         li.add(tag);
         searchTags = li;
         tvSelected.setText("Selected : " + tag.getName());
-        adapterLibrary.setLibraryList(filterByTag(li, etSearch.getText().toString()));
+        adapterLibrary.setLibraryList(applyFilter(fbt(li, etSearch.getText().toString())));
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 
@@ -219,7 +209,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public void chipDeleted(int i, String s) {
         searchTags.remove(i);
-        adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString()));
+        adapterLibrary.setLibraryList(applyFilter(fbt(searchTags, etSearch.getText().toString())));
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 
@@ -230,7 +220,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         this.languages = languages;
         this.mediums = mediums;
         this.levels = levels;
-        adapterLibrary.setLibraryList(filterByTag(searchTags, etSearch.getText().toString().trim()));
+        adapterLibrary.setLibraryList(applyFilter(fbt(searchTags, etSearch.getText().toString().trim())));
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 

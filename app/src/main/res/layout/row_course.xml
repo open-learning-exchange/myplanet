@@ -46,6 +46,15 @@
                     android:layout_height="wrap_content"
                     android:padding="4dp" />
 
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/flexbox_drawable"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:alignContent="space_around"
+                    app:alignItems="flex_start"
+                    app:flexWrap="wrap"
+                    app:showDivider="middle" />
+
                 <!--<android.support.v4.widget.ContentLoadingProgressBar-->
                 <!--android:id="@+id/progress"-->
                 <!--style="@style/Base.Widget.AppCompat.ProgressBar.Horizontal"-->

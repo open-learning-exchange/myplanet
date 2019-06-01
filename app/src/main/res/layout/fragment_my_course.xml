@@ -36,6 +36,13 @@
                 android:text="@string/collections"
                 style="@style/GreyButtons"
                 android:layout_marginRight="10dp"/>
+            <Button
+                android:id="@+id/btn_clear_tags"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/clear_tags"
+                android:textColor="@color/md_white_1000"
+                style="@style/BlueButton" />
 
             <TextView
                 android:id="@+id/tv_add"

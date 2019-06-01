@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -23,6 +24,8 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmTag;
+import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -30,6 +33,10 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import fisk.chipcloud.ChipCloud;
+import fisk.chipcloud.ChipCloudConfig;
+import io.realm.Realm;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -41,6 +48,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private HashMap<String, JsonObject> map;
     private HashMap<String, JsonObject> progressMap;
     private OnRatingChangeListener ratingChangeListener;
+    private Realm mRealm;
+    private ChipCloudConfig config;
 
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
@@ -50,6 +59,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
+        config = Utilities.getCloudConfig()
+                .selectMode(ChipCloud.SelectMode.single);
+    }
+
+    public void setmRealm(Realm mRealm) {
+        this.mRealm = mRealm;
     }
 
     public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
@@ -92,6 +107,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             // if (courseList.get(position) != null) {
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
             //  }
+            displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);
 
             if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
                 // ((ViewHoldercourse) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener));
@@ -113,6 +129,23 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             });
             showProgressAndRating(position, holder);
 
+        }
+    }
+
+
+    private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
+        flexboxDrawable.removeAllViews();
+        final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
+
+        List<RealmTag> tags = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("linkId", courseList.get(position).getId()).findAll();
+        for (RealmTag tag : tags) {
+            RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
+            chipCloud.addChip(parent.getName());
+            chipCloud.setListener((i, b, b1) -> {
+                if (b1 && listener != null) {
+                    listener.onTagClicked(parent);
+                }
+            });
         }
     }
 
@@ -171,6 +204,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         AppCompatRatingBar ratingBar;
         SeekBar progressBar;
         LinearLayout llRating;
+        FlexboxLayout flexboxLayout;
 
         public ViewHoldercourse(View itemView) {
             super(itemView);
@@ -179,6 +213,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             grad_level = itemView.findViewById(R.id.grad_level);
             average = itemView.findViewById(R.id.rating);
             ratingCount = itemView.findViewById(R.id.times_rated);
+            flexboxLayout = itemView.findViewById(R.id.flexbox_drawable);
             ratingBar = itemView.findViewById(R.id.rating_bar);
             subject_level = itemView.findViewById(R.id.subject_level);
             checkBox = itemView.findViewById(R.id.checkbox);
