@@ -19,11 +19,16 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
+import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.model.RealmTag;
+import org.ole.planet.myplanet.ui.library.CollectionsFragment;
+import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -33,7 +38,7 @@ import io.realm.RealmObject;
  * A simple {@link Fragment} subclass.
  */
 
-public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected {
+public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected, TagClickListener {
 
     TextView tvAddToLib, tvMessage ;
 
@@ -41,7 +46,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     ImageView imgSearch;
     AdapterCourses adapterCourses;
     Button btnRemove;
-
+    List<RealmTag> searchTags;
     public CourseFragment() {
     }
 
@@ -64,6 +69,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        searchTags = new ArrayList<>();
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> addToMyList());
         etSearch = getView().findViewById(R.id.et_search);
@@ -83,6 +89,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
        // setSearchListener();
         btnRemove.setOnClickListener(V ->{
             deleteSelected(true);
+        });
+        getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
+            CollectionsFragment f = CollectionsFragment.getInstance(searchTags);
+            f.setListener(this);
+            f.show(getChildFragmentManager(), "");
         });
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
@@ -124,5 +135,15 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     private void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
+    }
+
+    @Override
+    public void onTagSelected(RealmTag tag) {
+
+    }
+
+    @Override
+    public void onOkClicked(List<RealmTag> list) {
+
     }
 }

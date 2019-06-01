@@ -74,7 +74,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, tagMap);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
-        searchTags = new ArrayList<>();
 
         return adapterLibrary;
     }
@@ -83,6 +82,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        searchTags = new ArrayList<>();
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay);
         tvAddToLib = getView().findViewById(R.id.tv_add);
         etSearch = getView().findViewById(R.id.et_search);
