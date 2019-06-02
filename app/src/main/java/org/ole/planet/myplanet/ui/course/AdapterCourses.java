@@ -130,6 +130,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         flexboxDrawable.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
         List<RealmTag> tags = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("linkId", courseList.get(position).getId()).findAll();
+        showTags(tags, chipCloud);
+    }
+
+    private void showTags(List<RealmTag> tags, ChipCloud chipCloud) {
         for (RealmTag tag : tags) {
             RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
             showChip(chipCloud, parent);

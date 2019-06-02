@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 
 import io.realm.Case;
-import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 
@@ -181,7 +179,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    public List<RealmMyLibrary> filterLibraryByTag(List<RealmTag> tags, String s) {
+    public List<RealmMyLibrary> filterLibraryByTag(String s, List<RealmTag> tags) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
