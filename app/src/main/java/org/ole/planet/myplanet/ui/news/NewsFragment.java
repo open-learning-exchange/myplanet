@@ -56,7 +56,7 @@ public class NewsFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).findAll();
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        rvNews.setAdapter(new AdapterNews(getActivity(), list, mRealm));
+        rvNews.setAdapter(new AdapterNews(getActivity(), list, mRealm,user));
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
             if (message.isEmpty()) {

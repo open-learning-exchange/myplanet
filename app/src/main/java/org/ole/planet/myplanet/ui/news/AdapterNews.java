@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -26,11 +27,13 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmNews> list;
     private Realm mRealm;
+    private RealmUserModel currentUser;
 
-    public AdapterNews(Context context, List<RealmNews> list, Realm mRealm) {
+    public AdapterNews(Context context, List<RealmNews> list, Realm mRealm, RealmUserModel user) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
+        this.currentUser = user;
     }
 
     @NonNull
@@ -47,6 +50,14 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (userModel != null) {
                 ((ViewHolderNews) holder).tvName.setText(userModel.getName());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
+                Utilities.log(currentUser.getId() + " " + userModel.getId());
+                if (currentUser.getId().equals(userModel.getId())) {
+                    ((ViewHolderNews) holder).llEditDelete.setVisibility(View.VISIBLE);
+                } else {
+                    ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
+                }
+            }else{
+                ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
             ((ViewHolderNews) holder).tvMessage.setText(list.get(position).getMessage());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(list.get(position).getTime()));
@@ -97,6 +108,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     class ViewHolderNews extends RecyclerView.ViewHolder {
         TextView tvName, tvDate, tvMessage;
         ImageView imgEdit, imgDelete, imgUser;
+        LinearLayout llEditDelete;
 
         public ViewHolderNews(View itemView) {
             super(itemView);
@@ -106,7 +118,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             imgDelete = itemView.findViewById(R.id.img_delete);
             imgEdit = itemView.findViewById(R.id.img_edit);
             imgUser = itemView.findViewById(R.id.img_user);
-
+            llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
         }
     }
 }
