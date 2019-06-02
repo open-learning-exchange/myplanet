@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.Sort;
 
@@ -54,7 +55,10 @@ public class NewsFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).findAll();
+        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
+                .equalTo("docType","message", Case.INSENSITIVE)
+                .equalTo("viewableBy","community", Case.INSENSITIVE)
+                .findAll();
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvNews.setAdapter(new AdapterNews(getActivity(), list, mRealm,user));
         btnSubmit.setOnClickListener(view -> {
