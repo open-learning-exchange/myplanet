@@ -157,15 +157,17 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         if (tags.size() == 0) return list;
         RealmList<RealmMyCourse> courses = new RealmList<>();
         for (RealmMyCourse course : list) {
-            for (RealmTag tg : tags) {
-                long count = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("tagId", tg.getId()).equalTo("linkId", course.getCourseId()).count();
-//                long count = mRealm.where(RealmTag.class).equalTo("db", "courses").count();
-                Utilities.log("Count " + count);
-                if (count > 0 && !courses.contains(course))
-                    courses.add(course);
-            }
+            checkAndAddToList(course, courses, tags);
         }
         return courses;
+    }
+
+    private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
+        for (RealmTag tg : tags) {
+            long count = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("tagId", tg.getId()).equalTo("linkId", course.getCourseId()).count();
+            if (count > 0 && !courses.contains(course))
+                courses.add(course);
+        }
     }
 
 

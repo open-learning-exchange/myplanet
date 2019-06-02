@@ -104,13 +104,9 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).grad_level.setText("Grade Level  : " + courseList.get(position).getGradeLevel());
             ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " + courseList.get(position).getSubjectLevel());
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
-            // if (courseList.get(position) != null) {
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
-            //  }
             displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);
-
             if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
-                // ((ViewHoldercourse) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener));
                 ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
                     if (event.getAction() == MotionEvent.ACTION_UP)
                         homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
@@ -121,14 +117,11 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
 
             ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
-                Utilities.handleCheck(((CheckBox)view).isChecked(), position, (ArrayList) selectedItems, courseList);
-                if (listener != null) {
-                    listener.onSelectedListChange(selectedItems);
-                }
+                Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
+                if (listener != null) listener.onSelectedListChange(selectedItems);
                 notifyDataSetChanged();
             });
             showProgressAndRating(position, holder);
-
         }
     }
 

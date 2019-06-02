@@ -73,18 +73,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         searchTags = new ArrayList<>();
-        tvAddToLib = getView().findViewById(R.id.tv_add);
-        tvAddToLib.setOnClickListener(view -> addToMyList());
-        etSearch = getView().findViewById(R.id.et_search);
-        tvSelected = getView().findViewById(R.id.tv_selected);
-        btnRemove = getView().findViewById(R.id.btn_remove);
-        getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
+        initializeView();
         if (isMyCourseLib) {
             tvDelete.setText(R.string.archive_mycourse);
             btnRemove.setVisibility(View.VISIBLE);
         }
-        imgSearch = getView().findViewById(R.id.img_search);
-        tvMessage = getView().findViewById(R.id.tv_message);
+
         imgSearch.setOnClickListener(view -> {
             adapterCourses.setCourseList(search(etSearch.getText().toString(),searchTags ));
             showNoData(tvMessage, adapterCourses.getItemCount());
@@ -101,6 +95,17 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         });
         clearTags();
         showNoData(tvMessage, adapterCourses.getItemCount());
+    }
+
+    private void initializeView() {
+        tvAddToLib = getView().findViewById(R.id.tv_add);
+        tvAddToLib.setOnClickListener(view -> addToMyList());
+        etSearch = getView().findViewById(R.id.et_search);
+        tvSelected = getView().findViewById(R.id.tv_selected);
+        btnRemove = getView().findViewById(R.id.btn_remove);
+        imgSearch = getView().findViewById(R.id.img_search);
+        tvMessage = getView().findViewById(R.id.tv_message);
+        getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
     }
 
     private void clearTags() {
