@@ -147,20 +147,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         mRealm.close();
     }
 
-    public List<RealmMyCourse> search(String s, List<RealmTag> tags) {
-        if (tags.size() == 0 && s.isEmpty()) {
-            return (List<RealmMyCourse>) getList(RealmMyCourse.class);
-        }
-        List<RealmMyCourse> list = (List<RealmMyCourse>) getData(s, RealmMyCourse.class);
-        if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.getId(), list);
-        else list = RealmMyCourse.getOurCourse(model.getId(), list);
-        if (tags.size() == 0) return list;
-        RealmList<RealmMyCourse> courses = new RealmList<>();
-        for (RealmMyCourse course : list) {
-            checkAndAddToList(course, courses, tags);
-        }
-        return courses;
-    }
 
     private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
         for (RealmTag tg : tags) {
@@ -195,7 +181,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
+    public List<RealmMyLibrary> filterLibraryByTag(List<RealmTag> tags, String s) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
@@ -208,6 +194,21 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             filter(tags, library, libraries);
         }
         return libraries;
+    }
+
+    public List<RealmMyCourse> filterCourseByTag(String s, List<RealmTag> tags) {
+        if (tags.size() == 0 && s.isEmpty()) {
+            return (List<RealmMyCourse>) getList(RealmMyCourse.class);
+        }
+        List<RealmMyCourse> list = (List<RealmMyCourse>) getData(s, RealmMyCourse.class);
+        if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.getId(), list);
+        else list = RealmMyCourse.getOurCourse(model.getId(), list);
+        if (tags.size() == 0) return list;
+        RealmList<RealmMyCourse> courses = new RealmList<>();
+        for (RealmMyCourse course : list) {
+            checkAndAddToList(course, courses, tags);
+        }
+        return courses;
     }
 
     private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {

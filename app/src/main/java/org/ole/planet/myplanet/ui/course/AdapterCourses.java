@@ -129,17 +129,20 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
-
         List<RealmTag> tags = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("linkId", courseList.get(position).getId()).findAll();
         for (RealmTag tag : tags) {
             RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
-            chipCloud.addChip(parent.getName());
-            chipCloud.setListener((i, b, b1) -> {
-                if (b1 && listener != null) {
-                    listener.onTagClicked(parent);
-                }
-            });
+            showChip(chipCloud, parent);
         }
+    }
+
+    private void showChip(ChipCloud chipCloud, RealmTag parent) {
+        chipCloud.addChip(parent.getName());
+        chipCloud.setListener((i, b, b1) -> {
+            if (b1 && listener != null) {
+                listener.onTagClicked(parent);
+            }
+        });
     }
 
     private void showProgressAndRating(int position, RecyclerView.ViewHolder holder) {

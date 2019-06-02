@@ -5,9 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,15 +22,11 @@ import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
-import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import fisk.chipcloud.ChipCloud;
-import io.realm.RealmObject;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -80,7 +73,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         }
 
         imgSearch.setOnClickListener(view -> {
-            adapterCourses.setCourseList(search(etSearch.getText().toString(),searchTags ));
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(),searchTags ));
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
@@ -113,7 +106,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             searchTags.clear();
             etSearch.setText("");
             tvSelected.setText("");
-            adapterCourses.setCourseList(search("", searchTags));
+            adapterCourses.setCourseList(filterCourseByTag("", searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());
         });
     }
@@ -131,7 +124,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 //                if (!charSequence.toString().isEmpty()) {
 //                    String lastChar = charSequence.toString().substring(charSequence.length() - 1);
 //                    if (lastChar.equals(" ") || lastChar.equals("\n")) {
-//                        adapterCourses.setCourseList(search(etSearch.getText().toString().trim(), RealmMyCourse.class));
+//                        adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString().trim(), RealmMyCourse.class));
 //                        etSearch.setText(etSearch.getText().toString().trim());
 //                        showNoData(tvMessage, adapterCourses.getItemCount());
 //                        KeyboardUtils.hideSoftKeyboard(getActivity());
@@ -157,7 +150,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         searchTags.clear();
         if (!searchTags.contains(tag))
             searchTags.add(tag);
-        adapterCourses.setCourseList(search(etSearch.getText().toString(),searchTags));
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(),searchTags));
         showTagText(searchTags,tvSelected);
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
@@ -172,7 +165,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         li.add(tag);
         searchTags = li;
         tvSelected.setText("Selected : " + tag.getName());
-        adapterCourses.setCourseList((search( etSearch.getText().toString(), li)));
+        adapterCourses.setCourseList((filterCourseByTag( etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
 
