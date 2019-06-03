@@ -143,7 +143,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             chipCloud.addChip(parent.getName());
             chipCloud.setListener((i, b, b1) -> {
                 if (b1 && listener != null) {
-                    listener.onTagClicked(tag);
+                    listener.onTagClicked(parent);
                 }
             });
         }

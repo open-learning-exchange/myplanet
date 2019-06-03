@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.Download;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
+import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
@@ -242,5 +243,14 @@ public abstract class BaseResourceFragment extends Fragment {
         super.onResume();
         registerReceiver();
 
+    }
+
+  public  void showTagText(List<RealmTag> list, TextView tvSelected) {
+        StringBuilder selected = new StringBuilder("Selected : ");
+        for (RealmTag tags :
+                list) {
+            selected.append(tags.getName()).append(",");
+        }
+        tvSelected.setText(selected.subSequence(0, selected.length() - 2));
     }
 }
