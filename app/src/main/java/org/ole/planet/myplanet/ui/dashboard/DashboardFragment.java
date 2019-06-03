@@ -29,11 +29,13 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -50,7 +52,7 @@ import io.realm.RealmResults;
 public class DashboardFragment extends BaseDashboardFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole;
+    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole,tv_news;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -70,7 +72,7 @@ public class DashboardFragment extends BaseDashboardFragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         declareElements(view);
         onLoaded(view);
-        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(Utilities.currentDate());
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(TimeUtils.currentDate());
         return view;
     }
 
@@ -87,7 +89,9 @@ public class DashboardFragment extends BaseDashboardFragment {
         tv_surveys = view.findViewById(R.id.tv_surveys);
         tv_submission = view.findViewById(R.id.tv_submission);
         tv_achievement = view.findViewById(R.id.tv_achievement);
+        tv_news = view.findViewById(R.id.tv_news);
         tv_surveys.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey")));
+        tv_news.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(new NewsFragment()));
         tv_submission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
         tv_achievement.setVisibility(Constants.showBetaFeature(Constants.KEY_ACHIEVEMENT, getActivity()) ? View.VISIBLE : View.GONE);
         tv_achievement.setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));

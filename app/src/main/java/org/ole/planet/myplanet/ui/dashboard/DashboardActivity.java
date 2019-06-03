@@ -87,7 +87,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         BottomNavigationViewHelper.disableShiftMode(navigationView);
 
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if (user.getRolesList().isEmpty()) {
+        if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
@@ -123,6 +123,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
+                onClickTabItems(tab.getPosition());
             }
         });
         for (int i = 0; i < tabLayout.getTabCount(); i++) {

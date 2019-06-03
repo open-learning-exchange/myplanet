@@ -29,7 +29,7 @@
             android:text="Submit Feedback"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:theme="@style/PrimaryButton" />
+            style="@style/GreyButtons" />
     </LinearLayout>
 
 </FrameLayout>

@@ -129,9 +129,21 @@
     <string name="help_wanted">Help Wanted</string>
     <string name="btn_guest_login">Login As Guest</string>
     <string name="enter_username">Enter Username</string>
+    <string name="login">Login</string>
+    <string name="child_mode">Easy Mode</string>
     <string name="joined_members">Joined Members</string>
     <string name="requested_member">Requested Member</string>
     <string name="courses">Courses</string>
+    <string name="enter_message_here">Enter message here</string>
+    <string name="what_would">What would you like to share?</string>
+    <string name="our_news">Our News</string>
+    <string name="delete_record">Are you sure you want to delete the following ?</string>
+    <string name="edit_post">Edit Post</string>
+    <string name="search_user">Search user</string>
+    <string name="get_started">GET STARTED</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="managerial_login">Managerial Login</string>
+    <string name="save_username_and_password">Save Username and Password</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

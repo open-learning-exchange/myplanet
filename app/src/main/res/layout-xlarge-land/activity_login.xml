@@ -64,14 +64,27 @@
 
 
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/btn_lang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:entries="@array/language"
-                    android:text="@string/language"
-                    android:theme="@style/PrimaryFlatButton"
                     android:padding="@dimen/padding_normal"
-                    android:layout_height="wrap_content"/>
+                    android:text="@string/language"
+                    android:textColor="@color/md_white_1000"
+                    android:theme="@style/PrimaryFlatButton" />
+
+
+                <android.support.v7.widget.SwitchCompat
+                    android:id="@+id/switch_child_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/child_mode"
+                    android:textColor="@color/md_white_1000"
+                    android:theme="@style/PrimaryFlatButton" />
 
                 <TextView
                     android:id="@+id/lblVersion"
@@ -100,8 +113,8 @@
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginLeft="10dp"
                     android:layout_alignParentLeft="true"
+                    android:layout_marginLeft="10dp"
                     android:layout_marginTop="15dp"
                     android:background="@null"
                     android:scaleType="fitCenter" />
@@ -174,9 +187,20 @@
                         android:layout_height="wrap_content"
                         android:alpha="0.7"
                         android:fontFamily="sans-serif"
-                        android:text="Save Username and Password"
+                        android:text="@string/save_username_and_password"
                         android:textColor="@color/material_drawer_dark_background"
                         android:textSize="12sp" />
+
+                    <CheckBox
+                        android:id="@+id/manager_login"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:alpha="0.7"
+                        android:fontFamily="sans-serif"
+                        android:text="@string/managerial_login"
+                        android:textColor="@color/material_drawer_dark_background"
+                        android:textSize="12sp" />
+
 
                     <Button
                         android:id="@+id/btn_signin"

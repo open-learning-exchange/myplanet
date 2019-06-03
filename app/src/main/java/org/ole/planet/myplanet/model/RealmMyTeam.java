@@ -166,5 +166,4 @@ public class RealmMyTeam extends RealmObject {
         if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
             this.userId.add(userId);
     }
-
 }

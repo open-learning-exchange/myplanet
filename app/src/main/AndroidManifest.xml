@@ -20,9 +20,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application xmlns:tools="http://schemas.android.com/tools"
         android:name=".MainApplication"
@@ -32,17 +31,21 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/MyMaterialTheme"
         tools:replace="android:label">
-        <service android:name=".service.GPSService" />
-
-        <activity android:name=".ui.viewer.AudioPlayerActivity"></activity>
-        <activity
-            android:name=".ui.sync.LoginActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize">
+        <activity android:name=".ui.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <service android:name=".service.GPSService" />
+
+        <activity android:name=".ui.viewer.AudioPlayerActivity" />
+        <activity
+            android:name=".ui.sync.LoginActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize">
+
         </activity>
         <activity
             android:name=".ui.dashboard.DashboardActivity"
@@ -88,7 +91,6 @@
         </service>
 
         <activity android:name=".ui.viewer.WebViewActivity" />
-
     </application>
 
 </manifest>

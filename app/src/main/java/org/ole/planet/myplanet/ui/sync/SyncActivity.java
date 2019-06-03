@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -22,8 +24,11 @@ import com.github.kittinunf.fuel.core.Response;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
+import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
@@ -40,7 +45,7 @@ import io.realm.RealmResults;
 public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate;
-    public TextView intervalLabel;
+    public TextView intervalLabel, tvNodata;
     public Spinner spinner;
     public Switch syncSwitch;
     int convertedDate;
@@ -48,7 +53,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     Realm mRealm;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
-    private View constraintLayout;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -56,7 +60,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         editor = settings.edit();
         mRealm = new DatabaseService(this).getRealmInstance();
-
         requestPermission();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
@@ -95,6 +98,24 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
 
+    public void setUpChildMode() {
+        if (!settings.getBoolean("isChild", false))
+            return;
+        RecyclerView rvTeams = findViewById(R.id.rv_teams);
+        TextView tvNodata = findViewById(R.id.tv_nodata);
+
+        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).findAll();
+        rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
+        rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
+        if (teams.size() > 0) {
+            tvNodata.setVisibility(View.GONE);
+        } else {
+            tvNodata.setText("No teams available");
+            tvNodata.setVisibility(View.VISIBLE);
+        }
+    }
+
+
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
         progressDialog.show();
@@ -125,8 +146,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     public void declareHideKeyboardElements() {
-        constraintLayout = findViewById(R.id.constraintLayout);
-        constraintLayout.setOnTouchListener((view, ev) -> {
+        findViewById(R.id.constraintLayout).setOnTouchListener((view, ev) -> {
             hideKeyboard(view);
             return false;
         });
@@ -170,20 +190,20 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         editor.commit();
     }
 
-    public boolean authenticateUser(SharedPreferences settings, String username, String password, Context context) {
+    public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode ) {
         this.settings = settings;
-        AndroidDecrypter decrypt = new AndroidDecrypter();
-        if ( mRealm.isEmpty()) {
+        if (mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");
             return false;
         } else {
-            return checkName(username, password, decrypt);
+            return checkName(username, password, isManagerMode);
         }
     }
 
     @Nullable
-    private Boolean checkName(String username, String password, AndroidDecrypter decrypt) {
+    private Boolean checkName(String username, String password, boolean isManagerMode) {
         try {
+            AndroidDecrypter decrypt = new AndroidDecrypter();
             RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class)
                     .equalTo("name", username)
                     .findAll();
@@ -191,6 +211,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 mRealm.beginTransaction();
             for (RealmUserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
+                    if (isManagerMode && !user.isManager())
+                        return false;
                     saveUserInfoPref(settings, password, user);
                     return true;
                 }
@@ -238,6 +260,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public void onSyncComplete() {
         DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
+        if (settings.getBoolean("isChild", false)) {
+            runOnUiThread(() -> setUpChildMode());
+        }
         NotificationUtil.cancellAll(this);
     }
 

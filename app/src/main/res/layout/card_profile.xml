@@ -94,6 +94,15 @@
                     android:textSize="18sp" />
 
                 <TextView
+                    android:id="@+id/tv_news"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/our_news"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
+
+                <TextView
                     android:id="@+id/tv_achievement"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

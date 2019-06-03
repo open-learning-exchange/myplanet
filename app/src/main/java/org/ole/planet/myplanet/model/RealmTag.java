@@ -32,8 +32,14 @@ public class RealmTag extends RealmObject {
 
     private String _id;
 
+    private String linkId;
+    private String tagId;
+
     private RealmList<String> attachedTo;
 
+    private String docType;
+
+    private String db;
 
     public static HashMap<String, RealmTag> getListAsMap(List<RealmTag> list) {
         HashMap<String, RealmTag> map = new HashMap<>();
@@ -44,6 +50,21 @@ public class RealmTag extends RealmObject {
         return map;
     }
 
+    public String getLinkId() {
+        return linkId;
+    }
+
+    public void setLinkId(String linkId) {
+        this.linkId = linkId;
+    }
+
+    public String getTagId() {
+        return tagId;
+    }
+
+    public void setTagId(String tagId) {
+        this.tagId = tagId;
+    }
 
     public String getId() {
         return id;
@@ -53,23 +74,21 @@ public class RealmTag extends RealmObject {
         this.id = id;
     }
 
-//    public List<RealmTag> getChild() {
-//        return child;
-//    }
-//
-//    public void setChild(List<RealmTag> child) {
-//
-//        this.child = child;
-//    }
-//
-//    public void setChild(RealmTag tag) {
-//        if (child == null) {
-//            child = new ArrayList<>();
-//        }
-//        if (!this.child.contains(tag))
-//            this.child.add(tag);
-//
-//    }
+    public String getDocType() {
+        return docType;
+    }
+
+    public void setDocType(String docType) {
+        this.docType = docType;
+    }
+
+    public String getDb() {
+        return db;
+    }
+
+    public void setDb(String db) {
+        this.db = db;
+    }
 
     public String get_rev() {
         return _rev;
@@ -103,8 +122,13 @@ public class RealmTag extends RealmObject {
         tag.set_rev(JsonUtils.getString("_rev", act));
         tag.set_id(JsonUtils.getString("_id", act));
         tag.setName(JsonUtils.getString("name", act));
+        tag.setDb(JsonUtils.getString("db", act));
+        tag.setDocType(JsonUtils.getString("docType", act));
+        tag.setTagId(JsonUtils.getString("tagId", act));
+        tag.setLinkId(JsonUtils.getString("linkId", act));
         tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act));
     }
+
 
     private void setAttachedTo(JsonArray attachedTo) {
         this.attachedTo = new RealmList<>();

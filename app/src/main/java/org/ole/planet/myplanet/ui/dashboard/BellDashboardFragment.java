@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        tvDate.setText(Utilities.formatDate(new Date().getTime()));
+        tvDate.setText(TimeUtils.formatDate(new Date().getTime()));
         tvCommunityName.setText(model.getPlanetCode());
         ((DashboardActivity) getActivity()).getSupportActionBar().hide();
     }

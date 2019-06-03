@@ -33,6 +33,7 @@ import java.util.List;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
+import io.realm.Realm;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -44,8 +45,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> ratingMap;
     private OnRatingChangeListener ratingChangeListener;
-    private HashMap<String, RealmTag> tagMap;
-    private HashMap<String, RealmTag> tagMapWithName;
+    private Realm realm;
+    //  private HashMap<String, RealmTag> tagMap;
+    // private HashMap<String, RealmTag> tagMapWithName;
 
     public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
         this.ratingChangeListener = ratingChangeListener;
@@ -55,18 +57,20 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return libraryList;
     }
 
-    public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, HashMap<String, RealmTag> tagMap) {
+    //    public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, HashMap<String, RealmTag> tagMap) {
+    public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
         this.ratingMap = ratingMap;
         this.context = context;
+        this.realm = realm;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
-        this.tagMap = tagMap;
-        this.tagMapWithName = new HashMap<>();
-        for (String key : tagMap.keySet()
-        ) {
-            RealmTag tag = tagMap.get(key);
-            this.tagMapWithName.put(tag.getName(), tag);
-        }
+//        this.tagMap = tagMap;
+//        this.tagMapWithName = new HashMap<>();
+//        for (String key : tagMap.keySet()
+//        ) {
+//            RealmTag tag = tagMap.get(key);
+//            this.tagMapWithName.put(tag.getName(), tag);
+//        }
         config = Utilities.getCloudConfig()
                 .selectMode(ChipCloud.SelectMode.single);
         if (context instanceof OnHomeItemClickListener) {
@@ -122,18 +126,27 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
+//        for (String s : libraryList.get(position).getTag()) {
+//            if (tagMap.containsKey(s)) {
+//                chipCloud.addChip(tagMap.get(s));
+//                chipCloud.setListener((i, b, b1) -> {
+//                    if (b1 && listener != null) {
+//                        listener.onTagClicked(tagMapWithName.get(chipCloud.getLabel(i)));
+//                    }
+//                });
+//            }
+//        }
 
-        for (String s : libraryList.get(position).getTag()) {
-            if (tagMap.containsKey(s)) {
-                chipCloud.addChip(tagMap.get(s));
-                chipCloud.setListener((i, b, b1) -> {
-                    if (b1 && listener != null) {
-                        listener.onTagClicked(tagMapWithName.get(chipCloud.getLabel(i)));
-                    }
-                });
-            }
+        List<RealmTag> tags = realm.where(RealmTag.class).equalTo("db", "resources").equalTo("linkId", libraryList.get(position).getId()).findAll();
+        for (RealmTag tag : tags) {
+            RealmTag parent = realm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
+            chipCloud.addChip(parent.getName());
+            chipCloud.setListener((i, b, b1) -> {
+                if (b1 && listener != null) {
+                    listener.onTagClicked(parent);
+                }
+            });
         }
-
     }
 
     @Override

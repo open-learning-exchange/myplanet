@@ -16,11 +16,13 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
+import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
@@ -66,8 +68,9 @@ public class UploadManager {
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        if (model.isManager())
+            return;
         try {
-
             apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getMyPlanetActivities(context, pref, model)).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -83,6 +86,7 @@ public class UploadManager {
         } catch (Exception e) {
         }
     }
+
 
     public void uploadExamResult(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();
@@ -119,6 +123,7 @@ public class UploadManager {
             }
         });
     }
+
 
     public void uploadCourseProgress() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -165,6 +170,9 @@ public class UploadManager {
     public void uploadUserActivities(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
+        RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        if (model.isManager())
+            return;
         mRealm.executeTransactionAsync(realm -> {
             final RealmResults<RealmOfflineActivity> activities = realm.where(RealmOfflineActivity.class)
                     .isNull("_rev").equalTo("type", "login").findAll();
@@ -193,7 +201,6 @@ public class UploadManager {
                         continue;
                     Response<JsonObject> object;
                     if (TextUtils.isEmpty(act.get_id())) {
-                        Utilities.log("JSON " + RealmRating.serializeRating(act));
                         object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
                     } else {
                         object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
@@ -204,7 +211,33 @@ public class UploadManager {
                         act.setUpdated(false);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void uploadNews() {
+        mRealm = dbService.getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        RealmUserModel userModel = new UserProfileDbHandler(context).getUserModel();
+        mRealm.executeTransactionAsync(realm -> {
+            final RealmResults<RealmNews> activities = realm.where(RealmNews.class).isNull("_id").or().isEmpty("_id").findAll();
+            for (RealmNews act : activities) {
+                try {
+                    if (act.getUserId().startsWith("guest"))
+                        continue;
+                    Response<JsonObject> object;
+                    Utilities.log(RealmNews.serializeNews(act, userModel).toString());
+                    if (TextUtils.isEmpty(act.get_id())) {
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news", RealmNews.serializeNews(act, userModel)).execute();
+                    } else {
+                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), RealmNews.serializeNews(act, userModel)).execute();
+                    }
+                    if (object.body() != null) {
+                        act.set_id(JsonUtils.getString("_id", object.body()));
+                        act.set_rev(JsonUtils.getString("_rev", object.body()));
+                    }
+                } catch (Exception e) {
                 }
             }
         });
