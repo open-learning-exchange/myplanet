@@ -29,11 +29,14 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Realm mRealm;
     private RealmUserModel currentUser;
 
-    public AdapterNews(Context context, List<RealmNews> list, Realm mRealm, RealmUserModel user) {
+    public AdapterNews(Context context, List<RealmNews> list,  RealmUserModel user) {
         this.context = context;
         this.list = list;
-        this.mRealm = mRealm;
         this.currentUser = user;
+    }
+
+    public void setmRealm(Realm mRealm) {
+        this.mRealm = mRealm;
     }
 
     @NonNull

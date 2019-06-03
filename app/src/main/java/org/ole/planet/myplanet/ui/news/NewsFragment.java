@@ -60,7 +60,9 @@ public class NewsFragment extends Fragment {
                 .equalTo("viewableBy","community", Case.INSENSITIVE)
                 .findAll();
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        rvNews.setAdapter(new AdapterNews(getActivity(), list, mRealm,user));
+        AdapterNews adapterNews = new AdapterNews(getActivity(), list,user);
+        adapterNews.setmRealm(mRealm);
+        rvNews.setAdapter(adapterNews);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
             if (message.isEmpty()) {
