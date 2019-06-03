@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 
 import io.realm.Case;
-import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 
@@ -141,26 +139,21 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     }
 
 
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         mRealm.close();
     }
 
-    public List<LI> search(String s, Class c) {
-        if (s.isEmpty()) {
-            return getList(c);
-        }
-        List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
-        if (c == RealmMyLibrary.class) {
-            return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
-        } else if (c == RealmMyCourse.class && isMyCourseLib) {
-            return (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
-        } else {
-            return (List<LI>) RealmMyCourse.getOurCourse(model.getId(), (List<RealmMyCourse>) li);
+
+    private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
+        for (RealmTag tg : tags) {
+            long count = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("tagId", tg.getId()).equalTo("linkId", course.getCourseId()).count();
+            if (count > 0 && !courses.contains(course))
+                courses.add(course);
         }
     }
+
 
     private List<LI> getData(String s, Class c) {
         List<LI> li = new ArrayList<>();
@@ -170,7 +163,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             String[] query = s.split(" ");
             List<LI> data = mRealm.where(c).findAll();
             for (LI l : data) {
-               searchAndAddToList(l, c, query, li);
+                searchAndAddToList(l, c, query, li);
             }
         }
         return li;
@@ -186,7 +179,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
+    public List<RealmMyLibrary> filterLibraryByTag(String s, List<RealmTag> tags) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
@@ -201,18 +194,24 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         return libraries;
     }
 
-    private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
-//        for (RealmTag s : tags) {
-//            if (!library.getTag().toString().toLowerCase().contains(s.get_id())) {
-//                contains = false;
-//                break;
-//            }
-//        }
+    public List<RealmMyCourse> filterCourseByTag(String s, List<RealmTag> tags) {
+        if (tags.size() == 0 && s.isEmpty()) {
+            return (List<RealmMyCourse>) getList(RealmMyCourse.class);
+        }
+        List<RealmMyCourse> list = (List<RealmMyCourse>) getData(s, RealmMyCourse.class);
+        if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.getId(), list);
+        else list = RealmMyCourse.getOurCourse(model.getId(), list);
+        if (tags.size() == 0) return list;
+        RealmList<RealmMyCourse> courses = new RealmList<>();
+        for (RealmMyCourse course : list) {
+            checkAndAddToList(course, courses, tags);
+        }
+        return courses;
+    }
 
-        for (RealmTag tg : tags){
-            Utilities.log(tg.getName() + " "+ tg.getTagId() + tg.getDb());
-            long count = mRealm.where(RealmTag.class).equalTo("db","resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.getId()).count();
-            Utilities.log("Count " + count);
+    private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
+        for (RealmTag tg : tags) {
+            long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.getId()).count();
             if (count > 0)
                 libraries.add(library);
         }
