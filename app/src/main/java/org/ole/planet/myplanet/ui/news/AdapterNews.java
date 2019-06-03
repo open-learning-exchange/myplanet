@@ -50,12 +50,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (userModel != null) {
                 ((ViewHolderNews) holder).tvName.setText(userModel.getName());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
-                Utilities.log(currentUser.getId() + " " + userModel.getId());
-                if (currentUser.getId().equals(userModel.getId())) {
-                    ((ViewHolderNews) holder).llEditDelete.setVisibility(View.VISIBLE);
-                } else {
-                    ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
-                }
+                    showHideButtons(userModel, holder);
             }else{
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
@@ -67,17 +62,29 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     }).setNegativeButton(R.string.cancel, null).show());
 
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> {
-                View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
-                EditText et = v.findViewById(R.id.et_input);
-                et.setText(list.get(position).getMessage());
-                new AlertDialog.Builder(context).setTitle(R.string.edit_post).setIcon(R.drawable.ic_edit)
-                        .setView(v)
-                        .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
-                            String s = et.getText().toString();
-                            editPost(s, position);
-                        }).setNegativeButton(R.string.cancel, null).show();
+                showEditAlert(position);
             });
         }
+    }
+
+    private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
+        if (currentUser.getId().equals(userModel.getId())) {
+            ((ViewHolderNews) holder).llEditDelete.setVisibility(View.VISIBLE);
+        } else {
+            ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
+        }
+    }
+
+    private void showEditAlert(int position) {
+        View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
+        EditText et = v.findViewById(R.id.et_input);
+        et.setText(list.get(position).getMessage());
+        new AlertDialog.Builder(context).setTitle(R.string.edit_post).setIcon(R.drawable.ic_edit)
+                .setView(v)
+                .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
+                    String s = et.getText().toString();
+                    editPost(s, position);
+                }).setNegativeButton(R.string.cancel, null).show();
     }
 
     private void deletePost(int position) {
