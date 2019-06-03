@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -26,10 +27,15 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmNews> list;
     private Realm mRealm;
+    private RealmUserModel currentUser;
 
-    public AdapterNews(Context context, List<RealmNews> list, Realm mRealm) {
+    public AdapterNews(Context context, List<RealmNews> list,  RealmUserModel user) {
         this.context = context;
         this.list = list;
+        this.currentUser = user;
+    }
+
+    public void setmRealm(Realm mRealm) {
         this.mRealm = mRealm;
     }
 
@@ -47,6 +53,9 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (userModel != null) {
                 ((ViewHolderNews) holder).tvName.setText(userModel.getName());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
+                    showHideButtons(userModel, holder);
+            }else{
+                ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
             ((ViewHolderNews) holder).tvMessage.setText(list.get(position).getMessage());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(list.get(position).getTime()));
@@ -56,17 +65,29 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     }).setNegativeButton(R.string.cancel, null).show());
 
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> {
-                View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
-                EditText et = v.findViewById(R.id.et_input);
-                et.setText(list.get(position).getMessage());
-                new AlertDialog.Builder(context).setTitle(R.string.edit_post).setIcon(R.drawable.ic_edit)
-                        .setView(v)
-                        .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
-                            String s = et.getText().toString();
-                            editPost(s, position);
-                        }).setNegativeButton(R.string.cancel, null).show();
+                showEditAlert(position);
             });
         }
+    }
+
+    private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
+        if (currentUser.getId().equals(userModel.getId())) {
+            ((ViewHolderNews) holder).llEditDelete.setVisibility(View.VISIBLE);
+        } else {
+            ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
+        }
+    }
+
+    private void showEditAlert(int position) {
+        View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
+        EditText et = v.findViewById(R.id.et_input);
+        et.setText(list.get(position).getMessage());
+        new AlertDialog.Builder(context).setTitle(R.string.edit_post).setIcon(R.drawable.ic_edit)
+                .setView(v)
+                .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
+                    String s = et.getText().toString();
+                    editPost(s, position);
+                }).setNegativeButton(R.string.cancel, null).show();
     }
 
     private void deletePost(int position) {
@@ -97,6 +118,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     class ViewHolderNews extends RecyclerView.ViewHolder {
         TextView tvName, tvDate, tvMessage;
         ImageView imgEdit, imgDelete, imgUser;
+        LinearLayout llEditDelete;
 
         public ViewHolderNews(View itemView) {
             super(itemView);
@@ -106,7 +128,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             imgDelete = itemView.findViewById(R.id.img_delete);
             imgEdit = itemView.findViewById(R.id.img_edit);
             imgUser = itemView.findViewById(R.id.img_user);
-
+            llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
         }
     }
 }

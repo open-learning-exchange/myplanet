@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardElevation="2dp"
-    app:contentPadding="@dimen/padding_small"
-    app:cardUseCompatPadding="true">
+    app:cardUseCompatPadding="true"
+    app:contentPadding="@dimen/padding_small">
 
 
     <LinearLayout
@@ -15,10 +15,10 @@
         <ImageView
             android:id="@+id/img_user"
             android:layout_width="@dimen/_60dp"
+            android:layout_height="@dimen/_60dp"
             android:layout_gravity="center"
-            android:src="@drawable/ole_logo"
             android:padding="@dimen/padding_small"
-            android:layout_height="@dimen/_60dp" />
+            android:src="@drawable/ole_logo" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -58,25 +58,32 @@
 
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/img_edit"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="center"
-            android:layout_marginLeft="8dp"
-            android:background="?attr/selectableItemBackground"
-            android:visibility="visible"
-            app:srcCompat="@drawable/ic_edit" />
+        <LinearLayout
+            android:id="@+id/ll_edit_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center">
 
-        <ImageView
-            android:id="@+id/img_delete"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="center"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"
-            android:background="?attr/selectableItemBackground"
-            app:srcCompat="@drawable/ic_delete" />
+            <ImageView
+                android:id="@+id/img_edit"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:layout_marginLeft="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:visibility="visible"
+                app:srcCompat="@drawable/ic_edit" />
+
+            <ImageView
+                android:id="@+id/img_delete"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:background="?attr/selectableItemBackground"
+                app:srcCompat="@drawable/ic_delete" />
+        </LinearLayout>
 
     </LinearLayout>
 
