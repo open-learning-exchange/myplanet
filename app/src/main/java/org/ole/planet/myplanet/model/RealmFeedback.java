@@ -1,7 +1,14 @@
 package org.ole.planet.myplanet.model;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
+
+import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -9,6 +16,7 @@ import io.realm.annotations.PrimaryKey;
 public class RealmFeedback extends RealmObject {
     @PrimaryKey
     private String id;
+    private String _id;
     private String title;
 
     private String source;
@@ -27,7 +35,8 @@ public class RealmFeedback extends RealmObject {
 
     private boolean uploaded;
 
-    private RealmList<RealmMessage> messages;
+//    private RealmList<RealmMessage> messages;
+    private String messages;
 
     public static JsonObject serializeFeedback( RealmFeedback feedback) {
         JsonObject object = new JsonObject();
@@ -39,8 +48,42 @@ public class RealmFeedback extends RealmObject {
         object.addProperty("openTime", feedback.getOpenTime());
         object.addProperty("type", feedback.getType());
         object.addProperty("url", feedback.getUrl());
-        object.add("messages", RealmMessage.serialize(feedback.messages));
+//        object.add("messages", RealmMessage.serialize(feedback.messages));
+        JsonParser parser = new JsonParser();
+        object.add("messages", parser.parse(feedback.messages));
         return object;
+    }
+
+
+    public static void insertFeedback(Realm mRealm, JsonObject act) {
+        RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        if (feedback == null)
+            feedback = mRealm.createObject(RealmFeedback.class, JsonUtils.getString("_id", act));
+        feedback.set_id(JsonUtils.getString("_", act));
+        feedback.setTitle(JsonUtils.getString("title", act));
+        feedback.setSource(JsonUtils.getString("source", act));
+        feedback.setStatus(JsonUtils.getString("status", act));
+        feedback.setPriority(JsonUtils.getString("priority", act));
+        feedback.setOwner(JsonUtils.getString("owner", act));
+        feedback.setOpenTime(JsonUtils.getString("openTime", act));
+        feedback.setType(JsonUtils.getString("type", act));
+        feedback.setUrl(JsonUtils.getString("url", act));
+        feedback.setMessages(new Gson().toJson(JsonUtils.getJsonArray("messages", act)));
+        feedback.setUploaded(true);
+    }
+
+    public void setMessages(JsonArray messages){
+        for (JsonElement e: messages
+             ) {
+
+        }
+    }
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
     }
 
     public String getTitle() {
@@ -115,11 +158,20 @@ public class RealmFeedback extends RealmObject {
         this.id = id;
     }
 
-    public RealmList<RealmMessage> getMessages() {
+//    public RealmList<RealmMessage> getMessages() {
+//        return messages;
+//    }
+//
+//    public void setMessages(RealmList<RealmMessage> messages) {
+//        this.messages = messages;
+//    }
+
+
+    public String getMessages() {
         return messages;
     }
 
-    public void setMessages(RealmList<RealmMessage> messages) {
+    public void setMessages(String messages) {
         this.messages = messages;
     }
 

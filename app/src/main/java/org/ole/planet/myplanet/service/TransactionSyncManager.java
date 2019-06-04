@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.RealmAchievement;
+import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
@@ -67,6 +68,8 @@ public class TransactionSyncManager {
                 RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
             } else if (type.equals("achievements")) {
                 RealmAchievement.insertAchievement(mRealm, jsonDoc);
+            }else if (type.equals("feedback")) {
+                RealmFeedback.insertFeedback(mRealm, jsonDoc);
             }
             checkDoc(jsonDoc, mRealm, type);
         }
