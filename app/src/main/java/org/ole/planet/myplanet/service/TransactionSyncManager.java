@@ -12,18 +12,15 @@ import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.model.RealmNews;
-import org.ole.planet.myplanet.model.RealmOfflineActivity;
-import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
-import org.ole.planet.myplanet.model.RealmSubmission;
-import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 import io.realm.Realm;
 import retrofit2.Response;
@@ -60,36 +57,35 @@ public class TransactionSyncManager {
     }
 
     private static void processDoc(ApiInterface dbClient, Rows doc, Realm mRealm, String type) throws Exception {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
             JsonObject jsonDoc = dbClient.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + type + "/" + doc.getId()).execute().body();
-            if (type.equals("courses")) {
-                RealmMyCourse.insertMyCourses(jsonDoc, mRealm);
-            } else if (type.equals("exams")) {
+            if (type.equals("exams")) {
                 RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
-            } else if (type.equals("achievements")) {
-                RealmAchievement.insertAchievement(mRealm, jsonDoc);
-            }else if (type.equals("feedback")) {
-                RealmFeedback.insertFeedback(mRealm, jsonDoc);
+            } else if (type.equals("tablet_users")) {
+                RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
+            } else {
+                callMethod(mRealm, jsonDoc, type);
             }
-            checkDoc(jsonDoc, mRealm, type);
         }
     }
 
-    private static void checkDoc(JsonObject jsonDoc, Realm mRealm, String type) {
-        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        if (type.equals("submissions")) {
-            RealmSubmission.insertSubmission(mRealm, jsonDoc);
-        } else if (type.equals("ratings")) {
-            RealmRating.insertRatings(mRealm, jsonDoc);
-        } else if (type.equals("tablet_users")) {
-            RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
-        } else if (type.equals("login_activities")) {
-            RealmOfflineActivity.insertOfflineActivities(mRealm, jsonDoc);
-        } else if (type.equals("tags")) {
-            RealmTag.insertTags(mRealm, jsonDoc);
-        } else if (type.equals("news")) {
-            RealmNews.insertNews(mRealm, jsonDoc);
+    private static void callMethod(Realm mRealm, JsonObject jsonDoc, String type) {
+        try {
+            Method[] methods = Constants.classList.get(type).getMethods();
+            for (Method m : methods) {
+                Utilities.log("M " + m.getName());
+                if ("insert".equals(m.getName())) {
+                    m.invoke(null, new Object[] {mRealm, jsonDoc});
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            Utilities.log("Type " + type);
+            e.printStackTrace();
         }
     }
+
+
 
 }

@@ -193,7 +193,7 @@ public class RealmRating extends RealmObject {
     }
 
 
-    public static void insertRatings(Realm mRealm, JsonObject act) {
+    public static void insert(Realm mRealm, JsonObject act) {
         Utilities.log("Insert rating " + act);
         RealmRating rating = mRealm.where(RealmRating.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (rating == null)
