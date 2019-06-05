@@ -168,6 +168,9 @@
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Managerial Login</string>
     <string name="save_username_and_password">Save Username and Password</string>
+    <string name="priority">Priority</string>
+    <string name="status">Status</string>
+    <string name="title_not_compulsary">Title</string>
 
     <string-array name="info_type">
         <item>Languages</item>
