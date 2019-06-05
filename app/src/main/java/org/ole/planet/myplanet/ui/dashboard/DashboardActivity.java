@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
@@ -218,7 +219,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 openMyFragment(new CourseFragment());
                 break;
             case R.string.menu_feedback:
-                new FeedbackFragment().show(getSupportFragmentManager(), "");
+//                new FeedbackFragment().show(getSupportFragmentManager(), "");
+                openMyFragment(new FeedbackListFragment());
                 break;
             case R.string.menu_logout:
                 logout();

@@ -171,6 +171,17 @@ public class RealmFeedback extends RealmObject {
         return messages;
     }
 
+    public String getMessage(){
+        JsonParser parser = new JsonParser();
+      JsonElement e =   parser.parse(messages);
+      JsonArray ar = e.getAsJsonArray();
+      if (ar.size() > 0){
+          JsonObject ob = ar.get(0).getAsJsonObject();
+          return ob.get("message").getAsString();
+      }
+      return "";
+    }
+
     public void setMessages(String messages) {
         this.messages = messages;
     }
