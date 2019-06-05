@@ -56,6 +56,8 @@ public class FeedbackListFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         rvFeedbacks.setLayoutManager(new LinearLayoutManager(getActivity()));
         List<RealmFeedback> list = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.getName()).findAll();
+        if (userModel.isManager())
+            list = mRealm.where(RealmFeedback.class).findAll();
         AdapterFeedback adapterFeedback = new AdapterFeedback(getActivity(), list);
         rvFeedbacks.setAdapter(adapterFeedback);
     }
