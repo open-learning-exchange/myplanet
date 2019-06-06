@@ -98,7 +98,6 @@
                     android:layout_weight="1"
                     android:enabled="false"
                     android:entries="@array/language"
-                    android:gravity="center"
                     android:hint="@string/title"
                     android:padding="@dimen/padding_large" />
 
@@ -147,8 +146,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:gravity="center"
                     android:padding="@dimen/padding_large"
+                    android:textSize="@dimen/text_size_mid"
                     android:text="@string/subject" />
 
                 <TextView
@@ -157,7 +156,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:gravity="center"
+                    android:textSize="@dimen/text_size_mid"
                     android:padding="@dimen/padding_large"
                     android:text="@string/levels" />
 
@@ -187,7 +186,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:gravity="center"
+                    android:textSize="@dimen/text_size_mid"
                     android:padding="@dimen/padding_large"
                     android:text="@string/resource_for" />
 
@@ -228,8 +227,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:gravity="center"
                     android:padding="@dimen/padding_large"
+                    android:textSize="@dimen/text_size_mid"
                     android:text="@string/resource_for" />
 
                 <android.support.design.widget.TextInputLayout
@@ -260,6 +259,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_large"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textColor="@color/md_black_1000"
                     android:text="@string/file_upload" />
 
 
