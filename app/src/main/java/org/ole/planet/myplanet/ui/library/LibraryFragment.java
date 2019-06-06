@@ -1,12 +1,14 @@
 package org.ole.planet.myplanet.ui.library;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -54,6 +56,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     List<RealmTag> searchTags;
     ChipCloudConfig config;
     Button clearTags;
+
 
     public LibraryFragment() {
     }
@@ -109,6 +112,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             f.setListener(this);
             f.show(getChildFragmentManager(), "");
         });
+        getView().findViewById(R.id.add_resource).setOnClickListener(v->{
+            startActivity(new Intent(getActivity(), AddResourceActivity.class));
+        });
     }
 
     private void initArrays() {
@@ -133,32 +139,32 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
     }
 
-    private void setSearchListener() {
-        etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                if (!charSequence.toString().isEmpty()) {
-                    String lastChar = charSequence.toString().substring(charSequence.length() - 1);
-                    if (lastChar.equals(" ") || lastChar.equals("\n")) {
-                        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
-                        etSearch.setText(etSearch.getText().toString().trim());
-                        KeyboardUtils.hideSoftKeyboard(getActivity());
-                        showNoData(tvMessage, adapterLibrary.getItemCount());
-                    }
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable editable) {
-
-            }
-        });
-    }
+//    private void setSearchListener() {
+//        etSearch.addTextChangedListener(new TextWatcher() {
+//            @Override
+//            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//
+//            }
+//
+//            @Override
+//            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//                if (!charSequence.toString().isEmpty()) {
+//                    String lastChar = charSequence.toString().substring(charSequence.length() - 1);
+//                    if (lastChar.equals(" ") || lastChar.equals("\n")) {
+//                        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
+//                        etSearch.setText(etSearch.getText().toString().trim());
+//                        KeyboardUtils.hideSoftKeyboard(getActivity());
+//                        showNoData(tvMessage, adapterLibrary.getItemCount());
+//                    }
+//                }
+//            }
+//
+//            @Override
+//            public void afterTextChanged(Editable editable) {
+//
+//            }
+//        });
+//    }
 
 
     @Override
@@ -241,4 +247,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         b.put("levels", levels);
         return b;
     }
+
+
 }

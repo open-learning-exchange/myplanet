@@ -178,4 +178,12 @@
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Managerial Login</string>
     <string name="save_username_and_password">Save Username and Password</string>
+    <string name="year">Year</string>
+    <string name="publisher">Publisher</string>
+    <string name="link_to_license">Link to license</string>
+    <string name="resource_for">Resource For</string>
+    <string name="open_which_file">Open Which File</string>
+    <string name="file_upload">File Upload</string>
+    <string name="choose_file">Choose File</string>
+    <string name="file_downloadable">File downloadable</string>
 </resources>
