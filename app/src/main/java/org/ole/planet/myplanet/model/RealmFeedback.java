@@ -50,7 +50,11 @@ public class RealmFeedback extends RealmObject {
         object.addProperty("url", feedback.getUrl());
 //        object.add("messages", RealmMessage.serialize(feedback.messages));
         JsonParser parser = new JsonParser();
-        object.add("messages", parser.parse(feedback.messages));
+        try{
+            object.add("messages", parser.parse(feedback.messages));
+        }catch (Exception err){
+            err.printStackTrace();
+        }
         return object;
     }
 
