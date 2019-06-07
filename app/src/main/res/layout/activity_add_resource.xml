@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="@dimen/padding_normal"
     tools:context=".ui.library.AddResourceActivity">
 
     <ScrollView
@@ -21,6 +22,7 @@
                 android:layout_height="wrap_content">
 
                 <android.support.design.widget.TextInputLayout
+                    android:id="@+id/tl_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -123,7 +125,7 @@
                         android:id="@+id/et_link_to_license"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        
+
                         android:hint="@string/link_to_license" />
 
                 </android.support.design.widget.TextInputLayout>
@@ -135,26 +137,40 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-
-                <TextView
-                    android:id="@+id/tv_subject"
+                <android.support.design.widget.TextInputLayout
+                    android:id="@+id/tl_subjects"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:padding="@dimen/padding_large"
-                    android:textSize="@dimen/text_size_mid"
-                    android:text="@string/subject" />
+                    android:padding="@dimen/padding_normal">
 
-                <TextView
-                    android:id="@+id/tv_levels"
+                    <TextView
+                        android:id="@+id/tv_subject"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="@string/subject"
+                        android:textSize="@dimen/text_size_mid" />
+                </android.support.design.widget.TextInputLayout>
+
+
+                <android.support.design.widget.TextInputLayout
+                    android:id="@+id/tl_levels"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:textSize="@dimen/text_size_mid"
-                    android:padding="@dimen/padding_large"
-                    android:text="@string/levels" />
+                    android:padding="@dimen/padding_normal">
+
+                    <TextView
+                        android:id="@+id/tv_levels"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="@string/levels"
+                        android:textSize="@dimen/text_size_mid" />
+                </android.support.design.widget.TextInputLayout>
 
 
                 <Spinner
@@ -176,15 +192,21 @@
                 android:layout_height="wrap_content">
 
 
-                <TextView
-                    android:id="@+id/tv_resource_for"
+                <android.support.design.widget.TextInputLayout
+                    android:id="@+id/tl_resource_for"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:textSize="@dimen/text_size_mid"
-                    android:padding="@dimen/padding_large"
-                    android:text="@string/resource_for" />
+                    android:padding="@dimen/padding_normal">
+
+                    <TextView
+                        android:id="@+id/tv_resource_for"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/resource_for"
+                        android:textSize="@dimen/text_size_mid" />
+                </android.support.design.widget.TextInputLayout>
 
                 <Spinner
                     android:id="@+id/spn_media"
@@ -222,8 +244,8 @@
                     android:layout_gravity="center"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_large"
-                    android:textSize="@dimen/text_size_mid"
-                    android:text="@string/resource_for" />
+                    android:text="@string/resource_for"
+                    android:textSize="@dimen/text_size_mid" />
 
                 <android.support.design.widget.TextInputLayout
                     android:layout_width="0dp"
@@ -245,32 +267,32 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:padding="@dimen/padding_normal"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_large"
-                    android:textSize="@dimen/text_size_mid"
+                    android:text="@string/file_upload"
                     android:textColor="@color/md_black_1000"
-                    android:text="@string/file_upload" />
+                    android:textSize="@dimen/text_size_mid" />
 
 
                 <Button
                     android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="@string/choose_file"
-                    android:layout_height="wrap_content" />
+                    android:text="@string/choose_file" />
 
                 <CheckBox
+                    android:id="@+id/cb_downloadable"
                     android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
-                    android:text="@string/file_downloadable"
-                    android:id="@+id/cb_downloadable"
-                    android:layout_height="wrap_content" />
+                    android:text="@string/file_downloadable" />
             </LinearLayout>
 
             <LinearLayout
@@ -282,9 +304,9 @@
                     android:id="@+id/btn_submit"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
                     android:text="@string/button_submit"
-                    android:theme="@style/PrimaryButton"
-                    android:layout_marginRight="10dp"/>
+                    android:theme="@style/PrimaryButton" />
 
                 <Button
                     android:id="@+id/btn_cancel"

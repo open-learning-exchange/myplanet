@@ -214,4 +214,29 @@
         <item>Discussion Questions</item>
     </string-array>
 
+    <string-array name="array_levels">
+        <item>Early Education</item>
+        <item>Lower Primary</item>
+        <item>Upper Primary</item>
+        <item>Lower Secondary</item>
+        <item>Upper Secondary</item>
+        <item>Undergraduate</item>
+        <item>Graduate</item>
+        <item>Professional</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>Agriculture</item>
+        <item>Arts</item>
+        <item>Business and Finance</item>
+        <item>Environment</item>
+        <item>Food and Nutrition</item>
+        <item>Geography</item>
+        <item>Health and Medicine</item>
+        <item>History</item>
+        <item>Human Development</item>
+        <item>Languages</item>
+        <item>Law</item>
+        <item>Learning</item>
+    </string-array>
+
 </resources>
