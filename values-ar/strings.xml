@@ -54,7 +54,10 @@
     <string name="question">Question</string>
     <string name="bug">Bug</string>
     <string name="your_feedback">Your Feedback *</string>
+<<<<<<< HEAD
     <string name="app_version">0.3.50</string>
+=======
+>>>>>>> 8398087d17ee5cfbe9c6acb17a05bc767cf87be4
     <string name="button_update">Update</string>
     <string name="level">Level</string>
     <string name="male">Male</string>
