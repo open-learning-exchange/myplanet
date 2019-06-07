@@ -155,6 +155,7 @@
     <string name="priority">Priority</string>
     <string name="status">Status</string>
     <string name="title_not_compulsary">Title</string>
+    <string name="added_by">Added By</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>

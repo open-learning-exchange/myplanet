@@ -244,7 +244,7 @@
                     android:layout_gravity="center"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_large"
-                    android:text="@string/resource_for"
+                    android:text="@string/added_by"
                     android:textSize="@dimen/text_size_mid" />
 
                 <android.support.design.widget.TextInputLayout

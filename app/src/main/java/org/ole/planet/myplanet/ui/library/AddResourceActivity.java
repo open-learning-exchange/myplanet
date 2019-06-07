@@ -28,7 +28,7 @@ public class AddResourceActivity extends AppCompatActivity {
 
     EditText etTitle, etAuthor, etYear, etDescription, etPublisher, etLinkToLicense, etOpenWhich;
     Spinner spnLang, spnMedia, spnResourceType, spnOpenWith;
-    EditText tvSubjects, tvLevels, tvResourceFor;
+    TextView tvSubjects, tvLevels, tvResourceFor;
     Realm mRealm;
     RealmUserModel userModel;
     List<String> subjects;
