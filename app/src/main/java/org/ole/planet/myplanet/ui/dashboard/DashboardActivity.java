@@ -72,10 +72,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        user = new UserProfileDbHandler(this).getUserModel();
-        if (user.getId().startsWith("guest")){
-            getTheme().applyStyle(R.style.GuestStyle, true);
-        }
+        checkUser();
         setContentView(R.layout.activity_dashboard);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
@@ -107,6 +104,18 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
         openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
                 new BellDashboardFragment() : new DashboardFragment());
+    }
+
+    private void checkUser() {
+        user = new UserProfileDbHandler(this).getUserModel();
+        if(user  == null){
+            Utilities.toast(this, "Session expired.");
+            logout();
+            return;
+        }
+        if (user.getId().startsWith("guest")){
+            getTheme().applyStyle(R.style.GuestStyle, true);
+        }
     }
 
     private void topbarSetting() {
