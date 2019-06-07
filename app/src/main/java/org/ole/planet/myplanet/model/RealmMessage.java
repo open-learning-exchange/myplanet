@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
@@ -52,4 +53,8 @@ public class RealmMessage extends RealmObject {
         }
         return array;
     }
+
+      public static void insertFeedback(Realm mRealm, JsonObject act) {
+
+      }
 }

@@ -146,7 +146,7 @@ public class RealmOfflineActivity extends RealmObject {
         return s;
     }
 
-    public static void insertOfflineActivities(Realm mRealm, JsonObject act) {
+    public static void insert(Realm mRealm, JsonObject act) {
         RealmOfflineActivity activities = mRealm.createObject(RealmOfflineActivity.class, JsonUtils.getString("_id", act));
         activities.set_rev(JsonUtils.getString("_rev", act));
         activities.set_id(JsonUtils.getString("_id", act));
