@@ -73,6 +73,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         user = new UserProfileDbHandler(this).getUserModel();
+        if(user  == null){
+            Utilities.toast(this, "Session expired.");
+            logout();
+            return;
+        }
         if (user.getId().startsWith("guest")){
             getTheme().applyStyle(R.style.GuestStyle, true);
         }
