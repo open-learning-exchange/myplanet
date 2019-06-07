@@ -38,7 +38,7 @@ public class RealmSubmission extends RealmObject {
     private boolean uploaded;
 
 
-    public static void insertSubmission(Realm mRealm, JsonObject submission) {
+    public static void insert(Realm mRealm, JsonObject submission) {
         Utilities.log("Insert submission  ");
         String id = JsonUtils.getString("_id", submission);
         RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();

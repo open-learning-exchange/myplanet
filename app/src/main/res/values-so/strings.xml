@@ -186,4 +186,7 @@
     <string name="file_upload">File Upload</string>
     <string name="choose_file">Choose File</string>
     <string name="file_downloadable">File downloadable</string>
+    <string name="priority">Priority</string>
+    <string name="status">Status</string>
+    <string name="title_not_compulsary">Title</string>
 </resources>
