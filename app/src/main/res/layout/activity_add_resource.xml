@@ -30,7 +30,6 @@
                         android:id="@+id/et_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:enabled="false"
                         android:hint="@string/title" />
 
                 </android.support.design.widget.TextInputLayout>
@@ -45,7 +44,6 @@
                         android:id="@+id/et_author"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:enabled="false"
                         android:hint="@string/author" />
 
                 </android.support.design.widget.TextInputLayout>
@@ -60,7 +58,6 @@
                         android:id="@+id/et_year"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:enabled="false"
                         android:hint="@string/year" />
 
                 </android.support.design.widget.TextInputLayout>
@@ -78,7 +75,6 @@
                     android:id="@+id/et_description"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:enabled="false"
                     android:hint="@string/description"
                     android:lines="3" />
 
@@ -127,7 +123,7 @@
                         android:id="@+id/et_link_to_license"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:enabled="false"
+                        
                         android:hint="@string/link_to_license" />
 
                 </android.support.design.widget.TextInputLayout>
@@ -196,7 +192,6 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:enabled="false"
                     android:entries="@array/media"
                     android:gravity="center"
                     android:padding="@dimen/padding_large" />
@@ -208,7 +203,6 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:enabled="false"
                     android:entries="@array/resource_type"
                     android:gravity="center"
                     android:padding="@dimen/padding_large" />
