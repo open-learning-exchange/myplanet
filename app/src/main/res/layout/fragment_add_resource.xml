@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -22,7 +22,10 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:id="@+id/ll_record_video"
                 android:layout_weight="1"
+                android:layout_gravity="center"
+                android:gravity="center"
                 android:background="?attr/selectableItemBackground"
                 android:orientation="vertical">
 
@@ -31,7 +34,9 @@
                     android:layout_height="@dimen/profile_card_bell"
                     android:layout_margin="@dimen/padding_large"
                     android:background="@drawable/oval_primary"
-                    android:padding="@dimen/padding_normal"
+                    android:padding="@dimen/padding_large"
+                    android:layout_gravity="center"
+                    android:gravity="center"
                     android:tint="@color/colorPrimaryDark"
                     app:srcCompat="@drawable/ic_record_video" />
 
@@ -49,6 +54,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_gravity="center"
+                android:gravity="center"
                 android:background="?attr/selectableItemBackground"
                 android:orientation="vertical">
 
@@ -57,7 +64,9 @@
                     android:layout_height="@dimen/profile_card_bell"
                     android:layout_margin="@dimen/padding_large"
                     android:background="@drawable/oval_primary"
-                    android:padding="@dimen/padding_normal"
+                    android:padding="@dimen/padding_large"
+                    android:layout_gravity="center"
+                    android:gravity="center"
                     android:tint="@color/colorPrimaryDark"
                     app:srcCompat="@drawable/ic_mic" />
 
@@ -76,16 +85,19 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:layout_gravity="center"
+                android:gravity="center"
                 android:background="?attr/selectableItemBackground"
                 android:orientation="vertical">
 
                 <ImageView
                     android:layout_width="@dimen/profile_card_bell"
                     android:layout_height="@dimen/profile_card_bell"
-                    android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_large"
                     android:background="@drawable/oval_primary"
-                    android:padding="@dimen/padding_normal"
+                    android:layout_gravity="center"
+                    android:padding="@dimen/padding_large"
+                    android:gravity="center"
                     android:tint="@color/colorPrimaryDark"
                     app:srcCompat="@drawable/ic_folder" />
 
@@ -105,4 +117,4 @@
 
     </LinearLayout>
 
-</FrameLayout>
+</android.support.design.widget.CoordinatorLayout>

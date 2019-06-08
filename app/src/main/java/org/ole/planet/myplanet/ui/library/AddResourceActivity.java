@@ -74,33 +74,37 @@ public class AddResourceActivity extends AppCompatActivity {
         tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
         tvSubjects.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
-            String title = etTitle.getText().toString();
-            String author = etAuthor.getText().toString();
-            String year = etYear.getText().toString();
-            String description = etDescription.getText().toString();
-            String publisher = etPublisher.getText().toString();
-            String linkToLicense = etLinkToLicense.getText().toString();
-            String openWhich = etOpenWhich.getText().toString();
-            String lang = spnLang.getSelectedItem().toString();
-            String media = spnMedia.getSelectedItem().toString();
-            String resourceType = spnResourceType.getSelectedItem().toString();
-            String openWith = spnOpenWith.getSelectedItem().toString();
-            if (title.isEmpty()) {
-                ((TextInputLayout) findViewById(R.id.tl_title)).setError("Title is required");
-                return;
-            }
-            if (levels.isEmpty()) {
-                ((TextInputLayout) findViewById(R.id.tl_title)).setError("Level is required");
-                return;
-            }
-            if (subjects.isEmpty()) {
-                ((TextInputLayout) findViewById(R.id.tl_title)).setError("Subject is required");
-                return;
-            }
+            saveResource();
         });
         findViewById(R.id.btn_cancel).setOnClickListener(view -> {
             finish();
         });
+    }
+
+    private void saveResource() {
+        String title = etTitle.getText().toString();
+        String author = etAuthor.getText().toString();
+        String year = etYear.getText().toString();
+        String description = etDescription.getText().toString();
+        String publisher = etPublisher.getText().toString();
+        String linkToLicense = etLinkToLicense.getText().toString();
+        String openWhich = etOpenWhich.getText().toString();
+        String lang = spnLang.getSelectedItem().toString();
+        String media = spnMedia.getSelectedItem().toString();
+        String resourceType = spnResourceType.getSelectedItem().toString();
+        String openWith = spnOpenWith.getSelectedItem().toString();
+        if (title.isEmpty()) {
+            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Title is required");
+            return;
+        }
+        if (levels.isEmpty()) {
+            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Level is required");
+            return;
+        }
+        if (subjects.isEmpty()) {
+            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Subject is required");
+            return;
+        }
     }
 
     private void showMultiSelectList(String[] list, List<String> items, View view) {
