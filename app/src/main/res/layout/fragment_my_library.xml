@@ -107,12 +107,5 @@
 
     </LinearLayout>
 
-    <android.support.design.widget.FloatingActionButton
-        android:layout_width="wrap_content"
-        android:layout_margin="@dimen/padding_large"
-        android:layout_gravity="bottom|right"
-        android:id="@+id/add_resource"
-        android:src="@drawable/ic_add"
-        android:layout_height="wrap_content" />
 
 </android.support.design.widget.CoordinatorLayout>

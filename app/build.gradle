@@ -103,6 +103,8 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'de.hdodenhof:circleimageview:3.0.0'
+    implementation 'com.amosyuen.ffmpegvideorecorder:ffmpeg-video-recorder:2.0.3'
+
     //    implementation 'com.github.fiskurgit:ChipCloud:3.0.5'
     implementation project(':ChipCloud-3.0.5')
 }

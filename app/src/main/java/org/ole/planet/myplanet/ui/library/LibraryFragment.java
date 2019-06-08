@@ -112,9 +112,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             f.setListener(this);
             f.show(getChildFragmentManager(), "");
         });
-        getView().findViewById(R.id.add_resource).setOnClickListener(v->{
-            startActivity(new Intent(getActivity(), AddResourceActivity.class));
-        });
+
     }
 
     private void initArrays() {
