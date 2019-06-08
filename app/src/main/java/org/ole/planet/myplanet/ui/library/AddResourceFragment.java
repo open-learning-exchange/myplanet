@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
@@ -17,19 +18,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
-import com.amosyuen.videorecorder.activity.FFmpegRecorderActivity;
-import com.amosyuen.videorecorder.activity.params.FFmpegRecorderActivityParams;
-import com.amosyuen.videorecorder.camera.CameraControllerI;
-import com.amosyuen.videorecorder.recorder.common.ImageFit;
-import com.amosyuen.videorecorder.recorder.common.ImageScale;
-import com.amosyuen.videorecorder.recorder.common.ImageSize;
-import com.amosyuen.videorecorder.recorder.params.EncoderParamsI;
 
 import org.jetbrains.annotations.NotNull;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.UUID;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -46,11 +41,11 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     @NotNull
     @Override
-    public Dialog onCreateDialog( Bundle savedInstanceState) {
-        BottomSheetDialog bottomSheetDialog=(BottomSheetDialog)super.onCreateDialog(savedInstanceState);
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        BottomSheetDialog bottomSheetDialog = (BottomSheetDialog) super.onCreateDialog(savedInstanceState);
         bottomSheetDialog.setOnShowListener(d -> {
             BottomSheetDialog dialog = (BottomSheetDialog) d;
-            FrameLayout bottomSheet =  dialog .findViewById(android.support.design.R.id.design_bottom_sheet);
+            FrameLayout bottomSheet = dialog.findViewById(android.support.design.R.id.design_bottom_sheet);
             BottomSheetBehavior.from(bottomSheet).setState(BottomSheetBehavior.STATE_EXPANDED);
             BottomSheetBehavior.from(bottomSheet).setSkipCollapsed(true);
             BottomSheetBehavior.from(bottomSheet).setHideable(true);
@@ -63,77 +58,37 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_add_resource, container, false);
-        v.findViewById(R.id.ll_record_video).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startVideoActivity();
-            }
-        });
+        v.findViewById(R.id.ll_record_video).setOnClickListener(view -> dispatchTakeVideoIntent());
+        v.findViewById(R.id.ll_record_audio).setOnClickListener(view -> dispatchRecordAudioIntent());
         return v;
     }
 
-    public void startVideoActivity() {
-        String videoFileName = "ole-video-" + Integer.toString(4) + ".mp4";
-        File videoFile = new File(Utilities.SD_PATH + "/videos", videoFileName);
+    static final int REQUEST_VIDEO_CAPTURE = 1;
+    static final int REQUEST_RECORD_SOUND = 0;
 
-        String thumbnailFileName =
-                "ole-thumb-" + Integer.toString(4) + ".jpg";
-        File thumbFile = new File(Utilities.SD_PATH + "/videos", thumbnailFileName);
-        FFmpegRecorderActivityParams.Builder paramsBuilder =
-                FFmpegRecorderActivityParams.builder(getContext())
-                        .setVideoOutputFileUri(videoFile)
-                        .setVideoThumbnailOutputFileUri(thumbFile);
+    private void dispatchTakeVideoIntent() {
+        Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
 
-        paramsBuilder.recorderParamsBuilder()
-                .setVideoSize(new ImageSize(640, 480))
-                .setVideoCodec(EncoderParamsI.VideoCodec.H264)
-                .setVideoBitrate(100000)
-                .setVideoFrameRate(30)
-                .setVideoImageFit(ImageFit.FILL)
-                .setVideoImageScale(ImageScale.DOWNSCALE)
-                .setShouldCropVideo(true)
-                .setShouldPadVideo(true)
-                .setVideoCameraFacing(CameraControllerI.Facing.BACK)
-                .setAudioCodec(EncoderParamsI.AudioCodec.AAC)
-                .setAudioSamplingRateHz(44100)
-                .setAudioBitrate(100000)
-                .setAudioChannelCount(2)
-                .setOutputFormat(EncoderParamsI.OutputFormat.MP4);
+        if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+            startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
+        }
+    }
 
-        Intent intent = new Intent(getActivity(), FFmpegRecorderActivity.class);
-        intent.putExtra(FFmpegRecorderActivity.REQUEST_PARAMS_KEY, paramsBuilder.build());
-        startActivityForResult(intent, RECORD_VIDEO_REQUEST);
+    private void dispatchRecordAudioIntent() {
+
+        Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
+        if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
+            startActivityForResult(intent, REQUEST_RECORD_SOUND);
+        }
+//        startActivityForResult(intent, REQUEST_RECORD_SOUND);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        switch (requestCode) {
-            case RECORD_VIDEO_REQUEST:
-                switch (resultCode) {
-                    case RESULT_OK:
-                        Uri videoUri = data.getData();
-                        Uri thumbnailUri =
-                                data.getParcelableExtra(FFmpegRecorderActivity.RESULT_THUMBNAIL_URI_KEY);
-                        Utilities.log("Video uri.. " + videoUri);
-                        break;
-                    case Activity.RESULT_CANCELED:
-                        break;
-                    case FFmpegRecorderActivity.RESULT_ERROR:
-                        Exception error = (Exception)
-                                data.getSerializableExtra(FFmpegRecorderActivity.RESULT_ERROR_PATH_KEY);
-                        new AlertDialog.Builder(getActivity())
-                                .setCancelable(false)
-                                .setTitle("Unable to record video")
-                                .setMessage(error.getLocalizedMessage())
-                                .setPositiveButton(R.string.ok, null)
-                                .show();
-                        break;
-                }
-                break;
-            default:
-                super.onActivityResult(requestCode, resultCode, data);
-                break;
+        if (resultCode == RESULT_OK) {
+            Uri url = data.getData();
+            Utilities.log(" url" + url.getPath());
+            //  mVideoView.setVideoURI(videoUri);
         }
     }
 }
