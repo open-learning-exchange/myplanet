@@ -110,7 +110,6 @@
                         android:id="@+id/et_publisher"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:enabled="false"
                         android:hint="@string/publisher" />
 
                 </android.support.design.widget.TextInputLayout>
@@ -257,7 +256,6 @@
                         android:id="@+id/et_open_which"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:enabled="false"
                         android:hint="@string/open_which_file" />
 
                 </android.support.design.widget.TextInputLayout>
