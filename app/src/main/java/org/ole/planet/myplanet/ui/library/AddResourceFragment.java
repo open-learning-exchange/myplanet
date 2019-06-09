@@ -13,6 +13,7 @@ import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -86,6 +87,11 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         if (resultCode == RESULT_OK) {
             Uri url = data.getData();
             Utilities.log(" url" + url.getPath());
+            if (!TextUtils.isEmpty(url.getPath())){
+                startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", url.getPath()));
+            }else{
+                Utilities.toast(getActivity(), "Invalid resource url");
+            }
         }
     }
 }

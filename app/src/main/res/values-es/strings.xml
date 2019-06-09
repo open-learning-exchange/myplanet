@@ -193,4 +193,5 @@
     <string name="record_audio">Record Audio</string>
     <string name="record_video">Record Video</string>
     <string name="my_draft">My Draft</string>
+    <string name="add_resource">Add Resource :</string>
 </resources>

@@ -15,25 +15,30 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 
 public class AddResourceActivity extends AppCompatActivity {
 
     EditText etTitle, etAuthor, etYear, etDescription, etPublisher, etLinkToLicense, etOpenWhich;
     Spinner spnLang, spnMedia, spnResourceType, spnOpenWith;
-    TextView tvSubjects, tvLevels, tvResourceFor;
+    TextView tvSubjects, tvLevels, tvResourceFor, tvAddedBy;
     Realm mRealm;
     RealmUserModel userModel;
-    List<String> subjects;
-    List<String> levels;
-    List<String> resourceFor;
+    RealmList<String> subjects;
+    RealmList<String> levels;
+    RealmList<String> resourceFor;
+    String resourceUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,12 +46,14 @@ public class AddResourceActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_resource);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
-        levels = new ArrayList<>();
-        subjects = new ArrayList<>();
-        resourceFor = new ArrayList<>();
-        initializeViews();
         userModel = new UserProfileDbHandler(this).getUserModel();
+        resourceUrl = getIntent().getStringExtra("resource_local_url");
+        levels = new RealmList<>();
+        subjects = new RealmList<>();
+        resourceFor = new RealmList<>();
         mRealm = new DatabaseService(this).getRealmInstance();
+        initializeViews();
+
     }
 
     @Override
@@ -69,10 +76,12 @@ public class AddResourceActivity extends AppCompatActivity {
         spnResourceType = findViewById(R.id.spn_resource_type);
         spnOpenWith = findViewById(R.id.spn_open_with);
         tvSubjects = findViewById(R.id.tv_subject);
+        tvAddedBy = findViewById(R.id.tv_added_by);
         tvLevels = findViewById(R.id.tv_levels);
         tvResourceFor = findViewById(R.id.tv_resource_for);
         tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
         tvSubjects.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
+        tvAddedBy.setText(userModel.getName());
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             saveResource();
         });
@@ -84,6 +93,7 @@ public class AddResourceActivity extends AppCompatActivity {
     private void saveResource() {
         String title = etTitle.getText().toString();
         String author = etAuthor.getText().toString();
+        String addedBy = tvAddedBy.getText().toString();
         String year = etYear.getText().toString();
         String description = etDescription.getText().toString();
         String publisher = etPublisher.getText().toString();
@@ -105,6 +115,26 @@ public class AddResourceActivity extends AppCompatActivity {
             ((TextInputLayout) findViewById(R.id.tl_title)).setError("Subject is required");
             return;
         }
+        mRealm.executeTransactionAsync(realm -> {
+            RealmMyLibrary resource = realm.createObject(RealmMyLibrary.class, UUID.randomUUID().toString());
+            resource.setAddedBy(addedBy);
+            resource.setTitle(title);
+            resource.setAuthor(author);
+            resource.setYear(year);
+            resource.setDescription(description);
+            resource.setPublisher(publisher);
+            resource.setLinkToLicense(linkToLicense);
+            resource.setOpenWith(openWith);
+            resource.setLanguage(lang);
+            resource.setMediaType(media);
+            resource.setMediaType(resourceType);
+            resource.setSubject(subjects);
+            resource.setLevel(levels);
+            resource.setResourceFor(resourceFor);
+            resource.setResourceLocalAddress(resourceUrl);
+            resource.setFilename(resourceUrl.substring(resourceUrl.lastIndexOf("/")));
+        });
+
     }
 
     private void showMultiSelectList(String[] list, List<String> items, View view) {
