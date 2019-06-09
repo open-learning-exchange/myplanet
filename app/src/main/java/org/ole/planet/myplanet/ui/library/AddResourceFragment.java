@@ -56,7 +56,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_add_resource, container, false);
         v.findViewById(R.id.ll_record_video).setOnClickListener(view -> dispatchTakeVideoIntent());
         v.findViewById(R.id.ll_record_audio).setOnClickListener(view -> dispatchRecordAudioIntent());
@@ -80,7 +79,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_RECORD_SOUND);
         }
-//        startActivityForResult(intent, REQUEST_RECORD_SOUND);
     }
 
     @Override
@@ -88,7 +86,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         if (resultCode == RESULT_OK) {
             Uri url = data.getData();
             Utilities.log(" url" + url.getPath());
-            //  mVideoView.setVideoURI(videoUri);
         }
     }
 }
