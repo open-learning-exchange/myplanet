@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
@@ -60,7 +61,15 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         View v = inflater.inflate(R.layout.fragment_add_resource, container, false);
         v.findViewById(R.id.ll_record_video).setOnClickListener(view -> dispatchTakeVideoIntent());
         v.findViewById(R.id.ll_record_audio).setOnClickListener(view -> dispatchRecordAudioIntent());
+        v.findViewById(R.id.ll_draft).setOnClickListener(view -> openOleFolder());
         return v;
+    }
+
+    private void openOleFolder() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Uri uri = Uri.parse(Utilities.SD_PATH);
+        intent.setDataAndType(uri,"*/*");
+        startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
     }
 
     static final int REQUEST_VIDEO_CAPTURE = 1;
@@ -75,7 +84,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     }
 
     private void dispatchRecordAudioIntent() {
-
         Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
         if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_RECORD_SOUND);

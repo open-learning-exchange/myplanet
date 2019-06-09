@@ -32,7 +32,7 @@ public class AddResourceActivity extends AppCompatActivity {
 
     EditText etTitle, etAuthor, etYear, etDescription, etPublisher, etLinkToLicense, etOpenWhich;
     Spinner spnLang, spnMedia, spnResourceType, spnOpenWith;
-    TextView tvSubjects, tvLevels, tvResourceFor, tvAddedBy;
+    TextView tvSubjects, tvLevels, tvResourceFor, tvAddedBy, fileUrl;
     Realm mRealm;
     RealmUserModel userModel;
     RealmList<String> subjects;
@@ -66,6 +66,7 @@ public class AddResourceActivity extends AppCompatActivity {
     private void initializeViews() {
         etTitle = findViewById(R.id.et_title);
         etAuthor = findViewById(R.id.et_author);
+        fileUrl = findViewById(R.id.file_url);
         etYear = findViewById(R.id.et_year);
         etDescription = findViewById(R.id.et_description);
         etPublisher = findViewById(R.id.et_publisher);
@@ -79,6 +80,7 @@ public class AddResourceActivity extends AppCompatActivity {
         tvAddedBy = findViewById(R.id.tv_added_by);
         tvLevels = findViewById(R.id.tv_levels);
         tvResourceFor = findViewById(R.id.tv_resource_for);
+        fileUrl.setText("File : " + resourceUrl);
         tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
         tvSubjects.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
         tvAddedBy.setText(userModel.getName());
@@ -132,6 +134,7 @@ public class AddResourceActivity extends AppCompatActivity {
             resource.setLevel(levels);
             resource.setResourceFor(resourceFor);
             resource.setResourceLocalAddress(resourceUrl);
+            resource.setResourceOffline(true);
             resource.setFilename(resourceUrl.substring(resourceUrl.lastIndexOf("/")));
         });
 
