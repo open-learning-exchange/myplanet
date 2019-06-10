@@ -60,7 +60,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
     }
 
-    public void initRatingView( String type, String id, String title, OnRatingChangeListener listener) {
+    public void initRatingView(String type, String id, String title, OnRatingChangeListener listener) {
         timesRated = getView().findViewById(R.id.times_rated);
         rating = getView().findViewById(R.id.tv_rating);
         ratingBar = getView().findViewById(R.id.rating_bar);
@@ -81,7 +81,11 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
     public void openIntent(RealmMyLibrary items, Class typeClass) {
         Intent fileOpenIntent = new Intent(getActivity(), typeClass);
-        fileOpenIntent.putExtra("TOUCHED_FILE", items.getId() + "/" + items.getResourceLocalAddress());
+        if (items.getResourceLocalAddress().contains("ole/audio") || items.getResourceLocalAddress().contains("ole/video")) {
+            fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        } else {
+            fileOpenIntent.putExtra("TOUCHED_FILE", items.getId() + "/" + items.getResourceLocalAddress());
+        }
         startActivity(fileOpenIntent);
     }
 
@@ -161,9 +165,9 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
             Log.e("AUTH", "" + auth);
             bundle.putString("Auth", "" + auth);
         } else if (videoType.equals("offline")) {
-            if (items.getResourceRemoteAddress() == null && items.getResourceLocalAddress()!=null){
+            if (items.getResourceRemoteAddress() == null && items.getResourceLocalAddress() != null) {
                 bundle.putString("videoURL", items.getResourceLocalAddress());
-            }else{
+            } else {
                 bundle.putString("videoURL", "" + Uri.fromFile(new File("" + FileUtils.getSDPathFromUrl(items.getResourceRemoteAddress()))));
             }
             bundle.putString("Auth", "");

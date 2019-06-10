@@ -121,13 +121,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         if (resultCode == RESULT_OK) {
             Uri url = data.getData();
             File f = new File(url.toString());
-            Utilities.log(" url" + url.getPath());
-            Utilities.log("ur " + f.getAbsolutePath());
-            try {
-                Utilities.log("ur " + f.getCanonicalPath());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
             if (!TextUtils.isEmpty(url.getPath())) {
                 startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", getRealPathFromURI(getActivity(), url)));
             } else {

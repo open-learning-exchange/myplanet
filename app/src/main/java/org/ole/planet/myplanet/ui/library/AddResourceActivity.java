@@ -95,59 +95,54 @@ public class AddResourceActivity extends AppCompatActivity {
 
     private void saveResource() {
         String title = etTitle.getText().toString();
-        String author = etAuthor.getText().toString();
-        String addedBy = tvAddedBy.getText().toString();
-        String year = etYear.getText().toString();
-        String description = etDescription.getText().toString();
-        String publisher = etPublisher.getText().toString();
-        String linkToLicense = etLinkToLicense.getText().toString();
-        String openWhich = etOpenWhich.getText().toString();
-        String lang = spnLang.getSelectedItem().toString();
-        String media = spnMedia.getSelectedItem().toString();
-        String resourceType = spnResourceType.getSelectedItem().toString();
-        String openWith = spnOpenWith.getSelectedItem().toString();
-        if (title.isEmpty()) {
-            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Title is required");
-            return;
-        }
-        if (levels.isEmpty()) {
-            Utilities.toast(this,"Level is required");
-            return;
-        }
-        if (subjects.isEmpty()) {
-            Utilities.toast(this,"Subject is required");
-            return;
-        }
+        if (!validate(title)) return;
         mRealm.executeTransactionAsync(realm -> {
-            String id  = UUID.randomUUID().toString();
+            String id = UUID.randomUUID().toString();
             RealmMyLibrary resource = realm.createObject(RealmMyLibrary.class, id);
-            resource.setAddedBy(addedBy);
             resource.setTitle(title);
-            resource.setAuthor(author);
-            resource.setResource_id(id);
-            resource.setYear(year);
-            resource.setDescription(description);
-            resource.setPublisher(publisher);
-            resource.setLinkToLicense(linkToLicense);
-            resource.setOpenWith(openWith);
-            resource.setLanguage(lang);
-            resource.setMediaType(media);
-            resource.setMediaType(resourceType);
-            resource.setSubject(subjects);
-            resource.setUserId(new RealmList<>());
-            resource.setLevel(levels);
-            resource.setResourceFor(resourceFor);
-            resource.setResourceLocalAddress(resourceUrl);
-            resource.setResourceOffline(true);
-            resource.setFilename(resourceUrl.substring(resourceUrl.lastIndexOf("/")));
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                Utilities.toast(AddResourceActivity.this, "Resource saved successfully");
-                finish();
-            }
+            createResource(resource, id);
+        }, () -> {
+            Utilities.toast(AddResourceActivity.this, "Resource saved successfully");
+            finish();
         });
 
+    }
+
+    private void createResource(RealmMyLibrary resource, String id) {
+        resource.setAddedBy(tvAddedBy.getText().toString());
+        resource.setAuthor(etAuthor.getText().toString());
+        resource.setResource_id(id);
+        resource.setYear(etYear.getText().toString());
+        resource.setDescription( etDescription.getText().toString());
+        resource.setPublisher(etPublisher.getText().toString());
+        resource.setLinkToLicense(etLinkToLicense.getText().toString());
+        resource.setOpenWith(spnOpenWith.getSelectedItem().toString());
+        resource.setLanguage(spnLang.getSelectedItem().toString());
+        resource.setMediaType(spnMedia.getSelectedItem().toString());
+        resource.setMediaType(spnResourceType.getSelectedItem().toString());
+        resource.setSubject(subjects);
+        resource.setUserId(new RealmList<>());
+        resource.setLevel(levels);
+        resource.setResourceFor(resourceFor);
+        resource.setResourceLocalAddress(resourceUrl);
+        resource.setResourceOffline(true);
+        resource.setFilename(resourceUrl.substring(resourceUrl.lastIndexOf("/")));
+    }
+
+    private boolean validate(String title) {
+        if (title.isEmpty()) {
+            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Title is required");
+            return false;
+        }
+        if (levels.isEmpty()) {
+            Utilities.toast(this, "Level is required");
+            return false;
+        }
+        if (subjects.isEmpty()) {
+            Utilities.toast(this, "Subject is required");
+            return false;
+        }
+        return true;
     }
 
     private void showMultiSelectList(String[] list, List<String> items, View view) {
