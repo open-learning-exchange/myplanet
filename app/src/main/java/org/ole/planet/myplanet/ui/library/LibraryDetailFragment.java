@@ -51,6 +51,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             libraryId = getArguments().getString("libraryId");
+            Utilities.log("Library id " + libraryId);
         }
     }
 

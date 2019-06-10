@@ -3,8 +3,10 @@ package org.ole.planet.myplanet.ui.library;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -77,20 +79,40 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     static final int REQUEST_RECORD_SOUND = 0;
 
     private void dispatchTakeVideoIntent() {
+
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString())));
-
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
     }
 
     private void dispatchRecordAudioIntent() {
+
         Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
         intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/audio/" + UUID.randomUUID().toString())));
 
         if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_RECORD_SOUND);
+        }else{
+            Utilities.toast(getActivity(),"Your phone does not have audio recorder app, please download and try again");
+        }
+    }
+
+
+
+    public String getRealPathFromURI(Context context, Uri contentUri) {
+        Cursor cursor = null;
+        try {
+            String[] proj = { MediaStore.Images.Media.DATA };
+            cursor = context.getContentResolver().query(contentUri,  proj, null, null, null);
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
     }
 
@@ -98,7 +120,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             Uri url = data.getData();
-            File f = new File(url.getPath());
+            File f = new File(url.toString());
             Utilities.log(" url" + url.getPath());
             Utilities.log("ur " + f.getAbsolutePath());
             try {
@@ -107,7 +129,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 e.printStackTrace();
             }
             if (!TextUtils.isEmpty(url.getPath())) {
-                startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", url.getPath()));
+                startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", getRealPathFromURI(getActivity(), url)));
             } else {
                 Utilities.toast(getActivity(), "Invalid resource url");
             }

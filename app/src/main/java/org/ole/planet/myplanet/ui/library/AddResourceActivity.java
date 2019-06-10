@@ -119,10 +119,12 @@ public class AddResourceActivity extends AppCompatActivity {
             return;
         }
         mRealm.executeTransactionAsync(realm -> {
-            RealmMyLibrary resource = realm.createObject(RealmMyLibrary.class, UUID.randomUUID().toString());
+            String id  = UUID.randomUUID().toString();
+            RealmMyLibrary resource = realm.createObject(RealmMyLibrary.class, id);
             resource.setAddedBy(addedBy);
             resource.setTitle(title);
             resource.setAuthor(author);
+            resource.setResource_id(id);
             resource.setYear(year);
             resource.setDescription(description);
             resource.setPublisher(publisher);
