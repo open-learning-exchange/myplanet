@@ -243,5 +243,10 @@
         <item>Law</item>
         <item>Learning</item>
     </string-array>
+    <string-array name="array_resource_for">
+        <item>Default</item>
+        <item>Leader</item>
+        <item>Learner</item>
+    </string-array>
 
 </resources>

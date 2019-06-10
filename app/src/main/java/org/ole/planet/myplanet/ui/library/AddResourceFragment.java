@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 import static android.app.Activity.RESULT_OK;
@@ -68,7 +69,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     private void openOleFolder() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         Uri uri = Uri.parse(Utilities.SD_PATH);
-        intent.setDataAndType(uri,"*/*");
+        intent.setDataAndType(uri, "*/*");
         startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
     }
 
@@ -77,6 +78,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     private void dispatchTakeVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString())));
 
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
@@ -85,6 +87,8 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     private void dispatchRecordAudioIntent() {
         Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/audio/" + UUID.randomUUID().toString())));
+
         if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_RECORD_SOUND);
         }
@@ -94,10 +98,17 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             Uri url = data.getData();
+            File f = new File(url.getPath());
             Utilities.log(" url" + url.getPath());
-            if (!TextUtils.isEmpty(url.getPath())){
+            Utilities.log("ur " + f.getAbsolutePath());
+            try {
+                Utilities.log("ur " + f.getCanonicalPath());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (!TextUtils.isEmpty(url.getPath())) {
                 startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", url.getPath()));
-            }else{
+            } else {
                 Utilities.toast(getActivity(), "Invalid resource url");
             }
         }

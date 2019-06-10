@@ -83,6 +83,7 @@ public class AddResourceActivity extends AppCompatActivity {
         fileUrl.setText("File : " + resourceUrl);
         tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
         tvSubjects.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
+        tvResourceFor.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_resource_for), subjects, view));
         tvAddedBy.setText(userModel.getName());
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             saveResource();
@@ -110,11 +111,11 @@ public class AddResourceActivity extends AppCompatActivity {
             return;
         }
         if (levels.isEmpty()) {
-            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Level is required");
+            Utilities.toast(this,"Level is required");
             return;
         }
         if (subjects.isEmpty()) {
-            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Subject is required");
+            Utilities.toast(this,"Subject is required");
             return;
         }
         mRealm.executeTransactionAsync(realm -> {
@@ -131,11 +132,18 @@ public class AddResourceActivity extends AppCompatActivity {
             resource.setMediaType(media);
             resource.setMediaType(resourceType);
             resource.setSubject(subjects);
+            resource.setUserId(new RealmList<>());
             resource.setLevel(levels);
             resource.setResourceFor(resourceFor);
             resource.setResourceLocalAddress(resourceUrl);
             resource.setResourceOffline(true);
             resource.setFilename(resourceUrl.substring(resourceUrl.lastIndexOf("/")));
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                Utilities.toast(AddResourceActivity.this, "Resource saved successfully");
+                finish();
+            }
         });
 
     }
