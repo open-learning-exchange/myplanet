@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
@@ -82,6 +83,7 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
 //        });
         initView(view);
         view.findViewById(R.id.ll_achievement).setOnClickListener(v->homeItemClickListener.openCallFragment(new AchievementFragment()));
+        view.findViewById(R.id.ll_news).setOnClickListener(v->homeItemClickListener.openCallFragment(new NewsFragment()));
     }
 
 }
