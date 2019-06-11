@@ -177,7 +177,21 @@
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Manager Login</string>
     <string name="save_username_and_password">Save Username and Password</string>
+    <string name="year">Year</string>
+    <string name="publisher">Publisher</string>
+    <string name="link_to_license">Link to license</string>
+    <string name="resource_for">Resource For</string>
+    <string name="open_which_file">Open Which File</string>
+    <string name="file_upload">File Upload</string>
+    <string name="choose_file">Choose File</string>
+    <string name="file_downloadable">File downloadable</string>
     <string name="priority">Priority</string>
     <string name="status">Status</string>
     <string name="title_not_compulsary">Title</string>
+    <string name="search_user">Search user</string>
+    <string name="added_by">Added By</string>
+    <string name="record_audio">Record Audio</string>
+    <string name="record_video">Record Video</string>
+    <string name="my_draft">My Draft</string>
+    <string name="add_resource">Add Resource :</string>
 </resources>

@@ -144,9 +144,22 @@
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Manager Login</string>
     <string name="save_username_and_password">Save Username and Password</string>
+    <string name="year">Year</string>
+    <string name="publisher">Publisher</string>
+    <string name="link_to_license">Link to license</string>
+    <string name="resource_for">Resource For</string>
+    <string name="open_which_file">Open Which File</string>
+    <string name="file_upload">File Upload</string>
+    <string name="choose_file">Choose File</string>
+    <string name="file_downloadable">File downloadable</string>
     <string name="priority">Priority</string>
     <string name="status">Status</string>
     <string name="title_not_compulsary">Title</string>
+    <string name="added_by">Added By</string>
+    <string name="record_audio">Record Audio</string>
+    <string name="record_video">Record Video</string>
+    <string name="my_draft">My Draft</string>
+    <string name="add_resource">Add Resource :</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -182,4 +195,58 @@
         <item>Internships</item>
         <item>Awards</item>
     </string-array>
+    <string-array name="open_With">
+        <item>HTML</item>
+        <item>PDF.js</item>
+        <item>BeLL-Reader</item>
+        <item>Mp3</item>
+        <item>Flow Video Player</item>
+        <item>BeLL Video Book Player</item>
+        <item>Native Video</item>
+    </string-array>
+    <string-array name="media">
+        <item>Text</item>
+        <item>Graphic/Pictures</item>
+        <item>Audio/Music/Book</item>
+        <item>Video</item>
+    </string-array>
+
+    <string-array name="resource_type">
+        <item>Textbook</item>
+        <item>Lesson Plan</item>
+        <item>Activities</item>
+        <item>Exercises</item>
+        <item>Discussion Questions</item>
+    </string-array>
+
+    <string-array name="array_levels">
+        <item>Early Education</item>
+        <item>Lower Primary</item>
+        <item>Upper Primary</item>
+        <item>Lower Secondary</item>
+        <item>Upper Secondary</item>
+        <item>Undergraduate</item>
+        <item>Graduate</item>
+        <item>Professional</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>Agriculture</item>
+        <item>Arts</item>
+        <item>Business and Finance</item>
+        <item>Environment</item>
+        <item>Food and Nutrition</item>
+        <item>Geography</item>
+        <item>Health and Medicine</item>
+        <item>History</item>
+        <item>Human Development</item>
+        <item>Languages</item>
+        <item>Law</item>
+        <item>Learning</item>
+    </string-array>
+    <string-array name="array_resource_for">
+        <item>Default</item>
+        <item>Leader</item>
+        <item>Learner</item>
+    </string-array>
+
 </resources>
