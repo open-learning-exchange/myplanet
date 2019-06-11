@@ -38,11 +38,13 @@ public class RealmNews extends RealmObject {
     private String viewableBy;
     private String viewableId;
     private String avatar;
+    private String userName;
     private long time;
     private String createdOn;
     private String parentCode;
 
     public static void insert(Realm mRealm, JsonObject doc) {
+        Utilities.log("Insert news " + doc);
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", JsonUtils.getString("_id", doc)).findFirst();
         if (news == null) {
             news = mRealm.createObject(RealmNews.class, JsonUtils.getString("_id", doc));
@@ -60,6 +62,15 @@ public class RealmNews extends RealmObject {
         JsonObject user = JsonUtils.getJsonObject("user", doc);
         news.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", doc)));
         news.setUserId(JsonUtils.getString("_id", user));
+        news.setUserName(JsonUtils.getString("name", user));
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 
     public String getDocType() {
@@ -122,17 +133,18 @@ public class RealmNews extends RealmObject {
         return object;
     }
 
-    public static RealmNews createNews(String message, Realm mRealm, RealmUserModel user) {
+    public static RealmNews createNews(String message,String viewableBy, String viewableId, Realm mRealm, RealmUserModel user) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmNews news = mRealm.createObject(RealmNews.class, UUID.randomUUID().toString());
         news.setMessage(message);
         news.setTime(new Date().getTime());
         news.setCreatedOn(user.getPlanetCode());
-        news.setViewableId("");
+        news.setViewableId(viewableId);
         news.setAvatar("");
         news.setDocType("message");
-        news.setViewableBy("community");
+        news.setViewableBy(viewableBy);
+        news.setUserName(user.getName());
         news.setParentCode(user.getParentCode());
         news.setUserId(user.getId());
         news.setUser(new Gson().toJson(user.serialize()));

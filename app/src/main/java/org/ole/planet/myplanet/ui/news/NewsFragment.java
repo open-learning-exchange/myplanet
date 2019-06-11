@@ -70,7 +70,7 @@ public class NewsFragment extends Fragment {
                 return;
             }
             etMessage.setText("");
-            RealmNews.createNews(message, mRealm, user);
+            RealmNews.createNews(message,"community","", mRealm, user);
             rvNews.getAdapter().notifyDataSetChanged();
         });
     }

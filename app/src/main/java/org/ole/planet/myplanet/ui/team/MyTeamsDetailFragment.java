@@ -2,10 +2,15 @@ package org.ole.planet.myplanet.ui.team;
 
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
+import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,10 +28,12 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.CourseDetailFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -56,6 +63,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     TabLayout tabLayout;
     DatabaseService dbService;
     OnHomeItemClickListener homeItemClickListener;
+    RecyclerView rvDiscussion;
 
     @Override
     public void onAttach(Context context) {
@@ -96,10 +104,31 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnInvite = v.findViewById(R.id.btn_invite);
         btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
+        rvDiscussion = v.findViewById(R.id.rv_discussion);
         tvDescription = v.findViewById(R.id.description);
         tabLayout = v.findViewById(R.id.tab_layout);
         listContent = v.findViewById(R.id.list_content);
         tvTitle = v.findViewById(R.id.title);
+        v.findViewById(R.id.add_message).setOnClickListener(view -> {
+            showAddMessage();
+        });
+    }
+
+    private void showAddMessage() {
+        View v = getLayoutInflater().inflate(R.layout.alert_input, null);
+        TextInputLayout layout = v.findViewById(R.id.tl_input);
+        new AlertDialog.Builder(getActivity())
+                .setView(v)
+                .setTitle("Add Message")
+                .setPositiveButton("Save", (dialogInterface, i) -> {
+                    String msg = layout.getEditText().getText().toString();
+                    if (msg.isEmpty()) {
+                        Utilities.toast(getActivity(), "Message is required");
+                        return;
+                    }
+                    RealmNews.createNews(msg, "teams", teamId, mRealm, user);
+                    rvDiscussion.getAdapter().notifyDataSetChanged();
+                }).setNegativeButton("Cancel", null).show();
     }
 
     @Override
@@ -112,16 +141,28 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     private void setTeamList() {
         RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", team.getUserId().toArray(new String[0])).findAll();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getTeamId()).findAll();
+        Utilities.log("news list size " + realmNewsList.size());
+        rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
+        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user);
+        adapterNews.setmRealm(mRealm);
+        rvDiscussion.setAdapter(adapterNews);
+        rvDiscussion.setVisibility(View.VISIBLE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
-        tabLayout.getTabAt(2).setText(String.format("Courses : (%s)", courses.size()));
-        setListContent(tabLayout.getTabAt(0), String.format("Joined Members : (%s)", users.size()), users);
-        tabLayout.getTabAt(1).setText(String.format("Requested Members : (%s)", reqUsers.size()));
+
+        // setListContent(tabLayout.getTabAt(1), String.format("Joined Members : (%s)", users.size()), users);
+        tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
+        tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
+        tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                if (tab.getPosition() == 0)
+                if (tab.getPosition() == 0) {
+                    listContent.setVisibility(View.GONE);
+                    rvDiscussion.setVisibility(View.VISIBLE);
+                } else if (tab.getPosition() == 1)
                     setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
-                else if (tab.getPosition() == 1)
+                else if (tab.getPosition() == 2)
                     setListContent(tab, String.format("Requested Members : (%s)", reqUsers.size()), reqUsers);
                 else setCourseList(tab, courses);
             }
@@ -151,6 +192,8 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     }
 
     private void setListContent(TabLayout.Tab tab, String s, List<RealmUserModel> data) {
+        listContent.setVisibility(View.VISIBLE);
+        rvDiscussion.setVisibility(View.GONE);
         tab.setText(s);
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, data));
         listContent.setOnItemClickListener(null);
@@ -166,7 +209,6 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     public void onClick(View view) {
         if (view.getId() == R.id.btn_leave) {
             leaveJoinTeam();
-
         }
     }
 

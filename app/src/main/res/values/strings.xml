@@ -147,6 +147,8 @@
     <string name="priority">Priority</string>
     <string name="status">Status</string>
     <string name="title_not_compulsary">Title</string>
+    <string name="discussion">Discussion</string>
+    <string name="add_message">Add Message</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
