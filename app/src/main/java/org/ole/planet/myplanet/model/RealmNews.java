@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -133,17 +134,17 @@ public class RealmNews extends RealmObject {
         return object;
     }
 
-    public static RealmNews createNews(String message, String viewableBy, String viewableId, Realm mRealm, RealmUserModel user) {
+    public static RealmNews createNews(HashMap<String, String> map, Realm mRealm, RealmUserModel user) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmNews news = mRealm.createObject(RealmNews.class, UUID.randomUUID().toString());
-        news.setMessage(message);
+        news.setMessage(map.get("message"));
         news.setTime(new Date().getTime());
         news.setCreatedOn(user.getPlanetCode());
-        news.setViewableId(viewableId);
+        news.setViewableId(map.get("viewableId"));
         news.setAvatar("");
         news.setDocType("message");
-        news.setViewableBy(viewableBy);
+        news.setViewableBy(map.get("viewableBy"));
         news.setUserName(user.getName());
         news.setParentCode(user.getParentCode());
         news.setUserId(user.getId());

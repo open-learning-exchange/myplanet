@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Realm;
@@ -127,7 +128,11 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                         Utilities.toast(getActivity(), "Message is required");
                         return;
                     }
-                    RealmNews.createNews(msg, "teams", teamId, mRealm, user);
+                    HashMap<String,String> map= new HashMap<>();
+                    map.put("viewableBy", "teams");
+                    map.put("viewableId", teamId);
+                    map.put("message", msg);
+                    RealmNews.createNews(map, mRealm, user);
                     rvDiscussion.getAdapter().notifyDataSetChanged();
                 }).setNegativeButton("Cancel", null).show();
     }
