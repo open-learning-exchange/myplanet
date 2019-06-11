@@ -117,6 +117,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
     private void showAddMessage() {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
+        layout.setHint(getString(R.string.enter_message));
         new AlertDialog.Builder(getActivity())
                 .setView(v)
                 .setTitle("Add Message")
@@ -149,11 +150,13 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         rvDiscussion.setAdapter(adapterNews);
         rvDiscussion.setVisibility(View.VISIBLE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
-
-        // setListContent(tabLayout.getTabAt(1), String.format("Joined Members : (%s)", users.size()), users);
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
         tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
+        setTabListener(users, courses, reqUsers);
+    }
+
+    private void setTabListener(RealmResults<RealmUserModel> users, RealmResults<RealmMyCourse> courses, List<RealmUserModel> reqUsers) {
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {

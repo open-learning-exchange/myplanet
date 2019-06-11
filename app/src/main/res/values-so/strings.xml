@@ -183,4 +183,5 @@
     <string name="title_not_compulsary">Title</string>
     <string name="discussion">Discussion</string>
     <string name="add_message">Add Message</string>
+    <string name="enter_message">Enter your message here..</string>
 </resources>

@@ -133,7 +133,7 @@ public class RealmNews extends RealmObject {
         return object;
     }
 
-    public static RealmNews createNews(String message,String viewableBy, String viewableId, Realm mRealm, RealmUserModel user) {
+    public static RealmNews createNews(String message, String viewableBy, String viewableId, Realm mRealm, RealmUserModel user) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmNews news = mRealm.createObject(RealmNews.class, UUID.randomUUID().toString());
