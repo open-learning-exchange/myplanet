@@ -154,6 +154,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         adapterNews.setmRealm(mRealm);
         rvDiscussion.setAdapter(adapterNews);
         rvDiscussion.setVisibility(View.VISIBLE);
+        listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
