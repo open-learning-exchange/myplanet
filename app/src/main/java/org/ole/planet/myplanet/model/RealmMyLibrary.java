@@ -30,6 +30,7 @@ import io.realm.annotations.PrimaryKey;
 public class RealmMyLibrary extends RealmObject {
     @PrimaryKey
     private String id;
+    private String _id;
     private RealmList<String> userId;
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
@@ -175,6 +176,13 @@ public class RealmMyLibrary extends RealmObject {
         mRealm.commitTransaction();
     }
 
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
+    }
 
     public static void insertMyLibrary(String userId, String stepId, String courseId, JsonObject doc, Realm mRealm) {
 
@@ -186,6 +194,7 @@ public class RealmMyLibrary extends RealmObject {
         }
 //        if (!TextUtils.isEmpty(userId) ) {
         resource.setUserId(userId);
+        resource.set_id(resourceId);
 //        }
         if (!TextUtils.isEmpty(stepId)) {
             resource.setStepId(stepId);
@@ -237,7 +246,7 @@ public class RealmMyLibrary extends RealmObject {
 
     public JsonObject serializeResource() {
         JsonObject object = new JsonObject();
-        object.addProperty("_id", id);
+        object.addProperty("_id", _id);
         object.addProperty("_rev", _rev);
         object.addProperty("_rev", _rev);
         object.addProperty("need_optimization", need_optimization);
@@ -414,6 +423,9 @@ public class RealmMyLibrary extends RealmObject {
     }
 
     public String getSubjectsAsString() {
+        if ((subject).isEmpty()){
+            return "";
+        }
         String str = "";
         for (String s : subject) {
             str += s + ", ";

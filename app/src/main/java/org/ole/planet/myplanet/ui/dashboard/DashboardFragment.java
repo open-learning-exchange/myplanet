@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -28,6 +29,8 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.library.AddResourceActivity;
+import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
@@ -52,7 +55,7 @@ import io.realm.RealmResults;
 public class DashboardFragment extends BaseDashboardFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole,tv_news;
+    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole, tv_news;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -82,7 +85,10 @@ public class DashboardFragment extends BaseDashboardFragment {
         int noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
 
         (getView().findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
-
+        getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
+            // startActivity(new Intent(getActivity(), AddResourceActivity.class));
+            new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
+        });
     }
 
     private void declareElements(View view) {

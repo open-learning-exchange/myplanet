@@ -110,7 +110,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_submit"
-                style="@style/GreyButtons"
+                android:theme="@style/PrimaryButton"
                 android:layout_marginRight="10dp"/>
 
             <Button
@@ -118,7 +118,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_cancel"
-                style="@style/GreyButtons" />
+                android:theme="@style/AccentButton" />
 
         </LinearLayout>
 
