@@ -59,9 +59,7 @@ public class SyncManager {
     }
 
     public static SyncManager getInstance() {
-        //   if (ourInstance == null) {
         ourInstance = new SyncManager(MainApplication.context);
-        // }
         return ourInstance;
     }
 
@@ -117,17 +115,17 @@ public class SyncManager {
             NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
             mRealm = dbService.getRealmInstance();
             TransactionSyncManager.syncDb(mRealm, "tablet_users");
+            myLibraryTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "courses");
             TransactionSyncManager.syncDb(mRealm, "exams");
-            resourceTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "ratings");
             TransactionSyncManager.syncDb(mRealm, "achievements");
             TransactionSyncManager.syncDb(mRealm, "tags");
             TransactionSyncManager.syncDb(mRealm, "submissions");
             TransactionSyncManager.syncDb(mRealm, "news");
             TransactionSyncManager.syncDb(mRealm, "feedback");
-            myLibraryTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "login_activities");
+            resourceTransactionSync();
             RealmResourceActivity.onSynced(mRealm, settings);
         } catch (Exception err) {
             handleException(err.getMessage());

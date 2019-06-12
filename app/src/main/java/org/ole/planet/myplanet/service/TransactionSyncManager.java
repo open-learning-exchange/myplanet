@@ -40,7 +40,7 @@ public class TransactionSyncManager {
 
     public static void syncDb(final Realm mRealm, final String table) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-
+        Utilities.log("Sync " + table);
         mRealm.executeTransactionAsync(realm -> {
             try {
                 DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs").execute().body();
