@@ -122,7 +122,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "news");
             TransactionSyncManager.syncDb(mRealm, "feedback");
             TransactionSyncManager.syncDb(mRealm, "login_activities");
-            resourceTransactionSync();
+            resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
         } catch (Exception err) {
             handleException(err.getMessage());
@@ -140,17 +140,17 @@ public class SyncManager {
     }
 
 
-    public void resourceTransactionSync() {
+    public void resourceTransactionSync(SyncListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
             try {
-                syncResource(apiInterface);
+                syncResource(apiInterface, listener);
             } catch (IOException e) {
             }
         });
     }
 
-    private void syncResource(ApiInterface dbClient) throws IOException {
+    private void syncResource(ApiInterface dbClient, SyncListener listener) throws IOException {
         int skip = 0;
         int limit = 1000;
         List<String> newIds = new ArrayList<>();
@@ -168,6 +168,7 @@ public class SyncManager {
                 break;
             } else {
                 skip = skip + limit;
+                listener.onProgressChange(String.format("Current progress : %d", skip));
             }
         }
         RealmMyLibrary.removeDeletedResource(newIds, mRealm);

@@ -57,6 +57,11 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     }
 
     @Override
+    public void onProgressChange(String status) {
+
+    }
+
+    @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         startActivity(new Intent(this, LoginActivity.class)
                 .putExtra("versionInfo", info)

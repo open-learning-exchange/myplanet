@@ -262,6 +262,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     Utilities.toast(LoginActivity.this,msg);
                     progressDialog.dismiss();
                 }
+
+                @Override
+                public void onProgressChange(String status) {
+
+                }
             });
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
@@ -270,9 +275,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     }
 
-    private void managerLogin() {
-
-    }
 
     private void onLogin() {
         UserProfileDbHandler handler = new UserProfileDbHandler(this);
@@ -402,7 +404,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 case R.id.input_password:
                     validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
                     break;
-
                 default:
                     break;
             }

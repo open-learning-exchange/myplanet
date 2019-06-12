@@ -249,6 +249,12 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
 
     @Override
+    public void onProgressChange(String status) {
+        Utilities.log("On progress change");
+        progressDialog.setMessage(status);
+    }
+
+    @Override
     public void onSyncFailed(final String s) {
         runOnUiThread(() -> {
             DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
