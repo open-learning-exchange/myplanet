@@ -198,8 +198,14 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     @Override
     public void onOkClicked(List<RealmTag> list) {
-        for (RealmTag tag : list) {
-            onTagClicked(tag);
+        if (list.isEmpty()) {
+            searchTags.clear();
+            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString(), searchTags)));
+
+        } else {
+            for (RealmTag tag : list) {
+                onTagClicked(tag);
+            }
         }
     }
 

@@ -149,8 +149,10 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         }
         listTag.setGroupIndicator(null);
         adapter = new TagExpandableAdapter(getActivity(), list, childMap, selectedItemsList);
+        adapter.setSelectMultiple(true);
         adapter.setClickListener(this);
         listTag.setAdapter(adapter);
+        btnOk.setVisibility(View.VISIBLE);
 //        switchMany.setChecked(true);
     }
 
