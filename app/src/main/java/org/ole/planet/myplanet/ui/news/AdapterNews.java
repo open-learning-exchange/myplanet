@@ -55,6 +55,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
                     showHideButtons(userModel, holder);
             }else{
+                ((ViewHolderNews) holder).tvName.setText(list.get(position).getUserName());
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
             ((ViewHolderNews) holder).tvMessage.setText(list.get(position).getMessage());
