@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -49,13 +48,11 @@ public class SyncManager {
     private Rows shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
-    private UserProfileDbHandler userProfileDbHandler;
 
     private SyncManager(Context context) {
         this.context = context;
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
-        userProfileDbHandler = new UserProfileDbHandler(context);
     }
 
     public static SyncManager getInstance() {

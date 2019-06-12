@@ -150,7 +150,6 @@ public class RealmOfflineActivity extends RealmObject {
         RealmOfflineActivity activities = mRealm.where(RealmOfflineActivity.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (activities == null)
             activities = mRealm.createObject(RealmOfflineActivity.class, JsonUtils.getString("_id", act));
-//        RealmOfflineActivity activities = mRealm.createObject(RealmOfflineActivity.class, JsonUtils.getString("_id", act));
         activities.set_rev(JsonUtils.getString("_rev", act));
         activities.set_id(JsonUtils.getString("_id", act));
         activities.setLoginTime(JsonUtils.getLong("loginTime", act));
