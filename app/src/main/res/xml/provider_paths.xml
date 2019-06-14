@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <external-path name="external_files" path="."/>
+    <!--<external-path name="ole" path="ole/*"/>-->
     <!--<files-path name="releases" path="ole/releases/"/>-->
 </paths>
