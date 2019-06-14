@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import io.realm.RealmList;
+
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -147,7 +149,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     @Override
     public void onTagClicked(RealmTag tag) {
-        searchTags.clear();
+//        searchTags.clear();
         if (!searchTags.contains(tag))
             searchTags.add(tag);
         adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(),searchTags));
@@ -171,8 +173,14 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     @Override
     public void onOkClicked(List<RealmTag> list) {
-        for (RealmTag tag : list) {
-            onTagClicked(tag);
+        if (list.isEmpty()) {
+            searchTags.clear();
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(),searchTags));
+            showNoData(tvMessage, adapterCourses.getItemCount());
+        } else {
+            for (RealmTag tag : list) {
+                onTagClicked(tag);
+            }
         }
     }
 }
