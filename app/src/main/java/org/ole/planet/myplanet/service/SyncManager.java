@@ -168,7 +168,6 @@ public class SyncManager {
                 break;
             } else {
                 skip = skip + limit;
-                listener.onProgressChange(String.format("Current progress : %d", skip));
             }
         }
         RealmMyLibrary.removeDeletedResource(newIds, mRealm);

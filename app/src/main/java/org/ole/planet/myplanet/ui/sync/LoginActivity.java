@@ -263,10 +263,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     progressDialog.dismiss();
                 }
 
-                @Override
-                public void onProgressChange(String status) {
-
-                }
             });
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
