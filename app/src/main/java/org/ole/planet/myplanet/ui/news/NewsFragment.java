@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Case;
@@ -70,7 +71,11 @@ public class NewsFragment extends Fragment {
                 return;
             }
             etMessage.setText("");
-            RealmNews.createNews(message, mRealm, user);
+            HashMap<String, String> map = new HashMap<>();
+            map.put("message", message);
+            map.put("viewableBy", "community");
+            map.put("viewableId", "");
+            RealmNews.createNews(map, mRealm, user);
             rvNews.getAdapter().notifyDataSetChanged();
         });
     }
