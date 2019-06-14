@@ -15,6 +15,7 @@ import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -81,7 +82,9 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     private void dispatchTakeVideoIntent() {
 
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString())));
+//        Uri photoURI = FileProvider.getUriForFile(getActivity(), , new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString() + ".mp4"));
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString() + ".mp4")));
+//        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
@@ -90,7 +93,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     private void dispatchRecordAudioIntent() {
 
         Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/audio/" + UUID.randomUUID().toString())));
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/audio/" + UUID.randomUUID().toString() + ".mp3")));
 
         if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_RECORD_SOUND);

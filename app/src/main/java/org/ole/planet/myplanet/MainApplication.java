@@ -59,6 +59,10 @@ public class MainApplication extends Application implements Application.Activity
     @Override
     public void onCreate() {
         super.onCreate();
+        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+        StrictMode.setVmPolicy(builder.build());
+        builder.detectFileUriExposure();
+
         dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         context = this;
         preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
