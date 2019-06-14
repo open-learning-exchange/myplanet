@@ -61,6 +61,7 @@ public class SettingActivity extends AppCompatActivity {
         UserProfileDbHandler profileDbHandler;
         RealmUserModel user;
         ProgressDialog dialog;
+        SettingFragment beta;
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -91,8 +92,22 @@ public class SettingActivity extends AppCompatActivity {
 //            });
 
 
+             beta.enable_beta_toggle();
+
+        }
 
 
+        public void enable_beta_toggle()
+        {
+            SwitchPreference parent = (SwitchPreference) findPreference("beta_function");
+            SwitchPreference course = (SwitchPreference) findPreference("beta_course");
+            SwitchPreference achievement = (SwitchPreference) findPreference("beta_achievement");
+            SwitchPreference survey = (SwitchPreference) findPreference("beta_survey");
+            SwitchPreference rating = (SwitchPreference) findPreference("beta_rating");
+            if(parent.isChecked() == true)
+            {
+                course.setChecked(true);
+            }
         }
 
         private void managerLogin() {
