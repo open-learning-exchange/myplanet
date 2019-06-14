@@ -38,7 +38,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     ExpandableListView listTag;
     TextInputLayout tlFilter;
-    SwitchCompat switchMany;
+//    SwitchCompat switchMany;
     Realm mRealm;
     static List<RealmTag> recentList;
     List<RealmTag> list;
@@ -83,10 +83,10 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         View v = inflater.inflate(R.layout.fragment_collections, container, false);
         listTag = v.findViewById(R.id.list_tags);
         tlFilter = v.findViewById(R.id.tl_filter);
-        switchMany = v.findViewById(R.id.switch_many);
+//        switchMany = v.findViewById(R.id.switch_many);
         etFilter = v.findViewById(R.id.et_filter);
         btnOk = v.findViewById(R.id.btn_ok);
-        switchMany.setOnCheckedChangeListener(this);
+//        switchMany.setOnCheckedChangeListener(this);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         filteredList = new ArrayList<>();
         KeyboardUtils.hideSoftKeyboard(getActivity());
@@ -142,9 +142,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     private void setListAdapter() {
         list = mRealm.where(RealmTag.class).equalTo("db", dbType).isNotEmpty("name").findAll();
         selectedItemsList = (ArrayList<RealmTag>) recentList;
-//        if (recentList.isEmpty()) {
-//            recentList = list;
-//        }
         List<RealmTag> allTags = mRealm.where(RealmTag.class).findAll();
         HashMap<String, List<RealmTag>> childMap = new HashMap<>();
         for (RealmTag t : allTags) {
@@ -152,9 +149,11 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         }
         listTag.setGroupIndicator(null);
         adapter = new TagExpandableAdapter(getActivity(), list, childMap, selectedItemsList);
+        adapter.setSelectMultiple(true);
         adapter.setClickListener(this);
         listTag.setAdapter(adapter);
-        switchMany.setChecked(MainApplication.isCollectionSwitchOn);
+        btnOk.setVisibility(View.VISIBLE);
+//        switchMany.setChecked(true);
     }
 
     private void createChildMap(HashMap<String, List<RealmTag>> childMap, RealmTag t) {
