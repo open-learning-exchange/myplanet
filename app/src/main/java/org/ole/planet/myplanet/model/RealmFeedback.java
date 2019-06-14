@@ -60,7 +60,7 @@ public class RealmFeedback extends RealmObject {
 
 
     public static void insert(Realm mRealm, JsonObject act) {
-        RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("id", JsonUtils.getString("_id", act)).findFirst();
         if (feedback == null)
             feedback = mRealm.createObject(RealmFeedback.class, JsonUtils.getString("_id", act));
         feedback.set_id(JsonUtils.getString("_", act));

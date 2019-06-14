@@ -57,7 +57,7 @@ public class SettingActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static class SettingFragment extends PreferenceFragment implements SyncListener {
+    public static class SettingFragment extends PreferenceFragment  {
         UserProfileDbHandler profileDbHandler;
         RealmUserModel user;
         ProgressDialog dialog;
@@ -94,54 +94,54 @@ public class SettingActivity extends AppCompatActivity {
 
 
         }
-
-        private void managerLogin() {
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_manager_login, null);
-            EditText etUserName = v.findViewById(R.id.et_user_name);
-            EditText etPassword = v.findViewById(R.id.et_password);
-            new AlertDialog.Builder(getActivity()).setTitle("Add Manager Account")
-                    .setView(v)
-                    .setPositiveButton("Ok", (dialogInterface, i) -> {
-
-                        String username = etUserName.getText().toString();
-                        String password = etPassword.getText().toString();
-                        if (username.isEmpty()){
-                            Utilities.toast(getActivity(),"Please enter username");
-
-                        }else if(password.isEmpty()){
-                            Utilities.toast(getActivity(),"Please enter password");
-                        }else{
-                            ManagerSync.getInstance().login(username, password, this);
-                        }
-                    }).setNegativeButton("Cancel", null).show();
-        }
+//
+//        private void managerLogin() {
+//            View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_manager_login, null);
+//            EditText etUserName = v.findViewById(R.id.et_user_name);
+//            EditText etPassword = v.findViewById(R.id.et_password);
+//            new AlertDialog.Builder(getActivity()).setTitle("Add Manager Account")
+//                    .setView(v)
+//                    .setPositiveButton("Ok", (dialogInterface, i) -> {
+//
+//                        String username = etUserName.getText().toString();
+//                        String password = etPassword.getText().toString();
+//                        if (username.isEmpty()){
+//                            Utilities.toast(getActivity(),"Please enter username");
+//
+//                        }else if(password.isEmpty()){
+//                            Utilities.toast(getActivity(),"Please enter password");
+//                        }else{
+//                            ManagerSync.getInstance().login(username, password, this);
+//                        }
+//                    }).setNegativeButton("Cancel", null).show();
+//        }
 
         @Override
         public void onDestroy() {
             super.onDestroy();
             profileDbHandler.onDestory();
         }
+//
+//        @Override
+//        public void onSyncStarted() {
+//            dialog.show();
+//        }
+//
+//        @Override
+//        public void onSyncComplete() {
+//            getActivity().runOnUiThread(() -> {
+//                Utilities.toast(getActivity(),"Added manager user");
+//                dialog.dismiss();
+//            });
+//        }
 
-        @Override
-        public void onSyncStarted() {
-            dialog.show();
-        }
-
-        @Override
-        public void onSyncComplete() {
-            getActivity().runOnUiThread(() -> {
-                Utilities.toast(getActivity(),"Added manager user");
-                dialog.dismiss();
-            });
-        }
-
-        @Override
-        public void onSyncFailed(String msg) {
-          getActivity().runOnUiThread(() -> {
-              Utilities.toast(getActivity(),msg);
-              dialog.dismiss();
-          });
-        }
+//        @Override
+//        public void onSyncFailed(String msg) {
+//          getActivity().runOnUiThread(() -> {
+//              Utilities.toast(getActivity(),msg);
+//              dialog.dismiss();
+//          });
+//        }
     }
 
     @Override
