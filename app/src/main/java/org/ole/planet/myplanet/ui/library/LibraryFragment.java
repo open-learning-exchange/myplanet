@@ -201,7 +201,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         if (list.isEmpty()) {
             searchTags.clear();
             adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString(), searchTags)));
-
+            showNoData(tvMessage, adapterLibrary.getItemCount());
         } else {
             for (RealmTag tag : list) {
                 onTagClicked(tag);
