@@ -44,7 +44,11 @@ public class SettingActivity extends AppCompatActivity {
                 .replace(android.R.id.content, new SettingFragment())
                 .commit();
         setTitle(getString(R.string.action_settings));
+
+
     }
+
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -61,7 +65,7 @@ public class SettingActivity extends AppCompatActivity {
         UserProfileDbHandler profileDbHandler;
         RealmUserModel user;
         ProgressDialog dialog;
-        SettingFragment beta;
+
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -76,7 +80,7 @@ public class SettingActivity extends AppCompatActivity {
                 return true;
             });
             dialog = new ProgressDialog(getActivity());
-
+            setBetaToggleOn();
             ListPreference lp = (ListPreference) findPreference("app_language");
             // lp.setSummary(PreferenceManager.getDefaultSharedPreferences(getActivity()).getString("app_language", ""));
             lp.setOnPreferenceChangeListener((preference, o) -> {
@@ -92,22 +96,33 @@ public class SettingActivity extends AppCompatActivity {
 //            });
 
 
-             beta.enable_beta_toggle();
+
+
 
         }
 
 
-        public void enable_beta_toggle()
+        public void setBetaToggleOn()
         {
-            SwitchPreference parent = (SwitchPreference) findPreference("beta_function");
+            SwitchPreference beta = (SwitchPreference) findPreference("beta_function");
             SwitchPreference course = (SwitchPreference) findPreference("beta_course");
             SwitchPreference achievement = (SwitchPreference) findPreference("beta_achievement");
             SwitchPreference survey = (SwitchPreference) findPreference("beta_survey");
             SwitchPreference rating = (SwitchPreference) findPreference("beta_rating");
-            if(parent.isChecked() == true)
-            {
-                course.setChecked(true);
-            }
+
+
+            beta.setOnPreferenceChangeListener((preference, o) -> {
+                if(beta.isChecked())
+                {
+                    course.setChecked(true);
+                    achievement.setChecked(true);
+                    survey.setChecked(true);
+                    rating.setChecked(true);
+                }
+
+                return true;
+            });
+
         }
 
         private void managerLogin() {
