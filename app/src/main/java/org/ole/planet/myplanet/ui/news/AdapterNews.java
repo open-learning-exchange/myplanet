@@ -68,6 +68,10 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(position, true));
             ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(position, false));
+            List<RealmNews> replies = mRealm.where(RealmNews.class).equalTo("replyTo", list.get(position).getId()).findAll();
+            ((ViewHolderNews) holder).btnShowReply.setText("Show replies(" + replies.size() + ")");
+            ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
+
         }
     }
 
@@ -101,7 +105,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         map.put("message", s);
         map.put("viewableBy", "community");
         map.put("viewableId", "");
-        map.put("replyTo", list.get(position).get_id());
+        map.put("replyTo", list.get(position).getId());
         RealmNews.createNews(map, mRealm, currentUser);
         mRealm.commitTransaction();
     }

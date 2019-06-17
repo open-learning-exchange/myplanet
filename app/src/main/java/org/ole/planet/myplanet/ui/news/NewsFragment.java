@@ -60,7 +60,7 @@ public class NewsFragment extends Fragment {
         List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
                 .equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("replyTo", "")
+                .equalTo("replyTo", "", Case.INSENSITIVE)
                 .findAll();
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
         AdapterNews adapterNews = new AdapterNews(getActivity(), list, user);
