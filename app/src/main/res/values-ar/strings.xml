@@ -190,6 +190,7 @@
     <string name="add_resource">Add Resource :</string>
     <string name="reply">Reply</string>
     <string name="show_reply">Show Replies</string>
+    <string name="show_main_conversation">Show main conversation</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

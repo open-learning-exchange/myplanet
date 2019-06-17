@@ -27,16 +27,28 @@
 
         <Button
             android:id="@+id/btn_submit"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:text="@string/button_submit"
-            style="@style/GreyButtons" />
+            android:minWidth="@dimen/user_image_size"
+            android:theme="@style/PrimaryButton" />
+
+        <Button
+            android:id="@+id/btn_main"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:text="@string/show_main_conversation"
+            android:theme="@style/PrimaryFlatButton"
+            android:visibility="gone" />
+
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rv_news"
-            android:padding="@dimen/padding_normal"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:padding="@dimen/padding_normal" />
 
     </LinearLayout>
 
