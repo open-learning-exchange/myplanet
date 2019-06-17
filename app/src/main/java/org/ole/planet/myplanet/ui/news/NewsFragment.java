@@ -29,6 +29,7 @@ import io.realm.Sort;
 
 public class NewsFragment extends Fragment {
 
+
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
@@ -57,11 +58,12 @@ public class NewsFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("docType","message", Case.INSENSITIVE)
-                .equalTo("viewableBy","community", Case.INSENSITIVE)
+                .equalTo("docType", "message", Case.INSENSITIVE)
+                .equalTo("viewableBy", "community", Case.INSENSITIVE)
+                .equalTo("replyTo", "")
                 .findAll();
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        AdapterNews adapterNews = new AdapterNews(getActivity(), list,user);
+        AdapterNews adapterNews = new AdapterNews(getActivity(), list, user);
         adapterNews.setmRealm(mRealm);
         rvNews.setAdapter(adapterNews);
         btnSubmit.setOnClickListener(view -> {

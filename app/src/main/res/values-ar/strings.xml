@@ -188,6 +188,8 @@
     <string name="record_video">Record Video</string>
     <string name="my_draft">My Draft</string>
     <string name="add_resource">Add Resource :</string>
+    <string name="reply">Reply</string>
+    <string name="show_reply">Show Replies</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

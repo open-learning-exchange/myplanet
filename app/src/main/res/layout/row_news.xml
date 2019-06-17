@@ -10,81 +10,109 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <ImageView
-            android:id="@+id/img_user"
-            android:layout_width="@dimen/_60dp"
-            android:layout_height="@dimen/_60dp"
-            android:layout_gravity="center"
-            android:padding="@dimen/padding_small"
-            android:src="@drawable/ole_logo" />
 
         <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:padding="8dp">
 
-            <TextView
-                android:id="@+id/tv_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/tv_date"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textColor="@color/colorPrimary"
-                android:textSize="16sp" />
+            <ImageView
+                android:id="@+id/img_user"
+                android:layout_width="@dimen/_60dp"
+                android:layout_height="@dimen/_60dp"
+                android:layout_gravity="center"
+                android:padding="@dimen/padding_small"
+                android:src="@drawable/ole_logo" />
 
-            <TextView
-                android:id="@+id/tv_message"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:textSize="16sp"
-                android:visibility="visible" />
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/tv_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/colorPrimary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/tv_message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textSize="16sp"
+                    android:visibility="visible" />
+
+            </LinearLayout>
+
 
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/ll_edit_delete"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
-            <ImageView
-                android:id="@+id/img_edit"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_gravity="center"
-                android:layout_marginLeft="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:visibility="visible"
-                app:srcCompat="@drawable/ic_edit" />
+            <Button
+                android:id="@+id/btn_reply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/reply"
+                android:theme="@style/PrimaryFlatButton" />
 
-            <ImageView
-                android:id="@+id/img_delete"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_gravity="center"
-                android:layout_marginLeft="8dp"
-                android:layout_marginRight="8dp"
-                android:background="?attr/selectableItemBackground"
-                app:srcCompat="@drawable/ic_delete" />
+            <Button
+                android:id="@+id/btn_show_reply"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/show_reply"
+                android:theme="@style/PrimaryFlatButton" />
+
+            <LinearLayout
+                android:id="@+id/ll_edit_delete"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center">
+
+                <ImageView
+                    android:id="@+id/img_edit"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="8dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:visibility="visible"
+                    app:srcCompat="@drawable/ic_edit" />
+
+                <ImageView
+                    android:id="@+id/img_delete"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="8dp"
+                    android:layout_marginRight="8dp"
+                    android:background="?attr/selectableItemBackground"
+                    app:srcCompat="@drawable/ic_delete" />
+            </LinearLayout>
         </LinearLayout>
-
     </LinearLayout>
 
 
