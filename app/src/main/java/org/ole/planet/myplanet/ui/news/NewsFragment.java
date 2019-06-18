@@ -86,7 +86,6 @@ public class NewsFragment extends Fragment implements AdapterNews.OnNewsItemClic
     }
 
     private void setData(List<RealmNews> list) {
-
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
         AdapterNews adapterNews = new AdapterNews(getActivity(), list, user);
         adapterNews.setmRealm(mRealm);

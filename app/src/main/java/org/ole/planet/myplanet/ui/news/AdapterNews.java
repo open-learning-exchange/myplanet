@@ -32,7 +32,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private RealmUserModel currentUser;
     private OnNewsItemClickListener listener;
 
-    interface OnNewsItemClickListener {
+   public interface OnNewsItemClickListener {
         void showReply(RealmNews news);
     }
 
@@ -121,6 +121,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         map.put("viewableId", "");
         map.put("replyTo", list.get(position).getId());
         RealmNews.createNews(map, mRealm, currentUser);
+        notifyDataSetChanged();
     }
 
     private void deletePost(int position) {
