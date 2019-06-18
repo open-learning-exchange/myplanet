@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.base;
 
+import android.content.Context;
 import android.support.v4.app.Fragment;
 import android.view.View;
 import android.widget.Button;
 
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 
@@ -17,6 +19,14 @@ public abstract class BaseNewsFragment extends Fragment implements AdapterNews.O
 
     public Realm mRealm;
     public Button btnShowMain;
+    public OnHomeItemClickListener homeItemClickListener;
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof OnHomeItemClickListener)
+            homeItemClickListener = (OnHomeItemClickListener) context;
+    }
 
 
     @Override

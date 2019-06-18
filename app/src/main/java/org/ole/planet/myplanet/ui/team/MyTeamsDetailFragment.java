@@ -66,16 +66,9 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     ListView listContent;
     TabLayout tabLayout;
     DatabaseService dbService;
-    OnHomeItemClickListener homeItemClickListener;
     RecyclerView rvDiscussion;
     LinearLayout llRv;
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnHomeItemClickListener)
-            homeItemClickListener = (OnHomeItemClickListener) context;
-    }
 
     public MyTeamsDetailFragment() {
     }
