@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.feedback;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -36,6 +37,7 @@ public class AdapterFeedback extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderFeedback) holder).tvType.setText(list.get(position).getType());
             ((ViewHolderFeedback) holder).tvPriority.setText(list.get(position).getPriority());
             ((ViewHolderFeedback) holder).tvStatus.setText(list.get(position).getStatus());
+            holder.itemView.setOnClickListener(v->context.startActivity(new Intent(context, FeedbackDetailActivity.class).putExtra("id", list.get(position).getId())));
         }
     }
 
