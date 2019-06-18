@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -27,16 +28,14 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.Sort;
 
-public class NewsFragment extends Fragment implements AdapterNews.OnNewsItemClickListener {
+public class NewsFragment extends BaseNewsFragment {
 
 
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
-    Realm mRealm;
     Button btnSubmit;
     RealmUserModel user;
-    Button btnShowMain;
 
     public NewsFragment() {
     }
@@ -85,7 +84,7 @@ public class NewsFragment extends Fragment implements AdapterNews.OnNewsItemClic
         });
     }
 
-    private void setData(List<RealmNews> list) {
+    public void setData(List<RealmNews> list) {
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
         AdapterNews adapterNews = new AdapterNews(getActivity(), list, user);
         adapterNews.setmRealm(mRealm);
@@ -93,12 +92,5 @@ public class NewsFragment extends Fragment implements AdapterNews.OnNewsItemClic
         rvNews.setAdapter(adapterNews);
     }
 
-    @Override
-    public void showReply(RealmNews news) {
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", news.getId(), Case.INSENSITIVE)
-                .findAll();
-        setData(list);
-        btnShowMain.setVisibility(View.VISIBLE);
-    }
+
 }

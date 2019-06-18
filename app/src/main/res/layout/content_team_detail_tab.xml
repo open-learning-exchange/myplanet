@@ -92,6 +92,7 @@
                     android:id="@+id/btn_main_conversation"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:theme="@style/PrimaryFlatButton"
                     android:layout_margin="@dimen/padding_normal"
                     android:text="@string/show_main_conversation"
                     android:visibility="gone" />

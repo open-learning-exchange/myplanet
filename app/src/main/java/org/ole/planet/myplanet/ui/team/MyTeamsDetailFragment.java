@@ -24,6 +24,7 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
@@ -52,17 +53,15 @@ import okhttp3.internal.Util;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyTeamsDetailFragment extends Fragment implements View.OnClickListener, AdapterNews.OnNewsItemClickListener {
+public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnClickListener {
 
     TextView tvTitle, tvDescription;
 
     UserProfileDbHandler profileDbHandler;
     RealmUserModel user;
     String teamId;
-    Realm mRealm;
     RealmMyTeam team;
     Button btnLeave;
-    Button btnShowMain;
     Button btnInvite;
     ListView listContent;
     TabLayout tabLayout;
@@ -136,7 +135,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                         Utilities.toast(getActivity(), "Message is required");
                         return;
                     }
-                    HashMap<String,String> map= new HashMap<>();
+                    HashMap<String, String> map = new HashMap<>();
                     map.put("viewableBy", "teams");
                     map.put("viewableId", teamId);
                     map.put("message", msg);
@@ -263,9 +262,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                 array.put(user.getId());
             }
             team.setRequests(array.toString());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        } catch (JSONException e) {}
     }
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
@@ -276,18 +273,21 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                 ids[i] = array.get(i).toString();
             }
             return mRealm.where(RealmUserModel.class).in("id", ids).findAll();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) {}
         return new ArrayList<>();
     }
 
     @Override
-    public void showReply(RealmNews news) {
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", news.getId(), Case.INSENSITIVE)
-                .findAll();
+    public void setData(List<RealmNews> list) {
         showRecyclerView(list);
-        btnShowMain.setVisibility(View.VISIBLE);
     }
+
+//    @Override
+//    public void showReply(RealmNews news) {
+//        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
+//                .equalTo("replyTo", news.getId(), Case.INSENSITIVE)
+//                .findAll();
+//        showRecyclerView(list);
+//        btnShowMain.setVisibility(View.VISIBLE);
+//    }
 }
