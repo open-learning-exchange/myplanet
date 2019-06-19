@@ -17,12 +17,14 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
@@ -41,37 +43,32 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.RealmResults;
+import io.realm.Sort;
 import okhttp3.internal.Util;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyTeamsDetailFragment extends Fragment implements View.OnClickListener {
+public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnClickListener {
 
     TextView tvTitle, tvDescription;
 
     UserProfileDbHandler profileDbHandler;
     RealmUserModel user;
     String teamId;
-    Realm mRealm;
     RealmMyTeam team;
     Button btnLeave;
     Button btnInvite;
     ListView listContent;
     TabLayout tabLayout;
     DatabaseService dbService;
-    OnHomeItemClickListener homeItemClickListener;
     RecyclerView rvDiscussion;
+    LinearLayout llRv;
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnHomeItemClickListener)
-            homeItemClickListener = (OnHomeItemClickListener) context;
-    }
 
     public MyTeamsDetailFragment() {
     }
@@ -101,7 +98,9 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
 
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
+        btnShowMain = v.findViewById(R.id.btn_main_conversation);
         btnLeave.setOnClickListener(this);
+        llRv = v.findViewById(R.id.ll_rv);
         btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnInvite = v.findViewById(R.id.btn_invite);
         btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
@@ -113,6 +112,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         v.findViewById(R.id.add_message).setOnClickListener(view -> {
             showAddMessage();
         });
+
     }
 
     private void showAddMessage() {
@@ -128,7 +128,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                         Utilities.toast(getActivity(), "Message is required");
                         return;
                     }
-                    HashMap<String,String> map= new HashMap<>();
+                    HashMap<String, String> map = new HashMap<>();
                     map.put("viewableBy", "teams");
                     map.put("viewableId", teamId);
                     map.put("message", msg);
@@ -150,10 +150,11 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getTeamId()).findAll();
         Utilities.log("news list size " + realmNewsList.size());
         rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
-        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user);
-        adapterNews.setmRealm(mRealm);
-        rvDiscussion.setAdapter(adapterNews);
-        rvDiscussion.setVisibility(View.VISIBLE);
+        showRecyclerView(realmNewsList);
+        btnShowMain.setOnClickListener(view -> {
+            showRecyclerView(realmNewsList);
+            btnShowMain.setVisibility(View.GONE);
+        });
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
@@ -162,13 +163,21 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         setTabListener(users, courses, reqUsers);
     }
 
+    private void showRecyclerView(List<RealmNews> realmNewsList) {
+        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user);
+        adapterNews.setmRealm(mRealm);
+        adapterNews.setListener(this);
+        rvDiscussion.setAdapter(adapterNews);
+        llRv.setVisibility(View.VISIBLE);
+    }
+
     private void setTabListener(RealmResults<RealmUserModel> users, RealmResults<RealmMyCourse> courses, List<RealmUserModel> reqUsers) {
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 if (tab.getPosition() == 0) {
                     listContent.setVisibility(View.GONE);
-                    rvDiscussion.setVisibility(View.VISIBLE);
+                    llRv.setVisibility(View.VISIBLE);
                 } else if (tab.getPosition() == 1)
                     setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
                 else if (tab.getPosition() == 2)
@@ -202,7 +211,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
 
     private void setListContent(TabLayout.Tab tab, String s, List<RealmUserModel> data) {
         listContent.setVisibility(View.VISIBLE);
-        rvDiscussion.setVisibility(View.GONE);
+        llRv.setVisibility(View.GONE);
         tab.setText(s);
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, data));
         listContent.setOnItemClickListener(null);
@@ -246,9 +255,7 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                 array.put(user.getId());
             }
             team.setRequests(array.toString());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        } catch (JSONException e) {}
     }
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
@@ -259,10 +266,21 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
                 ids[i] = array.get(i).toString();
             }
             return mRealm.where(RealmUserModel.class).in("id", ids).findAll();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) {}
         return new ArrayList<>();
     }
 
+    @Override
+    public void setData(List<RealmNews> list) {
+        showRecyclerView(list);
+    }
+
+//    @Override
+//    public void showReply(RealmNews news) {
+//        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
+//                .equalTo("replyTo", news.getId(), Case.INSENSITIVE)
+//                .findAll();
+//        showRecyclerView(list);
+//        btnShowMain.setVisibility(View.VISIBLE);
+//    }
 }

@@ -39,6 +39,7 @@ public class RealmNews extends RealmObject {
     private String viewableBy;
     private String viewableId;
     private String avatar;
+    private String replyTo;
     private String userName;
     private long time;
     private String createdOn;
@@ -59,6 +60,8 @@ public class RealmNews extends RealmObject {
         news.setAvatar(JsonUtils.getString("avatar", doc));
         news.setViewableId(JsonUtils.getString("viewableId", doc));
         news.setCreatedOn(JsonUtils.getString("createdOn", doc));
+        news.setReplyTo(JsonUtils.getString("replyTo", doc));
+        Utilities.log("reply to " + JsonUtils.getString("replyTo", doc));
         news.setParentCode(JsonUtils.getString("parentCode", doc));
         JsonObject user = JsonUtils.getJsonObject("user", doc);
         news.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", doc)));
@@ -128,10 +131,19 @@ public class RealmNews extends RealmObject {
         object.addProperty("viewableBy", news.getViewableBy());
         object.addProperty("avatar", news.getAvatar());
         object.addProperty("createdOn", news.getCreatedOn());
+        object.addProperty("replyTo", news.getReplyTo());
         object.addProperty("parentCode", news.getParentCode());
         object.add("user", new Gson().fromJson(news.getUser(), JsonObject.class));
         //  object.add("user", user.serialize());
         return object;
+    }
+
+    public String getReplyTo() {
+        return replyTo;
+    }
+
+    public void setReplyTo(String replyTo) {
+        this.replyTo = replyTo;
     }
 
     public static RealmNews createNews(HashMap<String, String> map, Realm mRealm, RealmUserModel user) {
@@ -148,6 +160,7 @@ public class RealmNews extends RealmObject {
         news.setUserName(user.getName());
         news.setParentCode(user.getParentCode());
         news.setUserId(user.getId());
+        news.setReplyTo(map.containsKey("replyTo") ? map.get("replyTo") : "");
         news.setUser(new Gson().toJson(user.serialize()));
         mRealm.commitTransaction();
         return news;

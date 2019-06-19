@@ -14,6 +14,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -27,12 +28,12 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.Sort;
 
-public class NewsFragment extends Fragment {
+public class NewsFragment extends BaseNewsFragment {
+
 
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
-    Realm mRealm;
     Button btnSubmit;
     RealmUserModel user;
 
@@ -48,6 +49,7 @@ public class NewsFragment extends Fragment {
         etMessage = v.findViewById(R.id.et_message);
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
+        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         return v;
@@ -57,13 +59,15 @@ public class NewsFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("docType","message", Case.INSENSITIVE)
-                .equalTo("viewableBy","community", Case.INSENSITIVE)
+                .equalTo("docType", "message", Case.INSENSITIVE)
+                .equalTo("viewableBy", "community", Case.INSENSITIVE)
+                .equalTo("replyTo", "", Case.INSENSITIVE)
                 .findAll();
-        rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        AdapterNews adapterNews = new AdapterNews(getActivity(), list,user);
-        adapterNews.setmRealm(mRealm);
-        rvNews.setAdapter(adapterNews);
+        btnShowMain.setOnClickListener(view -> {
+            setData(list);
+            btnShowMain.setVisibility(View.GONE);
+        });
+        setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
             if (message.isEmpty()) {
@@ -79,4 +83,14 @@ public class NewsFragment extends Fragment {
             rvNews.getAdapter().notifyDataSetChanged();
         });
     }
+
+    public void setData(List<RealmNews> list) {
+        rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
+        AdapterNews adapterNews = new AdapterNews(getActivity(), list, user);
+        adapterNews.setmRealm(mRealm);
+        adapterNews.setListener(this);
+        rvNews.setAdapter(adapterNews);
+    }
+
+
 }
