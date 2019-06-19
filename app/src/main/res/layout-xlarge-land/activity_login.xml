@@ -8,14 +8,14 @@
 
 
     <LinearLayout
-        android:layout_width="1000dp"
-        android:layout_height="499dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:background="@color/bg_white"
         android:baselineAligned="false"
+        android:layout_margin="@dimen/_60dp"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
         android:orientation="horizontal"
-        android:weightSum="10"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintBottom_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -131,17 +131,20 @@
 
             </RelativeLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="5.5"
-                android:gravity="center"
-                android:orientation="horizontal">
+            <!--<ScrollView-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="match_parent"-->
+                <!--android:layout_gravity="center"-->
+                <!--android:gravity="center"-->
+                <!--android:orientation="horizontal">-->
 
                 <LinearLayout
-                    android:layout_width="400dp"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
                     android:gravity="center"
+                    android:layout_gravity="center"
+                    android:padding="@dimen/padding_normal"
                     android:orientation="vertical">
 
                     <android.support.design.widget.TextInputLayout
@@ -211,25 +214,48 @@
                         android:text="@string/btn_sign_in"
                         android:textColor="@android:color/white" />
 
-                    <Button
-                        android:id="@+id/btn_guest_login"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="@string/btn_guest_login"
-                        android:textSize="14sp"
-                        android:theme="@style/PrimaryFlatButton" />
+                    <!--<Button-->
+                        <!--android:id="@+id/btn_guest_login"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:layout_marginTop="10dp"-->
+                        <!--android:text="@string/btn_guest_login"-->
+                        <!--android:textSize="14sp"-->
+                        <!--android:theme="@style/PrimaryFlatButton" />-->
 
-                    <Button
-                        android:id="@+id/become_member"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_margin="@dimen/padding_normal"
-                        android:text="Become a member"
-                        android:theme="@style/PrimaryFlatButton" />
+                    <!--<Button-->
+                        <!--android:id="@+id/become_member"-->
+                        <!--android:layout_width="wrap_content"-->
+                        <!--android:layout_height="wrap_content"-->
+                        <!--android:layout_gravity="center"-->
+                        <!--android:layout_margin="@dimen/padding_normal"-->
+                        <!--android:text="Become a member"-->
+                        <!--android:theme="@style/PrimaryFlatButton" />-->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_marginTop="10dp"
+                        android:layout_height="wrap_content">
+
+                        <Button
+                            android:id="@+id/btn_guest_login"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="@string/btn_guest_login"
+                            android:textSize="14sp"
+                            android:theme="@style/PrimaryFlatButton" />
+
+                        <Button
+                            android:id="@+id/become_member"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="Become a member"
+                            android:theme="@style/PrimaryFlatButton" />
+                    </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
+            <!--</ScrollView>-->
         </LinearLayout>
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>

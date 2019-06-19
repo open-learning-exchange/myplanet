@@ -54,12 +54,14 @@ public class WebViewActivity extends AppCompatActivity {
         pBar.setProgress(0);
         setListeners();
         wv.getSettings().setJavaScriptEnabled(true);
+        wv.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         wv.loadUrl(link);
         findViewById(R.id.finish).setOnClickListener(v -> finish());
         setWebClient();
     }
 
     private void setWebClient() {
+//        wv.setWebChromeClient(new WebChromeClient());
 
         wv.setWebViewClient(new WebViewClient() {
             @Override
