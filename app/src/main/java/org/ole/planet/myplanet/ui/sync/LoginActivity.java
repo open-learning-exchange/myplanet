@@ -21,6 +21,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,6 +55,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     EditText serverUrl;
     EditText serverPassword;
+    private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn, btnGuestLogin;
@@ -288,8 +291,23 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+        protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
+        protocol_checkin.setOnCheckedChangeListener((radioGroup, i) -> {
+            switch (i)
+            {
+                case R.id.radio_http:
+                    serverUrl.setText("http://");
+                    break;
+
+                case R.id.radio_https:
+                    serverUrl.setText("https://");
+                    break;
+
+
+            }
+        });
         serverUrl.setText(settings.getString("serverURL", ""));
         serverPassword.setText(settings.getString("serverPin", ""));
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
