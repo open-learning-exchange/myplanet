@@ -319,11 +319,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             switch (i)
             {
                 case R.id.radio_http:
-                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst("https://", "http://") : "http://");
+                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.https_protocol), getString(R.string.http_protocol)) : getString(R.string.http_protocol));
                     break;
 
                 case R.id.radio_https:
-                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst("http://", "https://") : "https://");
+                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.http_protocol), getString(R.string.https_protocol)) : getString(R.string.https_protocol));
                     break;
             }
         });
