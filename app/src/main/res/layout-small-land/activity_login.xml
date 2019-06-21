@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
     android:id="@+id/constraintLayout"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/darkblue_gradient">
 
 
     <LinearLayout
-        android:layout_width="150dp"
-        android:layout_height="99dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:background="@color/bg_white"
+        android:layout_margin="@dimen/padding_large"
         android:baselineAligned="false"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
         android:orientation="horizontal"
         android:weightSum="10"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintBottom_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintLeft_toRightOf="parent"
         app:layout_constraintRight_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
@@ -55,34 +56,35 @@
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
                     android:layout_height="0dp"
-                    android:layout_weight="0.9"
+                    android:layout_weight="0.7"
                     android:text="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
-                    android:textSize="5sp"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
 
+
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/btn_lang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:entries="@array/language"
+                    android:padding="@dimen/padding_normal"
                     android:text="@string/language"
                     android:textColor="@android:color/white"
-                    android:entries="@array/language"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:padding="@dimen/padding_normal"
-                    android:layout_height="wrap_content"/>
+                    android:theme="@style/PrimaryFlatButton" />
 
 
                 <android.support.v7.widget.SwitchCompat
-                    android:layout_width="wrap_content"
-                    android:text="@string/child_mode"
-                    android:layout_gravity="center"
                     android:id="@+id/switch_child_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:gravity="center"
                     android:padding="@dimen/padding_normal"
-                    android:textColor="@color/md_white_1000"
-                    android:layout_height="wrap_content" />
+                    android:text="@string/child_mode"
+                    android:textColor="@color/md_white_1000" />
 
                 <TextView
                     android:id="@+id/lblVersion"
@@ -92,7 +94,7 @@
                     android:text="@string/app_version"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
-                    android:textSize="5sp" />
+                    android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -107,14 +109,16 @@
 
             <RelativeLayout
                 android:layout_width="wrap_content"
-                android:layout_height="0dp"
-                android:layout_weight="0.5">
+                android:layout_height="6dp"
+                android:layout_weight="0.6">
 
                 <pl.droidsonroids.gif.GifImageButton
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_alignParentLeft="true"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginTop="5dp"
                     android:background="@null"
                     android:scaleType="fitCenter" />
 
@@ -123,15 +127,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
-                    android:adjustViewBounds="true"
                     android:background="@null"
-                    android:maxHeight="16dp"
-                    android:maxWidth="16dp"
-                    android:scaleType="fitCenter"
-                    app:srcCompat="@drawable/ic_settings_black_18dp" />
+                    android:paddingTop="10dp"
+                    android:paddingRight="10dp"
+                    app:srcCompat="@drawable/ic_settings_black_24dp" />
+
             </RelativeLayout>
 
-            <LinearLayout
+            <ScrollView
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="5.5"
@@ -139,8 +142,9 @@
                 android:orientation="horizontal">
 
                 <LinearLayout
-                    android:layout_width="70dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
                     android:gravity="center"
                     android:orientation="vertical">
 
@@ -149,9 +153,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/hint_name"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
-                        app:hintEnabled="true"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
+                        app:hintEnabled="true">
 
                         <EditText
                             android:id="@+id/input_name"
@@ -159,18 +163,17 @@
                             android:layout_height="wrap_content"
                             android:singleLine="true"
                             android:textColor="@android:color/background_dark"
-                            android:textColorHint="@android:color/darker_gray"
-                            android:textSize="4sp" />
+                            android:textColorHint="@android:color/darker_gray" />
                     </android.support.design.widget.TextInputLayout>
 
                     <android.support.design.widget.TextInputLayout
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:hint="@string/hint_password"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
                         app:hintEnabled="true"
-                        android:layout_height="wrap_content"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:passwordToggleEnabled="true">
 
                         <EditText
@@ -179,8 +182,7 @@
                             android:layout_height="wrap_content"
                             android:inputType="textPassword"
                             android:textColor="@android:color/background_dark"
-                            android:textColorHint="@android:color/darker_gray"
-                            android:textSize="4sp" />
+                            android:textColorHint="@android:color/darker_gray" />
                     </android.support.design.widget.TextInputLayout>
 
                     <CheckBox
@@ -208,11 +210,11 @@
                     <Button
                         android:id="@+id/btn_signin"
                         android:layout_width="wrap_content"
-                        android:layout_height="10dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
                         android:background="@color/colorPrimary"
                         android:text="@string/btn_sign_in"
-                        android:textColor="@android:color/white"
-                        android:textSize="5sp" />
+                        android:textColor="@android:color/white" />
 
                     <Button
                         android:id="@+id/btn_guest_login"
@@ -220,20 +222,19 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="@string/btn_guest_login"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:textSize="14sp" />
-
+                        android:textSize="14sp"
+                        android:theme="@style/PrimaryFlatButton" />
 
                     <Button
+                        android:id="@+id/become_member"
                         android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:id="@+id/become_member"
                         android:text="Become a member"
-                        android:layout_height="wrap_content" />
+                        android:theme="@style/PrimaryFlatButton" />
                 </LinearLayout>
-            </LinearLayout>
+            </ScrollView>
         </LinearLayout>
     </LinearLayout>
 </android.support.constraint.ConstraintLayout>
