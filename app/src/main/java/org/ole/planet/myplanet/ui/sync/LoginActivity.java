@@ -307,9 +307,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void protocol_semantics() {
         Uri uri = Uri.parse(serverUrl.getText().toString());
         String protocol = uri.getScheme();
-        if(protocol.equals("https")){
+        if(TextUtils.equals("https", protocol)){
             protocol_checkin.check(R.id.radio_https);
-        }else if(protocol.equals("http")){
+        }else if(TextUtils.equals("http", protocol)){
             protocol_checkin.check(R.id.radio_http);
         }else {
             protocol_checkin.check(R.id.radio_http);
