@@ -26,7 +26,10 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         RealmFeedback feedback = realm.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
         TextView tvMessage = findViewById(R.id.tv_message);
         TextView tvDate = findViewById(R.id.tv_date);
-        tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
+        if (!TextUtils.isEmpty(feedback.getOpenTime()))
+            tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
+        else
+            tvDate.setText("Date : N/A");
         tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
     }
 
