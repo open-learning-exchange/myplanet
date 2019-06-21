@@ -14,6 +14,9 @@
     <string name="err_msg_login">Username and/or password do not match</string>
     <string name="hint_serverURl">Planet Server Address</string>
     <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
+    <string name="radio_protocol">Protocol:</string>
+    <string name="radio_http">HTTP</string>
+    <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">My Planet</string>
     <string name="menu_home">Home</string>
@@ -203,4 +206,6 @@
     <string name="reply">Reply</string>
     <string name="show_reply">Show Replies</string>
     <string name="show_main_conversation">Show main conversation</string>
+    <string name="https_protocol">https://</string>
+    <string name="http_protocol">http://</string>
 </resources>
