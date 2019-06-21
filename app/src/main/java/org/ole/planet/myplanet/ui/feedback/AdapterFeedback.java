@@ -38,11 +38,14 @@ public class AdapterFeedback extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderFeedback) holder).tvTitle.setText(list.get(position).getTitle());
             ((ViewHolderFeedback) holder).tvType.setText(list.get(position).getType());
             ((ViewHolderFeedback) holder).tvPriority.setText(list.get(position).getPriority());
-            ((ViewHolderFeedback) holder).tvPriority.setBackground(context.getResources().getDrawable("yes".equalsIgnoreCase(list.get(position).getPriority())?R.drawable.bg_primary : R.drawable.bg_grey ));
             ((ViewHolderFeedback) holder).tvStatus.setText(list.get(position).getStatus());
-            ((ViewHolderFeedback) holder).tvStatus.setBackground(context.getResources().getDrawable("open".equalsIgnoreCase(list.get(position).getStatus())?R.drawable.bg_primary : R.drawable.bg_grey ));
+            if ("yes".equalsIgnoreCase(list.get(position).getPriority()))
+                ((ViewHolderFeedback) holder).tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_primary));
+            else
+                ((ViewHolderFeedback) holder).tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_grey));
+            ((ViewHolderFeedback) holder).tvStatus.setBackground(context.getResources().getDrawable("open".equalsIgnoreCase(list.get(position).getStatus()) ? R.drawable.bg_primary : R.drawable.bg_grey));
             ((ViewHolderFeedback) holder).tvOpenDate.setText(TimeUtils.getFormatedDate(Long.parseLong(list.get(position).getOpenTime())));
-            holder.itemView.setOnClickListener(v->context.startActivity(new Intent(context, FeedbackDetailActivity.class).putExtra("id", list.get(position).getId())));
+            holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, FeedbackDetailActivity.class).putExtra("id", list.get(position).getId())));
         }
     }
 
