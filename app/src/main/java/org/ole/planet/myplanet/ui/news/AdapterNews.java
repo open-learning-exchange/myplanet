@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
@@ -64,21 +63,10 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
 
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderNews) {
-            RealmNews news = null;
-            if (parentNews != null) {
-                Utilities.log("Parent not null");
-                if (position == 0) {
-                    Utilities.log("Parent not null position 0");
-                    ((CardView)holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_blue_50));
-                    news = mRealm.copyFromRealm(parentNews);
-                } else
-                    news = mRealm.copyFromRealm(list.get(position - 1));
-            } else
-                news = mRealm.copyFromRealm(list.get(position));
+            RealmNews news = getNews(holder, position);
             RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
             if (userModel != null) {
                 ((ViewHolderNews) holder).tvName.setText(userModel.getName());
@@ -93,23 +81,42 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(finalNews)).setNegativeButton(R.string.cancel, null).show());
-
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(finalNews, true));
-            ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews, false));
-            List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                    .equalTo("replyTo", news.getId(), Case.INSENSITIVE)
-                    .findAll();
-            ((ViewHolderNews) holder).btnShowReply.setText("Show replies (" + replies.size() + ")");
-            ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
-            if (position == 0 && parentNews!=null)
-                ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
-            ((ViewHolderNews) holder).btnShowReply.setOnClickListener(view -> {
-                if (listener != null) {
-                    listener.showReply(finalNews);
-                }
-            });
-
+            showReplyButton(holder,finalNews, position);
         }
+    }
+
+    private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {
+        ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews, false));
+        List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
+                .equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE)
+                .findAll();
+        ((ViewHolderNews) holder).btnShowReply.setText(String.format("Show replies (%d)", replies.size()));
+        ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
+        if (position == 0 && parentNews != null)
+            ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
+        ((ViewHolderNews) holder).btnShowReply.setOnClickListener(view -> {
+            if (listener != null) {
+                listener.showReply(finalNews);
+            }
+        });
+    }
+
+    private RealmNews getNews(RecyclerView.ViewHolder holder, int position) {
+        RealmNews news;
+        if (parentNews != null) {
+            if (position == 0) {
+                ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_blue_50));
+                news = mRealm.copyFromRealm(parentNews);
+            } else{
+                ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
+                news = mRealm.copyFromRealm(list.get(position - 1));
+            }
+        } else{
+            ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
+            news = mRealm.copyFromRealm(list.get(position));
+        }
+        return news;
     }
 
     private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
