@@ -56,7 +56,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     List<RealmTag> searchTags;
     ChipCloudConfig config;
     Button clearTags;
-
+    KeyboardUtils keyboardUtils;
 
     public LibraryFragment() {
     }
@@ -112,6 +112,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             f.setListener(this);
             f.show(getChildFragmentManager(), "");
         });
+        keyboardUtils = new KeyboardUtils();
+        keyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout),getActivity());
+
 
     }
 

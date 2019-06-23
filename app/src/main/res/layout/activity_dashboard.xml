@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardActivity">
+    tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardActivity"
+    android:id="@+id/activity_dashboard_parent_layout">
 
     <LinearLayout
         android:layout_width="match_parent"

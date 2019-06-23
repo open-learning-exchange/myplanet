@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +36,7 @@ public class NewsFragment extends BaseNewsFragment {
     TextInputLayout tlMessage;
     Button btnSubmit;
     RealmUserModel user;
+    KeyboardUtils keyboardUtils;
 
     public NewsFragment() {
     }
@@ -52,6 +53,8 @@ public class NewsFragment extends BaseNewsFragment {
         btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
+        keyboardUtils = new KeyboardUtils();
+        keyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout),getActivity());
         return v;
     }
 
@@ -92,5 +95,5 @@ public class NewsFragment extends BaseNewsFragment {
         rvNews.setAdapter(adapterNews);
     }
 
-
+    
 }
