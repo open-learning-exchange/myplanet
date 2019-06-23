@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.feedback;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.MenuItem;
 import android.widget.TextView;
 
@@ -25,8 +26,11 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         RealmFeedback feedback = realm.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
         TextView tvMessage = findViewById(R.id.tv_message);
         TextView tvDate = findViewById(R.id.tv_date);
-        tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
-        tvMessage.setText(feedback.getMessage());
+        if (!TextUtils.isEmpty(feedback.getOpenTime()))
+            tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
+        else
+            tvDate.setText("Date : N/A");
+        tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
     }
 
     @Override
