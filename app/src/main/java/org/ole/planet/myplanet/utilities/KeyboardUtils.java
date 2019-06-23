@@ -25,25 +25,28 @@ public class KeyboardUtils {
                 activity.getCurrentFocus().getWindowToken(), 0);
     }
 
-    public void setupUI(View v,Activity activity) {
+    public void setupUI(View v, Activity activity) {
         // Set up touch listener for non-text box views to hide keyboard.
-        if (v != null) {
-            if (!(v instanceof EditText)) {
-                v.setOnTouchListener(new View.OnTouchListener() {
-                    public boolean onTouch(View v, MotionEvent event) {
-                        hideSoftKeyboard(activity);
-                        return false;
-                    }
-                });
-            }
 
-            //If a layout container, iterate over children and seed recursion.
-            if (v instanceof ViewGroup) {
-                for (int i = 0; i < ((ViewGroup) v).getChildCount(); i++) {
-                    View innerView = ((ViewGroup) v).getChildAt(i);
-                    setupUI(innerView, activity);
-                }
+        View.OnTouchListener onTouchListener = new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                hideSoftKeyboard(activity);
+                return false;
+            }
+        };
+
+        if (!(v instanceof EditText) && v != null) {
+            v.setOnTouchListener(onTouchListener);
+        }
+
+        //If a layout container, iterate over children and seed recursion.
+        if (v instanceof ViewGroup && v != null) {
+            for (int i = 0; i < ((ViewGroup) v).getChildCount(); i++) {
+                View innerView = ((ViewGroup) v).getChildAt(i);
+                setupUI(innerView, activity);
             }
         }
+
     }
 }
