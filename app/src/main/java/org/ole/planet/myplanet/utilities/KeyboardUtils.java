@@ -36,14 +36,15 @@ public class KeyboardUtils {
             }
         };
 
-        if (!(v instanceof EditText) && v != null) {
+        if (!(v instanceof EditText)) {
             v.setOnTouchListener(onTouchListener);
         }
 
         //If a layout container, iterate over children and seed recursion.
-        if (v instanceof ViewGroup && v != null) {
-            for (int i = 0; i < ((ViewGroup) v).getChildCount(); i++) {
-                View innerView = ((ViewGroup) v).getChildAt(i);
+        if (v instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup)v;
+            for (int i = 0; i < vg.getChildCount(); i++) {
+                View innerView = vg.getChildAt(i);
                 setupUI(innerView, activity);
             }
         }
