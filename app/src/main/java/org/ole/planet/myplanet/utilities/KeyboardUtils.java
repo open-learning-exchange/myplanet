@@ -6,9 +6,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.view.View.OnTouchListener;
 
 public class KeyboardUtils {
-    private View.OnTouchListener onTouchListener;
 
     public static void hideSoftKeyboard(Activity activity) {
         InputMethodManager inputMethodManager =
@@ -26,20 +26,15 @@ public class KeyboardUtils {
                 activity.getCurrentFocus().getWindowToken(), 0);
     }
 
-    public void setUpOnTouchListener(Activity activity) {
-        this.onTouchListener = new View.OnTouchListener() {
+    public void setupUI(View v, Activity activity) {
+        // Set up touch listener for non-text box views to hide keyboard.
+        OnTouchListener onTouchListener= new OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 hideSoftKeyboard(activity);
                 return false;
             }
         };
-
-    }
-
-    public void setupUI(View v, Activity activity) {
-        // Set up touch listener for non-text box views to hide keyboard.
-        setUpOnTouchListener(activity);
 
         if (!(v instanceof EditText) && v != null) {
             v.setOnTouchListener(onTouchListener);
