@@ -102,6 +102,8 @@ public class SettingActivity extends AppCompatActivity {
         }
 
 
+
+
         public void setBetaToggleOn()
         {
             SwitchPreference beta = (SwitchPreference) findPreference("beta_function");
