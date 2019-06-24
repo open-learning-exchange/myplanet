@@ -197,6 +197,7 @@
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of :</string>
+    <string name="open_date">Open Date</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>
