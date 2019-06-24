@@ -36,7 +36,6 @@ public class NewsFragment extends BaseNewsFragment {
     TextInputLayout tlMessage;
     Button btnSubmit;
     RealmUserModel user;
-    KeyboardUtils keyboardUtils;
 
     public NewsFragment() {
     }
@@ -53,8 +52,7 @@ public class NewsFragment extends BaseNewsFragment {
         btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
-        keyboardUtils = new KeyboardUtils();
-        keyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout),getActivity());
+        KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout),getActivity());
         return v;
     }
 

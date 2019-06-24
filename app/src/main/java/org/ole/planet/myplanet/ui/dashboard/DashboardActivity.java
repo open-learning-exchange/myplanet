@@ -64,7 +64,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private Drawer result = null;
     private Toolbar mTopToolbar, bellToolbar;
     RealmUserModel user;
-    KeyboardUtils keyboardUtils;
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -76,8 +75,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         super.onCreate(savedInstanceState);
         checkUser();
         setContentView(R.layout.activity_dashboard);
-        keyboardUtils = new KeyboardUtils();
-        keyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout),DashboardActivity.this);
+        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout),DashboardActivity.this);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
