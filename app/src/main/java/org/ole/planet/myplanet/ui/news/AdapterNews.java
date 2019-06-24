@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,7 +23,9 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.HashMap;
 import java.util.List;
 
+import io.realm.Case;
 import io.realm.Realm;
+import io.realm.Sort;
 
 public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
@@ -31,8 +33,10 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Realm mRealm;
     private RealmUserModel currentUser;
     private OnNewsItemClickListener listener;
+    private RealmNews parentNews;
 
-   public interface OnNewsItemClickListener {
+
+    public interface OnNewsItemClickListener {
         void showReply(RealmNews news);
     }
 
@@ -40,10 +44,11 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.listener = listener;
     }
 
-    public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user) {
+    public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
         this.context = context;
         this.list = list;
         this.currentUser = user;
+        this.parentNews = parentNews;
     }
 
     public void setmRealm(Realm mRealm) {
@@ -57,35 +62,61 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return new ViewHolderNews(v);
     }
 
+
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderNews) {
-            RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
+            RealmNews news = getNews(holder, position);
+            RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
             if (userModel != null) {
                 ((ViewHolderNews) holder).tvName.setText(userModel.getName());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
                 showHideButtons(userModel, holder);
             } else {
-                ((ViewHolderNews) holder).tvName.setText(list.get(position).getUserName());
+                ((ViewHolderNews) holder).tvName.setText(news.getUserName());
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
-            ((ViewHolderNews) holder).tvMessage.setText(list.get(position).getMessage());
-            ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(list.get(position).getTime()));
+            RealmNews finalNews = news;
+            ((ViewHolderNews) holder).tvMessage.setText(news.getMessage());
+            ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(position)).setNegativeButton(R.string.cancel, null).show());
-
-            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(position, true));
-            ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(position, false));
-            List<RealmNews> replies = mRealm.where(RealmNews.class).equalTo("replyTo", list.get(position).getId()).findAll();
-            ((ViewHolderNews) holder).btnShowReply.setText("Show replies (" + replies.size() + ")");
-            ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
-            ((ViewHolderNews) holder).btnShowReply.setOnClickListener(view -> {
-                    if (listener!=null){
-                        listener.showReply(list.get(position));
-                    }
-            });
-
+                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(finalNews)).setNegativeButton(R.string.cancel, null).show());
+            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(finalNews, true));
+            showReplyButton(holder,finalNews, position);
         }
+    }
+
+    private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {
+        ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews, false));
+        List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
+                .equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE)
+                .findAll();
+        ((ViewHolderNews) holder).btnShowReply.setText(String.format("Show replies (%d)", replies.size()));
+        ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
+        if (position == 0 && parentNews != null)
+            ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
+        ((ViewHolderNews) holder).btnShowReply.setOnClickListener(view -> {
+            if (listener != null) {
+                listener.showReply(finalNews);
+            }
+        });
+    }
+
+    private RealmNews getNews(RecyclerView.ViewHolder holder, int position) {
+        RealmNews news;
+        if (parentNews != null) {
+            if (position == 0) {
+                ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_blue_50));
+                news = mRealm.copyFromRealm(parentNews);
+            } else{
+                ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
+                news = mRealm.copyFromRealm(list.get(position - 1));
+            }
+        } else{
+            ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
+            news = mRealm.copyFromRealm(list.get(position));
+        }
+        return news;
     }
 
     private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
@@ -96,57 +127,59 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    private void showEditAlert(int position, boolean isEdit) {
+    private void showEditAlert(RealmNews news, boolean isEdit) {
         View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
         EditText et = v.findViewById(R.id.et_input);
         if (isEdit)
-        et.setText(list.get(position).getMessage());
-        new AlertDialog.Builder(context).setTitle(R.string.edit_post).setIcon(R.drawable.ic_edit)
+            et.setText(news.getMessage());
+        new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
                     String s = et.getText().toString();
                     if (isEdit)
-                        editPost(s, position);
+                        editPost(s, news);
                     else
-                        postReply(s, position);
+                        postReply(s, news);
                 }).setNegativeButton(R.string.cancel, null).show();
     }
 
-    private void postReply(String s, int position) {
+    private void postReply(String s, RealmNews news) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         HashMap<String, String> map = new HashMap<>();
         map.put("message", s);
         map.put("viewableBy", "community");
         map.put("viewableId", "");
-        map.put("replyTo", list.get(position).getId());
+        map.put("replyTo", news.getId());
         RealmNews.createNews(map, mRealm, currentUser);
         notifyDataSetChanged();
     }
 
-    private void deletePost(int position) {
+    private void deletePost(RealmNews news) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        list.get(position).deleteFromRealm();
+        news.deleteFromRealm();
         mRealm.commitTransaction();
         notifyDataSetChanged();
     }
 
-    private void editPost(String s, int position) {
+    private void editPost(String s, RealmNews news) {
         if (s.isEmpty()) {
             Utilities.toast(context, "Please enter message");
             return;
         }
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        list.get(position).setMessage(s);
+        news.setMessage(s);
         mRealm.commitTransaction();
         notifyDataSetChanged();
     }
 
+
     @Override
     public int getItemCount() {
-        return list.size();
+        Utilities.log("Parent news  " + (parentNews == null));
+        return parentNews == null ? list.size() : list.size() + 1;
     }
 
     class ViewHolderNews extends RecyclerView.ViewHolder {
