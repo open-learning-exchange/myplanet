@@ -49,7 +49,7 @@ public class NewsFragment extends BaseNewsFragment {
         etMessage = v.findViewById(R.id.et_message);
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
-        btnShowMain = v.findViewById(R.id.btn_main);
+//        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         return v;
@@ -63,10 +63,10 @@ public class NewsFragment extends BaseNewsFragment {
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("replyTo", "", Case.INSENSITIVE)
                 .findAll();
-        btnShowMain.setOnClickListener(view -> {
-            setData(list);
-            btnShowMain.setVisibility(View.GONE);
-        });
+//        btnShowMain.setOnClickListener(view -> {
+//            setData(list);
+//            btnShowMain.setVisibility(View.GONE);
+//        });
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
@@ -86,7 +86,7 @@ public class NewsFragment extends BaseNewsFragment {
 
     public void setData(List<RealmNews> list) {
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        AdapterNews adapterNews = new AdapterNews(getActivity(), list, user);
+        AdapterNews adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
         rvNews.setAdapter(adapterNews);

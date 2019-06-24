@@ -21,12 +21,12 @@
             android:padding="@dimen/padding_normal"
             android:textColor="@color/md_black_1000"
             android:textSize="16sp" />
-        <Button
-            android:id="@+id/add_message"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/padding_normal"
-            android:text="@string/add_message" />
+        <!--<Button-->
+            <!--android:id="@+id/add_message"-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_margin="@dimen/padding_normal"-->
+            <!--android:text="@string/add_message" />-->
 
         </LinearLayout>
     </ScrollView>
@@ -88,14 +88,20 @@
                 android:orientation="vertical">
 
 
+                <!--<Button-->
+                    <!--android:id="@+id/btn_main_conversation"-->
+                    <!--android:layout_width="wrap_content"-->
+                    <!--android:layout_height="wrap_content"-->
+                    <!--android:theme="@style/PrimaryFlatButton"-->
+                    <!--android:layout_margin="@dimen/padding_normal"-->
+                    <!--android:text="@string/show_main_conversation"-->
+                    <!--android:visibility="gone" />-->
                 <Button
-                    android:id="@+id/btn_main_conversation"
+                    android:id="@+id/add_message"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:theme="@style/PrimaryFlatButton"
                     android:layout_margin="@dimen/padding_normal"
-                    android:text="@string/show_main_conversation"
-                    android:visibility="gone" />
+                    android:text="@string/add_message" />
 
 
                 <android.support.v7.widget.RecyclerView
