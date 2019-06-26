@@ -38,5 +38,7 @@ public class SurveyFragment extends BaseRecyclerFragment<RealmStepExam> {
         addNewServey.setOnClickListener(view -> {
             // TODO: 8/21/18 Create add survey page for administrator
         });
+        if (getAdapter() != null)
+            showNoData(tvMessage, getAdapter().getItemCount());
     }
 }

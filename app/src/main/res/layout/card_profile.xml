@@ -124,7 +124,7 @@
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:padding="@dimen/padding_normal"
-                        android:text="@string/menu_surveys"
+                        android:text="@string/my_survey"
                         android:textColor="@color/md_black_1000"
                         android:textSize="18sp" />
 
