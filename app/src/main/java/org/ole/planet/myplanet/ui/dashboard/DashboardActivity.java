@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -74,6 +75,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         super.onCreate(savedInstanceState);
         checkUser();
         setContentView(R.layout.activity_dashboard);
+        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout),DashboardActivity.this);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
