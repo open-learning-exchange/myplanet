@@ -42,7 +42,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     public UserProfileDbHandler profileDbHandler;
 
     public RecyclerView recyclerView;
-    TextView tvMessage;
+    public TextView tvMessage;
     List<LI> list;
     public boolean isMyCourseLib;
     public TextView tvDelete;

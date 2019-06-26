@@ -46,7 +46,7 @@ import static org.ole.planet.myplanet.model.RealmMyLibrary.*;
  */
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
 
-    TextView tvAddToLib, tvMessage, tvSelected;
+    TextView tvAddToLib, tvSelected;
 
     EditText etSearch, etTags;
 
@@ -86,7 +86,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         etTags = getView().findViewById(R.id.et_tags);
         clearTags = getView().findViewById(R.id.btn_clear_tags);
         tvSelected = getView().findViewById(R.id.tv_selected);
-        tvMessage = getView().findViewById(R.id.tv_message);
+//        tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         initArrays();

@@ -21,6 +21,7 @@ public class RealmApkLog extends RealmObject {
     private String page;
     private String parentCode;
     private String createdOn;
+    private String time;
     public String getId() {
         return id;
     }
@@ -41,6 +42,14 @@ public class RealmApkLog extends RealmObject {
         this.createdOn = createdOn;
     }
 
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
 
     public void setId(String id) {
         this.id = id;
@@ -72,6 +81,7 @@ public class RealmApkLog extends RealmObject {
         object.addProperty("type", log.getType());
         object.addProperty("error", log.getError());
         object.addProperty("page", log.getPage());
+        object.addProperty("time", log.getTime());
         object.addProperty("createdOn", log.getCreatedOn());
         object.addProperty("parentCode", log.getParentCode());
         return object;
