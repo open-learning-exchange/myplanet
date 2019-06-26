@@ -63,7 +63,8 @@ public class RealmSubmission extends RealmObject {
         JsonObject object = new JsonObject();
         RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", sub.userId).findFirst();
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", sub.parentId).findFirst();
-        object.addProperty("_id", sub.get_id());
+        if (!TextUtils.isEmpty(sub.get_id()))
+            object.addProperty("_id", sub.get_id());
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
@@ -79,6 +80,7 @@ public class RealmSubmission extends RealmObject {
             JsonParser parser = new JsonParser();
             object.add("user", parser.parse(sub.getUser()));
         }
+        Utilities.log("Serialize sub");
         return object;
 
     }
