@@ -26,7 +26,7 @@
                     style="@style/GreyButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
+                    android:layout_marginEnd="10dp"
                     android:padding="@dimen/padding_normal"
                     android:text="Open Resource" />
 
@@ -35,7 +35,7 @@
                     style="@style/GreyButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
+                    android:layout_marginEnd="10dp"
                     android:padding="10dp"
                     android:text="Resources" />
 
