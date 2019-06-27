@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -108,6 +109,7 @@ public class RealmSubmission extends RealmObject {
     public static RealmSubmission createSubmission(RealmSubmission sub, List<RealmExamQuestion> questions, Realm mRealm) {
         if (sub == null || questions.size() == sub.getAnswers().size())
             sub = mRealm.createObject(RealmSubmission.class, UUID.randomUUID().toString());
+        sub.setLastUpdateTime(new Date().getTime());
         return sub;
     }
 
