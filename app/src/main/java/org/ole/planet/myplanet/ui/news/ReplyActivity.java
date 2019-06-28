@@ -50,7 +50,6 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
         List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
                 .equalTo("replyTo", id, Case.INSENSITIVE)
                 .findAll();
-        Utilities.log("List "  + list.size());
         newsAdapter = new AdapterNews(this, list, user, news);
         newsAdapter.setListener(this);
         newsAdapter.setmRealm(mRealm);
