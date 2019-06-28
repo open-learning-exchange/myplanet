@@ -145,22 +145,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                int tabPosition = tab.getPosition();
-                onClickTabItems(tabPosition);
-                if(tabPosition > 3){
-                    rightArrowImageButton.setVisibility(View.GONE);
-                    rightArrowImageButton.clearAnimation();
-                }
-                if(tabPosition < 2){
-                    leftArrowImageButton.clearAnimation();
-                    leftArrowImageButton.setVisibility(View.GONE);
-                }
-                if(tabPosition > 1 && tabPosition < 4){
-                    leftArrowImageButton.setVisibility(View.VISIBLE);
-                    leftArrowImageButton.startAnimation(blinkAnimation);
-                    rightArrowImageButton.startAnimation(blinkAnimation);
-                    rightArrowImageButton.setVisibility(View.VISIBLE);
-                }
+                onClickTabItems(tab.getPosition());
+                checkAndUpdateArrowVisibility(tab.getPosition());
             }
 
             @Override
@@ -392,5 +378,21 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         return true;
     }
 
+    private void checkAndUpdateArrowVisibility(int tabPosition){
+        if(tabPosition > 3){
+            rightArrowImageButton.setVisibility(View.GONE);
+            rightArrowImageButton.clearAnimation();
+        }
+        if(tabPosition < 2){
+            leftArrowImageButton.clearAnimation();
+            leftArrowImageButton.setVisibility(View.GONE);
+        }
+        if(tabPosition > 1 && tabPosition < 4){
+            leftArrowImageButton.setVisibility(View.VISIBLE);
+            leftArrowImageButton.startAnimation(blinkAnimation);
+            rightArrowImageButton.startAnimation(blinkAnimation);
+            rightArrowImageButton.setVisibility(View.VISIBLE);
+        }
+    }
 
 }
