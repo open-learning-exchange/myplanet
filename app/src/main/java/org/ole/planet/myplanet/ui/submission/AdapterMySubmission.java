@@ -61,20 +61,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
         if (holder instanceof ViewHolderMySurvey) {
             ((ViewHolderMySurvey) holder).status.setText(list.get(position).getStatus());
             ((ViewHolderMySurvey) holder).date.setText(TimeUtils.getFormatedDate(list.get(position).getStartTime()));
-            ((ViewHolderMySurvey) holder).submitted_by.setVisibility(View.VISIBLE);
-            Utilities.log("User " + list.get(position).getUser());
-            try {
-                JSONObject ob = new JSONObject(list.get(position).getUser());
-                ((ViewHolderMySurvey) holder).submitted_by.setText(ob.optString("name"));
-            } catch (Exception e) {
-                if (mRealm != null) {
-                    Utilities.log("Realm not null");
-                    RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
-                    if (user != null)
-                        ((ViewHolderMySurvey) holder).submitted_by.setText(user.getName());
-                }
-                e.printStackTrace();
-            }
+            showSubmittedBy(((ViewHolderMySurvey) holder).submitted_by, position);
             if (examHashMap.containsKey(list.get(position).getParentId()))
                 ((ViewHolderMySurvey) holder).title.setText(examHashMap.get(list.get(position).getParentId()).getName());
             holder.itemView.setOnClickListener(view -> {
@@ -83,6 +70,20 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
                 else
                     openSubmissionDetail(listener, list.get(position).getId());
             });
+        }
+    }
+
+    private void showSubmittedBy(TextView submitted_by, int position) {
+        submitted_by.setVisibility(View.VISIBLE);
+        try {
+            JSONObject ob = new JSONObject(list.get(position).getUser());
+            submitted_by.setText(ob.optString("name"));
+        } catch (Exception e) {
+            if (mRealm != null) {
+                RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
+                if (user != null)
+                    submitted_by.setText(user.getName());
+            }
         }
     }
 
