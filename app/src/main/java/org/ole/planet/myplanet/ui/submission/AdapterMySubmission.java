@@ -79,11 +79,9 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
             JSONObject ob = new JSONObject(list.get(position).getUser());
             submitted_by.setText(ob.optString("name"));
         } catch (Exception e) {
-            if (mRealm != null) {
                 RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
                 if (user != null)
                     submitted_by.setText(user.getName());
-            }
         }
     }
 
