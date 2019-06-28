@@ -76,18 +76,17 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 ((ViewHolderNews) holder).tvName.setText(news.getUserName());
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
-            RealmNews finalNews = news;
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessage());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(finalNews)).setNegativeButton(R.string.cancel, null).show());
-            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(finalNews, true));
-            showReplyButton(holder,finalNews, position);
+                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.get_id())).setNegativeButton(R.string.cancel, null).show());
+            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.get_id(), true));
+            showReplyButton(holder, news, position);
         }
     }
 
     private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {
-        ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews, false));
+        ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews.getId(), false));
         List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
                 .equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE)
                 .findAll();
@@ -108,11 +107,11 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (position == 0) {
                 ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_blue_50));
                 news = mRealm.copyFromRealm(parentNews);
-            } else{
+            } else {
                 ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
                 news = mRealm.copyFromRealm(list.get(position - 1));
             }
-        } else{
+        } else {
             ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
             news = mRealm.copyFromRealm(list.get(position));
         }
@@ -127,9 +126,10 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-    private void showEditAlert(RealmNews news, boolean isEdit) {
+    private void showEditAlert(String id, boolean isEdit) {
         View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
         EditText et = v.findViewById(R.id.et_input);
+        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         if (isEdit)
             et.setText(news.getMessage());
         new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit)
@@ -155,10 +155,12 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         notifyDataSetChanged();
     }
 
-    private void deletePost(RealmNews news) {
+    private void deletePost(String id) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        news.deleteFromRealm();
+        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
+        if (news != null)
+            news.deleteFromRealm();
         mRealm.commitTransaction();
         notifyDataSetChanged();
     }
