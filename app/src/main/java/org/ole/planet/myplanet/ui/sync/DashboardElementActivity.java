@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
@@ -76,7 +77,8 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
                 openCallFragment(new SurveyFragment(), "survey");
                 break;
             case 4:
-                new FeedbackFragment().show(getSupportFragmentManager(), "feedback");
+//                new FeedbackFragment().show(getSupportFragmentManager(), "feedback");
+                openCallFragment(new FeedbackListFragment(), "Feedback");
                 break;
             case 5:
                 logout();

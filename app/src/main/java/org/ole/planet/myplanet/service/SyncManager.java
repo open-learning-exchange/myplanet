@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -49,19 +48,15 @@ public class SyncManager {
     private Rows shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
-    private UserProfileDbHandler userProfileDbHandler;
 
     private SyncManager(Context context) {
         this.context = context;
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
-        userProfileDbHandler = new UserProfileDbHandler(context);
     }
 
     public static SyncManager getInstance() {
-        //   if (ourInstance == null) {
         ourInstance = new SyncManager(MainApplication.context);
-        // }
         return ourInstance;
     }
 
@@ -117,16 +112,17 @@ public class SyncManager {
             NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
             mRealm = dbService.getRealmInstance();
             TransactionSyncManager.syncDb(mRealm, "tablet_users");
+            myLibraryTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "courses");
             TransactionSyncManager.syncDb(mRealm, "exams");
-            resourceTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "ratings");
             TransactionSyncManager.syncDb(mRealm, "achievements");
             TransactionSyncManager.syncDb(mRealm, "tags");
             TransactionSyncManager.syncDb(mRealm, "submissions");
             TransactionSyncManager.syncDb(mRealm, "news");
-            myLibraryTransactionSync();
+            TransactionSyncManager.syncDb(mRealm, "feedback");
             TransactionSyncManager.syncDb(mRealm, "login_activities");
+            resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
         } catch (Exception err) {
             handleException(err.getMessage());
@@ -144,17 +140,17 @@ public class SyncManager {
     }
 
 
-    public void resourceTransactionSync() {
+    public void resourceTransactionSync(SyncListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
             try {
-                syncResource(apiInterface);
+                syncResource(apiInterface, listener);
             } catch (IOException e) {
             }
         });
     }
 
-    private void syncResource(ApiInterface dbClient) throws IOException {
+    private void syncResource(ApiInterface dbClient, SyncListener listener) throws IOException {
         int skip = 0;
         int limit = 1000;
         List<String> newIds = new ArrayList<>();

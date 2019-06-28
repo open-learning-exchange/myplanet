@@ -43,12 +43,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -71,11 +73,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        user = new UserProfileDbHandler(this).getUserModel();
-        if (user.getId().startsWith("guest")){
-            getTheme().applyStyle(R.style.GuestStyle, true);
-        }
+        checkUser();
         setContentView(R.layout.activity_dashboard);
+        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout),DashboardActivity.this);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
@@ -102,10 +102,29 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-        topbarSetting();
 
-        openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
+        topbarSetting();
+        openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) ?
                 new BellDashboardFragment() : new DashboardFragment());
+
+        if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true))
+        {
+            bellToolbar.setVisibility(View.VISIBLE);
+            navigationView.setVisibility(View.GONE);
+        }
+
+    }
+
+    private void checkUser() {
+        user = new UserProfileDbHandler(this).getUserModel();
+        if(user  == null){
+            Utilities.toast(this, "Session expired.");
+            logout();
+            return;
+        }
+        if (user.getId().startsWith("guest")){
+            getTheme().applyStyle(R.style.GuestStyle, true);
+        }
     }
 
     private void topbarSetting() {
@@ -218,7 +237,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 openMyFragment(new CourseFragment());
                 break;
             case R.string.menu_feedback:
-                new FeedbackFragment().show(getSupportFragmentManager(), "");
+//                new FeedbackFragment().show(getSupportFragmentManager(), "");
+                openMyFragment(new FeedbackListFragment());
                 break;
             case R.string.menu_logout:
                 logout();

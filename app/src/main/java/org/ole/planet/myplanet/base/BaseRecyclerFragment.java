@@ -42,7 +42,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
     public UserProfileDbHandler profileDbHandler;
 
     public RecyclerView recyclerView;
-    TextView tvMessage;
+    public TextView tvMessage;
     List<LI> list;
     public boolean isMyCourseLib;
     public TextView tvDelete;
@@ -171,12 +171,16 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
 
     private void searchAndAddToList(LI l, Class c, String[] query, List<LI> li) {
         String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
+        boolean isExists = false;
         for (String q : query) {
-            if (title.toLowerCase().contains(q.toLowerCase())) {
-                li.add(l);
-                break;
-            }
+//                li.add(l);
+            isExists = title.toLowerCase().contains(q.toLowerCase());
+            Utilities.log(title.toLowerCase() + " " + q.toLowerCase() + " is exists " + isExists);
+
+            if (!isExists) break;
         }
+        if (isExists)
+            li.add(l);
     }
 
     public List<RealmMyLibrary> filterLibraryByTag(String s, List<RealmTag> tags) {

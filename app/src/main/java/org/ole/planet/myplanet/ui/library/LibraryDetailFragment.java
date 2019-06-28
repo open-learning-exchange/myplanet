@@ -51,6 +51,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             libraryId = getArguments().getString("libraryId");
+            Utilities.log("Library id " + libraryId);
         }
     }
 
@@ -133,6 +134,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             }
             openResource(library);
         });
+        Utilities.log("user id " + profileDbHandler.getUserModel().getId() + " " + library.getUserId().contains(profileDbHandler.getUserModel().getId()));
         boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
         remove.setText(isAdd ? "Add To My Library" : "Remove from myLibrary");
         remove.setOnClickListener(view -> {

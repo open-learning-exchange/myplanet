@@ -9,14 +9,12 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:baselineAligned="false"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
+        android:layout_margin="@dimen/_40dp"
         android:orientation="horizontal"
-        android:paddingLeft="40dp"
-        android:paddingRight="40dp"
-        android:weightSum="10"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintBottom_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"

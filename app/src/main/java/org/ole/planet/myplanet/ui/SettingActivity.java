@@ -2,32 +2,19 @@ package org.ole.planet.myplanet.ui;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
-import android.preference.Preference;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
 import android.preference.SwitchPreference;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.EditText;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.callback.SyncListener;
-import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
-import org.ole.planet.myplanet.utilities.Utilities;
-
-import static org.ole.planet.myplanet.base.BaseResourceFragment.settings;
 
 public class SettingActivity extends AppCompatActivity {
     @Override
@@ -44,7 +31,10 @@ public class SettingActivity extends AppCompatActivity {
                 .replace(android.R.id.content, new SettingFragment())
                 .commit();
         setTitle(getString(R.string.action_settings));
+
+
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -57,10 +47,17 @@ public class SettingActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static class SettingFragment extends PreferenceFragment implements SyncListener {
+    @Override
+    public void finish() {
+        super.finish();
+        startActivity(new Intent(this, DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
+
+    public static class SettingFragment extends PreferenceFragment {
         UserProfileDbHandler profileDbHandler;
         RealmUserModel user;
         ProgressDialog dialog;
+
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -75,7 +72,7 @@ public class SettingActivity extends AppCompatActivity {
                 return true;
             });
             dialog = new ProgressDialog(getActivity());
-
+            setBetaToggleOn();
             ListPreference lp = (ListPreference) findPreference("app_language");
             // lp.setSummary(PreferenceManager.getDefaultSharedPreferences(getActivity()).getString("app_language", ""));
             lp.setOnPreferenceChangeListener((preference, o) -> {
@@ -91,63 +88,77 @@ public class SettingActivity extends AppCompatActivity {
 //            });
 
 
-
-
         }
 
-        private void managerLogin() {
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_manager_login, null);
-            EditText etUserName = v.findViewById(R.id.et_user_name);
-            EditText etPassword = v.findViewById(R.id.et_password);
-            new AlertDialog.Builder(getActivity()).setTitle("Add Manager Account")
-                    .setView(v)
-                    .setPositiveButton("Ok", (dialogInterface, i) -> {
 
-                        String username = etUserName.getText().toString();
-                        String password = etPassword.getText().toString();
-                        if (username.isEmpty()){
-                            Utilities.toast(getActivity(),"Please enter username");
+        public void setBetaToggleOn() {
+            SwitchPreference beta = (SwitchPreference) findPreference("beta_function");
+            SwitchPreference course = (SwitchPreference) findPreference("beta_course");
+            SwitchPreference achievement = (SwitchPreference) findPreference("beta_achievement");
+            SwitchPreference survey = (SwitchPreference) findPreference("beta_survey");
+            SwitchPreference rating = (SwitchPreference) findPreference("beta_rating");
 
-                        }else if(password.isEmpty()){
-                            Utilities.toast(getActivity(),"Please enter password");
-                        }else{
-                            ManagerSync.getInstance().login(username, password, this);
-                        }
-                    }).setNegativeButton("Cancel", null).show();
+
+            beta.setOnPreferenceChangeListener((preference, o) -> {
+                if (beta.isChecked()) {
+                    course.setChecked(true);
+                    achievement.setChecked(true);
+                    survey.setChecked(true);
+                    rating.setChecked(true);
+                }
+
+                return true;
+            });
+
         }
+//
+//        private void managerLogin() {
+//            View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_manager_login, null);
+//            EditText etUserName = v.findViewById(R.id.et_user_name);
+//            EditText etPassword = v.findViewById(R.id.et_password);
+//            new AlertDialog.Builder(getActivity()).setTitle("Add Manager Account")
+//                    .setView(v)
+//                    .setPositiveButton("Ok", (dialogInterface, i) -> {
+//
+//                        String username = etUserName.getText().toString();
+//                        String password = etPassword.getText().toString();
+//                        if (username.isEmpty()){
+//                            Utilities.toast(getActivity(),"Please enter username");
+//
+//                        }else if(password.isEmpty()){
+//                            Utilities.toast(getActivity(),"Please enter password");
+//                        }else{
+//                            ManagerSync.getInstance().login(username, password, this);
+//                        }
+//                    }).setNegativeButton("Cancel", null).show();
+//        }
 
         @Override
         public void onDestroy() {
             super.onDestroy();
             profileDbHandler.onDestory();
         }
+//
+//        @Override
+//        public void onSyncStarted() {
+//            dialog.show();
+//        }
+//
+//        @Override
+//        public void onSyncComplete() {
+//            getActivity().runOnUiThread(() -> {
+//                Utilities.toast(getActivity(),"Added manager user");
+//                dialog.dismiss();
+//            });
+//        }
 
-        @Override
-        public void onSyncStarted() {
-            dialog.show();
-        }
-
-        @Override
-        public void onSyncComplete() {
-            getActivity().runOnUiThread(() -> {
-                Utilities.toast(getActivity(),"Added manager user");
-                dialog.dismiss();
-            });
-        }
-
-        @Override
-        public void onSyncFailed(String msg) {
-          getActivity().runOnUiThread(() -> {
-              Utilities.toast(getActivity(),msg);
-              dialog.dismiss();
-          });
-        }
-    }
-
-    @Override
-    public void finish() {
-        super.finish();
-        startActivity(new Intent(this, DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
+//        @Override
+//        public void onSyncFailed(String msg) {
+//          getActivity().runOnUiThread(() -> {
+//              Utilities.toast(getActivity(),msg);
+//              dialog.dismiss();
+//          });
+//        }
     }
 
 }

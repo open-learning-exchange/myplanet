@@ -13,6 +13,9 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmFeedback;
@@ -117,7 +120,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
 
     private void saveData(Realm realm, String urgent, String type, String message) {
         RealmFeedback feedback = realm.createObject(RealmFeedback.class, UUID.randomUUID().toString());
-        RealmMessage msg = realm.createObject(RealmMessage.class, UUID.randomUUID().toString());
+//        RealmMessage msg = realm.createObject(RealmMessage.class, UUID.randomUUID().toString());
         feedback.setTitle("Question regarding /");
         feedback.setOpenTime(new Date().getTime() + "");
         feedback.setUrl("/");
@@ -126,11 +129,12 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
         feedback.setStatus("Open");
         feedback.setPriority(urgent);
         feedback.setType(type);
-        msg.setMessage(message);
-        msg.setTime(new Date().getTime() + "");
-        msg.setUser(user);
-        RealmList<RealmMessage> msgArray = new RealmList<>();
-        msgArray.add(msg);
+        JsonObject object = new JsonObject();
+        object.addProperty("message", message);
+        object.addProperty("time", new Date().getTime() +"");
+        object.addProperty("user", user +"");
+        JsonArray msgArray = new JsonArray();
+        msgArray.add(object);
         feedback.setMessages(msgArray);
         dismiss();
     }

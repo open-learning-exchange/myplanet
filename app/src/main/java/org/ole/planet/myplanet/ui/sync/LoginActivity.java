@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputEditText;
@@ -21,6 +22,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,6 +56,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     EditText serverUrl;
     EditText serverPassword;
+    private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn, btnGuestLogin;
@@ -262,6 +266,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     Utilities.toast(LoginActivity.this,msg);
                     progressDialog.dismiss();
                 }
+
             });
         } else {
             alertDialogOkay(getString(R.string.err_msg_login));
@@ -270,9 +275,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     }
 
-    private void managerLogin() {
-
-    }
 
     private void onLogin() {
         UserProfileDbHandler handler = new UserProfileDbHandler(this);
@@ -282,6 +284,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         openDashboard();
     }
 
+
     public void settingDialog() {
         MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
         builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
@@ -290,15 +293,41 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+        protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
         serverUrl.setText(settings.getString("serverURL", ""));
         serverPassword.setText(settings.getString("serverPin", ""));
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
+        protocol_semantics();
         dialog.show();
         sync(dialog);
     }
 
+    private void protocol_semantics() {
+        Uri uri = Uri.parse(serverUrl.getText().toString());
+        String protocol = uri.getScheme();
+        if(TextUtils.equals("https", protocol)){
+            protocol_checkin.check(R.id.radio_https);
+        }else if(TextUtils.equals("http", protocol)){
+            protocol_checkin.check(R.id.radio_http);
+        }else {
+            protocol_checkin.check(R.id.radio_http);
+            serverUrl.setText("http://");
+        }
+        protocol_checkin.setOnCheckedChangeListener((radioGroup, i) -> {
+            switch (i)
+            {
+                case R.id.radio_http:
+                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.https_protocol), getString(R.string.http_protocol)) : getString(R.string.http_protocol));
+                    break;
+
+                case R.id.radio_https:
+                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.http_protocol), getString(R.string.https_protocol)) : getString(R.string.https_protocol));
+                    break;
+            }
+        });
+    }
 
     @Override
     public void onSuccess(String s) {
@@ -402,7 +431,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 case R.id.input_password:
                     validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
                     break;
-
                 default:
                     break;
             }

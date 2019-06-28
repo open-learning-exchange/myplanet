@@ -11,7 +11,7 @@
         android:key="app_language"
         android:title="@string/language" />
     <SwitchPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="bell_theme"
         android:title="BeLL Dashboard Theme" />
     <SwitchPreference
@@ -41,16 +41,16 @@
             android:title="Beta Function for WiFi Switch" />
 
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="beta_achievement"
             android:title="Beta Function for Achievement" />
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="beta_survey"
             android:title="Beta Function for Survey" />
 
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="beta_rating"
             android:title="Beta Function for Rating" />
     </PreferenceCategory>
