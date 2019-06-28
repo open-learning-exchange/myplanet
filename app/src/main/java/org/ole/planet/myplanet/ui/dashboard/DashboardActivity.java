@@ -21,6 +21,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TextView;
@@ -64,7 +67,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private Drawer result = null;
     private Toolbar mTopToolbar, bellToolbar;
     RealmUserModel user;
-
+    private ImageButton leftArrowImageButton;
+    private ImageButton rightArrowImageButton;
+    private Animation blinkAnimation;
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -75,6 +80,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         super.onCreate(savedInstanceState);
         checkUser();
         setContentView(R.layout.activity_dashboard);
+        leftArrowImageButton = findViewById(R.id.left_arrow_action_bar);
+        rightArrowImageButton = findViewById(R.id.right_arrow_action_bar);
         KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout),DashboardActivity.this);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
@@ -112,7 +119,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             bellToolbar.setVisibility(View.VISIBLE);
             navigationView.setVisibility(View.GONE);
         }
-
+        blinkAnimation = new AlphaAnimation(0.0f, 1.0f);
+        blinkAnimation.setDuration(400); //Speed of blink
+        blinkAnimation.setStartOffset(20);
+        blinkAnimation.setRepeatMode(Animation.REVERSE);
+        blinkAnimation.setRepeatCount(Animation.INFINITE);
+        rightArrowImageButton.startAnimation(blinkAnimation);
     }
 
     private void checkUser() {
@@ -133,7 +145,22 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                onClickTabItems(tab.getPosition());
+                int tabPosition = tab.getPosition();
+                onClickTabItems(tabPosition);
+                if(tabPosition > 3){
+                    rightArrowImageButton.setVisibility(View.GONE);
+                    rightArrowImageButton.clearAnimation();
+                }
+                if(tabPosition < 2){
+                    leftArrowImageButton.clearAnimation();
+                    leftArrowImageButton.setVisibility(View.GONE);
+                }
+                if(tabPosition > 1 && tabPosition < 4){
+                    leftArrowImageButton.setVisibility(View.VISIBLE);
+                    leftArrowImageButton.startAnimation(blinkAnimation);
+                    rightArrowImageButton.startAnimation(blinkAnimation);
+                    rightArrowImageButton.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override

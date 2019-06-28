@@ -29,11 +29,30 @@
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
 
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_left_arrow"
+            android:background="@null"
+            android:paddingTop="14dp"
+            android:visibility="gone"
+            android:id="@+id/left_arrow_action_bar"
+            android:alpha="0.5"/>
+
         <include
             layout="@layout/bell_actionbar_items"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1" />
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_right_arrow"
+            android:background="@null"
+            android:paddingTop="14dp"
+            android:id="@+id/right_arrow_action_bar"
+            android:alpha="0.5"/>
 
         <ImageView
             android:id="@+id/iv_setting"
