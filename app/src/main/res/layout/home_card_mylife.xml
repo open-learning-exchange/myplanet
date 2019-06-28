@@ -83,6 +83,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/ll_messages"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
@@ -114,6 +115,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/ll_calendar"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
@@ -144,6 +146,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/ll_contacts"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
@@ -206,6 +209,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/ll_dictionaries"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
@@ -237,6 +241,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/ll_help_wanted"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
