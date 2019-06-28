@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Date;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -139,6 +140,7 @@ public class MainApplication extends Application implements Application.Activity
             log.setParentCode(model.getParentCode());
             log.setCreatedOn(model.getPlanetCode());
         }
+        log.setTime(new Date().getTime() +"");
         log.setPage("");
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);
         log.setError(e);

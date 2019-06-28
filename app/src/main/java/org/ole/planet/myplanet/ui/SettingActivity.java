@@ -2,32 +2,19 @@ package org.ole.planet.myplanet.ui;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
-import android.preference.Preference;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceManager;
 import android.preference.SwitchPreference;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.view.LayoutInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.EditText;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.callback.SyncListener;
-import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
-import org.ole.planet.myplanet.utilities.Utilities;
-
-import static org.ole.planet.myplanet.base.BaseResourceFragment.settings;
 
 public class SettingActivity extends AppCompatActivity {
     @Override
@@ -49,7 +36,6 @@ public class SettingActivity extends AppCompatActivity {
     }
 
 
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -61,7 +47,13 @@ public class SettingActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public static class SettingFragment extends PreferenceFragment  {
+    @Override
+    public void finish() {
+        super.finish();
+        startActivity(new Intent(this, DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
+    }
+
+    public static class SettingFragment extends PreferenceFragment {
         UserProfileDbHandler profileDbHandler;
         RealmUserModel user;
         ProgressDialog dialog;
@@ -96,14 +88,10 @@ public class SettingActivity extends AppCompatActivity {
 //            });
 
 
-
-
-
         }
 
 
-        public void setBetaToggleOn()
-        {
+        public void setBetaToggleOn() {
             SwitchPreference beta = (SwitchPreference) findPreference("beta_function");
             SwitchPreference course = (SwitchPreference) findPreference("beta_course");
             SwitchPreference achievement = (SwitchPreference) findPreference("beta_achievement");
@@ -112,8 +100,7 @@ public class SettingActivity extends AppCompatActivity {
 
 
             beta.setOnPreferenceChangeListener((preference, o) -> {
-                if(beta.isChecked())
-                {
+                if (beta.isChecked()) {
                     course.setChecked(true);
                     achievement.setChecked(true);
                     survey.setChecked(true);
@@ -172,12 +159,6 @@ public class SettingActivity extends AppCompatActivity {
 //              dialog.dismiss();
 //          });
 //        }
-    }
-
-    @Override
-    public void finish() {
-        super.finish();
-        startActivity(new Intent(this, DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
     }
 
 }

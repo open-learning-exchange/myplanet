@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -49,9 +49,10 @@ public class NewsFragment extends BaseNewsFragment {
         etMessage = v.findViewById(R.id.et_message);
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
-        btnShowMain = v.findViewById(R.id.btn_main);
+//        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
+        KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout),getActivity());
         return v;
     }
 
@@ -63,10 +64,10 @@ public class NewsFragment extends BaseNewsFragment {
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("replyTo", "", Case.INSENSITIVE)
                 .findAll();
-        btnShowMain.setOnClickListener(view -> {
-            setData(list);
-            btnShowMain.setVisibility(View.GONE);
-        });
+//        btnShowMain.setOnClickListener(view -> {
+//            setData(list);
+//            btnShowMain.setVisibility(View.GONE);
+//        });
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
@@ -86,11 +87,11 @@ public class NewsFragment extends BaseNewsFragment {
 
     public void setData(List<RealmNews> list) {
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        AdapterNews adapterNews = new AdapterNews(getActivity(), list, user);
+        AdapterNews adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
         rvNews.setAdapter(adapterNews);
     }
 
-
+    
 }

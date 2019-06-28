@@ -32,7 +32,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/MyMaterialTheme"
         tools:replace="android:label">
-
+        <activity android:name=".ui.news.ReplyActivity"
+            android:theme="@style/AppTheme"
+            ></activity>
         <activity
             android:name=".ui.library.AddResourceActivity"
             android:theme="@style/AppTheme" />
@@ -47,9 +49,9 @@
         <service android:name=".service.GPSService" />
 
         <activity android:name=".ui.viewer.AudioPlayerActivity" />
-        <activity android:name=".ui.feedback.FeedbackDetailActivity"
-            android:theme="@style/AppTheme"
-            />
+        <activity
+            android:name=".ui.feedback.FeedbackDetailActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.sync.LoginActivity"
             android:configChanges="orientation|keyboardHidden|screenSize" />

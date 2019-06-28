@@ -98,7 +98,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
 
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
-        btnShowMain = v.findViewById(R.id.btn_main_conversation);
+//        btnShowMain = v.findViewById(R.id.btn_main_conversation);
         btnLeave.setOnClickListener(this);
         llRv = v.findViewById(R.id.ll_rv);
         btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
@@ -151,10 +151,10 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         Utilities.log("news list size " + realmNewsList.size());
         rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
         showRecyclerView(realmNewsList);
-        btnShowMain.setOnClickListener(view -> {
-            showRecyclerView(realmNewsList);
-            btnShowMain.setVisibility(View.GONE);
-        });
+//        btnShowMain.setOnClickListener(view -> {
+//            showRecyclerView(realmNewsList);
+//            btnShowMain.setVisibility(View.GONE);
+//        });
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
@@ -164,7 +164,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     }
 
     private void showRecyclerView(List<RealmNews> realmNewsList) {
-        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user);
+        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
         rvDiscussion.setAdapter(adapterNews);
