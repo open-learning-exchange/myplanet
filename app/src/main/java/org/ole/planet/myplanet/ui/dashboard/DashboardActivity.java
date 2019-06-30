@@ -6,26 +6,22 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,7 +41,6 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
-import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
@@ -70,6 +65,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private ImageButton leftArrowImageButton;
     private ImageButton rightArrowImageButton;
     private Animation blinkAnimation;
+    private TabLayout tabLayout;
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -141,12 +137,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     private void topbarSetting() {
         changeUITheme();
-        TabLayout tabLayout = findViewById(R.id.tab_layout);
+        tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 onClickTabItems(tab.getPosition());
-                checkAndUpdateArrowVisibility(tab.getPosition());
             }
 
             @Override
@@ -167,6 +162,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             icon.setImageDrawable(tabLayout.getTabAt(i).getIcon());
             tabLayout.getTabAt(i).setCustomView(v);
         }
+        tabLayout.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                checkScrollLocation();
+            }
+        });
 
     }
 
@@ -378,20 +379,24 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         return true;
     }
 
-    private void checkAndUpdateArrowVisibility(int tabPosition){
-        if(tabPosition > 3){
-            rightArrowImageButton.setVisibility(View.GONE);
+    public void checkScrollLocation(){
+        if (tabLayout.getChildAt(0).getRight()
+                <= (tabLayout.getWidth() + tabLayout.getScrollX())) {   //When scroll at right end
             rightArrowImageButton.clearAnimation();
-        }
-        if(tabPosition < 2){
-            leftArrowImageButton.clearAnimation();
-            leftArrowImageButton.setVisibility(View.GONE);
-        }
-        if(tabPosition > 1 && tabPosition < 4){
+            rightArrowImageButton.setVisibility(View.INVISIBLE);
             leftArrowImageButton.setVisibility(View.VISIBLE);
             leftArrowImageButton.startAnimation(blinkAnimation);
-            rightArrowImageButton.startAnimation(blinkAnimation);
+        } else if(tabLayout.getChildAt(0).getLeft()     //When scroll at left end
+                == tabLayout.getScrollX()) {
+            leftArrowImageButton.clearAnimation();
+            leftArrowImageButton.setVisibility(View.INVISIBLE);
             rightArrowImageButton.setVisibility(View.VISIBLE);
+            rightArrowImageButton.startAnimation(blinkAnimation);
+        } else {
+            leftArrowImageButton.setVisibility(View.VISIBLE);   //When scroll not at ends
+            leftArrowImageButton.startAnimation(blinkAnimation);
+            rightArrowImageButton.setVisibility(View.VISIBLE);
+            rightArrowImageButton.startAnimation(blinkAnimation);
         }
     }
 
