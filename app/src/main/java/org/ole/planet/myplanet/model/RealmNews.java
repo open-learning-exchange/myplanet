@@ -41,6 +41,9 @@ public class RealmNews extends RealmObject {
     private String avatar;
     private String replyTo;
     private String userName;
+    private String messagePlanetCode;
+    private String messageType;
+    private long updatedDate;
     private long time;
     private String createdOn;
     private String parentCode;
@@ -58,8 +61,11 @@ public class RealmNews extends RealmObject {
         news.setViewableBy(JsonUtils.getString("viewableBy", doc));
         news.setDocType(JsonUtils.getString("docType", doc));
         news.setAvatar(JsonUtils.getString("avatar", doc));
+        news.setUpdatedDate(JsonUtils.getLong("updatedDate", doc));
         news.setViewableId(JsonUtils.getString("viewableId", doc));
         news.setCreatedOn(JsonUtils.getString("createdOn", doc));
+        news.setMessageType(JsonUtils.getString("messageType", doc));
+        news.setMessagePlanetCode(JsonUtils.getString("messagePlanetCode", doc));
         news.setReplyTo(JsonUtils.getString("replyTo", doc));
         Utilities.log("reply to " + JsonUtils.getString("replyTo", doc));
         news.setParentCode(JsonUtils.getString("parentCode", doc));
@@ -67,6 +73,30 @@ public class RealmNews extends RealmObject {
         news.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", doc)));
         news.setUserId(JsonUtils.getString("_id", user));
         news.setUserName(JsonUtils.getString("name", user));
+    }
+
+    public String getMessagePlanetCode() {
+        return messagePlanetCode;
+    }
+
+    public void setMessagePlanetCode(String messagePlanetCode) {
+        this.messagePlanetCode = messagePlanetCode;
+    }
+
+    public String getMessageType() {
+        return messageType;
+    }
+
+    public void setMessageType(String messageType) {
+        this.messageType = messageType;
+    }
+
+    public long getUpdatedDate() {
+        return updatedDate;
+    }
+
+    public void setUpdatedDate(long updatedDate) {
+        this.updatedDate = updatedDate;
     }
 
     public String getUserName() {
@@ -130,6 +160,8 @@ public class RealmNews extends RealmObject {
         object.addProperty("viewableId", news.getViewableId());
         object.addProperty("viewableBy", news.getViewableBy());
         object.addProperty("avatar", news.getAvatar());
+        object.addProperty("messageType", news.getMessageType());
+        object.addProperty("messagePlanetCode", news.getMessagePlanetCode());
         object.addProperty("createdOn", news.getCreatedOn());
         object.addProperty("replyTo", news.getReplyTo());
         object.addProperty("parentCode", news.getParentCode());
@@ -159,6 +191,11 @@ public class RealmNews extends RealmObject {
         news.setViewableBy(map.get("viewableBy"));
         news.setUserName(user.getName());
         news.setParentCode(user.getParentCode());
+        news.setMessagePlanetCode(map.get("messagePlanetCode"));
+        news.setMessageType(map.get("messageType"));
+        try{
+            news.setUpdatedDate(Long.parseLong(map.get("updatedDate")));
+        }catch (Exception e){}
         news.setUserId(user.getId());
         news.setReplyTo(map.containsKey("replyTo") ? map.get("replyTo") : "");
         news.setUser(new Gson().toJson(user.serialize()));

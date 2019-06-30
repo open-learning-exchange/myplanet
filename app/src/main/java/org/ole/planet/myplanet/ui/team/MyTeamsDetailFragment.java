@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.CourseDetailFragment;
@@ -40,8 +41,10 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -132,6 +135,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
                     map.put("viewableBy", "teams");
                     map.put("viewableId", teamId);
                     map.put("message", msg);
+                    map.put("messageType", team.getTeamType());
+                    map.put("messagePlanetCode", team.getTeamPlanetCode());
                     RealmNews.createNews(map, mRealm, user);
                     rvDiscussion.getAdapter().notifyDataSetChanged();
                 }).setNegativeButton("Cancel", null).show();
@@ -146,6 +151,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
 
     private void setTeamList() {
         RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", team.getUserId().toArray(new String[0])).findAll();
+        createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getTeamId()).findAll();
         Utilities.log("news list size " + realmNewsList.size());
@@ -161,6 +167,21 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
         tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
         setTabListener(users, courses, reqUsers);
+    }
+
+    private void createTeamLog() {
+        if (!mRealm.isInTransaction()) {
+            mRealm.beginTransaction();
+        }
+        RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
+        log.setTeamId(teamId);
+        log.setUser(user.getName());
+        log.setCreatedOn(user.getPlanetCode());
+        log.setType("teamVisit");
+        log.setTeamType(team.getTeamType());
+        log.setParentCode(user.getParentCode());
+        log.setTime(new Date().getTime());
+        mRealm.commitTransaction();
     }
 
     private void showRecyclerView(List<RealmNews> realmNewsList) {
@@ -255,7 +276,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
                 array.put(user.getId());
             }
             team.setRequests(array.toString());
-        } catch (JSONException e) {}
+        } catch (JSONException e) {
+        }
     }
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
@@ -266,7 +288,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
                 ids[i] = array.get(i).toString();
             }
             return mRealm.where(RealmUserModel.class).in("id", ids).findAll();
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
         return new ArrayList<>();
     }
 
