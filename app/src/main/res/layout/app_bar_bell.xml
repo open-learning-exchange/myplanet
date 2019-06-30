@@ -35,7 +35,7 @@
             android:src="@drawable/ic_left_arrow"
             android:background="@null"
             android:paddingTop="14dp"
-            android:visibility="gone"
+            android:visibility="invisible"
             android:id="@+id/left_arrow_action_bar"
             android:alpha="0.5"/>
 
