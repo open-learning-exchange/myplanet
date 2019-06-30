@@ -138,21 +138,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private void topbarSetting() {
         changeUITheme();
         tabLayout = findViewById(R.id.tab_layout);
-        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
-            @Override
-            public void onTabSelected(TabLayout.Tab tab) {
-                onClickTabItems(tab.getPosition());
-            }
-
-            @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
-            }
-
-            @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-                onClickTabItems(tab.getPosition());
-            }
-        });
+        setUpTopBarListeners();
         for (int i = 0; i < tabLayout.getTabCount(); i++) {
             View v = LayoutInflater.from(this).inflate(R.layout.custom_tab, null);
             TextView title = v.findViewById(R.id.title);
@@ -162,13 +148,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             icon.setImageDrawable(tabLayout.getTabAt(i).getIcon());
             tabLayout.getTabAt(i).setCustomView(v);
         }
-        tabLayout.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
-            @Override
-            public void onScrollChanged() {
-                checkScrollLocation();
-            }
-        });
-
     }
 
     private void changeUITheme() {
@@ -400,4 +379,27 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         }
     }
 
+    public void setUpTopBarListeners(){
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                onClickTabItems(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                onClickTabItems(tab.getPosition());
+            }
+        });
+        tabLayout.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
+            @Override
+            public void onScrollChanged() {
+                checkScrollLocation();
+            }
+        });
+    }
 }
