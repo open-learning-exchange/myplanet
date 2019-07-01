@@ -106,12 +106,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) ?
                 new BellDashboardFragment() : new DashboardFragment());
 
-        if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true))
-        {
+        if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) {
             bellToolbar.setVisibility(View.VISIBLE);
             navigationView.setVisibility(View.GONE);
         }
 
+        findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
     }
 
     private void checkUser() {
