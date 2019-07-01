@@ -96,8 +96,10 @@ public abstract class BaseResourceFragment extends Fragment {
                     convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
                     AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
                     alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
-                    createListView(db_myLibrary);
-                    alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null).show();
+                    alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
+                    AlertDialog alertDialog = alertDialogBuilder.create();
+                    createListView(db_myLibrary, alertDialog);
+                    alertDialog.show();
                 }
             }
 
@@ -158,7 +160,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public void onDownloadComplete() {
     }
 
-    public void createListView(List<RealmMyLibrary> db_myLibrary) {
+    public void createListView(List<RealmMyLibrary> db_myLibrary, AlertDialog alertDialog) {
         lv = convertView.findViewById(R.id.alertDialog_listView);
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < db_myLibrary.size(); i++) {
@@ -166,6 +168,10 @@ public abstract class BaseResourceFragment extends Fragment {
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        lv.setCheckChangeListener(() -> {
+            ( alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+            ( alertDialog).getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(lv.getSelectedItemsList().size() > 0);
+        });
         lv.setAdapter(adapter);
     }
 

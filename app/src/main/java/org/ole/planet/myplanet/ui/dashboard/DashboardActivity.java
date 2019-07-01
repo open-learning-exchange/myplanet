@@ -102,7 +102,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-
         topbarSetting();
         openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) ?
                 new BellDashboardFragment() : new DashboardFragment());
