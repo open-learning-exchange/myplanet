@@ -100,6 +100,8 @@ public abstract class BaseResourceFragment extends Fragment {
                     AlertDialog alertDialog = alertDialogBuilder.create();
                     createListView(db_myLibrary, alertDialog);
                     alertDialog.show();
+                    (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                    (alertDialog).getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(lv.getSelectedItemsList().size() > 0);
                 }
             }
 
@@ -169,8 +171,8 @@ public abstract class BaseResourceFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setCheckChangeListener(() -> {
-            ( alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
-            ( alertDialog).getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(lv.getSelectedItemsList().size() > 0);
+            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+            (alertDialog).getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(lv.getSelectedItemsList().size() > 0);
         });
         lv.setAdapter(adapter);
     }
@@ -204,9 +206,9 @@ public abstract class BaseResourceFragment extends Fragment {
     private List<RealmMyLibrary> getLibraries(RealmResults<RealmMyLibrary> l) {
         List<RealmMyLibrary> libraries = new ArrayList<>();
         for (RealmMyLibrary lib : l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib);
-                }
+            if (lib.needToUpdate()) {
+                libraries.add(lib);
+            }
         }
         return libraries;
     }
@@ -251,7 +253,7 @@ public abstract class BaseResourceFragment extends Fragment {
 
     }
 
-  public  void showTagText(List<RealmTag> list, TextView tvSelected) {
+    public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder("Selected : ");
         for (RealmTag tags :
                 list) {

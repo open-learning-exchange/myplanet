@@ -54,5 +54,7 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
         } else {
             selectedItemsList.add((Integer) i);
         }
+        if (listener!=null)
+            listener.onCheckChange();
     }
 }
