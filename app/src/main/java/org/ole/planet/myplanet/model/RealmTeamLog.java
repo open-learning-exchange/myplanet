@@ -44,9 +44,6 @@ public class RealmTeamLog extends RealmObject {
         return teamId;
     }
 
-    public boolean isUploaded() {
-        return uploaded;
-    }
 
     public void setUploaded(boolean uploaded) {
         this.uploaded = uploaded;

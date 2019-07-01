@@ -59,8 +59,6 @@ import okhttp3.internal.Util;
 public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnClickListener {
 
     TextView tvTitle, tvDescription;
-
-    UserProfileDbHandler profileDbHandler;
     RealmUserModel user;
     String teamId;
     RealmMyTeam team;
@@ -101,7 +99,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
 
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
-//        btnShowMain = v.findViewById(R.id.btn_main_conversation);
         btnLeave.setOnClickListener(this);
         llRv = v.findViewById(R.id.ll_rv);
         btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
@@ -145,7 +142,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        setUpTeamsData();
+        tvTitle.setText(team.getName());
+        tvDescription.setText(team.getDescription());
         setTeamList();
     }
 
@@ -154,13 +152,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getTeamId()).findAll();
-        Utilities.log("news list size " + realmNewsList.size());
         rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
         showRecyclerView(realmNewsList);
-//        btnShowMain.setOnClickListener(view -> {
-//            showRecyclerView(realmNewsList);
-//            btnShowMain.setVisibility(View.GONE);
-//        });
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
@@ -207,12 +200,10 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
             }
 
             @Override
-            public void onTabUnselected(TabLayout.Tab tab) {
-            }
+            public void onTabUnselected(TabLayout.Tab tab) { }
 
             @Override
-            public void onTabReselected(TabLayout.Tab tab) {
-            }
+            public void onTabReselected(TabLayout.Tab tab) { }
         });
     }
 
@@ -239,10 +230,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     }
 
 
-    private void setUpTeamsData() {
-        tvTitle.setText(team.getName());
-        tvDescription.setText(team.getDescription());
-    }
 
     @Override
     public void onClick(View view) {
@@ -263,11 +250,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         });
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        profileDbHandler.onDestory();
-    }
+
 
     private void requestToJoin() {
         try {
@@ -276,8 +259,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
                 array.put(user.getId());
             }
             team.setRequests(array.toString());
-        } catch (JSONException e) {
-        }
+        } catch (JSONException e) { }
     }
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
@@ -297,13 +279,4 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     public void setData(List<RealmNews> list) {
         showRecyclerView(list);
     }
-
-//    @Override
-//    public void showReply(RealmNews news) {
-//        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-//                .equalTo("replyTo", news.getId(), Case.INSENSITIVE)
-//                .findAll();
-//        showRecyclerView(list);
-//        btnShowMain.setVisibility(View.VISIBLE);
-//    }
 }

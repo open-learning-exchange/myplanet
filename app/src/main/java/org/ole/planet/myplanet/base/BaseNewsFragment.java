@@ -8,6 +8,7 @@ import android.widget.Button;
 
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.news.ReplyActivity;
 
@@ -20,8 +21,8 @@ import io.realm.Sort;
 public abstract class BaseNewsFragment extends Fragment implements AdapterNews.OnNewsItemClickListener {
 
     public Realm mRealm;
-//    public Button btnShowMain;
     public OnHomeItemClickListener homeItemClickListener;
+    public UserProfileDbHandler profileDbHandler;
 
     @Override
     public void onAttach(Context context) {
@@ -30,14 +31,15 @@ public abstract class BaseNewsFragment extends Fragment implements AdapterNews.O
             homeItemClickListener = (OnHomeItemClickListener) context;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (profileDbHandler != null)
+            profileDbHandler.onDestory();
+    }
 
     @Override
     public void showReply(RealmNews news) {
-//        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-//                .equalTo("replyTo", news.getId(), Case.INSENSITIVE)
-//                .findAll();
-//        setData(list);
-//        btnShowMain.setVisibility(View.VISIBLE);
         startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.getId()));
     }
 
