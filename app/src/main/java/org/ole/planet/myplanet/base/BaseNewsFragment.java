@@ -45,9 +45,6 @@ public abstract class BaseNewsFragment extends Fragment implements AdapterNews.O
     public abstract void setData(List<RealmNews> list);
 
     public void showNoData(View v, int count) {
-        if (v == null)
-            return;
-        v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-        ((TextView) v).setText("No news available.");
+        BaseRecyclerFragment.showNoData(v,count);
     }
 }
