@@ -44,6 +44,10 @@
             android:theme="@style/PrimaryFlatButton"
             android:visibility="gone" />
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rv_news"
@@ -51,12 +55,12 @@
             android:layout_height="match_parent"
             android:padding="@dimen/padding_normal" />
 
+        <TextView
+            android:id="@+id/tv_message"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_height="wrap_content"/>
+        </FrameLayout>
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tv_message"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
 
 </FrameLayout>
