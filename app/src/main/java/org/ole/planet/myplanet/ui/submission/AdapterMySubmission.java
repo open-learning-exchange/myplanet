@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -25,12 +26,15 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.HashMap;
 import java.util.List;
 
+import io.realm.Realm;
+
 public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnHomeItemClickListener listener;
     private Context context;
     private List<RealmSubmission> list;
     private HashMap<String, RealmStepExam> examHashMap;
     private String type = "";
+    private Realm mRealm;
 
     public AdapterMySubmission(Context context, List<RealmSubmission> list, HashMap<String, RealmStepExam> exams) {
         this.context = context;
@@ -39,6 +43,10 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
         if (context instanceof OnHomeItemClickListener) {
             this.listener = (OnHomeItemClickListener) context;
         }
+    }
+
+    public void setmRealm(Realm mRealm) {
+        this.mRealm = mRealm;
     }
 
     @NonNull
@@ -53,14 +61,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
         if (holder instanceof ViewHolderMySurvey) {
             ((ViewHolderMySurvey) holder).status.setText(list.get(position).getStatus());
             ((ViewHolderMySurvey) holder).date.setText(TimeUtils.getFormatedDate(list.get(position).getStartTime()));
-            ((ViewHolderMySurvey) holder).submitted_by.setVisibility(View.VISIBLE);
-            try {
-                JSONObject ob = new JSONObject(list.get(position).getUser());
-                ((ViewHolderMySurvey) holder).submitted_by.setText(ob.optString("name"));
-            } catch (Exception e) {
-                ((ViewHolderMySurvey) holder).submitted_by.setText("Unknown");
-                e.printStackTrace();
-            }
+            showSubmittedBy(((ViewHolderMySurvey) holder).submitted_by, position);
             if (examHashMap.containsKey(list.get(position).getParentId()))
                 ((ViewHolderMySurvey) holder).title.setText(examHashMap.get(list.get(position).getParentId()).getName());
             holder.itemView.setOnClickListener(view -> {
@@ -69,6 +70,18 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
                 else
                     openSubmissionDetail(listener, list.get(position).getId());
             });
+        }
+    }
+
+    private void showSubmittedBy(TextView submitted_by, int position) {
+        submitted_by.setVisibility(View.VISIBLE);
+        try {
+            JSONObject ob = new JSONObject(list.get(position).getUser());
+            submitted_by.setText(ob.optString("name"));
+        } catch (Exception e) {
+                RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
+                if (user != null)
+                    submitted_by.setText(user.getName());
         }
     }
 

@@ -79,8 +79,8 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessage());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.get_id())).setNegativeButton(R.string.cancel, null).show());
-            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.get_id(), true));
+                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
+            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
             showReplyButton(holder, news, position);
         }
     }
@@ -131,7 +131,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         EditText et = v.findViewById(R.id.et_input);
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         if (isEdit)
-            et.setText(news.getMessage());
+            et.setText(news.getMessage() +"");
         new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {

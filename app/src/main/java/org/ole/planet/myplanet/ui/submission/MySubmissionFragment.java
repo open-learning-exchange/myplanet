@@ -159,6 +159,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         }
         submissions = q.findAll();
         AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
+        adapter.setmRealm(mRealm);
         adapter.setType(type);
         rvSurvey.setAdapter(adapter);
     }

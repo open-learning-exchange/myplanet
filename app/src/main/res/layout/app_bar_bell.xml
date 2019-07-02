@@ -55,6 +55,15 @@
             android:alpha="0.5"/>
 
         <ImageView
+            android:id="@+id/iv_sync"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="match_parent"
+            android:padding="@dimen/padding_small"
+            android:layout_gravity="center"
+            android:tint="@color/md_white_1000"
+            app:srcCompat="@drawable/sync_icon" />
+
+        <ImageView
             android:id="@+id/iv_setting"
             android:layout_width="@dimen/_40dp"
             android:layout_height="match_parent"

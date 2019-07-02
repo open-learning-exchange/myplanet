@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -63,7 +64,8 @@ public class RealmSubmission extends RealmObject {
         JsonObject object = new JsonObject();
         RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", sub.userId).findFirst();
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", sub.parentId).findFirst();
-        object.addProperty("_id", sub.get_id());
+        if (!TextUtils.isEmpty(sub.get_id()))
+            object.addProperty("_id", sub.get_id());
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
@@ -79,6 +81,7 @@ public class RealmSubmission extends RealmObject {
             JsonParser parser = new JsonParser();
             object.add("user", parser.parse(sub.getUser()));
         }
+        Utilities.log("Serialize sub");
         return object;
 
     }
@@ -106,6 +109,7 @@ public class RealmSubmission extends RealmObject {
     public static RealmSubmission createSubmission(RealmSubmission sub, List<RealmExamQuestion> questions, Realm mRealm) {
         if (sub == null || questions.size() == sub.getAnswers().size())
             sub = mRealm.createObject(RealmSubmission.class, UUID.randomUUID().toString());
+        sub.setLastUpdateTime(new Date().getTime());
         return sub;
     }
 
