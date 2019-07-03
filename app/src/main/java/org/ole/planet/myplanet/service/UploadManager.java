@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -187,7 +188,22 @@ public class UploadManager {
                 }
 
             }
+            uploadTeamActivities(realm, apiInterface);
         }, () -> listener.onSuccess("Sync with server completed successfully"));
+    }
+
+    private void uploadTeamActivities(Realm realm, ApiInterface apiInterface) {
+        final RealmResults<RealmTeamLog> logs = realm.where(RealmTeamLog.class)
+                .equalTo("uploaded", false).findAll();
+        for (RealmTeamLog log : logs) {
+            try {
+                JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/team_activities", RealmTeamLog.serializeTeamActivities(log)).execute().body();
+                if (object != null)
+                    log.setUploaded(true);
+            } catch (IOException e) {
+            }
+
+        }
     }
 
     public void uploadRating(final SuccessListener listener) {

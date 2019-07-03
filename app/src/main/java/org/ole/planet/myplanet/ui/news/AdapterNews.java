@@ -148,9 +148,11 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             mRealm.beginTransaction();
         HashMap<String, String> map = new HashMap<>();
         map.put("message", s);
-        map.put("viewableBy", "community");
-        map.put("viewableId", "");
+        map.put("viewableBy", news.getViewableBy());
+        map.put("viewableId", news.getViewableId());
         map.put("replyTo", news.getId());
+        map.put("messageType", news.getMessageType());
+        map.put("messagePlanetCode", news.getMessagePlanetCode());
         RealmNews.createNews(map, mRealm, currentUser);
         notifyDataSetChanged();
     }
