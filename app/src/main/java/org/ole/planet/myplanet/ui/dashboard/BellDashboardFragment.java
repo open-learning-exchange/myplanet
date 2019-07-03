@@ -88,6 +88,17 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         initView(view);
         view.findViewById(R.id.ll_achievement).setOnClickListener(v->homeItemClickListener.openCallFragment(new AchievementFragment()));
         view.findViewById(R.id.ll_news).setOnClickListener(v->homeItemClickListener.openCallFragment(new NewsFragment()));
+        View.OnClickListener showToast = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(getContext(),"Feature Not Available",Toast.LENGTH_LONG).show();
+            }
+        };
+        view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_dictionaries).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
         view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v ->{
             openHelperFragment(new LibraryFragment());
 
@@ -104,17 +115,7 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         b.putBoolean("isMyCourseLib", true);
         temp.setArguments(b);
         homeItemClickListener.openCallFragment(temp);
-        View.OnClickListener showToast = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast.makeText(getContext(),"Feature Not Available",Toast.LENGTH_LONG).show();
-            }
-        };
-        view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_dictionaries).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
+
     }
 
 }
