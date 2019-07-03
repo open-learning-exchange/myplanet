@@ -121,12 +121,16 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         } else if (id == R.id.action_setting) {
             startActivity(new Intent(this, SettingActivity.class));
         } else if (id == R.id.action_sync) {
-            settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-            startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
-            doubleBackToExitPressedOnce = true;
-            finish();
+          syncNow();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    protected  void syncNow(){
+        settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
+        startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        doubleBackToExitPressedOnce = true;
+        finish();
     }
 
     @SuppressLint("RestrictedApi")

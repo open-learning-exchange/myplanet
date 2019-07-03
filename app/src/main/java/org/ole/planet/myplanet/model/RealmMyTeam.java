@@ -35,6 +35,8 @@ public class RealmMyTeam extends RealmObject {
     private String requests;
     private String limit;
     private String status;
+    private String teamType;
+    private String teamPlanetCode;
 
     public static void insertMyTeams(String userId, String teamId, JsonObject doc, Realm mRealm) {
         Utilities.log("Insert my team");
@@ -48,6 +50,8 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setDescription(JsonUtils.getString("description", doc));
         myTeams.setLimit(JsonUtils.getString("limit", doc));
         myTeams.setStatus(JsonUtils.getString("status", doc));
+        myTeams.setStatus(JsonUtils.getString("teamPlanetCode", doc));
+        myTeams.setStatus(JsonUtils.getString("teamType", doc));
         myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
         myTeams.courses = new RealmList<>();
@@ -56,6 +60,22 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public String getTeamType() {
+        return teamType;
+    }
+
+    public void setTeamType(String teamType) {
+        this.teamType = teamType;
+    }
+
+    public String getTeamPlanetCode() {
+        return teamPlanetCode;
+    }
+
+    public void setTeamPlanetCode(String teamPlanetCode) {
+        this.teamPlanetCode = teamPlanetCode;
     }
 
     public static List<RealmObject> getMyTeamsByUserId(Realm mRealm, SharedPreferences settings) {

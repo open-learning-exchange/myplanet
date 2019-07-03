@@ -17,6 +17,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
@@ -103,6 +104,17 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         b.putBoolean("isMyCourseLib", true);
         temp.setArguments(b);
         homeItemClickListener.openCallFragment(temp);
+        View.OnClickListener showToast = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Toast.makeText(getContext(),"Feature Not Available",Toast.LENGTH_LONG).show();
+            }
+        };
+        view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_dictionaries).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
     }
 
 }

@@ -102,17 +102,16 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
-
         topbarSetting();
         openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) ?
                 new BellDashboardFragment() : new DashboardFragment());
 
-        if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true))
-        {
+        if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) {
             bellToolbar.setVisibility(View.VISIBLE);
             navigationView.setVisibility(View.GONE);
         }
 
+        findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
     }
 
     private void checkUser() {
