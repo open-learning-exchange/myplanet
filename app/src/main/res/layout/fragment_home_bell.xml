@@ -52,4 +52,13 @@
 
         </LinearLayout>
 
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/add_resource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:layout_margin="@dimen/padding_large"
+        android:src="@drawable/ic_add" />
+
 </FrameLayout>
