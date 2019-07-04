@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
+import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
@@ -77,6 +78,9 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         tvDate.setText(TimeUtils.formatDate(new Date().getTime()));
         tvCommunityName.setText(model.getPlanetCode());
         ((DashboardActivity) getActivity()).getSupportActionBar().hide();
+        getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
+            new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
+        });
     }
 
     private void declareElements(View view) {
