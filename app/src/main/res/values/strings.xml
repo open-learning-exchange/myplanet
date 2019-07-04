@@ -127,7 +127,7 @@
     <string name="messeges">Messeges</string>
     <string name="contacts">Contacts</string>
     <string name="news">News</string>
-    <string name="dictionaries">Dictionaries</string>
+    <string name="references">References</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
     <string name="btn_guest_login">Login As Guest</string>
@@ -262,5 +262,6 @@
         <item>Leader</item>
         <item>Learner</item>
     </string-array>
+    <string name="dictionaries">Dictionaries</string>
 
 </resources>
