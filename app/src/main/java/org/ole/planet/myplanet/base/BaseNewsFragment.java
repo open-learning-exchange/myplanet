@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmNews;
@@ -44,4 +45,8 @@ public abstract class BaseNewsFragment extends Fragment implements AdapterNews.O
     }
 
     public abstract void setData(List<RealmNews> list);
+
+    public void showNoData(View v, int count) {
+        BaseRecyclerFragment.showNoData(v,count);
+    }
 }
