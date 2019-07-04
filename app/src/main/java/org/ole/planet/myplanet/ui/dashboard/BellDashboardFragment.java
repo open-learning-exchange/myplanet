@@ -11,6 +11,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -32,7 +33,10 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.library.LibraryFragment;
+import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
@@ -74,6 +78,9 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         tvDate.setText(TimeUtils.formatDate(new Date().getTime()));
         tvCommunityName.setText(model.getPlanetCode());
         ((DashboardActivity) getActivity()).getSupportActionBar().hide();
+        getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
+            new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
+        });
     }
 
     private void declareElements(View view) {
@@ -96,6 +103,23 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
         view.findViewById(R.id.ll_dictionaries).setOnClickListener(showToast);
         view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
+        view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v ->{
+            openHelperFragment(new LibraryFragment());
+
+        });
+        view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v->{
+            openHelperFragment(new CourseFragment());
+        });
+    }
+
+    private void openHelperFragment(Fragment f)
+    {
+        Fragment temp = f;
+        Bundle b = new Bundle();
+        b.putBoolean("isMyCourseLib", true);
+        temp.setArguments(b);
+        homeItemClickListener.openCallFragment(temp);
+
     }
 
 }
