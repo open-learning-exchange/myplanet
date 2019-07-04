@@ -209,7 +209,7 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/ll_dictionaries"
+                android:id="@+id/ll_references"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"

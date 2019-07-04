@@ -101,7 +101,7 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
         view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
         view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_dictionaries).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_references).setOnClickListener(showToast);
         view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
         view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v ->{
             openHelperFragment(new LibraryFragment());
