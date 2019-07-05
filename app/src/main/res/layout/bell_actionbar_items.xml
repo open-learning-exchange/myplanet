@@ -6,8 +6,7 @@
     app:tabTextColor="@color/md_white_1000"
     android:id="@+id/tab_layout"
     app:tabSelectedTextColor="@color/md_black_1000"
-    android:orientation="vertical"
-    app:tabMinWidth="120dp">
+    android:orientation="vertical">
 
     <android.support.design.widget.TabItem
         android:layout_width="wrap_content"
