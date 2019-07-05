@@ -6,15 +6,11 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,9 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.TableLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -42,7 +36,6 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
-import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
@@ -75,7 +68,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         super.onCreate(savedInstanceState);
         checkUser();
         setContentView(R.layout.activity_dashboard);
-        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout),DashboardActivity.this);
+        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout), DashboardActivity.this);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
@@ -85,9 +78,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
+        bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
 
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if ( user.getRolesList().isEmpty() && !user.getUserAdmin()) {
+        if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
@@ -106,22 +100,40 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) ?
                 new BellDashboardFragment() : new DashboardFragment());
 
-        if(PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) {
+        if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) {
             bellToolbar.setVisibility(View.VISIBLE);
             navigationView.setVisibility(View.GONE);
         }
 
         findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
+        bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.action_sync:
+                        syncNow();
+                        return true;
+                    case R.id.action_settings:
+                        startActivity(new Intent(DashboardActivity.this, SettingActivity.class));
+                        return true;
+                    case R.id.action_logout:
+                        logout();
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
     }
 
     private void checkUser() {
         user = new UserProfileDbHandler(this).getUserModel();
-        if(user  == null){
+        if (user == null) {
             Utilities.toast(this, "Session expired.");
             logout();
             return;
         }
-        if (user.getId().startsWith("guest")){
+        if (user.getId().startsWith("guest")) {
             getTheme().applyStyle(R.style.GuestStyle, true);
         }
     }
@@ -364,5 +376,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         return true;
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
 }
