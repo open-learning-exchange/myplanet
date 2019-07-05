@@ -120,19 +120,23 @@ public class FileUtils {
     }
 
     public static void copyAssets(Context context) {
+        String[] tiles = {"dhulikhel.mbtiles", "somalia.mbtiles"};
         AssetManager assetManager = context.getAssets();
         try {
+            for (String s : tiles) {
                 InputStream in;
                 OutputStream out;
-                in = assetManager.open("dhulikhel.mbtiles");
-                File outFile = new File(Environment.getExternalStorageDirectory() + "/osmdroid", "dhulikhel.mbtiles");
+                in = assetManager.open(s);
+                Utilities.log("MAP " +s);
+                File outFile = new File(Environment.getExternalStorageDirectory() + "/osmdroid", s);
                 out = new FileOutputStream(outFile);
                 copyFile(in, out);
                 out.close();
                 in.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            Log.e("tag", "Failed to copy asset file: " + e);
+            Log.e("ggggggggg", "Failed to copy asset file: " + e);
         }
     }
 
