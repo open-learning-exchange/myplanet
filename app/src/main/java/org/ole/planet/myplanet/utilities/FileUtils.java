@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -8,11 +10,16 @@ import android.os.StatFs;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 import org.ole.planet.myplanet.BuildConfig;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class FileUtils {
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
@@ -64,8 +71,8 @@ public class FileUtils {
 
     public static String getIdFromUrl(String url) {
         try {
-            String[] sp = url.substring(url.indexOf("resources/") ).split("/");
-            Utilities.log("Id "+ sp[1]);
+            String[] sp = url.substring(url.indexOf("resources/")).split("/");
+            Utilities.log("Id " + sp[1]);
             return sp[1];
         } catch (Exception e) {
         }
@@ -112,8 +119,28 @@ public class FileUtils {
         return type;
     }
 
-    public static void install(AppCompatActivity activity, String file) {
-
+    public static void copyAssets(Context context) {
+        AssetManager assetManager = context.getAssets();
+        try {
+                InputStream in;
+                OutputStream out;
+                in = assetManager.open("dhulikhel.mbtiles");
+                File outFile = new File(Environment.getExternalStorageDirectory() + "/osmdroid", "dhulikhel.mbtiles");
+                out = new FileOutputStream(outFile);
+                copyFile(in, out);
+                out.close();
+                in.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Log.e("tag", "Failed to copy asset file: " + e);
+        }
     }
 
+    private static void copyFile(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+    }
 }
