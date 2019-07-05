@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.map.OfflineMapActivity;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
@@ -85,16 +86,11 @@ public class BellDashboardFragment extends BaseDashboardFragment  {
         initView(view);
         view.findViewById(R.id.ll_achievement).setOnClickListener(v->homeItemClickListener.openCallFragment(new AchievementFragment()));
         view.findViewById(R.id.ll_news).setOnClickListener(v->homeItemClickListener.openCallFragment(new NewsFragment()));
-        View.OnClickListener showToast = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast.makeText(getContext(),"Feature Not Available",Toast.LENGTH_LONG).show();
-            }
-        };
+        View.OnClickListener showToast = view1 -> Toast.makeText(getContext(),"Feature Not Available",Toast.LENGTH_LONG).show();
         view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
         view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
         view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_dictionaries).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_dictionaries).setOnClickListener(view12 -> startActivity(new Intent(getActivity(), OfflineMapActivity.class)));
         view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
     }
 

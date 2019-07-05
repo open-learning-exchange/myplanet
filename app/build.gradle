@@ -103,6 +103,8 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'de.hdodenhof:circleimageview:3.0.0'
+    implementation 'org.osmdroid:osmdroid-android:6.1.0'
+
     implementation project(':ChipCloud-3.0.5')
 }
 realm {
