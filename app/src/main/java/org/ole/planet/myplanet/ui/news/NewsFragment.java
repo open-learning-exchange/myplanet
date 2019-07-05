@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
@@ -36,6 +37,8 @@ public class NewsFragment extends BaseNewsFragment {
     TextInputLayout tlMessage;
     Button btnSubmit;
     RealmUserModel user;
+    TextView tvMessage;
+    AdapterNews adapterNews;
 
     public NewsFragment() {
     }
@@ -49,6 +52,7 @@ public class NewsFragment extends BaseNewsFragment {
         etMessage = v.findViewById(R.id.et_message);
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
+        tvMessage = v.findViewById(R.id.tv_message);
 //        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
@@ -87,11 +91,28 @@ public class NewsFragment extends BaseNewsFragment {
 
     public void setData(List<RealmNews> list) {
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        AdapterNews adapterNews = new AdapterNews(getActivity(), list, user, null);
+        adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
+        adapterNews.registerAdapterDataObserver(observer);
         rvNews.setAdapter(adapterNews);
+        showNoData(tvMessage, adapterNews.getItemCount());
     }
 
-    
+    final private RecyclerView.AdapterDataObserver observer = new RecyclerView.AdapterDataObserver() {
+        @Override
+        public void onChanged() {
+            showNoData(tvMessage, adapterNews.getItemCount());
+        }
+
+        @Override
+        public void onItemRangeInserted(int positionStart, int itemCount) {
+            showNoData(tvMessage, adapterNews.getItemCount());
+        }
+
+        @Override
+        public void onItemRangeRemoved(int positionStart, int itemCount) {
+            showNoData(tvMessage, adapterNews.getItemCount());
+        }
+    };
 }

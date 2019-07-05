@@ -255,7 +255,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
     }
 
-    public void showNoData(View v, int count) {
+    public static void showNoData(View v, int count) {
         if (v == null)
             return;
         v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
