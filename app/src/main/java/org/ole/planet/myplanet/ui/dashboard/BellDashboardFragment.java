@@ -59,6 +59,8 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.ll_achievement).setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
         view.findViewById(R.id.ll_news).setOnClickListener(v -> homeItemClickListener.openCallFragment(new NewsFragment()));
         View.OnClickListener showToast = view1 -> Toast.makeText(getContext(), "Feature Not Available", Toast.LENGTH_LONG).show();
+        view.findViewById(R.id.myTeamsImageButton).setOnClickListener(showToast);
+        view.findViewById(R.id.myLifeImageButton).setOnClickListener(showToast);
         view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
         view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
         view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
