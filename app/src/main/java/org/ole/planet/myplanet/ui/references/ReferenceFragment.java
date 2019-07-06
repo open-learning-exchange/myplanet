@@ -42,12 +42,16 @@ public class ReferenceFragment extends Fragment {
         list.add(new Reference(getString(R.string.dictionaries), R.drawable.ic_dictionary));
         rvReference = v.findViewById(R.id.rv_references);
         rvReference.setLayoutManager(new GridLayoutManager(getActivity(), 3));
+        setRecyclerAdapter(list);
+        return v;
+    }
+
+    private void setRecyclerAdapter(List<Reference> list) {
         rvReference.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View v = LayoutInflater.from(getActivity()).inflate(R.layout.row_reference, parent, false);
-                return new ViewHolderReference(v);
+                return new ViewHolderReference(LayoutInflater.from(getActivity()).inflate(R.layout.row_reference, parent, false));
             }
 
             @Override
@@ -56,10 +60,8 @@ public class ReferenceFragment extends Fragment {
                     ((ViewHolderReference) holder).title.setText(list.get(position).getTitle());
                     ((ViewHolderReference) holder).icon.setImageResource(list.get(position).getIcon());
                     holder.itemView.setOnClickListener(view -> {
-                        if (position == 0)
-                            startActivity(new Intent(getActivity(), OfflineMapActivity.class));
-                        else
-                            Utilities.toast(getActivity(),getActivity().getString(R.string.feature_not));
+                        if (position == 0) startActivity(new Intent(getActivity(), OfflineMapActivity.class));
+                        else Utilities.toast(getActivity(), getActivity().getString(R.string.feature_not));
                     });
                 }
             }
@@ -69,7 +71,6 @@ public class ReferenceFragment extends Fragment {
                 return list.size();
             }
         });
-        return v;
     }
 
 
