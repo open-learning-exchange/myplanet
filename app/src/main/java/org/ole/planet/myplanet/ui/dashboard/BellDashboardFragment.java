@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.ui.map.OfflineMapActivity;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
@@ -60,19 +61,13 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.ll_news).setOnClickListener(v -> homeItemClickListener.openCallFragment(new NewsFragment()));
         View.OnClickListener showToast = view1 -> Toast.makeText(getContext(), "Feature Not Available", Toast.LENGTH_LONG).show();
         view.findViewById(R.id.myTeamsImageButton).setOnClickListener(showToast);
-        view.findViewById(R.id.myLifeImageButton).setOnClickListener(showToast);
         view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
         view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
         view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_references).setOnClickListener(view12 -> startActivity(new Intent(getActivity(), OfflineMapActivity.class)));
+        view.findViewById(R.id.ll_references).setOnClickListener(view12 -> homeItemClickListener.openCallFragment(new ReferenceFragment()));
         view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
-        view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v -> {
-            openHelperFragment(new LibraryFragment());
-
-        });
-        view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> {
-            openHelperFragment(new CourseFragment());
-        });
+        view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v -> openHelperFragment(new LibraryFragment()));
+        view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> openHelperFragment(new CourseFragment()));
     }
 
     private void openHelperFragment(Fragment f) {
