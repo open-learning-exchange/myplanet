@@ -9,11 +9,14 @@ import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
+import org.osmdroid.views.CustomZoomButtonsController;
 import org.osmdroid.views.MapView;
 
 public class OfflineMapActivity extends AppCompatActivity {
     MapView map = null;
-    @Override public void onCreate(Bundle savedInstanceState) {
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this));
@@ -21,23 +24,21 @@ public class OfflineMapActivity extends AppCompatActivity {
 
         map = (MapView) findViewById(R.id.map);
         map.setTileSource(TileSourceFactory.MAPNIK);
-        map.setBuiltInZoomControls(true);
+        map.getZoomController().setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT);
         map.setMultiTouchControls(true);
         IMapController mapController = map.getController();
-        mapController.setZoom(14);
-        GeoPoint startPoint = new GeoPoint(27.624184,85.5235105);
+        mapController.setZoom(15.0);
+        GeoPoint startPoint = new GeoPoint(2.0593708, 45.236624);
         mapController.setCenter(startPoint);
     }
 
 
-
-
-    public void onResume(){
+    public void onResume() {
         super.onResume();
         map.onResume(); //needed for compass, my location overlays, v6.0.0 and up
     }
 
-    public void onPause(){
+    public void onPause() {
         super.onPause();
         map.onPause();  //needed for compass, my location overlays, v6.0.0 and up
     }
