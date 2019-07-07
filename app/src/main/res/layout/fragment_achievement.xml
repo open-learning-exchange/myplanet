@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.userprofile.AchievementFragment">
-
 
     <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -32,20 +32,19 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_normal"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
                     android:textColor="@color/md_white_1000"
-                  />
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
 
                 <Button
                     android:id="@+id/btn_edit"
+                    style="@style/GreyButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
-                    android:text="@string/edit_achievement"
                     android:padding="@dimen/padding_normal"
-                    style="@style/GreyButtons" />
+                    android:text="@string/edit_achievement" />
 
 
             </LinearLayout>
@@ -56,9 +55,35 @@
                 android:layout_gravity="center"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tv_name"
-                    style="@style/Header" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_gravity="center">
+
+                    <ImageView
+                        android:layout_width="@dimen/image_size_home_card"
+                        android:layout_height="@dimen/image_size_home_card"
+                        android:layout_gravity="center"
+                        android:layout_marginLeft="16dp"
+                        android:layout_marginRight="16dp"
+                        android:tint="@color/md_black_1000"
+                        app:srcCompat="@drawable/my_achievement" />
+
+                    <TextView
+                        android:id="@+id/tv_name"
+                        style="@style/Header" />
+
+                    <ImageView
+                        android:layout_width="@dimen/image_size_home_card"
+                        android:layout_height="@dimen/image_size_home_card"
+                        android:layout_gravity="center"
+                        android:layout_marginLeft="16dp"
+                        android:layout_marginRight="16dp"
+                        android:tint="@color/md_black_1000"
+                        app:srcCompat="@drawable/my_achievement" />
+
+                </LinearLayout>
 
                 <TextView
                     style="@style/Header"
@@ -104,8 +129,7 @@
                     android:gravity="center"
                     android:orientation="vertical"
                     android:paddingLeft="@dimen/padding_normal"
-                    android:paddingRight="@dimen/padding_normal"
-                    />
+                    android:paddingRight="@dimen/padding_normal" />
 
                 <TextView
                     style="@style/Header"
