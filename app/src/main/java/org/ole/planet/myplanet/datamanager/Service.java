@@ -78,7 +78,7 @@ public class Service {
         else if (currentVersion < body.getLatestapkcode()) {
             callback.onUpdateAvailable(body, true);
         } else {
-            callback.onError("New version not available", false);
+            callback.onError("Planet up to date", false);
         }
     }
 

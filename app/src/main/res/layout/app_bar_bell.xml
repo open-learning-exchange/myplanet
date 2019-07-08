@@ -6,7 +6,8 @@
     android:layout_height="?android:attr/actionBarSize"
     android:background="?attr/colorPrimary"
     app:elevation="4dp"
-    app:popupTheme="@style/AppTheme">
+    app:popupTheme="@style/AppTheme"
+    android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -42,7 +43,8 @@
             android:padding="@dimen/padding_small"
             android:layout_gravity="center"
             android:tint="@color/md_white_1000"
-            app:srcCompat="@drawable/sync_icon" />
+            app:srcCompat="@drawable/sync_icon"
+            android:visibility="gone"/>
 
         <ImageView
             android:id="@+id/iv_setting"
@@ -51,7 +53,8 @@
             android:padding="@dimen/padding_small"
             android:layout_gravity="center"
             android:tint="@color/md_white_1000"
-            app:srcCompat="@drawable/settings" />
+            app:srcCompat="@drawable/settings"
+            android:visibility="gone"/>
 
     </LinearLayout>
 </android.support.v7.widget.Toolbar>
