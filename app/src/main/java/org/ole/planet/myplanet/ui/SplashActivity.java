@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.FileUtils;
 
 public class SplashActivity extends AppCompatActivity {
     RadioButton rbChild, rbNormal;
@@ -24,6 +25,7 @@ public class SplashActivity extends AppCompatActivity {
         rbChild = findViewById(R.id.child_login);
         rbNormal = findViewById(R.id.normal_login);
         getStarted = findViewById(R.id.get_started);
+        FileUtils.copyAssets(this);
         SharedPreferences settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         if (settings.getBoolean(Constants.KEY_LOGIN, false)) {
             Intent dashboard = new Intent(getApplicationContext(), DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

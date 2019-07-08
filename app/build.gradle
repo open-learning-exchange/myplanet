@@ -7,8 +7,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 422
-        versionName "0.4.22"
+        versionCode 427
+        versionName "0.4.27"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -103,6 +103,8 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'de.hdodenhof:circleimageview:3.0.0'
+    implementation 'org.osmdroid:osmdroid-android:6.1.0'
+
     implementation project(':ChipCloud-3.0.5')
 }
 realm {
