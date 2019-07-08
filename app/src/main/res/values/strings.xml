@@ -263,5 +263,7 @@
         <item>Learner</item>
     </string-array>
     <string name="dictionaries">Dictionaries</string>
+    <string name="bible">Bibles</string>
+    <string name="feature_not">Feature not available</string>
 
 </resources>
