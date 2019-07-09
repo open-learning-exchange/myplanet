@@ -65,6 +65,7 @@
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
                  android:id="@+id/ll_achievement"
+                 android:minWidth="@dimen/user_image_size"
                  android:gravity="center"
                  android:orientation="vertical">
 
@@ -83,7 +84,6 @@
                      android:layout_gravity="center"
                      android:foregroundGravity="center"
                      android:gravity="center"
-                     android:textStyle="bold"
                      android:padding="@dimen/eight_dp"
                      android:text="@string/achievements"
                      android:textColor="@color/md_black_1000" />
@@ -95,6 +95,7 @@
                  android:layout_width="wrap_content"
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
+                 android:minWidth="@dimen/user_image_size"
                  android:background="@color/md_grey_300"
                  android:gravity="center"
                  android:orientation="vertical">
@@ -117,7 +118,7 @@
                      android:padding="@dimen/eight_dp"
                      android:text="@string/messeges"
                      android:textColor="@color/md_black_1000"
-                     android:textStyle="bold" />
+                      />
 
              </LinearLayout>
 
@@ -127,6 +128,7 @@
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
                  android:gravity="center"
+                 android:minWidth="@dimen/user_image_size"
                  android:orientation="vertical">
 
                  <ImageView
@@ -147,7 +149,7 @@
                      android:padding="@dimen/eight_dp"
                      android:text="@string/calendar"
                      android:textColor="@color/md_black_1000"
-                     android:textStyle="bold" />
+                    />
 
              </LinearLayout>
 
@@ -158,6 +160,7 @@
                  android:layout_gravity="center"
                  android:background="@color/md_grey_300"
                  android:gravity="center"
+                 android:minWidth="@dimen/user_image_size"
                  android:orientation="vertical">
 
                  <ImageView
@@ -178,7 +181,7 @@
                      android:padding="@dimen/eight_dp"
                      android:text="@string/contacts"
                      android:textColor="@color/md_black_1000"
-                     android:textStyle="bold" />
+                     />
 
              </LinearLayout>
 
@@ -187,6 +190,7 @@
                  android:layout_width="wrap_content"
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
+                 android:minWidth="@dimen/user_image_size"
                  android:gravity="center"
                  android:orientation="vertical">
 
@@ -208,7 +212,7 @@
                      android:padding="@dimen/eight_dp"
                      android:text="@string/news"
                      android:textColor="@color/md_black_1000"
-                     android:textStyle="bold" />
+                      />
 
              </LinearLayout>
 
@@ -218,6 +222,7 @@
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
                  android:background="@color/md_grey_300"
+                 android:minWidth="@dimen/user_image_size"
                  android:gravity="center"
                  android:orientation="vertical">
 
@@ -239,7 +244,7 @@
                      android:padding="@dimen/eight_dp"
                      android:text="@string/references"
                      android:textColor="@color/md_black_1000"
-                     android:textStyle="bold" />
+                   />
 
              </LinearLayout>
 
@@ -248,6 +253,7 @@
                  android:layout_width="wrap_content"
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
+                 android:minWidth="@dimen/user_image_size"
                  android:gravity="center"
                  android:orientation="vertical">
 
@@ -269,7 +275,7 @@
                      android:padding="@dimen/eight_dp"
                      android:text="@string/help_wanted"
                      android:textColor="@color/md_black_1000"
-                     android:textStyle="bold" />
+                     />
 
              </LinearLayout>
 
