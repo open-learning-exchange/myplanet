@@ -295,9 +295,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
-        serverUrl.setText(settings.getString("serverURL", ""));
-        serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.http_protocol), "") : "");
-        serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.https_protocol), "") : "");
+        serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
         serverPassword.setText(settings.getString("serverPin", ""));
         serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
@@ -445,5 +443,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         super.onDestroy();
         if (mRealm != null && !mRealm.isClosed())
             mRealm.close();
+    }
+
+    public String removeProtocol(String url){
+        url = url.replaceFirst(getString(R.string.https_protocol), "");
+        url = url.replaceFirst(getString(R.string.http_protocol), "");
+        return url;
     }
 }
