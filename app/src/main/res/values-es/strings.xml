@@ -209,4 +209,6 @@
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurvey</string>
     <string name="references">References</string>
+    <string name="bible">Bibles</string>
+    <string name="feature_not">Feature not available</string>
 </resources>

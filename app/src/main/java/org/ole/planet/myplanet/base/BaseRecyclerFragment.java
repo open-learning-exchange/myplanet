@@ -109,6 +109,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 Utilities.toast(getActivity(), "Added to my courses");
                 recyclerView.setAdapter(getAdapter());
             }
+            showNoData(tvMessage,getAdapter().getItemCount());
         }
     }
 

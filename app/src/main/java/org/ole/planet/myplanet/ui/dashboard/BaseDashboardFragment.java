@@ -191,7 +191,8 @@ public class BaseDashboardFragment extends BaseContainerFragment {
 
 
     public void initView(View view) {
-        view.findViewById(R.id.ll_user).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
+        view.findViewById(R.id.imageView).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
+        view.findViewById(R.id.txtFullName).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         myLibraryDiv(view);

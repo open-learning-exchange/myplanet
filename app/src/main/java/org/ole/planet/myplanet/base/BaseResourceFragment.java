@@ -101,7 +101,6 @@ public abstract class BaseResourceFragment extends Fragment {
                     createListView(db_myLibrary, alertDialog);
                     alertDialog.show();
                     (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
-                    (alertDialog).getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(lv.getSelectedItemsList().size() > 0);
                 }
             }
 
@@ -172,7 +171,6 @@ public abstract class BaseResourceFragment extends Fragment {
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setCheckChangeListener(() -> {
             (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
-            (alertDialog).getButton(AlertDialog.BUTTON_NEUTRAL).setEnabled(lv.getSelectedItemsList().size() > 0);
         });
         lv.setAdapter(adapter);
     }
