@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
     android:id="@+id/constraintLayout"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/darkblue_gradient">
 
@@ -10,19 +11,19 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@color/bg_white"
+        android:layout_margin="@dimen/_20dp"
         android:baselineAligned="false"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
-        android:layout_margin="@dimen/_40dp"
         android:orientation="horizontal"
-        android:background="@color/bg_white"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintBottom_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintLeft_toRightOf="parent"
         app:layout_constraintRight_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
@@ -36,18 +37,17 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="2"
+                android:layout_height="wrap_content"
                 android:gravity="top|center"
+                android:layout_gravity="center"
                 android:orientation="vertical"
-                android:textAlignment="center"
-                android:weightSum="5">
+                android:textAlignment="center">
 
                 <ImageView
                     android:id="@+id/logoImageView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="0dp"
-                    android:layout_weight="3"
+                    android:layout_width="100dp"
+                    android:tint="@color/md_white_1000"
+                    android:layout_height="100dp"
                     android:contentDescription="TODO"
                     app:srcCompat="@drawable/ole_logo" />
 
@@ -59,43 +59,42 @@
                     android:text="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
-                    android:textSize="10sp"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
 
 
-
-
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/btn_lang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:entries="@array/language"
+                    android:padding="@dimen/padding_normal"
                     android:text="@string/language"
                     android:textColor="@android:color/white"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:padding="@dimen/padding_normal"
-                    android:layout_height="wrap_content"/>
+                    android:theme="@style/PrimaryFlatButton" />
 
 
                 <android.support.v7.widget.SwitchCompat
-                    android:layout_width="wrap_content"
-                    android:text="@string/child_mode"
-                    android:layout_gravity="center"
                     android:id="@+id/switch_child_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:gravity="center"
                     android:padding="@dimen/padding_normal"
+                    android:text="@string/child_mode"
                     android:textColor="@color/md_white_1000"
-                    android:layout_height="wrap_content" />
+                    />
 
                 <TextView
                     android:id="@+id/lblVersion"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/app_version"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
-                    android:textSize="10sp" />
+                    android:textSize="12sp"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -109,17 +108,17 @@
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="0.1"
-               >
+                android:layout_height="6dp"
+                android:layout_weight="0.6"
+                >
 
                 <pl.droidsonroids.gif.GifImageButton
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginLeft="10dp"
                     android:layout_alignParentLeft="true"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginLeft="10dp"
+                    android:layout_marginTop="5dp"
                     android:background="@null"
                     android:scaleType="fitCenter" />
 
@@ -129,7 +128,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
                     android:background="@null"
-                    android:paddingTop="6dp"
+                    android:paddingTop="10dp"
                     android:paddingRight="10dp"
                     app:srcCompat="@drawable/ic_settings_black_24dp" />
 
