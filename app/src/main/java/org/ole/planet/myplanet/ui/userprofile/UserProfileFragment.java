@@ -72,7 +72,7 @@ public class UserProfileFragment extends Fragment {
         ((TextView) v.findViewById(R.id.txt_dob)).setText(dob);
         Utilities.loadImage(model.getUserImage(), (ImageView) v.findViewById(R.id.image));
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
-        map.put("Community Name", Utilities.checkNA(model.getCommunityName()));
+        map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
         map.put("Maximum opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
