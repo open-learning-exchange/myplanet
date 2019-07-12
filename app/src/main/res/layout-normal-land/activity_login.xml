@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
@@ -40,8 +41,7 @@
                 android:gravity="top|center"
                 android:layout_gravity="center"
                 android:orientation="vertical"
-                android:textAlignment="center"
-              >
+                android:textAlignment="center">
 
                 <ImageView
                     android:id="@+id/logoImageView"
