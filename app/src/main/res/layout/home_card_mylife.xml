@@ -91,12 +91,44 @@
              </LinearLayout>
 
              <LinearLayout
-                 android:id="@+id/ll_messages"
+                 android:id="@+id/ll_myHealth"
                  android:layout_width="wrap_content"
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
                  android:minWidth="@dimen/user_image_size"
                  android:background="@color/md_grey_300"
+                 android:gravity="center"
+                 android:orientation="vertical">
+
+                 <ImageView
+                     android:layout_width="@dimen/icon_size_mid"
+                     android:layout_height="@dimen/icon_size_mid"
+                     android:layout_gravity="center"
+                     android:layout_marginLeft="16dp"
+                     android:layout_marginRight="16dp"
+                     android:tint="@color/md_black_1000"
+                     app:srcCompat="@drawable/ic_myhealth" />
+
+                 <TextView
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center"
+                     android:foregroundGravity="center"
+                     android:gravity="center"
+                     android:padding="@dimen/eight_dp"
+                     android:text="@string/myhealth"
+                     android:textColor="@color/md_black_1000"
+                      />
+
+             </LinearLayout>
+
+             <LinearLayout
+                 android:id="@+id/ll_messages"
+                 android:layout_width="wrap_content"
+                 android:layout_height="match_parent"
+                 android:layout_gravity="center"
+                 android:minWidth="@dimen/user_image_size"
+                 android:background="@color/md_white_1000"
                  android:gravity="center"
                  android:orientation="vertical">
 
@@ -123,6 +155,101 @@
              </LinearLayout>
 
              <LinearLayout
+                 android:id="@+id/ll_news"
+                 android:layout_width="wrap_content"
+                 android:layout_height="match_parent"
+                 android:layout_gravity="center"
+                 android:minWidth="@dimen/user_image_size"
+                 android:gravity="center"
+                 android:background="@color/md_grey_300"
+                 android:orientation="vertical">
+
+                 <ImageView
+                     android:layout_width="@dimen/icon_size_mid"
+                     android:layout_height="@dimen/icon_size_mid"
+                     android:layout_gravity="center"
+                     android:layout_marginLeft="16dp"
+                     android:layout_marginRight="16dp"
+                     android:tint="@color/md_black_1000"
+                     app:srcCompat="@drawable/team" />
+
+                 <TextView
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center"
+                     android:foregroundGravity="center"
+                     android:gravity="center"
+                     android:padding="@dimen/eight_dp"
+                     android:text="@string/news"
+                     android:textColor="@color/md_black_1000"
+                     />
+
+             </LinearLayout>
+
+             <LinearLayout
+                 android:id="@+id/ll_references"
+                 android:layout_width="wrap_content"
+                 android:layout_height="match_parent"
+                 android:layout_gravity="center"
+                 android:minWidth="@dimen/user_image_size"
+                 android:gravity="center"
+                 android:orientation="vertical">
+
+                 <ImageView
+                     android:layout_width="@dimen/icon_size_mid"
+                     android:layout_height="@dimen/icon_size_mid"
+                     android:layout_gravity="center"
+                     android:layout_marginLeft="16dp"
+                     android:layout_marginRight="16dp"
+                     android:tint="@color/md_black_1000"
+                     app:srcCompat="@drawable/ic_references" />
+
+                 <TextView
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center"
+                     android:foregroundGravity="center"
+                     android:gravity="center"
+                     android:padding="@dimen/eight_dp"
+                     android:text="@string/references"
+                     android:textColor="@color/md_black_1000"
+                     />
+
+             </LinearLayout>
+
+             <LinearLayout
+                 android:id="@+id/ll_help_wanted"
+                 android:layout_width="wrap_content"
+                 android:layout_height="match_parent"
+                 android:layout_gravity="center"
+                 android:minWidth="@dimen/user_image_size"
+                 android:background="@color/md_grey_300"
+                 android:gravity="center"
+                 android:orientation="vertical">
+
+                 <ImageView
+                     android:layout_width="@dimen/icon_size_mid"
+                     android:layout_height="@dimen/icon_size_mid"
+                     android:layout_gravity="center"
+                     android:layout_marginLeft="16dp"
+                     android:layout_marginRight="16dp"
+                     android:tint="@color/md_black_1000"
+                     app:srcCompat="@drawable/ic_help_wanted" />
+
+                 <TextView
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_gravity="center"
+                     android:foregroundGravity="center"
+                     android:gravity="center"
+                     android:padding="@dimen/eight_dp"
+                     android:text="@string/help_wanted"
+                     android:textColor="@color/md_black_1000"
+                     />
+
+             </LinearLayout>
+
+             <LinearLayout
                  android:id="@+id/ll_calendar"
                  android:layout_width="wrap_content"
                  android:layout_height="match_parent"
@@ -142,14 +269,13 @@
 
                  <TextView
                      android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
+                     android:layout_height="53dp"
                      android:layout_gravity="center"
                      android:foregroundGravity="center"
                      android:gravity="center"
                      android:padding="@dimen/eight_dp"
                      android:text="@string/calendar"
-                     android:textColor="@color/md_black_1000"
-                    />
+                     android:textColor="@color/md_black_1000" />
 
              </LinearLayout>
 
@@ -159,6 +285,7 @@
                  android:layout_height="match_parent"
                  android:layout_gravity="center"
                  android:background="@color/md_grey_300"
+                 android:visibility="gone"
                  android:gravity="center"
                  android:minWidth="@dimen/user_image_size"
                  android:orientation="vertical">
@@ -185,99 +312,11 @@
 
              </LinearLayout>
 
-             <LinearLayout
-                 android:id="@+id/ll_news"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:gravity="center"
-                 android:orientation="vertical">
 
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/team" />
 
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/news"
-                     android:textColor="@color/md_black_1000"
-                      />
 
-             </LinearLayout>
 
-             <LinearLayout
-                 android:id="@+id/ll_references"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:background="@color/md_grey_300"
-                 android:minWidth="@dimen/user_image_size"
-                 android:gravity="center"
-                 android:orientation="vertical">
 
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_references" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/references"
-                     android:textColor="@color/md_black_1000"
-                   />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_help_wanted"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:gravity="center"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_help_wanted" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/help_wanted"
-                     android:textColor="@color/md_black_1000"
-                     />
-
-             </LinearLayout>
 
          </LinearLayout>
          </HorizontalScrollView>
