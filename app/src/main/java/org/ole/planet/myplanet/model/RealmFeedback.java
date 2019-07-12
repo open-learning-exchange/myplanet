@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.text.TextUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -177,6 +179,8 @@ public class RealmFeedback extends RealmObject {
 
     public String getMessage(){
         JsonParser parser = new JsonParser();
+        if (TextUtils.isEmpty(messages))
+            return "";
       JsonElement e =   parser.parse(messages);
       JsonArray ar = e.getAsJsonArray();
       if (ar.size() > 0){
