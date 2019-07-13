@@ -58,6 +58,7 @@ public class Constants {
         classList.put("courses", RealmMyCourse.class);
         classList.put("achievements", RealmAchievement.class);
         classList.put("feedback", RealmFeedback.class);
+        classList.put("teams", RealmMyTeam.class);
     }
 
     public static class ShelfData {

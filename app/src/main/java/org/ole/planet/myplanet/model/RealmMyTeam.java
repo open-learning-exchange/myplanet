@@ -34,12 +34,14 @@ public class RealmMyTeam extends RealmObject {
     private String description;
     private String requests;
     private String limit;
+    private long createdDate;
     private String status;
     private String teamType;
     private String teamPlanetCode;
+    private String docType;
 
-    public static void insertMyTeams(String userId, String teamId, JsonObject doc, Realm mRealm) {
-        Utilities.log("Insert my team");
+    public static void insertMyTeams(String userId, JsonObject doc, Realm mRealm) {
+        String teamId = JsonUtils.getString("_id", doc);
         RealmMyTeam myTeams = mRealm.where(RealmMyTeam.class).equalTo("id", teamId).findFirst();
         if (myTeams == null) {
             myTeams = mRealm.createObject(RealmMyTeam.class, teamId);
@@ -50,9 +52,11 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setDescription(JsonUtils.getString("description", doc));
         myTeams.setLimit(JsonUtils.getString("limit", doc));
         myTeams.setStatus(JsonUtils.getString("status", doc));
-        myTeams.setStatus(JsonUtils.getString("teamPlanetCode", doc));
-        myTeams.setStatus(JsonUtils.getString("teamType", doc));
+        myTeams.setTeamPlanetCode(JsonUtils.getString("teamPlanetCode", doc));
+        myTeams.setCreatedDate(JsonUtils.getLong("createdDate", doc));
+        myTeams.setTeamType(JsonUtils.getString("teamType", doc));
         myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
+        myTeams.setDocType(JsonUtils.getString("docType", doc).toString());
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
         myTeams.courses = new RealmList<>();
         for (JsonElement e : coursesArray) {
@@ -60,6 +64,26 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public static void insert(Realm mRealm, JsonObject doc) {
+        insertMyTeams("", doc, mRealm);
+    }
+
+    public String getDocType() {
+        return docType;
+    }
+
+    public void setDocType(String docType) {
+        this.docType = docType;
+    }
+
+    public long getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(long createdDate) {
+        this.createdDate = createdDate;
     }
 
     public String getTeamType() {
@@ -178,7 +202,6 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public void setUserId(String userId) {
-        Utilities.log("Set user id " + userId);
         if (this.userId == null) {
             this.userId = new RealmList<>();
         }
