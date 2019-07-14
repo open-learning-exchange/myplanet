@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
@@ -19,11 +20,14 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -33,12 +37,14 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
     private Context context;
     private List<RealmMyTeam> list;
     private Realm mRealm;
+    RealmUserModel user;
 
 
     public AdapterTeamList(Context context, List<RealmMyTeam> list, Realm mRealm) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
+        this.user = new UserProfileDbHandler(context).getUserModel();
     }
 
 
@@ -55,10 +61,33 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             ((ViewHolderTeam) holder).created.setText(TimeUtils.getFormatedDate(list.get(position).getCreatedDate()));
             ((ViewHolderTeam) holder).type.setText(list.get(position).getTeamType());
-            holder.itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
+            Utilities.log("Is my team " + list.get(position).isMyTeam(user.getId()));
+            if (list.get(position).isMyTeam(user.getId())) {
+                ((ViewHolderTeam) holder).action.setText(context.getString(R.string.leave));
+                ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
+                    list.get(position).leave(user);
+                });
+            } else if (list.get(position).requested(user.getId(), mRealm)) {
+                ((ViewHolderTeam) holder).action.setText("Requested");
+                ((ViewHolderTeam) holder).action.setEnabled(false);
+            } else {
+                ((ViewHolderTeam) holder).action.setText("Request to Join");
+                ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
+                    RealmMyTeam.requestToJoin(list.get(position).getId(), user, mRealm);
+                    notifyDataSetChanged();
+                });
+            }
 
+
+            holder.itemView.setOnClickListener(view -> {
+                if (list.get(position).isMyTeam(user.getId())) {
+                    if (context instanceof OnHomeItemClickListener) {
+                        MyTeamsDetailFragment f = new MyTeamsDetailFragment();
+                        Bundle b = new Bundle();
+                        b.putString("id", list.get(position).getId());
+                        f.setArguments(b);
+                        ((OnHomeItemClickListener) context).openCallFragment(f);
+                    }
                 }
             });
         }

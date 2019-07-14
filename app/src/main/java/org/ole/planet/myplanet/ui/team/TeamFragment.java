@@ -54,7 +54,7 @@ public class TeamFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("docType").findAll();
+        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
         rvTeamList.setLayoutManager(new LinearLayoutManager(getActivity()));
         AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
         rvTeamList.setAdapter(adapterTeamList);

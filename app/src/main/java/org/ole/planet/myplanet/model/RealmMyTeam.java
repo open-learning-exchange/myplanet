@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -14,6 +15,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,10 +29,12 @@ import io.realm.annotations.PrimaryKey;
 public class RealmMyTeam extends RealmObject {
     @PrimaryKey
     private String id;
-    private RealmList<String> userId;
+    private String _id;
+    private RealmList<String> userIds;
     private RealmList<String> courses;
     private String teamId;
     private String name;
+    private String userId;
     private String description;
     private String requests;
     private String limit;
@@ -47,7 +51,9 @@ public class RealmMyTeam extends RealmObject {
             myTeams = mRealm.createObject(RealmMyTeam.class, teamId);
         }
         myTeams.setUserId(userId);
-        myTeams.setTeamId(teamId);
+        myTeams.setUser_id(JsonUtils.getString("userId",doc));
+        myTeams.setTeamId(JsonUtils.getString("teamId", doc));
+        myTeams.set_id("_id");
         myTeams.setName(JsonUtils.getString("name", doc));
         myTeams.setDescription(JsonUtils.getString("description", doc));
         myTeams.setLimit(JsonUtils.getString("limit", doc));
@@ -68,6 +74,31 @@ public class RealmMyTeam extends RealmObject {
 
     public static void insert(Realm mRealm, JsonObject doc) {
         insertMyTeams("", doc, mRealm);
+    }
+
+    public static void requestToJoin(String teamId, RealmUserModel userModel, Realm mRealm) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
+        team.setDocType("request");
+        team.setCreatedDate(new Date().getTime());
+        team.setTeamType("sync");
+        team.setUser_id(userModel.getId());
+        team.setTeamId(teamId);
+        team.setTeamPlanetCode(userModel.getPlanetCode());
+        mRealm.commitTransaction();
+    }
+
+    public void leave(RealmUserModel user) {
+            this.userIds.remove(user.getId());
+    }
+
+    public void setUser_id(String user_id) {
+        this.userId = user_id;
+    }
+
+    public String getUser_id() {
+        return this.userId;
     }
 
     public String getDocType() {
@@ -119,7 +150,7 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public RealmList<String> getUserId() {
-        return userId;
+        return userIds;
     }
 
     public RealmList<String> getCourses() {
@@ -131,7 +162,7 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public void setUserId(RealmList<String> userId) {
-        this.userId = userId;
+        this.userIds = userId;
     }
 
     public static JsonArray getMyTeamIds(Realm realm, String userId) {
@@ -202,11 +233,28 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public void setUserId(String userId) {
-        if (this.userId == null) {
-            this.userId = new RealmList<>();
+        if (this.userIds == null) {
+            this.userIds = new RealmList<>();
         }
 
-        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
-            this.userId.add(userId);
+        if (!this.userIds.contains(userId) && !TextUtils.isEmpty(userId))
+            this.userIds.add(userId);
+    }
+
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
+    }
+
+    public boolean isMyTeam(String id) {
+        Utilities.log(new Gson().toJson(this.userIds));
+        return this.userIds != null && this.userIds.contains(id);
+    }
+
+    public boolean requested(String userId, Realm mRealm) {
+        return mRealm.where(RealmMyTeam.class).equalTo("docType", "request").equalTo("teamId", this._id).equalTo("userId", userId).count() > 0;
     }
 }
