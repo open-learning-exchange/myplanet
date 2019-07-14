@@ -66,6 +66,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Send Survey"
+                android:background="@drawable/buttongrey"
                 style="@style/GreyButtons"
                 android:layout_marginRight="10dp"/>
 
@@ -73,6 +74,7 @@
                 android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:background="@drawable/buttongrey"
                 android:text="Take Survey"
                 style="@style/GreyButtons" />
 
