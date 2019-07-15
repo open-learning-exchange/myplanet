@@ -30,7 +30,6 @@ public class RealmMyTeam extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id;
-    private RealmList<String> userIds;
     private RealmList<String> courses;
     private String teamId;
     private String name;
@@ -50,7 +49,7 @@ public class RealmMyTeam extends RealmObject {
         if (myTeams == null) {
             myTeams = mRealm.createObject(RealmMyTeam.class, teamId);
         }
-        myTeams.setUserId(userId);
+//        myTeams.setUserId(userId);
         myTeams.setUser_id(JsonUtils.getString("userId",doc));
         myTeams.setTeamId(JsonUtils.getString("teamId", doc));
         myTeams.set_id("_id");
@@ -89,9 +88,9 @@ public class RealmMyTeam extends RealmObject {
         mRealm.commitTransaction();
     }
 
-    public void leave(RealmUserModel user) {
-            this.userIds.remove(user.getId());
-    }
+//    public void leave(RealmUserModel user) {
+//            this.userIds.remove(user.getId());
+//    }
 
     public void setUser_id(String user_id) {
         this.userId = user_id;
@@ -141,17 +140,18 @@ public class RealmMyTeam extends RealmObject {
 
     public static List<RealmObject> getMyTeamByUserId(String userId, List<RealmMyTeam> tm) {
         List<RealmObject> teams = new ArrayList<>();
-        for (RealmMyTeam item : tm) {
-            if (item.getUserId().contains(userId)) {
-                teams.add(item);
-            }
-        }
+//        for (RealmMyTeam item : tm) {
+//            if (item.getUserId().contains(userId)) {
+//                teams.add(item);
+//            }
+//        }
+//        return teams;
         return teams;
     }
 
-    public RealmList<String> getUserId() {
-        return userIds;
-    }
+//    public RealmList<String> getUserId() {
+//        return userIds;
+//    }
 
     public RealmList<String> getCourses() {
         return courses;
@@ -161,9 +161,9 @@ public class RealmMyTeam extends RealmObject {
         this.courses = courses;
     }
 
-    public void setUserId(RealmList<String> userId) {
-        this.userIds = userId;
-    }
+//    public void setUserId(RealmList<String> userId) {
+//        this.userIds = userId;
+//    }
 
     public static JsonArray getMyTeamIds(Realm realm, String userId) {
         List<RealmObject> myLibraries = getMyTeamByUserId(userId, realm.where(RealmMyTeam.class).findAll());
@@ -232,14 +232,14 @@ public class RealmMyTeam extends RealmObject {
         this.status = status;
     }
 
-    public void setUserId(String userId) {
-        if (this.userIds == null) {
-            this.userIds = new RealmList<>();
-        }
-
-        if (!this.userIds.contains(userId) && !TextUtils.isEmpty(userId))
-            this.userIds.add(userId);
-    }
+//    public void setUserId(String userId) {
+//        if (this.userIds == null) {
+//            this.userIds = new RealmList<>();
+//        }
+//
+//        if (!this.userIds.contains(userId) && !TextUtils.isEmpty(userId))
+//            this.userIds.add(userId);
+//    }
 
     public String get_id() {
         return _id;
@@ -249,10 +249,10 @@ public class RealmMyTeam extends RealmObject {
         this._id = _id;
     }
 
-    public boolean isMyTeam(String id) {
-        Utilities.log(new Gson().toJson(this.userIds));
-        return this.userIds != null && this.userIds.contains(id);
-    }
+//    public boolean isMyTeam(String id) {
+//        Utilities.log(new Gson().toJson(this.userIds));
+//        return this.userIds != null && this.userIds.contains(id);
+//    }
 
     public boolean requested(String userId, Realm mRealm) {
         return mRealm.where(RealmMyTeam.class).equalTo("docType", "request").equalTo("teamId", this._id).equalTo("userId", userId).count() > 0;

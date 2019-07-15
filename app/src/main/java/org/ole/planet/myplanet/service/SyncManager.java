@@ -244,6 +244,7 @@ public class SyncManager {
 
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
                                int x, JsonObject resourceDoc) {
+
         switch (stringArray[2]) {
             case "resources":
                 RealmMyLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
