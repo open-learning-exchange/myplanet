@@ -61,11 +61,12 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             ((ViewHolderTeam) holder).created.setText(TimeUtils.getFormatedDate(list.get(position).getCreatedDate()));
             ((ViewHolderTeam) holder).type.setText(list.get(position).getTeamType());
-            Utilities.log("Is my team " + list.get(position).isMyTeam(user.getId()));
-            if (list.get(position).isMyTeam(user.getId())) {
-                ((ViewHolderTeam) holder).action.setText(context.getString(R.string.leave));
+            boolean isMyTeam = list.get(position).isMyTeam(user.getId(),mRealm);
+            if (isMyTeam) {
+                ((ViewHolderTeam) holder).action.setText("Leave");
                 ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                    list.get(position).leave(user);
+                    list.get(position).leave(user, mRealm);
+                    notifyDataSetChanged();
                 });
             } else if (list.get(position).requested(user.getId(), mRealm)) {
                 ((ViewHolderTeam) holder).action.setText("Requested");
@@ -80,7 +81,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
 
             holder.itemView.setOnClickListener(view -> {
-                if (list.get(position).isMyTeam(user.getId())) {
+                if (isMyTeam) {
                     if (context instanceof OnHomeItemClickListener) {
                         MyTeamsDetailFragment f = new MyTeamsDetailFragment();
                         Bundle b = new Bundle();

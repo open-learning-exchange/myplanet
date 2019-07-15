@@ -49,10 +49,9 @@ public class RealmMyTeam extends RealmObject {
         if (myTeams == null) {
             myTeams = mRealm.createObject(RealmMyTeam.class, teamId);
         }
-//        myTeams.setUserId(userId);
-        myTeams.setUser_id(JsonUtils.getString("userId",doc));
+        myTeams.setUser_id(JsonUtils.getString("userId", doc));
         myTeams.setTeamId(JsonUtils.getString("teamId", doc));
-        myTeams.set_id("_id");
+        myTeams.set_id(JsonUtils.getString("_id", doc));
         myTeams.setName(JsonUtils.getString("name", doc));
         myTeams.setDescription(JsonUtils.getString("description", doc));
         myTeams.setLimit(JsonUtils.getString("limit", doc));
@@ -86,6 +85,26 @@ public class RealmMyTeam extends RealmObject {
         team.setTeamId(teamId);
         team.setTeamPlanetCode(userModel.getPlanetCode());
         mRealm.commitTransaction();
+    }
+
+    public static void leaveTeam(String teamId, RealmUserModel userModel, Realm mRealm) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        team.deleteFromRealm();
+        mRealm.commitTransaction();
+
+    }
+
+    public static List<RealmUserModel> getUsers(String teamId, Realm mRealm) {
+        List<RealmMyTeam> myteam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).findAll();
+        List<RealmUserModel> list = new ArrayList<>();
+        for (RealmMyTeam team : myteam) {
+            RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", team.getUser_id()).findFirst();
+            if (model != null)
+                list.add(model);
+        }
+        return list;
     }
 
 //    public void leave(RealmUserModel user) {
@@ -133,25 +152,16 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public static List<RealmObject> getMyTeamsByUserId(Realm mRealm, SharedPreferences settings) {
-        RealmResults<RealmMyTeam> libs = mRealm.where(RealmMyTeam.class).findAll();
-        return getMyTeamByUserId(settings.getString("userId", "--"), libs);
+        String userId = settings.getString("userId", "--");
+        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).equalTo("userId", userId).equalTo("docType", "membership").findAll();
+        List<RealmObject> teamList = new ArrayList<>();
+        for (RealmMyTeam l : list) {
+            RealmMyTeam aa = mRealm.where(RealmMyTeam.class).equalTo("_id", l.getTeamId()).findFirst();
+            teamList.add(aa);
+        }
+        return teamList;
     }
 
-
-    public static List<RealmObject> getMyTeamByUserId(String userId, List<RealmMyTeam> tm) {
-        List<RealmObject> teams = new ArrayList<>();
-//        for (RealmMyTeam item : tm) {
-//            if (item.getUserId().contains(userId)) {
-//                teams.add(item);
-//            }
-//        }
-//        return teams;
-        return teams;
-    }
-
-//    public RealmList<String> getUserId() {
-//        return userIds;
-//    }
 
     public RealmList<String> getCourses() {
         return courses;
@@ -159,20 +169,6 @@ public class RealmMyTeam extends RealmObject {
 
     public void setCourses(RealmList<String> courses) {
         this.courses = courses;
-    }
-
-//    public void setUserId(RealmList<String> userId) {
-//        this.userIds = userId;
-//    }
-
-    public static JsonArray getMyTeamIds(Realm realm, String userId) {
-        List<RealmObject> myLibraries = getMyTeamByUserId(userId, realm.where(RealmMyTeam.class).findAll());
-        JsonArray ids = new JsonArray();
-        for (RealmObject lib : myLibraries
-        ) {
-            ids.add(((RealmMyTeam) lib).getId());
-        }
-        return ids;
     }
 
     public String getId() {
@@ -232,15 +228,6 @@ public class RealmMyTeam extends RealmObject {
         this.status = status;
     }
 
-//    public void setUserId(String userId) {
-//        if (this.userIds == null) {
-//            this.userIds = new RealmList<>();
-//        }
-//
-//        if (!this.userIds.contains(userId) && !TextUtils.isEmpty(userId))
-//            this.userIds.add(userId);
-//    }
-
     public String get_id() {
         return _id;
     }
@@ -249,12 +236,27 @@ public class RealmMyTeam extends RealmObject {
         this._id = _id;
     }
 
-//    public boolean isMyTeam(String id) {
-//        Utilities.log(new Gson().toJson(this.userIds));
-//        return this.userIds != null && this.userIds.contains(id);
-//    }
-
     public boolean requested(String userId, Realm mRealm) {
-        return mRealm.where(RealmMyTeam.class).equalTo("docType", "request").equalTo("teamId", this._id).equalTo("userId", userId).count() > 0;
+        List<RealmMyTeam> m = mRealm.where(RealmMyTeam.class).equalTo("docType", "request").equalTo("teamId", this._id).equalTo("userId", userId).findAll();
+        if (m.size() > 0) {
+            Utilities.log("Team " + m.get(0).get_id() + "  " + m.get(0).getDocType());
+        }
+        return m.size() > 0;
+    }
+
+    public boolean isMyTeam(String userID, Realm mRealm) {
+        return mRealm.where(RealmMyTeam.class).equalTo("userId", userID).equalTo("teamId", this._id).equalTo("docType", "membership").count() > 0;
+    }
+
+    public void leave(RealmUserModel user, Realm mRealm) {
+        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).equalTo("userId", user.getId()).equalTo("teamId", this._id).equalTo("docType", "membership").findAll();
+        for (RealmMyTeam team : teams) {
+            if (team != null) {
+                if (!mRealm.isInTransaction())
+                    mRealm.beginTransaction();
+                team.deleteFromRealm();
+                mRealm.commitTransaction();
+            }
+        }
     }
 }
