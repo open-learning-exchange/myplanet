@@ -62,22 +62,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderTeam) holder).created.setText(TimeUtils.getFormatedDate(list.get(position).getCreatedDate()));
             ((ViewHolderTeam) holder).type.setText(list.get(position).getTeamType());
             boolean isMyTeam = list.get(position).isMyTeam(user.getId(),mRealm);
-            if (isMyTeam) {
-                ((ViewHolderTeam) holder).action.setText("Leave");
-                ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                    list.get(position).leave(user, mRealm);
-                    notifyDataSetChanged();
-                });
-            } else if (list.get(position).requested(user.getId(), mRealm)) {
-                ((ViewHolderTeam) holder).action.setText("Requested");
-                ((ViewHolderTeam) holder).action.setEnabled(false);
-            } else {
-                ((ViewHolderTeam) holder).action.setText("Request to Join");
-                ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                    RealmMyTeam.requestToJoin(list.get(position).getId(), user, mRealm);
-                    notifyDataSetChanged();
-                });
-            }
+            showActionButton(isMyTeam, holder, position);
 
 
             holder.itemView.setOnClickListener(view -> {
@@ -90,6 +75,25 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         ((OnHomeItemClickListener) context).openCallFragment(f);
                     }
                 }
+            });
+        }
+    }
+
+    private void showActionButton(boolean isMyTeam, RecyclerView.ViewHolder holder, int position) {
+        if (isMyTeam) {
+            ((ViewHolderTeam) holder).action.setText("Leave");
+            ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
+                list.get(position).leave(user, mRealm);
+                notifyDataSetChanged();
+            });
+        } else if (list.get(position).requested(user.getId(), mRealm)) {
+            ((ViewHolderTeam) holder).action.setText("Requested");
+            ((ViewHolderTeam) holder).action.setEnabled(false);
+        } else {
+            ((ViewHolderTeam) holder).action.setText("Request to Join");
+            ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
+                RealmMyTeam.requestToJoin(list.get(position).getId(), user, mRealm);
+                notifyDataSetChanged();
             });
         }
     }
