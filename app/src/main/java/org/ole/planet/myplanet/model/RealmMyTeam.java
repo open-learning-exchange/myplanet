@@ -252,11 +252,15 @@ public class RealmMyTeam extends RealmObject {
         List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).equalTo("userId", user.getId()).equalTo("teamId", this._id).equalTo("docType", "membership").findAll();
         for (RealmMyTeam team : teams) {
             if (team != null) {
-                if (!mRealm.isInTransaction())
-                    mRealm.beginTransaction();
-                team.deleteFromRealm();
-                mRealm.commitTransaction();
+                removeTeam(team, mRealm);
             }
         }
+    }
+
+    private void removeTeam(RealmMyTeam team, Realm mRealm) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        team.deleteFromRealm();
+        mRealm.commitTransaction();
     }
 }
