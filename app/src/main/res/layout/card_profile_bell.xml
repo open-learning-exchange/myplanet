@@ -33,59 +33,34 @@
                 android:layout_height="wrap_content">
 
                 <TextView
-                    android:id="@+id/txt_community_name"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_normal"
-                    android:textStyle="bold"
-
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="16sp" />
-
-                <TextView
-                    android:id="@+id/txt_date"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="right"
-                    android:layout_weight="1"
-                    android:gravity="right"
-                    android:padding="@dimen/padding_normal"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="16sp"
-
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
-
-                <TextView
                     android:id="@+id/txtFullName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:paddingLeft="@dimen/padding_normal"
                     android:paddingRight="@dimen/padding_normal"
-                    android:text=""
-
                     android:textColor="@color/md_black_1000"
-                    android:textSize="16sp"
+                    android:textSize="24sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/txtRole"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:gravity="center"
                     android:paddingLeft="@dimen/padding_large"
-
                     android:textColor="@color/md_black_1000"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txt_community_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:layout_weight="1"
+                    android:textStyle="bold"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="16sp"
+                    android:layout_gravity="right"
+                    android:gravity="right"/>
 
             </LinearLayout>
 
@@ -98,8 +73,19 @@
                 android:paddingLeft="@dimen/padding_normal"
                 android:paddingRight="@dimen/padding_normal"
                 android:textColor="@color/md_black_1000"
-                android:textSize="16sp"
+                android:textSize="20sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txt_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:gravity="right"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp"
+                android:textStyle="bold"/>
 
         </LinearLayout>
 
