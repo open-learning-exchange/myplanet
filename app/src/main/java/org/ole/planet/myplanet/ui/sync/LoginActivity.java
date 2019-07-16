@@ -22,7 +22,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,7 +53,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
-    EditText serverUrl;
+    EditText serverUrl, serverUrlProtocol;
     EditText serverPassword;
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
@@ -253,17 +252,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     progressDialog.dismiss();
                     Utilities.log("on complete");
                     boolean log = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), true);
-                    if (log){
+                    if (log) {
                         Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
                         onLogin();
-                    }else{
+                    } else {
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
                 }
 
                 @Override
                 public void onSyncFailed(String msg) {
-                    Utilities.toast(LoginActivity.this,msg);
+                    Utilities.toast(LoginActivity.this, msg);
                     progressDialog.dismiss();
                 }
 
@@ -296,8 +295,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
-        serverUrl.setText(settings.getString("serverURL", ""));
+        serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
         serverPassword.setText(settings.getString("serverPin", ""));
+        serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         protocol_semantics();
         dialog.show();
@@ -307,23 +307,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void protocol_semantics() {
         Uri uri = Uri.parse(serverUrl.getText().toString());
         String protocol = uri.getScheme();
-        if(TextUtils.equals("https", protocol)){
+        if (TextUtils.equals("https", protocol)) {
             protocol_checkin.check(R.id.radio_https);
-        }else if(TextUtils.equals("http", protocol)){
+        } else if (TextUtils.equals("http", protocol)) {
             protocol_checkin.check(R.id.radio_http);
-        }else {
+        } else {
             protocol_checkin.check(R.id.radio_http);
-            serverUrl.setText("http://");
+            serverUrlProtocol.setText(getString(R.string.http_protocol));
         }
         protocol_checkin.setOnCheckedChangeListener((radioGroup, i) -> {
-            switch (i)
-            {
+            switch (i) {
                 case R.id.radio_http:
-                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.https_protocol), getString(R.string.http_protocol)) : getString(R.string.http_protocol));
+//                  serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.https_protocol), getString(R.string.http_protocol)) : getString(R.string.http_protocol));
+                    serverUrlProtocol.setText(getString(R.string.http_protocol));
                     break;
 
                 case R.id.radio_https:
-                    serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.http_protocol), getString(R.string.https_protocol)) : getString(R.string.https_protocol));
+//                  serverUrl.setText((!serverUrl.getText().toString().equals("")) ? serverUrl.getText().toString().replaceFirst(getString(R.string.http_protocol), getString(R.string.https_protocol)) : getString(R.string.https_protocol));
+                    serverUrlProtocol.setText(getString(R.string.https_protocol));
                     break;
             }
         });
@@ -418,9 +419,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
 
         public void onTextChanged(CharSequence s, int i, int i1, int i2) {
+            String protocol = serverUrlProtocol.getText().toString();
             if (view.getId() == R.id.input_server_url)
-                positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(s.toString()));
-
+                positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(protocol + s.toString()));
         }
 
         public void afterTextChanged(Editable editable) {
@@ -442,5 +443,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         super.onDestroy();
         if (mRealm != null && !mRealm.isClosed())
             mRealm.close();
+    }
+
+    public String removeProtocol(String url){
+        url = url.replaceFirst(getString(R.string.https_protocol), "");
+        url = url.replaceFirst(getString(R.string.http_protocol), "");
+        return url;
     }
 }
