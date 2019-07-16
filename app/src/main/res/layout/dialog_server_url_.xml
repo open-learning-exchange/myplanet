@@ -59,6 +59,16 @@
                 android:textSize="18sp" />
         </android.support.design.widget.TextInputLayout>
 
+        <EditText
+            android:id="@+id/input_server_url_protocol"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textUri"
+            android:visibility="gone"
+            android:singleLine="true"
+            android:textSize="18sp"
+            android:text="@string/http_protocol"/>
+
         <android.support.design.widget.TextInputLayout
             android:id="@+id/input_layout_password"
             android:layout_width="match_parent"
