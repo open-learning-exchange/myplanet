@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -11,9 +10,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.ui.MyLife.LifeFragment;
+import org.ole.planet.myplanet.ui.mylife.LifeFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
-import org.ole.planet.myplanet.ui.map.OfflineMapActivity;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
