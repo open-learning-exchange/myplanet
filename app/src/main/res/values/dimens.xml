@@ -12,6 +12,7 @@
     <dimen name="profile_card_bell">100dp</dimen>
     <dimen name="padding_small">4dp</dimen>
     <dimen name="image_size_home_card">40dp</dimen>
+    <dimen name="dashboard_card_title">90dp</dimen>
     <dimen name="_40dp">40dp</dimen>
     <dimen name="_60dp">60dp</dimen>
     <dimen name="_20dp">20dp</dimen>

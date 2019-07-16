@@ -42,7 +42,7 @@
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
     <string name="submission">Submissions</string>
-    <string name="calendar">Calendar</string>
+    <string name="calendar">myCalendar</string>
     <string name="email">Email</string>
     <string name="documents">Documents</string>
     <string name="your_ans">Your Answer</string>
@@ -126,10 +126,10 @@
     <string name="levels">Levels</string>
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
-    <string name="achievements">Achievements</string>
-    <string name="messeges">Messeges</string>
+    <string name="achievements">myAchievements</string>
+    <string name="messeges">myMessages</string>
     <string name="contacts">Contacts</string>
-    <string name="news">News</string>
+    <string name="news">Our News</string>
     <string name="dictionaries">Dictionaries</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
@@ -212,4 +212,5 @@
     <string name="references">References</string>
     <string name="bible">Bibles</string>
     <string name="feature_not">Feature not available</string>
+    <string name="myhealth">myHealth</string>
 </resources>
