@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.ui.MyLife.LifeFragment;
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.map.OfflineMapActivity;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
@@ -63,7 +64,7 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         View.OnClickListener showToast = view1 -> Toast.makeText(getContext(), "Feature Not Available", Toast.LENGTH_LONG).show();
         view.findViewById(R.id.myTeamsImageButton).setOnClickListener(showToast);
         view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_calendar).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_calendar).setOnClickListener(v -> homeItemClickListener.openCallFragment(new CalendarFragment()));
         view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
         view.findViewById(R.id.ll_references).setOnClickListener(view12 -> homeItemClickListener.openCallFragment(new ReferenceFragment()));
         view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
