@@ -36,6 +36,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/collections"
                 style="@style/GreyButtons"
+                android:background="@drawable/buttongrey"
                 android:layout_marginRight="10dp"/>
 
             <Button
@@ -44,6 +45,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/show_filter"
                 style="@style/GreyButtons"
+                android:background="@drawable/buttongrey"
                 android:layout_marginRight="10dp"/>
 
 
@@ -52,6 +54,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/clear_tags"
+                android:layout_marginRight="24dp"
+                android:background="@drawable/buttonblue"
                 android:textColor="@color/md_white_1000"
                 style="@style/BlueButton" />
 
