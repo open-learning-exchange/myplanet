@@ -22,6 +22,7 @@
                 android:layout_height="wrap_content"
                 android:text="Open Resource"
                 android:padding="@dimen/padding_normal"
+                android:background="@drawable/buttongrey"
                 style="@style/GreyButtons"
                 android:layout_marginRight="10dp"/>
 
@@ -30,6 +31,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Download Resources"
+                android:background="@drawable/buttongrey"
                 android:padding="@dimen/padding_normal"
                 style="@style/GreyButtons" />
 

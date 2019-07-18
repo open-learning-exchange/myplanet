@@ -40,7 +40,7 @@
     <string name="add_to_mycourse">Add to my courses</string>
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
-    <string name="submission">Submissions</string>
+    <string name="submission">mySubmissions</string>
     <string name="calendar">myCalendar</string>
     <string name="email">Email</string>
     <string name="documents">Documents</string>
