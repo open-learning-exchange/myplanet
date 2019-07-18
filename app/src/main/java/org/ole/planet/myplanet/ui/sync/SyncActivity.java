@@ -233,8 +233,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         dialog.dismiss();
         saveSyncInfoToPreference();
         String processedUrl = "";
+        String protocol = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url_protocol)).getText().toString();
         String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
+        url = protocol + url;
         if (isUrlValid(url))
             processedUrl = setUrlParts(url, pin, this);
         return processedUrl;

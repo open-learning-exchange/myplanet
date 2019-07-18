@@ -50,6 +50,7 @@
                         android:text="@string/invite_member"
                         android:padding="@dimen/padding_normal"
                         android:textColor="@color/md_white_1000"
+                        android:background="@drawable/buttonblue"
                         style="@style/BlueButton"
                         android:layout_marginRight="10dp"/>
 
@@ -60,6 +61,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/leave"
                         android:padding="@dimen/padding_normal"
+                        android:background="@drawable/buttongrey"
                         style="@style/GreyButtons" />
 
                 </LinearLayout>

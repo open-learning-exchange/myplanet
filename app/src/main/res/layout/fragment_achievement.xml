@@ -42,6 +42,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:drawableLeft="@drawable/ic_edit"
+                    android:background="@drawable/buttongrey"
                     android:drawablePadding="@dimen/padding_normal"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/edit_achievement" />

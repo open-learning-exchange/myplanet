@@ -1,49 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:layout_gravity="center"
     android:gravity="start"
+    android:orientation="vertical"
     android:padding="@dimen/padding_normal">
 
     <LinearLayout
         android:id="@+id/ll_row"
         android:layout_width="wrap_content"
-        android:gravity="start"
+        android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_height="wrap_content">
+        android:gravity="start">
 
         <TextView
             android:id="@+id/tv_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:drawableRight="@drawable/ic_down"
-            android:textColor="@color/md_black_1000"
             android:padding="@dimen/padding_normal"
+            android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_mid" />
 
         <TextView
             android:id="@+id/tv_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/md_black_1000"
             android:padding="@dimen/padding_normal"
+            android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_mid" />
 
 
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/ll_desc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/ll_desc"
         android:layout_gravity="center"
-        android:visibility="gone"
         android:gravity="start"
         android:orientation="vertical"
-        >
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/tv_description"
@@ -58,11 +58,11 @@
     </LinearLayout>
 
     <!--<Button-->
-        <!--android:id="@+id/btn_attachment"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:text="View Attachment"-->
-        <!--android:theme="@style/AccentButton"-->
-        <!--android:visibility="gone" />-->
+    <!--android:id="@+id/btn_attachment"-->
+    <!--android:layout_width="wrap_content"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:text="View Attachment"-->
+    <!--android:theme="@style/AccentButton"-->
+    <!--android:visibility="gone" />-->
 
 </LinearLayout>
