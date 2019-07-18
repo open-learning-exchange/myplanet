@@ -111,13 +111,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
         findViewById(R.id.become_member).setOnClickListener(v -> {
-            if (!Utilities.getUrl().isEmpty()) {
-                startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
-                        .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
-            } else {
-                Utilities.toast(this, "Please enter server url first.");
-                settingDialog();
-            }
+            becomeAMember();
         });
         imgBtnSetting.setOnClickListener(view -> settingDialog());
         btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
@@ -127,6 +121,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settings.edit().putBoolean("isChild", b).commit();
             recreate();
         });
+    }
+
+    private void becomeAMember() {
+        if (!Utilities.getUrl().isEmpty()) {
+            startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
+                    .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
+        } else {
+            Utilities.toast(this, "Please enter server url first.");
+            settingDialog();
+        }
     }
 
     private void showGuestLoginDialog() {
