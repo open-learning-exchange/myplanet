@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.MyLife;
+package org.ole.planet.myplanet.ui.mylife;
 
 import android.content.Context;
 import android.net.Uri;
@@ -9,7 +9,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 
 /**
  * A simple {@link Fragment} subclass.
