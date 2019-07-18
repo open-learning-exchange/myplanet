@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.MyLife.LifeFragment">
+
+    <!-- TODO: Update blank fragment layout -->
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="horizontal">
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:id="@+id/achievement_image"
+                        app:srcCompat="@drawable/my_achievement" />
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="@dimen/_60dp"
+                        android:text="@string/achievements"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginLeft="@dimen/_20dp"
+                        android:textStyle="bold"
+                        android:layout_toRightOf="@id/achievement_image"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginBottom="@dimen/_20dp"
+                        android:text="Add to my Favourites"
+                        style="@style/BlueButton"/>
+                </RelativeLayout>
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="horizontal">
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentStart="true"
+                        android:id="@+id/health_image"
+                        app:srcCompat="@drawable/ic_myhealth" />
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="@dimen/_60dp"
+                        android:text="@string/myhealth"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginLeft="@dimen/_20dp"
+                        android:textStyle="bold"
+                        android:layout_toRightOf="@id/health_image"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginBottom="@dimen/_20dp"
+                        android:text="Add to my Favourites"
+                        style="@style/BlueButton"/>
+                </RelativeLayout>
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="horizontal">
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentStart="true"
+                        android:id="@+id/message_image"
+                        app:srcCompat="@drawable/ic_messages" />
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="@dimen/_60dp"
+                        android:text="@string/messeges"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginLeft="@dimen/_20dp"
+                        android:textStyle="bold"
+                        android:layout_toRightOf="@id/message_image"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginBottom="@dimen/_20dp"
+                        android:text="Add to my Favourites"
+                        style="@style/BlueButton"/>
+                </RelativeLayout>
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:orientation="horizontal">
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:layout_width="100dp"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true"
+                    android:id="@+id/news_image"
+                    app:srcCompat="@drawable/ic_news" />
+
+                <TextView
+                    android:layout_width="100dp"
+                    android:layout_height="@dimen/_60dp"
+                    android:text="@string/news"
+                    android:layout_marginTop="@dimen/_20dp"
+                    android:layout_marginLeft="@dimen/_20dp"
+                    android:textStyle="bold"
+                    android:layout_toRightOf="@id/news_image"/>
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:layout_marginTop="@dimen/_20dp"
+                    android:layout_marginBottom="@dimen/_20dp"
+                    android:text="Add to my Favourites"
+                    style="@style/BlueButton"/>
+            </RelativeLayout>
+
+
+        </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="horizontal">
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentStart="true"
+                        android:id="@+id/reference_image"
+                        app:srcCompat="@drawable/ic_references" />
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="@dimen/_60dp"
+                        android:text="@string/references"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginLeft="@dimen/_20dp"
+                        android:textStyle="bold"
+                        android:layout_toRightOf="@+id/reference_image"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginBottom="@dimen/_20dp"
+                        android:text="Add to my Favourites"
+                        style="@style/BlueButton"/>
+                </RelativeLayout>
+
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="horizontal">
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentStart="true"
+                        android:id="@+id/help-wanted_image"
+                        app:srcCompat="@drawable/ic_help_wanted" />
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="@dimen/_60dp"
+                        android:text="@string/help_wanted"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginLeft="@dimen/_20dp"
+                        android:textStyle="bold"
+                        android:layout_toRightOf="@+id/help-wanted_image"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginBottom="@dimen/_20dp"
+                        android:text="Add to my Favourites"
+                        style="@style/BlueButton"/>
+                </RelativeLayout>
+
+
+            </LinearLayout>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="100dp"
+                android:orientation="horizontal">
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:layout_width="100dp"
+                        android:layout_height="match_parent"
+                        android:layout_alignParentStart="true"
+                        android:id="@+id/myCalendar_image"
+                        app:srcCompat="@drawable/ic_calendar" />
+
+                    <TextView
+                        android:layout_width="100dp"
+                        android:layout_height="@dimen/_60dp"
+                        android:text="@string/calendar"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginLeft="@dimen/_20dp"
+                        android:textStyle="bold"
+                        android:layout_toRightOf="@+id/myCalendar_image"/>
+
+                    <Button
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentRight="true"
+                        android:layout_marginTop="@dimen/_20dp"
+                        android:layout_marginBottom="@dimen/_20dp"
+                        android:text="Add to my Favourites"
+                        style="@style/BlueButton"/>
+                </RelativeLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/darker_gray"/>
+
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>
