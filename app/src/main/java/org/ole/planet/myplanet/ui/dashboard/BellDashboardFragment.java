@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -11,13 +10,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.ui.MyLife.LifeFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
-import org.ole.planet.myplanet.ui.map.OfflineMapActivity;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
@@ -69,7 +67,8 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
         view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v -> openHelperFragment(new LibraryFragment()));
         view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> openHelperFragment(new CourseFragment()));
-        view.findViewById(R.id.myLifeImageButton).setOnClickListener(v -> homeItemClickListener.openCallFragment(new LifeFragment()));
+        view.findViewById(R.id.ll_mySubmissions).setOnClickListener(v -> homeItemClickListener.openCallFragment(new MySubmissionFragment()));
+        view.findViewById(R.id.ll_myHealth).setOnClickListener(showToast);
     }
 
     private void openHelperFragment(Fragment f) {

@@ -71,6 +71,7 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/get_started"
+            android:background="@drawable/buttonblue"
             android:textColor="@color/md_white_1000"
             style="@style/BlueButton" />
 
