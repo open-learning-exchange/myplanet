@@ -17,6 +17,7 @@
             android:foregroundGravity="center">
 
             <LinearLayout
+                android:id="@+id/myTeamsImageButton"
                 android:layout_width="@dimen/dashboard_card_title"
                 android:layout_height="match_parent"
                 android:layout_gravity="center"
@@ -26,7 +27,6 @@
                 android:padding="@dimen/padding_normal">
 
                 <ImageView
-                    android:id="@+id/myTeamsImageButton"
                     android:layout_width="@dimen/image_size_home_card"
                     android:layout_height="@dimen/image_size_home_card"
                     android:layout_marginLeft="16dp"

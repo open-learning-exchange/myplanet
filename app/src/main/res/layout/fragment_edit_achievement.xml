@@ -43,6 +43,7 @@
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:text="@string/edit_achievement"
+                    android:background="@drawable/buttongrey"
                     android:padding="@dimen/padding_normal"
                     style="@style/GreyButtons" />
 
