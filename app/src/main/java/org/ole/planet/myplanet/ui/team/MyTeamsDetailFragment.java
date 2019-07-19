@@ -151,7 +151,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm);
         createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
-        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getTeamId()).findAll();
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).findAll();
         rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
         showRecyclerView(realmNewsList);
         listContent.setVisibility(View.GONE);
