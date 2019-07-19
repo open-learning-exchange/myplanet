@@ -107,9 +107,17 @@ public class RealmMyTeam extends RealmObject {
         return list;
     }
 
-//    public void leave(RealmUserModel user) {
-//            this.userIds.remove(user.getId());
-//    }
+    public static List<RealmUserModel> filterUsers(String teamId,String user, Realm mRealm) {
+        List<RealmMyTeam> myteam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).findAll();
+        List<RealmUserModel> list = new ArrayList<>();
+        for (RealmMyTeam team : myteam) {
+            RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", team.getUser_id()).findFirst();
+            if (model != null && (model.getName().contains(user)))
+                list.add(model);
+        }
+        return list;
+    }
+
 
     public void setUser_id(String user_id) {
         this.userId = user_id;

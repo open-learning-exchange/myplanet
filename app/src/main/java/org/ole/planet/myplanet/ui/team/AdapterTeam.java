@@ -76,8 +76,8 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//                users = charSequence.toString()).findAll();
-//                setListAdapter(lv,users);
+                    users = RealmMyTeam.filterUsers(realmMyTeam.getId(),charSequence.toString(), mRealm);
+                    setListAdapter(lv, users);
                 }
 
             @Override

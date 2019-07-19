@@ -108,14 +108,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         managerialLogin = findViewById(R.id.manager_login);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
+        if (!settings.contains("serverProtocol"))
+            settings.edit().putString("serverProtocol", "http://").commit();
         findViewById(R.id.become_member).setOnClickListener(v -> {
-            if (!Utilities.getUrl().isEmpty()) {
-                startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
-                        .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
-            } else {
-                Utilities.toast(this, "Please enter server url first.");
-                settingDialog();
-            }
+            becomeAMember();
         });
         imgBtnSetting.setOnClickListener(view -> settingDialog());
         btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
@@ -125,6 +121,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settings.edit().putBoolean("isChild", b).commit();
             recreate();
         });
+    }
+
+    private void becomeAMember() {
+        if (!Utilities.getUrl().isEmpty()) {
+            startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
+                    .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
+        } else {
+            Utilities.toast(this, "Please enter server url first.");
+            settingDialog();
+        }
     }
 
     private void showGuestLoginDialog() {
@@ -298,6 +304,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
         serverPassword.setText(settings.getString("serverPin", ""));
         serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
+        serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         protocol_semantics();
         dialog.show();
@@ -315,6 +322,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             protocol_checkin.check(R.id.radio_http);
             serverUrlProtocol.setText(getString(R.string.http_protocol));
         }
+        settings.edit().putString("serverProtocol", serverUrlProtocol.getText().toString()).commit();
         protocol_checkin.setOnCheckedChangeListener((radioGroup, i) -> {
             switch (i) {
                 case R.id.radio_http:
@@ -327,7 +335,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     serverUrlProtocol.setText(getString(R.string.https_protocol));
                     break;
             }
+            settings.edit().putString("serverProtocol", serverUrlProtocol.getText().toString()).commit();
         });
+
     }
 
     @Override
@@ -419,7 +429,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
 
         public void onTextChanged(CharSequence s, int i, int i1, int i2) {
-            String protocol = serverUrlProtocol.getText().toString();
+
+            String protocol = serverUrlProtocol == null ? settings.getString("serverProtocol", "http://") : serverUrlProtocol.getText().toString();
             if (view.getId() == R.id.input_server_url)
                 positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(protocol + s.toString()));
         }
@@ -445,7 +456,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             mRealm.close();
     }
 
-    public String removeProtocol(String url){
+    public String removeProtocol(String url) {
         url = url.replaceFirst(getString(R.string.https_protocol), "");
         url = url.replaceFirst(getString(R.string.http_protocol), "");
         return url;

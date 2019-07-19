@@ -6,6 +6,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -58,5 +60,23 @@ public class TeamFragment extends Fragment {
         rvTeamList.setLayoutManager(new LinearLayoutManager(getActivity()));
         AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
         rvTeamList.setAdapter(adapterTeamList);
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").contains("name",charSequence.toString(), Case.INSENSITIVE).findAll();
+                AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
+                rvTeamList.setAdapter(adapterTeamList);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
     }
 }
