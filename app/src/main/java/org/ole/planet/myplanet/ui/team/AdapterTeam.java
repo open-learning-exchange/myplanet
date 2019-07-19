@@ -56,6 +56,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderTeam) {
+
             ((ViewHolderTeam) holder).title.setText(list.get(position).getName());
             holder.itemView.setOnClickListener(view -> {
                 showUserList(list.get(position));
@@ -67,7 +68,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         View view = LayoutInflater.from(context).inflate(R.layout.layout_user_list,null);
         EditText etSearch = view.findViewById(R.id.et_search);
         ListView lv = view.findViewById(R.id.list_user);
-        users = mRealm.where(RealmUserModel.class).in("id", realmMyTeam.getUserId().toArray(new String[0])).findAll();
+        users = RealmMyTeam.getUsers(realmMyTeam.getId(), mRealm);
         setListAdapter(lv,users);
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -75,8 +76,8 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                users = mRealm.where(RealmUserModel.class).in("id", realmMyTeam.getUserId().toArray(new String[0])).contains("name", charSequence.toString()).findAll();
-                setListAdapter(lv,users);
+                    users = RealmMyTeam.filterUsers(realmMyTeam.getId(),charSequence.toString(), mRealm);
+                    setListAdapter(lv, users);
                 }
 
             @Override

@@ -45,6 +45,8 @@ public class RealmUserModel extends RealmObject {
     private String userImage;
     private boolean showTopbar;
 
+
+
     public JsonObject serialize() {
         JsonObject object = new JsonObject();
         object.addProperty("_id", getId());

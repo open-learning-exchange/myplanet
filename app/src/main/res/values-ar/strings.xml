@@ -203,6 +203,10 @@
     <string name="bible">Bibles</string>
     <string name="feature_not">Feature not available</string>
     <string name="myhealth">myHealth</string>
+    <string name="type_name_to_search">Type name to search</string>
+    <string name="action">Action</string>
+    <string name="created_on">Created On</string>
+    <string name="name_normal">Name</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

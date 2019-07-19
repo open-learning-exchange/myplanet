@@ -93,7 +93,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         mRealm = dbService.getRealmInstance();
         profileDbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(profileDbHandler.getUserModel());
-        team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).findFirst();
+        team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
         return v;
     }
 
@@ -148,7 +148,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     }
 
     private void setTeamList() {
-        RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", team.getUserId().toArray(new String[0])).findAll();
+        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm);
         createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getTeamId()).findAll();
@@ -185,7 +185,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         llRv.setVisibility(View.VISIBLE);
     }
 
-    private void setTabListener(RealmResults<RealmUserModel> users, RealmResults<RealmMyCourse> courses, List<RealmUserModel> reqUsers) {
+    private void setTabListener(List<RealmUserModel> users, RealmResults<RealmMyCourse> courses, List<RealmUserModel> reqUsers) {
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -234,33 +234,33 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_leave) {
-            leaveJoinTeam();
+//            leaveJoinTeam();
         }
     }
 
-    private void leaveJoinTeam() {
-        mRealm.executeTransaction(realm -> {
-            if (team.getUserId().isEmpty()) {
-                requestToJoin();
-                btnLeave.setText("Request Pending");
-            } else {
-                team.setUserId("");
-                btnLeave.setText("Request to Join");
-            }
-        });
-    }
+//    private void leaveJoinTeam() {
+//        mRealm.executeTransaction(realm -> {
+//            if (team.isMyTeam(user.getId(), realm)) {
+//
+//                btnLeave.setText("Request Pending");
+//            } else {
+//                team.setUserId("");
+//                btnLeave.setText("Request to Join");
+//            }
+//        });
+//    }
 
 
-
-    private void requestToJoin() {
-        try {
-            JSONArray array = new JSONArray(team.getRequests());
-            if (!team.getRequests().contains(user.getId())) {
-                array.put(user.getId());
-            }
-            team.setRequests(array.toString());
-        } catch (JSONException e) { }
-    }
+//
+//    private void requestToJoin() {
+//        try {
+//            JSONArray array = new JSONArray(team.getRequests());
+//            if (!team.getRequests().contains(user.getId())) {
+//                array.put(user.getId());
+//            }
+//            team.setRequests(array.toString());
+//        } catch (JSONException e) { }
+//    }
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
         try {

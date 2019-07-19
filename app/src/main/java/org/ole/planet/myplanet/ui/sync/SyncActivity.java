@@ -104,7 +104,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         RecyclerView rvTeams = findViewById(R.id.rv_teams);
         TextView tvNodata = findViewById(R.id.tv_nodata);
 
-        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).findAll();
+        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
         rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
         rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
         if (teams.size() > 0) {

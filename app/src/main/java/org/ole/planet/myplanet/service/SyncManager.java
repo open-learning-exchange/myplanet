@@ -122,6 +122,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "news");
             TransactionSyncManager.syncDb(mRealm, "feedback");
             TransactionSyncManager.syncDb(mRealm, "login_activities");
+            TransactionSyncManager.syncDb(mRealm, "teams");
             resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
         } catch (Exception err) {
@@ -243,6 +244,7 @@ public class SyncManager {
 
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
                                int x, JsonObject resourceDoc) {
+
         switch (stringArray[2]) {
             case "resources":
                 RealmMyLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
@@ -254,7 +256,7 @@ public class SyncManager {
                 RealmMyCourse.insertMyCourses(stringArray[0], resourceDoc, mRealm);
                 break;
             case "teams":
-                RealmMyTeam.insertMyTeams(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                RealmMyTeam.insertMyTeams(stringArray[0], resourceDoc, mRealm);
                 break;
         }
     }

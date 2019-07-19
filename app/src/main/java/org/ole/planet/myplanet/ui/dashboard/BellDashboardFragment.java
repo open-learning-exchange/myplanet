@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
+import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
@@ -60,7 +61,7 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.ll_achievement).setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
         view.findViewById(R.id.ll_news).setOnClickListener(v -> homeItemClickListener.openCallFragment(new NewsFragment()));
         View.OnClickListener showToast = view1 -> Toast.makeText(getContext(), "Feature Not Available", Toast.LENGTH_LONG).show();
-        view.findViewById(R.id.myTeamsImageButton).setOnClickListener(showToast);
+        view.findViewById(R.id.ll_home_team).setOnClickListener(v->homeItemClickListener.openCallFragment(new TeamFragment()));
         view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
         view.findViewById(R.id.ll_calendar).setOnClickListener(v -> homeItemClickListener.openCallFragment(new CalendarFragment()));
         view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
