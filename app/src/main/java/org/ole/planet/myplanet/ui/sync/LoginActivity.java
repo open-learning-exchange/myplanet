@@ -305,6 +305,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverPassword.setText(settings.getString("serverPin", ""));
         serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
         serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
+        protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         protocol_semantics();
         dialog.show();
@@ -312,16 +313,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private void protocol_semantics() {
-        Uri uri = Uri.parse(serverUrl.getText().toString());
-        String protocol = uri.getScheme();
-        if (TextUtils.equals("https", protocol)) {
-            protocol_checkin.check(R.id.radio_https);
-        } else if (TextUtils.equals("http", protocol)) {
-            protocol_checkin.check(R.id.radio_http);
-        } else {
-            protocol_checkin.check(R.id.radio_http);
-            serverUrlProtocol.setText(getString(R.string.http_protocol));
-        }
+//        Uri uri = Uri.parse(serverUrl.getText().toString());
+//        String protocol = serverUrlProtocol.getText().toString();
+//        if (TextUtils.equals("https://", protocol)) {
+//            protocol_checkin.check(R.id.radio_https);
+//        } else if (TextUtils.equals("http://", protocol)) {
+//            protocol_checkin.check(R.id.radio_http);
+//        } else {
+//            protocol_checkin.check(R.id.radio_http);
+//            serverUrlProtocol.setText(getString(R.string.http_protocol));
+//        }
         settings.edit().putString("serverProtocol", serverUrlProtocol.getText().toString()).commit();
         protocol_checkin.setOnCheckedChangeListener((radioGroup, i) -> {
             switch (i) {

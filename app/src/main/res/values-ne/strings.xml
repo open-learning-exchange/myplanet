@@ -12,7 +12,7 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">Planet Server Address</string>
+    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.1.2)</string>
     <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">HTTP</string>
