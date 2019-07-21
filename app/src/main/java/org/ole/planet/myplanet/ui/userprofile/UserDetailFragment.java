@@ -30,7 +30,8 @@ public class UserDetailFragment extends Fragment {
     RecyclerView rvUserDetail;
     String userId;
     Realm mRealm;
-
+    RealmUserModel user;
+    UserProfileDbHandler db ;
     public UserDetailFragment() {
     }
 
@@ -47,7 +48,10 @@ public class UserDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_detail, container, false);
         rvUserDetail = v.findViewById(R.id.rv_user_detail);
+        rvUserDetail.setLayoutManager(new GridLayoutManager(getActivity(), 2));
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        db = new UserProfileDbHandler(getActivity());
+        user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         return v;
     }
 
@@ -63,24 +67,17 @@ public class UserDetailFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         if (user == null) {
             Utilities.toast(getActivity(), "User not available in our database");
             return;
         }
-        UserProfileDbHandler db = new UserProfileDbHandler(getActivity());
-
-        rvUserDetail.setLayoutManager(new GridLayoutManager(getActivity(), 2));
         List<Detail> list = getList(user, db);
-        list.add(new Detail("Last Login", Utilities.getRelativeTime(db.getLastVisit()) + ""));
         rvUserDetail.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
             public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_title_desc, parent, false);
-                return new AdapterOtherInfo.ViewHolderOtherInfo(v);
+                return new AdapterOtherInfo.ViewHolderOtherInfo(LayoutInflater.from(getActivity()).inflate(R.layout.item_title_desc, parent, false));
             }
-
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
@@ -88,11 +85,8 @@ public class UserDetailFragment extends Fragment {
                     ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(list.get(position).description);
                 }
             }
-
             @Override
-            public int getItemCount() {
-                return list.size();
-            }
+            public int getItemCount() { return list.size(); }
         });
     }
 
@@ -105,6 +99,7 @@ public class UserDetailFragment extends Fragment {
         list.add(new Detail("Language", user.getLanguage()));
         list.add(new Detail("Level", user.getLevel()));
         list.add(new Detail("Number of Visits", db.getOfflineVisits() + ""));
+        list.add(new Detail("Last Login", Utilities.getRelativeTime(db.getLastVisit()) + ""));
         return list;
     }
 }
