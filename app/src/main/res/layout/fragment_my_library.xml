@@ -1,9 +1,9 @@
 <android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/my_library_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.library.LibraryFragment"
-    android:id="@+id/my_library_parent_layout">
+    tools:context=".ui.library.LibraryFragment">
 
 
     <LinearLayout
@@ -18,7 +18,75 @@
             android:layout_gravity="right"
             android:background="@color/colorPrimary"
             android:gravity="right"
+            android:orientation="vertical"
             android:padding="@dimen/padding_large">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:gravity="right">
+
+                <Button
+                    android:id="@+id/btn_collections"
+                    style="@style/GreyButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/buttongrey"
+                    android:text="@string/collections" />
+
+                <Button
+                    android:id="@+id/show_filter"
+                    style="@style/GreyButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/buttongrey"
+                    android:text="@string/show_filter" />
+
+
+                <Button
+                    android:id="@+id/btn_clear_tags"
+                    style="@style/BlueButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="24dp"
+                    android:background="@drawable/buttonblue"
+                    android:text="@string/clear_tags"
+                    android:textColor="@color/md_white_1000" />
+
+
+                <TextView
+                    android:id="@+id/tv_add"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableLeft="@drawable/ic_add_library"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/add_to_mylib"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid" />
+
+
+                <TextView
+                    android:id="@+id/tv_delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/padding_normal"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableStart="@drawable/ic_delete"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/remove_selected"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone" />
+
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tv_selected"
@@ -29,65 +97,6 @@
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/md_white_1000"
                 android:textSize="@dimen/text_size_mid" />
-
-            <Button
-                android:id="@+id/btn_collections"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/collections"
-                style="@style/GreyButtons"
-                android:background="@drawable/buttongrey"
-                android:layout_marginRight="10dp"/>
-
-            <Button
-                android:id="@+id/show_filter"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/show_filter"
-                style="@style/GreyButtons"
-                android:background="@drawable/buttongrey"
-                android:layout_marginRight="10dp"/>
-
-
-            <Button
-                android:id="@+id/btn_clear_tags"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/clear_tags"
-                android:layout_marginRight="24dp"
-                android:background="@drawable/buttonblue"
-                android:textColor="@color/md_white_1000"
-                style="@style/BlueButton" />
-
-
-            <TextView
-                android:id="@+id/tv_add"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="?attr/selectableItemBackground"
-                android:drawableLeft="@drawable/ic_add_library"
-                android:drawablePadding="4dp"
-                android:gravity="center"
-                android:text="@string/add_to_mylib"
-                android:textColor="@drawable/tv_color"
-                android:textSize="@dimen/text_size_mid" />
-
-
-            <TextView
-                android:id="@+id/tv_delete"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginStart="@dimen/padding_normal"
-                android:background="?attr/selectableItemBackground"
-                android:drawableStart="@drawable/ic_delete"
-                android:drawablePadding="4dp"
-                android:gravity="center"
-                android:text="@string/remove_selected"
-                android:textColor="@drawable/tv_color"
-                android:textSize="@dimen/text_size_mid"
-                android:visibility="gone" />
         </LinearLayout>
 
 

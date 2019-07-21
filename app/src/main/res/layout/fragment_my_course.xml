@@ -1,9 +1,9 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/my_course_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.library.LibraryFragment"
-    android:id="@+id/my_course_parent_layout">
+    tools:context=".ui.library.LibraryFragment">
 
 
     <LinearLayout
@@ -12,13 +12,79 @@
         android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/ll_actions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="right"
-            android:id="@+id/ll_actions"
             android:background="@color/colorPrimary"
             android:gravity="right"
+            android:orientation="vertical"
             android:padding="@dimen/padding_large">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:gravity="right">
+
+                <Button
+                    android:id="@+id/btn_collections"
+                    style="@style/GreyButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
+                    android:background="@drawable/buttongrey"
+                    android:text="@string/collections" />
+
+                <Button
+                    android:id="@+id/btn_clear_tags"
+                    style="@style/BlueButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="@dimen/materialize_baseline_grid_x3"
+                    android:background="@drawable/buttonblue"
+                    android:text="@string/clear_tags"
+                    android:textColor="@color/md_white_1000" />
+
+                <TextView
+                    android:id="@+id/tv_add"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableLeft="@drawable/ic_add_library"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/add_to_mycourse"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid" />
+
+                <TextView
+                    android:id="@+id/tv_delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/padding_normal"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableStart="@drawable/ic_delete"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/remove_selected"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone" />
+
+
+                <Button
+                    android:id="@+id/btn_remove"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:text="@string/leave"
+                    android:theme="@style/AccentButton"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tv_selected"
@@ -30,67 +96,10 @@
                 android:textColor="@color/md_white_1000"
                 android:textSize="@dimen/text_size_mid" />
 
-            <Button
-                android:id="@+id/btn_collections"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/collections"
-                style="@style/GreyButtons"
-                android:background="@drawable/buttongrey"
-                android:layout_marginRight="10dp"/>
-
-            <Button
-                android:id="@+id/btn_clear_tags"
-                style="@style/BlueButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="@dimen/materialize_baseline_grid_x3"
-                android:text="@string/clear_tags"
-                android:background="@drawable/buttonblue"
-                android:textColor="@color/md_white_1000" />
-
-            <TextView
-                android:id="@+id/tv_add"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="?attr/selectableItemBackground"
-                android:drawableLeft="@drawable/ic_add_library"
-                android:drawablePadding="4dp"
-                android:gravity="center"
-                android:text="@string/add_to_mycourse"
-                android:textColor="@drawable/tv_color"
-                android:textSize="@dimen/text_size_mid" />
-
-            <TextView
-                android:id="@+id/tv_delete"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginStart="@dimen/padding_normal"
-                android:background="?attr/selectableItemBackground"
-                android:drawablePadding="4dp"
-                android:drawableStart="@drawable/ic_delete"
-                android:gravity="center"
-                android:visibility="gone"
-                android:text="@string/remove_selected"
-                android:textColor="@drawable/tv_color"
-                android:textSize="@dimen/text_size_mid" />
-
-
-            <Button
-                android:id="@+id/btn_remove"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone"
-                android:layout_margin="@dimen/padding_small"
-                android:text="@string/leave"
-                android:theme="@style/AccentButton" />
 
         </LinearLayout>
 
-        <include layout="@layout/layout_search"/>
+        <include layout="@layout/layout_search" />
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -105,8 +114,8 @@
             <TextView
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" />
         </FrameLayout>
 
     </LinearLayout>

@@ -38,6 +38,8 @@ public class RealmUserModel extends RealmObject {
     private String password_scheme;
     private String iterations;
     private String derived_key;
+    private String level;
+    private String language;
     private String salt;
     private String dob;
     private String birthPlace;
@@ -59,6 +61,8 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("lastName", getLastName());
         object.addProperty("middleName", getMiddleName());
         object.addProperty("email", getEmail());
+        object.addProperty("language", getLanguage());
+        object.addProperty("level", getLevel());
         object.addProperty("phoneNumber", getPhoneNumber());
         object.addProperty("birthPlace", getBirthPlace());
         object.addProperty("derived_key", getDerived_key());
@@ -67,6 +71,21 @@ public class RealmUserModel extends RealmObject {
         return object;
     }
 
+    public String getLevel() {
+        return level;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
 
     public static RealmUserModel createGuestUser(String username, Realm mRealm, SharedPreferences settings) {
         JsonObject object = new JsonObject();
