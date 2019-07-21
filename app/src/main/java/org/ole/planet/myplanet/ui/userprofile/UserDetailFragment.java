@@ -38,7 +38,7 @@ public class UserDetailFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            userId = getArguments().getString("userId");
+            userId = getArguments().getString("id");
         }
     }
 
@@ -71,14 +71,7 @@ public class UserDetailFragment extends Fragment {
         UserProfileDbHandler db = new UserProfileDbHandler(getActivity());
 
         rvUserDetail.setLayoutManager(new GridLayoutManager(getActivity(), 2));
-        List<Detail> list = new ArrayList<>();
-        list.add(new Detail("Full Name", user.getFullName()));
-        list.add(new Detail("DOB", TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
-        list.add(new Detail("Email", user.getEmail()));
-        list.add(new Detail("Phone", user.getPhoneNumber()));
-        list.add(new Detail("Language", user.getLanguage()));
-        list.add(new Detail("Level", user.getLevel()));
-        list.add(new Detail("Number of Visits", db.getOfflineVisits() + ""));
+        List<Detail> list = getList(user, db);
         list.add(new Detail("Last Login", Utilities.getRelativeTime(db.getLastVisit()) + ""));
         rvUserDetail.setAdapter(new RecyclerView.Adapter() {
             @NonNull
@@ -101,5 +94,17 @@ public class UserDetailFragment extends Fragment {
                 return list.size();
             }
         });
+    }
+
+    private List<Detail> getList(RealmUserModel user, UserProfileDbHandler db) {
+        List<Detail> list = new ArrayList<>();
+        list.add(new Detail("Full Name", user.getFullName()));
+        list.add(new Detail("DOB", TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
+        list.add(new Detail("Email", user.getEmail()));
+        list.add(new Detail("Phone", user.getPhoneNumber()));
+        list.add(new Detail("Language", user.getLanguage()));
+        list.add(new Detail("Level", user.getLevel()));
+        list.add(new Detail("Number of Visits", db.getOfflineVisits() + ""));
+        return list;
     }
 }

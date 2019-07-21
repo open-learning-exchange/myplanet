@@ -215,11 +215,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
-                Bundle b = new Bundle();
-                TakeCourseFragment f = new TakeCourseFragment();
-                b.putString("id", courses.get(i).getCourseId());
-                f.setArguments(b);
-                homeItemClickListener.openCallFragment(f);
+                openFragment(courses.get(i).getCourseId(), new TakeCourseFragment());
             }
         });
     }
@@ -230,12 +226,15 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         tab.setText(s);
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, data));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
-            Bundle b = new Bundle();
-            UserDetailFragment f = new UserDetailFragment();
-            b.putString("userId", data.get(i).getId());
-            f.setArguments(b);
-            homeItemClickListener.openCallFragment(f);
+            openFragment(data.get(i).getId(), new UserDetailFragment());
         });
+    }
+
+    private void openFragment(String id, Fragment f) {
+        Bundle b = new Bundle();
+        b.putString("id", id);
+        f.setArguments(b);
+        homeItemClickListener.openCallFragment(f);
     }
 
 
