@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.CourseDetailFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
+import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -200,10 +201,12 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
             }
 
             @Override
-            public void onTabUnselected(TabLayout.Tab tab) { }
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
 
             @Override
-            public void onTabReselected(TabLayout.Tab tab) { }
+            public void onTabReselected(TabLayout.Tab tab) {
+            }
         });
     }
 
@@ -212,11 +215,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
-                Bundle b = new Bundle();
-                TakeCourseFragment f = new TakeCourseFragment();
-                b.putString("id", courses.get(i).getCourseId());
-                f.setArguments(b);
-                homeItemClickListener.openCallFragment(f);
+                openFragment(courses.get(i).getCourseId(), new TakeCourseFragment());
             }
         });
     }
@@ -226,41 +225,25 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         llRv.setVisibility(View.GONE);
         tab.setText(s);
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, data));
-        listContent.setOnItemClickListener(null);
+        listContent.setOnItemClickListener((adapterView, view, i, l) -> {
+            openFragment(data.get(i).getId(), new UserDetailFragment());
+        });
     }
 
+    private void openFragment(String id, Fragment f) {
+        Bundle b = new Bundle();
+        b.putString("id", id);
+        f.setArguments(b);
+        homeItemClickListener.openCallFragment(f);
+    }
 
 
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_leave) {
-//            leaveJoinTeam();
         }
     }
 
-//    private void leaveJoinTeam() {
-//        mRealm.executeTransaction(realm -> {
-//            if (team.isMyTeam(user.getId(), realm)) {
-//
-//                btnLeave.setText("Request Pending");
-//            } else {
-//                team.setUserId("");
-//                btnLeave.setText("Request to Join");
-//            }
-//        });
-//    }
-
-
-//
-//    private void requestToJoin() {
-//        try {
-//            JSONArray array = new JSONArray(team.getRequests());
-//            if (!team.getRequests().contains(user.getId())) {
-//                array.put(user.getId());
-//            }
-//            team.setRequests(array.toString());
-//        } catch (JSONException e) { }
-//    }
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
         try {

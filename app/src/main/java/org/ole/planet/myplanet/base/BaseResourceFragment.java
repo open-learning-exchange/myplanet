@@ -257,6 +257,6 @@ public abstract class BaseResourceFragment extends Fragment {
                 list) {
             selected.append(tags.getName()).append(",");
         }
-        tvSelected.setText(selected.subSequence(0, selected.length() - 2));
+        tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }
 }
