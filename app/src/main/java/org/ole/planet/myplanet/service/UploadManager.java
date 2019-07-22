@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
@@ -165,6 +166,26 @@ public class UploadManager {
 
             }
         }, () -> listener.onSuccess("Feedback sync completed successfully"));
+    }
+
+
+    public void uploadTeams() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm = dbService.getRealmInstance();
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).isEmpty("_id").isNotEmpty("teamId").findAll();
+            for (RealmMyTeam team : teams) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/teams", RealmMyTeam.serialize(team)).execute().body();
+                    if (object != null) {
+                        team.set_id(JsonUtils.getString("_id", object));
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
     }
 
 
