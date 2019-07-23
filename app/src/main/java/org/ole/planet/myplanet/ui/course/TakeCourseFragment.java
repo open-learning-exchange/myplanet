@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.CustomViewPager;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.CameraUtils;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ import io.realm.Realm;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChangeListener, View.OnClickListener {
+public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChangeListener, View.OnClickListener, CameraUtils.ImageCaptureCallback {
 
     CustomViewPager mViewPager;
     TextView tvCourseTitle, tvCompleted, tvStepTitle, tvSteps;
@@ -76,6 +77,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         mRealm = dbService.getRealmInstance();
         userModel = new UserProfileDbHandler(getActivity()).getUserModel();
         currentCourse = mRealm.where(RealmMyCourse.class).equalTo("courseId", courseId).findFirst();
+        CameraUtils.CapturePhoto(this);
         return v;
     }
 
@@ -112,6 +114,12 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         mViewPager.setCurrentItem(position);
 
     }
+
+    /**
+    public void onStart()
+    {
+       CameraUtils.CapturePhoto(this);
+    }**/
 
     private void setListeners() {
         next.setOnClickListener(this);
@@ -198,6 +206,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         if (mViewPager.getCurrentItem() == steps.size()) {
             next.setTextColor(getResources().getColor(R.color.md_grey_500));
         }
+
+
     }
 
     private void onClickPrevious() {
@@ -213,6 +223,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
                     previous.setTextColor(getResources().getColor(R.color.md_white_1000));
+                    CameraUtils.CapturePhoto(this);
                 }
                 onClickNext();
                 break;
@@ -248,5 +259,10 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     public boolean isValidClickLeft() {
         return mViewPager.getAdapter() != null && mViewPager.getCurrentItem() > 0;
+    }
+
+    @Override
+    public void onImageCapture(String fileUri) {
+
     }
 }
