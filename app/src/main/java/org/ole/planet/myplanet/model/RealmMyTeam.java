@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
@@ -116,6 +117,21 @@ public class RealmMyTeam extends RealmObject {
                 list.add(model);
         }
         return list;
+    }
+
+    public static JsonObject serialize(RealmMyTeam team) {
+        JsonObject object = new JsonObject();
+        object.addProperty("teamId", team.getTeamId());
+        object.addProperty("name", team.getName());
+        object.addProperty("userId", team.getUser_id());
+        object.addProperty("description", team.getDescription());
+        object.addProperty("limit", team.getLimit());
+        object.addProperty("createdDate", team.getCreatedDate());
+        object.addProperty("status", team.getStatus());
+        object.addProperty("teamType", team.getTeamType());
+        object.addProperty("teamPlanetCode", team.getTeamPlanetCode());
+        object.addProperty("docType", team.getDocType());
+        return object;
     }
 
 
