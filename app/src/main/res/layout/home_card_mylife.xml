@@ -15,13 +15,13 @@
          android:layout_gravity="center">
 
          <FrameLayout
+             android:id="@+id/myLifeImageButton"
              android:layout_width="wrap_content"
              android:layout_height="match_parent"
              android:layout_gravity="center"
              android:foregroundGravity="center">
 
              <LinearLayout
-                 android:id="@+id/myLifeImageButton"
                  android:layout_width="@dimen/dashboard_card_title"
                  android:layout_height="match_parent"
                  android:layout_gravity="center"

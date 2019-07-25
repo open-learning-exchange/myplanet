@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
+import org.ole.planet.myplanet.ui.mylife.LifeFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
@@ -71,6 +72,7 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> openHelperFragment(new CourseFragment()));
         view.findViewById(R.id.ll_mySubmissions).setOnClickListener(v -> homeItemClickListener.openCallFragment(new MySubmissionFragment()));
         view.findViewById(R.id.ll_myHealth).setOnClickListener(showToast);
+        view.findViewById(R.id.myLifeImageButton).setOnClickListener(v -> homeItemClickListener.openCallFragment(new LifeFragment()));
     }
 
     private void openHelperFragment(Fragment f) {
