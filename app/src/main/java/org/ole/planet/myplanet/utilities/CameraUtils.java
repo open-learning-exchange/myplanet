@@ -17,9 +17,9 @@ public class CameraUtils {
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         int frontCamera = 1;
         //int backCamera=0;
-        Camera.getCameraInfo(frontCamera, cameraInfo);
         Camera camera;
         try {
+            Camera.getCameraInfo(frontCamera, cameraInfo);
             camera = Camera.open(frontCamera);
         } catch (RuntimeException e) {
             Utilities.log("Front Camera not available");
