@@ -20,10 +20,12 @@ import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmMyLife extends RealmObject {
+    private int weight;
     @PrimaryKey
-    private String stringId;
+    private String _id;
     private String imageId;
-    private RealmList<String> userId;
+    private String userId;
+    private String title;
 
     public static void insertMyLife(String userId, JsonObject myLifeDoc, Realm mRealm) {
         Utilities.log("INSERT MYLIFE " + new Gson().toJson(myLifeDoc));
@@ -33,20 +35,21 @@ public class RealmMyLife extends RealmObject {
             myMyLifeDB = mRealm.createObject(RealmMyLife.class, stringId);
         }
         myMyLifeDB.setUserId(userId);
-        myMyLifeDB.setStringId(JsonUtils.getString("_id", myLifeDoc));
+        myMyLifeDB.set_id(JsonUtils.getString("_id", myLifeDoc));
         myMyLifeDB.setImageId(JsonUtils.getString("imageId",myLifeDoc));
+        myMyLifeDB.setTitle(JsonUtils.getString("title",myLifeDoc));
     }
 
-    public static List<RealmObject> getMyByUserId(Realm mRealm, SharedPreferences settings) {
-        RealmResults<RealmMyLife> libs = mRealm.where(RealmMyLife.class).findAll();
-        List<RealmObject> myLifeItems = new ArrayList<>();
-        for (RealmMyLife item : libs) {
-            if (item.getUserId().contains(settings.getString("userId", "--"))) {
-                myLifeItems.add(item);
-            }
-        }
-        return myLifeItems;
-    }
+//    public static List<RealmObject> getMyByUserId(Realm mRealm, SharedPreferences settings) {
+//        RealmResults<RealmMyLife> libs = mRealm.where(RealmMyLife.class).findAll();
+//        List<RealmObject> myLifeItems = new ArrayList<>();
+//        for (RealmMyLife item : libs) {
+//            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+//                myLifeItems.add(item);
+//            }
+//        }
+//        return myLifeItems;
+//    }
 
 
     public static List<RealmMyLife> getMyLifeByUserId(String userId, List<RealmMyLife> libs) {
@@ -85,7 +88,7 @@ public class RealmMyLife extends RealmObject {
     public static void createMyLife(RealmMyLife myLife, Realm mRealm, String stringId) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        myLife.setStringId(stringId);
+        myLife.set_id(stringId);
         mRealm.commitTransaction();
     }
 //
@@ -103,17 +106,25 @@ public class RealmMyLife extends RealmObject {
         JsonArray stringIds = new JsonArray();
         for (RealmObject lib : myLifeItems
         ) {
-            stringIds.add(((RealmMyLife) lib).getStringId());
+            stringIds.add(((RealmMyLife) lib).get_id());
         }
         return stringIds;
     }
 
-    public String getStringId() {
-        return stringId;
+    public int getWeight() {
+        return weight;
     }
 
-    public void setStringId(String stringId) {
-        this.stringId = stringId;
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
     }
 
     public String getImageId() {
@@ -124,16 +135,19 @@ public class RealmMyLife extends RealmObject {
         this.imageId = imageId;
     }
 
-    public RealmList<String> getUserId() {
+    public String getUserId() {
         return userId;
     }
 
     public void setUserId(String userId) {
-        if (this.userId == null) {
-            this.userId = new RealmList<>();
-        }
+        this.userId = userId;
+    }
 
-        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
-            this.userId.add(userId);
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 }
