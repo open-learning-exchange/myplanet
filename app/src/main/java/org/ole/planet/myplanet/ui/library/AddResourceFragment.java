@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
@@ -21,16 +22,24 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 
 
 import org.jetbrains.annotations.NotNull;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyPersonal;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.UUID;
+
+import io.realm.Realm;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -40,9 +49,18 @@ import static android.app.Activity.RESULT_OK;
 public class AddResourceFragment extends BottomSheetDialogFragment {
 
     private static final int RECORD_VIDEO_REQUEST = 1000;
+    int type = 0;
 
     public AddResourceFragment() {
         // Required empty public constructor
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            type = getArguments().getInt("type", 0);
+        }
     }
 
     @NotNull
@@ -97,18 +115,17 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
         if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_RECORD_SOUND);
-        }else{
-            Utilities.toast(getActivity(),"Your phone does not have audio recorder app, please download and try again");
+        } else {
+            Utilities.toast(getActivity(), "Your phone does not have audio recorder app, please download and try again");
         }
     }
-
 
 
     public String getRealPathFromURI(Context context, Uri contentUri) {
         Cursor cursor = null;
         try {
-            String[] proj = { MediaStore.Images.Media.DATA };
-            cursor = context.getContentResolver().query(contentUri,  proj, null, null, null);
+            String[] proj = {MediaStore.Images.Media.DATA};
+            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
             int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
             cursor.moveToFirst();
             return cursor.getString(column_index);
@@ -124,10 +141,42 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         if (resultCode == RESULT_OK) {
             Uri url = data.getData();
             if (!TextUtils.isEmpty(url.getPath())) {
-                startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", getRealPathFromURI(getActivity(), url)));
+                if (type == 0) {
+                    startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", getRealPathFromURI(getActivity(), url)));
+                } else {
+                    showAlert();
+                }
             } else {
                 Utilities.toast(getActivity(), "Invalid resource url");
             }
         }
+    }
+
+    private void showAlert() {
+
+        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_my_personal, null);
+        EditText etTitle = v.findViewById(R.id.et_title);
+        EditText etDesc = v.findViewById(R.id.et_description);
+        RealmUserModel realmUserModel = new UserProfileDbHandler(getActivity()).getUserModel();
+        String userId = realmUserModel.getId();
+        new AlertDialog.Builder(getActivity()).setTitle("Enter resource detail")
+                .setView(v)
+                .setPositiveButton("Save", (dialogInterface, i) -> {
+                    String title = etTitle.getText().toString();
+                    if (title.isEmpty()) {
+                        Utilities.toast(getActivity(), "Title is required.");
+                        return;
+                    }
+                    String desc = etDesc.getText().toString();
+                    Realm realm = new DatabaseService(getActivity()).getRealmInstance();
+                    realm.executeTransactionAsync(realm1 -> {
+                        RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
+                        myPersonal.setTitle(title);
+                        myPersonal.setUserId(userId);
+                        myPersonal.setDate(new Date().getTime());
+                        myPersonal.setDescription(desc);
+                    }, () -> Utilities.toast(getActivity(), "Resource Saved"));
+
+                }).setNegativeButton("Dismiss", null).show();
     }
 }
