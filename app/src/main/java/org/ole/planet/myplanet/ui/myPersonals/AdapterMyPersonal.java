@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 import org.ole.planet.myplanet.utilities.TimeUtils;
@@ -20,10 +21,12 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     private Context context;
     private List<RealmMyPersonal> list ;
-
+    OnHomeItemClickListener clickListener;
     public AdapterMyPersonal(Context context, List<RealmMyPersonal> list) {
         this.context = context;
         this.list = list;
+        if (context instanceof OnHomeItemClickListener)
+            clickListener = (OnHomeItemClickListener) context;
     }
 
     @NonNull
@@ -39,6 +42,10 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
             ((ViewHolderMyPersonal) holder).title.setText(list.get(position).getTitle());
             ((ViewHolderMyPersonal) holder).description.setText(list.get(position).getDescription());
             ((ViewHolderMyPersonal) holder).date.setText(TimeUtils.getFormatedDate(list.get(position).getDate()));
+            holder.itemView.setOnClickListener(view -> {
+//                    if (clickListener!=null)
+//                        clickListener.openResource(list.get(position).getPath());
+            });
         }
     }
 
