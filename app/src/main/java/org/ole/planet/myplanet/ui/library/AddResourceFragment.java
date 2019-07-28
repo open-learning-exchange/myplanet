@@ -167,7 +167,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 if (type == 0) {
                     startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", path));
                 } else {
-                    showAlert();
+                    showAlert(path);
                 }
             } else {
                 Utilities.toast(getActivity(), "Invalid resource url");
@@ -176,7 +176,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     }
 
-    private void showAlert() {
+    private void showAlert(String path) {
 
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_my_personal, null);
         EditText etTitle = v.findViewById(R.id.et_title);
@@ -197,6 +197,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                         RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
                         myPersonal.setTitle(title);
                         myPersonal.setUserId(userId);
+                        myPersonal.setPath(path);
                         myPersonal.setDate(new Date().getTime());
                         myPersonal.setDescription(desc);
                     }, () -> Utilities.toast(getActivity(), "Resource Saved"));
