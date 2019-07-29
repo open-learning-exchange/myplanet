@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -120,11 +121,17 @@ public class BaseDashboardFragment extends BaseContainerFragment {
 
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
+        LinearLayout[] myLifeArray = new LinearLayout[db_myCourses.size()];
         int itemCnt = 0;
         for (final RealmObject items : db_myCourses) {
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
             setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c);
-            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
+            if( c == RealmMyLife.class) {
+                setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
+                flexboxLayout.addView(myLifeArray[itemCnt], params);
+            } else {
+                flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
+            }
             itemCnt++;
         }
     }
@@ -139,6 +146,39 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         }
     }
 
+    public void setLinearLayoutProperties(LinearLayout[] linearLayoutArray, int itemCnt, final RealmObject obj, Class c) {
+        linearLayoutArray[itemCnt] = new LinearLayout(getContext());
+        linearLayoutArray[itemCnt].setOrientation(LinearLayout.VERTICAL);
+        linearLayoutArray[itemCnt].setMinimumWidth(R.dimen.user_image_size);
+        linearLayoutArray[itemCnt].setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        lp.gravity = Gravity.CENTER;
+        linearLayoutArray[itemCnt].setLayoutParams(lp);
+
+        TextView tv = new TextView(getContext());
+        tv.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams lp_tv = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp_tv.gravity = Gravity.CENTER;
+        tv.setPadding(8,8,8,8);
+
+        ImageView imageView = new ImageView(getContext());
+        LinearLayout.LayoutParams lp_iv = new LinearLayout.LayoutParams(36,36);
+        lp_iv.gravity = Gravity.CENTER;
+        imageView.setLayoutParams(lp_iv);
+
+        linearLayoutArray[itemCnt].addView(imageView);
+        linearLayoutArray[itemCnt].addView(tv);
+
+        tv.setTextColor(getResources().getColor(R.color.md_black_1000));
+        if ((itemCnt % 2) == 0) {
+            linearLayoutArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+        } else {
+            linearLayoutArray[itemCnt].setBackgroundColor(getResources().getColor(R.color.md_grey_300));
+        }
+
+        handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),((RealmMyLife) obj).getImageId(),linearLayoutArray[itemCnt]);
+
+    }
 
     public void setTextViewProperties(TextView[] textViewArray, int itemCnt, final RealmObject obj, Class c) {
         textViewArray[itemCnt] = new TextView(getContext());
@@ -155,7 +195,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         } else if (obj instanceof RealmMeetup) {
             handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyLife) {
-            handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),textViewArray[itemCnt]);
+           // handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),((RealmMyLife) obj).getImageId(),li[itemCnt]);
         }
     }
 
@@ -171,72 +211,12 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         });
     }
 
-    private void setUpMyLife(){
-        String userId = settings.getString("userId", "--");
-        Realm realm = new DatabaseService(getContext()).getRealmInstance();
-//        RealmMyLife myLife = new RealmMyLife("@drawable/my_achievement",userId,getResources().getString(R.string.achievements));
-//        RealmMyLife.createMyLife(myLife,mRealm,"0");
-//        myLife = new RealmMyLife("@drawable/ic_myhealth",userId,getResources().getString(R.string.myhealth));
-//        RealmMyLife.createMyLife(myLife,mRealm,"1");
-//        myLife = new RealmMyLife("@drawable/ic_messages",userId,getResources().getString(R.string.messeges));
-//        RealmMyLife.createMyLife(myLife,mRealm,"2");
-//        myLife = new RealmMyLife("@drawable/ic_submissions",userId,getResources().getString(R.string.submission));
-//        RealmMyLife.createMyLife(myLife,mRealm,"3");
-        if (!realm.isInTransaction())
-            realm.beginTransaction();
-        RealmMyLife ml;
-//  TODO:      RealmMyLife ml = realm.createObject(RealmMyLife.class, "1");
-//        ml.setTitle(getString(R.string.myhealth));
-//        ml.setImageId("@drawable/ic_myhealth");
-//        ml.setUserId(userId);
-
-//        ml = realm.createObject(RealmMyLife.class, "2");
-//        ml.setTitle(getString(R.string.messeges));
-//        ml.setImageId("@drawable/ic_messeges");
-//        ml.setUserId(userId);
-
-//        ml = realm.createObject(RealmMyLife.class, "3");
-//        ml.setTitle(getString(R.string.achievements));
-//        ml.setImageId("@drawable/my_achievement");
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "4");
-//        ml.setTitle(getString(R.string.submission));
-//        ml.setImageId("@drawable/submission");
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "5");
-//        ml.setTitle(getString(R.string.news));
-//        ml.setImageId("@drawable/team");
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "6");
-//        ml.setTitle(getString(R.string.references));
-//        ml.setImageId("@drawable/ic_references");
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "7");
-//        ml.setTitle(getString(R.string.help_wanted));
-//        ml.setImageId("@drawable/ic_help_wanted");
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "8");
-//        ml.setTitle(getString(R.string.calendar));
-//        ml.setImageId("@drawable/ic_calendar");
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "9");
-//        ml.setTitle(getString(R.string.contacts));
-//        ml.setImageId("@drawable/ic_contacts");
-//        ml.setUserId(userId);
-
-
-        realm.commitTransaction();
-
-    }
-    private void handleClickMyLife(final String id, String title, TextView v) {
-        v.setText(title);
-            v.setOnClickListener(view -> {
+    private void handleClickMyLife(final String id, String title, int imageId, LinearLayout linearLayout) {
+        ImageView imageView = (ImageView) linearLayout.getChildAt(0);
+        TextView textView = (TextView) linearLayout.getChildAt(1);
+        imageView.setImageResource(imageId);
+        textView.setText(title);
+        linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
                 if (title.equals(getString(R.string.myhealth))) {
                     Utilities.toast(getContext(), "Feature not available");
@@ -261,6 +241,69 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         });
     }
 
+    private void setUpMyLife(){
+        String userId = settings.getString("userId", "--");
+        Realm realm = new DatabaseService(getContext()).getRealmInstance();
+//        RealmMyLife myLife = new RealmMyLife("@drawable/my_achievement",userId,getResources().getString(R.string.achievements));
+//        RealmMyLife.createMyLife(myLife,mRealm,"0");
+//        myLife = new RealmMyLife("@drawable/ic_myhealth",userId,getResources().getString(R.string.myhealth));
+//        RealmMyLife.createMyLife(myLife,mRealm,"1");
+//        myLife = new RealmMyLife("@drawable/ic_messages",userId,getResources().getString(R.string.messeges));
+//        RealmMyLife.createMyLife(myLife,mRealm,"2");
+//        myLife = new RealmMyLife("@drawable/ic_submissions",userId,getResources().getString(R.string.submission));
+//        RealmMyLife.createMyLife(myLife,mRealm,"3");
+        if (!realm.isInTransaction())
+            realm.beginTransaction();
+        RealmMyLife ml;
+//        ml = realm.createObject(RealmMyLife.class, "1");
+//        ml.setTitle(getString(R.string.myhealth));
+//        ml.setImageId(R.drawable.ic_myhealth);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "2");
+//        ml.setTitle(getString(R.string.messeges));
+//        ml.setImageId(R.drawable.ic_messages);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "3");
+//        ml.setTitle(getString(R.string.achievements));
+//        ml.setImageId(R.drawable.my_achievement);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "4");
+//        ml.setTitle(getString(R.string.submission));
+//        ml.setImageId(R.drawable.ic_submissions);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "5");
+//        ml.setTitle(getString(R.string.news));
+//        ml.setImageId(R.drawable.ic_news);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "6");
+//        ml.setTitle(getString(R.string.references));
+//        ml.setImageId(R.drawable.ic_references);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "7");
+//        ml.setTitle(getString(R.string.help_wanted));
+//        ml.setImageId(R.drawable.ic_help_wanted);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "8");
+//        ml.setTitle(getString(R.string.calendar));
+//        ml.setImageId(R.drawable.ic_calendar);
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "9");
+//        ml.setTitle(getString(R.string.contacts));
+//        ml.setImageId(R.drawable.ic_contacts);
+//        ml.setUserId(userId);
+//
+
+        realm.commitTransaction();
+
+    }
 
     public void myLibraryItemClickAction(TextView textView, final RealmMyLibrary items) {
         textView.setOnClickListener(v -> openResource(items));

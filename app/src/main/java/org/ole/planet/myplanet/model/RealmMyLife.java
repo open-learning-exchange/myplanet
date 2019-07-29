@@ -24,7 +24,7 @@ public class RealmMyLife extends RealmObject {
     private int weight;
     @PrimaryKey
     private String _id;
-    private String imageId;
+    private int imageId;
     private String userId;
     private String title;
 
@@ -37,7 +37,7 @@ public class RealmMyLife extends RealmObject {
         }
         myMyLifeDB.setUserId(userId);
         myMyLifeDB.set_id(JsonUtils.getString("_id", myLifeDoc));
-        myMyLifeDB.setImageId(JsonUtils.getString("imageId",myLifeDoc));
+        myMyLifeDB.setImageId(JsonUtils.getInt("imageId",myLifeDoc));
         myMyLifeDB.setTitle(JsonUtils.getString("title",myLifeDoc));
         myMyLifeDB.setWeight(JsonUtils.getInt("weight",myLifeDoc));
     }
@@ -108,7 +108,7 @@ public class RealmMyLife extends RealmObject {
 //        return stringIds;
 //    }
 
-    public RealmMyLife(String imageId, String userId, String title) {
+    public RealmMyLife(int imageId, String userId, String title) {
         this.imageId = imageId;
         this.userId = userId;
         this.title = title;
@@ -133,11 +133,11 @@ public class RealmMyLife extends RealmObject {
         this._id = _id;
     }
 
-    public String getImageId() {
+    public int getImageId() {
         return imageId;
     }
 
-    public void setImageId(String imageId) {
+    public void setImageId(int imageId) {
         this.imageId = imageId;
     }
 
