@@ -42,23 +42,35 @@ public class MyPersonalsFragment extends Fragment {
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         rvMyPersonal = v.findViewById(R.id.rv_mypersonal);
         rvMyPersonal.setLayoutManager(new LinearLayoutManager(getActivity()));
-        v.findViewById(R.id.add_my_personal).setOnClickListener(vi->{
+        v.findViewById(R.id.add_my_personal).setOnClickListener(vi -> {
             AddResourceFragment f = new AddResourceFragment();
             Bundle b = new Bundle();
             b.putInt("type", 1);
             f.setArguments(b);
             f.show(getChildFragmentManager(), "Add Resource");
-
         });
         return v;
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (rvMyPersonal != null)
+            setAdapter();
+    }
+
+    @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        setAdapter();
+    }
+
+    private void setAdapter() {
         RealmUserModel model = new UserProfileDbHandler(getActivity()).getUserModel();
         List<RealmMyPersonal> realmMyPersonals = mRealm.where(RealmMyPersonal.class).equalTo("userId", model.getId()).findAll();
-        rvMyPersonal.setAdapter(new AdapterMyPersonal(getActivity(), realmMyPersonals));
+        AdapterMyPersonal personalAdapter = new AdapterMyPersonal(getActivity(), realmMyPersonals);
+        personalAdapter.setRealm(mRealm);
+        rvMyPersonal.setAdapter(personalAdapter);
     }
 
     @Override
