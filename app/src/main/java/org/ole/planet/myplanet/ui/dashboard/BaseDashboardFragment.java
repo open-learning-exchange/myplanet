@@ -25,9 +25,15 @@ import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.myplanet.ui.news.NewsFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
+import org.ole.planet.myplanet.ui.submission.SubmissionDetailFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
+import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -167,26 +173,92 @@ public class BaseDashboardFragment extends BaseContainerFragment {
 
     private void setUpMyLife(){
         String userId = settings.getString("userId", "--");
-        RealmMyLife myLife = new RealmMyLife("@drawable/my_achievement",userId,getResources().getString(R.string.achievements));
-        RealmMyLife.createMyLife(myLife,mRealm,"0");
-        myLife = new RealmMyLife("@drawable/ic_myhealth",userId,getResources().getString(R.string.myhealth));
-        RealmMyLife.createMyLife(myLife,mRealm,"1");
-        myLife = new RealmMyLife("@drawable/ic_messages",userId,getResources().getString(R.string.messeges));
-        RealmMyLife.createMyLife(myLife,mRealm,"2");
-        myLife = new RealmMyLife("@drawable/ic_submissions",userId,getResources().getString(R.string.submission));
-        RealmMyLife.createMyLife(myLife,mRealm,"3");
+        Realm realm = new DatabaseService(getContext()).getRealmInstance();
+//        RealmMyLife myLife = new RealmMyLife("@drawable/my_achievement",userId,getResources().getString(R.string.achievements));
+//        RealmMyLife.createMyLife(myLife,mRealm,"0");
+//        myLife = new RealmMyLife("@drawable/ic_myhealth",userId,getResources().getString(R.string.myhealth));
+//        RealmMyLife.createMyLife(myLife,mRealm,"1");
+//        myLife = new RealmMyLife("@drawable/ic_messages",userId,getResources().getString(R.string.messeges));
+//        RealmMyLife.createMyLife(myLife,mRealm,"2");
+//        myLife = new RealmMyLife("@drawable/ic_submissions",userId,getResources().getString(R.string.submission));
+//        RealmMyLife.createMyLife(myLife,mRealm,"3");
+        if (!realm.isInTransaction())
+            realm.beginTransaction();
+        RealmMyLife ml;
+//  TODO:      RealmMyLife ml = realm.createObject(RealmMyLife.class, "1");
+//        ml.setTitle(getString(R.string.myhealth));
+//        ml.setImageId("@drawable/ic_myhealth");
+//        ml.setUserId(userId);
+
+//        ml = realm.createObject(RealmMyLife.class, "2");
+//        ml.setTitle(getString(R.string.messeges));
+//        ml.setImageId("@drawable/ic_messeges");
+//        ml.setUserId(userId);
+
+//        ml = realm.createObject(RealmMyLife.class, "3");
+//        ml.setTitle(getString(R.string.achievements));
+//        ml.setImageId("@drawable/my_achievement");
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "4");
+//        ml.setTitle(getString(R.string.submission));
+//        ml.setImageId("@drawable/submission");
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "5");
+//        ml.setTitle(getString(R.string.news));
+//        ml.setImageId("@drawable/team");
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "6");
+//        ml.setTitle(getString(R.string.references));
+//        ml.setImageId("@drawable/ic_references");
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "7");
+//        ml.setTitle(getString(R.string.help_wanted));
+//        ml.setImageId("@drawable/ic_help_wanted");
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "8");
+//        ml.setTitle(getString(R.string.calendar));
+//        ml.setImageId("@drawable/ic_calendar");
+//        ml.setUserId(userId);
+//
+//        ml = realm.createObject(RealmMyLife.class, "9");
+//        ml.setTitle(getString(R.string.contacts));
+//        ml.setImageId("@drawable/ic_contacts");
+//        ml.setUserId(userId);
+
+
+        realm.commitTransaction();
 
     }
     private void handleClickMyLife(final String id, String title, TextView v) {
         v.setText(title);
-//      TODO: v.setOnClickListener(view -> {
-//            if (homeItemClickListener != null) {
-//                Bundle b = new Bundle();
-//                b.putString("id", id);
-//                f.setArguments(b);
-//                homeItemClickListener.openCallFragment(f);
-//            }
-//        });
+            v.setOnClickListener(view -> {
+            if (homeItemClickListener != null) {
+                if (title.equals(getString(R.string.myhealth))) {
+                    Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.messeges))) {
+                    Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.submission))) {
+                    homeItemClickListener.openCallFragment(new MySubmissionFragment());
+                } else if (title.equals(getString(R.string.news))) {
+                    homeItemClickListener.openCallFragment(new NewsFragment());
+                } else if (title.equals(getString(R.string.references))) {
+                    homeItemClickListener.openCallFragment(new ReferenceFragment());
+                } else if (title.equals(getString(R.string.help_wanted))) {
+                    Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.calendar))) {
+                    homeItemClickListener.openCallFragment(new CalendarFragment());
+                } else if (title.equals(getString(R.string.contacts))) {
+                    Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.achievements))) {
+                    homeItemClickListener.openCallFragment(new AchievementFragment());
+                }
+            }
+        });
     }
 
 

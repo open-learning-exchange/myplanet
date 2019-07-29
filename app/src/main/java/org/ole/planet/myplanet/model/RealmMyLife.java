@@ -55,10 +55,8 @@ public class RealmMyLife extends RealmObject {
     public static List<RealmObject> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
         String userId = settings.getString("userId", "--");
         List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
-        Log.e("MYLIFE LIST", "FIRST----------------");
         List<RealmObject> myLifeItems = new ArrayList<>();
         for (RealmMyLife item : myLifeList) {
-            Log.e("MYLIFE LIST", "Second----------------");
             if (item.getUserId().contains(userId)) {
                 myLifeItems.add(item);
             }
@@ -85,7 +83,6 @@ public class RealmMyLife extends RealmObject {
     }
 
     public static void createMyLife(RealmMyLife myLife, Realm mRealm, String _id) {
-        Log.e("Tras LIST", "FIRST----------------");
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         myLife.set_id(_id);
