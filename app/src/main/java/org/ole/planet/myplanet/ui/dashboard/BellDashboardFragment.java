@@ -59,19 +59,19 @@ public class BellDashboardFragment extends BaseDashboardFragment {
 //            startActivity(new Intent(getActivity(), SettingActivity.class));
 //        });
         initView(view);
-        view.findViewById(R.id.ll_achievement).setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
-        view.findViewById(R.id.ll_news).setOnClickListener(v -> homeItemClickListener.openCallFragment(new NewsFragment()));
+       // view.findViewById(R.id.ll_achievement).setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
+       // view.findViewById(R.id.ll_news).setOnClickListener(v -> homeItemClickListener.openCallFragment(new NewsFragment()));
         View.OnClickListener showToast = view1 -> Toast.makeText(getContext(), "Feature Not Available", Toast.LENGTH_LONG).show();
         view.findViewById(R.id.ll_home_team).setOnClickListener(v->homeItemClickListener.openCallFragment(new TeamFragment()));
-        view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_calendar).setOnClickListener(v -> homeItemClickListener.openCallFragment(new CalendarFragment()));
-        view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
-        view.findViewById(R.id.ll_references).setOnClickListener(view12 -> homeItemClickListener.openCallFragment(new ReferenceFragment()));
-        view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
+//        view.findViewById(R.id.ll_messages).setOnClickListener(showToast);
+       // view.findViewById(R.id.ll_calendar).setOnClickListener(v -> homeItemClickListener.openCallFragment(new CalendarFragment()));
+       // view.findViewById(R.id.ll_contacts).setOnClickListener(showToast);
+    //    view.findViewById(R.id.ll_references).setOnClickListener(view12 -> homeItemClickListener.openCallFragment(new ReferenceFragment()));
+       // view.findViewById(R.id.ll_help_wanted).setOnClickListener(showToast);
         view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v -> openHelperFragment(new LibraryFragment()));
         view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> openHelperFragment(new CourseFragment()));
-        view.findViewById(R.id.ll_mySubmissions).setOnClickListener(v -> homeItemClickListener.openCallFragment(new MySubmissionFragment()));
-        view.findViewById(R.id.ll_myHealth).setOnClickListener(showToast);
+       // view.findViewById(R.id.ll_mySubmissions).setOnClickListener(v -> homeItemClickListener.openCallFragment(new MySubmissionFragment()));
+       // view.findViewById(R.id.ll_myHealth).setOnClickListener(showToast);
         view.findViewById(R.id.myLifeImageButton).setOnClickListener(v -> homeItemClickListener.openCallFragment(new LifeFragment()));
     }
 

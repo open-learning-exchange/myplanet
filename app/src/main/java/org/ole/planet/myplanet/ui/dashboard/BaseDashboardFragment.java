@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
@@ -9,6 +10,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -101,10 +104,14 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
         } else if (c == RealmMyTeam.class) {
             db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
+        } else if (c == RealmMyLife.class) {
+            setUpMyLife();
+            db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm,settings);
         } else {
             db_myCourses = mRealm.where(c)
                     .contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
         }
+
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         int itemCnt = 0;
@@ -141,6 +148,8 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMeetup) {
             handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
+        } else if (obj instanceof RealmMyLife) {
+            handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),textViewArray[itemCnt]);
         }
     }
 
@@ -154,6 +163,30 @@ public class BaseDashboardFragment extends BaseContainerFragment {
                 homeItemClickListener.openCallFragment(f);
             }
         });
+    }
+
+    private void setUpMyLife(){
+        String userId = settings.getString("userId", "--");
+        RealmMyLife myLife = new RealmMyLife("@drawable/my_achievement",userId,getResources().getString(R.string.achievements));
+        RealmMyLife.createMyLife(myLife,mRealm,"0");
+        myLife = new RealmMyLife("@drawable/ic_myhealth",userId,getResources().getString(R.string.myhealth));
+        RealmMyLife.createMyLife(myLife,mRealm,"1");
+        myLife = new RealmMyLife("@drawable/ic_messages",userId,getResources().getString(R.string.messeges));
+        RealmMyLife.createMyLife(myLife,mRealm,"2");
+        myLife = new RealmMyLife("@drawable/ic_submissions",userId,getResources().getString(R.string.submission));
+        RealmMyLife.createMyLife(myLife,mRealm,"3");
+
+    }
+    private void handleClickMyLife(final String id, String title, TextView v) {
+        v.setText(title);
+//      TODO: v.setOnClickListener(view -> {
+//            if (homeItemClickListener != null) {
+//                Bundle b = new Bundle();
+//                b.putString("id", id);
+//                f.setArguments(b);
+//                homeItemClickListener.openCallFragment(f);
+//            }
+//        });
     }
 
 
@@ -199,7 +232,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
+        initializeFlexBoxView(view, R.id.flexboxLayoutMyLife,RealmMyLife.class);
         showDownloadDialog(getLibraryList(mRealm));
-
     }
 }

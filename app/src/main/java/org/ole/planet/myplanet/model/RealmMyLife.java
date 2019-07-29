@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -38,23 +39,26 @@ public class RealmMyLife extends RealmObject {
         myMyLifeDB.set_id(JsonUtils.getString("_id", myLifeDoc));
         myMyLifeDB.setImageId(JsonUtils.getString("imageId",myLifeDoc));
         myMyLifeDB.setTitle(JsonUtils.getString("title",myLifeDoc));
+        myMyLifeDB.setWeight(JsonUtils.getInt("weight",myLifeDoc));
     }
 
-//    public static List<RealmObject> getMyByUserId(Realm mRealm, SharedPreferences settings) {
-//        RealmResults<RealmMyLife> libs = mRealm.where(RealmMyLife.class).findAll();
-//        List<RealmObject> myLifeItems = new ArrayList<>();
-//        for (RealmMyLife item : libs) {
-//            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+//    public static List<RealmMyLife> getMyLifeByUserId(String userId, List<RealmMyLife> myLifeList) {
+//        List<RealmMyLife> myLifeItems = new ArrayList<>();
+//        for (RealmMyLife item : myLifeList) {
+//            if (item.getUserId().contains(userId)) {
 //                myLifeItems.add(item);
 //            }
 //        }
 //        return myLifeItems;
 //    }
 
-
-    public static List<RealmMyLife> getMyLifeByUserId(String userId, List<RealmMyLife> libs) {
-        List<RealmMyLife> myLifeItems = new ArrayList<>();
-        for (RealmMyLife item : libs) {
+    public static List<RealmObject> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
+        String userId = settings.getString("userId", "--");
+        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
+        Log.e("MYLIFE LIST", "FIRST----------------");
+        List<RealmObject> myLifeItems = new ArrayList<>();
+        for (RealmMyLife item : myLifeList) {
+            Log.e("MYLIFE LIST", "Second----------------");
             if (item.getUserId().contains(userId)) {
                 myLifeItems.add(item);
             }
@@ -72,11 +76,6 @@ public class RealmMyLife extends RealmObject {
         return myLifeAll;
     }
 
-
-    public static boolean isMyCourse(String userId, String courseId, Realm realm) {
-        return RealmMyLife.getMyLifeByUserId(userId, realm.where(RealmMyLife.class).equalTo("courseId", courseId).findAll()).size() > 0;
-    }
-
     public static void insert(Realm mRealm, JsonObject doc) {
         insertMyLife("", doc, mRealm);
     }
@@ -85,10 +84,11 @@ public class RealmMyLife extends RealmObject {
         return mRealm.where(RealmMyLife.class).equalTo("_id", stringId).findFirst();
     }
 
-    public static void createMyLife(RealmMyLife myLife, Realm mRealm, String stringId) {
+    public static void createMyLife(RealmMyLife myLife, Realm mRealm, String _id) {
+        Log.e("Tras LIST", "FIRST----------------");
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        myLife.set_id(stringId);
+        myLife.set_id(_id);
         mRealm.commitTransaction();
     }
 //
@@ -101,14 +101,23 @@ public class RealmMyLife extends RealmObject {
 //        return myIds;
 //    }
 
-    public static JsonArray getMyLifeIds(Realm realm, String stringId) {
-        List<RealmMyLife> myLifeItems = getMyLifeByUserId(stringId, realm.where(RealmMyLife.class).findAll());
-        JsonArray stringIds = new JsonArray();
-        for (RealmObject lib : myLifeItems
-        ) {
-            stringIds.add(((RealmMyLife) lib).get_id());
-        }
-        return stringIds;
+//    public static JsonArray getMyLifeIds(Realm realm, String stringId) {
+//        List<RealmObject> myLifeItems = getMyLifeByUserId(stringId, realm.where(RealmMyLife.class).findAll());
+//        JsonArray stringIds = new JsonArray();
+//        for (RealmObject lib : myLifeItems
+//        ) {
+//            stringIds.add(((RealmMyLife) lib).get_id());
+//        }
+//        return stringIds;
+//    }
+
+    public RealmMyLife(String imageId, String userId, String title) {
+        this.imageId = imageId;
+        this.userId = userId;
+        this.title = title;
+    }
+
+    public RealmMyLife() {
     }
 
     public int getWeight() {
