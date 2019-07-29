@@ -32,6 +32,37 @@
             android:gravity="center">
 
             <LinearLayout
+                android:id="@+id/ll_capture_image"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_large"
+                    android:background="@drawable/oval_primary"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_large"
+                    android:tint="@color/colorPrimaryDark"
+                    app:srcCompat="@drawable/ic_camera" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="@string/capture_image"
+                    android:textColor="@color/colorPrimaryDark" />
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/ll_record_video"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -42,8 +73,8 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="@dimen/profile_card_bell"
-                    android:layout_height="@dimen/profile_card_bell"
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_large"
                     android:background="@drawable/oval_primary"
@@ -73,8 +104,8 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="@dimen/profile_card_bell"
-                    android:layout_height="@dimen/profile_card_bell"
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_large"
                     android:background="@drawable/oval_primary"
@@ -105,8 +136,8 @@
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="@dimen/profile_card_bell"
-                    android:layout_height="@dimen/profile_card_bell"
+                    android:layout_width="@dimen/_80dp"
+                    android:layout_height="@dimen/_80dp"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_large"
                     android:background="@drawable/oval_primary"
