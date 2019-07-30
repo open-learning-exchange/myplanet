@@ -104,15 +104,14 @@ public class BaseDashboardFragment extends BaseContainerFragment {
 
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
         List<RealmObject> db_myCourses;
-        if (c == RealmMyCourse.class) {
-            db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
-        } else if (c == RealmMyTeam.class) {
-            db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
+        if (c == RealmMyCourse.class) { db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
+        } else if (c == RealmMyTeam.class) { db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
         } else if (c == RealmMyLife.class) {
             setUpMyLife();
             db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         } else {
-            db_myCourses = mRealm.where(c).contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+            String userId = settings.getString("userId", "--");
+            db_myCourses = mRealm.where(c).contains("userId",userId, Case.INSENSITIVE).findAll();
         }
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
@@ -124,10 +123,8 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             if (c == RealmMyLife.class) {
                 setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
                 flexboxLayout.addView(myLifeArray[itemCnt], params);
-            } else {
-                flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
-            }
-            itemCnt++;
+            } else { flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
+            } itemCnt++;
         }
     }
 
