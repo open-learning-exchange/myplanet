@@ -47,16 +47,6 @@ public class RealmMyLife extends RealmObject {
         myMyLifeDB.setWeight(JsonUtils.getInt("weight",myLifeDoc));
     }
 
-//    public static List<RealmMyLife> getMyLifeByUserId(String userId, List<RealmMyLife> myLifeList) {
-//        List<RealmMyLife> myLifeItems = new ArrayList<>();
-//        for (RealmMyLife item : myLifeList) {
-//            if (item.getUserId().contains(userId)) {
-//                myLifeItems.add(item);
-//            }
-//        }
-//        return myLifeItems;
-//    }
-
     public static List<RealmObject> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
         String userId = settings.getString("userId", "--");
         List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll().sort("weight");
@@ -116,25 +106,6 @@ public class RealmMyLife extends RealmObject {
         myLife.set_id(_id);
         mRealm.commitTransaction();
     }
-//
-//    public static String[] getMyCourseIds(Realm mRealm, String userId) {
-//        List<RealmMyLife> list = mRealm.where(RealmMyLife.class).equalTo("userId", userId).findAll();
-//        String[] myIds = new String[list.size()];
-//        for (int i = 0; i < list.size(); i++) {
-//            myIds[i] = list.get(i).getCourseId();
-//        }
-//        return myIds;
-//    }
-
-//    public static JsonArray getMyLifeIds(Realm realm, String stringId) {
-//        List<RealmObject> myLifeItems = getMyLifeByUserId(stringId, realm.where(RealmMyLife.class).findAll());
-//        JsonArray stringIds = new JsonArray();
-//        for (RealmObject lib : myLifeItems
-//        ) {
-//            stringIds.add(((RealmMyLife) lib).get_id());
-//        }
-//        return stringIds;
-//    }
 
     public RealmMyLife(int imageId, String userId, String title) {
         this.imageId = imageId;
