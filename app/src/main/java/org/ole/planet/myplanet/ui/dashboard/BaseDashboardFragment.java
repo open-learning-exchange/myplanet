@@ -227,9 +227,9 @@ public class BaseDashboardFragment extends BaseContainerFragment {
     private void setUpMyLife() {
         String userId = settings.getString("userId", "--");
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
-        if (RealmMyLife.getMyLifeByUserId(mRealm, settings).isEmpty()) {
-            if (!realm.isInTransaction())
-                realm.beginTransaction();
+        List<RealmObject> realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        if (realmObjects.isEmpty()) {
+            if (!realm.isInTransaction()) realm.beginTransaction();
             RealmMyLife ml;
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.myhealth));
