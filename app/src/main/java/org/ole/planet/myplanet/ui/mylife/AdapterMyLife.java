@@ -9,10 +9,15 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
@@ -39,7 +44,6 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     private Context context;
     private List<RealmMyLife> myLifeList;
-    private List<RealmMyLife> selectedItems;
     private OnMyLifeItemSelected listener;
     private OnHomeItemClickListener homeItemClickListener;
     private Realm mRealm;
@@ -56,7 +60,6 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         this.context = context;
         this.mRealm = realm;
         this.myLifeList = myLifeList;
-        this.selectedItems = new ArrayList<>();
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
@@ -85,8 +88,20 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             Utilities.log("On bind " + position);
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
             ((ViewHolderMyLife) holder).imageView.setImageResource(myLifeList.get(position).getImageId());
-//            holder.itemView.setOnClickListener(view -> openMyLife(myLifeList.get(position)));
+            ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
+            ((ViewHolderMyLife) holder).updatePositionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    String weight = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
+                    swapPosition(Integer.parseInt(weight),myLifeList.get(position).getTitle(),myLifeList.get(position).getUserId());
+                }
+            });
         }
+    }
+
+    public void swapPosition(int weight, String title, String userId){
+        RealmMyLife.updateWeight(weight, title, mRealm, userId);
+        notifyDataSetChanged();
     }
 
     private void openMyLife(RealmMyLife myLife) {
@@ -107,11 +122,17 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     class ViewHolderMyLife extends RecyclerView.ViewHolder {
         TextView title;
         ImageView imageView;
+        EditText positionEditText;
+        Button updatePositionButton;
 
         public ViewHolderMyLife(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.titleTextView);
             imageView = itemView.findViewById(R.id.itemImageView);
+            positionEditText = itemView.findViewById(R.id.positionEditText);
+            updatePositionButton = itemView.findViewById(R.id.updatePosition);
         }
+
     }
+
 }

@@ -30,16 +30,22 @@
         <EditText
             android:id="@+id/positionEditText"
             android:layout_width="wrap_content"
-            android:layout_height="@dimen/_60dp"
-            android:layout_marginLeft="@dimen/_20dp"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="15dp"
             android:layout_marginTop="@dimen/_20dp"
-            android:layout_toRightOf="@id/titleTextView"
-            android:layout_toLeftOf="@id/visibilityToggleButton"
-            android:hint="T"
-            android:textStyle="bold" />
+            android:layout_toLeftOf="@id/updatePosition"/>
 
         <Button
-            style="@style/BlueButton"
+            android:id="@+id/updatePosition"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_marginBottom="@dimen/_20dp"
+            android:padding="@dimen/padding_normal"
+            android:text="Update"
+            android:layout_toLeftOf="@id/visibilityToggleButton"/>
+
+        <Button
             android:id="@+id/visibilityToggleButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

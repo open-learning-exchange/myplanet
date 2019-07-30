@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -12,6 +13,8 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import io.realm.Realm;
@@ -55,7 +58,7 @@ public class RealmMyLife extends RealmObject {
 
     public static List<RealmObject> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
         String userId = settings.getString("userId", "--");
-        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
+        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll().sort("weight");
         List<RealmObject> myLifeItems = new ArrayList<>();
         for (RealmMyLife item : myLifeList) {
             if (item.getUserId().contains(userId)) {
@@ -64,6 +67,7 @@ public class RealmMyLife extends RealmObject {
         }
         return myLifeItems;
     }
+
 
     public static List<RealmObject> getMyLifeByUserId(Realm mRealm, String userId) {
         List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
@@ -187,5 +191,22 @@ public class RealmMyLife extends RealmObject {
 
     public void setIsVisible(int isVisible) {
         this.isVisible = isVisible;
+    }
+
+    public static void updateWeight(int weight,String title, Realm realm, String userId){
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                List <RealmMyLife> myLifeList = realm.where(RealmMyLife.class).findAll();
+                for (RealmMyLife item : myLifeList) {
+                    if (item.getUserId().contains(userId)) {
+                        if(item.getTitle().contains(title)){
+                           item.setWeight(weight);
+                        }
+                    }
+                }
+            }
+        });
+
     }
 }
