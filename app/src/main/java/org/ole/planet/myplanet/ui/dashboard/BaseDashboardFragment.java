@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
@@ -32,7 +29,6 @@ import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
-import org.ole.planet.myplanet.ui.submission.SubmissionDetailFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
@@ -114,7 +110,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
         } else if (c == RealmMyLife.class) {
             setUpMyLife();
-            db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm,settings);
+            db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         } else {
             db_myCourses = mRealm.where(c).contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
         }
@@ -125,7 +121,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         for (final RealmObject items : db_myCourses) {
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
             setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c);
-            if( c == RealmMyLife.class) {
+            if (c == RealmMyLife.class) {
                 setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
                 flexboxLayout.addView(myLifeArray[itemCnt], params);
             } else {
@@ -158,10 +154,10 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         tv.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams lp_tv = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp_tv.gravity = Gravity.CENTER;
-        tv.setPadding(8,8,8,8);
+        tv.setPadding(8, 8, 8, 8);
 
         ImageView imageView = new ImageView(getContext());
-        LinearLayout.LayoutParams lp_iv = new LinearLayout.LayoutParams(36,36);
+        LinearLayout.LayoutParams lp_iv = new LinearLayout.LayoutParams(36, 36);
         lp_iv.gravity = Gravity.CENTER;
         imageView.setLayoutParams(lp_iv);
 
@@ -175,7 +171,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             linearLayoutArray[itemCnt].setBackgroundColor(getResources().getColor(R.color.md_grey_300));
         }
 
-        handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),((RealmMyLife) obj).getImageId(),linearLayoutArray[itemCnt]);
+        handleClickMyLife(((RealmMyLife) obj).get_id(), ((RealmMyLife) obj).getTitle(), ((RealmMyLife) obj).getImageId(), linearLayoutArray[itemCnt]);
 
     }
 
@@ -194,7 +190,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         } else if (obj instanceof RealmMeetup) {
             handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyLife) {
-           // handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),((RealmMyLife) obj).getImageId(),li[itemCnt]);
+            // handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),((RealmMyLife) obj).getImageId(),li[itemCnt]);
         }
     }
 
@@ -240,10 +236,10 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         });
     }
 
-    private void setUpMyLife(){
+    private void setUpMyLife() {
         String userId = settings.getString("userId", "--");
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
-        if(RealmMyLife.getMyLifeByUserId(mRealm,settings).isEmpty()) {
+        if (RealmMyLife.getMyLifeByUserId(mRealm, settings).isEmpty()) {
             if (!realm.isInTransaction())
                 realm.beginTransaction();
             RealmMyLife ml;
@@ -339,7 +335,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
-        initializeFlexBoxView(view, R.id.flexboxLayoutMyLife,RealmMyLife.class);
+        initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife.class);
         showDownloadDialog(getLibraryList(mRealm));
     }
 }
