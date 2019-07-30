@@ -104,27 +104,29 @@ public class BaseDashboardFragment extends BaseContainerFragment {
 
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
         List<RealmObject> db_myCourses;
+        String userId = settings.getString("userId", "--");
+        setUpMyLife(userId);
         if (c == RealmMyCourse.class) { db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
         } else if (c == RealmMyTeam.class) { db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
-        } else if (c == RealmMyLife.class) {
-            setUpMyLife();
-            db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm, settings);
-        } else {
-            String userId = settings.getString("userId", "--");
-            db_myCourses = mRealm.where(c).contains("userId",userId, Case.INSENSITIVE).findAll();
+        } else if (c == RealmMyLife.class) { db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        } else { db_myCourses = mRealm.where(c).contains("userId",userId, Case.INSENSITIVE).findAll();
         }
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         LinearLayout[] myLifeArray = new LinearLayout[db_myCourses.size()];
         int itemCnt = 0;
-        for (final RealmObject items : db_myCourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
-            setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c);
-            if (c == RealmMyLife.class) {
+        if (c == RealmMyLife.class) {
+            for (final RealmObject items : db_myCourses) {
                 setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
                 flexboxLayout.addView(myLifeArray[itemCnt], params);
-            } else { flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
-            } itemCnt++;
+                itemCnt++;
+            }
+        } else {
+            for (final RealmObject items : db_myCourses) {
+                setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
+                setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c);
+                flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
+            }
         }
     }
 
@@ -224,8 +226,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         });
     }
 
-    private void setUpMyLife() {
-        String userId = settings.getString("userId", "--");
+    private void setUpMyLife(String userId) {
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
         List<RealmObject> realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         if (realmObjects.isEmpty()) {
