@@ -81,7 +81,7 @@ public class RealmMyLife extends RealmObject {
     }
 
     public static List<RealmMyLife> getMyLifeByU(Realm mRealm, String userId) {
-        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
+        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll().sort("weight");
         List<RealmMyLife> myLifeItems = new ArrayList<>();
         for (RealmMyLife item : myLifeList) {
             if (item.getUserId().contains(userId)) {
