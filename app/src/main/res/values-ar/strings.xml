@@ -189,7 +189,7 @@
     <string name="added_by">Added By</string>
     <string name="record_audio">Record Audio</string>
     <string name="record_video">Record Video</string>
-    <string name="my_draft">My Draft</string>
+    <string name="select_gallery">Select From Gallery</string>
     <string name="add_resource">Add Resource :</string>
     <string name="reply">Reply</string>
     <string name="show_reply">Show Replies</string>
