@@ -33,35 +33,9 @@ public class RealmMyLife extends RealmObject {
     private String title;
     private int isVisible;
 
-    public static void insertMyLife(String userId, JsonObject myLifeDoc, Realm mRealm) {
-        Utilities.log("INSERT MYLIFE " + new Gson().toJson(myLifeDoc));
-        String stringId = JsonUtils.getString("_id", myLifeDoc);
-        RealmMyLife myMyLifeDB = mRealm.where(RealmMyLife.class).equalTo("id", stringId).findFirst();
-        if (myMyLifeDB == null) {
-            myMyLifeDB = mRealm.createObject(RealmMyLife.class, stringId);
-        }
-        myMyLifeDB.setUserId(userId);
-        myMyLifeDB.set_id(JsonUtils.getString("_id", myLifeDoc));
-        myMyLifeDB.setImageId(JsonUtils.getInt("imageId",myLifeDoc));
-        myMyLifeDB.setTitle(JsonUtils.getString("title",myLifeDoc));
-        myMyLifeDB.setWeight(JsonUtils.getInt("weight",myLifeDoc));
-    }
-
     public static List<RealmObject> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
         String userId = settings.getString("userId", "--");
         List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll().sort("weight");
-        List<RealmObject> myLifeItems = new ArrayList<>();
-        for (RealmMyLife item : myLifeList) {
-            if (item.getUserId().contains(userId)) {
-                myLifeItems.add(item);
-            }
-        }
-        return myLifeItems;
-    }
-
-
-    public static List<RealmObject> getMyLifeByUserId(Realm mRealm, String userId) {
-        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
         List<RealmObject> myLifeItems = new ArrayList<>();
         for (RealmMyLife item : myLifeList) {
             if (item.getUserId().contains(userId)) {
@@ -90,10 +64,6 @@ public class RealmMyLife extends RealmObject {
             }
         }
         return myLifeAll;
-    }
-
-    public static void insert(Realm mRealm, JsonObject doc) {
-        insertMyLife("", doc, mRealm);
     }
 
     public static RealmMyLife getMyLife(Realm mRealm, String stringId) {
