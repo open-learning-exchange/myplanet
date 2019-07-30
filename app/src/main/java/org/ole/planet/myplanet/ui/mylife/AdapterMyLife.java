@@ -94,10 +94,16 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ((ViewHolderMyLife) holder).updatePositionButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    String weight = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
-                    swapPosition(Integer.parseInt(weight),myLifeList.get(position).getTitle(),myLifeList.get(position).getUserId());
-                    KeyboardUtils.hideSoftKeyboard((Activity)context);
-                    notifyDataSetChanged();
+                    String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
+                    int weight = Integer.parseInt(weightString);
+                    if(weight <= getItemCount() && weight > 0) {
+                        swapPosition(weight, myLifeList.get(position).getTitle(), myLifeList.get(position).getUserId());
+                        KeyboardUtils.hideSoftKeyboard((Activity) context);
+                        notifyDataSetChanged();
+                    } else {
+                        Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
+                        ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
+                    }
                 }
             });
         }
