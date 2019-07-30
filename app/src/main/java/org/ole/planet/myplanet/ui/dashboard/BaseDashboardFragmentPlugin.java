@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
@@ -25,6 +26,9 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import io.realm.RealmObject;
 
@@ -57,6 +61,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
                 } else if (title.equals(getString(R.string.calendar))) { homeItemClickListener.openCallFragment(new CalendarFragment());
                 } else if (title.equals(getString(R.string.contacts))) {Utilities.toast(getContext(), "Feature not available");
                 } else if (title.equals(getString(R.string.achievements))) {homeItemClickListener.openCallFragment(new AchievementFragment());
+                } else if (title.equals(getString(R.string.mypersonals))) { homeItemClickListener.openCallFragment(new MyPersonalsFragment());
                 }
             }
         });
@@ -123,5 +128,20 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
 
         handleClickMyLife(((RealmMyLife) obj).get_id(), ((RealmMyLife) obj).getTitle(), ((RealmMyLife) obj).getImageId(), linearLayoutArray[itemCnt]);
 
+    }
+
+    public List<RealmMyLife> getMyLifeListBase(String userId){
+        List<RealmMyLife> myLifeList = new ArrayList<>();
+        myLifeList.add(new RealmMyLife(R.drawable.ic_myhealth,userId,getString(R.string.myhealth)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_messages,userId,getString(R.string.messeges)));
+        myLifeList.add(new RealmMyLife(R.drawable.my_achievement,userId,getString(R.string.achievements)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_submissions,userId,getString(R.string.submission)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_news,userId,getString(R.string.news)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_references,userId,getString(R.string.references)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_help_wanted,userId,getString(R.string.myhealth)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_calendar,userId,getString(R.string.calendar)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_contacts,userId,getString(R.string.contacts)));
+        myLifeList.add(new RealmMyLife(R.drawable.ic_mypersonals,userId,getString(R.string.mypersonals)));
+        return myLifeList;
     }
 }

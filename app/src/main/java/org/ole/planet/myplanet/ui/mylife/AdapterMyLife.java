@@ -95,7 +95,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 @Override
                 public void onClick(View view) {
                     String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
-                    int weight = Integer.parseInt(weightString);
+                    int weight = Integer.parseInt(weightString.trim());
                     if(weight <= getItemCount() && weight > 0) {
                         swapPosition(weight, myLifeList.get(position).getTitle(), myLifeList.get(position).getUserId());
                         KeyboardUtils.hideSoftKeyboard((Activity) context);
