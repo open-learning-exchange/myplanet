@@ -105,10 +105,11 @@ public class BaseDashboardFragment extends BaseContainerFragment {
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
         List<RealmObject> db_myCourses;
         String userId = settings.getString("userId", "--");
-        setUpMyLife(userId);
         if (c == RealmMyCourse.class) { db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
         } else if (c == RealmMyTeam.class) { db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
-        } else if (c == RealmMyLife.class) { db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        } else if (c == RealmMyLife.class) {
+            setUpMyLife(userId);
+            db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         } else { db_myCourses = mRealm.where(c).contains("userId",userId, Case.INSENSITIVE).findAll();
         }
         setCountText(db_myCourses.size(), c, view);
