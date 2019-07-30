@@ -18,6 +18,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
     private TextView mImageFileNameTitle;
     private ImageView mImageViewer;
+    private boolean isFullPath = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +35,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
     private void renderImageFile() {
         // File name to be viewed
-
+        isFullPath = getIntent().getBooleanExtra("isFullPath", false);
         Intent imageOpenIntent = getIntent();
         String fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
 
@@ -45,7 +46,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
         try {
             Glide.with(getApplicationContext())
-                    .load(new File(Utilities.SD_PATH, fileName))
+                    .load(isFullPath ? new File(fileName) : new File(Utilities.SD_PATH, fileName))
                     .into(mImageViewer);
         } catch (Exception e) {
             e.printStackTrace();
