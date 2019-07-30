@@ -207,6 +207,8 @@
     <string name="action">Action</string>
     <string name="created_on">Created On</string>
     <string name="name_normal">Name</string>
+    <string name="mypersonals">myPersonals</string>
+    <string name="capture_image">Capture Image</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.CameraUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -35,7 +36,7 @@ import io.realm.RealmResults;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CourseStepFragment extends BaseContainerFragment {
+public class CourseStepFragment extends BaseContainerFragment implements CameraUtils.ImageCaptureCallback{
 
     TextView tvTitle;
     MarkdownView description;
@@ -161,6 +162,7 @@ public class CourseStepFragment extends BaseContainerFragment {
                 b.putInt("stepNum", stepNumber);
                 takeExam.setArguments(b);
                 homeItemClickListener.openCallFragment(takeExam);
+                CameraUtils.CapturePhoto(this);
             }
         });
         final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class)
@@ -177,5 +179,10 @@ public class CourseStepFragment extends BaseContainerFragment {
     public void onDownloadComplete() {
         super.onDownloadComplete();
         setListeners();
+    }
+
+    @Override
+    public void onImageCapture(String fileUri) {
+
     }
 }
