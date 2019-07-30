@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -244,65 +245,67 @@ public class BaseDashboardFragment extends BaseContainerFragment {
     private void setUpMyLife(){
         String userId = settings.getString("userId", "--");
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
-//        if (!realm.isInTransaction())
-//            realm.beginTransaction();
-//        RealmMyLife ml;
-//        ml = realm.createObject(RealmMyLife.class, "1");
-//        ml.setTitle(getString(R.string.myhealth));
-//        ml.setImageId(R.drawable.ic_myhealth);
-//        ml.setWeight(1);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "2");
-//        ml.setTitle(getString(R.string.messeges));
-//        ml.setImageId(R.drawable.ic_messages);
-//        ml.setWeight(2);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "3");
-//        ml.setTitle(getString(R.string.achievements));
-//        ml.setImageId(R.drawable.my_achievement);
-//        ml.setWeight(3);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "4");
-//        ml.setTitle(getString(R.string.submission));
-//        ml.setImageId(R.drawable.ic_submissions);
-//        ml.setWeight(4);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "5");
-//        ml.setTitle(getString(R.string.news));
-//        ml.setImageId(R.drawable.ic_news);
-//        ml.setWeight(5);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "6");
-//        ml.setTitle(getString(R.string.references));
-//        ml.setImageId(R.drawable.ic_references);
-//        ml.setWeight(6);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "7");
-//        ml.setTitle(getString(R.string.help_wanted));
-//        ml.setImageId(R.drawable.ic_help_wanted);
-//        ml.setWeight(7);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "8");
-//        ml.setTitle(getString(R.string.calendar));
-//        ml.setImageId(R.drawable.ic_calendar);
-//        ml.setWeight(8);
-//        ml.setUserId(userId);
-//
-//        ml = realm.createObject(RealmMyLife.class, "9");
-//        ml.setTitle(getString(R.string.contacts));
-//        ml.setImageId(R.drawable.ic_contacts);
-//        ml.setWeight(9);
-//        ml.setUserId(userId);
-//
-//
-//        realm.commitTransaction();
+        if(RealmMyLife.getMyLifeByUserId(mRealm,settings).isEmpty()) {
+            if (!realm.isInTransaction())
+                realm.beginTransaction();
+            RealmMyLife ml;
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.myhealth));
+            ml.setImageId(R.drawable.ic_myhealth);
+            ml.setWeight(1);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.messeges));
+            ml.setImageId(R.drawable.ic_messages);
+            ml.setWeight(2);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.achievements));
+            ml.setImageId(R.drawable.my_achievement);
+            ml.setWeight(3);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.submission));
+            ml.setImageId(R.drawable.ic_submissions);
+            ml.setWeight(4);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.news));
+            ml.setImageId(R.drawable.ic_news);
+            ml.setWeight(5);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.references));
+            ml.setImageId(R.drawable.ic_references);
+            ml.setWeight(6);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.help_wanted));
+            ml.setImageId(R.drawable.ic_help_wanted);
+            ml.setWeight(7);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.calendar));
+            ml.setImageId(R.drawable.ic_calendar);
+            ml.setWeight(8);
+            ml.setUserId(userId);
+
+            ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+            ml.setTitle(getString(R.string.contacts));
+            ml.setImageId(R.drawable.ic_contacts);
+            ml.setWeight(9);
+            ml.setUserId(userId);
+
+
+            realm.commitTransaction();
+        }
 
     }
 

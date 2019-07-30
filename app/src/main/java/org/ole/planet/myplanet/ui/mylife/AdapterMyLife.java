@@ -97,6 +97,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     String weight = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
                     swapPosition(Integer.parseInt(weight),myLifeList.get(position).getTitle(),myLifeList.get(position).getUserId());
                     KeyboardUtils.hideSoftKeyboard((Activity)context);
+                    notifyDataSetChanged();
                 }
             });
         }
