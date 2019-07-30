@@ -116,10 +116,8 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             setUpMyLife();
             db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm,settings);
         } else {
-            db_myCourses = mRealm.where(c)
-                    .contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+            db_myCourses = mRealm.where(c).contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
         }
-
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
         LinearLayout[] myLifeArray = new LinearLayout[db_myCourses.size()];
@@ -218,28 +216,32 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         imageView.setImageResource(imageId);
         textView.setText(title);
         linearLayout.setOnClickListener(view -> {
-            if (homeItemClickListener != null) {
-                if (title.equals(getString(R.string.myhealth))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.messeges))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.submission))) {
-                    homeItemClickListener.openCallFragment(new MySubmissionFragment());
-                } else if (title.equals(getString(R.string.news))) {
-                    homeItemClickListener.openCallFragment(new NewsFragment());
-                } else if (title.equals(getString(R.string.references))) {
-                    homeItemClickListener.openCallFragment(new ReferenceFragment());
-                } else if (title.equals(getString(R.string.help_wanted))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.calendar))) {
-                    homeItemClickListener.openCallFragment(new CalendarFragment());
-                } else if (title.equals(getString(R.string.contacts))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.achievements))) {
-                    homeItemClickListener.openCallFragment(new AchievementFragment());
-                }
-            }
+            setUpClickListener(title);
         });
+    }
+    
+    public void setUpClickListener(String title){
+        if (homeItemClickListener != null) {
+            if (title.equals(getString(R.string.myhealth))) {
+                Utilities.toast(getContext(), "Feature not available");
+            } else if (title.equals(getString(R.string.messeges))) {
+                Utilities.toast(getContext(), "Feature not available");
+            } else if (title.equals(getString(R.string.submission))) {
+                homeItemClickListener.openCallFragment(new MySubmissionFragment());
+            } else if (title.equals(getString(R.string.news))) {
+                homeItemClickListener.openCallFragment(new NewsFragment());
+            } else if (title.equals(getString(R.string.references))) {
+                homeItemClickListener.openCallFragment(new ReferenceFragment());
+            } else if (title.equals(getString(R.string.help_wanted))) {
+                Utilities.toast(getContext(), "Feature not available");
+            } else if (title.equals(getString(R.string.calendar))) {
+                homeItemClickListener.openCallFragment(new CalendarFragment());
+            } else if (title.equals(getString(R.string.contacts))) {
+                Utilities.toast(getContext(), "Feature not available");
+            } else if (title.equals(getString(R.string.achievements))) {
+                homeItemClickListener.openCallFragment(new AchievementFragment());
+            }
+        }
     }
 
     private void setUpMyLife(){
@@ -254,56 +256,46 @@ public class BaseDashboardFragment extends BaseContainerFragment {
             ml.setImageId(R.drawable.ic_myhealth);
             ml.setWeight(1);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.messeges));
             ml.setImageId(R.drawable.ic_messages);
             ml.setWeight(2);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.achievements));
             ml.setImageId(R.drawable.my_achievement);
             ml.setWeight(3);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.submission));
             ml.setImageId(R.drawable.ic_submissions);
             ml.setWeight(4);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.news));
             ml.setImageId(R.drawable.ic_news);
             ml.setWeight(5);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.references));
             ml.setImageId(R.drawable.ic_references);
             ml.setWeight(6);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.help_wanted));
             ml.setImageId(R.drawable.ic_help_wanted);
             ml.setWeight(7);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.calendar));
             ml.setImageId(R.drawable.ic_calendar);
             ml.setWeight(8);
             ml.setUserId(userId);
-
             ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
             ml.setTitle(getString(R.string.contacts));
             ml.setImageId(R.drawable.ic_contacts);
             ml.setWeight(9);
             ml.setUserId(userId);
-
-
             realm.commitTransaction();
         }
 
