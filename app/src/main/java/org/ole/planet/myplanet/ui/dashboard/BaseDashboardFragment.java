@@ -210,24 +210,15 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         textView.setText(title);
         linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
-                if (title.equals(getString(R.string.myhealth))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.messeges))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.submission))) {
-                    homeItemClickListener.openCallFragment(new MySubmissionFragment());
-                } else if (title.equals(getString(R.string.news))) {
-                    homeItemClickListener.openCallFragment(new NewsFragment());
-                } else if (title.equals(getString(R.string.references))) {
-                    homeItemClickListener.openCallFragment(new ReferenceFragment());
-                } else if (title.equals(getString(R.string.help_wanted))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.calendar))) {
-                    homeItemClickListener.openCallFragment(new CalendarFragment());
-                } else if (title.equals(getString(R.string.contacts))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.achievements))) {
-                    homeItemClickListener.openCallFragment(new AchievementFragment());
+                if (title.equals(getString(R.string.myhealth))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.messeges))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.submission))) { homeItemClickListener.openCallFragment(new MySubmissionFragment());
+                } else if (title.equals(getString(R.string.news))) { homeItemClickListener.openCallFragment(new NewsFragment());
+                } else if (title.equals(getString(R.string.references))) { homeItemClickListener.openCallFragment(new ReferenceFragment());
+                } else if (title.equals(getString(R.string.help_wanted))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.calendar))) { homeItemClickListener.openCallFragment(new CalendarFragment());
+                } else if (title.equals(getString(R.string.contacts))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.achievements))) { homeItemClickListener.openCallFragment(new AchievementFragment());
                 }
             }
         });
