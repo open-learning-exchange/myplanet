@@ -244,14 +244,6 @@ public class BaseDashboardFragment extends BaseContainerFragment {
     private void setUpMyLife(){
         String userId = settings.getString("userId", "--");
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
-//        RealmMyLife myLife = new RealmMyLife("@drawable/my_achievement",userId,getResources().getString(R.string.achievements));
-//        RealmMyLife.createMyLife(myLife,mRealm,"0");
-//        myLife = new RealmMyLife("@drawable/ic_myhealth",userId,getResources().getString(R.string.myhealth));
-//        RealmMyLife.createMyLife(myLife,mRealm,"1");
-//        myLife = new RealmMyLife("@drawable/ic_messages",userId,getResources().getString(R.string.messeges));
-//        RealmMyLife.createMyLife(myLife,mRealm,"2");
-//        myLife = new RealmMyLife("@drawable/ic_submissions",userId,getResources().getString(R.string.submission));
-//        RealmMyLife.createMyLife(myLife,mRealm,"3");
         if (!realm.isInTransaction())
             realm.beginTransaction();
         RealmMyLife ml;

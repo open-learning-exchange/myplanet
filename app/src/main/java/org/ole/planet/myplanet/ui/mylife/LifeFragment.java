@@ -3,12 +3,25 @@ package org.ole.planet.myplanet.ui.mylife;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseRecyclerFragment;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLife;
+import org.ole.planet.myplanet.ui.library.CollectionsFragment;
+import org.ole.planet.myplanet.ui.library.LibraryFilterFragment;
+import org.ole.planet.myplanet.ui.library.LibraryFragment;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -17,32 +30,39 @@ import org.ole.planet.myplanet.R;
  * to handle interaction events.
 
  */
-public class LifeFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-
-    // TODO: Rename and change types of parameters
-
+public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> {
 
     private OnFragmentInteractionListener mListener;
+    AdapterMyLife adapterMyLife;
 
     public LifeFragment() {
         // Required empty public constructor
+    }
+
+    @Override
+    public int getLayout() {
+        return R.layout.fragment_life;
+    }
+
+    @Override
+    public RecyclerView.Adapter getAdapter() {
+        List <RealmMyLife> myLifeList = RealmMyLife.getMyLifeByU(mRealm,model.getId());
+        adapterMyLife = new AdapterMyLife(getContext(),myLifeList,mRealm);
+        return adapterMyLife;
     }
 
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_life, container, false);
-    }
+//    @Override
+//    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+//                             Bundle savedInstanceState) {
+//        // Inflate the layout for this fragment
+//        return inflater.inflate(R.layout.fragment_life, container, false);
+//    }
 
 
 
@@ -61,6 +81,12 @@ public class LifeFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
     }
 
     /**

@@ -27,6 +27,7 @@ public class RealmMyLife extends RealmObject {
     private int imageId;
     private String userId;
     private String title;
+    private int isVisible;
 
     public static void insertMyLife(String userId, JsonObject myLifeDoc, Realm mRealm) {
         Utilities.log("INSERT MYLIFE " + new Gson().toJson(myLifeDoc));
@@ -56,6 +57,28 @@ public class RealmMyLife extends RealmObject {
         String userId = settings.getString("userId", "--");
         List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
         List<RealmObject> myLifeItems = new ArrayList<>();
+        for (RealmMyLife item : myLifeList) {
+            if (item.getUserId().contains(userId)) {
+                myLifeItems.add(item);
+            }
+        }
+        return myLifeItems;
+    }
+
+    public static List<RealmObject> getMyLifeByUserId(Realm mRealm, String userId) {
+        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
+        List<RealmObject> myLifeItems = new ArrayList<>();
+        for (RealmMyLife item : myLifeList) {
+            if (item.getUserId().contains(userId)) {
+                myLifeItems.add(item);
+            }
+        }
+        return myLifeItems;
+    }
+
+    public static List<RealmMyLife> getMyLifeByU(Realm mRealm, String userId) {
+        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll();
+        List<RealmMyLife> myLifeItems = new ArrayList<>();
         for (RealmMyLife item : myLifeList) {
             if (item.getUserId().contains(userId)) {
                 myLifeItems.add(item);
@@ -112,6 +135,7 @@ public class RealmMyLife extends RealmObject {
         this.imageId = imageId;
         this.userId = userId;
         this.title = title;
+        this.isVisible = 1;
     }
 
     public RealmMyLife() {
@@ -155,5 +179,13 @@ public class RealmMyLife extends RealmObject {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public int getIsVisible() {
+        return isVisible;
+    }
+
+    public void setIsVisible(int isVisible) {
+        this.isVisible = isVisible;
     }
 }

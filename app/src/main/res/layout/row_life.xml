@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="100dp"
+    android:padding="@dimen/padding_normal"
+    android:orientation="horizontal">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/itemImageView"
+            android:layout_width="100dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            app:srcCompat="@drawable/ic_messages" />
+
+        <TextView
+            android:id="@+id/titleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_60dp"
+            android:layout_marginLeft="15dp"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_toRightOf="@id/itemImageView"
+            android:hint="@string/messeges"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/positionEditText"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_60dp"
+            android:layout_marginLeft="@dimen/_20dp"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_toRightOf="@id/titleTextView"
+            android:layout_toLeftOf="@id/visibilityToggleButton"
+            android:hint="T"
+            android:textStyle="bold" />
+
+        <Button
+            style="@style/BlueButton"
+            android:id="@+id/visibilityToggleButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_marginBottom="@dimen/_20dp"
+            android:padding="@dimen/padding_normal"
+            android:text="Add to my Favourites" />
+    </RelativeLayout>
+</LinearLayout>
