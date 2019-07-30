@@ -197,11 +197,20 @@ public class RealmMyLife extends RealmObject {
         realm.executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
+                int currentWeight = -1;
                 List <RealmMyLife> myLifeList = realm.where(RealmMyLife.class).findAll();
                 for (RealmMyLife item : myLifeList) {
                     if (item.getUserId().contains(userId)) {
                         if(item.getTitle().contains(title)){
-                           item.setWeight(weight);
+                            currentWeight =item.getWeight();
+                            item.setWeight(weight);
+                        }
+                    }
+                }
+                for (RealmMyLife item : myLifeList) {
+                    if (item.getUserId().contains(userId)) {
+                        if (currentWeight != -1 && item.getWeight() == weight && !item.getTitle().contains(title)) {
+                            item.setWeight(currentWeight);
                         }
                     }
                 }
