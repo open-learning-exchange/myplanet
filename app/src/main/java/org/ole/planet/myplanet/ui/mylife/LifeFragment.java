@@ -86,6 +86,7 @@ public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        KeyboardUtils.setupUI(getView().findViewById(R.id.my_life_parent_layout),getActivity());
 
     }
 

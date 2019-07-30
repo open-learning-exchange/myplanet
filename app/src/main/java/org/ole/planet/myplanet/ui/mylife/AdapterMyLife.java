@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.mylife;
 
+import android.app.Activity;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.AppCompatRatingBar;
@@ -30,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -94,6 +96,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 public void onClick(View view) {
                     String weight = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
                     swapPosition(Integer.parseInt(weight),myLifeList.get(position).getTitle(),myLifeList.get(position).getUserId());
+                    KeyboardUtils.hideSoftKeyboard((Activity)context);
                 }
             });
         }
