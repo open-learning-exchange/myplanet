@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.util.Log;
@@ -15,6 +16,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,8 +28,13 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
+import org.ole.planet.myplanet.ui.news.NewsFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
+import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity;
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
@@ -231,4 +239,36 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
     }
 
+    public void handleClick(final String id, String title, final Fragment f, TextView v) {
+        v.setText(title);
+        v.setOnClickListener(view -> {
+            if (homeItemClickListener != null) {
+                Bundle b = new Bundle();
+                b.putString("id", id);
+                f.setArguments(b);
+                homeItemClickListener.openCallFragment(f);
+            }
+        });
+    }
+
+    public void handleClickMyLife(final String id, String title, int imageId, LinearLayout linearLayout) {
+        ImageView imageView = (ImageView) linearLayout.getChildAt(0);
+        TextView textView = (TextView) linearLayout.getChildAt(1);
+        imageView.setImageResource(imageId);
+        textView.setText(title);
+        linearLayout.setOnClickListener(view -> {
+            if (homeItemClickListener != null) {
+                if (title.equals(getString(R.string.myhealth))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.messeges))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.submission))) { homeItemClickListener.openCallFragment(new MySubmissionFragment());
+                } else if (title.equals(getString(R.string.news))) { homeItemClickListener.openCallFragment(new NewsFragment());
+                } else if (title.equals(getString(R.string.references))) { homeItemClickListener.openCallFragment(new ReferenceFragment());
+                } else if (title.equals(getString(R.string.help_wanted))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.calendar))) { homeItemClickListener.openCallFragment(new CalendarFragment());
+                } else if (title.equals(getString(R.string.contacts))) { Utilities.toast(getContext(), "Feature not available");
+                } else if (title.equals(getString(R.string.achievements))) { homeItemClickListener.openCallFragment(new AchievementFragment());
+                }
+            }
+        });
+    }
 }
