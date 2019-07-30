@@ -56,20 +56,6 @@ public class RealmMyLife extends RealmObject {
         return myLifeItems;
     }
 
-    public static List<RealmMyLife> getMyLifeAll(String userId, List<RealmMyLife> libs) {
-        List<RealmMyLife> myLifeAll = new ArrayList<>();
-        for (RealmMyLife item : libs) {
-            if (!item.getUserId().contains(userId)) {
-                myLifeAll.add(item);
-            }
-        }
-        return myLifeAll;
-    }
-
-    public static RealmMyLife getMyLife(Realm mRealm, String stringId) {
-        return mRealm.where(RealmMyLife.class).equalTo("_id", stringId).findFirst();
-    }
-
     public static void createMyLife(RealmMyLife myLife, Realm mRealm, String _id) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
