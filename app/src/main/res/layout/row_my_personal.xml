@@ -37,6 +37,32 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:padding="4dp" />
+        <LinearLayout
+            android:id="@+id/ll_edit_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right">
+
+            <ImageView
+                android:id="@+id/img_edit"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:layout_marginLeft="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:visibility="visible"
+                app:srcCompat="@drawable/ic_edit" />
+
+            <ImageView
+                android:id="@+id/img_delete"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:background="?attr/selectableItemBackground"
+                app:srcCompat="@drawable/ic_delete" />
+        </LinearLayout>
 
     </LinearLayout>
 
