@@ -33,27 +33,13 @@ public class RealmMyLife extends RealmObject {
     private String title;
     private int isVisible;
 
-    public static List<RealmObject> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
+    public static List<RealmMyLife> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
         String userId = settings.getString("userId", "--");
-        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll().sort("weight");
-        List<RealmObject> myLifeItems = new ArrayList<>();
-        for (RealmMyLife item : myLifeList) {
-            if (item.getUserId().contains(userId)) {
-                myLifeItems.add(item);
-            }
-        }
-        return myLifeItems;
+        return getMyLifeByUserId(mRealm, userId);
     }
 
-    public static List<RealmMyLife> getMyLifeByU(Realm mRealm, String userId) {
-        List <RealmMyLife> myLifeList = mRealm.where(RealmMyLife.class).findAll().sort("weight");
-        List<RealmMyLife> myLifeItems = new ArrayList<>();
-        for (RealmMyLife item : myLifeList) {
-            if (item.getUserId().contains(userId)) {
-                myLifeItems.add(item);
-            }
-        }
-        return myLifeItems;
+    public static List<RealmMyLife> getMyLifeByUserId(Realm mRealm, String userId) {
+        return mRealm.where(RealmMyLife.class).equalTo("userId", userId).findAll().sort("weight");
     }
 
     public static void createMyLife(RealmMyLife myLife, Realm mRealm, String _id) {
@@ -121,16 +107,16 @@ public class RealmMyLife extends RealmObject {
         this.isVisible = isVisible;
     }
 
-    public static void updateWeight(int weight,String title, Realm realm, String userId){
+    public static void updateWeight(int weight, String title, Realm realm, String userId) {
         realm.executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
                 int currentWeight = -1;
-                List <RealmMyLife> myLifeList = realm.where(RealmMyLife.class).findAll();
+                List<RealmMyLife> myLifeList = realm.where(RealmMyLife.class).findAll();
                 for (RealmMyLife item : myLifeList) {
                     if (item.getUserId().contains(userId)) {
-                        if(item.getTitle().contains(title)){
-                            currentWeight =item.getWeight();
+                        if (item.getTitle().contains(title)) {
+                            currentWeight = item.getWeight();
                             item.setWeight(weight);
                         }
                     }

@@ -1,11 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -14,7 +10,6 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -23,14 +18,6 @@ import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
-import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
-import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
-import org.ole.planet.myplanet.ui.news.NewsFragment;
-import org.ole.planet.myplanet.ui.references.ReferenceFragment;
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
-import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
-import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -83,7 +70,6 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         for (final RealmMyLibrary items : db_myLibrary) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
             setTextColor((v.findViewById(R.id.title)), itemCnt, RealmMyLibrary.class);
-            //int color = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(RealmMyLibrary.class) : R.color.md_grey_400;
             v.setBackgroundColor(getResources().getColor((itemCnt % 2) == 0 ? R.color.md_white_1000 : R.color.md_grey_300));
             ((TextView) v.findViewById(R.id.title)).setText(items.getTitle());
             (v.findViewById(R.id.detail)).setOnClickListener(vi -> {
@@ -123,7 +109,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
     }
 
     private void myLifeListInit(FlexboxLayout flexboxLayout, Class c, View view){
-        List<RealmObject> db_myLife;
+        List<RealmMyLife> db_myLife;
         db_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         setCountText(db_myLife.size(), c, view);
         LinearLayout[] myLifeArray = new LinearLayout[db_myLife.size()];
@@ -136,7 +122,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
     }
     private void setUpMyLife(String userId) {
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
-        List<RealmObject> realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        List<RealmMyLife> realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction()) realm.beginTransaction();
             List<RealmMyLife> myLifeListBase = getMyLifeListBase(userId);
