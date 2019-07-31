@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 
 
-public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener, LifeFragment.OnFragmentInteractionListener{
+public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener{
     public static final String MESSAGE_PROGRESS = "message_progress";
 
     AccountHeader headerResult;
@@ -383,10 +383,5 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
         return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
     }
 }
