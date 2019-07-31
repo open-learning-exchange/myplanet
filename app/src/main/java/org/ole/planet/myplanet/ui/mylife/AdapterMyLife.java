@@ -71,12 +71,13 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     int weight = Integer.parseInt(weightString.trim());
                     if(weight <= getItemCount() && weight > 0) {
                         swapPosition(weight, myLifeList.get(position).getTitle(), myLifeList.get(position).getUserId());
-                        KeyboardUtils.hideSoftKeyboard((Activity) context);
+                        Utilities.toast(context, "Position updated");
                         notifyDataSetChanged();
                     } else {
                         Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
                         ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
                     }
+                    KeyboardUtils.hideSoftKeyboard((Activity) context);
                 }
             });
         }

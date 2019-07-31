@@ -3,8 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="100dp"
-    android:padding="@dimen/padding_normal"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:padding="@dimen/padding_normal">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -27,13 +27,26 @@
             android:hint="@string/messeges"
             android:textStyle="bold" />
 
-        <EditText
-            android:id="@+id/positionEditText"
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/input_layout_update_position"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="15dp"
             android:layout_marginTop="@dimen/_20dp"
-            android:layout_toLeftOf="@id/updatePosition"/>
+            android:layout_toLeftOf="@id/updatePosition"
+            android:hint="Enter new position"
+            app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+            app:hintAnimationEnabled="true"
+            app:hintEnabled="true">
+
+            <EditText
+                android:id="@+id/positionEditText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:minWidth="120dp" />
+
+        </android.support.design.widget.TextInputLayout>
 
         <Button
             android:id="@+id/updatePosition"
@@ -41,9 +54,9 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_20dp"
             android:layout_marginBottom="@dimen/_20dp"
+            android:layout_toLeftOf="@id/visibilityToggleButton"
             android:padding="@dimen/padding_normal"
-            android:text="Update"
-            android:layout_toLeftOf="@id/visibilityToggleButton"/>
+            android:text="Update" />
 
         <Button
             android:id="@+id/visibilityToggleButton"
@@ -52,6 +65,7 @@
             android:layout_alignParentRight="true"
             android:layout_marginTop="@dimen/_20dp"
             android:layout_marginBottom="@dimen/_20dp"
+            android:enabled="false"
             android:padding="@dimen/padding_normal"
             android:text="Add to my Favourites" />
     </RelativeLayout>
