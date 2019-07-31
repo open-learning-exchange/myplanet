@@ -108,26 +108,32 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         setUpMyLife(userId);
         if (c == RealmMyCourse.class) { db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
         } else if (c == RealmMyTeam.class) { db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
-        } else if (c == RealmMyLife.class) { db_myCourses = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        } else if (c == RealmMyLife.class) { myLifeListInit(flexboxLayout,c,view); return;
         } else { db_myCourses = mRealm.where(c).contains("userId",userId, Case.INSENSITIVE).findAll();
         }
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
-        LinearLayout[] myLifeArray = new LinearLayout[db_myCourses.size()];
         int itemCnt = 0;
         for (final RealmObject items : db_myCourses) {
-            if (c == RealmMyLife.class) {
-                setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
-                flexboxLayout.addView(myLifeArray[itemCnt], params);
-            } else {
-                setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
-                setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c);
-                flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
-            }
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c);
+            setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c);
+            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
         }
     }
 
+    private void myLifeListInit(FlexboxLayout flexboxLayout, Class c, View view){
+        List<RealmObject> db_myLife;
+        db_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        setCountText(db_myLife.size(), c, view);
+        LinearLayout[] myLifeArray = new LinearLayout[db_myLife.size()];
+        int itemCnt = 0;
+        for (final RealmObject items : db_myLife) {
+            setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
+            flexboxLayout.addView(myLifeArray[itemCnt], params);
+            itemCnt++;
+        }
+    }
     private void setUpMyLife(String userId) {
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
         List<RealmObject> realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings);
