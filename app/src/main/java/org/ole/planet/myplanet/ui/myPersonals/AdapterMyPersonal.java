@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.ui.myPersonals;
 
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
@@ -12,15 +15,21 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity;
+import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.List;
 
 import io.realm.Realm;
@@ -28,12 +37,14 @@ import io.realm.Realm;
 public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private Context context;
-    private List<RealmMyPersonal> list;
     private Realm realm;
-
+    private List<RealmMyPersonal> list ;
+    OnHomeItemClickListener clickListener;
     public AdapterMyPersonal(Context context, List<RealmMyPersonal> list) {
         this.context = context;
         this.list = list;
+        if (context instanceof OnHomeItemClickListener)
+            clickListener = (OnHomeItemClickListener) context;
     }
 
     public void setRealm(Realm realm) {
@@ -66,6 +77,37 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
             ((ViewHolderMyPersonal) holder).ivEdit.setOnClickListener(view -> {
                 editPersonal(list.get(position));
             });
+            holder.itemView.setOnClickListener(view -> {
+                openResource(list.get(position).getPath());
+            });
+        }
+    }
+
+    private void openResource(String path) {
+        String[] arr = path.split("\\.");
+        String extension = arr[arr.length - 1];
+        switch (extension){
+            case "pdf":
+                context.startActivity(new Intent(context, PDFReaderActivity.class).putExtra("TOUCHED_FILE", path));
+                break;
+            case "bmp":
+            case "gif":
+            case "jpg":
+            case "png":
+            case "webp":
+                Intent ii = new Intent(context, ImageViewerActivity.class).putExtra("TOUCHED_FILE", path);
+                ii.putExtra("isFullPath", true);
+                context.startActivity(ii);
+                break;
+            case "mp4":
+                Bundle b = new Bundle();
+                b.putString("videoURL", "" + Uri.fromFile(new File(path)));
+                b.putString("Auth", "" + Uri.fromFile(new File(path)));
+                b.putString("videoType", "offline");
+                Intent i = new Intent(context, VideoPlayerActivity.class).putExtra("TOUCHED_FILE", path);
+                i.putExtras(b);
+                context.startActivity(i);
+                break;
         }
     }
 

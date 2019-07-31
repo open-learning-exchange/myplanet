@@ -17,4 +17,5 @@
     <dimen name="_60dp">60dp</dimen>
     <dimen name="_20dp">20dp</dimen>
     <dimen name="_1dp">1dp</dimen>
+    <dimen name="_80dp">80dp</dimen>
 </resources>
