@@ -9,374 +9,61 @@
 
 
 
-     <LinearLayout
-         android:layout_width="match_parent"
-         android:layout_height="match_parent"
-         android:layout_gravity="center">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center">
 
-         <FrameLayout
-             android:layout_width="wrap_content"
-             android:layout_height="match_parent"
-             android:layout_gravity="center"
-             android:foregroundGravity="center">
+        <FrameLayout
+            android:id="@+id/myLifeImageButton"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:foregroundGravity="center">
 
-             <LinearLayout
-                 android:id="@+id/myLifeImageButton"
-                 android:layout_width="@dimen/dashboard_card_title"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:background="@color/md_purple_700"
-                 android:gravity="center"
-                 android:orientation="vertical"
-                 android:padding="@dimen/padding_normal">
+            <LinearLayout
+                android:layout_width="@dimen/dashboard_card_title"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:background="@color/md_purple_700"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/padding_normal">
 
-                 <ImageView
-                     android:layout_width="@dimen/image_size_home_card"
-                     android:layout_height="@dimen/image_size_home_card"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     app:srcCompat="@drawable/meetups" />
+                <ImageView
+                    android:layout_width="@dimen/image_size_home_card"
+                    android:layout_height="@dimen/image_size_home_card"
+                    android:layout_marginLeft="16dp"
+                    android:layout_marginRight="16dp"
+                    app:srcCompat="@drawable/meetups" />
 
-                 <TextView
-                     android:layout_width="match_parent"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:gravity="center"
-                     android:text="@string/txt_myLife"
-                     android:textColor="@color/md_white_1000" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:text="@string/txt_myLife"
+                    android:textColor="@color/md_white_1000" />
 
-             </LinearLayout>
-
-
-         </FrameLayout>
-
-         <HorizontalScrollView
-             android:layout_width="match_parent"
-             android:layout_gravity="center"
-             android:foregroundGravity="center"
-             android:layout_height="match_parent">
-         <LinearLayout
-             android:layout_width="wrap_content"
-             android:layout_height="match_parent">
-
-             <LinearLayout
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:id="@+id/ll_achievement"
-                 android:minWidth="@dimen/user_image_size"
-                 android:gravity="center"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/my_achievement" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/achievements"
-                     android:textColor="@color/md_black_1000" />
-
-             </LinearLayout>
+            </LinearLayout>
 
 
+        </FrameLayout>
 
-             <LinearLayout
-                 android:id="@+id/ll_myHealth"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:background="@color/md_grey_300"
-                 android:gravity="center"
-                 android:orientation="vertical">
+        <HorizontalScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1">
 
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_myhealth" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/myhealth"
-                     android:textColor="@color/md_black_1000"
-                      />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_messages"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:background="@color/md_white_1000"
-                 android:gravity="center"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_messages" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/messeges"
-                     android:textColor="@color/md_black_1000"
-                      />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_myPersonals"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:background="@color/md_grey_300"
-                 android:gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_mypersonals" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/mypersonals"
-                     android:textColor="@color/md_black_1000" />
-
-             </LinearLayout>
-
-
-             <LinearLayout
-                 android:id="@+id/ll_mySubmissions"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_submissions" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/submission"
-                     android:textColor="@color/md_black_1000" />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_news"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:gravity="center"
-                 android:background="@color/md_grey_300"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/team" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/news"
-                     android:textColor="@color/md_black_1000"
-                     />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_references"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:gravity="center"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_references" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/references"
-                     android:textColor="@color/md_black_1000"
-                     />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_help_wanted"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:background="@color/md_grey_300"
-                 android:gravity="center"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_help_wanted" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/help_wanted"
-                     android:textColor="@color/md_black_1000"
-                     />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_calendar"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_calendar" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="53dp"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/calendar"
-                     android:textColor="@color/md_black_1000" />
-
-             </LinearLayout>
-
-             <LinearLayout
-                 android:id="@+id/ll_contacts"
-                 android:layout_width="wrap_content"
-                 android:layout_height="match_parent"
-                 android:layout_gravity="center"
-                 android:background="@color/md_grey_300"
-                 android:visibility="gone"
-                 android:gravity="center"
-                 android:minWidth="@dimen/user_image_size"
-                 android:orientation="vertical">
-
-                 <ImageView
-                     android:layout_width="@dimen/icon_size_mid"
-                     android:layout_height="@dimen/icon_size_mid"
-                     android:layout_gravity="center"
-                     android:layout_marginLeft="16dp"
-                     android:layout_marginRight="16dp"
-                     android:tint="@color/md_black_1000"
-                     app:srcCompat="@drawable/ic_contacts" />
-
-                 <TextView
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:layout_gravity="center"
-                     android:foregroundGravity="center"
-                     android:gravity="center"
-                     android:padding="@dimen/eight_dp"
-                     android:text="@string/contacts"
-                     android:textColor="@color/md_black_1000"
-                     />
-
-             </LinearLayout>
-         </LinearLayout>
-         </HorizontalScrollView>
-     </LinearLayout>
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/flexboxLayoutMyLife"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                app:alignContent="stretch"
+                app:alignItems="stretch"
+                app:flexWrap="wrap" />
+        </HorizontalScrollView>
+    </LinearLayout>
 
 
 </android.support.v7.widget.CardView>

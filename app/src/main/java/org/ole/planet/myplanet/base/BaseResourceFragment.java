@@ -19,6 +19,8 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,7 +37,12 @@ import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
+import org.ole.planet.myplanet.ui.news.NewsFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.DownloadUtils;
@@ -259,4 +266,5 @@ public abstract class BaseResourceFragment extends Fragment {
         }
         tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }
+
 }

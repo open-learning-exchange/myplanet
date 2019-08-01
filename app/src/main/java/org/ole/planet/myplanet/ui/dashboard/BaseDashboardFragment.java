@@ -1,9 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -14,27 +10,25 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
-import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
-import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
 
-public class BaseDashboardFragment extends BaseContainerFragment {
+public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
     String fullName;
     Realm mRealm;
     TextView txtFullName, txtVisits, txtRole;
@@ -76,7 +70,6 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         for (final RealmMyLibrary items : db_myLibrary) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_library_home, null);
             setTextColor((v.findViewById(R.id.title)), itemCnt, RealmMyLibrary.class);
-            //int color = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(RealmMyLibrary.class) : R.color.md_grey_400;
             v.setBackgroundColor(getResources().getColor((itemCnt % 2) == 0 ? R.color.md_white_1000 : R.color.md_grey_300));
             ((TextView) v.findViewById(R.id.title)).setText(items.getTitle());
             (v.findViewById(R.id.detail)).setOnClickListener(vi -> {
@@ -97,13 +90,12 @@ public class BaseDashboardFragment extends BaseContainerFragment {
 
     public void setUpMyList(Class c, FlexboxLayout flexboxLayout, View view) {
         List<RealmObject> db_myCourses;
-        if (c == RealmMyCourse.class) {
-            db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
-        } else if (c == RealmMyTeam.class) {
-            db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
-        } else {
-            db_myCourses = mRealm.where(c)
-                    .contains("userId", settings.getString("userId", "--"), Case.INSENSITIVE).findAll();
+        String userId = settings.getString("userId", "--");
+        setUpMyLife(userId);
+        if (c == RealmMyCourse.class) { db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
+        } else if (c == RealmMyTeam.class) { db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
+        } else if (c == RealmMyLife.class) { myLifeListInit(flexboxLayout,c,view); return;
+        } else { db_myCourses = mRealm.where(c).contains("userId",userId, Case.INSENSITIVE).findAll();
         }
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
@@ -116,46 +108,38 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         }
     }
 
-    private void setTextColor(TextView textView, int itemCnt, Class c) {
-        //  int color = getResources().getColor(PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(c) : R.color.md_grey_400);
-        textView.setTextColor(getResources().getColor(R.color.md_black_1000));
-        if ((itemCnt % 2) == 0) {
-            textView.setBackgroundResource(R.drawable.light_rect);
-        } else {
-            textView.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
+    private void myLifeListInit(FlexboxLayout flexboxLayout, Class c, View view){
+        List<RealmMyLife> db_myLife;
+        db_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        setCountText(db_myLife.size(), c, view);
+        LinearLayout[] myLifeArray = new LinearLayout[db_myLife.size()];
+        int itemCnt = 0;
+        for (final RealmObject items : db_myLife) {
+            setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
+            flexboxLayout.addView(myLifeArray[itemCnt], params);
+            itemCnt++;
         }
     }
-
-
-    public void setTextViewProperties(TextView[] textViewArray, int itemCnt, final RealmObject obj, Class c) {
-        textViewArray[itemCnt] = new TextView(getContext());
-        textViewArray[itemCnt].setPadding(20, 10, 20, 10);
-        textViewArray[itemCnt].setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        textViewArray[itemCnt].setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-        if (obj instanceof RealmMyLibrary) {
-            textViewArray[itemCnt].setText(((RealmMyLibrary) obj).getTitle());
-        } else if (obj instanceof RealmMyCourse) {
-            handleClick(((RealmMyCourse) obj).getCourseId(), ((RealmMyCourse) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
-        } else if (obj instanceof RealmMyTeam) {
-            //    textViewArray[itemCnt].setText(((RealmMyTeam) obj).getName());
-            handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
-        } else if (obj instanceof RealmMeetup) {
-            handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
-        }
-    }
-
-    private void handleClick(final String id, String title, final Fragment f, TextView v) {
-        v.setText(title);
-        v.setOnClickListener(view -> {
-            if (homeItemClickListener != null) {
-                Bundle b = new Bundle();
-                b.putString("id", id);
-                f.setArguments(b);
-                homeItemClickListener.openCallFragment(f);
+    private void setUpMyLife(String userId) {
+        Realm realm = new DatabaseService(getContext()).getRealmInstance();
+        List<RealmMyLife> realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        if (realmObjects.isEmpty()) {
+            if (!realm.isInTransaction()) realm.beginTransaction();
+            List<RealmMyLife> myLifeListBase = getMyLifeListBase(userId);
+            RealmMyLife ml;
+            int weight = 1;
+            for(RealmMyLife item: myLifeListBase){
+                ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
+                ml.setTitle(item.getTitle());
+                ml.setImageId(item.getImageId());
+                ml.setWeight(weight);
+                ml.setUserId(item.getUserId());
+                weight++;
             }
-        });
-    }
+            realm.commitTransaction();
+        }
 
+    }
 
     public void myLibraryItemClickAction(TextView textView, final RealmMyLibrary items) {
         textView.setOnClickListener(v -> openResource(items));
@@ -199,7 +183,7 @@ public class BaseDashboardFragment extends BaseContainerFragment {
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
+        initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife.class);
         showDownloadDialog(getLibraryList(mRealm));
-
     }
 }
