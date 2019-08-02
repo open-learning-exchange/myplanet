@@ -1,27 +1,11 @@
 package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences;
-import android.support.annotation.NonNull;
-import android.text.TextUtils;
-import android.util.Log;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 import io.realm.Realm;
-import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmMyLife extends RealmObject {
@@ -112,20 +96,16 @@ public class RealmMyLife extends RealmObject {
             @Override
             public void execute(Realm realm) {
                 int currentWeight = -1;
-                List<RealmMyLife> myLifeList = realm.where(RealmMyLife.class).findAll();
+                List<RealmMyLife> myLifeList = getMyLifeByUserId(realm,userId);
                 for (RealmMyLife item : myLifeList) {
-                    if (item.getUserId().contains(userId)) {
-                        if (item.get_id().contains(_id)) {
-                            currentWeight = item.getWeight();
-                            item.setWeight(weight);
-                        }
+                    if (item.get_id().contains(_id)) {
+                        currentWeight = item.getWeight();
+                        item.setWeight(weight);
                     }
                 }
                 for (RealmMyLife item : myLifeList) {
-                    if (item.getUserId().contains(userId)) {
-                        if (currentWeight != -1 && item.getWeight() == weight && !item.get_id().contains(_id)) {
-                            item.setWeight(currentWeight);
-                        }
+                    if (currentWeight != -1 && item.getWeight() == weight && !item.get_id().contains(_id)) {
+                        item.setWeight(currentWeight);
                     }
                 }
             }

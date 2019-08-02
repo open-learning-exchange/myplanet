@@ -83,8 +83,8 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
     }
 
-    public void swapPosition(int weight, String title, String userId){
-        RealmMyLife.updateWeight(weight, title, mRealm, userId);
+    public void swapPosition(int weight, String _id, String userId){
+        RealmMyLife.updateWeight(weight, _id, mRealm, userId);
         notifyDataSetChanged();
     }
 
