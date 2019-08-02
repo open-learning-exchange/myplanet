@@ -107,15 +107,19 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
                 IntentUtils.openAudioFile(context, path);
                 break;
             case "mp4":
-                Bundle b = new Bundle();
-                b.putString("videoURL", "" + Uri.fromFile(new File(path)));
-                b.putString("Auth", "" + Uri.fromFile(new File(path)));
-                b.putString("videoType", "offline");
-                Intent i = new Intent(context, VideoPlayerActivity.class).putExtra("TOUCHED_FILE", path);
-                i.putExtras(b);
-                context.startActivity(i);
+               openVideo(path);
                 break;
         }
+    }
+
+    private void openVideo(String path) {
+        Bundle b = new Bundle();
+        b.putString("videoURL", "" + Uri.fromFile(new File(path)));
+        b.putString("Auth", "" + Uri.fromFile(new File(path)));
+        b.putString("videoType", "offline");
+        Intent i = new Intent(context, VideoPlayerActivity.class).putExtra("TOUCHED_FILE", path);
+        i.putExtras(b);
+        context.startActivity(i);
     }
 
 
