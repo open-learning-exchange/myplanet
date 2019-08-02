@@ -58,8 +58,7 @@
             android:layout_width="wrap_content"
             android:id="@+id/fab_play"
             app:fab_label="Play Audio"
-            android:tint="#ffffff"
-            android:src="@drawable/ic_play"
+            android:src="@drawable/ic_play_white"
             android:layout_height="wrap_content" />
     </com.github.clans.fab.FloatingActionMenu>
 </android.support.design.widget.CoordinatorLayout>
