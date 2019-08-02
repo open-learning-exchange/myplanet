@@ -27,6 +27,7 @@ import android.widget.FrameLayout;
 
 
 import org.jetbrains.annotations.NotNull;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
@@ -167,7 +168,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 if (type == 0) {
                     startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", path));
                 } else {
-                    showAlert(path);
+                    showAlert(getActivity(), path);
                 }
             } else {
                 Utilities.toast(getActivity(), "Invalid resource url");
@@ -176,23 +177,23 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     }
 
-    private void showAlert(String path) {
+    public static void showAlert(Context context, String path) {
 
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_my_personal, null);
+        View v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null);
         EditText etTitle = v.findViewById(R.id.et_title);
         EditText etDesc = v.findViewById(R.id.et_description);
-        RealmUserModel realmUserModel = new UserProfileDbHandler(getActivity()).getUserModel();
+        RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userId = realmUserModel.getId();
-        new AlertDialog.Builder(getActivity()).setTitle("Enter resource detail")
+        new AlertDialog.Builder(context).setTitle("Enter resource detail")
                 .setView(v)
                 .setPositiveButton("Save", (dialogInterface, i) -> {
                     String title = etTitle.getText().toString();
                     if (title.isEmpty()) {
-                        Utilities.toast(getActivity(), "Title is required.");
+                        Utilities.toast(context, "Title is required.");
                         return;
                     }
                     String desc = etDesc.getText().toString();
-                    Realm realm = new DatabaseService(getActivity()).getRealmInstance();
+                    Realm realm = new DatabaseService(context).getRealmInstance();
                     realm.executeTransactionAsync(realm1 -> {
                         RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
                         myPersonal.setTitle(title);
@@ -200,7 +201,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                         myPersonal.setPath(path);
                         myPersonal.setDate(new Date().getTime());
                         myPersonal.setDescription(desc);
-                    }, () -> Utilities.toast(getActivity(), "Resource Saved"));
+                    }, () -> Utilities.toast(MainApplication.context, "Resource Saved to my personal"));
 
                 }).setNegativeButton("Dismiss", null).show();
     }

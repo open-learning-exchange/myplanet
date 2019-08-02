@@ -106,6 +106,13 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         startActivity(fileOpenIntent);
     }
 
+    public void openPdf(RealmMyLibrary item) {
+        Intent fileOpenIntent = new Intent(getActivity(), PDFReaderActivity.class);
+        fileOpenIntent.putExtra("TOUCHED_FILE", item.getId() + "/" + item.getResourceLocalAddress());
+        fileOpenIntent.putExtra("resourceId", item.getId());
+        startActivity(fileOpenIntent);
+    }
+
 
     public void openResource(RealmMyLibrary items) {
         if (items.getResourceOffline() != null && items.isResourceOffline()) {
@@ -125,7 +132,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         String extension = filenameArray[filenameArray.length - 1];
         switch (extension) {
             case "pdf":
-                openIntent(items, PDFReaderActivity.class);
+                openPdf(items);
                 break;
             case "bmp":
             case "gif":

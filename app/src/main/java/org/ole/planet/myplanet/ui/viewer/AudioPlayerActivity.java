@@ -20,6 +20,7 @@ import java.util.ArrayList;
 public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerManagerListener {
     JcPlayerView jcplayer;
     ArrayList<JcAudio> jcAudios;
+    boolean isFullPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,10 +28,12 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
         setContentView(R.layout.activity_audio_player);
         jcplayer = findViewById(R.id.jcplayer);
         String filePath = getIntent().getStringExtra("TOUCHED_FILE");
-        // String title = getIntent().getStringExtra("title");
         jcAudios = new ArrayList<>();
-        Utilities.log("File " + String.valueOf(new File(Utilities.SD_PATH, filePath)));
-        jcAudios.add(JcAudio.createFromFilePath(String.valueOf(new File(Utilities.SD_PATH, filePath))));
+        isFullPath = getIntent().getBooleanExtra("isFullPath", false);
+        String fullPath = String.valueOf(new File(Utilities.SD_PATH, filePath));
+        if (isFullPath)
+            fullPath = String.valueOf(new File(filePath));
+        jcAudios.add(JcAudio.createFromFilePath(fullPath));
         jcplayer.initPlaylist(jcAudios, null);
         jcplayer.getRootView().findViewById(R.id.btnNext).setVisibility(View.GONE);
         jcplayer.getRootView().findViewById(R.id.btnPrev).setVisibility(View.GONE);
@@ -39,7 +42,7 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home){
+        if (item.getItemId() == android.R.id.home) {
             finish();
         }
         return super.onOptionsItemSelected(item);
