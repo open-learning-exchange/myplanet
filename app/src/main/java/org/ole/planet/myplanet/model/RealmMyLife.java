@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.Log;
 

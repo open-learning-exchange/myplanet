@@ -45,33 +45,27 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         });
     }
 
-    public void handleClickMyLife(final String id, String title, int imageId, LinearLayout linearLayout) {
+    public void handleClickMyLife(String title, int imageId, LinearLayout linearLayout) {
         ImageView imageView = (ImageView) linearLayout.getChildAt(0);
         TextView textView = (TextView) linearLayout.getChildAt(1);
         imageView.setImageResource(imageId);
         textView.setText(title);
         linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
-                if (title.equals(getString(R.string.myhealth))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.messeges))) {
-                    Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.submission))) {
+                if (title.equals(getString(R.string.submission))) {
                     homeItemClickListener.openCallFragment(new MySubmissionFragment());
                 } else if (title.equals(getString(R.string.news))) {
                     homeItemClickListener.openCallFragment(new NewsFragment());
                 } else if (title.equals(getString(R.string.references))) {
                     homeItemClickListener.openCallFragment(new ReferenceFragment());
-                } else if (title.equals(getString(R.string.help_wanted))) {
-                    Utilities.toast(getContext(), "Feature not available");
                 } else if (title.equals(getString(R.string.calendar))) {
                     homeItemClickListener.openCallFragment(new CalendarFragment());
-                } else if (title.equals(getString(R.string.contacts))) {
-                    Utilities.toast(getContext(), "Feature not available");
                 } else if (title.equals(getString(R.string.achievements))) {
                     homeItemClickListener.openCallFragment(new AchievementFragment());
                 } else if (title.equals(getString(R.string.mypersonals))) {
                     homeItemClickListener.openCallFragment(new MyPersonalsFragment());
+                } else {
+                    Utilities.toast(getActivity(), "Feature Not Available");
                 }
             }
         });
@@ -136,7 +130,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             linearLayoutArray[itemCnt].setBackgroundColor(getResources().getColor(R.color.md_grey_300));
         }
 
-        handleClickMyLife(((RealmMyLife) obj).get_id(), ((RealmMyLife) obj).getTitle(), ((RealmMyLife) obj).getImageId(), linearLayoutArray[itemCnt]);
+        handleClickMyLife(((RealmMyLife) obj).getTitle(), ((RealmMyLife) obj).getImageId(), linearLayoutArray[itemCnt]);
 
     }
 

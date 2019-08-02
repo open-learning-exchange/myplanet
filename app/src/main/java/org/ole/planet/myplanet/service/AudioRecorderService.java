@@ -34,16 +34,9 @@ public class AudioRecorderService {
     }
 
     public void startRecording() {
-
         outputFile = Environment.getExternalStorageDirectory().getAbsolutePath() +"/"+ UUID.randomUUID().toString() + ".aac";
         File f = new File(outputFile);
-        if (!f.exists()) {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        createFileIfNotExists(f);
         myAudioRecorder = new MediaRecorder();
         myAudioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
@@ -60,6 +53,16 @@ public class AudioRecorderService {
                 audioRecordListener.onError(e.getMessage());
             }
 
+        }
+    }
+
+    private void createFileIfNotExists(File f) {
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
