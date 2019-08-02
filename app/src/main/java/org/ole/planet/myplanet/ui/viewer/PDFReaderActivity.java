@@ -5,8 +5,8 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
@@ -17,10 +17,16 @@ import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener;
 import com.github.barteksc.pdfviewer.listener.OnPageChangeListener;
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener;
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle;
+import com.github.clans.fab.FloatingActionButton;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.SourceFile;
 import org.ole.planet.myplanet.service.AudioRecorderService;
+import org.ole.planet.myplanet.ui.library.AddResourceFragment;
+import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
+import org.ole.planet.myplanet.utilities.IntentUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -30,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import io.realm.Realm;
+
 public class PDFReaderActivity extends AppCompatActivity implements OnPageChangeListener, OnLoadCompleteListener,
         OnPageErrorListener, AudioRecorderService.AudioRecordListener {
 
@@ -37,13 +45,21 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
     private TextView mPdfFileNameTitle;
     private String fileName;
     private PDFView pdfView;
-    private FloatingActionButton fabRecord;
+    private FloatingActionButton fabRecord, fabPlay;
     private AudioRecorderService audioRecorderService;
+    private RealmMyLibrary library;
+    private Realm mRealm;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pdfreader);
         audioRecorderService = new AudioRecorderService().setAudioRecordListener(this);
+        mRealm = new DatabaseService(this).getRealmInstance();
+        if (getIntent().hasExtra("resourceId")) {
+            String resourceID = getIntent().getStringExtra("resourceId");
+            library = mRealm.where(RealmMyLibrary.class).equalTo("id", resourceID).findFirst();
+        }
         declareElements();
         renderPdfFile();
     }
@@ -52,11 +68,18 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         mPdfFileNameTitle = findViewById(R.id.pdfFileName);
         pdfView = findViewById(R.id.pdfView);
         fabRecord = findViewById(R.id.fab_record);
+        fabPlay = findViewById(R.id.fab_play);
         fabRecord.setOnClickListener(view -> {
-            if (audioRecorderService.isRecording()){
+            if (audioRecorderService.isRecording()) {
                 audioRecorderService.stopRecording();
-            }else{
+            } else {
                 audioRecorderService.startRecording();
+            }
+        });
+
+        fabPlay.setOnClickListener(view -> {
+            if (library!=null && !TextUtils.isEmpty(library.getTranslationAudioPath())){
+                IntentUtils.openAudioFile(this, library.getTranslationAudioPath());
             }
         });
     }
@@ -109,13 +132,27 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
     public void onRecordStopped(String outputFile) {
         Utilities.toast(this, "Recording stopped.");
         NotificationUtil.cancellAll(this);
+        if (outputFile != null) {
+            updateTranslation(outputFile);
+            AddResourceFragment.showAlert(this,outputFile);
+        }
         fabRecord.setImageResource(R.drawable.ic_mic);
+    }
+
+    private void updateTranslation(String outputFile) {
+        if (library != null) {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            library.setTranslationAudioPath(outputFile);
+            mRealm.commitTransaction();
+            Utilities.toast(this, "Audio file saved in database.");
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (audioRecorderService!=null && audioRecorderService.isRecording())
+        if (audioRecorderService != null && audioRecorderService.isRecording())
             audioRecorderService.stopRecording();
     }
 

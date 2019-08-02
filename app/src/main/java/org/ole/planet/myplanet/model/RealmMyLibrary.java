@@ -56,6 +56,7 @@ public class RealmMyLibrary extends RealmObject {
     private String mediaType;
     private String description;
     private String sendOnAccept;
+    private String translationAudioPath;
     private int sum;
     private int timesRated;
     private RealmList<String> resourceFor;
@@ -365,6 +366,14 @@ public class RealmMyLibrary extends RealmObject {
             if (!(s instanceof JsonNull) && !resource.getLevel().contains(s.getAsString()))
                 resource.getLevel().add(s.getAsString());
         }
+    }
+
+    public String getTranslationAudioPath() {
+        return translationAudioPath;
+    }
+
+    public void setTranslationAudioPath(String translationAudioPath) {
+        this.translationAudioPath = translationAudioPath;
     }
 
     public void setTag(JsonArray array, RealmMyLibrary resource) {

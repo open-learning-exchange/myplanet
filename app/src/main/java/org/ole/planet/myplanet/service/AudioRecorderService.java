@@ -34,12 +34,12 @@ public class AudioRecorderService {
     }
 
     public void startRecording() {
-
-        outputFile = Environment.getExternalStorageDirectory().getAbsolutePath() +"/ole/audios/"+ UUID.randomUUID().toString()+".3gp";
+        outputFile = Environment.getExternalStorageDirectory().getAbsolutePath() +"/"+ UUID.randomUUID().toString() + ".aac";
         File f = new File(outputFile);
+        createFileIfNotExists(f);
         myAudioRecorder = new MediaRecorder();
         myAudioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
         myAudioRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
         myAudioRecorder.setOutputFile(outputFile);
         try {
@@ -53,6 +53,16 @@ public class AudioRecorderService {
                 audioRecordListener.onError(e.getMessage());
             }
 
+        }
+    }
+
+    private void createFileIfNotExists(File f) {
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 

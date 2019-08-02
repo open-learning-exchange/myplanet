@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.mylife;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -47,11 +49,11 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (holder instanceof org.ole.planet.myplanet.ui.mylife.AdapterMyLife.ViewHolderMyLife) {
             Utilities.log("On bind " + position);
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
-            ((ViewHolderMyLife) holder).imageView.setImageResource(myLifeList.get(position).getImageId());
-            ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
+            ((ViewHolderMyLife) holder).imageView.setImageResource(context.getResources().getIdentifier(myLifeList.get(position).getImageId(), "drawable", context.getPackageName()));
+            ((ViewHolderMyLife) holder).positionEditText.setText(String.format("%d", myLifeList.get(position).getWeight()));
             ((ViewHolderMyLife) holder).updatePositionButton.setOnClickListener(view -> {
                 String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
-                if(!weightString.isEmpty()) {
+                if (!weightString.isEmpty()) {
                     int weight = Integer.parseInt(weightString.trim());
                     if (weight <= getItemCount() && weight > 0) {
                         swapPosition(weight, myLifeList.get(position).get_id(), myLifeList.get(position).getUserId());
@@ -61,15 +63,15 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                         Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
                         ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
                     }
-                } else{
+                } else {
                     Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
                 }
                 KeyboardUtils.hideSoftKeyboard((Activity) context);
             });
         }
     }
-                                                                                
-    public void swapPosition(int weight, String _id, String userId){
+
+    public void swapPosition(int weight, String _id, String userId) {
         RealmMyLife.updateWeight(weight, _id, mRealm, userId);
         notifyDataSetChanged();
     }
@@ -100,3 +102,4 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
 }
+

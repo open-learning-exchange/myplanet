@@ -45,23 +45,27 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         });
     }
 
-    public void handleClickMyLife(final String id, String title, int imageId, LinearLayout linearLayout) {
+    public void handleClickMyLife(String title, String imageId, LinearLayout linearLayout) {
         ImageView imageView = (ImageView) linearLayout.getChildAt(0);
         TextView textView = (TextView) linearLayout.getChildAt(1);
-        imageView.setImageResource(imageId);
+        imageView.setImageResource(getResources().getIdentifier(imageId,"drawable", getActivity().getPackageName()));
         textView.setText(title);
         linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
-                if (title.equals(getString(R.string.myhealth))) { Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.messeges))) { Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.submission))) { homeItemClickListener.openCallFragment(new MySubmissionFragment());
-                } else if (title.equals(getString(R.string.news))) { homeItemClickListener.openCallFragment(new NewsFragment());
-                } else if (title.equals(getString(R.string.references))) { homeItemClickListener.openCallFragment(new ReferenceFragment());
-                } else if (title.equals(getString(R.string.help_wanted))) { Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.calendar))) { homeItemClickListener.openCallFragment(new CalendarFragment());
-                } else if (title.equals(getString(R.string.contacts))) {Utilities.toast(getContext(), "Feature not available");
-                } else if (title.equals(getString(R.string.achievements))) {homeItemClickListener.openCallFragment(new AchievementFragment());
-                } else if (title.equals(getString(R.string.mypersonals))) { homeItemClickListener.openCallFragment(new MyPersonalsFragment());
+                if (title.equals(getString(R.string.submission))) {
+                    homeItemClickListener.openCallFragment(new MySubmissionFragment());
+                } else if (title.equals(getString(R.string.news))) {
+                    homeItemClickListener.openCallFragment(new NewsFragment());
+                } else if (title.equals(getString(R.string.references))) {
+                    homeItemClickListener.openCallFragment(new ReferenceFragment());
+                } else if (title.equals(getString(R.string.calendar))) {
+                    homeItemClickListener.openCallFragment(new CalendarFragment());
+                } else if (title.equals(getString(R.string.achievements))) {
+                    homeItemClickListener.openCallFragment(new AchievementFragment());
+                } else if (title.equals(getString(R.string.mypersonals))) {
+                    homeItemClickListener.openCallFragment(new MyPersonalsFragment());
+                } else {
+                    Utilities.toast(getActivity(), "Feature Not Available");
                 }
             }
         });
@@ -126,22 +130,22 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             linearLayoutArray[itemCnt].setBackgroundColor(getResources().getColor(R.color.md_grey_300));
         }
 
-        handleClickMyLife(((RealmMyLife) obj).get_id(), ((RealmMyLife) obj).getTitle(), ((RealmMyLife) obj).getImageId(), linearLayoutArray[itemCnt]);
+        handleClickMyLife(((RealmMyLife) obj).getTitle(), ((RealmMyLife) obj).getImageId(), linearLayoutArray[itemCnt]);
 
     }
 
-    public List<RealmMyLife> getMyLifeListBase(String userId){
+    public List<RealmMyLife> getMyLifeListBase(String userId) {
         List<RealmMyLife> myLifeList = new ArrayList<>();
-        myLifeList.add(new RealmMyLife(R.drawable.ic_myhealth,userId,getString(R.string.myhealth)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_messages,userId,getString(R.string.messeges)));
-        myLifeList.add(new RealmMyLife(R.drawable.my_achievement,userId,getString(R.string.achievements)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_submissions,userId,getString(R.string.submission)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_news,userId,getString(R.string.news)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_references,userId,getString(R.string.references)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_help_wanted,userId,getString(R.string.help_wanted)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_calendar,userId,getString(R.string.calendar)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_contacts,userId,getString(R.string.contacts)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_mypersonals,userId,getString(R.string.mypersonals)));
+        myLifeList.add(new RealmMyLife("ic_myhealth", userId, getString(R.string.myhealth)));
+        myLifeList.add(new RealmMyLife("ic_messages", userId, getString(R.string.messeges)));
+        myLifeList.add(new RealmMyLife("my_achievement", userId, getString(R.string.achievements)));
+        myLifeList.add(new RealmMyLife("ic_submissions", userId, getString(R.string.submission)));
+        myLifeList.add(new RealmMyLife("ic_news", userId, getString(R.string.news)));
+        myLifeList.add(new RealmMyLife("ic_references", userId, getString(R.string.references)));
+        myLifeList.add(new RealmMyLife("ic_help_wanted", userId, getString(R.string.help_wanted)));
+        myLifeList.add(new RealmMyLife("ic_calendar", userId, getString(R.string.calendar)));
+        myLifeList.add(new RealmMyLife("ic_contacts", userId, getString(R.string.contacts)));
+        myLifeList.add(new RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)));
         return myLifeList;
     }
 }

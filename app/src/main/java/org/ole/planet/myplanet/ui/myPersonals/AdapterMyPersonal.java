@@ -22,10 +22,12 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity;
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity;
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.IntentUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -38,8 +40,9 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     private Context context;
     private Realm realm;
-    private List<RealmMyPersonal> list ;
+    private List<RealmMyPersonal> list;
     OnHomeItemClickListener clickListener;
+
     public AdapterMyPersonal(Context context, List<RealmMyPersonal> list) {
         this.context = context;
         this.list = list;
@@ -86,7 +89,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
     private void openResource(String path) {
         String[] arr = path.split("\\.");
         String extension = arr[arr.length - 1];
-        switch (extension){
+        switch (extension) {
             case "pdf":
                 context.startActivity(new Intent(context, PDFReaderActivity.class).putExtra("TOUCHED_FILE", path));
                 break;
@@ -99,17 +102,26 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
                 ii.putExtra("isFullPath", true);
                 context.startActivity(ii);
                 break;
+            case "aac":
+            case "mp3":
+                IntentUtils.openAudioFile(context, path);
+                break;
             case "mp4":
-                Bundle b = new Bundle();
-                b.putString("videoURL", "" + Uri.fromFile(new File(path)));
-                b.putString("Auth", "" + Uri.fromFile(new File(path)));
-                b.putString("videoType", "offline");
-                Intent i = new Intent(context, VideoPlayerActivity.class).putExtra("TOUCHED_FILE", path);
-                i.putExtras(b);
-                context.startActivity(i);
+               openVideo(path);
                 break;
         }
     }
+
+    private void openVideo(String path) {
+        Bundle b = new Bundle();
+        b.putString("videoURL", "" + Uri.fromFile(new File(path)));
+        b.putString("Auth", "" + Uri.fromFile(new File(path)));
+        b.putString("videoType", "offline");
+        Intent i = new Intent(context, VideoPlayerActivity.class).putExtra("TOUCHED_FILE", path);
+        i.putExtras(b);
+        context.startActivity(i);
+    }
+
 
     private void editPersonal(RealmMyPersonal personal) {
         View v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null);
