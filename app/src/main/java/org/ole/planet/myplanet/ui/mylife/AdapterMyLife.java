@@ -24,30 +24,12 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     private Context context;
     private List<RealmMyLife> myLifeList;
-    private OnMyLifeItemSelected listener;
-    private OnHomeItemClickListener homeItemClickListener;
     private Realm mRealm;
-
-    public List<RealmMyLife> getMyLifeList() {
-        return myLifeList;
-    }
 
      public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm) {
         this.context = context;
         this.mRealm = realm;
         this.myLifeList = myLifeList;
-        if (context instanceof OnHomeItemClickListener) {
-            homeItemClickListener = (OnHomeItemClickListener) context;
-        }
-    }
-
-    public void setMyLifeList(List<RealmMyLife> myLifeList) {
-        this.myLifeList = myLifeList;
-        notifyDataSetChanged();
-    }
-
-    public void setListener(OnMyLifeItemSelected listener) {
-        this.listener = listener;
     }
 
     @NonNull
@@ -64,27 +46,24 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
             ((ViewHolderMyLife) holder).imageView.setImageResource(myLifeList.get(position).getImageId());
             ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
-            ((ViewHolderMyLife) holder).updatePositionButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
-                    int weight = Integer.parseInt(weightString.trim());
-                    if(weight <= getItemCount() && weight > 0) {
-                        swapPosition(weight, myLifeList.get(position).getTitle(), myLifeList.get(position).getUserId());
-                        Utilities.toast(context, "Position updated");
-                        notifyDataSetChanged();
-                    } else {
-                        Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
-                        ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
-                    }
-                    KeyboardUtils.hideSoftKeyboard((Activity) context);
+            ((ViewHolderMyLife) holder).updatePositionButton.setOnClickListener(view -> {
+                String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
+                int weight = Integer.parseInt(weightString.trim());
+                if(weight <= getItemCount() && weight > 0) {
+                    swapPosition(weight, myLifeList.get(position).get_id(), myLifeList.get(position).getUserId());
+                    Utilities.toast(context, "Position updated");
+                    notifyDataSetChanged();
+                } else {
+                    Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
+                    ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
                 }
+                KeyboardUtils.hideSoftKeyboard((Activity) context);
             });
         }
     }
 
-    public void swapPosition(int weight, String title, String userId){
-        RealmMyLife.updateWeight(weight, title, mRealm, userId);
+    public void swapPosition(int weight, String _id, String userId){
+        RealmMyLife.updateWeight(weight, _id, mRealm, userId);
         notifyDataSetChanged();
     }
 
