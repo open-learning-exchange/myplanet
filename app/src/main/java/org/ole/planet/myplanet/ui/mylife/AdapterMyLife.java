@@ -41,7 +41,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false);
-        return new org.ole.planet.myplanet.ui.mylife.AdapterMyLife.ViewHolderMyLife(v);
+        return new ViewHolderMyLife(v);
     }
 
     @Override
@@ -53,22 +53,25 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ((ViewHolderMyLife) holder).positionEditText.setText(String.format("%d", myLifeList.get(position).getWeight()));
             ((ViewHolderMyLife) holder).updatePositionButton.setOnClickListener(view -> {
                 String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
-                int weight = Integer.parseInt(weightString.trim());
-                if(weight <= getItemCount() && weight > 0) {
-                    swapPosition(weight, myLifeList.get(position).get_id(), myLifeList.get(position).getUserId());
-                    Utilities.toast(context, "Position updated");
-                    notifyDataSetChanged();
+                if (!weightString.isEmpty()) {
+                    int weight = Integer.parseInt(weightString.trim());
+                    if (weight <= getItemCount() && weight > 0) {
+                        swapPosition(weight, myLifeList.get(position).get_id(), myLifeList.get(position).getUserId());
+                        Utilities.toast(context, "Position updated");
+                        notifyDataSetChanged();
+                    } else {
+                        Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
+                        ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
+                    }
                 } else {
                     Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
-                    ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
                 }
                 KeyboardUtils.hideSoftKeyboard((Activity) context);
             });
         }
     }
 
-
-    public void swapPosition(int weight, String _id, String userId){
+    public void swapPosition(int weight, String _id, String userId) {
         RealmMyLife.updateWeight(weight, _id, mRealm, userId);
         notifyDataSetChanged();
     }
