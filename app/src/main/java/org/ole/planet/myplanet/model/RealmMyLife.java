@@ -107,7 +107,7 @@ public class RealmMyLife extends RealmObject {
         this.isVisible = isVisible;
     }
 
-    public static void updateWeight(int weight, String title, Realm realm, String userId) {
+    public static void updateWeight(int weight, String _id, Realm realm, String userId) {
         realm.executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
@@ -115,7 +115,7 @@ public class RealmMyLife extends RealmObject {
                 List<RealmMyLife> myLifeList = realm.where(RealmMyLife.class).findAll();
                 for (RealmMyLife item : myLifeList) {
                     if (item.getUserId().contains(userId)) {
-                        if (item.getTitle().contains(title)) {
+                        if (item.get_id().contains(_id)) {
                             currentWeight = item.getWeight();
                             item.setWeight(weight);
                         }
@@ -123,7 +123,7 @@ public class RealmMyLife extends RealmObject {
                 }
                 for (RealmMyLife item : myLifeList) {
                     if (item.getUserId().contains(userId)) {
-                        if (currentWeight != -1 && item.getWeight() == weight && !item.getTitle().contains(title)) {
+                        if (currentWeight != -1 && item.getWeight() == weight && !item.get_id().contains(_id)) {
                             item.setWeight(currentWeight);
                         }
                     }

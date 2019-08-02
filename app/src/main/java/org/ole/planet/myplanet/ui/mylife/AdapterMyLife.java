@@ -70,7 +70,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
                     int weight = Integer.parseInt(weightString.trim());
                     if(weight <= getItemCount() && weight > 0) {
-                        swapPosition(weight, myLifeList.get(position).getTitle(), myLifeList.get(position).getUserId());
+                        swapPosition(weight, myLifeList.get(position).get_id(), myLifeList.get(position).getUserId());
                         Utilities.toast(context, "Position updated");
                         notifyDataSetChanged();
                     } else {
