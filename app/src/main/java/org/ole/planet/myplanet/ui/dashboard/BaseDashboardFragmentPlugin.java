@@ -45,10 +45,10 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         });
     }
 
-    public void handleClickMyLife(String title, int imageId, LinearLayout linearLayout) {
+    public void handleClickMyLife(String title, String imageId, LinearLayout linearLayout) {
         ImageView imageView = (ImageView) linearLayout.getChildAt(0);
         TextView textView = (TextView) linearLayout.getChildAt(1);
-        imageView.setImageResource(imageId);
+        imageView.setImageResource(getResources().getIdentifier(imageId,"drawable", getActivity().getPackageName()));
         textView.setText(title);
         linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
@@ -136,16 +136,16 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
 
     public List<RealmMyLife> getMyLifeListBase(String userId) {
         List<RealmMyLife> myLifeList = new ArrayList<>();
-        myLifeList.add(new RealmMyLife(R.drawable.ic_myhealth, userId, getString(R.string.myhealth)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_messages, userId, getString(R.string.messeges)));
-        myLifeList.add(new RealmMyLife(R.drawable.my_achievement, userId, getString(R.string.achievements)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_submissions, userId, getString(R.string.submission)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_news, userId, getString(R.string.news)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_references, userId, getString(R.string.references)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_help_wanted, userId, getString(R.string.help_wanted)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_calendar, userId, getString(R.string.calendar)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_contacts, userId, getString(R.string.contacts)));
-        myLifeList.add(new RealmMyLife(R.drawable.ic_mypersonals, userId, getString(R.string.mypersonals)));
+        myLifeList.add(new RealmMyLife("ic_myhealth", userId, getString(R.string.myhealth)));
+        myLifeList.add(new RealmMyLife("ic_messages", userId, getString(R.string.messeges)));
+        myLifeList.add(new RealmMyLife("my_achievement", userId, getString(R.string.achievements)));
+        myLifeList.add(new RealmMyLife("ic_submissions", userId, getString(R.string.submission)));
+        myLifeList.add(new RealmMyLife("ic_news", userId, getString(R.string.news)));
+        myLifeList.add(new RealmMyLife("ic_references", userId, getString(R.string.references)));
+        myLifeList.add(new RealmMyLife("ic_help_wanted", userId, getString(R.string.help_wanted)));
+        myLifeList.add(new RealmMyLife("ic_calendar", userId, getString(R.string.calendar)));
+        myLifeList.add(new RealmMyLife("ic_contacts", userId, getString(R.string.contacts)));
+        myLifeList.add(new RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)));
         return myLifeList;
     }
 }

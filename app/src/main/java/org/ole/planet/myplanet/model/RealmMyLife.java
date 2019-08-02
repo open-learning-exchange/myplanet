@@ -29,7 +29,7 @@ public class RealmMyLife extends RealmObject {
     private int weight;
     @PrimaryKey
     private String _id;
-    private int imageId;
+    private String imageId;
     private String userId;
     private String title;
     private int isVisible;
@@ -50,7 +50,7 @@ public class RealmMyLife extends RealmObject {
         mRealm.commitTransaction();
     }
 
-    public RealmMyLife(int imageId, String userId, String title) {
+    public RealmMyLife(String imageId, String userId, String title) {
         this.imageId = imageId;
         this.userId = userId;
         this.title = title;
@@ -76,11 +76,11 @@ public class RealmMyLife extends RealmObject {
         this._id = _id;
     }
 
-    public int getImageId() {
+    public String getImageId() {
         return imageId;
     }
 
-    public void setImageId(int imageId) {
+    public void setImageId(String imageId) {
         this.imageId = imageId;
     }
 

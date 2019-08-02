@@ -67,8 +67,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (holder instanceof org.ole.planet.myplanet.ui.mylife.AdapterMyLife.ViewHolderMyLife) {
             Utilities.log("On bind " + position);
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
-
-            ((ViewHolderMyLife) holder).imageView.setImageResource(myLifeList.get(position).getImageId());
+            ((ViewHolderMyLife) holder).imageView.setImageResource(context.getResources().getIdentifier(myLifeList.get(position).getImageId(), "drawable", context.getPackageName()));
             ((ViewHolderMyLife) holder).positionEditText.setText(String.format("%d", myLifeList.get(position).getWeight()));
             ((ViewHolderMyLife) holder).updatePositionButton.setOnClickListener(view -> {
                 String weightString = ((ViewHolderMyLife) holder).positionEditText.getText().toString();
