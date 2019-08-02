@@ -61,6 +61,8 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                         Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
                         ((ViewHolderMyLife) holder).positionEditText.setText(Integer.toString(myLifeList.get(position).getWeight()));
                     }
+                } else{
+                    Utilities.toast(context, "Please enter a value from 1 to " + getItemCount());
                 }
                 KeyboardUtils.hideSoftKeyboard((Activity) context);
             });
