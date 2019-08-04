@@ -23,7 +23,9 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -56,7 +58,6 @@ public class TeamFragment extends Fragment {
     }
 
     private void createTeamAlert() {
-        RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_create_team, null);
         EditText etName = v.findViewById(R.id.et_name);
         EditText etDescription = v.findViewById(R.id.et_description);
@@ -72,12 +73,29 @@ public class TeamFragment extends Fragment {
                     } else if (type.isEmpty()) {
                         Utilities.toast(getActivity(), "Type is required");
                     } else {
-                        RealmMyTeam.createTeam(name, desc, type, mRealm, user);
+                        createTeam(name, desc, type);
                         Utilities.toast(getActivity(), "Team Created");
                         setTeamList();
 
                     }
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    public void createTeam(String name, String desc, String type) {
+        RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
+        team.setStatus("active");
+        team.setCreatedDate(new Date().getTime());
+        team.setTeamType(type);
+        team.setName(name);
+        team.setDescription(desc);
+        team.setTeamId("");
+        team.setUser_id(user.getId());
+        team.setParentCode(user.getParentCode());
+        team.setTeamPlanetCode(user.getPlanetCode());
+        mRealm.commitTransaction();
     }
 
     @Override

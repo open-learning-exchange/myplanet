@@ -153,21 +153,7 @@ public class RealmMyTeam extends RealmObject {
         return object;
     }
 
-    public static void createTeam(String name, String desc, String type, Realm mRealm, RealmUserModel user) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
-        team.setStatus("active");
-        team.setCreatedDate(new Date().getTime());
-        team.setTeamType(type);
-        team.setName(name);
-        team.setDescription(desc);
-        team.setTeamId("");
-        team.setUser_id(user.getId());
-        team.setParentCode(user.getParentCode());
-        team.setTeamPlanetCode(user.getPlanetCode());
-        mRealm.commitTransaction();
-    }
+
 
 
     public void setUser_id(String user_id) {
