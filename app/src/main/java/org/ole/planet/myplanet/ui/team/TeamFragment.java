@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.team;
 
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -12,12 +14,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.Spinner;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -43,7 +51,51 @@ public class TeamFragment extends Fragment {
         rvTeamList = v.findViewById(R.id.rv_team_list);
         etSearch = v.findViewById(R.id.et_search);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        v.findViewById(R.id.add_team).setOnClickListener(view -> {
+            createTeamAlert();
+        });
         return v;
+    }
+
+    private void createTeamAlert() {
+        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_create_team, null);
+        EditText etName = v.findViewById(R.id.et_name);
+        EditText etDescription = v.findViewById(R.id.et_description);
+        Spinner spnType = v.findViewById(R.id.spn_team_type);
+        new AlertDialog.Builder(getActivity()).setTitle("Enter Team Detail")
+                .setView(v)
+                .setPositiveButton("Save", (dialogInterface, i) -> {
+                    String name = etName.getText().toString();
+                    String desc = etDescription.getText().toString();
+                    String type = spnType.getSelectedItemPosition() == 0 ? "local" : "sync";
+                    if (name.isEmpty()) {
+                        Utilities.toast(getActivity(), "Name is required");
+                    } else if (type.isEmpty()) {
+                        Utilities.toast(getActivity(), "Type is required");
+                    } else {
+                        createTeam(name, desc, type);
+                        Utilities.toast(getActivity(), "Team Created");
+                        setTeamList();
+
+                    }
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    public void createTeam(String name, String desc, String type) {
+        RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
+        team.setStatus("active");
+        team.setCreatedDate(new Date().getTime());
+        team.setTeamType(type);
+        team.setName(name);
+        team.setDescription(desc);
+        team.setTeamId("");
+        team.setUser_id(user.getId());
+        team.setParentCode(user.getParentCode());
+        team.setTeamPlanetCode(user.getPlanetCode());
+        mRealm.commitTransaction();
     }
 
     @Override
@@ -56,10 +108,8 @@ public class TeamFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
         rvTeamList.setLayoutManager(new LinearLayoutManager(getActivity()));
-        AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
-        rvTeamList.setAdapter(adapterTeamList);
+        setTeamList();
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -68,7 +118,7 @@ public class TeamFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").contains("name",charSequence.toString(), Case.INSENSITIVE).findAll();
+                List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").contains("name", charSequence.toString(), Case.INSENSITIVE).findAll();
                 AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
                 rvTeamList.setAdapter(adapterTeamList);
             }
@@ -78,5 +128,11 @@ public class TeamFragment extends Fragment {
 
             }
         });
+    }
+
+    private void setTeamList() {
+        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
+        AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
+        rvTeamList.setAdapter(adapterTeamList);
     }
 }

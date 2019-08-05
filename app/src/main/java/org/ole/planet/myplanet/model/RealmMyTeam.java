@@ -42,6 +42,7 @@ public class RealmMyTeam extends RealmObject {
     private String status;
     private String teamType;
     private String teamPlanetCode;
+    private String parentCode;
     private String docType;
 
     public static void insertMyTeams(String userId, JsonObject doc, Realm mRealm) {
@@ -60,6 +61,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setTeamPlanetCode(JsonUtils.getString("teamPlanetCode", doc));
         myTeams.setCreatedDate(JsonUtils.getLong("createdDate", doc));
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
+        myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
         myTeams.setDocType(JsonUtils.getString("docType", doc).toString());
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
@@ -69,6 +71,22 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getParentCode() {
+        return parentCode;
+    }
+
+    public void setParentCode(String parentCode) {
+        this.parentCode = parentCode;
     }
 
     public static void insert(Realm mRealm, JsonObject doc) {
@@ -108,7 +126,7 @@ public class RealmMyTeam extends RealmObject {
         return list;
     }
 
-    public static List<RealmUserModel> filterUsers(String teamId,String user, Realm mRealm) {
+    public static List<RealmUserModel> filterUsers(String teamId, String user, Realm mRealm) {
         List<RealmMyTeam> myteam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).findAll();
         List<RealmUserModel> list = new ArrayList<>();
         for (RealmMyTeam team : myteam) {
@@ -130,9 +148,12 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("status", team.getStatus());
         object.addProperty("teamType", team.getTeamType());
         object.addProperty("teamPlanetCode", team.getTeamPlanetCode());
+        object.addProperty("parentCode", team.getParentCode());
         object.addProperty("docType", team.getDocType());
         return object;
     }
+
+
 
 
     public void setUser_id(String user_id) {

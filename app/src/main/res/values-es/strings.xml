@@ -218,4 +218,5 @@
     <string name="name_normal">Name</string>
     <string name="mypersonals">myPersonals</string>
     <string name="capture_image">Capture Image</string>
+    <string name="team_name">Enter Team Name</string>
 </resources>
