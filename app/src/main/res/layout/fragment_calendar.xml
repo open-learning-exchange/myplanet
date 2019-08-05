@@ -9,17 +9,17 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginTop="50dp">
+        android:layout_marginTop="15dp">
         <TextView
             android:id="@+id/myDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="CALENDAR"
             android:textColor="@color/colorPrimaryDark"
-            android:textSize="23sp"
+            android:textSize="20sp"
             android:gravity="center"
             android:layout_gravity="center"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -28,10 +28,36 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <CalendarView
+            android:id="@+id/calendarView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="30dp">
+            android:layout_marginTop="15dp">
         </CalendarView>
+
+        <Button
+            android:layout_width="200dp"
+            android:layout_height="50dp"
+            android:text="CREATE NEW SCHEDULE"
+            android:id="@+id/scheduleButton" />
+
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="UP-COMING SCHEDULE"
+            android:gravity="center"
+            android:textSize="20sp"
+            android:textColor="@color/colorPrimaryDark"
+            android:layout_marginTop="15dp"
+            />
+
+        <TextView
+            android:id="@+id/scheduleCalendar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:textSize="15sp"
+            android:text="No available schedule"
+            android:layout_margin="10dp"/>
     </LinearLayout>
 
 </RelativeLayout>

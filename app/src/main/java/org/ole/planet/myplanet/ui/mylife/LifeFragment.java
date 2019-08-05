@@ -24,7 +24,6 @@ public class LifeFragment extends Fragment {
     // TODO: Rename and change types of parameters
 
 
-    private OnFragmentInteractionListener mListener;
 
     public LifeFragment() {
         // Required empty public constructor
@@ -46,21 +45,10 @@ public class LifeFragment extends Fragment {
 
 
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
 
     @Override
     public void onDetach() {
         super.onDetach();
-        mListener = null;
     }
 
     /**
@@ -73,8 +61,5 @@ public class LifeFragment extends Fragment {
      * "http://developer.android.com/training/basics/fragments/communicating.html"
      * >Communicating with Other Fragments</a> for more information.
      */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
-    }
+
 }
