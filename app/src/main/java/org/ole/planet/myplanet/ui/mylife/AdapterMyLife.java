@@ -59,9 +59,8 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             });
             ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> changeVisibility(holder, position, true));
             ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> changeVisibility(holder, position, false));
-            if (!myLifeList.get(position).isVisible()) {
-                hideItem(holder);
-            }else showItem(holder);
+            if (!myLifeList.get(position).isVisible()) hideItem(holder);
+            else showItem(holder);
         }
     }
 
@@ -76,13 +75,13 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
     }
 
-    public void hideItem(RecyclerView.ViewHolder holder){
+    public void hideItem(RecyclerView.ViewHolder holder) {
         ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
         ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
         ((ViewHolderMyLife) holder).rv_item_container.setAlpha(Float.parseFloat("0.5"));
     }
 
-    public void showItem(RecyclerView.ViewHolder holder){
+    public void showItem(RecyclerView.ViewHolder holder) {
         ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
         ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
         ((ViewHolderMyLife) holder).rv_item_container.setAlpha(Float.parseFloat("1"));
