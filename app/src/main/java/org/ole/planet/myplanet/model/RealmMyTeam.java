@@ -40,6 +40,7 @@ public class RealmMyTeam extends RealmObject {
     private String requests;
     private String limit;
     private long createdDate;
+    private String resourceId;
     private String status;
     private String teamType;
     private String teamPlanetCode;
@@ -62,6 +63,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setStatus(JsonUtils.getString("status", doc));
         myTeams.setTeamPlanetCode(JsonUtils.getString("teamPlanetCode", doc));
         myTeams.setCreatedDate(JsonUtils.getLong("createdDate", doc));
+        myTeams.setResourceId(JsonUtils.getString("resourceId", doc));
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
@@ -73,6 +75,14 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public String getResourceId() {
+        return resourceId;
+    }
+
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
     }
 
     public String get_rev() {
@@ -162,8 +172,6 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("docType", team.getDocType());
         return object;
     }
-
-
 
 
     public void setUser_id(String user_id) {
