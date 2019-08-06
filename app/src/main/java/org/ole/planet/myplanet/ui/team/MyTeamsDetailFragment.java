@@ -70,7 +70,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     DatabaseService dbService;
     RecyclerView rvDiscussion;
     LinearLayout llRv;
-
+    boolean isMyTeam;
 
     public MyTeamsDetailFragment() {
     }
@@ -81,6 +81,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             teamId = getArguments().getString("id");
+            isMyTeam = getArguments().getBoolean("isMyTeam", false);
         }
     }
 
@@ -157,10 +158,16 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         showRecyclerView(realmNewsList);
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
+
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
         tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
+
         setTabListener(users, courses, reqUsers);
+        if (!isMyTeam){
+            ((ViewGroup)tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
+            tabLayout.getTabAt(1).select();
+        }
     }
 
     private void createTeamLog() {

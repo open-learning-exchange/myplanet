@@ -31,6 +31,7 @@ public class RealmMyTeam extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id;
+    private String _rev;
     private RealmList<String> courses;
     private String teamId;
     private String name;
@@ -54,6 +55,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setUser_id(JsonUtils.getString("userId", doc));
         myTeams.setTeamId(JsonUtils.getString("teamId", doc));
         myTeams.set_id(JsonUtils.getString("_id", doc));
+        myTeams.set_rev(JsonUtils.getString("_rev", doc));
         myTeams.setName(JsonUtils.getString("name", doc));
         myTeams.setDescription(JsonUtils.getString("description", doc));
         myTeams.setLimit(JsonUtils.getString("limit", doc));
@@ -71,6 +73,14 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public String get_rev() {
+        return _rev;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
     }
 
     public String getUserId() {
