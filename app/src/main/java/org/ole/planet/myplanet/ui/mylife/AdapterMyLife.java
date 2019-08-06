@@ -57,22 +57,26 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 }
                 return false;
             });
-            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> {
-                RealmMyLife.updateVisibilty(1, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
-                ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
-                ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
-                Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");
-            });
-            ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> {
-                RealmMyLife.updateVisibilty(0, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
-                ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
-                ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
-                Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
-            });
+            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> changeVisibility(holder, position, 1));
+            ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> changeVisibility(holder, position, 0));
             if (myLifeList.get(position).getIsVisible() == 0)
                 ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
             if (myLifeList.get(position).getIsVisible() == 1)
                 ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void changeVisibility(RecyclerView.ViewHolder holder, int position, int visibility) {
+        if (visibility == 0) {
+            RealmMyLife.updateVisibilty(0, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
+            ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
+            ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
+            Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
+        } else if (visibility == 1) {
+            RealmMyLife.updateVisibilty(1, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
+            ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+            ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
+            Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");
         }
     }
 
