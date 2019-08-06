@@ -57,16 +57,15 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     mDragStartListener.onStartDrag(holder);
                 return false;
             });
-            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> changeVisibility(holder, position, true));
-            ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> changeVisibility(holder, position, false));
+            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> changeVisibility(holder, position, myLifeList.get(position).isVisible()));
             if (!myLifeList.get(position).isVisible()) hideItem(holder);
             else showItem(holder);
         }
     }
 
     public void changeVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
-        RealmMyLife.updateVisibility(isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
-        if (!isVisible) {
+        RealmMyLife.updateVisibility(!isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
+        if (isVisible) {
             hideItem(holder);
             Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
         } else {
@@ -76,14 +75,12 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public void hideItem(RecyclerView.ViewHolder holder) {
-        ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
-        ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
+        ((ViewHolderMyLife) holder).visibility.setImageResource(R.drawable.ic_visibility);
         ((ViewHolderMyLife) holder).rv_item_container.setAlpha(Float.parseFloat("0.5"));
     }
 
     public void showItem(RecyclerView.ViewHolder holder) {
-        ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
-        ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+        ((ViewHolderMyLife) holder).visibility.setImageResource(R.drawable.ic_visibility_off);
         ((ViewHolderMyLife) holder).rv_item_container.setAlpha(Float.parseFloat("1"));
     }
 
@@ -106,7 +103,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     class ViewHolderMyLife extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         TextView title;
         ImageView imageView;
-        ImageButton editImageButton, dragImageButton, visibility, visibilityOff;
+        ImageButton editImageButton, dragImageButton, visibility;
         LinearLayout rv_item_container;
 
         public ViewHolderMyLife(View itemView) {
@@ -116,7 +113,6 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             dragImageButton = itemView.findViewById(R.id.drag_image_button);
             editImageButton = itemView.findViewById(R.id.edit_image_button);
             visibility = itemView.findViewById(R.id.visibility_image_button);
-            visibilityOff = itemView.findViewById(R.id.visibility_off_image_button);
             rv_item_container = itemView.findViewById(R.id.rv_item_parent_layout);
         }
 
