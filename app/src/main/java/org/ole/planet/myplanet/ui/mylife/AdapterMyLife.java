@@ -52,28 +52,25 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
             ((ViewHolderMyLife) holder).imageView.setImageResource(context.getResources().getIdentifier(myLifeList.get(position).getImageId(), "drawable", context.getPackageName()));
             ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener((v, event) -> {
-                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN)
                     mDragStartListener.onStartDrag(holder);
-                }
                 return false;
             });
-            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> changeVisibility(holder, position, 1));
-            ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> changeVisibility(holder, position, 0));
-            if (myLifeList.get(position).getIsVisible() == 0)
+            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> changeVisibility(holder, position, true));
+            ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> changeVisibility(holder, position, false));
+            if (!myLifeList.get(position).isVisible())
                 ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
-            if (myLifeList.get(position).getIsVisible() == 1)
-                ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+            else ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
         }
     }
 
-    public void changeVisibility(RecyclerView.ViewHolder holder, int position, int visibility) {
-        if (visibility == 0) {
-            RealmMyLife.updateVisibilty(0, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
+    public void changeVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
+        RealmMyLife.updateVisibility(isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
+        if (!isVisible) {
             ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
             ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
             Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
-        } else if (visibility == 1) {
-            RealmMyLife.updateVisibilty(1, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
+        } else {
             ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
             ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
             Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");

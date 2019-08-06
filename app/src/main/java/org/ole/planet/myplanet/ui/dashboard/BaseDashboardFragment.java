@@ -113,7 +113,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         List<RealmMyLife> db_myLife, raw_myLife;
         raw_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         db_myLife = new ArrayList<>();
-        for(RealmMyLife item : raw_myLife) if(item.getIsVisible() == 1) db_myLife.add(item);
+        for(RealmMyLife item : raw_myLife) if(item.isVisible()) db_myLife.add(item);
         setCountText(db_myLife.size(), c, view);
         LinearLayout[] myLifeArray = new LinearLayout[db_myLife.size()];
         int itemCnt = 0;
@@ -137,7 +137,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
                 ml.setImageId(item.getImageId());
                 ml.setWeight(weight);
                 ml.setUserId(item.getUserId());
-                ml.setIsVisible(1);
+                ml.setVisible(true);
                 weight++;
             }
             realm.commitTransaction();

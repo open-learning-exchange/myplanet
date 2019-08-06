@@ -7,13 +7,14 @@ import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmMyLife extends RealmObject {
-    private int weight;
+
     @PrimaryKey
     private String _id;
     private String imageId;
     private String userId;
     private String title;
-    private int isVisible;
+    private boolean isVisible;
+    private int weight;
 
     public static List<RealmMyLife> getMyLifeByUserId(Realm mRealm, SharedPreferences settings) {
         String userId = settings.getString("userId", "--");
@@ -35,7 +36,7 @@ public class RealmMyLife extends RealmObject {
         this.imageId = imageId;
         this.userId = userId;
         this.title = title;
-        this.isVisible = 1;
+        this.isVisible = true;
     }
 
     public RealmMyLife() {
@@ -81,12 +82,12 @@ public class RealmMyLife extends RealmObject {
         this.title = title;
     }
 
-    public int getIsVisible() {
+    public boolean isVisible() {
         return isVisible;
     }
 
-    public void setIsVisible(int isVisible) {
-        this.isVisible = isVisible;
+    public void setVisible(boolean visible) {
+        isVisible = visible;
     }
 
     public static void updateWeight(int weight, String _id, Realm realm, String userId) {
@@ -110,14 +111,14 @@ public class RealmMyLife extends RealmObject {
         });
     }
 
-    public static void updateVisibilty(int isVisible, String _id, Realm realm, String userId) {
+    public static void updateVisibility(boolean isVisible, String _id, Realm realm, String userId) {
         realm.executeTransaction(new Realm.Transaction() {
             @Override
             public void execute(Realm realm) {
                 List<RealmMyLife> myLifeList = getMyLifeByUserId(realm,userId);
                 for (RealmMyLife item : myLifeList) {
                     if (item.get_id().contains(_id)) {
-                        item.setIsVisible(isVisible);
+                        item.setVisible(isVisible);
                     }
                 }
             }
