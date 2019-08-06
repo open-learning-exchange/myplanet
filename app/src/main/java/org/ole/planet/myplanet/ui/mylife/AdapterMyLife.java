@@ -60,7 +60,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                     mDragStartListener.onStartDrag(holder);
                 return false;
             });
-            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> updateVisibility(holder, position, myLifeList.get(position).isVisible()));
+            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> updateVisibility(holder, holder.getAdapterPosition(), myLifeList.get(holder.getAdapterPosition()).isVisible()));
             if (!myLifeList.get(position).isVisible()) changeVisibility(holder,R.drawable.ic_visibility,HIDE);
             else changeVisibility(holder,R.drawable.ic_visibility_off,SHOW);
         }
