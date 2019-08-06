@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamLog;
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.CourseDetailFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment;
 import org.ole.planet.myplanet.utilities.Constants;
@@ -149,6 +151,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         setTeamList();
     }
 
+    RealmResults<RealmMyLibrary> libraries;
+
     private void setTeamList() {
         List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm);
         createTeamLog();
@@ -158,14 +162,17 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         showRecyclerView(realmNewsList);
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
+        libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
 
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
         tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
+        tabLayout.getTabAt(4).setText(String.format("Resources : (%s)", libraries.size()));
 
         setTabListener(users, courses, reqUsers);
-        if (!isMyTeam){
-            ((ViewGroup)tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
+        if (!isMyTeam) {
+            ((ViewGroup) tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
+            ((ViewGroup) tabLayout.getChildAt(4)).getChildAt(0).setVisibility(View.GONE);
             tabLayout.getTabAt(1).select();
         }
     }
@@ -204,7 +211,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
                     setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
                 else if (tab.getPosition() == 2)
                     setListContent(tab, String.format("Requested Members : (%s)", reqUsers.size()), reqUsers);
-                else setCourseList(tab, courses);
+                else if (tab.getPosition() == 3) setCourseList(tab, courses);
+                else if (tab.getPosition() == 4) setLibraryList(tab);
             }
 
             @Override
@@ -217,7 +225,27 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         });
     }
 
+    private void setLibraryList(TabLayout.Tab tab) {
+        listContent.setVisibility(View.VISIBLE);
+        llRv.setVisibility(View.GONE);
+        Utilities.log("Set library list");
+        tab.setText(String.format("Resources : (%s)", libraries.size()));
+        listContent.setAdapter(new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.simple_list_item_1, libraries));
+        listContent.setOnItemClickListener((adapterView, view, i, l) -> {
+            if (homeItemClickListener != null) {
+                LibraryDetailFragment f = new LibraryDetailFragment();
+                Bundle b = new Bundle();
+                b.putString("libraryId", libraries.get(i).getId());
+                f.setArguments(b);
+                homeItemClickListener.openCallFragment(f);
+            }
+
+        });
+    }
+
     private void setCourseList(TabLayout.Tab tab, RealmResults<RealmMyCourse> courses) {
+        listContent.setVisibility(View.VISIBLE);
+        llRv.setVisibility(View.GONE);
         tab.setText(String.format("Courses : (%s)", courses.size()));
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {

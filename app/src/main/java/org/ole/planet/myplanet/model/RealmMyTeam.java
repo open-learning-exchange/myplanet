@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -75,6 +76,16 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public static List<String> getResourceIds(String teamId, Realm realm) {
+        List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).findAll();
+        List<String> ids = new ArrayList<>();
+        for (RealmMyTeam team : teams) {
+            if (!TextUtils.isEmpty(team.getResourceId()))
+                ids.add(team.getResourceId());
+        }
+        return ids;
     }
 
     public String getResourceId() {
