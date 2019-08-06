@@ -120,8 +120,9 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
 
         @Override
-        public void onItemClear() {
+        public void onItemClear(RecyclerView.ViewHolder holder) {
             itemView.setBackgroundColor(0);
+            if(!myLifeList.get(holder.getAdapterPosition()).isVisible()) ((ViewHolderMyLife) holder).rv_item_container.setAlpha(HIDE);
         }
     }
 
