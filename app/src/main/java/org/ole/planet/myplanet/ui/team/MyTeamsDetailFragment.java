@@ -226,10 +226,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     }
 
     private void setLibraryList(TabLayout.Tab tab) {
-        listContent.setVisibility(View.VISIBLE);
-        llRv.setVisibility(View.GONE);
-        Utilities.log("Set library list");
-        tab.setText(String.format("Resources : (%s)", libraries.size()));
+        hideRv(tab, String.format("Resources : (%s)", libraries.size()));
         listContent.setAdapter(new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.simple_list_item_1, libraries));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
@@ -244,15 +241,19 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     }
 
     private void setCourseList(TabLayout.Tab tab, RealmResults<RealmMyCourse> courses) {
-        listContent.setVisibility(View.VISIBLE);
-        llRv.setVisibility(View.GONE);
-        tab.setText(String.format("Courses : (%s)", courses.size()));
+        hideRv(tab, String.format("Courses : (%s)", courses.size()));
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
                 openFragment(courses.get(i).getCourseId(), new TakeCourseFragment());
             }
         });
+    }
+
+    private void hideRv(TabLayout.Tab tab, String s) {
+        listContent.setVisibility(View.VISIBLE);
+        llRv.setVisibility(View.GONE);
+        tab.setText(s);
     }
 
     private void setListContent(TabLayout.Tab tab, String s, List<RealmUserModel> data) {
