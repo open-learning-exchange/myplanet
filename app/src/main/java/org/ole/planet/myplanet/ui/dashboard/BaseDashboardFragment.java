@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -109,8 +110,10 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
     }
 
     private void myLifeListInit(FlexboxLayout flexboxLayout, Class c, View view){
-        List<RealmMyLife> db_myLife;
-        db_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        List<RealmMyLife> db_myLife, raw_myLife;
+        raw_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
+        db_myLife = new ArrayList<>();
+        for(RealmMyLife item : raw_myLife) if(item.getIsVisible() == 1) db_myLife.add(item);
         setCountText(db_myLife.size(), c, view);
         LinearLayout[] myLifeArray = new LinearLayout[db_myLife.size()];
         int itemCnt = 0;
@@ -134,6 +137,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
                 ml.setImageId(item.getImageId());
                 ml.setWeight(weight);
                 ml.setUserId(item.getUserId());
+                ml.setIsVisible(1);
                 weight++;
             }
             realm.commitTransaction();

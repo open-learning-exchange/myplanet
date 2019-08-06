@@ -62,15 +62,26 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             Utilities.log("On bind " + position);
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
             ((ViewHolderMyLife) holder).imageView.setImageResource(context.getResources().getIdentifier(myLifeList.get(position).getImageId(), "drawable", context.getPackageName()));
-            ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                        mDragStartListener.onStartDrag(holder);
-                    }
-                    return false;
+            ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener((v, event) -> {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    mDragStartListener.onStartDrag(holder);
                 }
+                return false;
             });
+            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> {
+                RealmMyLife.updateVisibilty(1,myLifeList.get(position).get_id(),mRealm,myLifeList.get(position).getUserId());
+                ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+                ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
+                Utilities.toast(context,myLifeList.get(position).getTitle() + " is now shown");
+            });
+            ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> {
+                RealmMyLife.updateVisibilty(0,myLifeList.get(position).get_id(),mRealm,myLifeList.get(position).getUserId());
+                ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
+                ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
+                Utilities.toast(context,myLifeList.get(position).getTitle() + " is now hidden");
+            });
+            if(myLifeList.get(position).getIsVisible() == 0)((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
+            if(myLifeList.get(position).getIsVisible() == 1)((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
         }
     }
 
@@ -93,7 +104,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     class ViewHolderMyLife extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         TextView title;
         ImageView imageView;
-        ImageButton editImageButton, dragImageButton;
+        ImageButton editImageButton, dragImageButton,visibility,visibilityOff;
 
         public ViewHolderMyLife(View itemView) {
             super(itemView);
@@ -101,6 +112,8 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             imageView = itemView.findViewById(R.id.itemImageView);
             dragImageButton = itemView.findViewById(R.id.drag_image_button);
             editImageButton = itemView.findViewById(R.id.edit_image_button);
+            visibility = itemView.findViewById(R.id.visibility_image_button);
+            visibilityOff = itemView.findViewById(R.id.visibility_off_image_button);
         }
 
         @Override

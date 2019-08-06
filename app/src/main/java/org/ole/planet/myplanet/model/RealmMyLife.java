@@ -108,6 +108,19 @@ public class RealmMyLife extends RealmObject {
                 }
             }
         });
+    }
 
+    public static void updateVisibilty(int isVisible, String _id, Realm realm, String userId) {
+        realm.executeTransaction(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                List<RealmMyLife> myLifeList = getMyLifeByUserId(realm,userId);
+                for (RealmMyLife item : myLifeList) {
+                    if (item.get_id().contains(_id)) {
+                        item.setIsVisible(isVisible);
+                    }
+                }
+            }
+        });
     }
 }
