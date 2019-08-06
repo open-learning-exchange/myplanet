@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -58,23 +59,33 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             });
             ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> changeVisibility(holder, position, true));
             ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> changeVisibility(holder, position, false));
-            if (!myLifeList.get(position).isVisible())
-                ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
-            else ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+            if (!myLifeList.get(position).isVisible()) {
+                hideItem(holder);
+            }else showItem(holder);
         }
     }
 
     public void changeVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
         RealmMyLife.updateVisibility(isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
         if (!isVisible) {
-            ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
-            ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
+            hideItem(holder);
             Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
         } else {
-            ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
-            ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
+            showItem(holder);
             Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");
         }
+    }
+
+    public void hideItem(RecyclerView.ViewHolder holder){
+        ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
+        ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
+        ((ViewHolderMyLife) holder).rv_item_container.setAlpha(Float.parseFloat("0.5"));
+    }
+
+    public void showItem(RecyclerView.ViewHolder holder){
+        ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
+        ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+        ((ViewHolderMyLife) holder).rv_item_container.setAlpha(Float.parseFloat("1"));
     }
 
     public void setmRealm(Realm mRealm) {
@@ -97,6 +108,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         TextView title;
         ImageView imageView;
         ImageButton editImageButton, dragImageButton, visibility, visibilityOff;
+        LinearLayout rv_item_container;
 
         public ViewHolderMyLife(View itemView) {
             super(itemView);
@@ -106,6 +118,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             editImageButton = itemView.findViewById(R.id.edit_image_button);
             visibility = itemView.findViewById(R.id.visibility_image_button);
             visibilityOff = itemView.findViewById(R.id.visibility_off_image_button);
+            rv_item_container = itemView.findViewById(R.id.rv_item_parent_layout);
         }
 
         @Override
