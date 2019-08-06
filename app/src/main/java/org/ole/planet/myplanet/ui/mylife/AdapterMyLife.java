@@ -1,36 +1,25 @@
 package org.ole.planet.myplanet.ui.mylife;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
-import android.support.v4.view.MotionEventCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.callback.OnMyLifeItemSelected;
 import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter;
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder;
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener;
-import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
@@ -41,7 +30,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private Realm mRealm;
     private final OnStartDragListener mDragStartListener;
 
-    public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm, OnStartDragListener onStartDragListener)  {
+    public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm, OnStartDragListener onStartDragListener) {
         mDragStartListener = onStartDragListener;
         this.context = context;
         this.mRealm = realm;
@@ -69,19 +58,21 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 return false;
             });
             ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> {
-                RealmMyLife.updateVisibilty(1,myLifeList.get(position).get_id(),mRealm,myLifeList.get(position).getUserId());
+                RealmMyLife.updateVisibilty(1, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
                 ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
                 ((ViewHolderMyLife) holder).visibility.setVisibility(View.GONE);
-                Utilities.toast(context,myLifeList.get(position).getTitle() + " is now shown");
+                Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");
             });
             ((ViewHolderMyLife) holder).visibilityOff.setOnClickListener(view -> {
-                RealmMyLife.updateVisibilty(0,myLifeList.get(position).get_id(),mRealm,myLifeList.get(position).getUserId());
+                RealmMyLife.updateVisibilty(0, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
                 ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.GONE);
                 ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
-                Utilities.toast(context,myLifeList.get(position).getTitle() + " is now hidden");
+                Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
             });
-            if(myLifeList.get(position).getIsVisible() == 0)((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
-            if(myLifeList.get(position).getIsVisible() == 1)((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
+            if (myLifeList.get(position).getIsVisible() == 0)
+                ((ViewHolderMyLife) holder).visibility.setVisibility(View.VISIBLE);
+            if (myLifeList.get(position).getIsVisible() == 1)
+                ((ViewHolderMyLife) holder).visibilityOff.setVisibility(View.VISIBLE);
         }
     }
 
@@ -96,15 +87,15 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     @Override
     public boolean onItemMove(int fromPosition, int toPosition) {
-        RealmMyLife.updateWeight(toPosition+1, myLifeList.get(fromPosition).get_id(),mRealm, myLifeList.get(fromPosition).getUserId());
-        notifyItemMoved(fromPosition,toPosition);
+        RealmMyLife.updateWeight(toPosition + 1, myLifeList.get(fromPosition).get_id(), mRealm, myLifeList.get(fromPosition).getUserId());
+        notifyItemMoved(fromPosition, toPosition);
         return true;
     }
 
     class ViewHolderMyLife extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         TextView title;
         ImageView imageView;
-        ImageButton editImageButton, dragImageButton,visibility,visibilityOff;
+        ImageButton editImageButton, dragImageButton, visibility, visibilityOff;
 
         public ViewHolderMyLife(View itemView) {
             super(itemView);
