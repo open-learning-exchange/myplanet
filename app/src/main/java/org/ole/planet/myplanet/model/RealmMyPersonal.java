@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import com.google.gson.JsonObject;
+
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -11,6 +13,16 @@ public class RealmMyPersonal extends RealmObject {
    private long date;
    private String userId;
    private String path;
+
+
+   public static JsonObject serialize(RealmMyPersonal personal){
+       JsonObject object = new JsonObject();
+       object.addProperty("date", personal.getDate());
+       object.addProperty("path", personal.getPath());
+       object.addProperty("userId", personal.getUserId());
+       object.addProperty("description", personal.getDescription());
+       return object;
+   }
 
     public String get_id() {
         return _id;
