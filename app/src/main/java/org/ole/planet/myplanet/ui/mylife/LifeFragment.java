@@ -1,50 +1,40 @@
 package org.ole.planet.myplanet.ui.mylife;
 
-import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseRecyclerFragment;
+import org.ole.planet.myplanet.model.RealmMyLife;
+import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener;
+import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import java.util.List;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link LifeFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
 
- */
-public class LifeFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements OnStartDragListener {
 
     // TODO: Rename and change types of parameters
 
-
+    AdapterMyLife adapterMyLife;
+    private ItemTouchHelper mItemTouchHelper;
 
     public LifeFragment() {
-        // Required empty public constructor
-    }
-
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_life, container, false);
+    public int getLayout() {
+        return R.layout.fragment_life;
     }
 
-
-
+    @Override
+    public RecyclerView.Adapter getAdapter() {
+        List <RealmMyLife> myLifeList = RealmMyLife.getMyLifeByUserId(mRealm,model.getId());
+        adapterMyLife = new AdapterMyLife(getContext(),myLifeList,mRealm,this);
+        return adapterMyLife;
+    }
 
     @Override
     public void onDetach() {
@@ -62,4 +52,18 @@ public class LifeFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
 
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        recyclerView.setHasFixedSize(true);
+        KeyboardUtils.setupUI(getView().findViewById(R.id.my_life_parent_layout),getActivity());
+        ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapterMyLife);
+        mItemTouchHelper = new ItemTouchHelper(callback);
+        mItemTouchHelper.attachToRecyclerView(recyclerView);
+    }
+
+    @Override
+    public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
+        mItemTouchHelper.startDrag(viewHolder);
+    }
 }

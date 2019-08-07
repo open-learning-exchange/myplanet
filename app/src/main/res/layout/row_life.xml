@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="100dp"
+    android:orientation="horizontal"
+    android:padding="@dimen/padding_normal"
+    android:id="@+id/rv_item_parent_layout">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/itemImageView"
+            android:layout_width="100dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            app:srcCompat="@drawable/ic_messages" />
+
+        <TextView
+            android:id="@+id/titleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_60dp"
+            android:layout_marginLeft="15dp"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_toRightOf="@id/itemImageView"
+            android:hint="@string/messeges"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/edit_image_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/drag_image_button"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_marginBottom="@dimen/_20dp"
+            android:padding="@dimen/padding_normal"
+            android:background="@drawable/roundcorner"
+            app:srcCompat="@drawable/ic_edit" />
+
+        <ImageButton
+            android:id="@+id/drag_image_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_marginBottom="@dimen/_20dp"
+            android:enabled="false"
+            android:padding="@dimen/padding_normal"
+            android:background="@null"
+            android:src="@drawable/ic_round_drag"/>
+
+    </RelativeLayout>
+</LinearLayout>

@@ -164,7 +164,7 @@
     <string name="added_by">Added By</string>
     <string name="record_audio">Record Audio</string>
     <string name="record_video">Record Video</string>
-    <string name="my_draft">My Draft</string>
+    <string name="select_gallery">Select From Gallery</string>
     <string name="add_resource">Add Resource :</string>
     <string name="reply">Reply</string>
     <string name="show_reply">Show Replies</string>
@@ -270,5 +270,13 @@
     <string name="action">Action</string>
     <string name="created_on">Created On</string>
     <string name="name_normal">Name</string>
+    <string name="mypersonals">myPersonals</string>
+    <string name="capture_image">Capture Image</string>
+    <string name="team_name">Enter Team Name</string>
+    <string-array name="team_type">
+        <item>Local Team</item>
+        <item>Connect With Nation</item>
+    </string-array>
+
 
 </resources>

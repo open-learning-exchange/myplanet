@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.BottomSheetDialogFragment;
@@ -21,16 +22,26 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 
 
 import org.jetbrains.annotations.NotNull;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyPersonal;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.UUID;
+
+import io.realm.Realm;
+import retrofit2.http.Url;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -39,10 +50,18 @@ import static android.app.Activity.RESULT_OK;
  */
 public class AddResourceFragment extends BottomSheetDialogFragment {
 
-    private static final int RECORD_VIDEO_REQUEST = 1000;
+    int type = 0;
 
     public AddResourceFragment() {
         // Required empty public constructor
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            type = getArguments().getInt("type", 0);
+        }
     }
 
     @NotNull
@@ -65,6 +84,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         View v = inflater.inflate(R.layout.fragment_add_resource, container, false);
         v.findViewById(R.id.ll_record_video).setOnClickListener(view -> dispatchTakeVideoIntent());
         v.findViewById(R.id.ll_record_audio).setOnClickListener(view -> dispatchRecordAudioIntent());
+        v.findViewById(R.id.ll_capture_image).setOnClickListener(view -> takePhoto());
         v.findViewById(R.id.ll_draft).setOnClickListener(view -> openOleFolder());
         return v;
     }
@@ -78,6 +98,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     static final int REQUEST_VIDEO_CAPTURE = 1;
     static final int REQUEST_RECORD_SOUND = 0;
+    static final int REQUEST_CAPTURE_PICTURE = 2;
 
     private void dispatchTakeVideoIntent() {
 
@@ -97,18 +118,28 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
         if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(intent, REQUEST_RECORD_SOUND);
-        }else{
-            Utilities.toast(getActivity(),"Your phone does not have audio recorder app, please download and try again");
+        } else {
+            Utilities.toast(getActivity(), "Your phone does not have audio recorder app, please download and try again");
         }
     }
 
+    File output;
+
+    public void takePhoto() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        File dir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
+        output = new File(dir, UUID.randomUUID().toString() + ".jpg");
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(output));
+        startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
+    }
 
 
     public String getRealPathFromURI(Context context, Uri contentUri) {
         Cursor cursor = null;
         try {
-            String[] proj = { MediaStore.Images.Media.DATA };
-            cursor = context.getContentResolver().query(contentUri,  proj, null, null, null);
+            String[] proj = {MediaStore.Images.Media.DATA};
+            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
             int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
             cursor.moveToFirst();
             return cursor.getString(column_index);
@@ -122,12 +153,56 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-            Uri url = data.getData();
-            if (!TextUtils.isEmpty(url.getPath())) {
-                startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", getRealPathFromURI(getActivity(), url)));
+            Uri url = null;
+            String path = "";
+            if (requestCode == REQUEST_CAPTURE_PICTURE) {
+                if (output != null) {
+                    url = Uri.fromFile(output);
+                    path = url.getPath();
+                }
+            } else {
+                url = data.getData();
+                path = getRealPathFromURI(getActivity(), url);
+            }
+            if (!TextUtils.isEmpty(path)) {
+                if (type == 0) {
+                    startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", path));
+                } else {
+                    showAlert(getActivity(), path);
+                }
             } else {
                 Utilities.toast(getActivity(), "Invalid resource url");
             }
         }
+
+    }
+
+    public static void showAlert(Context context, String path) {
+
+        View v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null);
+        EditText etTitle = v.findViewById(R.id.et_title);
+        EditText etDesc = v.findViewById(R.id.et_description);
+        RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        String userId = realmUserModel.getId();
+        new AlertDialog.Builder(context).setTitle("Enter resource detail")
+                .setView(v)
+                .setPositiveButton("Save", (dialogInterface, i) -> {
+                    String title = etTitle.getText().toString();
+                    if (title.isEmpty()) {
+                        Utilities.toast(context, "Title is required.");
+                        return;
+                    }
+                    String desc = etDesc.getText().toString();
+                    Realm realm = new DatabaseService(context).getRealmInstance();
+                    realm.executeTransactionAsync(realm1 -> {
+                        RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
+                        myPersonal.setTitle(title);
+                        myPersonal.setUserId(userId);
+                        myPersonal.setPath(path);
+                        myPersonal.setDate(new Date().getTime());
+                        myPersonal.setDescription(desc);
+                    }, () -> Utilities.toast(MainApplication.context, "Resource Saved to my personal"));
+
+                }).setNegativeButton("Dismiss", null).show();
     }
 }

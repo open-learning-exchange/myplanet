@@ -6,15 +6,19 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.AppCompatRatingBar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,10 +27,22 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
+import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmMyLife;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
+import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
+import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
+import org.ole.planet.myplanet.ui.news.NewsFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
+import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
+import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity;
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity;
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity;
@@ -41,6 +57,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.realm.RealmObject;
 import io.realm.RealmResults;
 
 public abstract class BaseContainerFragment extends BaseResourceFragment {
@@ -89,6 +106,13 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         startActivity(fileOpenIntent);
     }
 
+    public void openPdf(RealmMyLibrary item) {
+        Intent fileOpenIntent = new Intent(getActivity(), PDFReaderActivity.class);
+        fileOpenIntent.putExtra("TOUCHED_FILE", item.getId() + "/" + item.getResourceLocalAddress());
+        fileOpenIntent.putExtra("resourceId", item.getId());
+        startActivity(fileOpenIntent);
+    }
+
 
     public void openResource(RealmMyLibrary items) {
         if (items.getResourceOffline() != null && items.isResourceOffline()) {
@@ -108,7 +132,7 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         String extension = filenameArray[filenameArray.length - 1];
         switch (extension) {
             case "pdf":
-                openIntent(items, PDFReaderActivity.class);
+                openPdf(items);
                 break;
             case "bmp":
             case "gif":
@@ -230,5 +254,4 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
 
     }
-
 }

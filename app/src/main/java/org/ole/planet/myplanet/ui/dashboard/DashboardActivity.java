@@ -81,7 +81,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
         bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
-
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
         if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
@@ -384,5 +383,4 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
         return super.onCreateOptionsMenu(menu);
     }
-
 }
