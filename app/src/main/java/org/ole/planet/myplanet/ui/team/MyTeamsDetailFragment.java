@@ -61,7 +61,7 @@ import okhttp3.internal.Util;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnClickListener {
+public class MyTeamsDetailFragment extends BaseNewsFragment  {
 
     TextView tvTitle, tvDescription;
     RealmUserModel user;
@@ -105,7 +105,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
 
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
-        btnLeave.setOnClickListener(this);
         llRv = v.findViewById(R.id.ll_rv);
         btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnInvite = v.findViewById(R.id.btn_invite);
@@ -285,11 +284,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     }
 
 
-    @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.btn_leave) {
-        }
-    }
 
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
