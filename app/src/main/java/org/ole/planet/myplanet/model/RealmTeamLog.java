@@ -112,7 +112,5 @@ public class RealmTeamLog extends RealmObject {
         ob.addProperty("teamId", log.getTeamId());
         return ob;
     }
-
-
-
+    
 }
