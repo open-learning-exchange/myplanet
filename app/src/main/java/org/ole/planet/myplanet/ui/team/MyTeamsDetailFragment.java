@@ -4,6 +4,7 @@ package org.ole.planet.myplanet.ui.team;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.TextInputLayout;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.realm.Case;
@@ -163,7 +165,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
-
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
         tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
@@ -260,7 +261,17 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         listContent.setVisibility(View.VISIBLE);
         llRv.setVisibility(View.GONE);
         tab.setText(s);
-        listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, data));
+        listContent.setAdapter(new ArrayAdapter<RealmUserModel>(getActivity(), android.R.layout.simple_list_item_1, data){
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                if (convertView == null)
+                    convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
+                TextView tv = convertView.findViewById(android.R.id.text1);
+                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName()) + " visits )");
+                return convertView;
+            }
+        });
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             openFragment(data.get(i).getId(), new UserDetailFragment());
         });
