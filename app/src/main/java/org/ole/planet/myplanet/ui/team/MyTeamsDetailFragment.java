@@ -4,6 +4,7 @@ package org.ole.planet.myplanet.ui.team;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.TextInputLayout;
@@ -29,6 +30,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamLog;
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.course.CourseDetailFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment;
 import org.ole.planet.myplanet.utilities.Constants;
@@ -45,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import io.realm.Case;
@@ -57,7 +61,7 @@ import okhttp3.internal.Util;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnClickListener {
+public class MyTeamsDetailFragment extends BaseNewsFragment  {
 
     TextView tvTitle, tvDescription;
     RealmUserModel user;
@@ -70,7 +74,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     DatabaseService dbService;
     RecyclerView rvDiscussion;
     LinearLayout llRv;
-
+    boolean isMyTeam;
 
     public MyTeamsDetailFragment() {
     }
@@ -81,6 +85,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             teamId = getArguments().getString("id");
+            isMyTeam = getArguments().getBoolean("isMyTeam", false);
         }
     }
 
@@ -100,7 +105,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
 
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
-        btnLeave.setOnClickListener(this);
         llRv = v.findViewById(R.id.ll_rv);
         btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnInvite = v.findViewById(R.id.btn_invite);
@@ -148,6 +152,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         setTeamList();
     }
 
+    RealmResults<RealmMyLibrary> libraries;
+
     private void setTeamList() {
         List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm);
         createTeamLog();
@@ -157,10 +163,18 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         showRecyclerView(realmNewsList);
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
+        libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
         tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
+        tabLayout.getTabAt(4).setText(String.format("Resources : (%s)", libraries.size()));
+
         setTabListener(users, courses, reqUsers);
+        if (!isMyTeam) {
+            ((ViewGroup) tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
+            ((ViewGroup) tabLayout.getChildAt(4)).getChildAt(0).setVisibility(View.GONE);
+            tabLayout.getTabAt(1).select();
+        }
     }
 
     private void createTeamLog() {
@@ -197,7 +211,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
                     setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
                 else if (tab.getPosition() == 2)
                     setListContent(tab, String.format("Requested Members : (%s)", reqUsers.size()), reqUsers);
-                else setCourseList(tab, courses);
+                else if (tab.getPosition() == 3) setCourseList(tab, courses);
+                else if (tab.getPosition() == 4) setLibraryList(tab);
             }
 
             @Override
@@ -210,8 +225,23 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         });
     }
 
+    private void setLibraryList(TabLayout.Tab tab) {
+        hideRv(tab, String.format("Resources : (%s)", libraries.size()));
+        listContent.setAdapter(new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.simple_list_item_1, libraries));
+        listContent.setOnItemClickListener((adapterView, view, i, l) -> {
+            if (homeItemClickListener != null) {
+                LibraryDetailFragment f = new LibraryDetailFragment();
+                Bundle b = new Bundle();
+                b.putString("libraryId", libraries.get(i).getId());
+                f.setArguments(b);
+                homeItemClickListener.openCallFragment(f);
+            }
+
+        });
+    }
+
     private void setCourseList(TabLayout.Tab tab, RealmResults<RealmMyCourse> courses) {
-        tab.setText(String.format("Courses : (%s)", courses.size()));
+        hideRv(tab, String.format("Courses : (%s)", courses.size()));
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
@@ -220,11 +250,27 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
         });
     }
 
+    private void hideRv(TabLayout.Tab tab, String s) {
+        listContent.setVisibility(View.VISIBLE);
+        llRv.setVisibility(View.GONE);
+        tab.setText(s);
+    }
+
     private void setListContent(TabLayout.Tab tab, String s, List<RealmUserModel> data) {
         listContent.setVisibility(View.VISIBLE);
         llRv.setVisibility(View.GONE);
         tab.setText(s);
-        listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, data));
+        listContent.setAdapter(new ArrayAdapter<RealmUserModel>(getActivity(), android.R.layout.simple_list_item_1, data){
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                if (convertView == null)
+                    convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
+                TextView tv = convertView.findViewById(android.R.id.text1);
+                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName()) + " visits )");
+                return convertView;
+            }
+        });
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             openFragment(data.get(i).getId(), new UserDetailFragment());
         });
@@ -238,11 +284,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment implements View.OnCl
     }
 
 
-    @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.btn_leave) {
-        }
-    }
 
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
