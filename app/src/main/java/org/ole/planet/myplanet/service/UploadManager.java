@@ -179,6 +179,7 @@ public class UploadManager {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/teams", RealmMyTeam.serialize(team)).execute().body();
                     if (object != null) {
                         team.set_id(JsonUtils.getString("_id", object));
+                        team.set_rev(JsonUtils.getString("_rev", object));
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

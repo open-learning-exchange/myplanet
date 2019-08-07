@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +32,7 @@ public class RealmMyTeam extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id;
+    private String _rev;
     private RealmList<String> courses;
     private String teamId;
     private String name;
@@ -39,6 +41,7 @@ public class RealmMyTeam extends RealmObject {
     private String requests;
     private String limit;
     private long createdDate;
+    private String resourceId;
     private String status;
     private String teamType;
     private String teamPlanetCode;
@@ -54,12 +57,14 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setUser_id(JsonUtils.getString("userId", doc));
         myTeams.setTeamId(JsonUtils.getString("teamId", doc));
         myTeams.set_id(JsonUtils.getString("_id", doc));
+        myTeams.set_rev(JsonUtils.getString("_rev", doc));
         myTeams.setName(JsonUtils.getString("name", doc));
         myTeams.setDescription(JsonUtils.getString("description", doc));
         myTeams.setLimit(JsonUtils.getString("limit", doc));
         myTeams.setStatus(JsonUtils.getString("status", doc));
         myTeams.setTeamPlanetCode(JsonUtils.getString("teamPlanetCode", doc));
         myTeams.setCreatedDate(JsonUtils.getLong("createdDate", doc));
+        myTeams.setResourceId(JsonUtils.getString("resourceId", doc));
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
@@ -71,6 +76,32 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public static List<String> getResourceIds(String teamId, Realm realm) {
+        List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).findAll();
+        List<String> ids = new ArrayList<>();
+        for (RealmMyTeam team : teams) {
+            if (!TextUtils.isEmpty(team.getResourceId()))
+                ids.add(team.getResourceId());
+        }
+        return ids;
+    }
+
+    public String getResourceId() {
+        return resourceId;
+    }
+
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
+    }
+
+    public String get_rev() {
+        return _rev;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
     }
 
     public String getUserId() {
@@ -152,8 +183,6 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("docType", team.getDocType());
         return object;
     }
-
-
 
 
     public void setUser_id(String user_id) {

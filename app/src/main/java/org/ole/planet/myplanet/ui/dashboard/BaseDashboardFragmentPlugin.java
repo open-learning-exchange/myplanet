@@ -39,6 +39,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             if (homeItemClickListener != null) {
                 Bundle b = new Bundle();
                 b.putString("id", id);
+                if (f instanceof MyTeamsDetailFragment)
+                    b.putBoolean("isMyTeam", true);
                 f.setArguments(b);
                 homeItemClickListener.openCallFragment(f);
             }

@@ -6,6 +6,9 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 
+import java.util.HashMap;
+import java.util.List;
+
 import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.Sort;
@@ -44,6 +47,9 @@ public class RealmTeamLog extends RealmObject {
         return teamId;
     }
 
+    public static long getVisitCount(Realm realm, String userName){
+        return realm.where(RealmTeamLog.class).equalTo("type", "teamVisit").equalTo("user",userName).count();
+    }
 
     public void setUploaded(boolean uploaded) {
         this.uploaded = uploaded;
@@ -112,5 +118,4 @@ public class RealmTeamLog extends RealmObject {
         ob.addProperty("teamId", log.getTeamId());
         return ob;
     }
-    
 }
