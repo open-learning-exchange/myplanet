@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
+import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
@@ -168,6 +169,32 @@ public class UploadManager {
         }, () -> listener.onSuccess("Feedback sync completed successfully"));
     }
 
+
+    public void uploadMyPersonal(RealmMyPersonal personal, SuccessListener listener) {
+        mRealm = new DatabaseService(context).getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        if (!personal.isUploaded()) {
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", RealmMyPersonal.serialize(personal)).enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                    JsonObject object = response.body();
+                    if (object != null) {
+                        if (!mRealm.isInTransaction())
+                            mRealm.beginTransaction();
+                        personal.setUploaded(true);
+                        mRealm.commitTransaction();
+                        listener.onSuccess("Uploaded Successfully");
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                    listener.onSuccess("Unable to upload resource");
+                }
+            });
+
+        }
+    }
 
     public void uploadTeams() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);

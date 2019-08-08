@@ -147,4 +147,15 @@ public class FileUtils {
             out.write(buffer, 0, read);
         }
     }
+
+    public static String getMediaType(String path) {
+        String ext = getFileExtension(path);
+        if (ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("png"))
+            return "image";
+        else if (ext.equalsIgnoreCase("mp4") )
+            return "mp4";
+        else if (ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("aac"))
+            return "audio";
+        return "";
+    }
 }

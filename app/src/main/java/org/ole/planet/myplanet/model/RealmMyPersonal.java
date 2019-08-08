@@ -2,27 +2,45 @@ package org.ole.planet.myplanet.model;
 
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.FileUtils;
+
+import java.util.Date;
+
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmMyPersonal extends RealmObject {
     @PrimaryKey
-   private String _id;
-   private String title;
-   private String description;
-   private long date;
-   private String userId;
-   private String path;
+    private String _id;
+    private boolean uploaded;
+    private String title;
+    private String description;
+    private long date;
+    private String userId;
+    private String path;
 
 
-   public static JsonObject serialize(RealmMyPersonal personal){
-       JsonObject object = new JsonObject();
-       object.addProperty("date", personal.getDate());
-       object.addProperty("path", personal.getPath());
-       object.addProperty("userId", personal.getUserId());
-       object.addProperty("description", personal.getDescription());
-       return object;
-   }
+    public static JsonObject serialize(RealmMyPersonal personal) {
+        JsonObject object = new JsonObject();
+        object.addProperty("title", personal.getTitle());
+        object.addProperty("uploadDate", new Date().getTime());
+        object.addProperty("createdDate", personal.getDate());
+        object.addProperty("filename", FileUtils.getFileNameFromUrl(personal.getPath()));
+        object.addProperty("author", personal.getUserId());
+        object.addProperty("addedBy", personal.getUserId());
+        object.addProperty("description", personal.getDescription());
+        object.addProperty("resourceType", "private");
+        object.addProperty("mediaType", FileUtils.getMediaType(personal.getPath()));
+        return object;
+    }
+
+    public boolean isUploaded() {
+        return uploaded;
+    }
+
+    public void setUploaded(boolean uploaded) {
+        this.uploaded = uploaded;
+    }
 
     public String get_id() {
         return _id;
