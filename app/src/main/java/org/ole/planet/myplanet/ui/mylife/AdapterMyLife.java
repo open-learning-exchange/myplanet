@@ -1,36 +1,27 @@
 package org.ole.planet.myplanet.ui.mylife;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
-import android.support.v4.view.MotionEventCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
-import org.ole.planet.myplanet.callback.OnMyLifeItemSelected;
 import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter;
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder;
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener;
-import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Realm;
@@ -40,8 +31,10 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private List<RealmMyLife> myLifeList;
     private Realm mRealm;
     private final OnStartDragListener mDragStartListener;
+    private final float HIDE = 0.5f;
+    private final float SHOW = 1f;
 
-    public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm, OnStartDragListener onStartDragListener)  {
+    public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm, OnStartDragListener onStartDragListener) {
         mDragStartListener = onStartDragListener;
         this.context = context;
         this.mRealm = realm;
@@ -62,16 +55,31 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             Utilities.log("On bind " + position);
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
             ((ViewHolderMyLife) holder).imageView.setImageResource(context.getResources().getIdentifier(myLifeList.get(position).getImageId(), "drawable", context.getPackageName()));
-            ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-                        mDragStartListener.onStartDrag(holder);
-                    }
-                    return false;
-                }
+            ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener((v, event) -> {
+                if (event.getActionMasked() == MotionEvent.ACTION_DOWN)
+                    mDragStartListener.onStartDrag(holder);
+                return false;
             });
+            ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> updateVisibility(holder, holder.getAdapterPosition(), myLifeList.get(holder.getAdapterPosition()).isVisible()));
+            if (!myLifeList.get(position).isVisible()) changeVisibility(holder,R.drawable.ic_visibility,HIDE);
+            else changeVisibility(holder,R.drawable.ic_visibility_off,SHOW);
         }
+    }
+
+    public void updateVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
+        RealmMyLife.updateVisibility(!isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
+        if (isVisible) {
+            changeVisibility(holder, R.drawable.ic_visibility,HIDE);
+            Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
+        } else {
+            changeVisibility(holder, R.drawable.ic_visibility_off,SHOW);
+            Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");
+        }
+    }
+
+    public void changeVisibility(RecyclerView.ViewHolder holder,int imageId, float alpha) {
+        ((ViewHolderMyLife) holder).visibility.setImageResource(imageId);
+        ((ViewHolderMyLife) holder).rv_item_container.setAlpha(alpha);
     }
 
     public void setmRealm(Realm mRealm) {
@@ -85,15 +93,16 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     @Override
     public boolean onItemMove(int fromPosition, int toPosition) {
-        RealmMyLife.updateWeight(toPosition+1, myLifeList.get(fromPosition).get_id(),mRealm, myLifeList.get(fromPosition).getUserId());
-        notifyItemMoved(fromPosition,toPosition);
+        RealmMyLife.updateWeight(toPosition + 1, myLifeList.get(fromPosition).get_id(), mRealm, myLifeList.get(fromPosition).getUserId());
+        notifyItemMoved(fromPosition, toPosition);
         return true;
     }
 
     class ViewHolderMyLife extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         TextView title;
         ImageView imageView;
-        ImageButton editImageButton, dragImageButton;
+        ImageButton editImageButton, dragImageButton, visibility;
+        LinearLayout rv_item_container;
 
         public ViewHolderMyLife(View itemView) {
             super(itemView);
@@ -101,6 +110,8 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             imageView = itemView.findViewById(R.id.itemImageView);
             dragImageButton = itemView.findViewById(R.id.drag_image_button);
             editImageButton = itemView.findViewById(R.id.edit_image_button);
+            visibility = itemView.findViewById(R.id.visibility_image_button);
+            rv_item_container = itemView.findViewById(R.id.rv_item_parent_layout);
         }
 
         @Override
@@ -109,8 +120,9 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
 
         @Override
-        public void onItemClear() {
+        public void onItemClear(RecyclerView.ViewHolder holder) {
             itemView.setBackgroundColor(0);
+            if(!myLifeList.get(holder.getAdapterPosition()).isVisible()) ((ViewHolderMyLife) holder).rv_item_container.setAlpha(HIDE);
         }
     }
 
