@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.FileUtils;
@@ -11,12 +12,15 @@ import io.realm.annotations.PrimaryKey;
 
 public class RealmMyPersonal extends RealmObject {
     @PrimaryKey
+    private String id;
     private String _id;
+    private String _rev;
     private boolean uploaded;
     private String title;
     private String description;
     private long date;
     private String userId;
+    private String userName;
     private String path;
 
 
@@ -26,12 +30,24 @@ public class RealmMyPersonal extends RealmObject {
         object.addProperty("uploadDate", new Date().getTime());
         object.addProperty("createdDate", personal.getDate());
         object.addProperty("filename", FileUtils.getFileNameFromUrl(personal.getPath()));
-        object.addProperty("author", personal.getUserId());
-        object.addProperty("addedBy", personal.getUserId());
+        object.addProperty("author", personal.getUserName());
+        object.addProperty("addedBy", personal.getUserName());
         object.addProperty("description", personal.getDescription());
         object.addProperty("resourceType", "private");
         object.addProperty("mediaType", FileUtils.getMediaType(personal.getPath()));
         return object;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
     }
 
     public boolean isUploaded() {
@@ -48,6 +64,18 @@ public class RealmMyPersonal extends RealmObject {
 
     public void set_id(String _id) {
         this._id = _id;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String get_rev() {
+        return _rev;
     }
 
     public String getTitle() {

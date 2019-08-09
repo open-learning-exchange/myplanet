@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.MyPlanet;
 
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -33,6 +34,9 @@ public interface ApiInterface {
 
     @POST
     Call<JsonObject> postDoc(@Header("Authorization") String header, @Header("Content-Type") String c, @Url String url, @Body JsonObject s);
+
+    @PUT
+    Call<JsonObject> uploadResource(@Header("Authorization") String header, @Header("Content-Type") String content_type, @Header("If-Match")String _rev,@Url String url, @Body RequestBody body );
 
     @PUT
     Call<JsonObject> putDoc(@Header("Authorization") String header, @Header("Content-Type") String c, @Url String url, @Body JsonObject s);

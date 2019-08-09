@@ -184,6 +184,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         EditText etDesc = v.findViewById(R.id.et_description);
         RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userId = realmUserModel.getId();
+        String userName= realmUserModel.getName();
         new AlertDialog.Builder(context).setTitle("Enter resource detail")
                 .setView(v)
                 .setPositiveButton("Save", (dialogInterface, i) -> {
@@ -198,6 +199,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                         RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
                         myPersonal.setTitle(title);
                         myPersonal.setUserId(userId);
+                        myPersonal.setUserName(userName);
                         myPersonal.setPath(path);
                         myPersonal.setDate(new Date().getTime());
                         myPersonal.setDescription(desc);

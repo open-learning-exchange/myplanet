@@ -16,6 +16,7 @@ import android.webkit.MimeTypeMap;
 import org.ole.planet.myplanet.BuildConfig;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +40,32 @@ public class FileUtils {
         } else {
             return 0;
         }
+    }
+
+   public static byte[] fullyReadFileToBytes(File f) throws IOException {
+        int size = (int) f.length();
+       byte[] bytes = new byte[size];
+       byte[] tmpBuff = new byte[size];
+        FileInputStream fis= new FileInputStream(f);;
+        try {
+
+            int read = fis.read(bytes, 0, size);
+            if (read < size) {
+                int remain = size - read;
+                while (remain > 0) {
+                    read = fis.read(tmpBuff, 0, remain);
+                    System.arraycopy(tmpBuff, 0, bytes, size - remain, read);
+                    remain -= read;
+                }
+            }
+        }  catch (IOException e){
+            e.printStackTrace();
+            throw e;
+        } finally {
+            fis.close();
+        }
+
+        return bytes;
     }
 
     private static File createFilePath(String folder, String filename) {
