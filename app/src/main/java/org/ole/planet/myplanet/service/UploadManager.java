@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.FileUploadService;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
@@ -54,7 +55,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class UploadManager {
+public class UploadManager extends FileUploadService {
     private DatabaseService dbService;
     private Realm mRealm;
     private static UploadManager instance;
@@ -187,7 +188,6 @@ public class UploadManager {
                     if (object != null) {
                         if (!mRealm.isInTransaction())
                             mRealm.beginTransaction();
-                        Utilities.log("response " + new Gson().toJson(response.body()));
                         String _rev = JsonUtils.getString("rev", object);
                         String _id = JsonUtils.getString("id", object);
                         personal.setUploaded(true);
@@ -207,41 +207,6 @@ public class UploadManager {
         }
     }
 
-    private void uploadAttachment(String id, String rev, RealmMyPersonal personal, SuccessListener listener) {
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        File f = new File(personal.getPath());
-        String name = FileUtils.getFileNameFromUrl(personal.getPath());
-        URLConnection connection = null;
-        try {
-            connection = f.toURL().openConnection();
-            String mimeType = connection.getContentType();
-            RequestBody body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f));
-            String url = String.format("%s/resources/%s/%s", Utilities.getUrl(), id, name);
-            Utilities.log("Url " + url);
-            apiInterface.uploadResource(Utilities.getHeader(), mimeType, rev, url, body).enqueue(new Callback<JsonObject>() {
-                @Override
-                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                    Utilities.log(response.message() + " " + response.errorBody());
-                    if (response.body() != null) {
-                        JsonObject obj = response.body();
-                        if (JsonUtils.getBoolean("ok", obj)) {
-                            listener.onSuccess("Uploaded successfully");
-                            return;
-                        }
-                    }
-                    listener.onSuccess("Unable to upload resource");
-                }
-
-                @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) {
-                    listener.onSuccess("Unable to upload resource");
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
-            listener.onSuccess("Unable to upload resource");
-        }
-    }
 
     public void uploadTeams() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
