@@ -11,12 +11,15 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import retrofit2.http.Header;
 
 public class FileUploadService {
     public void uploadAttachment(String id, String rev, RealmMyPersonal personal, SuccessListener listener) {
@@ -28,7 +31,7 @@ public class FileUploadService {
             String mimeType = connection.getContentType();
             RequestBody body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f));
             String url = String.format("%s/resources/%s/%s", Utilities.getUrl(), id, name);
-            apiInterface.uploadResource(Utilities.getHeader(), mimeType, rev, url, body).enqueue(new Callback<JsonObject>() {
+            apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     onDataReceived(response.body(), listener);
@@ -42,6 +45,14 @@ public class FileUploadService {
         } catch (IOException e) {
             listener.onSuccess("Unable to upload resource");
         }
+    }
+
+    private Map<String, String> getHeaderMap(String mimeType, String rev) {
+        Map<String, String> hashMap = new HashMap<>();
+        hashMap.put("Authorization", Utilities.getHeader());
+        hashMap.put("Content-Type", mimeType);
+        hashMap.put("If-Match", rev);
+        return hashMap;
     }
 
     private void onDataReceived(JsonObject object, SuccessListener listener) {
