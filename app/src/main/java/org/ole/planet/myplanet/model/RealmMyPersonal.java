@@ -33,7 +33,11 @@ public class RealmMyPersonal extends RealmObject {
         object.addProperty("author", personal.getUserName());
         object.addProperty("addedBy", personal.getUserName());
         object.addProperty("description", personal.getDescription());
-        object.addProperty("resourceType", "private");
+        object.addProperty("resourceType", "Activities");
+        object.addProperty("private", true);
+        JsonObject object1 = new JsonObject();
+        object1.addProperty("users", personal.getUserId());
+        object.add("privateFor", object1);
         object.addProperty("mediaType", FileUtils.getMediaType(personal.getPath()));
         return object;
     }
