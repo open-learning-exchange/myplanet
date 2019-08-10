@@ -6,11 +6,15 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.MyPlanet;
 
+import java.util.Map;
+
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.HeaderMap;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Streaming;
@@ -35,10 +39,14 @@ public interface ApiInterface {
     Call<JsonObject> postDoc(@Header("Authorization") String header, @Header("Content-Type") String c, @Url String url, @Body JsonObject s);
 
     @PUT
+    Call<JsonObject> uploadResource(@HeaderMap Map<String, String> headerMap, @Url String url, @Body RequestBody body);
+
+    @PUT
     Call<JsonObject> putDoc(@Header("Authorization") String header, @Header("Content-Type") String c, @Url String url, @Body JsonObject s);
 
     @GET
     Call<MyPlanet> checkVersion(@Url String serverUrl);
+
     @GET
     Call<ResponseBody> isPlanetAvailable(@Url String serverUrl);
 }
