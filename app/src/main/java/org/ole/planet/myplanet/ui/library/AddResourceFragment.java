@@ -96,16 +96,30 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         return v;
     }
 
+    TextView tvTime;
+    FloatingActionButton floatingActionButton;
+    AudioRecorderService audioRecorderService;
+
     private void showAudioRecordAlert() {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_sound_recorder, null);
-        TextView tvTime = v.findViewById(R.id.tv_time);
-        FloatingActionButton floatingActionButton = v.findViewById(R.id.fab_record);
-
+        initViews(v);
         AlertDialog dialog = new AlertDialog.Builder(getActivity()).setTitle("Record Audio").setView(v).setCancelable(false).create();
-        AudioRecorderService audioRecorderService = new AudioRecorderService().setAudioRecordListener(new AudioRecorderService.AudioRecordListener() {
+        createAudioRecorderService(dialog);
+        floatingActionButton.setOnClickListener(view -> startStopRecording(audioRecorderService));
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Dismiss", (dialogInterface, i) -> {
+            if (audioRecorderService != null && audioRecorderService.isRecording()) {
+                audioRecorderService.forceStop();
+            }
+            dialog.dismiss();
+        });
+        dialog.show();
+
+    }
+
+    private void createAudioRecorderService(AlertDialog dialog) {
+        audioRecorderService = new AudioRecorderService().setAudioRecordListener(new AudioRecorderService.AudioRecordListener() {
             @Override
             public void onRecordStarted() {
-                Utilities.log("Recording started");
                 tvTime.setText("Recording audio......");
                 floatingActionButton.setImageResource(R.drawable.ic_stop);
             }
@@ -113,7 +127,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             @Override
             public void onRecordStopped(String outputFile) {
                 tvTime.setText("");
-                Utilities.log("Recording stopped");
                 dialog.dismiss();
                 startIntent(outputFile);
                 floatingActionButton.setImageResource(R.drawable.ic_mic);
@@ -124,26 +137,19 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 Utilities.toast(getActivity(), error);
             }
         });
+    }
 
-        floatingActionButton.setOnClickListener(view -> {
-            Utilities.log("On clicked");
-            if (!audioRecorderService.isRecording()) {
-                audioRecorderService.startRecording();
-            } else {
-                audioRecorderService.stopRecording();
-            }
-        });
-        dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Dismiss", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                if (audioRecorderService!=null && audioRecorderService.isRecording()) {
-                    audioRecorderService.forceStop();
-                }
-                dialog.dismiss();
-            }
-        });
-        dialog.show();
+    private void initViews(View v) {
+        tvTime = v.findViewById(R.id.tv_time);
+        floatingActionButton = v.findViewById(R.id.fab_record);
+    }
 
+    private void startStopRecording(AudioRecorderService audioRecorderService) {
+        if (!audioRecorderService.isRecording()) {
+            audioRecorderService.startRecording();
+        } else {
+            audioRecorderService.stopRecording();
+        }
     }
 
     private void openOleFolder() {
@@ -165,18 +171,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 //        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
-        }
-    }
-
-    private void dispatchRecordAudioIntent() {
-
-        Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/audio/" + UUID.randomUUID().toString() + ".mp3")));
-
-        if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
-            startActivityForResult(intent, REQUEST_RECORD_SOUND);
-        } else {
-            Utilities.toast(getActivity(), "Your phone does not have audio recorder app, please download and try again");
         }
     }
 
