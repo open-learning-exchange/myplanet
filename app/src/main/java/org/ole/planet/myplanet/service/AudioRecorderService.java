@@ -12,8 +12,19 @@ public class AudioRecorderService {
     private String outputFile;
     private MediaRecorder myAudioRecorder;
     private AudioRecordListener audioRecordListener;
+  
 
     public AudioRecorderService() {
+    }
+  
+    public void forceStop() {
+        if (myAudioRecorder != null) {
+            myAudioRecorder.stop();
+            myAudioRecorder.release();
+            myAudioRecorder = null;
+        }
+        if (audioRecordListener != null)
+            audioRecordListener.onError("Recording stopped");
     }
 
     public AudioRecorderService setAudioRecordListener(AudioRecordListener audioRecordListener) {

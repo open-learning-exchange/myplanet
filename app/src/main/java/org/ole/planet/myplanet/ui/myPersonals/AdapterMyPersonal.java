@@ -77,6 +77,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
                         personal.deleteFromRealm();
                         realm.commitTransaction();
                         notifyDataSetChanged();
+                        listener.onAddedResource();
                     }).setNegativeButton(R.string.cancel, null).show());
 
             ((ViewHolderMyPersonal) holder).ivEdit.setOnClickListener(view -> {
@@ -150,6 +151,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
                     personal.setTitle(title);
                     realm.commitTransaction();
                     notifyDataSetChanged();
+                    listener.onAddedResource();
                 }).setNegativeButton(R.string.cancel, null).show();
 
 

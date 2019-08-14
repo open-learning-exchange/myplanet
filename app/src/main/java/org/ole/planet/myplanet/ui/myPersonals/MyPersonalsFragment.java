@@ -10,6 +10,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal;
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -32,6 +34,7 @@ import io.realm.Realm;
 public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersonal {
 
     RecyclerView rvMyPersonal;
+    TextView tvNodata;
     Realm mRealm;
     ProgressDialog pg;
     public MyPersonalsFragment() {
@@ -47,6 +50,7 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
         pg = new ProgressDialog(getActivity());
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         rvMyPersonal = v.findViewById(R.id.rv_mypersonal);
+        tvNodata = v.findViewById(R.id.tv_nodata);
         rvMyPersonal.setLayoutManager(new LinearLayoutManager(getActivity()));
         v.findViewById(R.id.add_my_personal).setOnClickListener(vi -> {
             AddResourceFragment f = new AddResourceFragment();
@@ -58,12 +62,12 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
         return v;
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (rvMyPersonal != null)
-            setAdapter();
-    }
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//        if (rvMyPersonal != null)
+//            setAdapter();
+//    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -78,6 +82,18 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
         personalAdapter.setListener(this);
         personalAdapter.setRealm(mRealm);
         rvMyPersonal.setAdapter(personalAdapter);
+        showNodata();
+        mRealm.addChangeListener(realm -> showNodata());
+    }
+
+    private void showNodata() {
+        Utilities.log("Show nodata");
+        if (rvMyPersonal.getAdapter().getItemCount() == 0){
+            tvNodata.setVisibility(View.VISIBLE);
+            tvNodata.setText("No data available, please click + button to add new resource in myPersonal.");
+        }else{
+            tvNodata.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -94,5 +110,10 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
             Utilities.toast(getActivity(),s);
             pg.dismiss();
         });
+    }
+
+    @Override
+    public void onAddedResource() {
+        showNodata();
     }
 }
