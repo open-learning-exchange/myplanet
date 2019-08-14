@@ -2,22 +2,16 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
-import android.util.Log;
 
-import com.github.kittinunf.fuel.android.core.Json;
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-import org.json.JSONObject;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.datamanager.FileUploadService;
-import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
@@ -33,46 +27,37 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-import org.ole.planet.myplanet.utilities.VersionUtils;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URLConnection;
-import java.nio.file.Files;
-import java.util.Date;
 import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
-import okhttp3.MediaType;
-import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class UploadManager extends FileUploadService {
-    private DatabaseService dbService;
-    private Realm mRealm;
     private static UploadManager instance;
     Context context;
     SharedPreferences pref;
+    private DatabaseService dbService;
+    private Realm mRealm;
+
+    public UploadManager(Context context) {
+        dbService = new DatabaseService(context);
+        this.context = context;
+        pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+    }
 
     public static UploadManager getInstance() {
         if (instance == null) {
             instance = new UploadManager(MainApplication.context);
         }
         return instance;
-    }
-
-    public UploadManager(Context context) {
-        dbService = new DatabaseService(context);
-        this.context = context;
-        pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     public void uploadActivities(SuccessListener listener) {

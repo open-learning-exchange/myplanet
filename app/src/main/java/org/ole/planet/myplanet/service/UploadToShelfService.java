@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
@@ -31,22 +30,22 @@ import io.realm.RealmResults;
 
 public class UploadToShelfService {
 
+    private static UploadToShelfService instance;
     private DatabaseService dbService;
     private SharedPreferences sharedPreferences;
     private Realm mRealm;
-    private static UploadToShelfService instance;
 
+
+    public UploadToShelfService(Context context) {
+        sharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        dbService = new DatabaseService(context);
+    }
 
     public static UploadToShelfService getInstance() {
         if (instance == null) {
             instance = new UploadToShelfService(MainApplication.context);
         }
         return instance;
-    }
-
-    public UploadToShelfService(Context context) {
-        sharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        dbService = new DatabaseService(context);
     }
 
     public void uploadToshelf(final SuccessListener listener) {

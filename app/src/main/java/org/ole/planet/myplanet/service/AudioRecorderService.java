@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.service;
 
 import android.media.MediaRecorder;
-import android.net.Uri;
 import android.os.Environment;
-
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,17 +13,8 @@ public class AudioRecorderService {
     private MediaRecorder myAudioRecorder;
     private AudioRecordListener audioRecordListener;
 
-    public interface AudioRecordListener {
-        void onRecordStarted();
-
-        void onRecordStopped(String outputFile);
-
-        void onError(String error);
-    }
-
     public AudioRecorderService() {
     }
-
 
     public AudioRecorderService setAudioRecordListener(AudioRecordListener audioRecordListener) {
         this.audioRecordListener = audioRecordListener;
@@ -34,7 +22,7 @@ public class AudioRecorderService {
     }
 
     public void startRecording() {
-        outputFile = Environment.getExternalStorageDirectory().getAbsolutePath() +"/"+ UUID.randomUUID().toString() + ".aac";
+        outputFile = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + UUID.randomUUID().toString() + ".aac";
         File f = new File(outputFile);
         createFileIfNotExists(f);
         myAudioRecorder = new MediaRecorder();
@@ -78,5 +66,13 @@ public class AudioRecorderService {
             if (audioRecordListener != null)
                 audioRecordListener.onRecordStopped(outputFile);
         }
+    }
+
+    public interface AudioRecordListener {
+        void onRecordStarted();
+
+        void onRecordStopped(String outputFile);
+
+        void onError(String error);
     }
 }
