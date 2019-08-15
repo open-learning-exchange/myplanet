@@ -9,9 +9,6 @@ import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
-import org.ole.planet.myplanet.model.RealmAchievement;
-import org.ole.planet.myplanet.model.RealmFeedback;
-import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
@@ -76,7 +73,7 @@ public class TransactionSyncManager {
             for (Method m : methods) {
                 Utilities.log("M " + m.getName());
                 if ("insert".equals(m.getName())) {
-                    m.invoke(null, new Object[] {mRealm, jsonDoc});
+                    m.invoke(null, mRealm, jsonDoc);
                     break;
                 }
             }
@@ -85,7 +82,6 @@ public class TransactionSyncManager {
             e.printStackTrace();
         }
     }
-
 
 
 }
