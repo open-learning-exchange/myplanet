@@ -35,11 +35,12 @@ import java.util.HashMap;
 
 import io.realm.RealmList;
 import io.realm.Sort;
+import org.ole.planet.myplanet.utilities.CameraUtils;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener {
+public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, CameraUtils.ImageCaptureCallback {
 
     TextView tvQuestionCount, header, body;
     EditText etAnswer;
@@ -197,6 +198,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             }
             boolean cont = updateAnsDb();
             checkAnsAndContinue(cont);
+            CameraUtils.CapturePhoto(this);
+
         }
     }
 

@@ -72,7 +72,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
 
     @Override
     public void onError(String msg, boolean blockSync) {
-        if (!blockSync){
+        if (!blockSync) {
             SyncManager.getInstance().start(this);
             UploadManager.getInstance().uploadUserActivities(this);
             UploadManager.getInstance().uploadExamResult(this);

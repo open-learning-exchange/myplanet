@@ -3,12 +3,10 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
 
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 
