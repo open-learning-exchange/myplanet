@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.ui.exam;
 
 
+import android.content.Context;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
@@ -37,6 +40,8 @@ import io.realm.RealmList;
 import io.realm.Sort;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 
+import static io.realm.internal.SyncObjectServerFacade.getApplicationContext;
+
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -47,6 +52,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     Button btnSubmit;
     RadioGroup listChoices;
     LinearLayout llCheckbox;
+    String submit_id_photo = "";
 
     NestedScrollView container;
 
@@ -188,6 +194,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     }
 
 
+
+
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_submit) {
@@ -197,8 +205,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
                 return;
             }
             boolean cont = updateAnsDb();
-            checkAnsAndContinue(cont);
             CameraUtils.CapturePhoto(this);
+            insert_into_submitPhotos(exam, submit_id_photo);
+            checkAnsAndContinue(cont);
 
         }
     }
@@ -221,6 +230,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         answer.setValue(ans);
         answer.setValueChoices(listAns);
         answer.setSubmissionId(sub.getId());
+        submit_id_photo = answer.getSubmissionId();
         if (que.getCorrectChoice().size() == 0) {
             answer.setGrade(0);
             answer.setMistakes(0);

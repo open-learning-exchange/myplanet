@@ -14,18 +14,23 @@ import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.Date;
 
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
 
 public abstract class BaseExamFragment extends Fragment implements CameraUtils.ImageCaptureCallback {
+
+
     RealmStepExam exam;
     DatabaseService db;
     Realm mRealm;
@@ -40,6 +45,9 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     RealmSubmission sub;
     HashMap<String, String> listAns;
     boolean isMySurvey;
+    String mac_addr = NetworkUtils.getMacAddr();
+    String date = new Date().toString();
+    String photo_path = "";
 
 
     @Override
@@ -123,6 +131,33 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         }
     }
 
+
+    public void insert_into_submitPhotos(RealmStepExam exam, String sub)
+    {
+          String exam_id = exam.getId();
+          String course_id = exam.getCourseId();
+          String member_id = user.getId();
+          String submission_id = sub;
+
+
+          if(!mRealm.isInTransaction())
+          {
+              mRealm.beginTransaction();
+              RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class);
+              submit.setId(UUID.randomUUID().toString());
+              submit.setSubmission_id(submission_id);
+              submit.setCourse_id(course_id);
+              submit.setExam_id(exam_id);
+              submit.setMember_id(member_id);
+              submit.setMac_address(mac_addr);
+              submit.setDate(date);
+              submit.setPhoto_file_path(photo_path);
+              mRealm.commitTransaction();
+          }
+
+
+    }
+
     private void showUserInfoDialog() {
         if (!isMySurvey) {
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
@@ -174,6 +209,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         sub.setLocalUserImageUri(fileUri);
+        photo_path = fileUri;
         mRealm.close();
     }
 }
