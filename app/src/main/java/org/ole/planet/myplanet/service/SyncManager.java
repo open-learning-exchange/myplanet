@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -122,6 +123,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "feedback");
             TransactionSyncManager.syncDb(mRealm, "login_activities");
             TransactionSyncManager.syncDb(mRealm, "teams");
+            ManagerSync.getInstance().syncAdmin();
             resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
         } catch (Exception err) {
