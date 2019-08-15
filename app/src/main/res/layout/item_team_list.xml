@@ -19,7 +19,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000" />
+        android:textColor="@color/md_black_1000"
+        android:alpha="0.8"/>
 
     <TextView
         android:id="@+id/type"
@@ -27,7 +28,8 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000" />
+        android:textColor="@color/md_black_1000"
+        android:alpha="0.8"/>
 
     <Button
         android:id="@+id/join_leave"
