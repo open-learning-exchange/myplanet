@@ -16,6 +16,7 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.callback.OnSelectedMyPersonal;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -41,13 +42,14 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
     private Context context;
     private Realm realm;
     private List<RealmMyPersonal> list;
-    OnHomeItemClickListener clickListener;
-
+    private OnSelectedMyPersonal listener;
     public AdapterMyPersonal(Context context, List<RealmMyPersonal> list) {
         this.context = context;
         this.list = list;
-        if (context instanceof OnHomeItemClickListener)
-            clickListener = (OnHomeItemClickListener) context;
+    }
+
+    public void setListener(OnSelectedMyPersonal listener) {
+        this.listener = listener;
     }
 
     public void setRealm(Realm realm) {
@@ -75,6 +77,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
                         personal.deleteFromRealm();
                         realm.commitTransaction();
                         notifyDataSetChanged();
+                        listener.onAddedResource();
                     }).setNegativeButton(R.string.cancel, null).show());
 
             ((ViewHolderMyPersonal) holder).ivEdit.setOnClickListener(view -> {
@@ -82,6 +85,10 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
             });
             holder.itemView.setOnClickListener(view -> {
                 openResource(list.get(position).getPath());
+            });
+            ((ViewHolderMyPersonal) holder).ivUpload.setOnClickListener(v->{
+                if (listener!=null)
+                    listener.onUpload(list.get(position));
             });
         }
     }
@@ -144,6 +151,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
                     personal.setTitle(title);
                     realm.commitTransaction();
                     notifyDataSetChanged();
+                    listener.onAddedResource();
                 }).setNegativeButton(R.string.cancel, null).show();
 
 
@@ -156,7 +164,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     class ViewHolderMyPersonal extends RecyclerView.ViewHolder {
         TextView title, description, date;
-        ImageView ivEdit, ivDelete;
+        ImageView ivEdit, ivDelete,ivUpload;
 
         public ViewHolderMyPersonal(View itemView) {
             super(itemView);
@@ -165,6 +173,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
             date = itemView.findViewById(R.id.date);
             ivDelete = itemView.findViewById(R.id.img_delete);
             ivEdit = itemView.findViewById(R.id.img_edit);
+            ivUpload = itemView.findViewById(R.id.img_upload);
         }
     }
 }

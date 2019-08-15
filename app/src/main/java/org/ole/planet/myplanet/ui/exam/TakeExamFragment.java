@@ -40,7 +40,9 @@ import io.realm.RealmList;
 import io.realm.Sort;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 
+
 import static io.realm.internal.SyncObjectServerFacade.getApplicationContext;
+
 
 /**
  * A simple {@link Fragment} subclass.

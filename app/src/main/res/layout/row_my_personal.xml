@@ -44,6 +44,16 @@
             android:layout_gravity="right">
 
             <ImageView
+                android:id="@+id/img_upload"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:layout_marginLeft="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:visibility="visible"
+                app:srcCompat="@drawable/ic_file_upload" />
+
+            <ImageView
                 android:id="@+id/img_edit"
                 android:layout_width="30dp"
                 android:layout_height="30dp"

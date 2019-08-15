@@ -2,26 +2,23 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
-import android.util.Log;
 
-import com.github.kittinunf.fuel.android.core.Json;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-import org.json.JSONObject;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.datamanager.ManagerSync;
+import org.ole.planet.myplanet.datamanager.FileUploadService;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
+import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
@@ -32,12 +29,9 @@ import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.List;
 
 import io.realm.Realm;
@@ -47,24 +41,24 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class UploadManager {
-    private DatabaseService dbService;
-    private Realm mRealm;
+public class UploadManager extends FileUploadService {
     private static UploadManager instance;
     Context context;
     SharedPreferences pref;
+    private DatabaseService dbService;
+    private Realm mRealm;
+
+    public UploadManager(Context context) {
+        dbService = new DatabaseService(context);
+        this.context = context;
+        pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+    }
 
     public static UploadManager getInstance() {
         if (instance == null) {
             instance = new UploadManager(MainApplication.context);
         }
         return instance;
-    }
-
-    public UploadManager(Context context) {
-        dbService = new DatabaseService(context);
-        this.context = context;
-        pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     public void uploadActivities(SuccessListener listener) {
@@ -139,7 +133,7 @@ public class UploadManager {
                         continue;
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/courses_progress", RealmCourseProgress.serializeProgress(sub)).execute().body();
                     if (object != null) {
-                        sub.set_id(JsonUtils.getString("_id", object));
+                        sub.set_id(JsonUtils.getString("id", object));
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -169,17 +163,50 @@ public class UploadManager {
     }
 
 
+    public void uploadMyPersonal(RealmMyPersonal personal, SuccessListener listener) {
+        mRealm = new DatabaseService(context).getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        if (!personal.isUploaded()) {
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", RealmMyPersonal.serialize(personal)).enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                    JsonObject object = response.body();
+                    if (object != null) {
+                        if (!mRealm.isInTransaction())
+                            mRealm.beginTransaction();
+                        String _rev = JsonUtils.getString("rev", object);
+                        String _id = JsonUtils.getString("id", object);
+                        personal.setUploaded(true);
+                        personal.set_rev(_rev);
+                        personal.set_id(_id);
+                        mRealm.commitTransaction();
+                        uploadAttachment(_id, _rev, personal, listener);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                    listener.onSuccess("Unable to upload resource");
+                }
+            });
+
+        }
+    }
+
+
     public void uploadTeams() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).isEmpty("_id").isNotEmpty("teamId").findAll();
+            List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).isNull("_id").or().isEmpty("_id").findAll();
+            Utilities.log("Teams size "+ teams.size());
             for (RealmMyTeam team : teams) {
                 try {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/teams", RealmMyTeam.serialize(team)).execute().body();
+                    Utilities.log("Team upload " + new Gson().toJson(object));
                     if (object != null) {
-                        team.set_id(JsonUtils.getString("_id", object));
-                        team.set_rev(JsonUtils.getString("_rev", object));
+                        team.set_id(JsonUtils.getString("id", object));
+                        team.set_rev(JsonUtils.getString("rev", object));
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -244,8 +271,8 @@ public class UploadManager {
                         object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
                     }
                     if (object.body() != null) {
-                        act.set_id(JsonUtils.getString("_id", object.body()));
-                        act.set_rev(JsonUtils.getString("_rev", object.body()));
+                        act.set_id(JsonUtils.getString("id", object.body()));
+                        act.set_rev(JsonUtils.getString("rev", object.body()));
                         act.setUpdated(false);
                     }
                 } catch (Exception e) {
@@ -272,8 +299,8 @@ public class UploadManager {
                         object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), RealmNews.serializeNews(act, userModel)).execute();
                     }
                     if (object.body() != null) {
-                        act.set_id(JsonUtils.getString("_id", object.body()));
-                        act.set_rev(JsonUtils.getString("_rev", object.body()));
+                        act.set_id(JsonUtils.getString("id", object.body()));
+                        act.set_rev(JsonUtils.getString("rev", object.body()));
                     }
                 } catch (Exception e) {
                 }
@@ -290,7 +317,7 @@ public class UploadManager {
             for (RealmApkLog act : logs) {
                 try {
                     JsonObject o = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/apk_logs", RealmApkLog.serialize(act)).execute().body();
-                    if (o != null) act.set_rev(JsonUtils.getString("_rev", o));
+                    if (o != null) act.set_rev(JsonUtils.getString("rev", o));
                 } catch (IOException e) {
                 }
             }
@@ -313,8 +340,8 @@ public class UploadManager {
                 try {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + db, RealmResourceActivity.serializeResourceActivities(act)).execute().body();
                     if (object != null) {
-                        act.set_rev(JsonUtils.getString("_rev", object));
-                        act.set_id(JsonUtils.getString("_id", object));
+                        act.set_rev(JsonUtils.getString("rev", object));
+                        act.set_id(JsonUtils.getString("id", object));
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
