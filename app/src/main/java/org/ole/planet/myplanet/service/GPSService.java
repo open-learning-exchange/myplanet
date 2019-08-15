@@ -19,28 +19,22 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
-import android.util.Log;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 public class GPSService extends Service implements LocationListener {
 
+    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10; // 10 meters
+    private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1; // 1 minute
     private final Context mContext;
-
+    protected LocationManager locationManager;
     boolean isGPSEnabled = false;
     boolean canGetLocation = false;
     Location location; // location
     double latitude; // latitude
     double longitude; // longitude
     SharedPreferences pref;
-
-    private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10; // 10 meters
-
-    private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1; // 1 minute
-
-    protected LocationManager locationManager;
 
     public GPSService() {
         this.mContext = MainApplication.context;
@@ -66,7 +60,7 @@ public class GPSService extends Service implements LocationListener {
             } else {
                 this.canGetLocation = true;
                 if (location == null) {
-                   getLastKnownLocation();
+                    getLastKnownLocation();
                 }
             }
 
