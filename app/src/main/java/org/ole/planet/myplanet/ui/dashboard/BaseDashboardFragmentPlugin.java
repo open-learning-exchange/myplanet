@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment;
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
@@ -66,6 +67,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
                     homeItemClickListener.openCallFragment(new AchievementFragment());
                 } else if (title.equals(getString(R.string.mypersonals))) {
                     homeItemClickListener.openCallFragment(new MyPersonalsFragment());
+                } else if (title.equals(getString(R.string.help_wanted))) {
+                    homeItemClickListener.openCallFragment(new HelpWantedFragment());
                 } else {
                     Utilities.toast(getActivity(), "Feature Not Available");
                 }
