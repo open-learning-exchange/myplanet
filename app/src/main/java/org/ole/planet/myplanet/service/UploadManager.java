@@ -147,7 +147,7 @@ public class UploadManager extends FileUploadService {
                                 sub.setRev(_rev);
                                 sub.setJson_id(_id);
 
-                                uploadAttachment(_id, _rev, sub, listener);
+                                upload_Attachment(_id, _rev, sub, listener);
 
                                 Utilities.log("Submitting photos to Realm");
                             }

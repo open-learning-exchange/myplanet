@@ -51,7 +51,7 @@ public class FileUploadService {
 
 
 
-    public void uploadAttachment(String id, String rev, RealmSubmitPhotos personal, SuccessListener listener) {
+    public void upload_Attachment(String id, String rev, RealmSubmitPhotos personal, SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         File f = new File(personal.getPhoto_file_path());
         String name = FileUtils.getFileNameFromUrl(personal.getPhoto_file_path());
