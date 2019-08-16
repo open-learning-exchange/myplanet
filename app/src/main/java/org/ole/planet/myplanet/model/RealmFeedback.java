@@ -37,10 +37,10 @@ public class RealmFeedback extends RealmObject {
 
     private boolean uploaded;
 
-//    private RealmList<RealmMessage> messages;
+    //    private RealmList<RealmMessage> messages;
     private String messages;
 
-    public static JsonObject serializeFeedback( RealmFeedback feedback) {
+    public static JsonObject serializeFeedback(RealmFeedback feedback) {
         JsonObject object = new JsonObject();
         object.addProperty("title", feedback.getTitle());
         object.addProperty("source", feedback.getSource());
@@ -50,11 +50,10 @@ public class RealmFeedback extends RealmObject {
         object.addProperty("openTime", feedback.getOpenTime());
         object.addProperty("type", feedback.getType());
         object.addProperty("url", feedback.getUrl());
-//        object.add("messages", RealmMessage.serialize(feedback.messages));
         JsonParser parser = new JsonParser();
-        try{
-            object.add("messages", parser.parse(feedback.messages));
-        }catch (Exception err){
+        try {
+            object.add("messages", parser.parse(feedback.getMessages()));
+        } catch (Exception err) {
             err.printStackTrace();
         }
         return object;
@@ -78,12 +77,10 @@ public class RealmFeedback extends RealmObject {
         feedback.setUploaded(true);
     }
 
-    public void setMessages(JsonArray messages){
-        for (JsonElement e: messages
-             ) {
-
-        }
+    public void setMessages(JsonArray messages) {
+        this.messages = new Gson().toJson(messages);
     }
+
     public String get_id() {
         return _id;
     }
@@ -177,17 +174,17 @@ public class RealmFeedback extends RealmObject {
         return messages;
     }
 
-    public String getMessage(){
+    public String getMessage() {
         JsonParser parser = new JsonParser();
         if (TextUtils.isEmpty(messages))
             return "";
-      JsonElement e =   parser.parse(messages);
-      JsonArray ar = e.getAsJsonArray();
-      if (ar.size() > 0){
-          JsonObject ob = ar.get(0).getAsJsonObject();
-          return ob.get("message").getAsString();
-      }
-      return "";
+        JsonElement e = parser.parse(messages);
+        JsonArray ar = e.getAsJsonArray();
+        if (ar.size() > 0) {
+            JsonObject ob = ar.get(0).getAsJsonObject();
+            return ob.get("message").getAsString();
+        }
+        return "";
     }
 
     public void setMessages(String messages) {
