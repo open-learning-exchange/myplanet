@@ -12,7 +12,7 @@ import java.util.List;
 
 public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
-    List<String> list;
+    private List<String> list;
     public TeamPagerAdapter(FragmentManager fm) {
         super(fm);
         list = new ArrayList<>();
@@ -25,12 +25,22 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public Fragment getItem(int position) {
+        if (position == 0)
+            return new DiscussionListFragment();
+        else if(position == 1)
+            return new MembersFragment();
+        else if(position == 2)
+            return new JoinedMemberFragment();
+        else if(position == 3)
+            return new TeamCourseFragment();
+        else if(position == 4)
+            return new TeamResourceFragment();
         return null;
     }
 
     @Override
     public int getCount() {
-        return 0;
+        return list.size();
     }
 
 
