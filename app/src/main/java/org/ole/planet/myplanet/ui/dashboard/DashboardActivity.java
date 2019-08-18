@@ -395,12 +395,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
         @Override
-        public boolean onDown(MotionEvent event) {
-            Log.d("TAG", "onDown: ");
-            return true;
-        }
-
-        @Override
         public boolean onDoubleTap(MotionEvent e) {
             openCallFragment(new ReferenceFragment());
             return true;
