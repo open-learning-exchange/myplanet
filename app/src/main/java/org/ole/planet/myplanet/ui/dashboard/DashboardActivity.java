@@ -13,9 +13,12 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -59,6 +62,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private Drawer result = null;
     private Toolbar mTopToolbar, bellToolbar;
     RealmUserModel user;
+    private GestureDetector mDetector;
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -125,6 +129,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 }
             }
         });
+        mDetector = new GestureDetector(this, new MyGestureListener());
     }
 
     private void checkUser() {
@@ -382,5 +387,25 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        mDetector.onTouchEvent(ev);
+        return super.dispatchTouchEvent(ev);
+    }
+
+    public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+
+        @Override
+        public boolean onDown(MotionEvent event) {
+            Log.d("TAG","onDown: ");
+            return true;
+        }
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            openCallFragment(new LifeFragment());
+            return true;
+        }
     }
 }
