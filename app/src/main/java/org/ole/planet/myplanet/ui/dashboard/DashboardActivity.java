@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
@@ -404,7 +405,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         }
         @Override
         public boolean onDoubleTap(MotionEvent e) {
-            openCallFragment(new LifeFragment());
+            openCallFragment(new ReferenceFragment());
             return true;
         }
     }
