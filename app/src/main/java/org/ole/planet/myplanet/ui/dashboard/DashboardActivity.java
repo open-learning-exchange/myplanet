@@ -397,6 +397,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         @Override
         public boolean onDoubleTap(MotionEvent e) {
             openCallFragment(new ReferenceFragment());
+            Utilities.toast(getApplicationContext(),"References Opened");
             return true;
         }
     }
