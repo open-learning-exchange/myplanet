@@ -7,9 +7,12 @@ import android.support.v4.app.Fragment;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.List;
 
 public abstract class BaseTeamFragment extends BaseNewsFragment {
 
@@ -32,5 +35,8 @@ public abstract class BaseTeamFragment extends BaseNewsFragment {
         team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
     }
 
+    @Override
+    public void setData(List<RealmNews> list) {
 
+    }
 }

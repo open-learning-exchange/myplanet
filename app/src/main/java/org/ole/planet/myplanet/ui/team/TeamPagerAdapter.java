@@ -39,9 +39,9 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
         if (position == 0)
             f =  new DiscussionListFragment();
         else if(position == 1)
-            f =  new MembersFragment();
-        else if(position == 2)
             f =  new JoinedMemberFragment();
+        else if(position == 2)
+            f =  new MembersFragment();
         else if(position == 3)
             f =  new TeamCourseFragment();
         else if(position == 4)

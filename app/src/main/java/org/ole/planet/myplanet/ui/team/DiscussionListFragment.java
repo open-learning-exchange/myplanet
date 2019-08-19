@@ -82,6 +82,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
                     map.put("messageType", team.getTeamType());
                     map.put("messagePlanetCode", team.getTeamPlanetCode());
                     RealmNews.createNews(map, mRealm, user);
+                    Utilities.log("discussion created");
                     rvDiscussion.getAdapter().notifyDataSetChanged();
                 }).setNegativeButton("Cancel", null).show();
     }
