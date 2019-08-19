@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
+import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -40,7 +41,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             if (homeItemClickListener != null) {
                 Bundle b = new Bundle();
                 b.putString("id", id);
-                if (f instanceof MyTeamsDetailFragment)
+                if (f instanceof TeamDetailFragment)
                     b.putBoolean("isMyTeam", true);
                 f.setArguments(b);
                 homeItemClickListener.openCallFragment(f);
@@ -87,7 +88,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             handleClick(((RealmMyCourse) obj).getCourseId(), ((RealmMyCourse) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyTeam) {
             //    textViewArray[itemCnt].setText(((RealmMyTeam) obj).getName());
-            handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
+            handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new TeamDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMeetup) {
             handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyLife) {

@@ -97,7 +97,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
         initializeViews(v);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
-        profileDbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(profileDbHandler.getUserModel());
         team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
         return v;

@@ -68,7 +68,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             holder.itemView.setOnClickListener(view -> {
 //                if (isMyTeam) {
                     if (context instanceof OnHomeItemClickListener) {
-                        MyTeamsDetailFragment f = new MyTeamsDetailFragment();
+                        TeamDetailFragment f = new TeamDetailFragment();
                         Bundle b = new Bundle();
                         b.putString("id", list.get(position).getId());
                         b.putBoolean("isMyTeam", isMyTeam);

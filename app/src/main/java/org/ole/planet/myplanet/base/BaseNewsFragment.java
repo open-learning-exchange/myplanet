@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.base;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.View;
 import android.widget.Button;
@@ -24,6 +26,13 @@ public abstract class BaseNewsFragment extends Fragment implements AdapterNews.O
     public Realm mRealm;
     public OnHomeItemClickListener homeItemClickListener;
     public UserProfileDbHandler profileDbHandler;
+
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        profileDbHandler = new UserProfileDbHandler(getActivity());
+    }
 
     @Override
     public void onAttach(Context context) {

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team;
 
 
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
@@ -30,10 +31,11 @@ public class TeamDetailFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_team_detail, container, false);
         tabLayout = v.findViewById(R.id.tab_layout);
         viewPager = v.findViewById(R.id.view_pager);
-        viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager()));
+        viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), getArguments().getString("id")));
         tabLayout.setupWithViewPager(viewPager);
         return v;
     }
+
 
 
 }

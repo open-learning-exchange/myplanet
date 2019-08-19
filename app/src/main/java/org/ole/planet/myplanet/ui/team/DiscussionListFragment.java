@@ -28,23 +28,12 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class DiscussionListFragment extends BaseNewsFragment {
+public class DiscussionListFragment extends BaseTeamFragment {
 
     RecyclerView rvDiscussion;
-    DatabaseService dbService;
-    RealmUserModel user;
-    String teamId;
-    RealmMyTeam team;
+
 
     public DiscussionListFragment() {
-    }
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            teamId = getArguments().getString("id");
-        }
     }
 
 
@@ -53,13 +42,8 @@ public class DiscussionListFragment extends BaseNewsFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v =  inflater.inflate(R.layout.fragment_discussion_list, container, false);
-        dbService = new DatabaseService(getActivity());
-        user = mRealm.copyFromRealm(new UserProfileDbHandler(getActivity()).getUserModel());
-        mRealm = dbService.getRealmInstance();
-        team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
-        v.findViewById(R.id.add_message).setOnClickListener(view -> {
-            showAddMessage();
-        });
+        v.findViewById(R.id.add_message).setOnClickListener(view -> showAddMessage());
+        rvDiscussion = v.findViewById(R.id.rv_discussion);
         return v;
     }
 
