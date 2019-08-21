@@ -39,9 +39,11 @@ public class TeamDetailFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_team_detail, container, false);
+        boolean isMyTeam = getArguments().getBoolean("isMyTeam", false);
+
         tabLayout = v.findViewById(R.id.tab_layout);
         viewPager = v.findViewById(R.id.view_pager);
-        viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), getArguments().getString("id")));
+        viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), getArguments().getString("id"), isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
         return v;
     }

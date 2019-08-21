@@ -213,6 +213,7 @@
     <string name="resources">Resources</string>
     <string name="button_reject">Reject</string>
     <string name="button_accept">Accept</string>
+    <string name="plan">Plan</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>
