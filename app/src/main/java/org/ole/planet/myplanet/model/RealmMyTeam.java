@@ -151,7 +151,7 @@ public class RealmMyTeam extends RealmObject {
         List<RealmUserModel> list = new ArrayList<>();
         for (RealmMyTeam team : myteam) {
             RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", team.getUser_id()).findFirst();
-            if (model != null)
+            if (model != null && !list.contains(model))
                 list.add(model);
         }
         return list;

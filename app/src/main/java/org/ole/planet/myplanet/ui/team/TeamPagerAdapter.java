@@ -8,6 +8,11 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment;
+import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment;
+import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment;
+import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment;
+import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment;
 
 import java.util.ArrayList;
 import java.util.List;

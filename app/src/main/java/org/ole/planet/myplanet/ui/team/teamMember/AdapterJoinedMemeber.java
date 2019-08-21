@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team;
+package org.ole.planet.myplanet.ui.team.teamMember;
 
 import android.content.Context;
 import android.support.annotation.NonNull;

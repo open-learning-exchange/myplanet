@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team;
+package org.ole.planet.myplanet.ui.team.teamCourse;
 
 
 import android.os.Bundle;
@@ -12,10 +12,10 @@ import org.ole.planet.myplanet.R;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MembersFragment extends Fragment {
+public class TeamCourseFragment extends Fragment {
 
 
-    public MembersFragment() {
+    public TeamCourseFragment() {
         // Required empty public constructor
     }
 
@@ -24,7 +24,7 @@ public class MembersFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v =  inflater.inflate(R.layout.fragment_members, container, false);
+        View v =  inflater.inflate(R.layout.fragment_team_course, container, false);
         return v;
     }
 

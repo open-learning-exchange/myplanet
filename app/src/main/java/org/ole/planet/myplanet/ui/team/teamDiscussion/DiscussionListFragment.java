@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.team;
+package org.ole.planet.myplanet.ui.team.teamDiscussion;
 
 
 import android.os.Bundle;
@@ -11,6 +11,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
@@ -20,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
+import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
@@ -31,7 +33,7 @@ import java.util.List;
 public class DiscussionListFragment extends BaseTeamFragment {
 
     RecyclerView rvDiscussion;
-
+    TextView tvNodata;
 
     public DiscussionListFragment() {
     }
@@ -44,6 +46,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
         View v =  inflater.inflate(R.layout.fragment_discussion_list, container, false);
         v.findViewById(R.id.add_message).setOnClickListener(view -> showAddMessage());
         rvDiscussion = v.findViewById(R.id.rv_discussion);
+        tvNodata = v.findViewById(R.id.tv_nodata);
         return v;
     }
 
@@ -59,6 +62,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
         rvDiscussion.setAdapter(adapterNews);
+        showNoData(tvNodata, adapterNews.getItemCount());
     }
 
 
