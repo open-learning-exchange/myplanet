@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -13,9 +12,12 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -35,12 +37,12 @@ import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.mylife.LifeFragment;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
@@ -52,13 +54,14 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 
 
-public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener{
+public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
 
     AccountHeader headerResult;
     private Drawer result = null;
     private Toolbar mTopToolbar, bellToolbar;
     RealmUserModel user;
+    private GestureDetector mDetector;
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -125,6 +128,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 }
             }
         });
+        mDetector = new GestureDetector(this, new MyGestureListener());
     }
 
     private void checkUser() {
@@ -302,7 +306,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
 
-
     @NonNull
     private IDrawerItem[] getDrawerItems() {
         ArrayList<Drawable> menuImageList = new ArrayList<>();
@@ -382,5 +385,20 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        mDetector.onTouchEvent(ev);
+        return super.dispatchTouchEvent(ev);
+    }
+
+    public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            openCallFragment(new ReferenceFragment());
+            Utilities.toast(getApplicationContext(),"References Opened");
+            return true;
+        }
     }
 }
