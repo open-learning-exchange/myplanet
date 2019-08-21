@@ -154,7 +154,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
     RealmResults<RealmMyLibrary> libraries;
 
     private void setTeamList() {
-        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm);
+        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm,"");
         createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).findAll();

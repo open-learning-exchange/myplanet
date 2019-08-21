@@ -25,6 +25,7 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
@@ -67,7 +68,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setResourceId(JsonUtils.getString("resourceId", doc));
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
-        myTeams.setRequests(JsonUtils.getJsonArray("requests", doc).toString());
+//        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
         myTeams.setDocType(JsonUtils.getString("docType", doc).toString());
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
         myTeams.courses = new RealmList<>();
@@ -146,8 +147,19 @@ public class RealmMyTeam extends RealmObject {
 
     }
 
-    public static List<RealmUserModel> getUsers(String teamId, Realm mRealm) {
-        List<RealmMyTeam> myteam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).findAll();
+    public static List<RealmUserModel> getRequestedMemeber(String teamId, Realm realm){
+        return getUsers(teamId, realm,"request");
+    }
+    public static List<RealmUserModel> getJoinedMemeber(String teamId, Realm realm){
+        return getUsers(teamId, realm,"membership");
+    }
+
+    public static List<RealmUserModel> getUsers(String teamId, Realm mRealm, String docType) {
+        RealmQuery query = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId);
+        if (!TextUtils.isEmpty(docType)) {
+          query =   query.equalTo("docType", docType);
+        }
+        List<RealmMyTeam> myteam = query.findAll();
         List<RealmUserModel> list = new ArrayList<>();
         for (RealmMyTeam team : myteam) {
             RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", team.getUser_id()).findFirst();
