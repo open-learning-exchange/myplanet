@@ -12,9 +12,12 @@ import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -39,6 +42,7 @@ import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
@@ -57,7 +61,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     RealmUserModel user;
     private Drawer result = null;
     private Toolbar mTopToolbar, bellToolbar;
-
+    private GestureDetector mDetector;
+  
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -123,6 +128,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 }
             }
         });
+        mDetector = new GestureDetector(this, new MyGestureListener());
     }
 
     private void checkUser() {
@@ -379,5 +385,20 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        mDetector.onTouchEvent(ev);
+        return super.dispatchTouchEvent(ev);
+    }
+
+    public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            openCallFragment(new ReferenceFragment());
+            Utilities.toast(getApplicationContext(),"References Opened");
+            return true;
+        }
     }
 }
