@@ -11,6 +11,13 @@
         android:orientation="vertical"
         android:layout_height="wrap_content">
 
+
+        <ImageView
+            android:layout_width="30dp"
+            android:src="@drawable/close_x"
+            android:tint="@color/md_black_1000"
+            android:id="@+id/iv_remove"
+            android:layout_height="30dp" />
         <TextView
             android:id="@+id/title"
             android:layout_width="match_parent"

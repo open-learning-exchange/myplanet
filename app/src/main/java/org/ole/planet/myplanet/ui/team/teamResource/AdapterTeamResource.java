@@ -6,9 +6,11 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -21,11 +23,15 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
     private Context context;
     private List<RealmMyLibrary> list;
     private Realm mRealm;
+    private OnHomeItemClickListener listener;
 
     public AdapterTeamResource(Context context, List<RealmMyLibrary> list, Realm mRealm) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
+        if (context instanceof OnHomeItemClickListener) {
+            listener = (OnHomeItemClickListener) context;
+        }
     }
 
     @NonNull
@@ -40,6 +46,14 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
         if (holder instanceof ViewHolderTeamResource){
             ((ViewHolderTeamResource) holder).title.setText(list.get(position).getTitle());
             ((ViewHolderTeamResource) holder).description.setText(list.get(position).getDescription());
+            holder.itemView.setOnClickListener(v->{
+                if (listener!=null){
+                    listener.openLibraryDetailFragment(list.get(position));
+                }
+            });
+            ((ViewHolderTeamResource) holder).ivRemove.setOnClickListener(view -> {
+                // TODO: 2019-08-21 Remove resource from team
+            });
         }
     }
 
@@ -50,10 +64,12 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
 
     class ViewHolderTeamResource extends RecyclerView.ViewHolder{
         TextView title, description;
+        ImageView ivRemove;
         public ViewHolderTeamResource(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);
             description = itemView.findViewById(R.id.description);
+            ivRemove = itemView.findViewById(R.id.iv_remove);
         }
     }
 }
