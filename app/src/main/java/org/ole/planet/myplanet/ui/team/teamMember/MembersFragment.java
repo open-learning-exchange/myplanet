@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team.teamMember;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -11,14 +10,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import org.json.JSONArray;
 import org.ole.planet.myplanet.R;
+
+import android.support.annotation.Nullable;
+
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
-import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
