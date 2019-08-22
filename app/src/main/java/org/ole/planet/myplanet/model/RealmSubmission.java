@@ -30,10 +30,10 @@ public class RealmSubmission extends RealmObject {
     private String type;
     private String userId;
     private String user;
-    private String localUserImageUri;
     private long startTime;
     private long lastUpdateTime;
     private RealmList<RealmAnswer> answers;
+    private RealmList<RealmSubmitPhotos> submitPhotos;
     private String grade;
     private String status;
     private boolean uploaded;
@@ -71,9 +71,9 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("grade", sub.getGrade());
         object.addProperty("startTime", sub.getStartTime());
         object.addProperty("lastUpdateTime", sub.getLastUpdateTime());
-        object.addProperty("localUserImageUri", sub.getLocalUserImageUri());
         object.addProperty("status", sub.getStatus());
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
+        object.add("submit_photos", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub.getSubmitPhotos()));
         object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
         if (TextUtils.isEmpty(sub.getUser())) {
             object.add("user", user.serialize());
@@ -127,13 +127,7 @@ public class RealmSubmission extends RealmObject {
         }
     }
 
-    public String getLocalUserImageUri() {
-        return localUserImageUri;
-    }
 
-    public void setLocalUserImageUri(String localUserImageUri) {
-        this.localUserImageUri = localUserImageUri;
-    }
 
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
         return "Survey Taken " + mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
@@ -242,5 +236,13 @@ public class RealmSubmission extends RealmObject {
 
     public void setUser(String user) {
         this.user = user;
+    }
+
+    public void setSubmitPhotos(RealmList<RealmSubmitPhotos> submitPhotos) {
+        this.submitPhotos = submitPhotos;
+    }
+
+    public RealmList<RealmSubmitPhotos> getSubmitPhotos() {
+        return submitPhotos;
     }
 }
