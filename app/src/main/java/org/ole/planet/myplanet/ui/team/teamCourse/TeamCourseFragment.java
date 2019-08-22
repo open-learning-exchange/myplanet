@@ -32,18 +32,21 @@ public class TeamCourseFragment extends BaseTeamFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View v =  inflater.inflate(R.layout.fragment_team_course, container, false);
+        View v = inflater.inflate(R.layout.fragment_team_course, container, false);
+        initView(v);
+        return v;
+    }
+
+    private void initView(View v) {
         rvCourse = v.findViewById(R.id.rv_course);
         tvNodata = v.findViewById(R.id.tv_nodata);
-        return v;
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
-        AdapterTeamCourse adapterTeamCourse = new AdapterTeamCourse(getActivity(),courses);
+        AdapterTeamCourse adapterTeamCourse = new AdapterTeamCourse(getActivity(), courses);
         rvCourse.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvCourse.setAdapter(adapterTeamCourse);
         showNoData(tvNodata, adapterTeamCourse.getItemCount());

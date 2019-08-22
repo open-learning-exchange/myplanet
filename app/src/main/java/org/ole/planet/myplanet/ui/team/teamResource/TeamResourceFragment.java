@@ -35,15 +35,15 @@ public class TeamResourceFragment extends BaseTeamFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v =  inflater.inflate(R.layout.fragment_team_resource, container, false);
-        rvResource = v.findViewById(R.id.rv_resource);
-        tvNodata = v.findViewById(R.id.tv_nodata);
-        return v;
+        return  inflater.inflate(R.layout.fragment_team_resource, container, false);
+
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        rvResource = getView().findViewById(R.id.rv_resource);
+        tvNodata = getView().findViewById(R.id.tv_nodata);
         List<RealmMyLibrary> libraries =  mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
         adapterLibrary = new AdapterTeamResource(getActivity(),libraries, mRealm);
         rvResource.setLayoutManager(new GridLayoutManager(getActivity(), 3));
