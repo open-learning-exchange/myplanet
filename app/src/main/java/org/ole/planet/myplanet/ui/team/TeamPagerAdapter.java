@@ -21,13 +21,14 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
     private List<String> list;
     String teamId;
+
     public TeamPagerAdapter(FragmentManager fm, String id, boolean isMyTeam) {
         super(fm);
         this.teamId = id;
         list = new ArrayList<>();
         list.add(MainApplication.context.getString(R.string.plan));
         list.add(MainApplication.context.getString(R.string.joined_members));
-        if (isMyTeam){
+        if (isMyTeam) {
             list.add(MainApplication.context.getString(R.string.discussion));
             list.add(MainApplication.context.getString(R.string.requested_member));
             list.add(MainApplication.context.getString(R.string.courses));
@@ -45,20 +46,28 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     public Fragment getItem(int position) {
         Fragment f = null;
         if (position == 0)
-            f =  new PlanFragment();
-        else if(position == 1)
-            f =  new JoinedMemberFragment();
-        else if(position == 2)
-            f =  new DiscussionListFragment();
-        else if(position == 3)
-            f =  new MembersFragment();
-        else if(position == 4)
-            f =  new TeamCourseFragment();
-        else if(position == 5)
-            f=  new TeamResourceFragment();
+            f = new PlanFragment();
+        else if (position == 1)
+            f = new JoinedMemberFragment();
+        else {
+            f = checkCondition(position);
+        }
         Bundle b = new Bundle();
         b.putString("id", teamId);
         f.setArguments(b);
+        return f;
+    }
+
+    private Fragment checkCondition(int position) {
+        Fragment f = null;
+        if (position == 2)
+            f = new DiscussionListFragment();
+        else if (position == 3)
+            f = new MembersFragment();
+        else if (position == 4)
+            f = new TeamCourseFragment();
+        else if (position == 5)
+            f = new TeamResourceFragment();
         return f;
     }
 
@@ -66,7 +75,6 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     public int getCount() {
         return list.size();
     }
-
 
 
 }

@@ -30,17 +30,16 @@ import io.realm.Realm;
 import io.realm.RealmObject;
 
 public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
+    public UserProfileDbHandler profileDbHandler;
     String fullName;
     Realm mRealm;
     TextView txtFullName, txtVisits, txtRole;
-
     DatabaseService dbService;
     RealmUserModel model;
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
             250,
             100
     );
-    public UserProfileDbHandler profileDbHandler;
 
     void onLoaded(View v) {
         txtFullName = v.findViewById(R.id.txtFullName);
@@ -93,10 +92,15 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         List<RealmObject> db_myCourses;
         String userId = settings.getString("userId", "--");
         setUpMyLife(userId);
-        if (c == RealmMyCourse.class) { db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
-        } else if (c == RealmMyTeam.class) { db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
-        } else if (c == RealmMyLife.class) { myLifeListInit(flexboxLayout,c,view); return;
-        } else { db_myCourses = mRealm.where(c).contains("userId",userId, Case.INSENSITIVE).findAll();
+        if (c == RealmMyCourse.class) {
+            db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
+        } else if (c == RealmMyTeam.class) {
+            db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
+        } else if (c == RealmMyLife.class) {
+            myLifeListInit(flexboxLayout, c, view);
+            return;
+        } else {
+            db_myCourses = mRealm.where(c).contains("userId", userId, Case.INSENSITIVE).findAll();
         }
         setCountText(db_myCourses.size(), c, view);
         TextView[] myCoursesTextViewArray = new TextView[db_myCourses.size()];
@@ -109,11 +113,11 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         }
     }
 
-    private void myLifeListInit(FlexboxLayout flexboxLayout, Class c, View view){
+    private void myLifeListInit(FlexboxLayout flexboxLayout, Class c, View view) {
         List<RealmMyLife> db_myLife, raw_myLife;
         raw_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         db_myLife = new ArrayList<>();
-        for(RealmMyLife item : raw_myLife) if(item.isVisible()) db_myLife.add(item);
+        for (RealmMyLife item : raw_myLife) if (item.isVisible()) db_myLife.add(item);
         setCountText(db_myLife.size(), c, view);
         LinearLayout[] myLifeArray = new LinearLayout[db_myLife.size()];
         int itemCnt = 0;
@@ -123,6 +127,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
             itemCnt++;
         }
     }
+
     private void setUpMyLife(String userId) {
         Realm realm = new DatabaseService(getContext()).getRealmInstance();
         List<RealmMyLife> realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings);
@@ -131,7 +136,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
             List<RealmMyLife> myLifeListBase = getMyLifeListBase(userId);
             RealmMyLife ml;
             int weight = 1;
-            for(RealmMyLife item: myLifeListBase){
+            for (RealmMyLife item : myLifeListBase) {
                 ml = realm.createObject(RealmMyLife.class, UUID.randomUUID().toString());
                 ml.setTitle(item.getTitle());
                 ml.setImageId(item.getImageId());

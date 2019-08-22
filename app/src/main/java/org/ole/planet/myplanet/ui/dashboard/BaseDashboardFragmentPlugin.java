@@ -52,7 +52,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
     public void handleClickMyLife(String title, String imageId, LinearLayout linearLayout) {
         ImageView imageView = (ImageView) linearLayout.getChildAt(0);
         TextView textView = (TextView) linearLayout.getChildAt(1);
-        imageView.setImageResource(getResources().getIdentifier(imageId,"drawable", getActivity().getPackageName()));
+        imageView.setImageResource(getResources().getIdentifier(imageId, "drawable", getActivity().getPackageName()));
         textView.setText(title);
         linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
