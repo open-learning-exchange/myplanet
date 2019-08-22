@@ -58,11 +58,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public static final String MESSAGE_PROGRESS = "message_progress";
 
     AccountHeader headerResult;
+    RealmUserModel user;
     private Drawer result = null;
     private Toolbar mTopToolbar, bellToolbar;
-    RealmUserModel user;
     private GestureDetector mDetector;
-
+  
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
