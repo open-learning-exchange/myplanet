@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.R;
 
 import android.support.annotation.Nullable;
 
+import org.ole.planet.myplanet.base.BaseMemberFragment;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
@@ -23,33 +24,24 @@ import java.util.List;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MembersFragment extends BaseTeamFragment {
+public class MembersFragment extends BaseMemberFragment {
 
-
-    RecyclerView rvMember;
-    TextView tvNodata;
 
     public MembersFragment() {
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_members, container, false);
-        rvMember = v.findViewById(R.id.rv_member);
-        tvNodata = v.findViewById(R.id.tv_nodata);
-        return v;
+    public List<RealmUserModel> getList() {
+        return RealmMyTeam.getRequestedMemeber(teamId, mRealm);
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        List<RealmUserModel> members = RealmMyTeam.getRequestedMemeber(teamId, mRealm);
-        rvMember.setLayoutManager(new GridLayoutManager(getActivity(), 3));
-        rvMember.setAdapter(new AdapterJoinedMemeber(getActivity(), members, mRealm));
-        showNoData(tvNodata, members.size());
+    public RecyclerView.Adapter getAdapter() {
+        return new AdapterJoinedMemeber(getActivity(), getList(), mRealm);
     }
 
-
+    @Override
+    public RecyclerView.LayoutManager getLayoutManager() {
+        return new GridLayoutManager(getActivity(), 3);
+    }
 }
