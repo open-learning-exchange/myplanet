@@ -43,7 +43,7 @@ public class TeamCourseFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
-        AdapterTeamCourse adapterTeamCourse = new AdapterTeamCourse(getActivity(),courses, mRealm);
+        AdapterTeamCourse adapterTeamCourse = new AdapterTeamCourse(getActivity(),courses);
         rvCourse.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvCourse.setAdapter(adapterTeamCourse);
         showNoData(tvNodata, adapterTeamCourse.getItemCount());

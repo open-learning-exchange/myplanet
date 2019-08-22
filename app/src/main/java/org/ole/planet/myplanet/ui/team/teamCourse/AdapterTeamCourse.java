@@ -25,13 +25,11 @@ import io.realm.Realm;
 public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmMyCourse> list;
-    private Realm mRealm;
     private OnHomeItemClickListener listener;
 
-    public AdapterTeamCourse(Context context, List<RealmMyCourse> list, Realm mRealm) {
+    public AdapterTeamCourse(Context context, List<RealmMyCourse> list) {
         this.context = context;
         this.list = list;
-        this.mRealm = mRealm;
         if (context instanceof OnHomeItemClickListener) {
             listener = (OnHomeItemClickListener) context;
         }
