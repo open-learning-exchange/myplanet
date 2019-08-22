@@ -49,11 +49,7 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
             ((ViewHolderTeamCourse) holder).description.setText(list.get(position).getDescription());
             holder.itemView.setOnClickListener(v -> {
                 if (listener != null) {
-                    Fragment f = new TakeCourseFragment();
-                    Bundle b = new Bundle();
-                    b.putString("id", list.get(position).getCourseId());
-                    f.setArguments(b);
-                    listener.openCallFragment(f);
+                    listener.openCallFragment(TakeCourseFragment.newInstance(list.get(position).getCourseId()));
                 }
             });
         }
