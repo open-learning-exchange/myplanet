@@ -8,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
@@ -16,12 +15,9 @@ import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.mylife.LifeFragment;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
-
 import java.util.Date;
 
-/**
- * A placeholder fragment containing a simple view.
- */
+
 public class BellDashboardFragment extends BaseDashboardFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
@@ -56,7 +52,7 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v -> openHelperFragment(new LibraryFragment()));
         view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> openHelperFragment(new CourseFragment()));
         view.findViewById(R.id.myLifeImageButton).setOnClickListener(v -> homeItemClickListener.openCallFragment(new LifeFragment()));
-     }
+    }
 
     private void openHelperFragment(Fragment f) {
         Fragment temp = f;
