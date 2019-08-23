@@ -51,10 +51,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
     }
 
     public void handleClickMyLife(String title, String imageId, LinearLayout linearLayout) {
-        ImageView imageView = (ImageView) linearLayout.getChildAt(0);
-        TextView textView = (TextView) linearLayout.getChildAt(1);
-        imageView.setImageResource(getResources().getIdentifier(imageId, "drawable", getActivity().getPackageName()));
-        textView.setText(title);
+        ((ImageView) linearLayout.getChildAt(0)).setImageResource(getResources().getIdentifier(imageId, "drawable", getActivity().getPackageName()));
+        (((TextView) linearLayout.getChildAt(1))).setText(title);
         linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
                 if (title.equals(getString(R.string.submission))) {
