@@ -6,6 +6,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 
@@ -30,7 +31,13 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderVitalSign) {
+            ((ViewHolderVitalSign) holder).username.setText(list.get(position).getUserId());
+            String desc = "";
+            desc += list.get(position).getBodyTemp() > 99 ? "Body temperature is high\n" : "Body temperature is normal\n";
+            desc += list.get(position).getBodyTemp() > 99 ? "Body temperature is high\n" : "Body temperature is normal\n";
 
+
+            ((ViewHolderVitalSign) holder).description.setText(desc);
         }
     }
 
@@ -40,9 +47,12 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
     }
 
     class ViewHolderVitalSign extends RecyclerView.ViewHolder {
+        TextView username, description;
 
         public ViewHolderVitalSign(View itemView) {
             super(itemView);
+            username = itemView.findViewById(R.id.useranme);
+            description = itemView.findViewById(R.id.description);
         }
     }
 }

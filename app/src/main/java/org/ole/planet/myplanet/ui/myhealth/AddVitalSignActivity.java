@@ -66,6 +66,7 @@ public class AddVitalSignActivity extends AppCompatActivity {
                     sign.setBloodPressureSystolic(systolic);
                     sign.setRespirationRate(respRate);
                     sign.setPulseRate(pulseRate);
+                    sign.setUserId(userId);
                 }, () -> {
                     Utilities.toast(AddVitalSignActivity.this, "Record Saved");
                     finish();
