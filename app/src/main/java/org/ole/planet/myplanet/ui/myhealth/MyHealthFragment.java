@@ -21,6 +21,7 @@ import android.widget.Spinner;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -58,11 +59,12 @@ public class MyHealthFragment extends Fragment {
         View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
         Spinner spnUser = v.findViewById(R.id.spn_user);
         List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
+        Utilities.log("User " + userList.size());
         ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, userList);
         spnUser.setAdapter(adapter);
-        new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
-                .setView(R.layout.alert_users_spinner).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> userId = ((RealmUserModel) spnUser.getSelectedItem()).getId());
         List<RealmVitalSign> list = mRealm.where(RealmVitalSign.class).equalTo("userId", userId).findAll();
+        new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
+                .setView(R.layout.alert_users_spinner).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> userId = ((RealmUserModel) spnUser.getSelectedItem()).getId()).show();
         rvRecord.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvRecord.setAdapter(new AdapterVitalSign(getActivity(), list));
     }
