@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder;
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Realm;
@@ -61,23 +60,24 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 return false;
             });
             ((ViewHolderMyLife) holder).visibility.setOnClickListener(view -> updateVisibility(holder, holder.getAdapterPosition(), myLifeList.get(holder.getAdapterPosition()).isVisible()));
-            if (!myLifeList.get(position).isVisible()) changeVisibility(holder,R.drawable.ic_visibility,HIDE);
-            else changeVisibility(holder,R.drawable.ic_visibility_off,SHOW);
+            if (!myLifeList.get(position).isVisible())
+                changeVisibility(holder, R.drawable.ic_visibility, HIDE);
+            else changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
         }
     }
 
     public void updateVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
         RealmMyLife.updateVisibility(!isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
         if (isVisible) {
-            changeVisibility(holder, R.drawable.ic_visibility,HIDE);
+            changeVisibility(holder, R.drawable.ic_visibility, HIDE);
             Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
         } else {
-            changeVisibility(holder, R.drawable.ic_visibility_off,SHOW);
+            changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
             Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");
         }
     }
 
-    public void changeVisibility(RecyclerView.ViewHolder holder,int imageId, float alpha) {
+    public void changeVisibility(RecyclerView.ViewHolder holder, int imageId, float alpha) {
         ((ViewHolderMyLife) holder).visibility.setImageResource(imageId);
         ((ViewHolderMyLife) holder).rv_item_container.setAlpha(alpha);
     }
@@ -122,7 +122,8 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         @Override
         public void onItemClear(RecyclerView.ViewHolder holder) {
             itemView.setBackgroundColor(0);
-            if(!myLifeList.get(holder.getAdapterPosition()).isVisible()) ((ViewHolderMyLife) holder).rv_item_container.setAlpha(HIDE);
+            if (!myLifeList.get(holder.getAdapterPosition()).isVisible())
+                ((ViewHolderMyLife) holder).rv_item_container.setAlpha(HIDE);
         }
     }
 
