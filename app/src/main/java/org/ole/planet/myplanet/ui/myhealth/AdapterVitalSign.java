@@ -35,6 +35,8 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
             ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getUserId());
             String desc = "";
             desc += list.get(position).getBodyTemp() > 99 ? "Body temperature is high\n" : "Body temperature is normal\n";
+            desc += "Pulse rate : " + list.get(position).getPulseRate() +"\n";
+            desc += "Respiration Rate : " + list.get(position).getRespirationRate() +"\n";
             ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(desc);
         }
     }
