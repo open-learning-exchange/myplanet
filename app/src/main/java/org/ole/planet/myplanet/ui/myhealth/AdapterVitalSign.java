@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 
 import java.util.List;
 
@@ -25,16 +26,16 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.item_vital_sign, parent, false);
-        return new ViewHolderVitalSign(v);
+        return new AdapterOtherInfo.ViewHolderOtherInfo(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderVitalSign) {
-            ((ViewHolderVitalSign) holder).username.setText(list.get(position).getUserId());
+        if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
+            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getUserId());
             String desc = "";
             desc += list.get(position).getBodyTemp() > 99 ? "Body temperature is high\n" : "Body temperature is normal\n";
-            ((ViewHolderVitalSign) holder).description.setText(desc);
+            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(desc);
         }
     }
 
@@ -43,13 +44,13 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
         return list.size();
     }
 
-    class ViewHolderVitalSign extends RecyclerView.ViewHolder {
-        TextView username, description;
-
-        public ViewHolderVitalSign(View itemView) {
-            super(itemView);
-            username = itemView.findViewById(R.id.useranme);
-            description = itemView.findViewById(R.id.description);
-        }
-    }
+//    class ViewHolderVitalSign extends RecyclerView.ViewHolder {
+//        TextView username, description;
+//
+//        public ViewHolderVitalSign(View itemView) {
+//            super(itemView);
+//            username = itemView.findViewById(R.id.useranme);
+//            description = itemView.findViewById(R.id.description);
+//        }
+//    }
 }
