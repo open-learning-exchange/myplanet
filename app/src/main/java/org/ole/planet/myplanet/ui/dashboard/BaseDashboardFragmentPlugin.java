@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment;
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
+import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
@@ -70,6 +71,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
                     homeItemClickListener.openCallFragment(new MyPersonalsFragment());
                 } else if (title.equals(getString(R.string.help_wanted))) {
                     homeItemClickListener.openCallFragment(new HelpWantedFragment());
+                } else if (title.equals(getString(R.string.myhealth))) {
+                    homeItemClickListener.openCallFragment(new MyHealthFragment());
                 } else {
                     Utilities.toast(getActivity(), "Feature Not Available");
                 }

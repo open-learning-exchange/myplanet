@@ -32,7 +32,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/MyMaterialTheme"
         tools:replace="android:label">
-        <activity android:name=".ui.map.OfflineMapActivity"></activity>
+        <activity android:name=".ui.myhealth.AddVitalSignActivity"
+            android:theme="@style/AppTheme"
+            ></activity>
+        <activity android:name=".ui.map.OfflineMapActivity" />
         <activity
             android:name=".ui.news.ReplyActivity"
             android:theme="@style/AppTheme" />
@@ -78,7 +81,6 @@
             android:name="android.support.v4.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
-
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
