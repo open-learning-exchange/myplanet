@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 
 import java.util.List;
 
@@ -39,14 +40,14 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.row_team_resource, parent, false);
-        return new ViewHolderTeamCourse(v);
+        return new AdapterOtherInfo.ViewHolderOtherInfo(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderTeamCourse) {
-            ((ViewHolderTeamCourse) holder).title.setText(list.get(position).getCourseTitle());
-            ((ViewHolderTeamCourse) holder).description.setText(list.get(position).getDescription());
+        if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
+            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getCourseTitle());
+            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(list.get(position).getDescription());
             holder.itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.openCallFragment(TakeCourseFragment.newInstance(list.get(position).getCourseId()));
@@ -59,14 +60,14 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
     public int getItemCount() {
         return list.size();
     }
-
-    class ViewHolderTeamCourse extends RecyclerView.ViewHolder {
-        TextView title, description;
-
-        public ViewHolderTeamCourse(View itemView) {
-            super(itemView);
-            title = itemView.findViewById(R.id.title);
-            description = itemView.findViewById(R.id.description);
-        }
-    }
+//
+//    class ViewHolderTeamCourse extends RecyclerView.ViewHolder {
+//        TextView title, description;
+//
+//        public ViewHolderTeamCourse(View itemView) {
+//            super(itemView);
+//            title = itemView.findViewById(R.id.title);
+//            description = itemView.findViewById(R.id.description);
+//        }
+//    }
 }

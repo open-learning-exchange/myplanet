@@ -11,6 +11,7 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 
 import java.util.List;
 
@@ -31,14 +32,14 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View   v = LayoutInflater.from(context).inflate(R.layout.row_joined_user, parent, false);
-        return new ViewHolderUser(v);
+        return new AdapterOtherInfo.ViewHolderOtherInfo(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderUser){
-            ((ViewHolderUser) holder).name.setText(list.get(position).getName());
-            ((ViewHolderUser) holder).visit.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName()) + " visits )");
+        if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo){
+            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getName());
+            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName()) + " visits )");
         }
     }
 
@@ -46,12 +47,12 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     public int getItemCount() {
         return list.size();
     }
-    class ViewHolderUser extends RecyclerView.ViewHolder{
-        TextView name, visit;
-        public ViewHolderUser(View itemView) {
-            super(itemView);
-            name = itemView.findViewById(R.id.tv_name);
-            visit = itemView.findViewById(R.id.tv_visits);
-        }
-    }
+//    class ViewHolderUser extends RecyclerView.ViewHolder{
+//        TextView name, visit;
+//        public ViewHolderUser(View itemView) {
+//            super(itemView);
+//            name = itemView.findViewById(R.id.tv_title);
+//            visit = itemView.findViewById(R.id.tv_description);
+//        }
+//    }
 }
