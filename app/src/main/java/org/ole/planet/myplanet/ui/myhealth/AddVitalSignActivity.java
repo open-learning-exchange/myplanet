@@ -30,6 +30,49 @@ public class AddVitalSignActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_vital_sign);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        initViews();
+        userId = getIntent().getStringExtra("userId");
+        mRealm = new DatabaseService(this).getRealmInstance();
+        findViewById(R.id.btn_save).setOnClickListener(view -> {
+            String method = "";
+            RadioButton btn = findViewById(rbMethod.getCheckedRadioButtonId());
+            if (btn != null) {
+                method = ((RadioButton) findViewById(rbMethod.getCheckedRadioButtonId())).getText().toString();
+            } else {
+                Utilities.toast(this, "Please select Temperature taken method");
+            }
+            saveData(method);
+
+        });
+
+    }
+
+    private void saveData(String method) {
+        try {
+            float temp = Float.parseFloat(etTemperature.getText().toString());
+            int pulseRate = Integer.parseInt(etPulseRate.getText().toString());
+            int respRate = Integer.parseInt(etRespirationRate.getText().toString());
+            int systolic = Integer.parseInt(etBloodPressureSystolic.getText().toString());
+            int diastolic = Integer.parseInt(etBloodPressureDiastolic.getText().toString());
+            mRealm.executeTransactionAsync(realm -> {
+                RealmVitalSign sign = realm.createObject(RealmVitalSign.class, UUID.randomUUID().toString());
+                sign.setMethod(method);
+                sign.setBodyTemp(temp);
+                sign.setBloodPressureDiastolic(diastolic);
+                sign.setBloodPressureSystolic(systolic);
+                sign.setRespirationRate(respRate);
+                sign.setPulseRate(pulseRate);
+                sign.setUserId(userId);
+            }, () -> {
+                Utilities.toast(AddVitalSignActivity.this, "Record Saved");
+                finish();
+            });
+        } catch (Exception e) {
+            Utilities.toast(this, "All fields are required");
+        }
+    }
+
+    private void initViews() {
         rbMethod = findViewById(R.id.rb_method);
         rbRectally = findViewById(R.id.rb_rectally);
         rbOrally = findViewById(R.id.rb_orally);
@@ -41,42 +84,6 @@ public class AddVitalSignActivity extends AppCompatActivity {
         etRespirationRate = findViewById(R.id.et_respiration_rate);
         etBloodPressureSystolic = findViewById(R.id.et_systolic);
         etBloodPressureDiastolic = findViewById(R.id.et_diastolic);
-        userId = getIntent().getStringExtra("userId");
-        mRealm = new DatabaseService(this).getRealmInstance();
-        findViewById(R.id.btn_save).setOnClickListener(view -> {
-            String method = "";
-            RadioButton btn = findViewById(rbMethod.getCheckedRadioButtonId());
-            if (btn != null) {
-                method = ((RadioButton) findViewById(rbMethod.getCheckedRadioButtonId())).getText().toString();
-            } else {
-                Utilities.toast(this, "Please select Temperature taken method");
-            }
-            try {
-                float temp = Float.parseFloat(etTemperature.getText().toString());
-                int pulseRate = Integer.parseInt(etPulseRate.getText().toString());
-                int respRate = Integer.parseInt(etRespirationRate.getText().toString());
-                int systolic = Integer.parseInt(etBloodPressureSystolic.getText().toString());
-                int diastolic = Integer.parseInt(etBloodPressureDiastolic.getText().toString());
-                String finalMethod = method;
-                mRealm.executeTransactionAsync(realm -> {
-                    RealmVitalSign sign = realm.createObject(RealmVitalSign.class, UUID.randomUUID().toString());
-                    sign.setMethod(finalMethod);
-                    sign.setBodyTemp(temp);
-                    sign.setBloodPressureDiastolic(diastolic);
-                    sign.setBloodPressureSystolic(systolic);
-                    sign.setRespirationRate(respRate);
-                    sign.setPulseRate(pulseRate);
-                    sign.setUserId(userId);
-                }, () -> {
-                    Utilities.toast(AddVitalSignActivity.this, "Record Saved");
-                    finish();
-                });
-            } catch (Exception e) {
-                Utilities.toast(this, "All fields are required");
-            }
-
-        });
-
     }
 
     @Override
