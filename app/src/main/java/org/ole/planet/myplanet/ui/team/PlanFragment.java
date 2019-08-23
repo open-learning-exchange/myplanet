@@ -26,8 +26,7 @@ public class PlanFragment extends BaseTeamFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v =  inflater.inflate(R.layout.fragment_plan, container, false);
-        description = v.findViewById(R.id.tv_description);
-        date = v.findViewById(R.id.tv_date);
+
         return v;
     }
 
@@ -35,6 +34,8 @@ public class PlanFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (team!=null){
+            description = getView().findViewById(R.id.tv_description);
+            date = getView().findViewById(R.id.tv_date);
             description.setText(team.getDescription());
             date.setText(TimeUtils.formatDate(team.getCreatedDate()));
         }
