@@ -223,4 +223,7 @@
     <string name="capture_image">Capture Image</string>
     <string name="team_name">Enter Team Name</string>
     <string name="resources">Resources</string>
+    <string name="button_reject">Reject</string>
+    <string name="button_accept">Accept</string>
+    <string name="plan">Plan</string>
 </resources>

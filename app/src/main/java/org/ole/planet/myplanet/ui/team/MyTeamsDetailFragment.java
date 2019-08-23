@@ -97,7 +97,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
         initializeViews(v);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
-        profileDbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(profileDbHandler.getUserModel());
         team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
         return v;
@@ -155,7 +154,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
     RealmResults<RealmMyLibrary> libraries;
 
     private void setTeamList() {
-        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm);
+        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm,"");
         createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).findAll();
@@ -164,17 +163,21 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
         listContent.setVisibility(View.GONE);
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
+
         tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
         tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
         tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
         tabLayout.getTabAt(4).setText(String.format("Resources : (%s)", libraries.size()));
 
-        setTabListener(users, courses, reqUsers);
         if (!isMyTeam) {
-            ((ViewGroup) tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
-            ((ViewGroup) tabLayout.getChildAt(4)).getChildAt(0).setVisibility(View.GONE);
-            tabLayout.getTabAt(1).select();
+            try {
+                ((ViewGroup) tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
+                ((ViewGroup) tabLayout.getChildAt(4)).getChildAt(0).setVisibility(View.GONE);
+                tabLayout.getTabAt(1).select();
+            }catch (Exception e){}
         }
+        setTabListener(users, courses, reqUsers);
+
     }
 
     private void createTeamLog() {
