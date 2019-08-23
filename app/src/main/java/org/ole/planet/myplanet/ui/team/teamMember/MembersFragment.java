@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team.teamMember;
 
 
-import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 
 import org.ole.planet.myplanet.base.BaseMemberFragment;
@@ -11,6 +10,8 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import android.support.v7.widget.GridLayoutManager;
 
 import java.util.List;
+
+import android.support.v4.app.Fragment;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -28,7 +29,7 @@ public class MembersFragment extends BaseMemberFragment {
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        return new AdapterJoinedMemeber(getActivity(), getList(), mRealm);
+        return new AdapterMemberRequest(getActivity(), getList(), mRealm);
     }
 
     @Override
