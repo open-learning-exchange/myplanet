@@ -54,10 +54,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public TakeCourseFragment() {
     }
 
-    public static TakeCourseFragment newInstance(String id){
+    public static TakeCourseFragment newInstance(Bundle b){
         TakeCourseFragment takeCourseFragment = new TakeCourseFragment();
-        Bundle b = new Bundle();
-        b.putString("id", id);
         takeCourseFragment.setArguments(b);
         return takeCourseFragment;
     }

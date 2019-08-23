@@ -50,7 +50,9 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
             ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(list.get(position).getDescription());
             holder.itemView.setOnClickListener(v -> {
                 if (listener != null) {
-                    listener.openCallFragment(TakeCourseFragment.newInstance(list.get(position).getCourseId()));
+                    Bundle b = new Bundle();
+                    b.putString("id", list.get(position).getCourseId());
+                    listener.openCallFragment(TakeCourseFragment.newInstance(b));
                 }
             });
         }
