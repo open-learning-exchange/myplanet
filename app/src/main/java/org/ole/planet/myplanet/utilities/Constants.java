@@ -33,6 +33,7 @@ public class Constants {
     public static final String KEY_TEAMS = "key_teams";
     public static final String KEY_DELETE = "key_delete";
     public static final String KEY_ACHIEVEMENT = "beta_achievement";
+    public static final String KEY_MYHEALTH = "beta_myHealth";
     public static final HashMap<Class, Integer> COLOR_MAP = new HashMap<>();
     public static HashMap<String, Class> classList = new HashMap<>();
 
