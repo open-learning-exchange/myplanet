@@ -38,7 +38,7 @@ public class MyHealthDetailActivity extends AppCompatActivity {
             message = "Normal blood Pressure ";
         } else if (realmVitalSign.getBloodPressureSystolic() > 120 && realmVitalSign.getBloodPressureSystolic() < 129 && realmVitalSign.getBloodPressureDiastolic() <= 80) {
             message = "Elevated blood pressure";
-        } else if (realmVitalSign.getBloodPressureSystolic() > 130 && realmVitalSign.getBloodPressureSystolic() < 129 && realmVitalSign.getBloodPressureDiastolic() > 80 && realmVitalSign.getBloodPressureDiastolic() <= 89) {
+        } else if (isStage1(realmVitalSign)) {
             message = "Stage 1 high blood pressure";
         } else if (realmVitalSign.getBloodPressureSystolic() >= 140 && realmVitalSign.getBloodPressureDiastolic() >= 90) {
             message = "Stage 2 high blood pressure";
@@ -46,5 +46,9 @@ public class MyHealthDetailActivity extends AppCompatActivity {
 
         tvBlood.setText(String.format("%s : %d/%d", message, realmVitalSign.getBloodPressureSystolic(), realmVitalSign.getBloodPressureDiastolic()));
 
+    }
+
+    private boolean isStage1(RealmVitalSign realmVitalSign) {
+        return realmVitalSign.getBloodPressureSystolic() >= 130 && realmVitalSign.getBloodPressureSystolic() < 129 && realmVitalSign.getBloodPressureDiastolic() > 80 && realmVitalSign.getBloodPressureDiastolic() <= 89
     }
 }
