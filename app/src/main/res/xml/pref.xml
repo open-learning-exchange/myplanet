@@ -39,6 +39,10 @@
             android:defaultValue="false"
             android:key="beta_wifi_switch"
             android:title="Beta Function for WiFi Switch" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_myHealth"
+            android:title="Beta Function for myHealth" />
 
         <SwitchPreference
             android:defaultValue="true"

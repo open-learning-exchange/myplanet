@@ -2,12 +2,14 @@ package org.ole.planet.myplanet.ui.dashboard;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
@@ -20,12 +22,15 @@ import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment;
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
+import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment;
 import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
+import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -40,7 +45,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             if (homeItemClickListener != null) {
                 Bundle b = new Bundle();
                 b.putString("id", id);
-                if (f instanceof MyTeamsDetailFragment)
+                if (f instanceof TeamDetailFragment)
                     b.putBoolean("isMyTeam", true);
                 f.setArguments(b);
                 homeItemClickListener.openCallFragment(f);
@@ -49,10 +54,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
     }
 
     public void handleClickMyLife(String title, String imageId, LinearLayout linearLayout) {
-        ImageView imageView = (ImageView) linearLayout.getChildAt(0);
-        TextView textView = (TextView) linearLayout.getChildAt(1);
-        imageView.setImageResource(getResources().getIdentifier(imageId, "drawable", getActivity().getPackageName()));
-        textView.setText(title);
+        ((ImageView) linearLayout.getChildAt(0)).setImageResource(getResources().getIdentifier(imageId, "drawable", getActivity().getPackageName()));
+        (((TextView) linearLayout.getChildAt(1))).setText(title);
         linearLayout.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
                 if (title.equals(getString(R.string.submission))) {
@@ -69,6 +72,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
                     homeItemClickListener.openCallFragment(new MyPersonalsFragment());
                 } else if (title.equals(getString(R.string.help_wanted))) {
                     homeItemClickListener.openCallFragment(new HelpWantedFragment());
+                } else if (title.equals(getString(R.string.myhealth)) && Constants.showBetaFeature(Constants.KEY_MYHEALTH, getActivity())) {
+                   homeItemClickListener.openCallFragment(new MyHealthFragment());
                 } else {
                     Utilities.toast(getActivity(), "Feature Not Available");
                 }
@@ -87,7 +92,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             handleClick(((RealmMyCourse) obj).getCourseId(), ((RealmMyCourse) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyTeam) {
             //    textViewArray[itemCnt].setText(((RealmMyTeam) obj).getName());
-            handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new MyTeamsDetailFragment(), textViewArray[itemCnt]);
+            handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new TeamDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMeetup) {
             handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyLife) {
