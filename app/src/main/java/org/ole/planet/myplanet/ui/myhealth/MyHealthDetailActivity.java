@@ -49,6 +49,6 @@ public class MyHealthDetailActivity extends AppCompatActivity {
     }
 
     private boolean isStage1(RealmVitalSign realmVitalSign) {
-        return realmVitalSign.getBloodPressureSystolic() >= 130 && realmVitalSign.getBloodPressureSystolic() < 129 && realmVitalSign.getBloodPressureDiastolic() > 80 && realmVitalSign.getBloodPressureDiastolic() <= 89
+        return realmVitalSign.getBloodPressureSystolic() >= 130 && realmVitalSign.getBloodPressureSystolic() < 129 && realmVitalSign.getBloodPressureDiastolic() > 80 && realmVitalSign.getBloodPressureDiastolic() <= 89;
     }
 }
