@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.UUID;
@@ -43,6 +44,7 @@ public class TeamDetailFragment extends Fragment {
 
         tabLayout = v.findViewById(R.id.tab_layout);
         viewPager = v.findViewById(R.id.view_pager);
+        Utilities.log(getArguments().getString("id") + " id");
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), getArguments().getString("id"), isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
         return v;
@@ -57,8 +59,10 @@ public class TeamDetailFragment extends Fragment {
     private void createTeamLog() {
         String teamId = getArguments().getString("id");
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
-        Realm mRealm= new DatabaseService(getActivity()).getRealmInstance();
-       RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
+        Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
+        if (team == null)
+            return;
         if (!mRealm.isInTransaction()) {
             mRealm.beginTransaction();
         }
@@ -72,7 +76,6 @@ public class TeamDetailFragment extends Fragment {
         log.setTime(new Date().getTime());
         mRealm.commitTransaction();
     }
-
 
 
 }
