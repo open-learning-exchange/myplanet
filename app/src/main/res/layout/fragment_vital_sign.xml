@@ -29,6 +29,15 @@
                 android:text="Add New Record" />
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/lblVitalSigns"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/vital_signs"
+            android:textAlignment="center"
+            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textStyle="bold" />
+
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rv_records"
             android:layout_width="match_parent"
