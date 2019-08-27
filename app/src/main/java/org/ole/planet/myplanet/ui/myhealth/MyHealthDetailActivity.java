@@ -40,12 +40,16 @@ public class MyHealthDetailActivity extends AppCompatActivity {
             message = "Elevated blood pressure";
         } else if (isStage1(realmVitalSign)) {
             message = "Stage 1 high blood pressure";
-        } else if (realmVitalSign.getBloodPressureSystolic() >= 140 && realmVitalSign.getBloodPressureDiastolic() >= 90) {
+        } else if (isState2(realmVitalSign)) {
             message = "Stage 2 high blood pressure";
         }
 
         tvBlood.setText(String.format("%s : %d/%d", message, realmVitalSign.getBloodPressureSystolic(), realmVitalSign.getBloodPressureDiastolic()));
 
+    }
+
+    private boolean isState2(RealmVitalSign realmVitalSign) {
+        return realmVitalSign.getBloodPressureSystolic() >= 140 && realmVitalSign.getBloodPressureDiastolic() >= 90;
     }
 
     private boolean isNormal(RealmVitalSign realmVitalSign) {
