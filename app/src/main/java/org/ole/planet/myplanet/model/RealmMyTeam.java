@@ -331,6 +331,7 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public boolean isMyTeam(String userID, Realm mRealm) {
+        Utilities.log("Is my team team id " + this._id);
         return mRealm.where(RealmMyTeam.class).equalTo("userId", userID).equalTo("teamId", this._id).equalTo("docType", "membership").count() > 0;
     }
 
