@@ -290,6 +290,7 @@
     <string name="blood_pressure">Blood Pressure</string>
     <string name="orally">Orally</string>
     <string name="save">Save</string>
+    <string name="vital_signs">Vital Signs Record</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
