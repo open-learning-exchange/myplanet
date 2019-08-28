@@ -60,7 +60,7 @@ public class TeamDetailFragment extends Fragment {
         String teamId = getArguments().getString("id");
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("id", teamId).findFirst();
         if (team == null)
             return;
         if (!mRealm.isInTransaction()) {

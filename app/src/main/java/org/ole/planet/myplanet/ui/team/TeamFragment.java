@@ -118,7 +118,7 @@ public class TeamFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").contains("name", charSequence.toString(), Case.INSENSITIVE).findAll();
+                List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE).findAll();
                 AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
                 rvTeamList.setAdapter(adapterTeamList);
             }
@@ -131,7 +131,7 @@ public class TeamFragment extends Fragment {
     }
 
     private void setTeamList() {
-        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
+        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived").findAll();
         AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
         rvTeamList.setAdapter(adapterTeamList);
     }
