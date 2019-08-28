@@ -26,6 +26,7 @@
             android:layout_gravity="center"
             android:layout_margin="@dimen/padding_normal"
             android:text="@string/app_name"
+            android:id="@+id/app_title_name"
             android:textColor="@color/md_white_1000"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
