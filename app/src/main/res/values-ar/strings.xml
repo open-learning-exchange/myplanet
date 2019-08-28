@@ -227,6 +227,7 @@
     <string name="blood_pressure">Blood Pressure</string>
     <string name="orally">Orally</string>
     <string name="save">Save</string>
+    <string name="vital_signs">Vital Signs Record</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

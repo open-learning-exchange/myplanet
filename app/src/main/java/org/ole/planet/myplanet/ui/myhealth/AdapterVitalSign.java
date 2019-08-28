@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -35,9 +36,10 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
             ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getUserId());
             String desc = "";
             desc += list.get(position).getBodyTemp() > 99 ? "Body temperature is high\n" : "Body temperature is normal\n";
-            desc += "Pulse rate : " + list.get(position).getPulseRate() +"\n";
-            desc += "Respiration Rate : " + list.get(position).getRespirationRate() +"\n";
+            desc += "Pulse rate : " + list.get(position).getPulseRate() + "\n";
+            desc += "Respiration Rate : " + list.get(position).getRespirationRate() + "\n";
             ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(desc);
+            holder.itemView.setOnClickListener(view -> context.startActivity(new Intent(context, MyHealthDetailActivity.class).putExtra("id", list.get(position).getId())));
         }
     }
 
