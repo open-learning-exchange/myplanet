@@ -67,8 +67,8 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
         ImageView ivRemove;
         public ViewHolderTeamResource(View itemView) {
             super(itemView);
-            title = itemView.findViewById(R.id.title);
-            description = itemView.findViewById(R.id.description);
+            title = itemView.findViewById(R.id.tv_title);
+            description = itemView.findViewById(R.id.tv_description);
             ivRemove = itemView.findViewById(R.id.iv_remove);
         }
     }
