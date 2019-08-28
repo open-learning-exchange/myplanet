@@ -141,7 +141,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     private void showChip(ChipCloud chipCloud, RealmTag parent) {
-        chipCloud.addChip(parent.getName());
+        chipCloud.addChip(((parent != null) ? parent.getName() : ""));
         chipCloud.setListener((i, b, b1) -> {
             if (b1 && listener != null) {
                 listener.onTagClicked(parent);

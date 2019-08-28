@@ -17,6 +17,25 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
+            <TextView
+                android:id="@+id/lblNewRecord"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="New Record"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
+                android:text="Temperature"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textColor="@color/default_text"
+                android:textStyle="bold" />
+
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -77,6 +96,16 @@
 
             </RadioGroup>
 
+            <TextView
+                android:id="@+id/textView4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
+                android:text="Pulse"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textColor="@color/default_text"
+                android:textStyle="bold" />
+
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -90,6 +119,16 @@
                     android:inputType="number" />
 
             </android.support.design.widget.TextInputLayout>
+
+            <TextView
+                android:id="@+id/textView5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
+                android:text="Respitation"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textColor="@color/default_text"
+                android:textStyle="bold" />
 
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
@@ -106,11 +145,14 @@
             </android.support.design.widget.TextInputLayout>
 
             <TextView
+                android:id="@+id/textView6"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_small"
                 android:text="@string/blood_pressure"
-                android:textColor="@color/colorPrimaryDark" />
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                android:textColor="@color/default_text"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
