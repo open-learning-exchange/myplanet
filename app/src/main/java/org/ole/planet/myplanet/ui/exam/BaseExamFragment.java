@@ -188,9 +188,9 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         submit.setDate(date);
         submit.setMac_address(mac_addr);
         submit.setPhoto_location(photo_path);
+        submit.setUploaded(false);
         Utilities.log(submit.getPhoto_location());
         Utilities.log("insert_into_submitPhotos");
-        sub.getSubmitPhotos().add(submit);
         mRealm.commitTransaction();
 
 

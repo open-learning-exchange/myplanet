@@ -10,6 +10,8 @@ public class RealmSubmitPhotos extends RealmObject {
 
   @io.realm.annotations.PrimaryKey
   private String id;
+  private String _id;
+  private String _rev;
   private String submission_id;
   private String course_id;
   private String Exam_id;
@@ -17,6 +19,7 @@ public class RealmSubmitPhotos extends RealmObject {
   private String date;
   private String mac_address;
   private String photo_location;
+  private boolean uploaded;
 
     public void setId(String id) {
         this.id = id;
@@ -86,9 +89,31 @@ public class RealmSubmitPhotos extends RealmObject {
         return photo_location;
     }
 
+    public void set_id(String _id) {
+        this._id = _id;
+    }
 
+    public String get_rev() {
+        return _rev;
+    }
 
-    public static JsonArray serializeRealmSubmitPhotos(RealmList<RealmSubmitPhotos> submitPhotos)
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
+    }
+
+    public void setUploaded(boolean uploaded) {
+        this.uploaded = uploaded;
+    }
+
+    public boolean getUploaded() {
+        return uploaded;
+    }
+
+    /** public static JsonArray serializeRealmSubmitPhotos(RealmList<RealmSubmitPhotos> submitPhotos)
     {
         JsonArray arr = new JsonArray();
         for(RealmSubmitPhotos sub: submitPhotos)
@@ -97,10 +122,10 @@ public class RealmSubmitPhotos extends RealmObject {
         }
 
         return arr;
-    }
+    }**/
 
 
-    private static JsonObject createObject(RealmSubmitPhotos submit)
+    public static JsonObject serializeRealmSubmitPhotos(RealmSubmitPhotos submit)
     {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", submit.getId());

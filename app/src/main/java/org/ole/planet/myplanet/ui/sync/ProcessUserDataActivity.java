@@ -150,6 +150,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         UploadManager.getInstance().uploadRating(this);
         UploadManager.getInstance().uploadCrashLog(this);
         UploadManager.getInstance().uploadActivities(this);
+        UploadManager.getInstance().uploadSubmitPhotos(this);
 
         Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
     }
