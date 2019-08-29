@@ -48,6 +48,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     RadioGroup listChoices;
     LinearLayout llCheckbox;
 
+
     NestedScrollView container;
 
     public TakeExamFragment() {
@@ -196,9 +197,19 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             if (showErrorMessage("Please select / write your answer to continue")) {
                 return;
             }
+
+
             boolean cont = updateAnsDb();
+            try {
+                CameraUtils.CapturePhoto(this);
+            }
+            catch(Exception e)
+            {
+                e.printStackTrace();
+            }
+
             checkAnsAndContinue(cont);
-            CameraUtils.CapturePhoto(this);
+
 
         }
     }
@@ -221,6 +232,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         answer.setValue(ans);
         answer.setValueChoices(listAns);
         answer.setSubmissionId(sub.getId());
+        Submit_id = answer.getSubmissionId();
+
         if (que.getCorrectChoice().size() == 0) {
             answer.setGrade(0);
             answer.setMistakes(0);
