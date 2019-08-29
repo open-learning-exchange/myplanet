@@ -28,18 +28,17 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
     private List<RealmMyLibrary> list;
     private Realm mRealm;
     private OnHomeItemClickListener listener;
-    private String teamId;
     private SharedPreferences settings;
-
+    private String teamCreator;
     public AdapterTeamResource(Context context, List<RealmMyLibrary> list, Realm mRealm, String teamId, SharedPreferences settings) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
         this.settings = settings;
+        teamCreator = RealmMyTeam.getTeamCreator(teamId,mRealm);
         if (context instanceof OnHomeItemClickListener) {
             listener = (OnHomeItemClickListener) context;
         }
-        this.teamId = teamId;
     }
 
     @NonNull
@@ -62,8 +61,7 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
             ((ViewHolderTeamResource) holder).ivRemove.setOnClickListener(view -> {
                 // TODO: 2019-08-21 Remove resource from team
             });
-            String creator = RealmMyTeam.getTeamCreator(teamId,mRealm);
-            if(!settings.getString("userId", "--").equalsIgnoreCase(creator)){
+            if(!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)){
                 ((ViewHolderTeamResource) holder).ivRemove.setVisibility(View.GONE);
             }
         }
