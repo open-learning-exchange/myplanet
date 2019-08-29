@@ -28,13 +28,18 @@ public class TimeUtils {
         return dateformat.format(d);
     }
 
+    public static String formatDateTZ(long data) {
+        SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
+        return dateformat.format(data);
+    }
+
     public static String getFormatedDate(String stringDate, String pattern) {
         try {
             SimpleDateFormat sf = new SimpleDateFormat(pattern, Locale.getDefault());
             sf.setTimeZone(TimeZone.getTimeZone("UTC"));
             Date date = sf.parse(stringDate);
             return getFormatedDate(date.getTime());
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return "N/A";
         }
