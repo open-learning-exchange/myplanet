@@ -33,7 +33,6 @@ public class RealmSubmission extends RealmObject {
     private long startTime;
     private long lastUpdateTime;
     private RealmList<RealmAnswer> answers;
-    private RealmList<RealmSubmitPhotos> submitPhotos;
     private String grade;
     private String status;
     private boolean uploaded;
@@ -73,7 +72,6 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("lastUpdateTime", sub.getLastUpdateTime());
         object.addProperty("status", sub.getStatus());
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
-        object.add("submit_photos", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub.getSubmitPhotos()));
         object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
         if (TextUtils.isEmpty(sub.getUser())) {
             object.add("user", user.serialize());
@@ -238,11 +236,4 @@ public class RealmSubmission extends RealmObject {
         this.user = user;
     }
 
-    public void setSubmitPhotos(RealmList<RealmSubmitPhotos> submitPhotos) {
-        this.submitPhotos = submitPhotos;
-    }
-
-    public RealmList<RealmSubmitPhotos> getSubmitPhotos() {
-        return submitPhotos;
-    }
 }
