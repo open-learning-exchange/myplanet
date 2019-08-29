@@ -30,6 +30,7 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
     private OnHomeItemClickListener listener;
     private SharedPreferences settings;
     private String teamCreator;
+
     public AdapterTeamResource(Context context, List<RealmMyLibrary> list, Realm mRealm, String teamId, SharedPreferences settings) {
         this.context = context;
         this.list = list;

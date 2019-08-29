@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team.teamCourse;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -14,6 +15,7 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
@@ -27,13 +29,18 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
     private Context context;
     private List<RealmMyCourse> list;
     private OnHomeItemClickListener listener;
+    private SharedPreferences settings;
+    private String teamCreator;
 
-    public AdapterTeamCourse(Context context, List<RealmMyCourse> list) {
+
+    public AdapterTeamCourse(Context context, List<RealmMyCourse> list, Realm mRealm, String teamId, SharedPreferences settings) {
         this.context = context;
         this.list = list;
         if (context instanceof OnHomeItemClickListener) {
             listener = (OnHomeItemClickListener) context;
         }
+        this.settings = settings;
+        teamCreator = RealmMyTeam.getTeamCreator(teamId,mRealm);
     }
 
     @NonNull
@@ -55,6 +62,9 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
                     listener.openCallFragment(TakeCourseFragment.newInstance(b));
                 }
             });
+            if(!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)){
+                holder.itemView.findViewById(R.id.iv_remove).setVisibility(View.GONE);
+            }
         }
     }
 
