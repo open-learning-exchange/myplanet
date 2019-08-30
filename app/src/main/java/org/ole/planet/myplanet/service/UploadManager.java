@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.model.RealmTeamLog;
+import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -164,53 +165,33 @@ public class UploadManager extends FileUploadService {
     }
 
 
-public void uploadSubmitPhotos( SuccessListener listener)
-{
-    mRealm = new DatabaseService(context).getRealmInstance();
-    ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+    public void uploadSubmitPhotos(SuccessListener listener) {
+        mRealm = new DatabaseService(context).getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
 
-    mRealm.executeTransactionAsync(realm -> {
-                List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).equalTo("uploaded", false).findAll();
-                for(RealmSubmitPhotos sub : data){
+        mRealm.executeTransactionAsync(realm -> {
+                    List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).equalTo("uploaded", false).findAll();
+                    for (RealmSubmitPhotos sub : data) {
+                        try {
+                            JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)).execute().body();
+                            if (object != null) {
 
-                    try {
-                        JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)).execute().body();
-
-
-
-
-                        if (object != null) {
-
-
-                            String _rev = JsonUtils.getString("rev", object);
-                            String _id = JsonUtils.getString("id", object);
-                            sub.setUploaded(true);
-                            sub.set_rev(_rev);
-                            sub.set_id(_id);
-
-                            uploadAttachment(_id, _rev, sub, listener);
-
-                            Utilities.log("Submitting photos to Realm");
+                                String _rev = JsonUtils.getString("rev", object);
+                                String _id = JsonUtils.getString("id", object);
+                                sub.setUploaded(true);
+                                sub.set_rev(_rev);
+                                sub.set_id(_id);
+                                uploadAttachment(_id, _rev, sub, listener);
+                                Utilities.log("Submitting photos to Realm");
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-
-                    }
-
-
-
-
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
                     }
                 }
-            }
-    );
+        );
 
-}
-
-
-
-
+    }
 
 
     public void uploadMyPersonal(RealmMyPersonal personal, SuccessListener listener) {
@@ -244,12 +225,44 @@ public void uploadSubmitPhotos( SuccessListener listener)
     }
 
 
+    public void uploadTeamTask() {
+        mRealm = new DatabaseService(context).getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                List<RealmTeamTask> list = realm.where(RealmTeamTask.class).findAll();
+                for (RealmTeamTask task : list) {
+                    if (TextUtils.isEmpty(task.get_id())) {
+                        JsonObject object = null;
+                        try {
+                            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(task)).execute().body();
+                            if (object != null) {
+                                if (!mRealm.isInTransaction())
+                                    mRealm.beginTransaction();
+                                String _rev = JsonUtils.getString("rev", object);
+                                String _id = JsonUtils.getString("id", object);
+                                task.set_rev(_rev);
+                                task.set_id(_id);
+                                mRealm.commitTransaction();
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }
+            }
+        });
+    }
+
+
     public void uploadTeams() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
             List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).isNull("_id").or().isEmpty("_id").findAll();
-            Utilities.log("Teams size "+ teams.size());
+            Utilities.log("Teams size " + teams.size());
             for (RealmMyTeam team : teams) {
                 try {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/teams", RealmMyTeam.serialize(team)).execute().body();

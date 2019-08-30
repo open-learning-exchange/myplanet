@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmTeamTask extends RealmObject {
@@ -35,6 +36,16 @@ public class RealmTeamTask extends RealmObject {
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
         task.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj)));
         task.setCompleted(JsonUtils.getBoolean("completed", obj));
+    }
+
+    public static JsonObject serialize(RealmTeamTask task) {
+        JsonObject object = new JsonObject();
+        object.addProperty("title", task.getTitle());
+        object.addProperty("deadline", task.getDeadline());
+        object.addProperty("description", task.getDescription());
+        object.add("sync", new Gson().fromJson(task.getSync(), JsonObject.class));
+        object.add("links", new Gson().fromJson(task.getLink(), JsonObject.class));
+        return object;
     }
 
 
