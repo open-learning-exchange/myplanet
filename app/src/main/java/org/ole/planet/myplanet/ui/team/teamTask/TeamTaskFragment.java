@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
 import android.view.LayoutInflater;
@@ -21,11 +22,13 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmTeamTask;
+import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -33,11 +36,12 @@ import io.realm.Realm;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TeamTaskFragment extends BaseTeamFragment {
+public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.OnCompletedListener {
 
     RecyclerView rvTask;
     Calendar deadline;
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
+        deadline = Calendar.getInstance();
         deadline.set(Calendar.YEAR, year);
         deadline.set(Calendar.MONTH, monthOfYear);
         deadline.set(Calendar.DAY_OF_MONTH, dayOfMonth);
@@ -58,14 +62,13 @@ public class TeamTaskFragment extends BaseTeamFragment {
         return v;
     }
 
+
     private void showTaskAlert() {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_task, null);
         EditText title = v.findViewById(R.id.et_task);
         EditText description = v.findViewById(R.id.et_description);
         TextView datePicker = v.findViewById(R.id.tv_pick);
-
         Calendar myCalendar = Calendar.getInstance();
-
 
         datePicker.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, myCalendar
                 .get(Calendar.YEAR), myCalendar.get(Calendar.MONTH),
@@ -100,17 +103,32 @@ public class TeamTaskFragment extends BaseTeamFragment {
                     t.setSync(new Gson().toJson(sync));
                     t.setCompleted(false);
 
+                }, () -> {
+                    if (rvTask.getAdapter()!=null)
+                        rvTask.getAdapter().notifyDataSetChanged();
+                    Utilities.toast(getActivity(), "Task added successfully");
                 });
         }).setNegativeButton("Cancel", null).show();
 
     }
 
-    public void createTask() {
-
-    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        rvTask.setLayoutManager(new LinearLayoutManager(getActivity()));
+        List<RealmTeamTask> list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
+        Utilities.log("List size " + list.size());
+        AdapterTask adapterTask = new AdapterTask(getActivity(), list);
+        rvTask.setAdapter(adapterTask);
+    }
+
+    @Override
+    public void onCheckChange(RealmTeamTask realmTeamTask, boolean b) {
+        Utilities.log("cHECK CHANGED");
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        realmTeamTask.setCompleted(b);
+        mRealm.commitTransaction();
     }
 }

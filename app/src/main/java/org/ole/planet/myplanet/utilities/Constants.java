@@ -60,6 +60,7 @@ public class Constants {
         classList.put("achievements", RealmAchievement.class);
         classList.put("feedback", RealmFeedback.class);
         classList.put("teams", RealmMyTeam.class);
+        classList.put("tasks", RealmMyTeam.class);
     }
 
     public static class ShelfData {

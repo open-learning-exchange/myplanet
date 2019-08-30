@@ -29,7 +29,7 @@ public class TimeUtils {
     }
 
     public static String formatDateTZ(long data) {
-        SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-ddTHH:mm:ssZ");
+        SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return dateformat.format(data);
     }
 

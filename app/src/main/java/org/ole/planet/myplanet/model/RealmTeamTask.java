@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.security.PrivateKey;
 import java.util.UUID;
@@ -19,8 +20,8 @@ public class RealmTeamTask extends RealmObject {
     private boolean completed;
 
 
-    public static void insert(JsonObject obj, Realm mRealm) {
-
+    public static void insert(Realm mRealm, JsonObject obj) {
+        Utilities.log("Sunc tasks");
         RealmTeamTask task = mRealm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
         task.set_id(JsonUtils.getString("_id", obj));
         task.set_rev(JsonUtils.getString("_rev", obj));
