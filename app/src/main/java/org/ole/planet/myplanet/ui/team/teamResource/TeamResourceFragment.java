@@ -44,7 +44,7 @@ public class TeamResourceFragment extends BaseTeamFragment {
         rvResource = getView().findViewById(R.id.rv_resource);
         tvNodata = getView().findViewById(R.id.tv_nodata);
         List<RealmMyLibrary> libraries =  mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
-        adapterLibrary = new AdapterTeamResource(getActivity(),libraries, mRealm);
+        adapterLibrary = new AdapterTeamResource(getActivity(),libraries, mRealm, teamId,settings);
         rvResource.setLayoutManager(new GridLayoutManager(getActivity(), 3));
         rvResource.setAdapter(adapterLibrary);
         showNoData(tvNodata, adapterLibrary.getItemCount());
