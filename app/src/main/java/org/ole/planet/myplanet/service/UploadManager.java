@@ -236,13 +236,10 @@ public class UploadManager extends FileUploadService {
                     try {
                         object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(task)).execute().body();
                         if (object != null) {
-                            if (!mRealm.isInTransaction())
-                                mRealm.beginTransaction();
                             String _rev = JsonUtils.getString("rev", object);
                             String _id = JsonUtils.getString("id", object);
                             task.set_rev(_rev);
                             task.set_id(_id);
-                            mRealm.commitTransaction();
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
