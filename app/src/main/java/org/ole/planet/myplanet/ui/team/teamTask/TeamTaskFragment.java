@@ -97,15 +97,11 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             t.setTeamId(teamId);
             JsonObject ob = new JsonObject();
             ob.addProperty("teams", teamId);
-            JsonObject links = new JsonObject();
-            links.add("links", ob);
-            t.setLink(new Gson().toJson(links));
+            t.setLink(new Gson().toJson(ob));
             JsonObject obsync = new JsonObject();
             obsync.addProperty("type", "local");
             obsync.addProperty("planetCode", user.getPlanetCode());
-            JsonObject sync = new JsonObject();
-            sync.add("sync", obsync);
-            t.setSync(new Gson().toJson(sync));
+            t.setSync(new Gson().toJson(obsync));
             t.setCompleted(false);
 
         }, () -> {
