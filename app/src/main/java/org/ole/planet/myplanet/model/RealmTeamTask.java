@@ -43,6 +43,7 @@ public class RealmTeamTask extends RealmObject {
         object.addProperty("deadline", task.getDeadline());
         object.addProperty("description", task.getDescription());
         object.addProperty("completed", task.isCompleted());
+        object.addProperty("assignee", "");
         object.add("sync", new Gson().fromJson(task.getSync(), JsonObject.class));
         object.add("link", new Gson().fromJson(task.getLink(), JsonObject.class));
         return object;
