@@ -89,6 +89,11 @@ public class RealmMyTeam extends RealmObject {
         return ids;
     }
 
+    public static String getTeamCreator(String teamId, Realm realm) {
+        RealmMyTeam teams = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).findFirst();
+        return teams.getUserId();
+    }
+
     public String getResourceId() {
         return resourceId;
     }
