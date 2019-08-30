@@ -47,7 +47,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         deadline.set(Calendar.YEAR, year);
         deadline.set(Calendar.MONTH, monthOfYear);
         deadline.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-        if (datePicker!=null)
+        if (datePicker != null)
             datePicker.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
     };
 
@@ -70,9 +70,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_task, null);
         EditText title = v.findViewById(R.id.et_task);
         EditText description = v.findViewById(R.id.et_description);
-         datePicker = v.findViewById(R.id.tv_pick);
+        datePicker = v.findViewById(R.id.tv_pick);
         Calendar myCalendar = Calendar.getInstance();
-
         datePicker.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, myCalendar
                 .get(Calendar.YEAR), myCalendar.get(Calendar.MONTH),
                 myCalendar.get(Calendar.DAY_OF_MONTH)).show());
@@ -85,32 +84,35 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             else if (deadline == null)
                 Utilities.toast(getActivity(), "Deadline is required");
             else
-                mRealm.executeTransactionAsync(realm -> {
-                    RealmTeamTask t = realm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
-                    t.setTitle(task);
-                    t.setDescription(desc);
-                    t.setDeadline(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
-                    t.setTeamId(teamId);
-                    JsonObject ob = new JsonObject();
-                    ob.addProperty("teams", teamId);
-                    JsonObject links = new JsonObject();
-                    links.add("links", ob);
-                    t.setLink(new Gson().toJson(links));
-                    JsonObject obsync = new JsonObject();
-                    ob.addProperty("type", "local");
-                    ob.addProperty("planetCode", user.getPlanetCode());
-                    JsonObject sync = new JsonObject();
-                    sync.add("sync", obsync);
-                    t.setSync(new Gson().toJson(sync));
-                    t.setCompleted(false);
-
-                }, () -> {
-                    if (rvTask.getAdapter()!=null)
-                        rvTask.getAdapter().notifyDataSetChanged();
-                    Utilities.toast(getActivity(), "Task added successfully");
-                });
+                createNewTask(task, desc);
         }).setNegativeButton("Cancel", null).show();
+    }
 
+    private void createNewTask(String task, String desc) {
+        mRealm.executeTransactionAsync(realm -> {
+            RealmTeamTask t = realm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
+            t.setTitle(task);
+            t.setDescription(desc);
+            t.setDeadline(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+            t.setTeamId(teamId);
+            JsonObject ob = new JsonObject();
+            ob.addProperty("teams", teamId);
+            JsonObject links = new JsonObject();
+            links.add("links", ob);
+            t.setLink(new Gson().toJson(links));
+            JsonObject obsync = new JsonObject();
+            ob.addProperty("type", "local");
+            ob.addProperty("planetCode", user.getPlanetCode());
+            JsonObject sync = new JsonObject();
+            sync.add("sync", obsync);
+            t.setSync(new Gson().toJson(sync));
+            t.setCompleted(false);
+
+        }, () -> {
+            if (rvTask.getAdapter() != null)
+                rvTask.getAdapter().notifyDataSetChanged();
+            Utilities.toast(getActivity(), "Task added successfully");
+        });
     }
 
 
