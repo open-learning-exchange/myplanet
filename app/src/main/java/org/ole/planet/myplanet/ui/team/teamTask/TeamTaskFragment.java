@@ -40,8 +40,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
 
     RecyclerView rvTask;
     Calendar deadline;
-    TextView datePicker;
-
+    TextView datePicker, nodata;
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         deadline = Calendar.getInstance();
         deadline.set(Calendar.YEAR, year);
@@ -60,6 +59,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_team_task, container, false);
         rvTask = v.findViewById(R.id.rv_task);
+        nodata = v.findViewById(R.id.tv_nodata);
         v.findViewById(R.id.fab).setOnClickListener(view -> {
             showTaskAlert();
         });
@@ -105,8 +105,10 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             t.setCompleted(false);
 
         }, () -> {
-            if (rvTask.getAdapter() != null)
+            if (rvTask.getAdapter() != null){
                 rvTask.getAdapter().notifyDataSetChanged();
+                showNoData(nodata,  rvTask.getAdapter().getItemCount());
+            }
             Utilities.toast(getActivity(), "Task added successfully");
         });
     }
@@ -121,6 +123,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         AdapterTask adapterTask = new AdapterTask(getActivity(), list);
         adapterTask.setListener(this);
         rvTask.setAdapter(adapterTask);
+        showNoData(nodata, list.size());
     }
 
     @Override

@@ -10,6 +10,12 @@
        android:id="@+id/rv_task"
        android:layout_height="match_parent"/>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_gravity="center"
+        android:id="@+id/tv_nodata"
+        android:layout_height="wrap_content" />
+
     <android.support.design.widget.FloatingActionButton
         android:layout_width="wrap_content"
         android:id="@+id/fab"
