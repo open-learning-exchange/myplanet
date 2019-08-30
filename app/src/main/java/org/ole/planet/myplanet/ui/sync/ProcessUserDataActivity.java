@@ -148,6 +148,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         UploadManager.getInstance().uploadNews();
         UploadManager.getInstance().uploadTeams();
         UploadManager.getInstance().uploadRating(this);
+        UploadManager.getInstance().uploadTeamTask();
         UploadManager.getInstance().uploadCrashLog(this);
         UploadManager.getInstance().uploadActivities(this);
         UploadManager.getInstance().uploadSubmitPhotos(this);

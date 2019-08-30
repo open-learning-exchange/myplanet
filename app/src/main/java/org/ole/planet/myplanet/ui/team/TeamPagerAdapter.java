@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment;
 import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment;
 import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment;
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment;
+import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +34,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             list.add(MainApplication.context.getString(R.string.requested_member));
             list.add(MainApplication.context.getString(R.string.courses));
             list.add(MainApplication.context.getString(R.string.resources));
+            list.add(MainApplication.context.getString(R.string.task));
         }
     }
 
@@ -68,6 +70,8 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             f = new TeamCourseFragment();
         else if (position == 5)
             f = new TeamResourceFragment();
+        else if (position == 6)
+            f = new TeamTaskFragment();
         return f;
     }
 
