@@ -127,6 +127,7 @@ public class SyncManager {
             ManagerSync.getInstance().syncAdmin();
             resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
+            mRealm.close();
         } catch (Exception err) {
             handleException(err.getMessage());
         } finally {
