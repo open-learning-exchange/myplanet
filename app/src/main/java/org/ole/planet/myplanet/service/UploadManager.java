@@ -228,29 +228,26 @@ public class UploadManager extends FileUploadService {
     public void uploadTeamTask() {
         mRealm = new DatabaseService(context).getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                List<RealmTeamTask> list = realm.where(RealmTeamTask.class).findAll();
-                for (RealmTeamTask task : list) {
-                    if (TextUtils.isEmpty(task.get_id())) {
-                        JsonObject object = null;
-                        try {
-                            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(task)).execute().body();
-                            if (object != null) {
-                                if (!mRealm.isInTransaction())
-                                    mRealm.beginTransaction();
-                                String _rev = JsonUtils.getString("rev", object);
-                                String _id = JsonUtils.getString("id", object);
-                                task.set_rev(_rev);
-                                task.set_id(_id);
-                                mRealm.commitTransaction();
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmTeamTask> list = realm.where(RealmTeamTask.class).findAll();
+            for (RealmTeamTask task : list) {
+                if (TextUtils.isEmpty(task.get_id())) {
+                    JsonObject object = null;
+                    try {
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(task)).execute().body();
+                        if (object != null) {
+                            if (!mRealm.isInTransaction())
+                                mRealm.beginTransaction();
+                            String _rev = JsonUtils.getString("rev", object);
+                            String _id = JsonUtils.getString("id", object);
+                            task.set_rev(_rev);
+                            task.set_id(_id);
+                            mRealm.commitTransaction();
                         }
-
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
+
                 }
             }
         });

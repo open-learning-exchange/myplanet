@@ -40,11 +40,15 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
 
     RecyclerView rvTask;
     Calendar deadline;
+    TextView datePicker;
+
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         deadline = Calendar.getInstance();
         deadline.set(Calendar.YEAR, year);
         deadline.set(Calendar.MONTH, monthOfYear);
         deadline.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+        if (datePicker!=null)
+            datePicker.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
     };
 
     public TeamTaskFragment() {
@@ -62,12 +66,11 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         return v;
     }
 
-
     private void showTaskAlert() {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_task, null);
         EditText title = v.findViewById(R.id.et_task);
         EditText description = v.findViewById(R.id.et_description);
-        TextView datePicker = v.findViewById(R.id.tv_pick);
+         datePicker = v.findViewById(R.id.tv_pick);
         Calendar myCalendar = Calendar.getInstance();
 
         datePicker.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, myCalendar
