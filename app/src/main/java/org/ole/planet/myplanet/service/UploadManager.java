@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
@@ -161,6 +162,55 @@ public class UploadManager extends FileUploadService {
             }
         }, () -> listener.onSuccess("Feedback sync completed successfully"));
     }
+
+
+public void uploadSubmitPhotos( SuccessListener listener)
+{
+    mRealm = new DatabaseService(context).getRealmInstance();
+    ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+
+    mRealm.executeTransactionAsync(realm -> {
+                List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).equalTo("uploaded", false).findAll();
+                for(RealmSubmitPhotos sub : data){
+
+                    try {
+                        JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)).execute().body();
+
+
+
+
+                        if (object != null) {
+
+
+                            String _rev = JsonUtils.getString("rev", object);
+                            String _id = JsonUtils.getString("id", object);
+                            sub.setUploaded(true);
+                            sub.set_rev(_rev);
+                            sub.set_id(_id);
+
+                            uploadAttachment(_id, _rev, sub, listener);
+
+                            Utilities.log("Submitting photos to Realm");
+                        }
+
+                    }
+
+
+
+
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            }
+    );
+
+}
+
+
+
+
 
 
     public void uploadMyPersonal(RealmMyPersonal personal, SuccessListener listener) {

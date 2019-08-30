@@ -14,10 +14,13 @@ import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CameraUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -40,6 +43,11 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     RealmSubmission sub;
     HashMap<String, String> listAns;
     boolean isMySurvey;
+    String mac_addr = NetworkUtils.getMacAddr();
+    String date = new Date().toString();
+    String photo_path = "";
+    String Submit_id = "";
+
 
 
     @Override
@@ -103,7 +111,6 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
                     .setPositiveButton("Finish", (dialogInterface, i) -> {
                         getActivity().onBackPressed();
                         try {
-                            CameraUtils.CapturePhoto(BaseExamFragment.this);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -169,11 +176,31 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
 
     abstract void startExam(RealmExamQuestion question);
 
+
+    public void insert_into_submitPhotos(String submit_id)
+    {
+        mRealm.beginTransaction();
+        RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class, UUID.randomUUID().toString());
+        submit.setSubmission_id(submit_id);
+        submit.setExam_id(exam.getId());
+        submit.setCourse_id(exam.getCourseId());
+        submit.setMember_id(user.getId());
+        submit.setDate(date);
+        submit.setMac_address(mac_addr);
+        submit.setPhoto_location(photo_path);
+        submit.setUploaded(false);
+        Utilities.log(submit.getPhoto_location());
+        Utilities.log("insert_into_submitPhotos");
+        mRealm.commitTransaction();
+
+
+    }
+
     @Override
     public void onImageCapture(String fileUri) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        sub.setLocalUserImageUri(fileUri);
-        mRealm.close();
+
+        photo_path = fileUri;
+        insert_into_submitPhotos(Submit_id);
+        Utilities.log(photo_path);
     }
 }
