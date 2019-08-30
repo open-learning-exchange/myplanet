@@ -22,7 +22,6 @@ public class RealmTeamTask extends RealmObject {
 
 
     public static void insert(Realm mRealm, JsonObject obj) {
-        Utilities.log("Sunc tasks");
         RealmTeamTask task = mRealm.where(RealmTeamTask.class).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst();
         if (task == null) {
             task = mRealm.createObject(RealmTeamTask.class, JsonUtils.getString("_id", obj));
