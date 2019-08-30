@@ -22,11 +22,15 @@ public class RealmTeamTask extends RealmObject {
 
     public static void insert(Realm mRealm, JsonObject obj) {
         Utilities.log("Sunc tasks");
-        RealmTeamTask task = mRealm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
+        RealmTeamTask task = mRealm.where(RealmTeamTask.class).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst();
+        if (task == null) {
+            task = mRealm.createObject(RealmTeamTask.class, JsonUtils.getString("_id", obj));
+        }
         task.set_id(JsonUtils.getString("_id", obj));
         task.set_rev(JsonUtils.getString("_rev", obj));
         task.setTitle(JsonUtils.getString("title", obj));
         task.setDescription(JsonUtils.getString("description", obj));
+        task.setDeadline(JsonUtils.getString("deadline", obj).replaceAll("T", " ").replaceAll(".000Z", ""));
         task.setLink(new Gson().toJson(JsonUtils.getJsonObject("link", obj)));
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
         task.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj)));

@@ -93,8 +93,6 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                     JsonObject links = new JsonObject();
                     links.add("links", ob);
                     t.setLink(new Gson().toJson(links));
-
-
                     JsonObject obsync = new JsonObject();
                     ob.addProperty("type", "local");
                     ob.addProperty("planetCode", user.getPlanetCode());
@@ -120,6 +118,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         List<RealmTeamTask> list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
         Utilities.log("List size " + list.size());
         AdapterTask adapterTask = new AdapterTask(getActivity(), list);
+        adapterTask.setListener(this);
         rvTask.setAdapter(adapterTask);
     }
 
