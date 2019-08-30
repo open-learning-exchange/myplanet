@@ -63,8 +63,9 @@ public class UserProfileDbHandler {
     }
 
     public void onDestory() {
-        if (mRealm != null && !mRealm.isClosed())
+        if (mRealm != null && !mRealm.isClosed()){
             mRealm.close();
+        }
     }
 
     private RealmOfflineActivity createUser() {
