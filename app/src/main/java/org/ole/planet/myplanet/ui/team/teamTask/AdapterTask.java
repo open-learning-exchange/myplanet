@@ -57,15 +57,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
             ((ViewHolderTask) holder).deadline.setText("Deadline : " + list.get(position).getDeadline());
-            if (!TextUtils.isEmpty(list.get(position).getAssignee())) {
-                RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", list.get(position).getAssignee()).findFirst();
-                if (model != null) {
-                    ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
-                }
-            }else{
-                ((ViewHolderTask) holder).assignee.setText("No assignee");
-
-            }
+            showAssignee(holder,list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null)
                     listener.onCheckChange(list.get(position), b);
@@ -74,6 +66,18 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (listener != null)
                     listener.onClickMore(list.get(position));
             });
+        }
+    }
+
+    private void showAssignee(RecyclerView.ViewHolder holder, RealmTeamTask realmTeamTask) {
+        if (!TextUtils.isEmpty(realmTeamTask.getAssignee())) {
+            RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", realmTeamTask.getAssignee()).findFirst();
+            if (model != null) {
+                ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
+            }
+        }else{
+            ((ViewHolderTask) holder).assignee.setText("No assignee");
+
         }
     }
 
