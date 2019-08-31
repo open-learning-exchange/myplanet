@@ -58,7 +58,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
             ((ViewHolderTask) holder).deadline.setText("Deadline : " + list.get(position).getDeadline());
             if (!TextUtils.isEmpty(list.get(position).getAssignee())) {
-                RealmUserModel model = realm.where(RealmUserModel.class).equalTo("_id", list.get(position).getAssignee()).findFirst();
+                RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", list.get(position).getAssignee()).findFirst();
                 if (model != null) {
                     ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
                 }

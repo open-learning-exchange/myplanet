@@ -33,7 +33,8 @@
 
         <TextView
             android:layout_width="match_parent"
-            android:padding="@dimen/padding_normal"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal"
             android:id="@+id/assignee"
             android:layout_height="wrap_content" />
 
