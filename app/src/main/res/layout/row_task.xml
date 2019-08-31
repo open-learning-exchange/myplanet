@@ -9,6 +9,10 @@
 
     <LinearLayout
         android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
@@ -26,6 +30,16 @@
             android:padding="@dimen/padding_normal"
             android:id="@+id/deadline"
             android:layout_height="wrap_content" />
+
+
+    </LinearLayout>
+
+    <ImageView
+        android:layout_width="wrap_content"
+        app:srcCompat="@drawable/ic_more"
+        android:layout_margin="@dimen/padding_small"
+        android:id="@+id/ic_more"
+        android:layout_height="wrap_content" />
 
     </LinearLayout>
 </android.support.v7.widget.CardView>

@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -24,6 +25,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnCompletedListener listener;
     interface OnCompletedListener{
        void onCheckChange(RealmTeamTask realmTeamTask, boolean b);
+       void onClickMore(RealmTeamTask realmTeamTask);
     }
 
     public AdapterTask(Context context, List<RealmTeamTask> list) {
@@ -53,6 +55,10 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (listener!=null)
                     listener.onCheckChange(list.get(position), b);
             });
+            ((ViewHolderTask) holder).icMore.setOnClickListener(view -> {
+                if (listener!=null)
+                    listener.onClickMore(list.get(position));
+            });
         }
     }
 
@@ -64,11 +70,13 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     class ViewHolderTask extends RecyclerView.ViewHolder {
         CheckBox completed;
         TextView deadline;
+        ImageView icMore;
 
         public ViewHolderTask(View itemView) {
             super(itemView);
             completed = itemView.findViewById(R.id.checkbox);
             deadline = itemView.findViewById(R.id.deadline);
+            icMore = itemView.findViewById(R.id.ic_more);
         }
     }
 }
