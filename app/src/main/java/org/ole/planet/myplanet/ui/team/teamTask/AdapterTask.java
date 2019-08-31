@@ -62,6 +62,9 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (model != null) {
                     ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
                 }
+            }else{
+                ((ViewHolderTask) holder).assignee.setText("No assignee");
+
             }
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null)
