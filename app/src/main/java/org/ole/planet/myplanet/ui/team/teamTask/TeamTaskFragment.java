@@ -122,7 +122,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         rvTask.setLayoutManager(new LinearLayoutManager(getActivity()));
         List<RealmTeamTask> list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
         Utilities.log("List size " + list.size());
-        AdapterTask adapterTask = new AdapterTask(getActivity(), list);
+        AdapterTask adapterTask = new AdapterTask(getActivity(),mRealm, list);
         adapterTask.setListener(this);
         rvTask.setAdapter(adapterTask);
         showNoData(nodata, list.size());
