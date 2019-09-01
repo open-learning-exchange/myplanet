@@ -97,9 +97,6 @@ public class TeamResourceFragment extends BaseTeamFragment {
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < libraries.size(); i++) {
             names.add(libraries.get(i).getTitle());
-            mRealm.executeTransactionAsync(realm -> {
-
-            });
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
