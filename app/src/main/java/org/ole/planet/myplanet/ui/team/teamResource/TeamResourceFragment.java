@@ -94,11 +94,15 @@ public class TeamResourceFragment extends BaseTeamFragment {
             showLibraryList();
         }).setNegativeButton("Cancel", null);
         AlertDialog alertDialog = alertDialogBuilder.create();
+        listSetting(alertDialog, libraries, lv);
+    }
+
+    private void listSetting(AlertDialog alertDialog, List<RealmMyLibrary> libraries, CheckboxListView lv) {
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < libraries.size(); i++) {
             names.add(libraries.get(i).getTitle());
         }
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setCheckChangeListener(() -> {
             (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
