@@ -46,7 +46,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         txtVisits = v.findViewById(R.id.txtVisits);
         txtRole = v.findViewById(R.id.txtRole);
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        model = profileDbHandler.getUserModel();
         fullName = profileDbHandler.getUserModel().getFullName();
         ImageView imageView = v.findViewById(R.id.imageView);
         Utilities.loadImage(model.getUserImage(), imageView);
