@@ -70,7 +70,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         container = view.findViewById(R.id.container);
 
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
-        user = mRealm.copyFromRealm(dbHandler.getUserModel());
+        user = dbHandler.getUserModel();
         return view;
     }
 
