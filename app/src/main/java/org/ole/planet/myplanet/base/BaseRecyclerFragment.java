@@ -82,7 +82,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         realmService = new DatabaseService(getActivity());
         mRealm = realmService.getRealmInstance();
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        model = profileDbHandler.getUserModel();
         recyclerView.setAdapter(getAdapter());
         if (isMyCourseLib) showDownloadDialog(getLibraryList(mRealm));
         return v;
