@@ -65,7 +65,7 @@ public class UserProfileFragment extends Fragment {
     }
 
     private void populateUserData(View v) {
-        RealmUserModel model = mRealm.copyToRealmOrUpdate(handler.getUserModel());
+        RealmUserModel model = handler.getUserModel();
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
         String dob = TextUtils.isEmpty(model.getDob())? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
