@@ -20,6 +20,7 @@ public class RealmApkLog extends RealmObject {
     private String error;
     private String page;
     private String parentCode;
+    private String version;
     private String createdOn;
     private String time;
     public String getId() {
@@ -75,6 +76,13 @@ public class RealmApkLog extends RealmObject {
         return error;
     }
 
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
 
     public static JsonObject serialize(RealmApkLog log) {
         JsonObject object = new JsonObject();
@@ -82,6 +90,7 @@ public class RealmApkLog extends RealmObject {
         object.addProperty("error", log.getError());
         object.addProperty("page", log.getPage());
         object.addProperty("time", log.getTime());
+        object.addProperty("version", log.getVersion());
         object.addProperty("createdOn", log.getCreatedOn());
         object.addProperty("parentCode", log.getParentCode());
         return object;
