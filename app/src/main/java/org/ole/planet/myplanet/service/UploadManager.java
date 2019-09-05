@@ -234,7 +234,7 @@ public class UploadManager extends FileUploadService {
                 if (TextUtils.isEmpty(task.get_id())) {
                     JsonObject object = null;
                     try {
-                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(task)).execute().body();
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(realm,task)).execute().body();
                         if (object != null) {
                             String _rev = JsonUtils.getString("rev", object);
                             String _id = JsonUtils.getString("id", object);

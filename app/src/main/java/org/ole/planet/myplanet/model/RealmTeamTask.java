@@ -18,6 +18,7 @@ public class RealmTeamTask extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id, _rev, title, deadline, description, link, sync, teamId;
+    private String assignee;
     private boolean completed;
 
 
@@ -34,21 +35,35 @@ public class RealmTeamTask extends RealmObject {
         task.setLink(new Gson().toJson(JsonUtils.getJsonObject("link", obj)));
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
         task.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj)));
+        JsonObject user = JsonUtils.getJsonObject("assignee", obj );
+        if (user.has("_id"))
+            task.setAssignee(JsonUtils.getString("_id", user ));
         task.setCompleted(JsonUtils.getBoolean("completed", obj));
     }
 
-    public static JsonObject serialize(RealmTeamTask task) {
+    public static JsonObject serialize(Realm realm, RealmTeamTask task) {
         JsonObject object = new JsonObject();
         object.addProperty("title", task.getTitle());
         object.addProperty("deadline", task.getDeadline());
         object.addProperty("description", task.getDescription());
         object.addProperty("completed", task.isCompleted());
-        object.addProperty("assignee", "");
+        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", task.getAssignee()).findFirst();
+        if (user != null)
+            object.add("assignee", user.serialize());
+        else
+            object.addProperty("assignee", "");
         object.add("sync", new Gson().fromJson(task.getSync(), JsonObject.class));
         object.add("link", new Gson().fromJson(task.getLink(), JsonObject.class));
         return object;
     }
 
+    public String getAssignee() {
+        return assignee;
+    }
+
+    public void setAssignee(String assignee) {
+        this.assignee = assignee;
+    }
 
     public String getTeamId() {
         return teamId;
@@ -129,4 +144,6 @@ public class RealmTeamTask extends RealmObject {
     public void setCompleted(boolean completed) {
         this.completed = completed;
     }
+
+
 }

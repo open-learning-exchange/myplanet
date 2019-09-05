@@ -13,8 +13,10 @@ import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
@@ -22,6 +24,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmTeamTask;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
@@ -103,11 +106,10 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             obsync.addProperty("planetCode", user.getPlanetCode());
             t.setSync(new Gson().toJson(obsync));
             t.setCompleted(false);
-
         }, () -> {
-            if (rvTask.getAdapter() != null){
+            if (rvTask.getAdapter() != null) {
                 rvTask.getAdapter().notifyDataSetChanged();
-                showNoData(nodata,  rvTask.getAdapter().getItemCount());
+                showNoData(nodata, rvTask.getAdapter().getItemCount());
             }
             Utilities.toast(getActivity(), "Task added successfully");
         });
@@ -120,7 +122,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         rvTask.setLayoutManager(new LinearLayoutManager(getActivity()));
         List<RealmTeamTask> list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
         Utilities.log("List size " + list.size());
-        AdapterTask adapterTask = new AdapterTask(getActivity(), list);
+        AdapterTask adapterTask = new AdapterTask(getActivity(),mRealm, list);
         adapterTask.setListener(this);
         rvTask.setAdapter(adapterTask);
         showNoData(nodata, list.size());
@@ -133,5 +135,24 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             mRealm.beginTransaction();
         realmTeamTask.setCompleted(b);
         mRealm.commitTransaction();
+    }
+
+    @Override
+    public void onClickMore(RealmTeamTask realmTeamTask) {
+        View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
+        Spinner spnUser = v.findViewById(R.id.spn_user);
+        List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
+        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, userList);
+        spnUser.setAdapter(adapter);
+        new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
+                .setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
+            RealmUserModel user = ((RealmUserModel) spnUser.getSelectedItem());
+            String userId = user.getId();
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            realmTeamTask.setAssignee(userId);
+            mRealm.commitTransaction();
+            Utilities.toast(getActivity(), "Task Assigned to " + user.getName());
+        }).show();
     }
 }
