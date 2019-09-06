@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.lang.reflect.Array;
 import java.util.List;
@@ -80,8 +81,8 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
             teamLeader.setLeader(false);
         }
         mRealm.commitTransaction();
-        list.remove(position);
         notifyDataSetChanged();
+        Utilities.toast(context,"Leader selected");
     }
 
     private void reject(RealmUserModel userModel, int position) {

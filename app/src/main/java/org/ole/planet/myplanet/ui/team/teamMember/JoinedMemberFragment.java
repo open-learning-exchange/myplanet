@@ -27,7 +27,7 @@ public class JoinedMemberFragment extends BaseMemberFragment {
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        return new AdapterJoinedMemeber(getActivity(),getList(), mRealm);
+        return new AdapterJoinedMemeber(getActivity(),getList(), mRealm, teamId);
     }
 
     @Override
