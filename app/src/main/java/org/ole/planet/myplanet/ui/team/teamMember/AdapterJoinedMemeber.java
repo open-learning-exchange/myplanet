@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.lang.reflect.Array;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
 
@@ -38,8 +39,9 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
         this.mRealm = mRealm;
         this.teamId = teamId;
         this.currentUser = new UserProfileDbHandler(context).getUserModel();
-        RealmMyTeam leaderTeam = mRealm.where(RealmMyTeam.class).equalTo("isLeader", true).findFirst();
+        RealmMyTeam leaderTeam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (leaderTeam!=null){
+            Utilities.log("Team leader "  + leaderTeam.isLeader() + " " + leaderTeam.getUserId()) ;
             this.teamLeaderId = leaderTeam.getUserId();
         }
     }
