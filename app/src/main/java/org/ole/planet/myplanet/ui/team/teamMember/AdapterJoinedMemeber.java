@@ -59,6 +59,8 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
 
             if (this.teamLeaderId!=null && this.teamLeaderId.equals(this.currentUser.getId())){
                 ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
+            }else{
+                ((ViewHolderUser) holder).icMore.setVisibility(View.GONE);
             }
 
             ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
