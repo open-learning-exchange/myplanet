@@ -207,8 +207,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class)
                     .equalTo("name", username)
                     .findAll();
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+//            if (!mRealm.isInTransaction())
+//                mRealm.beginTransaction();
             for (RealmUserModel user : db_users) {
                 if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
                     if (isManagerMode && !user.isManager())

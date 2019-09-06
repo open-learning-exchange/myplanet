@@ -64,9 +64,9 @@ public class MainApplication extends Application implements Application.Activity
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
         builder.detectFileUriExposure();
-
         dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         context = this;
+        Realm.init(this);
         preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
             dispatcher.cancelAll();
