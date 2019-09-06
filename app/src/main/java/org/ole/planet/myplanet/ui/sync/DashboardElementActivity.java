@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
+import org.ole.planet.myplanet.ui.enterprises.EnterprisesFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
@@ -73,11 +74,10 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
                 openCallFragment(new CourseFragment(), "course");
                 break;
             case 3:
-                openCallFragment(new SurveyFragment(), "survey");
+                openCallFragment(new EnterprisesFragment(), "enterprise");
                 break;
             case 4:
-//                new FeedbackFragment().show(getSupportFragmentManager(), "feedback");
-                openCallFragment(new FeedbackListFragment(), "Feedback");
+                openCallFragment(new SurveyFragment(), "survey");
                 break;
             case 5:
                 logout();

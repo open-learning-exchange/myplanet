@@ -7,6 +7,11 @@
         android:title="@string/sync_now"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_feedback"
+        android:icon="@drawable/feedback"
+        android:title="@string/menu_feedback"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_settings"
         android:icon="@drawable/settings"
         android:title="@string/action_settings"
