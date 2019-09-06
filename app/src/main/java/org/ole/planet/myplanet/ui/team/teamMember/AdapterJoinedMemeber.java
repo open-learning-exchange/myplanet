@@ -66,16 +66,12 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
                 ((ViewHolderUser) holder).icMore.setVisibility(View.GONE);
             }
 
-
-
             if (this.teamLeaderId!=null && this.teamLeaderId.equals(list.get(position).getId())){
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
                 ((ViewHolderUser) holder).isLeader.setText("(Team Leader)" );
             }else{
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
-
             }
-
 
             ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
                 String[] s = {"Remove", "Make Leader"};
@@ -96,12 +92,13 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
             mRealm.beginTransaction();
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
         RealmMyTeam teamLeader = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
-        if (team != null) {
-            team.setLeader(true);
-        }
         if (teamLeader!=null){
             teamLeader.setLeader(false);
         }
+        if (team != null) {
+            team.setLeader(true);
+        }
+
         mRealm.commitTransaction();
         notifyDataSetChanged();
         Utilities.toast(context,"Leader selected");
