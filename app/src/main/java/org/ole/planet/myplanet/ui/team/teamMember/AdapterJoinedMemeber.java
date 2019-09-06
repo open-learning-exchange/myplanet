@@ -95,6 +95,8 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
         mRealm.commitTransaction();
         list.remove(position);
         notifyDataSetChanged();
+        Utilities.toast(context,"User removed from team selected");
+
     }
 
     @Override
