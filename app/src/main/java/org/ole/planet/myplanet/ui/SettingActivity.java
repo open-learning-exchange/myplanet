@@ -105,7 +105,7 @@ public class SettingActivity extends AppCompatActivity {
                     achievement.setChecked(true);
                     survey.setChecked(true);
                     rating.setChecked(true);
-                    myHealth.setChecked(true);
+                    //myHealth.setChecked(true);
                 }
 
                 return true;
