@@ -46,15 +46,14 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.View
         if (holder instanceof ViewHolderUser) {
             ((ViewHolderUser) holder).name.setText(list.get(position).getName());
             ((ViewHolderUser) holder).buttonAccept.setOnClickListener(view -> {
-                acceptReject(list.get(position), true);
-                list.remove(position);
-                notifyDataSetChanged();
+                acceptReject(list.get(position), true, position);
+
             });
-            ((ViewHolderUser) holder).buttonReject.setOnClickListener(view -> acceptReject(list.get(position), false));
+            ((ViewHolderUser) holder).buttonReject.setOnClickListener(view -> acceptReject(list.get(position), false, position));
         }
     }
 
-    private void acceptReject(RealmUserModel userModel, boolean isAccept) {
+    private void acceptReject(RealmUserModel userModel, boolean isAccept, int position) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
@@ -66,7 +65,8 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.View
             }
         }
         mRealm.commitTransaction();
-
+        list.remove(position);
+        notifyDataSetChanged();
     }
 
     @Override
