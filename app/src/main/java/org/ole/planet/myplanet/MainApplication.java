@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Date;
 import java.util.UUID;
@@ -142,6 +143,7 @@ public class MainApplication extends Application implements Application.Activity
         }
         log.setTime(new Date().getTime() +"");
         log.setPage("");
+        log.setVersion(VersionUtils.getVersionName(this));
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);
         log.setError(e);
         mRealm.commitTransaction();
