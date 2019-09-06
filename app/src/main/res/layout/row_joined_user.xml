@@ -29,6 +29,7 @@
                 android:layout_width="@dimen/_40dp"
                 app:srcCompat="@drawable/ic_more"
                 android:id="@+id/ic_more"
+                android:visibility="gone"
                 android:tint="@color/md_black_1000"
                 android:layout_height="@dimen/_40dp" />
 

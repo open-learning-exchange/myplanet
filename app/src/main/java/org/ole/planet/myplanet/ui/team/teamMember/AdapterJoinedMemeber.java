@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -29,12 +30,18 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     private List<RealmUserModel> list;
     private Realm mRealm;
     private String teamId;
-
+    private RealmUserModel currentUser;
+    private String teamLeaderId;
     public AdapterJoinedMemeber(Context context, List<RealmUserModel> list, Realm mRealm, String teamId) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
         this.teamId = teamId;
+        this.currentUser = new UserProfileDbHandler(context).getUserModel();
+        RealmMyTeam leaderTeam = mRealm.where(RealmMyTeam.class).equalTo("isLeader", true).findFirst();
+        if (leaderTeam!=null){
+            this.teamLeaderId = leaderTeam.getUserId();
+        }
     }
 
     @NonNull
@@ -49,22 +56,21 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
         if (holder instanceof ViewHolderUser) {
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).getName());
             ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName()) + " visits )");
-            ((ViewHolderUser) holder).icMore.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    String[] s = {"Remove", "Make Leader"};
-                    new AlertDialog.Builder(context)
-                            .setItems(s, new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    if (i == 0) {
-                                        reject(list.get(position), position);
-                                    } else {
-                                        makeLeader(list.get(position), position);
-                                    }
-                                }
-                            }).setNegativeButton("Dismiss", null).show();
-                }
+
+            if (this.teamLeaderId!=null && this.teamLeaderId.equals(this.currentUser.getId())){
+                ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
+            }
+
+            ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
+                String[] s = {"Remove", "Make Leader"};
+                new AlertDialog.Builder(context)
+                        .setItems(s, (dialogInterface, i) -> {
+                            if (i == 0) {
+                                reject(list.get(position), position);
+                            } else {
+                                makeLeader(list.get(position), position);
+                            }
+                        }).setNegativeButton("Dismiss", null).show();
             });
         }
     }
