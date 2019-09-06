@@ -15,7 +15,7 @@
         android:key="bell_theme"
         android:title="BeLL Dashboard Theme" />
     <SwitchPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="beta_function"
         android:title="Beta Functionality" />
 
@@ -40,7 +40,7 @@
             android:key="beta_wifi_switch"
             android:title="Beta Function for WiFi Switch" />
         <SwitchPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="beta_myHealth"
             android:title="Beta Function for myHealth" />
 
