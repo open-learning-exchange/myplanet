@@ -22,7 +22,6 @@ public class DatabaseService {
                 .deleteRealmIfMigrationNeeded()
                 .schemaVersion(4)
                 .build();
-
         Realm.setDefaultConfiguration(config);
         return Realm.getInstance(config);
     }
