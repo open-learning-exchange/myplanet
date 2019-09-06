@@ -48,6 +48,7 @@ public class RealmMyTeam extends RealmObject {
     private String teamPlanetCode;
     private String parentCode;
     private String docType;
+    private boolean isLeader;
 
     public static void insertMyTeams(String userId, JsonObject doc, Realm mRealm) {
         String teamId = JsonUtils.getString("_id", doc);
@@ -68,6 +69,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setResourceId(JsonUtils.getString("resourceId", doc));
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
+        myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
 //        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
         myTeams.setDocType(JsonUtils.getString("docType", doc).toString());
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
@@ -77,6 +79,14 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public boolean isLeader() {
+        return isLeader;
+    }
+
+    public void setLeader(boolean leader) {
+        isLeader = leader;
     }
 
     public static List<String> getResourceIds(String teamId, Realm realm) {
@@ -198,6 +208,7 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("teamPlanetCode", team.getTeamPlanetCode());
         object.addProperty("parentCode", team.getParentCode());
         object.addProperty("docType", team.getDocType());
+        object.addProperty("isLeader", team.isLeader());
         return object;
     }
 
