@@ -61,9 +61,21 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
 
             if (this.teamLeaderId!=null && this.teamLeaderId.equals(this.currentUser.getId())){
                 ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
-            }else{
+            }
+            else{
                 ((ViewHolderUser) holder).icMore.setVisibility(View.GONE);
             }
+
+
+
+            if (this.teamLeaderId!=null && this.teamLeaderId.equals(list.get(position).getId())){
+                ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
+                ((ViewHolderUser) holder).isLeader.setText("(Team Leader)" );
+            }else{
+                ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
+
+            }
+
 
             ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
                 String[] s = {"Remove", "Make Leader"};
@@ -116,10 +128,11 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
 
     class ViewHolderUser extends AdapterOtherInfo.ViewHolderOtherInfo {
         ImageView icMore;
-
+        TextView isLeader;
         public ViewHolderUser(View itemView) {
             super(itemView);
             icMore = itemView.findViewById(R.id.ic_more);
+            isLeader = itemView.findViewById(R.id.tv_is_leader);
         }
     }
 }
