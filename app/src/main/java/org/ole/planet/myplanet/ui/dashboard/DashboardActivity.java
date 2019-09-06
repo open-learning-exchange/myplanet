@@ -37,7 +37,10 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
+import org.ole.planet.myplanet.ui.enterprises.EnterprisesFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
@@ -45,6 +48,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
+import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
@@ -117,6 +121,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 switch (item.getItemId()) {
                     case R.id.action_sync:
                         syncNow();
+                        return true;
+                    case R.id.action_feedback:
+                        openCallFragment(new FeedbackListFragment());
                         return true;
                     case R.id.action_settings:
                         startActivity(new Intent(DashboardActivity.this, SettingActivity.class));
@@ -253,8 +260,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.txt_myCourses:
                 openMyFragment(new CourseFragment());
                 break;
+            case R.string.enterprises:
+                openMyFragment(new EnterprisesFragment());
+                break;
             case R.string.menu_feedback:
-//                new FeedbackFragment().show(getSupportFragmentManager(), "");
                 openMyFragment(new FeedbackListFragment());
                 break;
             case R.string.menu_logout:
@@ -314,7 +323,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.ourcourses));
         menuImageList.add(getResources().getDrawable(R.drawable.ourlibrary));
         menuImageList.add(getResources().getDrawable(R.drawable.mycourses));
-        menuImageList.add(getResources().getDrawable(R.drawable.meetups));
+        menuImageList.add(getResources().getDrawable(R.drawable.business));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
         return new IDrawerItem[]{
                 changeUX(R.string.menu_myplanet, menuImageList.get(0)),
@@ -322,11 +331,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 changeUX(R.string.txt_myCourses, menuImageList.get(2)),
                 changeUX(R.string.menu_library, menuImageList.get(3)),
                 changeUX(R.string.menu_courses, menuImageList.get(4)),
-                changeUX(R.string.menu_meetups, menuImageList.get(5))
+                changeUX(R.string.enterprises, menuImageList.get(5))
                         .withSelectable(false)
                         .withDisabledIconColor(getResources().getColor(R.color.disable_color))
                         .withDisabledTextColor(getResources().getColor(R.color.disable_color)),
-                changeUX(R.string.menu_surveys, menuImageList.get(6)),
+                changeUX(R.string.menu_surveys, menuImageList.get(6))
         };
     }
 
@@ -374,6 +383,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             openMyFragment(new CourseFragment());
         } else if (item.getItemId() == R.id.menu_mylibrary) {
             openMyFragment(new LibraryFragment());
+        } else if (item.getItemId() == R.id.menu_enterprises) {
+            openMyFragment(new EnterprisesFragment());
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
                     new BellDashboardFragment() : new DashboardFragment());
