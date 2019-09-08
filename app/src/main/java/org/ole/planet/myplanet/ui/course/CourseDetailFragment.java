@@ -4,6 +4,8 @@ package org.ole.planet.myplanet.ui.course;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,6 +20,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmCourseStep;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
@@ -47,6 +50,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     RealmUserModel user;
     String id;
     Button btnResources, btnOpen;
+    RecyclerView rv_step_list;
 
     public CourseDetailFragment() {
     }
@@ -86,6 +90,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         subjectLevel = v.findViewById(R.id.subject_level);
         gradeLevel = v.findViewById(R.id.grade_level);
         language = v.findViewById(R.id.language);
+        rv_step_list = v.findViewById(R.id.steps_list);
         method = v.findViewById(R.id.method);
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
@@ -115,6 +120,14 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
                 .findAll();
         setOpenResourceButton(downloadedResources, btnOpen);
         onRatingChanged();
+        setStepsList();
+    }
+
+    private void setStepsList() {
+       List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
+       rv_step_list.setLayoutManager(new LinearLayoutManager(getActivity()));
+       rv_step_list.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
+
     }
 
 
