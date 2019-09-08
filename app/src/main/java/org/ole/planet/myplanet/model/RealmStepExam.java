@@ -49,14 +49,6 @@ public class RealmStepExam extends RealmObject {
         return noOfQuestions;
     }
 
-    private static int getCountByStepId(Realm mRealm, String stepId){
-        RealmStepExam stepExam =  mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findFirst();
-        if (stepExam!=null){
-          return   stepExam.getNoOfQuestions();
-        }
-        return 0;
-    }
-
     private static void checkIdsAndInsert(String myCoursesID, String step_id, RealmStepExam myExam) {
         if (!TextUtils.isEmpty(myCoursesID)) {
             myExam.setCourseId(myCoursesID);
