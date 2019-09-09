@@ -29,7 +29,9 @@ public class MembersFragment extends BaseMemberFragment {
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        return new AdapterMemberRequest(getActivity(), getList(), mRealm);
+        AdapterMemberRequest adapterMemberRequest = new AdapterMemberRequest(getActivity(), getList(), mRealm);
+        adapterMemberRequest.setTeamId(teamId);
+        return adapterMemberRequest;
     }
 
     @Override

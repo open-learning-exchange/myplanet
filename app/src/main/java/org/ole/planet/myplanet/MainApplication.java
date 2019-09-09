@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Date;
 import java.util.UUID;
@@ -63,9 +64,9 @@ public class MainApplication extends Application implements Application.Activity
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
         builder.detectFileUriExposure();
-
         dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         context = this;
+        Realm.init(this);
         preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
             dispatcher.cancelAll();
@@ -142,6 +143,7 @@ public class MainApplication extends Application implements Application.Activity
         }
         log.setTime(new Date().getTime() +"");
         log.setPage("");
+        log.setVersion(VersionUtils.getVersionName(this));
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);
         log.setError(e);
         mRealm.commitTransaction();
