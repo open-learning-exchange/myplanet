@@ -6,6 +6,7 @@ import com.firebase.jobdispatcher.JobService;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmTeamTask;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 
 import java.util.Calendar;
@@ -21,14 +22,17 @@ public class TaskNotificationService extends JobService {
         long current = Calendar.getInstance().getTimeInMillis();
         Calendar tomorrow = Calendar.getInstance();
         tomorrow.add(Calendar.DAY_OF_YEAR, 1);
-        List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("completed", false).equalTo("notified", false)
-                .between("expire", current, tomorrow.getTimeInMillis()).findAll();
-        mRealm.beginTransaction();
-        for (RealmTeamTask in : tasks) {
-            NotificationUtil.create(this, R.drawable.ole_logo, in.getTitle(), "Task expires on " + in.getDeadline());
-            in.setNotified(true);
+        RealmUserModel user = new UserProfileDbHandler(this).getUserModel();
+        if (user != null) {
+            List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("completed", false).equalTo("assignee", user.getId()).equalTo("notified", false)
+                    .between("expire", current, tomorrow.getTimeInMillis()).findAll();
+            mRealm.beginTransaction();
+            for (RealmTeamTask in : tasks) {
+                NotificationUtil.create(this, R.drawable.ole_logo, in.getTitle(), "Task expires on " + in.getDeadline());
+                in.setNotified(true);
+            }
+            mRealm.commitTransaction();
         }
-        mRealm.commitTransaction();
         return false;
     }
 
