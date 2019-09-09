@@ -67,6 +67,8 @@ public class RealmStepExam extends RealmObject {
         return 0;
     }
 
+
+
     public static JsonObject serializeExam(Realm mRealm, RealmStepExam exam) {
         JsonObject object = new JsonObject();
         object.addProperty("name", exam.getName());
