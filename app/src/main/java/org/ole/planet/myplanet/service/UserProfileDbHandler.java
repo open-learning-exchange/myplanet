@@ -89,7 +89,7 @@ public class UserProfileDbHandler {
 
     public int getOfflineVisits(RealmUserModel m) {
         RealmResults<RealmOfflineActivity> db_users = mRealm.where(RealmOfflineActivity.class)
-                .equalTo("userId", m.getId())
+                .equalTo("userName", m.getName())
                 .equalTo("type", KEY_LOGIN)
                 .findAll();
         if (!db_users.isEmpty()) {

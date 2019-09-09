@@ -5,9 +5,10 @@ Takeout is the Android port of the Planet web application. It will work with Pla
 ### App Screenshots:
 
 <p align="middle">
-<img src="https://user-images.githubusercontent.com/37878201/43286563-67eaf1f0-90f0-11e8-9bb6-bec370bca3c9.png" width="267" height="427">
-<img src="https://user-images.githubusercontent.com/37878201/43286561-67c05706-90f0-11e8-9f52-f9de73f94df1.png" width="267" height="427"> 
-<img src="https://user-images.githubusercontent.com/37878201/43286562-67d32638-90f0-11e8-98f6-a10ca2c5650b.png" width="267" height="427"> 
+<img width="757" alt="Screenshot 2019-09-06 at 8 47 46 AM" src="https://user-images.githubusercontent.com/2836302/64419353-439ef300-d08c-11e9-8e78-40d086b251df.png">
+<img width="755" alt="Screenshot 2019-09-06 at 8 48 11 AM" src="https://user-images.githubusercontent.com/2836302/64419358-46014d00-d08c-11e9-9c7c-dfb28ca2ef26.png">
+<img width="763" alt="Screenshot 2019-09-06 at 9 02 11 AM" src="https://user-images.githubusercontent.com/2836302/64419366-4d285b00-d08c-11e9-9770-740ce5ad278b.png">
+<img width="771" alt="Screenshot 2019-09-06 at 9 53 43 AM" src="https://user-images.githubusercontent.com/2836302/64419378-53b6d280-d08c-11e9-86cb-53814e832795.png">
 </p>
 
 
