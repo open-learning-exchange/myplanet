@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.AutoSyncService;
 import org.ole.planet.myplanet.service.StayOnLineService;
+import org.ole.planet.myplanet.service.TaskNotificationService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
@@ -75,6 +76,7 @@ public class MainApplication extends Application implements Application.Activity
             dispatcher.cancelAll();
         }
         createJob(5 * 60, StayOnLineService.class);
+        createJob(60, TaskNotificationService.class);
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
     }

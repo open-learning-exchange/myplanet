@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.security.PrivateKey;
@@ -19,8 +20,9 @@ public class RealmTeamTask extends RealmObject {
     private String id;
     private String _id, _rev, title, deadline, description, link, sync, teamId;
     private String assignee;
+    private long expire;
     private boolean completed;
-
+    private boolean notified;
 
     public static void insert(Realm mRealm, JsonObject obj) {
         RealmTeamTask task = mRealm.where(RealmTeamTask.class).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst();
@@ -35,10 +37,18 @@ public class RealmTeamTask extends RealmObject {
         task.setLink(new Gson().toJson(JsonUtils.getJsonObject("link", obj)));
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
         task.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj)));
-        JsonObject user = JsonUtils.getJsonObject("assignee", obj );
+        JsonObject user = JsonUtils.getJsonObject("assignee", obj);
         if (user.has("_id"))
-            task.setAssignee(JsonUtils.getString("_id", user ));
+            task.setAssignee(JsonUtils.getString("_id", user));
         task.setCompleted(JsonUtils.getBoolean("completed", obj));
+    }
+
+    public boolean isNotified() {
+        return notified;
+    }
+
+    public void setNotified(boolean notified) {
+        this.notified = notified;
     }
 
     public static JsonObject serialize(Realm realm, RealmTeamTask task) {
@@ -55,6 +65,15 @@ public class RealmTeamTask extends RealmObject {
         object.add("sync", new Gson().fromJson(task.getSync(), JsonObject.class));
         object.add("link", new Gson().fromJson(task.getLink(), JsonObject.class));
         return object;
+    }
+
+
+    public long getExpire() {
+        return expire;
+    }
+
+    public void setExpire(long expire) {
+        this.expire = expire;
     }
 
     public String getAssignee() {
@@ -111,6 +130,7 @@ public class RealmTeamTask extends RealmObject {
 
     public void setDeadline(String deadline) {
         this.deadline = deadline;
+        this.expire = TimeUtils.dateToLong(this.deadline);
     }
 
     public String getDescription() {
