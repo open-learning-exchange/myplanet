@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
@@ -10,9 +9,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -20,8 +17,6 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.ui.sync.LoginActivity;
-import org.ole.planet.myplanet.utilities.LocaleHelper;
 
 import java.util.List;
 
@@ -32,10 +27,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<RealmMyTeam> list;
     private Realm mRealm;
     private OnUserSelectedListener listener;
-
-    public interface OnUserSelectedListener {
-        void onSelectedUser(RealmUserModel userModel);
-    }
+    private List<RealmUserModel> users;
 
     public AdapterTeam(Context context, List<RealmMyTeam> list, Realm mRealm) {
         this.context = context;
@@ -63,25 +55,27 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             });
         }
     }
-    private List<RealmUserModel> users;
+
     private void showUserList(RealmMyTeam realmMyTeam) {
-        View view = LayoutInflater.from(context).inflate(R.layout.layout_user_list,null);
+        View view = LayoutInflater.from(context).inflate(R.layout.layout_user_list, null);
         EditText etSearch = view.findViewById(R.id.et_search);
         ListView lv = view.findViewById(R.id.list_user);
         users = RealmMyTeam.getUsers(realmMyTeam.getId(), mRealm, "");
-        setListAdapter(lv,users);
+        setListAdapter(lv, users);
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) { }
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                    users = RealmMyTeam.filterUsers(realmMyTeam.getId(),charSequence.toString(), mRealm);
-                    setListAdapter(lv, users);
-                }
+                users = RealmMyTeam.filterUsers(realmMyTeam.getId(), charSequence.toString(), mRealm);
+                setListAdapter(lv, users);
+            }
 
             @Override
-            public void afterTextChanged(Editable editable) { }
+            public void afterTextChanged(Editable editable) {
+            }
         });
         lv.setOnItemClickListener((adapterView, view1, i, l) -> {
             if (listener != null)
@@ -98,6 +92,10 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public int getItemCount() {
         return list.size();
+    }
+
+    public interface OnUserSelectedListener {
+        void onSelectedUser(RealmUserModel userModel);
     }
 
     class ViewHolderTeam extends RecyclerView.ViewHolder {

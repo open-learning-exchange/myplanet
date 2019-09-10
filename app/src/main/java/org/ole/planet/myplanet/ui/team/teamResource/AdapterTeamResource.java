@@ -10,14 +10,10 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
-import org.ole.planet.myplanet.model.RealmTeamLog;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -36,7 +32,7 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
         this.list = list;
         this.mRealm = mRealm;
         this.settings = settings;
-        teamCreator = RealmMyTeam.getTeamCreator(teamId,mRealm);
+        teamCreator = RealmMyTeam.getTeamCreator(teamId, mRealm);
         if (context instanceof OnHomeItemClickListener) {
             listener = (OnHomeItemClickListener) context;
         }
@@ -45,24 +41,24 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View   v = LayoutInflater.from(context).inflate(R.layout.row_team_resource, parent, false);
+        View v = LayoutInflater.from(context).inflate(R.layout.row_team_resource, parent, false);
         return new ViewHolderTeamResource(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderTeamResource){
+        if (holder instanceof ViewHolderTeamResource) {
             ((ViewHolderTeamResource) holder).title.setText(list.get(position).getTitle());
             ((ViewHolderTeamResource) holder).description.setText(list.get(position).getDescription());
-            holder.itemView.setOnClickListener(v->{
-                if (listener!=null){
+            holder.itemView.setOnClickListener(v -> {
+                if (listener != null) {
                     listener.openLibraryDetailFragment(list.get(position));
                 }
             });
             ((ViewHolderTeamResource) holder).ivRemove.setOnClickListener(view -> {
                 // TODO: 2019-08-21 Remove resource from team
             });
-            if(!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)){
+            if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
                 ((ViewHolderTeamResource) holder).ivRemove.setVisibility(View.GONE);
             }
         }
@@ -73,9 +69,10 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
         return list.size();
     }
 
-    class ViewHolderTeamResource extends RecyclerView.ViewHolder{
+    class ViewHolderTeamResource extends RecyclerView.ViewHolder {
         TextView title, description;
         ImageView ivRemove;
+
         public ViewHolderTeamResource(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.tv_title);

@@ -20,8 +20,8 @@ import java.util.List;
 
 public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
-    private List<String> list;
     String teamId;
+    private List<String> list;
 
     public TeamPagerAdapter(FragmentManager fm, String id, boolean isMyTeam) {
         super(fm);
