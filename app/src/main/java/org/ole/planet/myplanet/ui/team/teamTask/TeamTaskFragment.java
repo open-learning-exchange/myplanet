@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team.teamTask;
 
 
 import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -15,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.TimePicker;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -45,7 +47,20 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         deadline.set(Calendar.DAY_OF_MONTH, dayOfMonth);
         if (datePicker != null)
             datePicker.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+        timePicker();
     };
+
+    private void timePicker() {
+
+        TimePickerDialog timePickerDialog = new TimePickerDialog(getActivity(),
+                (view, hourOfDay, minute) -> {
+                    deadline.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    deadline.set(Calendar.MINUTE, minute);
+                    if (datePicker != null)
+                        datePicker.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+                }, deadline.get(Calendar.HOUR_OF_DAY), deadline.get(Calendar.MINUTE), true);
+        timePickerDialog.show();
+    }
 
     public TeamTaskFragment() {
     }
