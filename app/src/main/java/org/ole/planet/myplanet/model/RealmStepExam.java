@@ -24,7 +24,7 @@ public class RealmStepExam extends RealmObject {
     private String courseId;
     private String passingPercentage;
     private String totalMarks;
-
+    private int noOfQuestions;
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
         RealmStepExam myExam = mRealm.where(RealmStepExam.class).equalTo("id", exam.get("_id").getAsString()).findFirst();
@@ -36,7 +36,17 @@ public class RealmStepExam extends RealmObject {
         myExam.setName(JsonUtils.getString("name", exam));
         myExam.setPassingPercentage(JsonUtils.getString("passingPercentage", exam));
         myExam.setTotalMarks(JsonUtils.getString("totalMarks", exam));
+        myExam.setNoOfQuestions(JsonUtils.getJsonArray("questions", exam).size());
         RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
+    }
+
+
+    public void setNoOfQuestions(int noOfQuestions) {
+        this.noOfQuestions = noOfQuestions;
+    }
+
+    public int getNoOfQuestions() {
+        return noOfQuestions;
     }
 
     private static void checkIdsAndInsert(String myCoursesID, String step_id, RealmStepExam myExam) {
@@ -56,6 +66,8 @@ public class RealmStepExam extends RealmObject {
         }
         return 0;
     }
+
+
 
     public static JsonObject serializeExam(Realm mRealm, RealmStepExam exam) {
         JsonObject object = new JsonObject();
