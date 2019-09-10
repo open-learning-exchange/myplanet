@@ -234,6 +234,10 @@
     <string name="enterprises">Enterprises</string>
     <string name="select_member">Select Team Member</string>
     <string name="assign_task_to">Task Assigned to</string>
+    <string name="leader_selected">Leader selected</string>
+    <string name="user_removed_from_team">User removed from team</string>
+    <string name="remove">Remove</string>
+    <string name="make_leader">Make Leader</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

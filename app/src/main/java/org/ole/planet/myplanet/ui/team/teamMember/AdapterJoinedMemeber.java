@@ -70,7 +70,7 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
             }
 
             ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
-                String[] s = {"Remove", "Make Leader"};
+                String[] s = {context.getString(R.string.remove), context.getString(R.string.make_leader)};
                 new AlertDialog.Builder(context)
                         .setItems(s, (dialogInterface, i) -> {
                             if (i == 0) {
@@ -97,7 +97,7 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
 
         mRealm.commitTransaction();
         notifyDataSetChanged();
-        Utilities.toast(context, "Leader selected");
+        Utilities.toast(context, context.getString(R.string.leader_selected));
     }
 
     private void reject(RealmUserModel userModel, int position) {
@@ -110,7 +110,7 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
         mRealm.commitTransaction();
         list.remove(position);
         notifyDataSetChanged();
-        Utilities.toast(context, "User removed from team");
+        Utilities.toast(context, context.getString(R.string.user_removed_from_team));
 
     }
 
