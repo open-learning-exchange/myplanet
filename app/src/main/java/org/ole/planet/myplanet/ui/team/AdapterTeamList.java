@@ -54,7 +54,6 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
 
             holder.itemView.setOnClickListener(view -> {
-//                if (isMyTeam) {
                 if (context instanceof OnHomeItemClickListener) {
                     TeamDetailFragment f = new TeamDetailFragment();
                     Bundle b = new Bundle();
@@ -63,7 +62,6 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     f.setArguments(b);
                     ((OnHomeItemClickListener) context).openCallFragment(f);
                 }
-//                }
             });
         }
     }
