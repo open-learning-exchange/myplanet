@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 public class PlanFragment extends BaseTeamFragment {
 
     TextView description, date;
+
     public PlanFragment() {
     }
 
@@ -25,7 +26,7 @@ public class PlanFragment extends BaseTeamFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v =  inflater.inflate(R.layout.fragment_plan, container, false);
+        View v = inflater.inflate(R.layout.fragment_plan, container, false);
 
         return v;
     }
@@ -33,7 +34,7 @@ public class PlanFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        if (team!=null){
+        if (team != null) {
             description = getView().findViewById(R.id.tv_description);
             date = getView().findViewById(R.id.tv_date);
             description.setText(team.getDescription());
