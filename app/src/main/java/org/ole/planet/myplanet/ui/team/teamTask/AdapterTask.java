@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -26,12 +25,6 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<RealmTeamTask> list;
     private OnCompletedListener listener;
     private Realm realm;
-
-    interface OnCompletedListener {
-        void onCheckChange(RealmTeamTask realmTeamTask, boolean b);
-
-        void onClickMore(RealmTeamTask realmTeamTask);
-    }
 
     public AdapterTask(Context context, Realm mRealm, List<RealmTeamTask> list) {
         this.context = context;
@@ -57,7 +50,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
             ((ViewHolderTask) holder).deadline.setText("Deadline : " + list.get(position).getDeadline());
-            showAssignee(holder,list.get(position));
+            showAssignee(holder, list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null)
                     listener.onCheckChange(list.get(position), b);
@@ -75,7 +68,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (model != null) {
                 ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
             }
-        }else{
+        } else {
             ((ViewHolderTask) holder).assignee.setText("No assignee");
 
         }
@@ -84,6 +77,12 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public int getItemCount() {
         return list.size();
+    }
+
+    interface OnCompletedListener {
+        void onCheckChange(RealmTeamTask realmTeamTask, boolean b);
+
+        void onClickMore(RealmTeamTask realmTeamTask);
     }
 
     class ViewHolderTask extends RecyclerView.ViewHolder {
