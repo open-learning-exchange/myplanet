@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -35,20 +34,27 @@ import io.realm.RealmObject;
 import static android.content.Context.MODE_PRIVATE;
 
 public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment implements OnRatingChangeListener {
-    public Set<String> subjects, languages, mediums, levels;
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
+    public Set<String> subjects, languages, mediums, levels;
     public List<LI> selectedItems;
     public DatabaseService realmService;
     public UserProfileDbHandler profileDbHandler;
 
     public RecyclerView recyclerView;
     public TextView tvMessage;
-    List<LI> list;
     public boolean isMyCourseLib;
     public TextView tvDelete;
+    List<LI> list;
 
     public BaseRecyclerFragment() {
+    }
+
+    public static void showNoData(View v, int count) {
+        if (v == null)
+            return;
+        v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+        ((TextView) v).setText("No data available, please check and try again.");
     }
 
     public abstract int getLayout();
@@ -62,8 +68,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
         }
     }
-
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -112,7 +116,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 Utilities.toast(getActivity(), "Added to my courses");
                 recyclerView.setAdapter(getAdapter());
             }
-            showNoData(tvMessage,getAdapter().getItemCount());
+            showNoData(tvMessage, getAdapter().getItemCount());
         }
     }
 
@@ -128,7 +132,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-
     private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {
         if (deleteProgress && object instanceof RealmMyCourse) {
             mRealm.where(RealmCourseProgress.class).equalTo("courseId", ((RealmMyCourse) object).getCourseId()).findAll().deleteAllFromRealm();
@@ -142,16 +145,11 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         mRealm.close();
     }
-
-
-
-
 
     private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
         for (RealmTag tg : tags) {
@@ -160,7 +158,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 courses.add(course);
         }
     }
-
 
     private List<LI> getData(String s, Class c) {
         List<LI> li = new ArrayList<>();
@@ -228,7 +225,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-
     public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
@@ -260,13 +256,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
         else
             return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
-    }
-
-    public static void showNoData(View v, int count) {
-        if (v == null)
-            return;
-        v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-        ((TextView) v).setText("No data available, please check and try again.");
     }
 
 }
