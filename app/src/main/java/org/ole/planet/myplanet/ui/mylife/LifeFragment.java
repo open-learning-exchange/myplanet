@@ -35,6 +35,7 @@ public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements O
         return adapterMyLife;
     }
 
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -43,10 +44,13 @@ public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements O
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapterMyLife);
         mItemTouchHelper = new ItemTouchHelper(callback);
         mItemTouchHelper.attachToRecyclerView(recyclerView);
+
     }
 
     @Override
     public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
         mItemTouchHelper.startDrag(viewHolder);
     }
+
+
 }
