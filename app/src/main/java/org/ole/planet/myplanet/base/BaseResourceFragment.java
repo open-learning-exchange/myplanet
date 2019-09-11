@@ -3,13 +3,10 @@ package org.ole.planet.myplanet.base;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -19,11 +16,8 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
@@ -37,16 +31,10 @@ import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
-import org.ole.planet.myplanet.ui.news.NewsFragment;
-import org.ole.planet.myplanet.ui.references.ReferenceFragment;
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.DownloadUtils;
-import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -61,16 +49,15 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 
 public abstract class BaseResourceFragment extends Fragment {
     public static SharedPreferences settings;
+    public static String auth = "";
     static ProgressDialog prgDialog;
     public OnHomeItemClickListener homeItemClickListener;
     public RealmUserModel model;
+    public Realm mRealm;
+    public UserProfileDbHandler profileDbHandler;
     //    ArrayList<Integer> selectedItemsList = new ArrayList<>();
     CheckboxListView lv;
     View convertView;
-    public Realm mRealm;
-
-    public UserProfileDbHandler profileDbHandler;
-    public static String auth = "";
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -91,6 +78,19 @@ public abstract class BaseResourceFragment extends Fragment {
                             wifi.setWifiEnabled(false);
                     })
                     .show();
+        }
+    };
+    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                if (!download.isFailed()) {
+                    setProgress(download);
+                } else {
+                    DialogUtils.showError(prgDialog, download.getMessage());
+                }
+            }
         }
     };
 
@@ -119,21 +119,6 @@ public abstract class BaseResourceFragment extends Fragment {
 
 
     }
-
-    private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed()) {
-                    setProgress(download);
-                } else {
-                    DialogUtils.showError(prgDialog, download.getMessage());
-                }
-            }
-        }
-    };
-
 
     public void startDownload(ArrayList urls) {
         new Service(getActivity()).isPlanetAvailable(new Service.PlanetAvailableListener() {
@@ -257,6 +242,7 @@ public abstract class BaseResourceFragment extends Fragment {
         registerReceiver();
 
     }
+
 
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder("Selected : ");
