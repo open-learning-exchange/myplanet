@@ -52,26 +52,25 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public static Fragment find_fragment(String frag) {
-        if (frag.equals("ic_mypersonals")) {
-            return new MyPersonalsFragment();
-        } else if (frag.equals("ic_news")) {
-            return new NewsFragment();
-        } else if (frag.equals(("ic_submissions"))) {
-            return new MySubmissionFragment();
-
-        } else if (frag.equals("ic_myhealth")) {
-            return new MyHealthFragment();
-        } else if (frag.equals(("ic_calendar"))) {
-            return new CalendarFragment();
-        } else if (frag.equals("ic_help_wanted")) {
-            return new HelpWantedFragment();
-        } else if (frag.equals("ic_references")) {
-            return new ReferenceFragment();
-        } else if (frag.equals("my_achievement")) {
-            return new AchievementFragment();
-        } else {
-            return null;
+        switch (frag){
+            case  "ic_mypersonals":
+                return new MyPersonalsFragment();
+            case  "ic_news":
+                return new NewsFragment();
+            case  "ic_submissions":
+                return  new MySubmissionFragment();
+            case  "ic_myhealth":
+                return new MyHealthFragment();
+            case  "ic_calendar":
+                return  new CalendarFragment();
+            case  "ic_help_wanted":
+                return new HelpWantedFragment();
+            case  "ic_references":
+                return  new ReferenceFragment();
+            case  "my_achievement":
+                return new AchievementFragment();
         }
+        return null;
     }
 
     public static void transactionFragment(Fragment f, View view) {
