@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
-import org.ole.planet.myplanet.ui.enterprises.EnterprisesFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
@@ -261,7 +260,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 openMyFragment(new CourseFragment());
                 break;
             case R.string.enterprises:
-                openMyFragment(new EnterprisesFragment());
+                openEnterpriseFragment();
                 break;
             case R.string.menu_feedback:
                 openMyFragment(new FeedbackListFragment());
@@ -275,6 +274,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 break;
         }
     }
+
 
     private void openMyFragment(Fragment f) {
         Bundle b = new Bundle();
@@ -384,7 +384,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         } else if (item.getItemId() == R.id.menu_mylibrary) {
             openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_enterprises) {
-            openMyFragment(new EnterprisesFragment());
+            openEnterpriseFragment();
         } else if (item.getItemId() == R.id.menu_home) {
             openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
                     new BellDashboardFragment() : new DashboardFragment());

@@ -22,10 +22,11 @@ import java.util.List;
 import io.realm.Realm;
 
 public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    RealmUserModel user;
+    private RealmUserModel user;
     private Context context;
     private List<RealmMyTeam> list;
     private Realm mRealm;
+    private String type = "";
 
 
     public AdapterTeamList(Context context, List<RealmMyTeam> list, Realm mRealm) {
@@ -46,9 +47,10 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderTeam) {
-            ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             ((ViewHolderTeam) holder).created.setText(TimeUtils.getFormatedDate(list.get(position).getCreatedDate()));
             ((ViewHolderTeam) holder).type.setText(list.get(position).getTeamType());
+            ((ViewHolderTeam) holder).type.setVisibility(type == null ? View.VISIBLE : View.GONE);
+            ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             boolean isMyTeam = list.get(position).isMyTeam(user.getId(), mRealm);
             showActionButton(isMyTeam, holder, position);
 
@@ -90,6 +92,11 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public int getItemCount() {
         return list.size();
     }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
 
     class ViewHolderTeam extends RecyclerView.ViewHolder {
         TextView name, created, type;
