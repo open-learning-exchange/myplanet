@@ -71,12 +71,16 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
         else if (position == 3)
             f = new MembersFragment();
         else if (position == 4)
-            f = isEnterprise ? new FinanceFragment() : new TeamCourseFragment();
+            f = getFragment();
         else if (position == 5)
             f = new TeamResourceFragment();
         else if (position == 6)
             f = new TeamTaskFragment();
         return f;
+    }
+
+    private Fragment getFragment() {
+       return isEnterprise ? new FinanceFragment() : new TeamCourseFragment();
     }
 
     @Override
