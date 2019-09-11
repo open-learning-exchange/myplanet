@@ -145,13 +145,7 @@ public class TeamFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("type", "enterprise").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE);
-                if (type == null) {
-                    query = query.notEqualTo("type", "enterprise");
-                } else {
-                    query = query.equalTo("type", "enterprise");
-                }
-                List<RealmMyTeam> list = query.findAll();
-                AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
+                AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), getList(query), mRealm);
                 rvTeamList.setAdapter(adapterTeamList);
             }
 
@@ -162,15 +156,19 @@ public class TeamFragment extends Fragment {
         });
     }
 
-    private void setTeamList() {
-        RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived");
+    private List<RealmMyTeam> getList(RealmQuery<RealmMyTeam> query) {
         if (type == null) {
             query = query.notEqualTo("type", "enterprise");
         } else {
             query = query.equalTo("type", "enterprise");
         }
-        List<RealmMyTeam> list = query.findAll();
-        AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
+        return query.findAll();
+    }
+
+    private void setTeamList() {
+        RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived");
+
+        AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), getList(query), mRealm);
         adapterTeamList.setType(type);
         getView().findViewById(R.id.type).setVisibility(type == null ? View.VISIBLE : View.GONE);
         rvTeamList.setAdapter(adapterTeamList);
