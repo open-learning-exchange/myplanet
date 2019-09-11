@@ -5,9 +5,6 @@ import android.content.Context;
 import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -34,19 +31,17 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-
-import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
 
 public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTouchHelperAdapter {
-    private Context context;
-    private List<RealmMyLife> myLifeList;
-    private Realm mRealm;
     private final OnStartDragListener mDragStartListener;
     private final float HIDE = 0.5f;
     private final float SHOW = 1f;
+    private Context context;
+    private List<RealmMyLife> myLifeList;
+    private Realm mRealm;
 
 
     public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm, OnStartDragListener onStartDragListener) {
@@ -54,6 +49,34 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         this.context = context;
         this.mRealm = realm;
         this.myLifeList = myLifeList;
+    }
+
+    public static Fragment find_fragment(String frag) {
+        if (frag.equals("ic_mypersonals")) {
+            return new MyPersonalsFragment();
+        } else if (frag.equals("ic_news")) {
+            return new NewsFragment();
+        } else if (frag.equals(("ic_submissions"))) {
+            return new MySubmissionFragment();
+
+        } else if (frag.equals("ic_myhealth")) {
+            return new MyHealthFragment();
+        } else if (frag.equals(("ic_calendar"))) {
+            return new CalendarFragment();
+        } else if (frag.equals("ic_help_wanted")) {
+            return new HelpWantedFragment();
+        } else if (frag.equals("ic_references")) {
+            return new ReferenceFragment();
+        } else if (frag.equals("my_achievement")) {
+            return new AchievementFragment();
+        } else {
+            return null;
+        }
+    }
+
+    public static void transactionFragment(Fragment f, View view) {
+        AppCompatActivity activity = (AppCompatActivity) view.getContext();
+        activity.getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, f).addToBackStack(null).commit();
     }
 
     @NonNull
@@ -71,7 +94,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
             ((ViewHolderMyLife) holder).imageView.setImageResource(context.getResources().getIdentifier(myLifeList.get(position).getImageId(), "drawable", context.getPackageName()));
             Fragment fragment = find_fragment(myLifeList.get(position).getImageId());
-            if(fragment != null) {
+            if (fragment != null) {
                 ((ViewHolderMyLife) holder).imageView.setOnClickListener(view -> transactionFragment(fragment, view));
             }
             ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener((v, event) -> {
@@ -86,61 +109,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
 
 
-
-
     }
-
-
-    public static Fragment find_fragment(String frag)
-    {
-          if(frag.equals("ic_mypersonals"))
-          {
-              return new MyPersonalsFragment();
-          }
-          else if(frag.equals("ic_news"))
-          {
-              return new NewsFragment();
-          }
-          else if(frag.equals(("ic_submissions")))
-          {
-              return new MySubmissionFragment();
-
-          }
-          else if(frag.equals("ic_myhealth"))
-          {
-              return new MyHealthFragment();
-          }
-          else if(frag.equals(("ic_calendar")))
-          {
-              return new CalendarFragment();
-          }
-          else if(frag.equals("ic_help_wanted"))
-          {
-              return new HelpWantedFragment();
-          }
-          else if(frag.equals("ic_references"))
-          {
-              return new ReferenceFragment();
-          }
-          else if(frag.equals("my_achievement"))
-          {
-              return new AchievementFragment();
-          }
-          else
-          {
-              return null;
-          }
-    }
-
-
-    public static void transactionFragment(Fragment f, View view)
-    {
-        AppCompatActivity activity = (AppCompatActivity) view.getContext();
-        activity.getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, f).addToBackStack(null).commit();
-    }
-
-
-
 
     public void updateVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
         RealmMyLife.updateVisibility(!isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
@@ -175,8 +144,6 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
 
-
-
     class ViewHolderMyLife extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         TextView title;
         ImageView imageView;
@@ -192,7 +159,6 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             visibility = itemView.findViewById(R.id.visibility_image_button);
             rv_item_container = itemView.findViewById(R.id.rv_item_parent_layout);
         }
-
 
 
         @Override
