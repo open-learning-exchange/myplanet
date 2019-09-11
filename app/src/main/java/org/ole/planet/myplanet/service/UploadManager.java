@@ -153,10 +153,17 @@ public class UploadManager extends FileUploadService {
             List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).findAll();
             for (RealmFeedback feedback : feedbacks) {
                 try {
-                    Response object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+                    Response object;
+                    if (TextUtils.isEmpty(feedback.get_rev()))
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+                    else{
+                        Utilities.log("Update " + new Gson().toJson(RealmFeedback.serializeFeedback(feedback)));
+                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+                    }
                     Log.e("TAG ", object.body() + " ");
-                    Log.e("TAG 2 ", object.errorBody().string() + " ");
-                    if (object != null) {
+                    if (object.errorBody() != null)
+                        Log.e("TAG 2 ", object.errorBody().string() + " ");
+                    if (object.body() != null) {
                         feedback.setUploaded(true);
                     }
                 } catch (IOException e) {
@@ -237,7 +244,7 @@ public class UploadManager extends FileUploadService {
                 if (TextUtils.isEmpty(task.get_id())) {
                     JsonObject object = null;
                     try {
-                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(realm,task)).execute().body();
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(realm, task)).execute().body();
                         if (object != null) {
                             String _rev = JsonUtils.getString("rev", object);
                             String _id = JsonUtils.getString("id", object);

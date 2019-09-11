@@ -62,7 +62,6 @@ public class FeedbackDetailActivity extends AppCompatActivity {
     }
 
     public void addReply(Realm mRealm, JsonObject obj, String id) {
-//        Realm mRealm = new DatabaseService(this).getRealmInstance();
         RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("id", id).findFirst();
         if(feedback != null){
             mRealm.executeTransaction(realm -> {

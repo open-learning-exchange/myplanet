@@ -55,7 +55,8 @@ public class RealmFeedback extends RealmObject {
         object.addProperty("openTime", feedback.getOpenTime());
         object.addProperty("type", feedback.getType());
         object.addProperty("url", feedback.getUrl());
-        if(feedback.get_rev() != null) object.addProperty("_rev",feedback.get_rev());
+        if (feedback.get_id() != null) object.addProperty("_id", feedback.get_id());
+        if (feedback.get_rev() != null) object.addProperty("_rev", feedback.get_rev());
         JsonParser parser = new JsonParser();
         try {
             object.add("messages", parser.parse(feedback.getMessages()));
@@ -80,7 +81,7 @@ public class RealmFeedback extends RealmObject {
         feedback.setUrl(JsonUtils.getString("url", act));
         feedback.setMessages(new Gson().toJson(JsonUtils.getJsonArray("messages", act)));
         feedback.setUploaded(true);
-        feedback.set_rev(JsonUtils.getString("_rev",act));
+        feedback.set_rev(JsonUtils.getString("_rev", act));
     }
 
     public void setMessages(JsonArray messages) {
