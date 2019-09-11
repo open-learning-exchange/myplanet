@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -149,10 +150,12 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).equalTo("uploaded", false).findAll();
+            List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).findAll();
             for (RealmFeedback feedback : feedbacks) {
                 try {
-                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute().body();
+                    Response object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+                    Log.e("TAG ", object.body() + " ");
+                    Log.e("TAG 2 ", object.errorBody().string() + " ");
                     if (object != null) {
                         feedback.setUploaded(true);
                     }

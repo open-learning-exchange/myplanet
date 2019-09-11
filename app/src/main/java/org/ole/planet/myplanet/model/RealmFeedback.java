@@ -8,6 +8,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import io.realm.Realm;
@@ -37,6 +40,8 @@ public class RealmFeedback extends RealmObject {
 
     private boolean uploaded;
 
+    private String _rev;
+
     //    private RealmList<RealmMessage> messages;
     private String messages;
 
@@ -50,6 +55,7 @@ public class RealmFeedback extends RealmObject {
         object.addProperty("openTime", feedback.getOpenTime());
         object.addProperty("type", feedback.getType());
         object.addProperty("url", feedback.getUrl());
+        if(feedback.get_rev() != null) object.addProperty("_rev",feedback.get_rev());
         JsonParser parser = new JsonParser();
         try {
             object.add("messages", parser.parse(feedback.getMessages()));
@@ -59,12 +65,11 @@ public class RealmFeedback extends RealmObject {
         return object;
     }
 
-
     public static void insert(Realm mRealm, JsonObject act) {
         RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("id", JsonUtils.getString("_id", act)).findFirst();
         if (feedback == null)
             feedback = mRealm.createObject(RealmFeedback.class, JsonUtils.getString("_id", act));
-        feedback.set_id(JsonUtils.getString("_", act));
+        feedback.set_id(JsonUtils.getString("_id", act));
         feedback.setTitle(JsonUtils.getString("title", act));
         feedback.setSource(JsonUtils.getString("source", act));
         feedback.setStatus(JsonUtils.getString("status", act));
@@ -75,10 +80,19 @@ public class RealmFeedback extends RealmObject {
         feedback.setUrl(JsonUtils.getString("url", act));
         feedback.setMessages(new Gson().toJson(JsonUtils.getJsonArray("messages", act)));
         feedback.setUploaded(true);
+        feedback.set_rev(JsonUtils.getString("_rev",act));
     }
 
     public void setMessages(JsonArray messages) {
         this.messages = new Gson().toJson(messages);
+    }
+
+    public String get_rev() {
+        return _rev;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
     }
 
     public String get_id() {
