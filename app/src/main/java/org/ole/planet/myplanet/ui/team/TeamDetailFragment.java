@@ -30,6 +30,9 @@ public class TeamDetailFragment extends Fragment {
 
     TabLayout tabLayout;
     ViewPager viewPager;
+    Realm mRealm;
+    RealmMyTeam team;
+    String teamId;
 
     public TeamDetailFragment() {
     }
@@ -41,11 +44,12 @@ public class TeamDetailFragment extends Fragment {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_team_detail, container, false);
         boolean isMyTeam = getArguments().getBoolean("isMyTeam", false);
-
+        teamId = getArguments().getString("id");
         tabLayout = v.findViewById(R.id.tab_layout);
         viewPager = v.findViewById(R.id.view_pager);
-        Utilities.log(getArguments().getString("id") + " id");
-        viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), getArguments().getString("id"), isMyTeam));
+        mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
+        viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
         return v;
     }
@@ -57,10 +61,7 @@ public class TeamDetailFragment extends Fragment {
     }
 
     private void createTeamLog() {
-        String teamId = getArguments().getString("id");
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
-        Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("id", teamId).findFirst();
         if (team == null)
             return;
         if (!mRealm.isInTransaction()) {

@@ -248,4 +248,8 @@
     <string name="user_removed_from_team">User removed from team</string>
     <string name="remove">Remove</string>
     <string name="make_leader">Make Leader</string>
+    <string name="mission"><![CDATA[Mission & Services]]></string>
+    <string name="team">Team</string>
+    <string name="applicants">Applicants</string>
+    <string name="finances">Finances</string>
 </resources>
