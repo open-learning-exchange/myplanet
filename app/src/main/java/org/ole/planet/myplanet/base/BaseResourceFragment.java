@@ -258,6 +258,8 @@ public abstract class BaseResourceFragment extends Fragment {
 
     }
 
+
+
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder("Selected : ");
         for (RealmTag tags :

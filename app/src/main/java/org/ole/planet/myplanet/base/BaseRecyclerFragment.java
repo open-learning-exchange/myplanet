@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -61,6 +62,8 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
             isMyCourseLib = getArguments().getBoolean("isMyCourseLib");
         }
     }
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -145,6 +148,9 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         super.onDestroy();
         mRealm.close();
     }
+
+
+
 
 
     private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
