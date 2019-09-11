@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.team.AdapterTeamList;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
@@ -28,19 +29,33 @@ import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmQuery;
 
 /**
  * A simple {@link Fragment} subclass.
  */
+
 public class TeamFragment extends Fragment {
+
 
     Realm mRealm;
     RecyclerView rvTeamList;
     EditText etSearch;
+    String type;
 
     public TeamFragment() {
     }
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            type = getArguments().getString("type");
+            Utilities.log("Team fragment");
+        }
+        Utilities.log("Team fragment");
+
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -61,7 +76,10 @@ public class TeamFragment extends Fragment {
         EditText etName = v.findViewById(R.id.et_name);
         EditText etDescription = v.findViewById(R.id.et_description);
         Spinner spnType = v.findViewById(R.id.spn_team_type);
-        new AlertDialog.Builder(getActivity()).setTitle("Enter Team Detail")
+        if (type != null) {
+            spnType.setVisibility(View.GONE);
+        }
+        new AlertDialog.Builder(getActivity()).setTitle(String.format("Enter %s Detail", type == null ? "Team" : "Enterprise"))
                 .setView(v)
                 .setPositiveButton("Save", (dialogInterface, i) -> {
                     String name = etName.getText().toString();
@@ -87,10 +105,12 @@ public class TeamFragment extends Fragment {
         RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
         team.setStatus("active");
         team.setCreatedDate(new Date().getTime());
-        team.setTeamType(type);
+        if (type != null)
+            team.setTeamType(type);
         team.setName(name);
         team.setDescription(desc);
         team.setTeamId("");
+        team.setType("team");
         team.setUser_id(user.getId());
         team.setParentCode(user.getParentCode());
         team.setTeamPlanetCode(user.getPlanetCode());
@@ -102,6 +122,13 @@ public class TeamFragment extends Fragment {
         super.onDestroy();
         if (mRealm != null && !mRealm.isClosed())
             mRealm.close();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        setTeamList();
+
     }
 
     @Override
@@ -117,7 +144,13 @@ public class TeamFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE).findAll();
+                RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("type", "enterprise").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE);
+                if (type == null) {
+                    query = query.notEqualTo("type", "enterprise");
+                } else {
+                    query = query.equalTo("type", "enterprise");
+                }
+                List<RealmMyTeam> list = query.findAll();
                 AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
                 rvTeamList.setAdapter(adapterTeamList);
             }
@@ -130,8 +163,17 @@ public class TeamFragment extends Fragment {
     }
 
     private void setTeamList() {
-        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived").findAll();
+        RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived");
+        if (type == null) {
+            query = query.notEqualTo("type", "enterprise");
+        } else {
+            query = query.equalTo("type", "enterprise");
+        }
+        List<RealmMyTeam> list = query.findAll();
         AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), list, mRealm);
+        adapterTeamList.setType(type);
+        getView().findViewById(R.id.type).setVisibility(type == null ? View.VISIBLE : View.GONE);
         rvTeamList.setAdapter(adapterTeamList);
     }
 }
+

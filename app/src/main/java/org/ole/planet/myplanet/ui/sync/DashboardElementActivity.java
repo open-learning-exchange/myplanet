@@ -33,12 +33,12 @@ import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
-import org.ole.planet.myplanet.ui.enterprises.EnterprisesFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
+import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -59,7 +59,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
         settings = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-
     }
 
     public void onClickTabItems(int position) {
@@ -74,7 +73,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
                 openCallFragment(new CourseFragment(), "course");
                 break;
             case 3:
-                openCallFragment(new EnterprisesFragment(), "enterprise");
+                openEnterpriseFragment();
                 break;
             case 4:
                 openCallFragment(new SurveyFragment(), "survey");
@@ -151,8 +150,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             (new Handler()).postDelayed(this::connectToWifi, 5000);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
-
-
         }
     }
 
@@ -231,4 +228,11 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     }
 
+    public void openEnterpriseFragment() {
+        Fragment fragment = new TeamFragment();
+        Bundle b = new Bundle();
+        b.putString("type", "enterprise");
+        fragment.setArguments(b);
+        openCallFragment(fragment, "Enterprise");
+    }
 }
