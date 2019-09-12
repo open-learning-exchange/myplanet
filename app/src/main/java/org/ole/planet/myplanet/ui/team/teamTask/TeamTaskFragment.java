@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,16 +74,25 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         rvTask = v.findViewById(R.id.rv_task);
         nodata = v.findViewById(R.id.tv_nodata);
         v.findViewById(R.id.fab).setOnClickListener(view -> {
-            showTaskAlert();
+            showTaskAlert(null);
         });
         return v;
     }
 
-    private void showTaskAlert() {
+    private void showTaskAlert(RealmTeamTask t) {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_task, null);
         EditText title = v.findViewById(R.id.et_task);
         EditText description = v.findViewById(R.id.et_description);
+
         datePicker = v.findViewById(R.id.tv_pick);
+        if (t != null) {
+            title.setText(t.getTitle());
+            description.setText(t.getDescription());
+            datePicker.setText(t.getDeadline());
+            deadline = Calendar.getInstance();
+            deadline.setTime(new Date(t.getExpire()));
+        }
+
         Calendar myCalendar = Calendar.getInstance();
         datePicker.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, myCalendar
                 .get(Calendar.YEAR), myCalendar.get(Calendar.MONTH),
@@ -96,32 +106,34 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             else if (deadline == null)
                 Utilities.toast(getActivity(), "Deadline is required");
             else
-                createNewTask(task, desc);
+                createOrUpdateTask(task, desc, t);
         }).setNegativeButton("Cancel", null).show();
     }
 
-    private void createNewTask(String task, String desc) {
-        mRealm.executeTransactionAsync(realm -> {
-            RealmTeamTask t = realm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
-            t.setTitle(task);
-            t.setDescription(desc);
-            t.setDeadline(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
-            t.setTeamId(teamId);
-            JsonObject ob = new JsonObject();
-            ob.addProperty("teams", teamId);
-            t.setLink(new Gson().toJson(ob));
-            JsonObject obsync = new JsonObject();
-            obsync.addProperty("type", "local");
-            obsync.addProperty("planetCode", user.getPlanetCode());
-            t.setSync(new Gson().toJson(obsync));
-            t.setCompleted(false);
-        }, () -> {
-            if (rvTask.getAdapter() != null) {
-                rvTask.getAdapter().notifyDataSetChanged();
-                showNoData(nodata, rvTask.getAdapter().getItemCount());
-            }
-            Utilities.toast(getActivity(), "Task added successfully");
-        });
+    private void createOrUpdateTask(String task, String desc, RealmTeamTask t) {
+        boolean isCreate = (t == null);
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        if (t == null)
+            t = mRealm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
+        t.setTitle(task);
+        t.setDescription(desc);
+        t.setDeadline(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+        t.setTeamId(teamId);
+        JsonObject ob = new JsonObject();
+        ob.addProperty("teams", teamId);
+        t.setLink(new Gson().toJson(ob));
+        JsonObject obsync = new JsonObject();
+        obsync.addProperty("type", "local");
+        obsync.addProperty("planetCode", user.getPlanetCode());
+        t.setSync(new Gson().toJson(obsync));
+        mRealm.commitTransaction();
+        if (rvTask.getAdapter() != null) {
+            rvTask.getAdapter().notifyDataSetChanged();
+            showNoData(nodata, rvTask.getAdapter().getItemCount());
+        }
+        Utilities.toast(getActivity(), String.format("Task %s successfully", isCreate ? "added" : "updated"));
+
     }
 
 
@@ -144,6 +156,11 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             mRealm.beginTransaction();
         realmTeamTask.setCompleted(b);
         mRealm.commitTransaction();
+    }
+
+    @Override
+    public void onEdit(RealmTeamTask task) {
+        showTaskAlert(task);
     }
 
     @Override
