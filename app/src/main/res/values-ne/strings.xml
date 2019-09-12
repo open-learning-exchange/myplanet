@@ -252,4 +252,5 @@
     <string name="team">Team</string>
     <string name="applicants">Applicants</string>
     <string name="finances">Finances</string>
+    <string name="messages">messages</string>
 </resources>
