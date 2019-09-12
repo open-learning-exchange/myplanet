@@ -64,13 +64,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
                 f = new JoinedMemberFragment();
             }
         }else{
-            if (position == 0)
-                f = new DiscussionListFragment();
-            else if (position == 1)
-                f = new PlanFragment();
-            else {
-                f = checkCondition(position);
-            }
+            f = checkCondition(position);
         }
         Bundle b = new Bundle();
         b.putString("id", teamId);
@@ -81,6 +75,12 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     private Fragment checkCondition(int position) {
         Fragment f = null;
         switch (position){
+            case 0:
+                f = new DiscussionListFragment();
+                break;
+            case 1:
+                f = new PlanFragment();
+                break;
             case 2:
                 f = new JoinedMemberFragment();
                 break;
