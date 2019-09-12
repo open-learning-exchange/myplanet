@@ -80,16 +80,23 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
     private Fragment checkCondition(int position) {
         Fragment f = null;
-        if (position == 2)
-            f = new JoinedMemberFragment();
-        else if (position == 3)
-            f = new TeamTaskFragment();
-        else if (position == 4)
-            f = new MembersFragment();
-        else if (position == 5)
-            f = getFragment();
-        else if (position == 6)
-            f = new TeamResourceFragment();
+        switch (position){
+            case 2:
+                f = new JoinedMemberFragment();
+                break;
+            case 3:
+                f = new TeamTaskFragment();
+                break;
+            case 4:
+                f = new MembersFragment();
+            break;
+            case 5:
+                f = getFragment();
+            break;
+            case 6:
+                f = new TeamResourceFragment();
+            break;
+        }
         return f;
     }
 
