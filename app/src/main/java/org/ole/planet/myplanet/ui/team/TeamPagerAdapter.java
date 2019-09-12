@@ -25,20 +25,26 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     private String teamId;
     private List<String> list;
     private boolean isEnterprise;
+    private boolean ismyLife;
 
     public TeamPagerAdapter(FragmentManager fm, RealmMyTeam team, boolean isMyTeam) {
         super(fm);
         this.teamId = team.getId();
         isEnterprise = team.getType().equals("enterprise");
         list = new ArrayList<>();
+        ismyLife = isMyTeam;
         list.add(MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
         list.add(MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         if (isMyTeam) {
-            list.add(MainApplication.context.getString(R.string.discussion));
+            list.add(MainApplication.context.getString(isEnterprise ? R.string.messages : R.string.discussion));
+            list.add(MainApplication.context.getString(R.string.task));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.applicants : R.string.requested_member));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.finances : R.string.courses));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.documents : R.string.resources));
-            list.add(MainApplication.context.getString(R.string.task));
+            list.remove(0);
+            list.remove(0);
+            list.add(1, MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan) );
+            list.add(2,MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         }
     }
 
@@ -51,12 +57,20 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     @Override
     public Fragment getItem(int position) {
         Fragment f = null;
-        if (position == 0)
-            f = new PlanFragment();
-        else if (position == 1)
-            f = new JoinedMemberFragment();
-        else {
-            f = checkCondition(position);
+        if (!ismyLife) {
+            if (position == 0)
+                f = new PlanFragment();
+            else {
+                f = new JoinedMemberFragment();
+            }
+        }else{
+            if (position == 0)
+                f = new DiscussionListFragment();
+            else if (position == 1)
+                f = new PlanFragment();
+            else {
+                f = checkCondition(position);
+            }
         }
         Bundle b = new Bundle();
         b.putString("id", teamId);
@@ -67,15 +81,15 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     private Fragment checkCondition(int position) {
         Fragment f = null;
         if (position == 2)
-            f = new DiscussionListFragment();
+            f = new JoinedMemberFragment();
         else if (position == 3)
-            f = new MembersFragment();
-        else if (position == 4)
-            f = getFragment();
-        else if (position == 5)
-            f = new TeamResourceFragment();
-        else if (position == 6)
             f = new TeamTaskFragment();
+        else if (position == 4)
+            f = new MembersFragment();
+        else if (position == 5)
+            f = getFragment();
+        else if (position == 6)
+            f = new TeamResourceFragment();
         return f;
     }
 
