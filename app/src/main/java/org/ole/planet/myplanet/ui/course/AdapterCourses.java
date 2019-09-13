@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -63,6 +62,14 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 .selectMode(ChipCloud.SelectMode.single);
     }
 
+    public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
+        average.setText(String.format("%.2f", object.get("averageRating").getAsFloat()));
+        ratingCount.setText(object.get("total").getAsInt() + " total");
+        if (object.has("ratingByUser"))
+            ratingBar.setRating(object.get("ratingByUser").getAsInt());
+        else ratingBar.setRating(0);
+    }
+
     public void setmRealm(Realm mRealm) {
         this.mRealm = mRealm;
     }
@@ -75,15 +82,14 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return courseList;
     }
 
-    public void setProgressMap(HashMap<String, JsonObject> progressMap) {
-        this.progressMap = progressMap;
-    }
-
     public void setCourseList(List<RealmMyCourse> courseList) {
         this.courseList = courseList;
         notifyDataSetChanged();
     }
 
+    public void setProgressMap(HashMap<String, JsonObject> progressMap) {
+        this.progressMap = progressMap;
+    }
 
     public void setListener(OnCourseItemSelected listener) {
         this.listener = listener;
@@ -124,7 +130,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             showProgressAndRating(position, holder);
         }
     }
-
 
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
@@ -170,15 +175,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         } else {
             ((ViewHoldercourse) holder).progressBar.setVisibility(View.GONE);
         }
-    }
-
-
-    public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
-        average.setText(String.format("%.2f", object.get("averageRating").getAsFloat()));
-        ratingCount.setText(object.get("total").getAsInt() + " total");
-        if (object.has("ratingByUser"))
-            ratingBar.setRating(object.get("ratingByUser").getAsInt());
-        else ratingBar.setRating(0);
     }
 
     private void openCourse(RealmMyCourse realm_myCourses, int i) {
