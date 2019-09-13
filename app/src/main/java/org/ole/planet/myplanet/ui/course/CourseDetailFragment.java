@@ -7,7 +7,6 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -27,7 +26,6 @@ import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
@@ -124,9 +122,9 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     }
 
     private void setStepsList() {
-       List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
-       rv_step_list.setLayoutManager(new LinearLayoutManager(getActivity()));
-       rv_step_list.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
+        List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
+        rv_step_list.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rv_step_list.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
 
     }
 
