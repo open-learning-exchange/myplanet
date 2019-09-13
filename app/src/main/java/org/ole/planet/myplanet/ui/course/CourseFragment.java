@@ -28,8 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import io.realm.RealmList;
-
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -75,7 +73,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         }
 
         imgSearch.setOnClickListener(view -> {
-            adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(),searchTags ));
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
@@ -90,7 +88,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         });
         clearTags();
         showNoData(tvMessage, adapterCourses.getItemCount());
-        KeyboardUtils.setupUI(getView().findViewById(R.id.my_course_parent_layout),getActivity());
+        KeyboardUtils.setupUI(getView().findViewById(R.id.my_course_parent_layout), getActivity());
 
     }
 
@@ -154,8 +152,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 //        searchTags.clear();
         if (!searchTags.contains(tag))
             searchTags.add(tag);
-        adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(),searchTags));
-        showTagText(searchTags,tvSelected);
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
+        showTagText(searchTags, tvSelected);
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
 
@@ -169,7 +167,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         li.add(tag);
         searchTags = li;
         tvSelected.setText("Selected : " + tag.getName());
-        adapterCourses.setCourseList((filterCourseByTag( etSearch.getText().toString(), li)));
+        adapterCourses.setCourseList((filterCourseByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
 
@@ -177,7 +175,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     public void onOkClicked(List<RealmTag> list) {
         if (list.isEmpty()) {
             searchTags.clear();
-            adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(),searchTags));
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());
         } else {
             for (RealmTag tag : list) {
