@@ -25,14 +25,14 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     private String teamId;
     private List<String> list;
     private boolean isEnterprise;
-    private boolean ismyLife;
+    private boolean isInMyTeam;
 
     public TeamPagerAdapter(FragmentManager fm, RealmMyTeam team, boolean isMyTeam) {
         super(fm);
         this.teamId = team.getId();
         isEnterprise = team.getType().equals("enterprise");
         list = new ArrayList<>();
-        ismyLife = isMyTeam;
+        isInMyTeam = isMyTeam;
         list.add(MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
         list.add(MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         if (isMyTeam) {
@@ -57,7 +57,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     @Override
     public Fragment getItem(int position) {
         Fragment f = null;
-        if (!ismyLife) {
+        if (!isInMyTeam) {
             if (position == 0)
                 f = new PlanFragment();
             else {
