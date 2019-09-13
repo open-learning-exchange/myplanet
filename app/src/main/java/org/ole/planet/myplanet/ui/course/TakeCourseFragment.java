@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
@@ -10,7 +9,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -25,9 +23,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.CustomViewPager;
-import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-
 
 import java.util.List;
 
@@ -54,7 +50,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public TakeCourseFragment() {
     }
 
-    public static TakeCourseFragment newInstance(Bundle b){
+    public static TakeCourseFragment newInstance(Bundle b) {
         TakeCourseFragment takeCourseFragment = new TakeCourseFragment();
         takeCourseFragment.setArguments(b);
         return takeCourseFragment;
