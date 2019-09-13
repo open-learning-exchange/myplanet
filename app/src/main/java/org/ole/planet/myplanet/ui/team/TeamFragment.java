@@ -110,7 +110,7 @@ public class TeamFragment extends Fragment {
         team.setName(name);
         team.setDescription(desc);
         team.setTeamId("");
-        team.setType("team");
+        team.setType(this.type == null? "team" : "enterprise");
         team.setUser_id(user.getId());
         team.setParentCode(user.getParentCode());
         team.setTeamPlanetCode(user.getPlanetCode());
