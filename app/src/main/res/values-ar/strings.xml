@@ -243,6 +243,7 @@
     <string name="applicants">Applicants</string>
     <string name="finances">Finances</string>
     <string name="messages">messages</string>
+    <string name="nodata">No data available</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

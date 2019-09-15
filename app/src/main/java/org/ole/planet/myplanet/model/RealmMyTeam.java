@@ -50,6 +50,7 @@ public class RealmMyTeam extends RealmObject {
     private String docType;
     private boolean isLeader;
     private String type;
+    private int amount;
 
     public static void insertMyTeams(String userId, JsonObject doc, Realm mRealm) {
         String teamId = JsonUtils.getString("_id", doc);

@@ -3,12 +3,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ui.enterprises.FinanceFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+
+
+    <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:id="@+id/rv_finance"
+        android:layout_height="match_parent"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:id="@+id/tv_nodata"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:layout_height="wrap_content"
+        android:text="@string/nodata" />
+
+
+    <com.github.clans.fab.FloatingActionButton
+        android:layout_width="wrap_content"
+        app:fab_label="Add Transaction"
+        android:id="@+id/add_transaction"
+        android:layout_margin="@dimen/padding_large"
+        android:layout_gravity="bottom|right"
+        android:src="@drawable/ic_add"
+        android:layout_height="wrap_content" />
 
 </FrameLayout>
