@@ -44,6 +44,11 @@ public class FinanceFragment extends BaseTeamFragment {
     TextView nodata;
     Realm mRealm;
     AdapterFinance adapterFinance;
+    TextInputLayout tlNote;
+    Spinner spnType;
+    TextInputLayout tlAmount;
+    Calendar date;
+    TextView tvSelectDate;
 
     public FinanceFragment() {
     }
@@ -72,26 +77,17 @@ public class FinanceFragment extends BaseTeamFragment {
         showNoData(nodata, list.size());
     }
 
-    Calendar date;
+    DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
+        date = Calendar.getInstance();
+        date.set(Calendar.YEAR, year);
+        date.set(Calendar.MONTH, monthOfYear);
+        date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+        if (date != null)
+            tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
+    };
 
     private void addTransaction() {
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.add_transaction, null);
-        Spinner spnType = v.findViewById(R.id.spn_type);
-        TextInputLayout tlNote = v.findViewById(R.id.tl_note);
-        TextInputLayout tlAmount = v.findViewById(R.id.tl_amount);
-        TextView tvSelectDate = v.findViewById(R.id.tv_select_date);
-        DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
-            date = Calendar.getInstance();
-            date.set(Calendar.YEAR, year);
-            date.set(Calendar.MONTH, monthOfYear);
-            date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-            if (date != null)
-                tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
-        };
-        tvSelectDate.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, date
-                .get(Calendar.YEAR), date.get(Calendar.MONTH),
-                date.get(Calendar.DAY_OF_MONTH)).show());
-        new AlertDialog.Builder(getActivity()).setView(v)
+        new AlertDialog.Builder(getActivity()).setView(setUpAlertUi())
                 .setTitle("Add Transaction")
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String type = spnType.getSelectedItem().toString();
@@ -105,31 +101,41 @@ public class FinanceFragment extends BaseTeamFragment {
                     } else if (date == null) {
                         Utilities.toast(getActivity(), "Date is required");
                     } else {
-                        mRealm.executeTransactionAsync(new Realm.Transaction() {
-                            @Override
-                            public void execute(Realm realm) {
-                                RealmMyTeam team = realm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
-                                team.setStatus("active");
-                                team.setCreatedDate(new Date().getTime());
-                                if (type != null)
-                                    team.setTeamType(type);
-                                team.setType(type);
-                                team.setDescription(note);
-                                team.setTeamId(teamId);
-                                team.setAmount(Integer.parseInt(amount));
-                                team.setParentCode(user.getParentCode());
-                                team.setTeamPlanetCode(user.getPlanetCode());
-                                team.setTeamType("sync");
-                                team.setDocType("transaction");
-                                adapterFinance.notifyDataSetChanged();
-                            }
+                        mRealm.executeTransactionAsync(realm -> {
+                            RealmMyTeam team = realm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
+                            team.setStatus("active");
+                            team.setCreatedDate(new Date().getTime());
+                            if (type != null)
+                                team.setTeamType(type);
+                            team.setType(type);
+                            team.setDescription(note);
+                            team.setTeamId(teamId);
+                            team.setAmount(Integer.parseInt(amount));
+                            team.setParentCode(user.getParentCode());
+                            team.setTeamPlanetCode(user.getPlanetCode());
+                            team.setTeamType("sync");
+                            team.setDocType("transaction");
+                            adapterFinance.notifyDataSetChanged();
                         }, () -> {
                             Utilities.toast(getActivity(), "Transaction added");
                             showNoData(nodata, adapterFinance.getItemCount());
-
                         });
                     }
                 })
                 .setNegativeButton("Cancel", null).show();
+    }
+
+
+    private View setUpAlertUi() {
+        View v = LayoutInflater.from(getActivity()).inflate(R.layout.add_transaction, null);
+        spnType = v.findViewById(R.id.spn_type);
+        tlNote = v.findViewById(R.id.tl_note);
+        tlAmount = v.findViewById(R.id.tl_amount);
+        tvSelectDate = v.findViewById(R.id.tv_select_date);
+        tvSelectDate.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, date
+                .get(Calendar.YEAR), date.get(Calendar.MONTH),
+                date.get(Calendar.DAY_OF_MONTH)).show());
+
+        return v;
     }
 }
