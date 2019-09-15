@@ -246,6 +246,9 @@
     <string name="nodata">No data available</string>
     <string name="note">Note *</string>
     <string name="amount">Amount</string>
+    <string name="debit">Debit</string>
+    <string name="credit">Credit</string>
+    <string name="balance">Balance</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

@@ -8,31 +8,45 @@
         android:id="@+id/date"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:padding="@dimen/padding_small"
+        android:text="@string/date" />
 
     <TextView
         android:id="@+id/note"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:padding="@dimen/padding_small"
+        android:text="@string/note" />
 
-    <TextView
-        android:id="@+id/debit"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1" />
 
     <TextView
         android:id="@+id/credit"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:padding="@dimen/padding_small"
+        android:text="@string/credit"
+        android:textColor="@color/md_green_500" />
+
+    <TextView
+        android:id="@+id/debit"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:padding="@dimen/padding_small"
+        android:text="@string/debit"
+        android:textColor="@color/md_red_500" />
+
 
     <TextView
         android:id="@+id/balance"
         android:layout_width="0dp"
-        android:visibility="gone"
         android:layout_height="wrap_content"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:padding="@dimen/padding_small"
+        android:text="@string/balance"
+        android:visibility="gone" />
 
 </LinearLayout>
