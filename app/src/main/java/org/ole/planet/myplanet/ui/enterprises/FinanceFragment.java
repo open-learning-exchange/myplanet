@@ -69,6 +69,7 @@ public class FinanceFragment extends BaseTeamFragment {
         adapterFinance = new AdapterFinance(getActivity(), list);
         rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvFinance.setAdapter(adapterFinance);
+        showNoData(nodata, list.size());
     }
 
     Calendar date;
@@ -122,7 +123,11 @@ public class FinanceFragment extends BaseTeamFragment {
                                 team.setDocType("transaction");
                                 adapterFinance.notifyDataSetChanged();
                             }
-                        }, () -> Utilities.toast(getActivity(), "Transaction added"));
+                        }, () -> {
+                            Utilities.toast(getActivity(), "Transaction added");
+                            showNoData(nodata, adapterFinance.getItemCount());
+
+                        });
                     }
                 })
                 .setNegativeButton("Cancel", null).show();
