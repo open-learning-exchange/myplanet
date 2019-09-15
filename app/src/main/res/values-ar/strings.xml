@@ -244,6 +244,8 @@
     <string name="finances">Finances</string>
     <string name="messages">messages</string>
     <string name="nodata">No data available</string>
+    <string name="note">Note *</string>
+    <string name="amount">Amount</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

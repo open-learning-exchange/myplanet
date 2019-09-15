@@ -51,6 +51,8 @@ public class RealmMyTeam extends RealmObject {
     private boolean isLeader;
     private String type;
     private int amount;
+    private long date;
+
 
     public static void insertMyTeams(String userId, JsonObject doc, Realm mRealm) {
         String teamId = JsonUtils.getString("_id", doc);
@@ -73,6 +75,8 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setType(JsonUtils.getString("type", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
+        myTeams.setAmount(JsonUtils.getInt("amount", doc));
+        myTeams.setDate(JsonUtils.getInt("date", doc));
 //        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
         myTeams.setDocType(JsonUtils.getString("docType", doc).toString());
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
@@ -98,6 +102,24 @@ public class RealmMyTeam extends RealmObject {
 
     public void setLeader(boolean leader) {
         isLeader = leader;
+    }
+
+
+    public int getAmount() {
+        return amount;
+    }
+
+    public void setAmount(int amount) {
+        this.amount = amount;
+    }
+
+
+    public long getDate() {
+        return date;
+    }
+
+    public void setDate(long date) {
+        this.date = date;
     }
 
     public static List<String> getResourceIds(String teamId, Realm realm) {
@@ -173,17 +195,18 @@ public class RealmMyTeam extends RealmObject {
 
     }
 
-    public static List<RealmUserModel> getRequestedMemeber(String teamId, Realm realm){
-        return getUsers(teamId, realm,"request");
+    public static List<RealmUserModel> getRequestedMemeber(String teamId, Realm realm) {
+        return getUsers(teamId, realm, "request");
     }
-    public static List<RealmUserModel> getJoinedMemeber(String teamId, Realm realm){
-        return getUsers(teamId, realm,"membership");
+
+    public static List<RealmUserModel> getJoinedMemeber(String teamId, Realm realm) {
+        return getUsers(teamId, realm, "membership");
     }
 
     public static List<RealmUserModel> getUsers(String teamId, Realm mRealm, String docType) {
         RealmQuery query = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId);
         if (!TextUtils.isEmpty(docType)) {
-          query =   query.equalTo("docType", docType);
+            query = query.equalTo("docType", docType);
         }
         List<RealmMyTeam> myteam = query.findAll();
         List<RealmUserModel> list = new ArrayList<>();
@@ -221,6 +244,13 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("docType", team.getDocType());
         object.addProperty("isLeader", team.isLeader());
         object.addProperty("type", team.getTeamType());
+        object.addProperty("amount", team.getAmount());
+        if (TextUtils.equals(team.getTeamType(), "debit")) {
+            object.addProperty("amount", team.getAmount());
+        } else if (TextUtils.equals(team.getTeamType(), "credit")) {
+            object.addProperty("amount", team.getAmount());
+        }
+        object.addProperty("amount", team.getTeamType());
         return object;
     }
 
