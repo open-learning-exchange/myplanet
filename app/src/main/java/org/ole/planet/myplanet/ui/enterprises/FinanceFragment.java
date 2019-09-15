@@ -68,6 +68,7 @@ public class FinanceFragment extends BaseTeamFragment {
         List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
         rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rvFinance.setAdapter(adapterFinance);
     }
 
     Calendar date;
@@ -118,8 +119,10 @@ public class FinanceFragment extends BaseTeamFragment {
                                 team.setParentCode(user.getParentCode());
                                 team.setTeamPlanetCode(user.getPlanetCode());
                                 team.setTeamType("sync");
+                                team.setDocType("transaction");
+                                adapterFinance.notifyDataSetChanged();
                             }
-                        });
+                        }, () -> Utilities.toast(getActivity(), "Transaction added"));
                     }
                 })
                 .setNegativeButton("Cancel", null).show();
