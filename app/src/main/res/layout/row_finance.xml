@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:padding="@dimen/padding_normal"
     android:orientation="horizontal">
 
     <TextView
@@ -10,6 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
+        android:textSize="@dimen/text_size_mid"
         android:text="@string/date" />
 
     <TextView
@@ -17,6 +19,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:textSize="@dimen/text_size_mid"
         android:padding="@dimen/padding_small"
         android:text="@string/note" />
 
@@ -27,6 +30,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
+        android:textSize="@dimen/text_size_mid"
         android:text="@string/credit"
         android:textColor="@color/md_green_500" />
 
@@ -35,6 +39,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:textSize="@dimen/text_size_mid"
         android:padding="@dimen/padding_small"
         android:text="@string/debit"
         android:textColor="@color/md_red_500" />
@@ -46,7 +51,10 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:textSize="@dimen/text_size_mid"
         android:text="@string/balance"
-        android:visibility="gone" />
+        android:visibility="visible" />
 
 </LinearLayout>

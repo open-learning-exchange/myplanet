@@ -91,6 +91,7 @@ public class FinanceFragment extends BaseTeamFragment {
                 .setTitle("Add Transaction")
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String type = spnType.getSelectedItem().toString();
+                    Utilities.log(type + " type");
                     String note = tlNote.getEditText().getText().toString();
                     String amount = tlAmount.getEditText().getText().toString();
 

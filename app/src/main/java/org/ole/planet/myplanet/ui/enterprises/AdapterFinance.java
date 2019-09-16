@@ -12,6 +12,7 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -38,14 +39,31 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHolderFinance) {
             ((ViewHolderFinance) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate()));
             ((ViewHolderFinance) holder).note.setText(list.get(position).getDescription());
-            if (TextUtils.equals(list.get(position).getType(), "debit")) {
+            Utilities.log("Type " + list.get(position).getType());
+            if (TextUtils.equals(list.get(position).getType().toLowerCase(), "debit")) {
                 ((ViewHolderFinance) holder).debit.setText(list.get(position).getAmount() + "");
                 ((ViewHolderFinance) holder).credit.setText("");
             } else {
                 ((ViewHolderFinance) holder).credit.setText(list.get(position).getAmount() + "");
                 ((ViewHolderFinance) holder).debit.setText("");
             }
+            ((ViewHolderFinance) holder).balance.setText(getBalance(position) + "");
+
         }
+    }
+
+    private String getBalance(int position) {
+        int i = 0;
+        int balance = 0;
+        Utilities.log(position + "");
+        for (RealmMyTeam team : list) {
+            if ("debit".equalsIgnoreCase(team.getType().toLowerCase())) balance -= team.getAmount();
+            else balance += team.getAmount();
+            if (i == position)
+                break;
+            i++;
+        }
+        return balance + "";
     }
 
     @Override
