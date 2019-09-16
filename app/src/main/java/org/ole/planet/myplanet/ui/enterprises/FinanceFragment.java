@@ -65,16 +65,33 @@ public class FinanceFragment extends BaseTeamFragment {
         date = Calendar.getInstance();
         return v;
     }
-
+    List<RealmMyTeam> list;
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         fab.setOnClickListener(view -> addTransaction());
-        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").findAll();
+        list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
         rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvFinance.setAdapter(adapterFinance);
+        calculateTotal(list);
         showNoData(nodata, list.size());
+    }
+
+    private void calculateTotal(List<RealmMyTeam> list) {
+        int debit = 0;
+        int credit = 0;
+        for (RealmMyTeam team : list) {
+            if ("credit".equalsIgnoreCase(team.getType().toLowerCase())) {
+                credit += team.getAmount();
+            } else {
+                debit += team.getAmount();
+            }
+        }
+        int total = credit - debit;
+        ((TextView) getView().findViewById(R.id.tv_debit)).setText(debit + "");
+        ((TextView) getView().findViewById(R.id.tv_credit)).setText(credit + "");
+        ((TextView) getView().findViewById(R.id.tv_balance)).setText(total + "");
     }
 
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
@@ -103,11 +120,12 @@ public class FinanceFragment extends BaseTeamFragment {
                         Utilities.toast(getActivity(), "Date is required");
                     } else {
                         mRealm.executeTransactionAsync(realm -> {
-                            createTransactionObject(realm,type, note, amount);
+                            createTransactionObject(realm, type, note, amount);
                         }, () -> {
                             Utilities.toast(getActivity(), "Transaction added");
                             adapterFinance.notifyDataSetChanged();
                             showNoData(nodata, adapterFinance.getItemCount());
+                            calculateTotal(list);
                         });
                     }
                 })

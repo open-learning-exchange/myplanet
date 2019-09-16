@@ -258,4 +258,5 @@
     <string name="debit">Debit</string>
     <string name="credit">Credit</string>
     <string name="balance">Balance</string>
+    <string name="total">Total</string>
 </resources>

@@ -8,18 +8,77 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <include layout="@layout/row_finance"
-        android:padding="@dimen/padding_normal"
-        />
+        <include
+            layout="@layout/row_finance"
+            android:padding="@dimen/padding_normal" />
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/rv_finance"
-        android:padding="@dimen/padding_normal"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal">
+
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/total"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:padding="@dimen/padding_small"
+                android:textSize="@dimen/text_size_mid" />
+
+
+            <TextView
+                android:id="@+id/tv_credit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/credit"
+                android:textColor="@color/md_green_500"
+                android:textSize="@dimen/text_size_mid" />
+
+            <TextView
+                android:id="@+id/tv_debit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:padding="@dimen/padding_small"
+                android:text="@string/debit"
+                android:textColor="@color/md_red_500"
+                android:textSize="@dimen/text_size_mid" />
+
+
+            <TextView
+                android:id="@+id/tv_balance"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="@dimen/padding_small"
+                android:text="@string/balance"
+                android:textSize="@dimen/text_size_mid"
+                android:visibility="visible" />
+
+
+        </LinearLayout>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/rv_finance"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="@dimen/padding_normal" />
 
     </LinearLayout>
 
@@ -30,8 +89,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center"
-        android:visibility="gone"
-        android:text="@string/nodata" />
+        android:text="@string/nodata"
+        android:visibility="gone" />
 
 
     <com.github.clans.fab.FloatingActionButton
