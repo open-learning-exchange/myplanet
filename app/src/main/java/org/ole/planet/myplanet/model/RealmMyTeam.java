@@ -76,7 +76,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
         myTeams.setAmount(JsonUtils.getInt("amount", doc));
-        myTeams.setDate(JsonUtils.getInt("date", doc));
+        myTeams.setDate(JsonUtils.getLong("date", doc));
 //        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
         myTeams.setDocType(JsonUtils.getString("docType", doc).toString());
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
@@ -245,6 +245,7 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("isLeader", team.isLeader());
         object.addProperty("type", team.getTeamType());
         object.addProperty("amount", team.getAmount());
+        object.addProperty("date", team.getDate());
         if (TextUtils.equals(team.getTeamType(), "debit")) {
             object.addProperty("amount", team.getAmount());
         } else if (TextUtils.equals(team.getTeamType(), "credit")) {
