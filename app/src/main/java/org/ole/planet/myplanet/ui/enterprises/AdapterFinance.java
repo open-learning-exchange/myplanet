@@ -37,7 +37,7 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderFinance) {
-            ((ViewHolderFinance) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate()));
+            ((ViewHolderFinance) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
             ((ViewHolderFinance) holder).note.setText(list.get(position).getDescription());
             Utilities.log("Type " + list.get(position).getType());
             if (TextUtils.equals(list.get(position).getType().toLowerCase(), "debit")) {
