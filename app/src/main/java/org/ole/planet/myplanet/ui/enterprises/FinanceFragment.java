@@ -102,10 +102,10 @@ public class FinanceFragment extends BaseTeamFragment {
                         Utilities.toast(getActivity(), "Date is required");
                     } else {
                         mRealm.executeTransactionAsync(realm -> {
-                            // Todo Un-comment bellow and fix crash
-//                            createTransactionObject(realm,type, note, amount);
+                            createTransactionObject(realm,type, note, amount);
                         }, () -> {
                             Utilities.toast(getActivity(), "Transaction added");
+                            adapterFinance.notifyDataSetChanged();
                             showNoData(nodata, adapterFinance.getItemCount());
                         });
                     }
@@ -127,7 +127,7 @@ public class FinanceFragment extends BaseTeamFragment {
         team.setTeamPlanetCode(user.getPlanetCode());
         team.setTeamType("sync");
         team.setDocType("transaction");
-        adapterFinance.notifyDataSetChanged();
+
     }
 
 

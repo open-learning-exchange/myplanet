@@ -40,8 +40,10 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderFinance) holder).note.setText(list.get(position).getDescription());
             if (TextUtils.equals(list.get(position).getType(), "debit")) {
                 ((ViewHolderFinance) holder).debit.setText(list.get(position).getAmount() + "");
+                ((ViewHolderFinance) holder).credit.setText("");
             } else {
                 ((ViewHolderFinance) holder).credit.setText(list.get(position).getAmount() + "");
+                ((ViewHolderFinance) holder).debit.setText("");
             }
         }
     }
