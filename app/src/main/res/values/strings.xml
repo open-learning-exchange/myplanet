@@ -306,10 +306,21 @@
     <string name="applicants">Applicants</string>
     <string name="finances">Finances</string>
     <string name="messages">messages</string>
+    <string name="nodata">No data available</string>
+    <string name="note">Note *</string>
+    <string name="amount">Amount</string>
+    <string name="debit">Debit</string>
+    <string name="credit">Credit</string>
+    <string name="balance">Balance</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
     </string-array>
 
+
+    <string-array name="transaction_type">
+        <item>Credit</item>
+        <item>Debit</item>
+    </string-array>
 
 </resources>
