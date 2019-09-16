@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.enterprises;
 
 
 import android.app.DatePickerDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
@@ -21,8 +20,6 @@ import com.github.clans.fab.FloatingActionButton;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -49,10 +46,18 @@ public class FinanceFragment extends BaseTeamFragment {
     TextInputLayout tlAmount;
     Calendar date;
     TextView tvSelectDate;
+    List<RealmMyTeam> list;
+    DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
+        date = Calendar.getInstance();
+        date.set(Calendar.YEAR, year);
+        date.set(Calendar.MONTH, monthOfYear);
+        date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+        if (date != null)
+            tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
+    };
 
     public FinanceFragment() {
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -65,7 +70,7 @@ public class FinanceFragment extends BaseTeamFragment {
         date = Calendar.getInstance();
         return v;
     }
-    List<RealmMyTeam> list;
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -93,15 +98,6 @@ public class FinanceFragment extends BaseTeamFragment {
         ((TextView) getView().findViewById(R.id.tv_credit)).setText(credit + "");
         ((TextView) getView().findViewById(R.id.tv_balance)).setText(total + "");
     }
-
-    DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
-        date = Calendar.getInstance();
-        date.set(Calendar.YEAR, year);
-        date.set(Calendar.MONTH, monthOfYear);
-        date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-        if (date != null)
-            tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
-    };
 
     private void addTransaction() {
         new AlertDialog.Builder(getActivity()).setView(setUpAlertUi())
