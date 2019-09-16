@@ -102,7 +102,8 @@ public class FinanceFragment extends BaseTeamFragment {
                         Utilities.toast(getActivity(), "Date is required");
                     } else {
                         mRealm.executeTransactionAsync(realm -> {
-                            createTransactionObject(realm,type, note, amount);
+                            // Todo Un-comment bellow and fix crash
+//                            createTransactionObject(realm,type, note, amount);
                         }, () -> {
                             Utilities.toast(getActivity(), "Transaction added");
                             showNoData(nodata, adapterFinance.getItemCount());
