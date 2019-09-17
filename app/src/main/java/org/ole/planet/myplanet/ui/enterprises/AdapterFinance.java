@@ -2,11 +2,9 @@ package org.ole.planet.myplanet.ui.enterprises;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
-import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -50,14 +48,14 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if (TextUtils.equals(list.get(position).getType().toLowerCase(), "debit")) {
                 ((ViewHolderFinance) holder).debit.setText(list.get(position).getAmount() + "");
                 ((ViewHolderFinance) holder).credit.setText(" -");
-                ((ViewHolderFinance) holder).credit.setTextColor(Color.BLACK);;
+                ((ViewHolderFinance) holder).credit.setTextColor(Color.BLACK);
             } else {
                 ((ViewHolderFinance) holder).credit.setText(list.get(position).getAmount() + "");
                 ((ViewHolderFinance) holder).debit.setText(" -");
                 ((ViewHolderFinance) holder).debit.setTextColor(Color.BLACK);
             }
             ((ViewHolderFinance) holder).balance.setText(getBalance(position) + "");
-            updateBackgroundColor(((ViewHolderFinance) holder).row,position);
+            updateBackgroundColor(((ViewHolderFinance) holder).row, position);
         }
     }
 
@@ -80,20 +78,7 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return list.size();
     }
 
-    class ViewHolderFinance extends RecyclerView.ViewHolder {
-        TextView date, note, credit, debit, balance;
-        LinearLayout row ;
-        public ViewHolderFinance(View itemView) {
-            super(itemView);
-            row= itemView.findViewById(R.id.llayout);
-            date = itemView.findViewById(R.id.date);
-            note = itemView.findViewById(R.id.note);
-            credit = itemView.findViewById(R.id.credit);
-            debit = itemView.findViewById(R.id.debit);
-            balance = itemView.findViewById(R.id.balance);
-        }
-    }
-    public void updateBackgroundColor(LinearLayout layout,int position) {
+    public void updateBackgroundColor(LinearLayout layout, int position) {
         if (position % 2 < 1) {
             GradientDrawable border = new GradientDrawable();
             border.setColor(0xFFFFFFFF); //white background
@@ -103,6 +88,21 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
             LayerDrawable layerDrawable = new LayerDrawable(layers);
             layerDrawable.setLayerInset(0, -10, 0, -10, 0);
             layout.setBackground(layerDrawable);
+        }
+    }
+
+    class ViewHolderFinance extends RecyclerView.ViewHolder {
+        TextView date, note, credit, debit, balance;
+        LinearLayout row;
+
+        public ViewHolderFinance(View itemView) {
+            super(itemView);
+            row = itemView.findViewById(R.id.llayout);
+            date = itemView.findViewById(R.id.date);
+            note = itemView.findViewById(R.id.note);
+            credit = itemView.findViewById(R.id.credit);
+            debit = itemView.findViewById(R.id.debit);
+            balance = itemView.findViewById(R.id.balance);
         }
     }
 }
