@@ -34,8 +34,6 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.row_finance, parent, false);
-        //LinearLayout layout = v.findViewById(R.id.llayout);
-        //layout.setBackgroundColor(context.getResources().getColor((R.color.accent)));
         return new ViewHolderFinance(v);
     }
 
