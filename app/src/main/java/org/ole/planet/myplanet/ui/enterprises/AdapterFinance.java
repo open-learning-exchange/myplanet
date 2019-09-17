@@ -3,6 +3,10 @@ package org.ole.planet.myplanet.ui.enterprises;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
+import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
@@ -91,7 +95,14 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
     public void updateBackgroundColor(LinearLayout layout,int position) {
         if (position % 2 < 1) {
-            layout.setBackgroundColor(context.getResources().getColor((R.color.cardview_light_background)));
+            GradientDrawable border = new GradientDrawable();
+            border.setColor(0xFFFFFFFF); //white background
+            border.setStroke(1, context.getResources().getColor(R.color.black_overlay));
+            border.setGradientType(GradientDrawable.RECTANGLE);
+            Drawable[] layers = {border};
+            LayerDrawable layerDrawable = new LayerDrawable(layers);
+            layerDrawable.setLayerInset(0, -10, 0, -10, 0);
+            layout.setBackground(layerDrawable);
         }
     }
 }
