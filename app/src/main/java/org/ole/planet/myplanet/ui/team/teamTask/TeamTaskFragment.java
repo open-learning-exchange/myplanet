@@ -13,10 +13,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.ToggleButton;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -41,6 +43,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     RecyclerView rvTask;
     Calendar deadline;
     TextView datePicker, nodata;
+    ToggleButton taskButton;
+    List<RealmTeamTask> list;
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         deadline = Calendar.getInstance();
         deadline.set(Calendar.YEAR, year);
@@ -72,6 +76,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_team_task, container, false);
         rvTask = v.findViewById(R.id.rv_task);
+        taskButton = v.findViewById(R.id.task_toggle);
         nodata = v.findViewById(R.id.tv_nodata);
         v.findViewById(R.id.fab).setOnClickListener(view -> {
             showTaskAlert(null);
@@ -141,12 +146,26 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         rvTask.setLayoutManager(new LinearLayoutManager(getActivity()));
-        List<RealmTeamTask> list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
-        Utilities.log("List size " + list.size());
+        list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
+        setAdapter();
+        showNoData(nodata, list.size());
+        taskButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b) {
+                    list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("assignee", user.getId()).findAll();
+                } else {
+                    list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
+                }
+                setAdapter();
+            }
+        });
+    }
+
+    private void setAdapter() {
         AdapterTask adapterTask = new AdapterTask(getActivity(), mRealm, list);
         adapterTask.setListener(this);
         rvTask.setAdapter(adapterTask);
-        showNoData(nodata, list.size());
     }
 
     @Override
@@ -179,6 +198,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             realmTeamTask.setAssignee(userId);
             mRealm.commitTransaction();
             Utilities.toast(getActivity(), getString(R.string.assign_task_to) + user.getName());
+            adapter.notifyDataSetChanged();
         }).show();
     }
 }
