@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.enterprises;
 
 
 import android.app.DatePickerDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
@@ -21,8 +20,6 @@ import com.github.clans.fab.FloatingActionButton;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -49,10 +46,18 @@ public class FinanceFragment extends BaseTeamFragment {
     TextInputLayout tlAmount;
     Calendar date;
     TextView tvSelectDate;
+    List<RealmMyTeam> list;
+    DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
+        date = Calendar.getInstance();
+        date.set(Calendar.YEAR, year);
+        date.set(Calendar.MONTH, monthOfYear);
+        date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+        if (date != null)
+            tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
+    };
 
     public FinanceFragment() {
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -70,27 +75,36 @@ public class FinanceFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         fab.setOnClickListener(view -> addTransaction());
-        List<RealmMyTeam> list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").findAll();
+        list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
         rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvFinance.setAdapter(adapterFinance);
+        calculateTotal(list);
         showNoData(nodata, list.size());
     }
 
-    DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
-        date = Calendar.getInstance();
-        date.set(Calendar.YEAR, year);
-        date.set(Calendar.MONTH, monthOfYear);
-        date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-        if (date != null)
-            tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
-    };
+    private void calculateTotal(List<RealmMyTeam> list) {
+        int debit = 0;
+        int credit = 0;
+        for (RealmMyTeam team : list) {
+            if ("credit".equalsIgnoreCase(team.getType().toLowerCase())) {
+                credit += team.getAmount();
+            } else {
+                debit += team.getAmount();
+            }
+        }
+        int total = credit - debit;
+        ((TextView) getView().findViewById(R.id.tv_debit)).setText(debit + "");
+        ((TextView) getView().findViewById(R.id.tv_credit)).setText(credit + "");
+        ((TextView) getView().findViewById(R.id.tv_balance)).setText(total + "");
+    }
 
     private void addTransaction() {
         new AlertDialog.Builder(getActivity()).setView(setUpAlertUi())
                 .setTitle("Add Transaction")
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String type = spnType.getSelectedItem().toString();
+                    Utilities.log(type + " type");
                     String note = tlNote.getEditText().getText().toString();
                     String amount = tlAmount.getEditText().getText().toString();
 
@@ -102,11 +116,12 @@ public class FinanceFragment extends BaseTeamFragment {
                         Utilities.toast(getActivity(), "Date is required");
                     } else {
                         mRealm.executeTransactionAsync(realm -> {
-                            // Todo Un-comment bellow and fix crash
-//                            createTransactionObject(realm,type, note, amount);
+                            createTransactionObject(realm, type, note, amount);
                         }, () -> {
                             Utilities.toast(getActivity(), "Transaction added");
+                            adapterFinance.notifyDataSetChanged();
                             showNoData(nodata, adapterFinance.getItemCount());
+                            calculateTotal(list);
                         });
                     }
                 })
@@ -127,7 +142,7 @@ public class FinanceFragment extends BaseTeamFragment {
         team.setTeamPlanetCode(user.getPlanetCode());
         team.setTeamType("sync");
         team.setDocType("transaction");
-        adapterFinance.notifyDataSetChanged();
+
     }
 
 
