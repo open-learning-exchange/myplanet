@@ -10,8 +10,8 @@
         <ToggleButton
             android:layout_width="wrap_content"
             android:id="@+id/task_toggle"
-            android:textOff="All Task"
-            android:textOn="My Task"
+            android:textOff="My Task"
+            android:textOn="All Task"
             android:layout_height="wrap_content" />
 
     <FrameLayout
