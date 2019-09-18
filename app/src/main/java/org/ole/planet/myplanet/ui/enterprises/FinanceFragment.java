@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.Sort;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -75,7 +76,7 @@ public class FinanceFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         fab.setOnClickListener(view -> addTransaction());
-        list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").findAll();
+        list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
         rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvFinance.setAdapter(adapterFinance);
