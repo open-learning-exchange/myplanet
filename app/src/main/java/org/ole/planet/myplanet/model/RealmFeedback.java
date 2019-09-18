@@ -12,6 +12,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -63,11 +64,12 @@ public class RealmFeedback extends RealmObject {
         } catch (Exception err) {
             err.printStackTrace();
         }
+        Utilities.log("OBJECT " +  new Gson().toJson(object));
         return object;
     }
 
     public static void insert(Realm mRealm, JsonObject act) {
-        RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("id", JsonUtils.getString("_id", act)).findFirst();
+        RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (feedback == null)
             feedback = mRealm.createObject(RealmFeedback.class, JsonUtils.getString("_id", act));
         feedback.set_id(JsonUtils.getString("_id", act));

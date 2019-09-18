@@ -153,18 +153,20 @@ public class UploadManager extends FileUploadService {
             List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).findAll();
             for (RealmFeedback feedback : feedbacks) {
                 try {
-                    Response object;
-                    if (TextUtils.isEmpty(feedback.get_rev()))
-                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
-                    else{
-                        Utilities.log("Update " + new Gson().toJson(RealmFeedback.serializeFeedback(feedback)));
-                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
-                    }
-                    Log.e("TAG ", object.body() + " ");
-                    if (object.errorBody() != null)
-                        Log.e("TAG 2 ", object.errorBody().string() + " ");
-                    if (object.body() != null) {
-                        feedback.setUploaded(true);
+                    Response res;
+//                    if (TextUtils.isEmpty(feedback.get_id()))
+                    res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+//                    else{
+//                        Utilities.log("Update " + new Gson().toJson(RealmFeedback.serializeFeedback(feedback)));
+//                        res = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+//                    }
+                    if (res.body() != null) {
+                        Utilities.log(new Gson().toJson(res.body()));
+                        JsonObject r = (JsonObject) res.body();
+                        feedback.set_rev(r.get("rev").getAsString());
+                        feedback.set_id(r.get("id").getAsString());
+                    } else {
+                        Utilities.log("ERRRRRRRR " + res.errorBody().string());
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
