@@ -2,22 +2,23 @@ package org.ole.planet.myplanet.ui.team.teamTask;
 
 
 import android.app.DatePickerDialog;
-import android.content.DialogInterface;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.DatePicker;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.TimePicker;
+import android.widget.ToggleButton;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -25,16 +26,14 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-
-import io.realm.Realm;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -44,6 +43,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     RecyclerView rvTask;
     Calendar deadline;
     TextView datePicker, nodata;
+    ToggleButton taskButton;
+    List<RealmTeamTask> list;
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         deadline = Calendar.getInstance();
         deadline.set(Calendar.YEAR, year);
@@ -51,7 +52,20 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         deadline.set(Calendar.DAY_OF_MONTH, dayOfMonth);
         if (datePicker != null)
             datePicker.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+        timePicker();
     };
+
+    private void timePicker() {
+
+        TimePickerDialog timePickerDialog = new TimePickerDialog(getActivity(),
+                (view, hourOfDay, minute) -> {
+                    deadline.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                    deadline.set(Calendar.MINUTE, minute);
+                    if (datePicker != null)
+                        datePicker.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+                }, deadline.get(Calendar.HOUR_OF_DAY), deadline.get(Calendar.MINUTE), true);
+        timePickerDialog.show();
+    }
 
     public TeamTaskFragment() {
     }
@@ -62,18 +76,28 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_team_task, container, false);
         rvTask = v.findViewById(R.id.rv_task);
+        taskButton = v.findViewById(R.id.task_toggle);
         nodata = v.findViewById(R.id.tv_nodata);
         v.findViewById(R.id.fab).setOnClickListener(view -> {
-            showTaskAlert();
+            showTaskAlert(null);
         });
         return v;
     }
 
-    private void showTaskAlert() {
+    private void showTaskAlert(RealmTeamTask t) {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_task, null);
         EditText title = v.findViewById(R.id.et_task);
         EditText description = v.findViewById(R.id.et_description);
+
         datePicker = v.findViewById(R.id.tv_pick);
+        if (t != null) {
+            title.setText(t.getTitle());
+            description.setText(t.getDescription());
+            datePicker.setText(t.getDeadline());
+            deadline = Calendar.getInstance();
+            deadline.setTime(new Date(t.getExpire()));
+        }
+
         Calendar myCalendar = Calendar.getInstance();
         datePicker.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, myCalendar
                 .get(Calendar.YEAR), myCalendar.get(Calendar.MONTH),
@@ -87,32 +111,34 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             else if (deadline == null)
                 Utilities.toast(getActivity(), "Deadline is required");
             else
-                createNewTask(task, desc);
+                createOrUpdateTask(task, desc, t);
         }).setNegativeButton("Cancel", null).show();
     }
 
-    private void createNewTask(String task, String desc) {
-        mRealm.executeTransactionAsync(realm -> {
-            RealmTeamTask t = realm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
-            t.setTitle(task);
-            t.setDescription(desc);
-            t.setDeadline(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
-            t.setTeamId(teamId);
-            JsonObject ob = new JsonObject();
-            ob.addProperty("teams", teamId);
-            t.setLink(new Gson().toJson(ob));
-            JsonObject obsync = new JsonObject();
-            obsync.addProperty("type", "local");
-            obsync.addProperty("planetCode", user.getPlanetCode());
-            t.setSync(new Gson().toJson(obsync));
-            t.setCompleted(false);
-        }, () -> {
-            if (rvTask.getAdapter() != null) {
-                rvTask.getAdapter().notifyDataSetChanged();
-                showNoData(nodata, rvTask.getAdapter().getItemCount());
-            }
-            Utilities.toast(getActivity(), "Task added successfully");
-        });
+    private void createOrUpdateTask(String task, String desc, RealmTeamTask t) {
+        boolean isCreate = (t == null);
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        if (t == null)
+            t = mRealm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
+        t.setTitle(task);
+        t.setDescription(desc);
+        t.setDeadline(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+        t.setTeamId(teamId);
+        JsonObject ob = new JsonObject();
+        ob.addProperty("teams", teamId);
+        t.setLink(new Gson().toJson(ob));
+        JsonObject obsync = new JsonObject();
+        obsync.addProperty("type", "local");
+        obsync.addProperty("planetCode", user.getPlanetCode());
+        t.setSync(new Gson().toJson(obsync));
+        mRealm.commitTransaction();
+        if (rvTask.getAdapter() != null) {
+            rvTask.getAdapter().notifyDataSetChanged();
+            showNoData(nodata, rvTask.getAdapter().getItemCount());
+        }
+        Utilities.toast(getActivity(), String.format("Task %s successfully", isCreate ? "added" : "updated"));
+
     }
 
 
@@ -120,21 +146,40 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         rvTask.setLayoutManager(new LinearLayoutManager(getActivity()));
-        List<RealmTeamTask> list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
-        Utilities.log("List size " + list.size());
-        AdapterTask adapterTask = new AdapterTask(getActivity(),mRealm, list);
+        list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
+        setAdapter();
+        showNoData(nodata, list.size());
+        taskButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if (b) {
+                    list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("assignee", user.getId()).findAll();
+                } else {
+                    list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
+                }
+                setAdapter();
+            }
+        });
+    }
+
+    private void setAdapter() {
+        AdapterTask adapterTask = new AdapterTask(getActivity(), mRealm, list);
         adapterTask.setListener(this);
         rvTask.setAdapter(adapterTask);
-        showNoData(nodata, list.size());
     }
 
     @Override
     public void onCheckChange(RealmTeamTask realmTeamTask, boolean b) {
-        Utilities.log("cHECK CHANGED");
+        Utilities.log("CHECK CHANGED");
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         realmTeamTask.setCompleted(b);
         mRealm.commitTransaction();
+    }
+
+    @Override
+    public void onEdit(RealmTeamTask task) {
+        showTaskAlert(task);
     }
 
     @Override
@@ -144,7 +189,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
         ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, userList);
         spnUser.setAdapter(adapter);
-        new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
+        new AlertDialog.Builder(getActivity()).setTitle(R.string.select_member)
                 .setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
             RealmUserModel user = ((RealmUserModel) spnUser.getSelectedItem());
             String userId = user.getId();
@@ -152,7 +197,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                 mRealm.beginTransaction();
             realmTeamTask.setAssignee(userId);
             mRealm.commitTransaction();
-            Utilities.toast(getActivity(), "Task Assigned to " + user.getName());
+            Utilities.toast(getActivity(), getString(R.string.assign_task_to) + user.getName());
+            adapter.notifyDataSetChanged();
         }).show();
     }
 }

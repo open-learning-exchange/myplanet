@@ -1,22 +1,13 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -24,20 +15,18 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.sync.LoginActivity;
-import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
 import io.realm.Realm;
 
 public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private RealmUserModel user;
     private Context context;
     private List<RealmMyTeam> list;
     private Realm mRealm;
-    RealmUserModel user;
+    private String type = "";
 
 
     public AdapterTeamList(Context context, List<RealmMyTeam> list, Realm mRealm) {
@@ -58,24 +47,23 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderTeam) {
-            ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             ((ViewHolderTeam) holder).created.setText(TimeUtils.getFormatedDate(list.get(position).getCreatedDate()));
             ((ViewHolderTeam) holder).type.setText(list.get(position).getTeamType());
-            boolean isMyTeam = list.get(position).isMyTeam(user.getId(),mRealm);
+            ((ViewHolderTeam) holder).type.setVisibility(type == null ? View.VISIBLE : View.GONE);
+            ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
+            boolean isMyTeam = list.get(position).isMyTeam(user.getId(), mRealm);
             showActionButton(isMyTeam, holder, position);
 
 
             holder.itemView.setOnClickListener(view -> {
-//                if (isMyTeam) {
-                    if (context instanceof OnHomeItemClickListener) {
-                        TeamDetailFragment f = new TeamDetailFragment();
-                        Bundle b = new Bundle();
-                        b.putString("id", list.get(position).getId());
-                        b.putBoolean("isMyTeam", isMyTeam);
-                        f.setArguments(b);
-                        ((OnHomeItemClickListener) context).openCallFragment(f);
-                    }
-//                }
+                if (context instanceof OnHomeItemClickListener) {
+                    TeamDetailFragment f = new TeamDetailFragment();
+                    Bundle b = new Bundle();
+                    b.putString("id", list.get(position).getId());
+                    b.putBoolean("isMyTeam", isMyTeam);
+                    f.setArguments(b);
+                    ((OnHomeItemClickListener) context).openCallFragment(f);
+                }
             });
         }
     }
@@ -104,6 +92,11 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public int getItemCount() {
         return list.size();
     }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
 
     class ViewHolderTeam extends RecyclerView.ViewHolder {
         TextView name, created, type;

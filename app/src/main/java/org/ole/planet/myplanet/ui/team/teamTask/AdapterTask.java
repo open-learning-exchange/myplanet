@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -26,12 +25,6 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<RealmTeamTask> list;
     private OnCompletedListener listener;
     private Realm realm;
-
-    interface OnCompletedListener {
-        void onCheckChange(RealmTeamTask realmTeamTask, boolean b);
-
-        void onClickMore(RealmTeamTask realmTeamTask);
-    }
 
     public AdapterTask(Context context, Realm mRealm, List<RealmTeamTask> list) {
         this.context = context;
@@ -57,7 +50,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
             ((ViewHolderTask) holder).deadline.setText("Deadline : " + list.get(position).getDeadline());
-            showAssignee(holder,list.get(position));
+            showAssignee(holder, list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null)
                     listener.onCheckChange(list.get(position), b);
@@ -65,6 +58,10 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderTask) holder).icMore.setOnClickListener(view -> {
                 if (listener != null)
                     listener.onClickMore(list.get(position));
+            });
+            ((ViewHolderTask) holder).editTask.setOnClickListener(view -> {
+                if (listener != null)
+                    listener.onEdit(list.get(position));
             });
         }
     }
@@ -75,7 +72,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             if (model != null) {
                 ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
             }
-        }else{
+        } else {
             ((ViewHolderTask) holder).assignee.setText("No assignee");
 
         }
@@ -86,10 +83,16 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return list.size();
     }
 
+    interface OnCompletedListener {
+        void onCheckChange(RealmTeamTask realmTeamTask, boolean b);
+        void onEdit(RealmTeamTask task);
+        void onClickMore(RealmTeamTask realmTeamTask);
+    }
+
     class ViewHolderTask extends RecyclerView.ViewHolder {
         CheckBox completed;
         TextView deadline, assignee;
-        ImageView icMore;
+        ImageView icMore, editTask;
 
         public ViewHolderTask(View itemView) {
             super(itemView);
@@ -97,6 +100,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             deadline = itemView.findViewById(R.id.deadline);
             assignee = itemView.findViewById(R.id.assignee);
             icMore = itemView.findViewById(R.id.ic_more);
+            editTask = itemView.findViewById(R.id.edit_task);
         }
     }
 }

@@ -14,12 +14,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseNewsFragment;
-import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
-import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -39,11 +34,10 @@ public class DiscussionListFragment extends BaseTeamFragment {
     }
 
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v =  inflater.inflate(R.layout.fragment_discussion_list, container, false);
+        View v = inflater.inflate(R.layout.fragment_discussion_list, container, false);
         v.findViewById(R.id.add_message).setOnClickListener(view -> showAddMessage());
         rvDiscussion = v.findViewById(R.id.rv_discussion);
         tvNodata = v.findViewById(R.id.tv_nodata);
@@ -57,6 +51,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
         rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
         showRecyclerView(realmNewsList);
     }
+
     private void showRecyclerView(List<RealmNews> realmNewsList) {
         AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
         adapterNews.setmRealm(mRealm);

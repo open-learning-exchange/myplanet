@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -16,9 +18,17 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyLife;
+import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
+import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment;
+import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
+import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment;
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter;
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder;
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener;
+import org.ole.planet.myplanet.ui.news.NewsFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
+import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
@@ -26,18 +36,46 @@ import java.util.List;
 import io.realm.Realm;
 
 public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements ItemTouchHelperAdapter {
-    private Context context;
-    private List<RealmMyLife> myLifeList;
-    private Realm mRealm;
     private final OnStartDragListener mDragStartListener;
     private final float HIDE = 0.5f;
     private final float SHOW = 1f;
+    private Context context;
+    private List<RealmMyLife> myLifeList;
+    private Realm mRealm;
+
 
     public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm, OnStartDragListener onStartDragListener) {
         mDragStartListener = onStartDragListener;
         this.context = context;
         this.mRealm = realm;
         this.myLifeList = myLifeList;
+    }
+
+    public static Fragment find_fragment(String frag) {
+        switch (frag){
+            case  "ic_mypersonals":
+                return new MyPersonalsFragment();
+            case  "ic_news":
+                return new NewsFragment();
+            case  "ic_submissions":
+                return  new MySubmissionFragment();
+            case  "ic_myhealth":
+                return new MyHealthFragment();
+            case  "ic_calendar":
+                return  new CalendarFragment();
+            case  "ic_help_wanted":
+                return new HelpWantedFragment();
+            case  "ic_references":
+                return  new ReferenceFragment();
+            case  "my_achievement":
+                return new AchievementFragment();
+        }
+        return null;
+    }
+
+    public static void transactionFragment(Fragment f, View view) {
+        AppCompatActivity activity = (AppCompatActivity) view.getContext();
+        activity.getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, f).addToBackStack(null).commit();
     }
 
     @NonNull
@@ -54,6 +92,10 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             Utilities.log("On bind " + position);
             ((ViewHolderMyLife) holder).title.setText(myLifeList.get(position).getTitle());
             ((ViewHolderMyLife) holder).imageView.setImageResource(context.getResources().getIdentifier(myLifeList.get(position).getImageId(), "drawable", context.getPackageName()));
+            Fragment fragment = find_fragment(myLifeList.get(position).getImageId());
+            if (fragment != null) {
+                ((ViewHolderMyLife) holder).imageView.setOnClickListener(view -> transactionFragment(fragment, view));
+            }
             ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener((v, event) -> {
                 if (event.getActionMasked() == MotionEvent.ACTION_DOWN)
                     mDragStartListener.onStartDrag(holder);
@@ -64,6 +106,8 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 changeVisibility(holder, R.drawable.ic_visibility, HIDE);
             else changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
         }
+
+
     }
 
     public void updateVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
@@ -98,6 +142,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         return true;
     }
 
+
     class ViewHolderMyLife extends RecyclerView.ViewHolder implements ItemTouchHelperViewHolder {
         TextView title;
         ImageView imageView;
@@ -113,6 +158,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             visibility = itemView.findViewById(R.id.visibility_image_button);
             rv_item_container = itemView.findViewById(R.id.rv_item_parent_layout);
         }
+
 
         @Override
         public void onItemSelected() {

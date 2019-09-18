@@ -59,5 +59,22 @@ public class TimeUtils {
         return datetime;
     }
 
+    public static String formatDate(long date, String format) {
+        SimpleDateFormat dateformat = new SimpleDateFormat(format);
+        String datetime = dateformat.format(date);
+        return datetime;
+    }
+
+
+    public static long dateToLong(String date) {
+        try {
+            SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            return dateformat.parse(date).getTime();
+        } catch (Exception e) {
+
+        }
+        return 0;
+    }
+
 
 }

@@ -22,8 +22,8 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
-import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.CameraUtils;
+import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.Date;
 import java.util.List;
@@ -36,7 +36,7 @@ import io.realm.RealmResults;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CourseStepFragment extends BaseContainerFragment implements CameraUtils.ImageCaptureCallback{
+public class CourseStepFragment extends BaseContainerFragment implements CameraUtils.ImageCaptureCallback {
 
     TextView tvTitle;
     MarkdownView description;

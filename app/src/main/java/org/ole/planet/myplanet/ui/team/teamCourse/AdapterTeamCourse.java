@@ -4,20 +4,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyTeam;
-import org.ole.planet.myplanet.model.RealmTeamLog;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 
@@ -40,7 +35,7 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
             listener = (OnHomeItemClickListener) context;
         }
         this.settings = settings;
-        teamCreator = RealmMyTeam.getTeamCreator(teamId,mRealm);
+        teamCreator = RealmMyTeam.getTeamCreator(teamId, mRealm);
     }
 
     @NonNull
@@ -62,7 +57,7 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
                     listener.openCallFragment(TakeCourseFragment.newInstance(b));
                 }
             });
-            if(!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)){
+            if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
                 holder.itemView.findViewById(R.id.iv_remove).setVisibility(View.GONE);
             }
         }

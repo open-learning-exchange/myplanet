@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.team.teamResource;
 
 
-import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -16,22 +14,15 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.google.gson.JsonArray;
-
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
-import org.ole.planet.myplanet.ui.team.teamResource.AdapterTeamResource;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
-import org.ole.planet.myplanet.utilities.DownloadUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
-import io.realm.Realm;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -79,9 +70,9 @@ public class TeamResourceFragment extends BaseTeamFragment {
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).not().in("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
         alertDialogBuilder.setView(convertView).setPositiveButton("Add", (dialogInterface, i) -> {
             ArrayList<Integer> selected = lv.getSelectedItemsList();
-            if(!mRealm.isInTransaction())
+            if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
-            for(Integer se: selected){
+            for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
                 team.setTeamId(teamId);
                 team.setResourceId(libraries.get(se).getResourceId());

@@ -15,6 +15,7 @@ public class CoursePagerAdapter extends FragmentStatePagerAdapter {
         this.steps = steps;
         this.courseId = courseId;
     }
+
     @Override
     public Fragment getItem(int position) {
         Bundle b = new Bundle();

@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.team;
 
 
-import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -15,7 +13,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -23,20 +20,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.course.CourseDetailFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
@@ -48,20 +40,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-import io.realm.Case;
-import io.realm.Realm;
-import io.realm.RealmObject;
 import io.realm.RealmResults;
-import io.realm.Sort;
-import okhttp3.internal.Util;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyTeamsDetailFragment extends BaseNewsFragment  {
+public class MyTeamsDetailFragment extends BaseNewsFragment {
 
     TextView tvTitle, tvDescription;
     RealmUserModel user;
@@ -75,10 +61,11 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
     RecyclerView rvDiscussion;
     LinearLayout llRv;
     boolean isMyTeam;
+    RealmResults<RealmMyLibrary> libraries;
+
 
     public MyTeamsDetailFragment() {
     }
-
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -88,7 +75,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
             isMyTeam = getArguments().getBoolean("isMyTeam", false);
         }
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -151,10 +137,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
         setTeamList();
     }
 
-    RealmResults<RealmMyLibrary> libraries;
-
     private void setTeamList() {
-        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm,"");
+        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm, "");
         createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).findAll();
@@ -174,7 +158,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
                 ((ViewGroup) tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
                 ((ViewGroup) tabLayout.getChildAt(4)).getChildAt(0).setVisibility(View.GONE);
                 tabLayout.getTabAt(1).select();
-            }catch (Exception e){}
+            } catch (Exception e) {
+            }
         }
         setTabListener(users, courses, reqUsers);
 
@@ -263,7 +248,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
         listContent.setVisibility(View.VISIBLE);
         llRv.setVisibility(View.GONE);
         tab.setText(s);
-        listContent.setAdapter(new ArrayAdapter<RealmUserModel>(getActivity(), android.R.layout.simple_list_item_1, data){
+        listContent.setAdapter(new ArrayAdapter<RealmUserModel>(getActivity(), android.R.layout.simple_list_item_1, data) {
             @NonNull
             @Override
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
@@ -285,8 +270,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment  {
         f.setArguments(b);
         homeItemClickListener.openCallFragment(f);
     }
-
-
 
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
