@@ -154,12 +154,7 @@ public class UploadManager extends FileUploadService {
             for (RealmFeedback feedback : feedbacks) {
                 try {
                     Response res;
-//                    if (TextUtils.isEmpty(feedback.get_id()))
                     res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
-//                    else{
-//                        Utilities.log("Update " + new Gson().toJson(RealmFeedback.serializeFeedback(feedback)));
-//                        res = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
-//                    }
                     if (res.body() != null) {
                         Utilities.log(new Gson().toJson(res.body()));
                         JsonObject r = (JsonObject) res.body();
