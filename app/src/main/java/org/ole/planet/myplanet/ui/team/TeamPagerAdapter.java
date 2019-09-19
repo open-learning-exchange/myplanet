@@ -43,8 +43,8 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             list.add(MainApplication.context.getString(isEnterprise ? R.string.documents : R.string.resources));
             list.remove(0);
             list.remove(0);
-            list.add(1, MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan) );
-            list.add(2,MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
+            list.add(1, MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
+            list.add(2, MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         }
     }
 
@@ -63,7 +63,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             else {
                 f = new JoinedMemberFragment();
             }
-        }else{
+        } else {
             f = checkCondition(position);
         }
         Bundle b = new Bundle();
@@ -74,7 +74,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
     private Fragment checkCondition(int position) {
         Fragment f = null;
-        switch (position){
+        switch (position) {
             case 0:
                 f = new DiscussionListFragment();
                 break;
@@ -89,19 +89,19 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
                 break;
             case 4:
                 f = new MembersFragment();
-            break;
+                break;
             case 5:
                 f = getFragment();
-            break;
+                break;
             case 6:
                 f = new TeamResourceFragment();
-            break;
+                break;
         }
         return f;
     }
 
     private Fragment getFragment() {
-       return isEnterprise ? new FinanceFragment() : new TeamCourseFragment();
+        return isEnterprise ? new FinanceFragment() : new TeamCourseFragment();
     }
 
     @Override

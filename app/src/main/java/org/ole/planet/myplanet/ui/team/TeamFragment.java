@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.team.AdapterTeamList;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
@@ -110,7 +109,7 @@ public class TeamFragment extends Fragment {
         team.setName(name);
         team.setDescription(desc);
         team.setTeamId("");
-        team.setType(this.type == null? "team" : "enterprise");
+        team.setType(this.type == null ? "team" : "enterprise");
         team.setUser_id(user.getId());
         team.setParentCode(user.getParentCode());
         team.setTeamPlanetCode(user.getPlanetCode());
