@@ -91,6 +91,12 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         } else if (obj instanceof RealmMyCourse) {
             handleClick(((RealmMyCourse) obj).getCourseId(), ((RealmMyCourse) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyTeam) {
+            if(((RealmMyTeam) obj).getTeamType().equals("sync")){
+                textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.accent));
+            }
+
+
+
             //    textViewArray[itemCnt].setText(((RealmMyTeam) obj).getName());
             handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new TeamDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMeetup) {
