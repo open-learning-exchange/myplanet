@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -9,7 +10,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.ui.mymeetup.MyMeetupDetailFragment;
 import org.ole.planet.myplanet.ui.news.NewsFragment;
 import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
-import org.ole.planet.myplanet.ui.team.MyTeamsDetailFragment;
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.Constants;
@@ -73,7 +72,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
                 } else if (title.equals(getString(R.string.help_wanted))) {
                     homeItemClickListener.openCallFragment(new HelpWantedFragment());
                 } else if (title.equals(getString(R.string.myhealth)) && Constants.showBetaFeature(Constants.KEY_MYHEALTH, getActivity())) {
-                   homeItemClickListener.openCallFragment(new MyHealthFragment());
+                    homeItemClickListener.openCallFragment(new MyHealthFragment());
                 } else {
                     Utilities.toast(getActivity(), "Feature Not Available");
                 }
@@ -91,12 +90,9 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         } else if (obj instanceof RealmMyCourse) {
             handleClick(((RealmMyCourse) obj).getCourseId(), ((RealmMyCourse) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMyTeam) {
-            if(((RealmMyTeam) obj).getTeamType().equals("sync")){
-                textViewArray[itemCnt].setTextColor(getResources().getColor(R.color.accent));
+            if (((RealmMyTeam) obj).getTeamType().equals("sync")) {
+                textViewArray[itemCnt].setTypeface(null, Typeface.BOLD);
             }
-
-
-
             //    textViewArray[itemCnt].setText(((RealmMyTeam) obj).getName());
             handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new TeamDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMeetup) {
