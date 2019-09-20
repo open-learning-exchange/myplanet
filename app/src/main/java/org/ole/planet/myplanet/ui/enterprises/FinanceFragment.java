@@ -117,7 +117,7 @@ public class FinanceFragment extends BaseTeamFragment {
                         Utilities.toast(getActivity(), "Date is required");
                     } else {
                         mRealm.executeTransactionAsync(realm -> {
-                            createTransactionObject(realm, type, note, amount);
+                            createTransactionObject(realm, type, note, amount,date);
                         }, () -> {
                             Utilities.toast(getActivity(), "Transaction added");
                             adapterFinance.notifyDataSetChanged();
@@ -129,10 +129,10 @@ public class FinanceFragment extends BaseTeamFragment {
                 .setNegativeButton("Cancel", null).show();
     }
 
-    private void createTransactionObject(Realm realm, String type, String note, String amount) {
+    private void createTransactionObject(Realm realm, String type, String note, String amount, Calendar date) {
         RealmMyTeam team = realm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
         team.setStatus("active");
-        team.setDate(new Date().getTime());
+        team.setDate(date.getTimeInMillis());
         if (type != null)
             team.setTeamType(type);
         team.setType(type);
