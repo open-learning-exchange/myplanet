@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.dashboard;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,7 +92,6 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             if (((RealmMyTeam) obj).getTeamType().equals("sync")) {
                 textViewArray[itemCnt].setTypeface(null, Typeface.BOLD);
             }
-            //    textViewArray[itemCnt].setText(((RealmMyTeam) obj).getName());
             handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new TeamDetailFragment(), textViewArray[itemCnt]);
         } else if (obj instanceof RealmMeetup) {
             handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
@@ -103,7 +101,6 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
     }
 
     public void setTextColor(TextView textView, int itemCnt, Class c) {
-        //  int color = getResources().getColor(PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("bell_theme", false) ? Constants.COLOR_MAP.get(c) : R.color.md_grey_400);
         textView.setTextColor(getResources().getColor(R.color.md_black_1000));
         if ((itemCnt % 2) == 0) {
             textView.setBackgroundResource(R.drawable.light_rect);
