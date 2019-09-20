@@ -86,18 +86,15 @@
             android:background="@color/md_blue_grey_700"
             android:layout_height="1dp"/>
         <LinearLayout
+            android:background="@color/cardview_dark_background"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal">
-
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:padding="@dimen/padding_small"
-                android:text="@string/total"
-                android:textColor="@color/md_black_1000"
                 android:textSize="@dimen/text_size_mid" />
 
             <TextView
@@ -105,8 +102,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:padding="@dimen/padding_small"
+                android:text="@string/total"
+                android:textColor="@color/bg_white"
                 android:textSize="@dimen/text_size_mid" />
-
 
             <TextView
                 android:id="@+id/tv_credit"
@@ -115,7 +113,7 @@
                 android:layout_weight="1"
                 android:padding="@dimen/padding_small"
                 android:text="@string/credit"
-                android:textColor="@color/md_green_500"
+                android:textColor="@color/bg_white"
                 android:textSize="@dimen/text_size_mid" />
 
             <TextView
@@ -125,7 +123,7 @@
                 android:layout_weight="1"
                 android:padding="@dimen/padding_small"
                 android:text="@string/debit"
-                android:textColor="@color/md_red_500"
+                android:textColor="@color/bg_white"
                 android:textSize="@dimen/text_size_mid" />
 
 
@@ -139,6 +137,7 @@
                 android:padding="@dimen/padding_small"
                 android:text="@string/balance"
                 android:textSize="@dimen/text_size_mid"
+                android:textColor="@color/bg_white"
                 android:visibility="visible" />
 
 

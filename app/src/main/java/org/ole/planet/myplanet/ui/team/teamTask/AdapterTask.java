@@ -85,7 +85,9 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     interface OnCompletedListener {
         void onCheckChange(RealmTeamTask realmTeamTask, boolean b);
+
         void onEdit(RealmTeamTask task);
+
         void onClickMore(RealmTeamTask realmTeamTask);
     }
 

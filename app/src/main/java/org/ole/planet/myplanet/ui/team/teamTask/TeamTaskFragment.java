@@ -17,7 +17,6 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.ToggleButton;
 
 import com.google.gson.Gson;
@@ -55,6 +54,9 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         timePicker();
     };
 
+    public TeamTaskFragment() {
+    }
+
     private void timePicker() {
 
         TimePickerDialog timePickerDialog = new TimePickerDialog(getActivity(),
@@ -66,10 +68,6 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                 }, deadline.get(Calendar.HOUR_OF_DAY), deadline.get(Calendar.MINUTE), true);
         timePickerDialog.show();
     }
-
-    public TeamTaskFragment() {
-    }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
