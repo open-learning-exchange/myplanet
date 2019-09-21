@@ -62,6 +62,7 @@ public class Constants {
         classList.put("feedback", RealmFeedback.class);
         classList.put("teams", RealmMyTeam.class);
         classList.put("tasks", RealmTeamTask.class);
+        classList.put("meetups", RealmMeetup.class);
     }
 
     public static class ShelfData {

@@ -9,6 +9,7 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment;
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment;
 import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment;
 import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment;
@@ -45,6 +46,8 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             list.remove(0);
             list.add(1, MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
             list.add(2, MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
+            list.add( MainApplication.context.getString(R.string.calendar));
+
         }
     }
 
@@ -95,6 +98,9 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
                 break;
             case 6:
                 f = new TeamResourceFragment();
+                break;
+             case 7:
+                f = new EnterpriseCalendarFragment();
                 break;
         }
         return f;

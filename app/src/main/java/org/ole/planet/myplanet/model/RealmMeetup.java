@@ -36,12 +36,20 @@ public class RealmMeetup extends RealmObject {
     private String category;
     private String meetupLocation;
     private String creator;
+    private String links;
+    private String teamId;
 
-    public static void insertMyMeetups(String userId, String meetupID, JsonObject meetupDoc, Realm mRealm) {
+    public static void insert(Realm mRealm, JsonObject meetupDoc) {
+        insert("", meetupDoc, mRealm);
+    }
 
-        RealmMeetup myMeetupsDB = mRealm.createObject(RealmMeetup.class, UUID.randomUUID().toString());
+    public static void insert(String userId, JsonObject meetupDoc, Realm mRealm) {
+        RealmMeetup myMeetupsDB = mRealm.where(RealmMeetup.class).equalTo("_id", JsonUtils.getString("_id", meetupDoc)).findFirst();
+        if (myMeetupsDB == null) {
+            myMeetupsDB = mRealm.createObject(RealmMeetup.class, JsonUtils.getString("_id", meetupDoc));
+        }
+        myMeetupsDB.setMeetupId(JsonUtils.getString("_id", meetupDoc));
         myMeetupsDB.setUserId(userId);
-        myMeetupsDB.setMeetupId(meetupID);
         myMeetupsDB.setMeetupId_rev(JsonUtils.getString("_rev", meetupDoc));
         myMeetupsDB.setTitle(JsonUtils.getString("title", meetupDoc));
         myMeetupsDB.setDescription(JsonUtils.getString("description", meetupDoc));
@@ -54,8 +62,30 @@ public class RealmMeetup extends RealmObject {
         myMeetupsDB.setMeetupLocation(JsonUtils.getString("meetupLocation", meetupDoc));
         myMeetupsDB.setCreator(JsonUtils.getString("creator", meetupDoc));
         myMeetupsDB.setDay(JsonUtils.getJsonArray("day", meetupDoc).toString());
+        myMeetupsDB.setLinks(JsonUtils.getJsonObject("links", meetupDoc).toString());
+        myMeetupsDB.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("links", meetupDoc)));
     }
 
+    public static void insertMyMeetups(String userId, JsonObject resourceDoc, Realm mRealm) {
+
+    }
+
+
+    public String getTeamId() {
+        return teamId;
+    }
+
+    public void setTeamId(String teamId) {
+        this.teamId = teamId;
+    }
+
+    public String getLinks() {
+        return links;
+    }
+
+    public void setLinks(String links) {
+        this.links = links;
+    }
 
     public static JsonArray getMyMeetUpIds(Realm realm, String userId) {
         RealmResults<RealmMeetup> meetups = realm.where(RealmMeetup.class).isNotEmpty("userId")
@@ -63,7 +93,7 @@ public class RealmMeetup extends RealmObject {
 
         JsonArray ids = new JsonArray();
         for (RealmMeetup lib : meetups
-                ) {
+        ) {
             ids.add(lib.getMeetupId());
         }
         return ids;
