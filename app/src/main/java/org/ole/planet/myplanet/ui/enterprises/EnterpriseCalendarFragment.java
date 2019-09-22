@@ -17,9 +17,9 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import com.events.calendar.views.EventsCalendar;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.marcohc.robotocalendar.RobotoCalendarView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMeetup;
@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
@@ -35,11 +36,10 @@ import java.util.UUID;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class EnterpriseCalendarFragment extends BaseTeamFragment implements RobotoCalendarView.RobotoCalendarListener {
+public class EnterpriseCalendarFragment extends BaseTeamFragment {
 
-    RobotoCalendarView calendarView;
+    EventsCalendar calendarView;
     List<RealmMeetup> list;
-    Calendar deadline;
     TextView startDate, startTime, endDate, endTime;
     Calendar start, end;
 
@@ -112,7 +112,7 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment implements Robo
     }
 
 
-    void setDatePickerListener(TextView view, Calendar date) {
+    private void setDatePickerListener(TextView view, Calendar date) {
         Calendar c = Calendar.getInstance();
         view.setOnClickListener(v -> {
 
@@ -144,26 +144,17 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment implements Robo
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        calendarView.setRobotoCalendarListener(this);
         list = mRealm.where(RealmMeetup.class).equalTo("teamId", teamId).findAll();
         Utilities.log(list.size() + "");
         Calendar daySelected = Calendar.getInstance();
         daySelected.add(Calendar.DAY_OF_MONTH, 5);
-        calendarView.markCircleImage2(Calendar.getInstance());
+        List<Calendar> li = new ArrayList<>();
+        for (RealmMeetup meetup : list
+        ) {
+            Calendar c = Calendar.getInstance();
+            c.setTimeInMillis(meetup.getStartDate());
+        }
     }
 
-    @Override
-    public void onDaySelected(Calendar calendar) {
 
-    }
-
-    @Override
-    public void onRightButtonClick() {
-
-    }
-
-    @Override
-    public void onLeftButtonClick() {
-
-    }
 }

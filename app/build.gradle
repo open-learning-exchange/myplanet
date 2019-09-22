@@ -77,7 +77,7 @@ dependencies {
     implementation 'com.mikepenz:fontawesome-typeface:5.0.6.0@aar'
     implementation 'com.mikepenz:octicons-typeface:3.0.0.1@aar'
     implementation 'de.hdodenhof:circleimageview:2.2.0'
-    compile 'com.github.marcohc:robotocalendarview:3.0.0'
+    implementation 'com.github.tizisdeepan:eventscalendar:1.5.2'
 
     implementation 'com.mikepenz:itemanimators:1.0.2@aar'
     implementation('com.github.jeancsanchez:JcPlayer:2.6.13') {
