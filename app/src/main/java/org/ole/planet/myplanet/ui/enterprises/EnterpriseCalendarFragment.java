@@ -51,6 +51,8 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment implements Robo
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_enterprise_calendar, container, false);
+        start = Calendar.getInstance();
+        end = Calendar.getInstance();
         calendarView = v.findViewById(R.id.calendar);
         v.findViewById(R.id.add_event).setOnClickListener(view -> showMeetupAlert());
         return v;
@@ -112,7 +114,6 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment implements Robo
 
     void setDatePickerListener(TextView view, Calendar date) {
         Calendar c = Calendar.getInstance();
-
         view.setOnClickListener(v -> {
 
             new DatePickerDialog(getActivity(), (vi, year, monthOfYear, dayOfMonth) -> {
@@ -120,19 +121,20 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment implements Robo
                 date.set(Calendar.MONTH, monthOfYear);
                 date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
                 if (view != null)
-                    view.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
-            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH));
+                    view.setText(TimeUtils.formatDate(date.getTimeInMillis(), "yyyy-MM-dd"));
+            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show();
 
         });
     }
 
 
     private void setTimePicker(TextView time) {
+        Calendar c = Calendar.getInstance();
         time.setOnClickListener(v -> {
             TimePickerDialog timePickerDialog = new TimePickerDialog(getActivity(),
                     (view, hourOfDay, minute) -> {
                         time.setText(String.format("%02d:%02d", hourOfDay, minute));
-                    }, deadline.get(Calendar.HOUR_OF_DAY), deadline.get(Calendar.MINUTE), true);
+                    }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true);
             timePickerDialog.show();
         });
 

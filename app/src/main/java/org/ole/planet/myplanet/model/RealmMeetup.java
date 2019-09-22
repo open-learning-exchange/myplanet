@@ -228,7 +228,7 @@ public class RealmMeetup extends RealmObject {
         map.put("Created By", checkNull(meetups.getCreator()));
         map.put("Category", checkNull(meetups.getCategory()));
         try {
-            map.put("Meetup Date", TimeUtils.getFormatedDate(Long.parseLong(meetups.getStartDate())) + " - " + TimeUtils.getFormatedDate(Long.parseLong(meetups.getEndDate())));
+            map.put("Meetup Date", TimeUtils.getFormatedDate((meetups.getStartDate())) + " - " + TimeUtils.getFormatedDate((meetups.getEndDate())));
         } catch (Exception e) {
         }
         map.put("Meetup Time", checkNull(meetups.getStartTime()) + " - " + checkNull(meetups.getEndTime()));
