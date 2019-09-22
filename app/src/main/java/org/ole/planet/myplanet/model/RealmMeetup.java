@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import org.json.JSONArray;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,8 +28,8 @@ public class RealmMeetup extends RealmObject {
     private String meetupId_rev;
     private String title;
     private String description;
-    private String startDate;
-    private String endDate;
+    private long startDate;
+    private long endDate;
     private String recurring;
     private String Day;
     private String startTime;
@@ -44,7 +45,8 @@ public class RealmMeetup extends RealmObject {
     }
 
     public static void insert(String userId, JsonObject meetupDoc, Realm mRealm) {
-        RealmMeetup myMeetupsDB = mRealm.where(RealmMeetup.class).equalTo("_id", JsonUtils.getString("_id", meetupDoc)).findFirst();
+        Utilities.log("INSERT MEETUP " + meetupDoc);
+        RealmMeetup myMeetupsDB = mRealm.where(RealmMeetup.class).equalTo("id", JsonUtils.getString("_id", meetupDoc)).findFirst();
         if (myMeetupsDB == null) {
             myMeetupsDB = mRealm.createObject(RealmMeetup.class, JsonUtils.getString("_id", meetupDoc));
         }
@@ -53,8 +55,8 @@ public class RealmMeetup extends RealmObject {
         myMeetupsDB.setMeetupId_rev(JsonUtils.getString("_rev", meetupDoc));
         myMeetupsDB.setTitle(JsonUtils.getString("title", meetupDoc));
         myMeetupsDB.setDescription(JsonUtils.getString("description", meetupDoc));
-        myMeetupsDB.setStartDate(JsonUtils.getString("startDate", meetupDoc));
-        myMeetupsDB.setEndDate(JsonUtils.getString("endDate", meetupDoc));
+        myMeetupsDB.setStartDate(JsonUtils.getLong("startDate", meetupDoc));
+        myMeetupsDB.setEndDate(JsonUtils.getLong("endDate", meetupDoc));
         myMeetupsDB.setRecurring(JsonUtils.getString("recurring", meetupDoc));
         myMeetupsDB.setStartTime(JsonUtils.getString("startTime", meetupDoc));
         myMeetupsDB.setEndTime(JsonUtils.getString("endTime", meetupDoc));
@@ -156,19 +158,19 @@ public class RealmMeetup extends RealmObject {
         this.description = description;
     }
 
-    public String getStartDate() {
+    public long getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(String startDate) {
+    public void setStartDate(long startDate) {
         this.startDate = startDate;
     }
 
-    public String getEndDate() {
+    public long getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(String endDate) {
+    public void setEndDate(long endDate) {
         this.endDate = endDate;
     }
 
