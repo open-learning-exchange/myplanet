@@ -11,13 +11,13 @@ import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CalendarView;
 import android.widget.DatePicker;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
-import com.events.calendar.views.EventsCalendar;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -38,7 +38,7 @@ import java.util.UUID;
  */
 public class EnterpriseCalendarFragment extends BaseTeamFragment {
 
-    EventsCalendar calendarView;
+    CalendarView calendarView;
     List<RealmMeetup> list;
     TextView startDate, startTime, endDate, endTime;
     Calendar start, end;
