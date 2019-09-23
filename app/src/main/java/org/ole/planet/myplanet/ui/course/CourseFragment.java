@@ -89,6 +89,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         clearTags();
         showNoData(tvMessage, adapterCourses.getItemCount());
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_course_parent_layout), getActivity());
+        changeButtonStatus();
 
     }
 

@@ -6,7 +6,6 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,20 +34,19 @@ import io.realm.Realm;
  */
 public class CollectionsFragment extends DialogFragment implements TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
 
+    static List<RealmTag> recentList;
     ExpandableListView listTag;
     TextInputLayout tlFilter;
-//    SwitchCompat switchMany;
+    //    SwitchCompat switchMany;
     Realm mRealm;
-    static List<RealmTag> recentList;
     List<RealmTag> list;
     List<RealmTag> filteredList;
     TagExpandableAdapter adapter;
     EditText etFilter;
     Button btnOk;
     String dbType;
-    private ArrayList<RealmTag> selectedItemsList = new ArrayList<>();
-
     TagClickListener listener;
+    private ArrayList<RealmTag> selectedItemsList = new ArrayList<>();
 
     public CollectionsFragment() {
     }
@@ -72,7 +69,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setStyle(DialogFragment.STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog_NoActionBar_MinWidth);
-        if (getArguments()!=null)
+        if (getArguments() != null)
             dbType = getArguments().getString("dbType");
     }
 
