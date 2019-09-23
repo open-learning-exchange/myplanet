@@ -69,6 +69,30 @@ public class FinanceFragment extends BaseTeamFragment {
         fab = v.findViewById(R.id.add_transaction);
         nodata = v.findViewById(R.id.tv_nodata);
         date = Calendar.getInstance();
+        v.findViewById(R.id.btn_filter).setOnClickListener(view -> {
+            Calendar now = Calendar.getInstance();
+            com.borax12.materialdaterangepicker.date.DatePickerDialog.newInstance(
+                    (view1, year, monthOfYear, dayOfMonth, yearEnd, monthOfYearEnd, dayOfMonthEnd) -> {
+                        Calendar start = Calendar.getInstance();
+                        Calendar end = Calendar.getInstance();
+                        start.set(year, monthOfYear, dayOfMonth);
+                        end.set(yearEnd, monthOfYearEnd, dayOfMonthEnd);
+                        Utilities.log("" + start.getTimeInMillis() + " " + end.getTimeInMillis());
+                        list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId)
+                                .equalTo("docType", "transaction")
+                                .between("date", start.getTimeInMillis(), end.getTimeInMillis())
+                                .sort("date", Sort.DESCENDING).findAll();
+                        adapterFinance = new AdapterFinance(getActivity(), list);
+                        rvFinance.setAdapter(adapterFinance);
+                        calculateTotal(list);
+
+                    },
+                    now.get(Calendar.YEAR),
+                    now.get(Calendar.MONTH),
+                    now.get(Calendar.DAY_OF_MONTH)
+            ).show(getActivity().getFragmentManager(), "");
+
+        });
         return v;
     }
 

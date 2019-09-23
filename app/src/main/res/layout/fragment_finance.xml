@@ -11,6 +11,19 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <Button
+            android:layout_width="wrap_content"
+            android:textSize="18sp"
+            android:padding="@dimen/padding_normal"
+            android:layout_gravity="right"
+            android:text="Filter"
+            android:drawableLeft="@drawable/ic_date"
+            android:id="@+id/btn_filter"
+            android:theme="@style/PrimaryButton"
+            android:layout_height="wrap_content" />
+
+
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

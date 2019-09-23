@@ -106,6 +106,8 @@ dependencies {
     implementation 'de.hdodenhof:circleimageview:3.0.0'
     implementation 'org.osmdroid:osmdroid-android:6.1.0'
     implementation 'com.github.clans:fab:1.6.4'
+    implementation 'com.borax12.materialdaterangepicker:library:2.0'
+
     implementation project(':ChipCloud-3.0.5')
 }
 realm {
