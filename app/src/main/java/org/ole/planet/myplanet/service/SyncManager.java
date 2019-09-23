@@ -124,6 +124,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "login_activities");
             TransactionSyncManager.syncDb(mRealm, "teams");
             TransactionSyncManager.syncDb(mRealm, "tasks");
+            TransactionSyncManager.syncDb(mRealm, "meetups");
             ManagerSync.getInstance().syncAdmin();
             resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
@@ -253,7 +254,7 @@ public class SyncManager {
                 RealmMyLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":
-                RealmMeetup.insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                RealmMeetup.insertMyMeetups(stringArray[0], resourceDoc, mRealm);
                 break;
             case "courses":
                 RealmMyCourse.insertMyCourses(stringArray[0], resourceDoc, mRealm);
