@@ -33,16 +33,16 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 //        return selectedItemsList;
 //    }
 
-    public void setSelectMultiple(boolean selectMultiple) {
-        isSelectMultiple = selectMultiple;
-
-    }
-
     public TagExpandableAdapter(Context context, List<RealmTag> tagList, HashMap<String, List<RealmTag>> childMap, ArrayList<RealmTag> selectedItemsList) {
         this.context = context;
         this.tagList = tagList;
         this.childMap = childMap;
         this.selectedItemsList = selectedItemsList;
+    }
+
+    public void setSelectMultiple(boolean selectMultiple) {
+        isSelectMultiple = selectMultiple;
+
     }
 
     @Override
