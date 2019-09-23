@@ -85,7 +85,6 @@ public class FinanceFragment extends BaseTeamFragment {
                         adapterFinance = new AdapterFinance(getActivity(), list);
                         rvFinance.setAdapter(adapterFinance);
                         calculateTotal(list);
-
                     },
                     now.get(Calendar.YEAR),
                     now.get(Calendar.MONTH),
