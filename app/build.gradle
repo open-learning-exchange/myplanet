@@ -7,8 +7,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 529
-        versionName "0.5.29"
+        versionCode 530
+        versionName "0.5.30"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -106,6 +106,8 @@ dependencies {
     implementation 'de.hdodenhof:circleimageview:3.0.0'
     implementation 'org.osmdroid:osmdroid-android:6.1.0'
     implementation 'com.github.clans:fab:1.6.4'
+    implementation 'com.borax12.materialdaterangepicker:library:2.0'
+
     implementation project(':ChipCloud-3.0.5')
 }
 realm {
