@@ -227,23 +227,23 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:gravity="center"
                 android:orientation="horizontal">
 
                 <android.support.v7.widget.RecyclerView
-                    android:layout_width="match_parent"
                     android:id="@+id/rv_teams"
-                    android:layout_marginLeft="10dp"
-                    android:layout_height="match_parent"/>
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginLeft="10dp" />
 
                 <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
-                    android:gravity="center"
                     android:id="@+id/tv_nodata"
-                    android:layout_height="wrap_content" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center" />
 
             </FrameLayout>
         </LinearLayout>
