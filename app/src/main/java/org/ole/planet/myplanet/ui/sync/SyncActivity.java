@@ -108,7 +108,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         if (teams.size() > 0) {
             tvNodata.setVisibility(View.GONE);
         } else {
-            tvNodata.setText("No teams available");
+            tvNodata.setText("No team / enterprise available");
             tvNodata.setVisibility(View.VISIBLE);
         }
     }
