@@ -31,10 +31,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
-import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
-import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
@@ -52,6 +49,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     public BottomNavigationView navigationView;
 
     public UserProfileDbHandler profileDbHandler;
+    boolean doubleBackToExitPressedOnce;
     private SharedPreferences settings;
 
     @Override
@@ -84,13 +82,11 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         }
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
         return true;
     }
-
 
     public void openCallFragment(Fragment newfragment, String tag) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -99,7 +95,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         fragmentTransaction.addToBackStack("");
         fragmentTransaction.commit();
     }
-
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
@@ -120,12 +115,12 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         } else if (id == R.id.action_setting) {
             startActivity(new Intent(this, SettingActivity.class));
         } else if (id == R.id.action_sync) {
-          syncNow();
+            syncNow();
         }
         return super.onOptionsItemSelected(item);
     }
 
-    protected  void syncNow(){
+    protected void syncNow() {
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
         startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         doubleBackToExitPressedOnce = true;
@@ -184,9 +179,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         doubleBackToExitPressedOnce = true;
         this.finish();
     }
-
-
-    boolean doubleBackToExitPressedOnce;
 
     @Override
     public void finish() {

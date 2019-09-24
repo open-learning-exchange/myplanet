@@ -269,4 +269,5 @@
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>
     <string name="recurring_frequency">Recurring Frequency</string>
+    <string name="filter_by_date">Date Filter</string>
 </resources>
