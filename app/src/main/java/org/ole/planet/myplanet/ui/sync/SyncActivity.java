@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -24,7 +23,6 @@ import com.github.kittinunf.fuel.core.Response;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
@@ -190,7 +188,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         editor.commit();
     }
 
-    public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode ) {
+    public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode) {
         this.settings = settings;
         if (mRealm.isEmpty()) {
             alertDialogOkay("Server not configured properly. Connect this device with Planet server");

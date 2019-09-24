@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputEditText;
@@ -55,6 +54,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     EditText serverUrl, serverUrlProtocol;
     EditText serverPassword;
+    String processedUrl;
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
@@ -65,7 +65,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifImageButton syncIcon;
     private CheckBox save, managerialLogin;
     private boolean isSync = false, isUpload = false, forceSync = false;
-    String processedUrl;
     private SwitchCompat switchChildMode;
 
     @Override
@@ -407,6 +406,19 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }).setNegativeButton(R.string.cancel, null).show();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mRealm != null && !mRealm.isClosed())
+            mRealm.close();
+    }
+
+    public String removeProtocol(String url) {
+        url = url.replaceFirst(getString(R.string.https_protocol), "");
+        url = url.replaceFirst(getString(R.string.http_protocol), "");
+        return url;
+    }
+
     private class MyTextWatcher implements TextWatcher {
         private View view;
 
@@ -436,18 +448,5 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     break;
             }
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mRealm != null && !mRealm.isClosed())
-            mRealm.close();
-    }
-
-    public String removeProtocol(String url) {
-        url = url.replaceFirst(getString(R.string.https_protocol), "");
-        url = url.replaceFirst(getString(R.string.http_protocol), "");
-        return url;
     }
 }

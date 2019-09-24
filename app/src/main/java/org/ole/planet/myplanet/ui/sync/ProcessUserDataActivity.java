@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Objects;
 
@@ -38,6 +37,15 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public abstract class ProcessUserDataActivity extends PermissionActivity implements SuccessListener {
     SharedPreferences settings;
     ProgressDialog progressDialog;
+    public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                checkDownloadResult(download, progressDialog);
+            }
+        }
+    };
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -68,7 +76,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         startActivity(dashboard);
         finish();
     }
-
 
     private void requestFocus(View view) {
         if (view.requestFocus()) {
@@ -116,7 +123,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         return couchdbURL;
     }
 
-
     public boolean isUrlValid(String url) {
         if (!URLUtil.isValidUrl(url) || url.equals("http://") || url.equals("https://")) {
             DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
@@ -124,16 +130,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         }
         return true;
     }
-
-    public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                checkDownloadResult(download, progressDialog);
-            }
-        }
-    };
 
     public void startUpload() {
         progressDialog.setMessage("Uploading data to server, please wait.....");
