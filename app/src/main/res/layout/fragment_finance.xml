@@ -18,7 +18,7 @@
             android:layout_gravity="left"
             android:text="@string/filter_by_date"
             android:id="@+id/btn_filter"
-            android:theme="@style/PrimaryButton"
+            android:theme="@style/GuestStyle"
             android:layout_height="wrap_content" />
 
 
