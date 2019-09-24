@@ -15,8 +15,8 @@
             android:layout_width="wrap_content"
             android:textSize="18sp"
             android:padding="@dimen/padding_normal"
-            android:layout_gravity="right"
-            android:text="Filter by date"
+            android:layout_gravity="left"
+            android:text="@string/filter_by_date"
             android:id="@+id/btn_filter"
             android:theme="@style/PrimaryButton"
             android:layout_height="wrap_content" />
@@ -73,7 +73,7 @@
                 android:textColor="@color/md_black_1000"
                 android:layout_weight="1"
                 android:textSize="@dimen/text_size_mid"
-                android:padding="@dimen/text_size_mid"
+                android:padding="@dimen/padding_small"
                 android:text="@string/debit"
            />
 
