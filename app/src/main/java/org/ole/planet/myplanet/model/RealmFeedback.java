@@ -14,6 +14,9 @@ import org.json.JSONObject;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
@@ -189,6 +192,22 @@ public class RealmFeedback extends RealmObject {
 
     public String getMessages() {
         return messages;
+    }
+
+    public List<FeedbackReply> getMessageList() {
+        JsonParser parser = new JsonParser();
+        if (TextUtils.isEmpty(messages))
+            return null;
+        List<FeedbackReply> feedbackReplies= new ArrayList<>();
+        JsonElement e = parser.parse(messages);
+        JsonArray ar = e.getAsJsonArray();
+        if (ar.size() > 0) {
+            for(int i = 1; i < ar.size(); i ++ ){
+                JsonObject ob = ar.get(i).getAsJsonObject();
+                feedbackReplies.add(new FeedbackReply(ob.get("message").getAsString(),ob.get("user").getAsString(),ob.get("time").getAsString()));
+            }
+        }
+        return feedbackReplies;
     }
 
     public String getMessage() {

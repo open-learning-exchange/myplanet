@@ -1,11 +1,17 @@
 package org.ole.planet.myplanet.ui.feedback;
 
+import android.content.Context;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -19,16 +25,25 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.FeedbackReply;
 import org.ole.planet.myplanet.model.RealmFeedback;
+import org.ole.planet.myplanet.ui.mylife.AdapterMyLife;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
+import java.util.List;
 
 import io.realm.Realm;
 
 public class FeedbackDetailActivity extends AppCompatActivity {
+
+    private RecyclerView rv_feedback_reply;
+    private RecyclerView.Adapter mAdapter;
+    private RecyclerView.LayoutManager layoutManager;
+    Button closeButton,replyButton;
+    EditText editText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,9 +61,26 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         else
             tvDate.setText("Date : N/A");
         tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
-        Button closeButton = findViewById(R.id.close_feedback);
-        Button replyButton = findViewById(R.id.reply_feedback);
-        EditText editText = findViewById(R.id.feedback_reply_edit_text);
+        closeButton = findViewById(R.id.close_feedback);
+        replyButton = findViewById(R.id.reply_feedback);
+        editText = findViewById(R.id.feedback_reply_edit_text);
+
+        rv_feedback_reply = (RecyclerView) findViewById(R.id.rv_feedback_reply);
+        rv_feedback_reply.setHasFixedSize(true);
+        layoutManager = new LinearLayoutManager(this);
+        rv_feedback_reply.setLayoutManager(layoutManager);
+        mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
+        rv_feedback_reply.setAdapter(mAdapter);
+        updateForClosed(feedback);
+
+        closeButton.setOnClickListener(view -> {
+            realm.executeTransaction(realm1 -> {
+                RealmFeedback feedback1 = realm1.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
+                feedback1.setStatus("Closed");
+                updateForClosed(feedback1);
+            });
+        });
+
         replyButton.setOnClickListener(r -> {
             String message = editText.getText().toString();
             JsonObject object = new JsonObject();
@@ -57,8 +89,18 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             object.addProperty("user", feedback.getOwner() +"");
             String id = feedback.getId();
             addReply(realm, object,id);
+            mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
+            rv_feedback_reply.setAdapter(mAdapter);
         });
 
+    }
+
+    public void updateForClosed(RealmFeedback feedback){
+        if(feedback.getStatus().equalsIgnoreCase("Closed")){
+            closeButton.setEnabled(false);
+            replyButton.setEnabled(false);
+            editText.setVisibility(View.INVISIBLE);
+        }
     }
 
     public void addReply(Realm mRealm, JsonObject obj, String id) {
@@ -67,7 +109,7 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             mRealm.executeTransaction(realm -> {
                 Gson con = new Gson();
                 JsonArray msgArray = con.fromJson(feedback.getMessages(),JsonArray.class);
-                Log.e("hi", new Gson().toJson(msgArray));
+                Log.e("Msg", new Gson().toJson(msgArray));
                 msgArray.add(obj);
                 feedback.setMessages(msgArray);
             });
@@ -80,4 +122,46 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             finish();
         return super.onOptionsItemSelected(item);
     }
+
+    public class RvFeedbackAdapter extends RecyclerView.Adapter<RvFeedbackAdapter.ReplyViewHolder> {
+        private List<FeedbackReply> replyList;
+        Context context;
+
+        public class ReplyViewHolder extends RecyclerView.ViewHolder {
+            public TextView tv_message, tv_date,tv_user;
+            public ReplyViewHolder(View v) {
+                super(v);
+                tv_message = v.findViewById(R.id.tv_message);
+                tv_user = v.findViewById(R.id.tv_user);
+                tv_date = v.findViewById(R.id.tv_date);
+            }
+        }
+
+        public RvFeedbackAdapter(List<FeedbackReply> replyList, Context context) {
+            this.replyList = replyList;
+            this.context = context;
+        }
+
+        @Override
+        public RvFeedbackAdapter.ReplyViewHolder onCreateViewHolder(ViewGroup parent,
+                                                         int viewType) {
+            View v = LayoutInflater.from(context).inflate(R.layout.row_feedback_reply, parent, false);
+            return new RvFeedbackAdapter.ReplyViewHolder(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ReplyViewHolder holder, int position) {
+           holder.tv_date.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(replyList.get(position).getDate())));
+           holder.tv_user.setText(replyList.get(position).getUser());
+           holder.tv_message.setText(replyList.get(position).getMessage());
+        }
+
+        @Override
+        public int getItemCount() {
+            return replyList.size();
+        }
+    }
+
+
 }
+
