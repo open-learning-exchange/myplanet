@@ -44,6 +44,8 @@ public class FeedbackDetailActivity extends AppCompatActivity {
     private RecyclerView.LayoutManager layoutManager;
     Button closeButton,replyButton;
     EditText editText;
+    RealmFeedback feedback;
+    Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,8 +54,8 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle("Feedback");
-        Realm realm = new DatabaseService(this).getRealmInstance();
-        RealmFeedback feedback = realm.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
+        realm = new DatabaseService(this).getRealmInstance();
+        feedback = realm.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
         TextView tvMessage = findViewById(R.id.tv_message);
         TextView tvDate = findViewById(R.id.tv_date);
         if (!TextUtils.isEmpty(feedback.getOpenTime()))
@@ -64,23 +66,24 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         closeButton = findViewById(R.id.close_feedback);
         replyButton = findViewById(R.id.reply_feedback);
         editText = findViewById(R.id.feedback_reply_edit_text);
+        setUpReplies();
+    }
 
+    public void setUpReplies(){
         rv_feedback_reply = (RecyclerView) findViewById(R.id.rv_feedback_reply);
         rv_feedback_reply.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(this);
         rv_feedback_reply.setLayoutManager(layoutManager);
         mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
         rv_feedback_reply.setAdapter(mAdapter);
-        updateForClosed(feedback);
-
+        updateForClosed();
         closeButton.setOnClickListener(view -> {
             realm.executeTransaction(realm1 -> {
                 RealmFeedback feedback1 = realm1.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
                 feedback1.setStatus("Closed");
-                updateForClosed(feedback1);
+                updateForClosed();
             });
         });
-
         replyButton.setOnClickListener(r -> {
             String message = editText.getText().toString();
             JsonObject object = new JsonObject();
@@ -92,10 +95,9 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
             rv_feedback_reply.setAdapter(mAdapter);
         });
-
     }
 
-    public void updateForClosed(RealmFeedback feedback){
+    public void updateForClosed(){
         if(feedback.getStatus().equalsIgnoreCase("Closed")){
             closeButton.setEnabled(false);
             replyButton.setEnabled(false);
