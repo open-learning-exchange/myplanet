@@ -143,8 +143,9 @@ public class TeamFragment extends Fragment {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("type", "enterprise").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE);
+                RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE);
                 AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), getList(query), mRealm);
+                Utilities.log("Adapter size " + adapterTeamList.getItemCount() );
                 rvTeamList.setAdapter(adapterTeamList);
             }
 
@@ -166,7 +167,6 @@ public class TeamFragment extends Fragment {
 
     private void setTeamList() {
         RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived");
-
         AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), getList(query), mRealm);
         adapterTeamList.setType(type);
         getView().findViewById(R.id.type).setVisibility(type == null ? View.VISIBLE : View.GONE);
