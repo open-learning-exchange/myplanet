@@ -50,7 +50,11 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof ViewHolderTask) {
             ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
-            ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(Long.parseLong(list.get(position).getDeadline())));
+            try{
+                ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(Long.parseLong(list.get(position).getDeadline())));
+            }catch(Exception df){
+                ((ViewHolderTask) holder).deadline.setText("Deadline : " + list.get(position).getDeadline());
+            }
             showAssignee(holder, list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null)
