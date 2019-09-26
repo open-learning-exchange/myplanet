@@ -31,7 +31,6 @@ import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
-import org.ole.planet.myplanet.datamanager.AES256;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
@@ -46,6 +45,9 @@ import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
@@ -288,10 +290,19 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         handler.onDestory();
         editor.putBoolean(Constants.KEY_LOGIN, true).commit();
         //openDashboard();
-        byte[] bt = { 1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4, 5,6,7,8,9,0,1,2 };
-        String  res = AES256.encrypt("\"cat\":\"zuzu\"","0123456789abcdef",bt);
-        Log.e("Enc", "Result "+res);
+        try {
+            Cipher cipher = Cipher.getInstance("AES");
+            byte[] keyBytes   = new byte[]{1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4, 5,6,7,8,9,0,1,2};
+            String algorithm  = "0123456789abcdef";
+            SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
 
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            String plainText  = "\"cat\":\"zuzu\"";
+            byte[] cipherText = cipher.doFinal(plainText.getBytes());
+            Log.e("Enc", "Result "+cipherText);
+        } catch (Exception err) {
+            err.printStackTrace();
+        }
     }
 
 
