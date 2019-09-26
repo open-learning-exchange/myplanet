@@ -14,6 +14,7 @@ import android.support.v7.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -30,6 +31,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
+import org.ole.planet.myplanet.datamanager.AES256;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
@@ -285,7 +287,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         handler.onLogin();
         handler.onDestory();
         editor.putBoolean(Constants.KEY_LOGIN, true).commit();
-        openDashboard();
+        //openDashboard();
+        byte[] bt = { 1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4, 5,6,7,8,9,0,1,2 };
+        String  res = AES256.encrypt("\"cat\":\"zuzu\"","0123456789abcdef",bt);
+        Log.e("Enc", "Result "+res);
+
     }
 
 
