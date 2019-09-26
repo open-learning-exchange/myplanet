@@ -12,6 +12,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -25,11 +27,14 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 import io.realm.Sort;
 
 /**
@@ -41,13 +46,17 @@ public class FinanceFragment extends BaseTeamFragment {
     FloatingActionButton fab;
     TextView nodata;
     Realm mRealm;
+    ImageView imgDate;
     AdapterFinance adapterFinance;
     TextInputLayout tlNote;
     Spinner spnType;
     TextInputLayout tlAmount;
+    LinearLayout llDate;
     Calendar date;
     TextView tvSelectDate;
-    List<RealmMyTeam> list;
+    RealmResults<RealmMyTeam> list;
+    boolean isAsc = false;
+
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         date = Calendar.getInstance();
         date.set(Calendar.YEAR, year);
@@ -68,9 +77,18 @@ public class FinanceFragment extends BaseTeamFragment {
         rvFinance = v.findViewById(R.id.rv_finance);
         fab = v.findViewById(R.id.add_transaction);
         nodata = v.findViewById(R.id.tv_nodata);
+        imgDate = v.findViewById(R.id.img_date);
+        llDate = v.findViewById(R.id.ll_date);
         date = Calendar.getInstance();
         v.findViewById(R.id.btn_filter).setOnClickListener(view -> {
-           showDatePickerDialog();
+            showDatePickerDialog();
+        });
+        llDate.setOnClickListener(view -> {
+            imgDate.setRotation(imgDate.getRotation() + 180);
+            list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date",isAsc? Sort.DESCENDING : Sort.ASCENDING).findAll();
+            adapterFinance = new AdapterFinance(getActivity(), list);
+            rvFinance.setAdapter(adapterFinance);
+            isAsc = !isAsc;
         });
         return v;
     }
@@ -143,7 +161,7 @@ public class FinanceFragment extends BaseTeamFragment {
                         Utilities.toast(getActivity(), "Date is required");
                     } else {
                         mRealm.executeTransactionAsync(realm -> {
-                            createTransactionObject(realm, type, note, amount,date);
+                            createTransactionObject(realm, type, note, amount, date);
                         }, () -> {
                             Utilities.toast(getActivity(), "Transaction added");
                             adapterFinance.notifyDataSetChanged();

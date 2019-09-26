@@ -311,7 +311,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         b.putString("surveyId", current.getId());
         f.setArguments(b);
         f.show(getSupportFragmentManager(), "");
-
     }
 
 
@@ -403,6 +402,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         mDetector.onTouchEvent(ev);
         return super.dispatchTouchEvent(ev);
     }
+
 
     public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
         @Override
