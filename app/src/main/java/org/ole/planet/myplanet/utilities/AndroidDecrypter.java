@@ -1,7 +1,12 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.util.Log;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 
 import de.rtner.misc.BinTools;
 import de.rtner.security.auth.spi.PBKDF2Engine;
@@ -34,7 +39,26 @@ public class AndroidDecrypter {
         return "";
     }
 
-  public  Boolean AndroidDecrypter(String usr_ID, String usr_rawPswd, String db_PswdkeyValue, String db_Salt) {
+    private static byte[] encrypt(String s) throws Exception {
+        byte[] keyBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2};
+        String algorithm = "0123456789abcdef";
+        SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        return cipher.doFinal(s.getBytes());
+    }
+
+    private static byte[] decrypt(String s) throws Exception {
+        byte[] keyBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2};
+        String algorithm = "0123456789abcdef";
+        SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
+        Cipher cipher = Cipher.getInstance("AES");
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        return cipher.doFinal(s.getBytes());
+    }
+
+
+    public Boolean AndroidDecrypter(String usr_ID, String usr_rawPswd, String db_PswdkeyValue, String db_Salt) {
         try {
 
             //SecureRandom.getInstance("HmacSHA1").nextBytes(salt);

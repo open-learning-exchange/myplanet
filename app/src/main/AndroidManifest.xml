@@ -33,8 +33,11 @@
         android:theme="@style/MyMaterialTheme"
         tools:replace="android:label">
         <activity
+            android:name=".ui.myhealth.AddMyHealthActivity"
+            android:theme="@style/AppTheme" />
+        <activity
             android:name=".ui.myhealth.MyHealthDetailActivity"
-            android:theme="@style/AppTheme"></activity>
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.myhealth.AddVitalSignActivity"
             android:theme="@style/AppTheme" />
