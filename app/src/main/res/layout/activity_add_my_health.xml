@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="@dimen/padding_normal"
     tools:context=".ui.myhealth.AddMyHealthActivity">
 
     <LinearLayout
@@ -74,6 +75,7 @@
                 <EditText
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress"
                     android:hint="@string/email"
                     android:padding="@dimen/padding_normal" />
 
@@ -88,6 +90,7 @@
                 <EditText
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:inputType="phone"
                     android:hint="@string/phone_number"
                     android:padding="@dimen/padding_normal" />
 
