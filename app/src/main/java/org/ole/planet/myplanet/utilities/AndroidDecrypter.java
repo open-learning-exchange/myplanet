@@ -5,7 +5,9 @@ import android.util.Log;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.rtner.misc.BinTools;
@@ -39,22 +41,21 @@ public class AndroidDecrypter {
         return "";
     }
 
-    private static byte[] encrypt(String s) throws Exception {
+    public static byte[] encrypt(String s) throws Exception {
+        return encryptDecrypt(s, Cipher.ENCRYPT_MODE);
+    }
+
+    private static byte[] encryptDecrypt(String s, int mode) throws Exception {
         byte[] keyBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2};
         String algorithm = "0123456789abcdef";
         SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
         Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.ENCRYPT_MODE, key);
+        cipher.init(mode, key);
         return cipher.doFinal(s.getBytes());
     }
 
-    private static byte[] decrypt(String s) throws Exception {
-        byte[] keyBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2};
-        String algorithm = "0123456789abcdef";
-        SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(Cipher.DECRYPT_MODE, key);
-        return cipher.doFinal(s.getBytes());
+    public static byte[] decrypt(String s) throws Exception {
+        return encryptDecrypt(s, Cipher.DECRYPT_MODE);
     }
 
 
