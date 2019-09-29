@@ -45,7 +45,7 @@ public class AndroidDecrypter {
         return encryptDecrypt(s, Cipher.ENCRYPT_MODE);
     }
 
-    private static byte[] encryptDecrypt(String s, int mode) throws Exception {
+    public static byte[] encryptDecrypt(String s, int mode) throws Exception {
         byte[] keyBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2};
         String algorithm = "0123456789abcdef";
         SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
