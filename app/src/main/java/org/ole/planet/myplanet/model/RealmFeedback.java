@@ -40,6 +40,10 @@ public class RealmFeedback extends RealmObject {
     //    private RealmList<RealmMessage> messages;
     private String messages;
 
+    private String item;
+    private String parentCode;
+    private String state;
+
     public static JsonObject serializeFeedback(RealmFeedback feedback) {
         JsonObject object = new JsonObject();
         object.addProperty("title", feedback.getTitle());
@@ -50,6 +54,9 @@ public class RealmFeedback extends RealmObject {
         object.addProperty("openTime", feedback.getOpenTime());
         object.addProperty("type", feedback.getType());
         object.addProperty("url", feedback.getUrl());
+        object.addProperty("parentCode", feedback.getParentCode());
+        object.addProperty("state",feedback.getState());
+        object.addProperty("item",feedback.getItem());
         JsonParser parser = new JsonParser();
         try {
             object.add("messages", parser.parse(feedback.getMessages()));
@@ -73,8 +80,11 @@ public class RealmFeedback extends RealmObject {
         feedback.setOpenTime(JsonUtils.getString("openTime", act));
         feedback.setType(JsonUtils.getString("type", act));
         feedback.setUrl(JsonUtils.getString("url", act));
+        feedback.setParentCode(JsonUtils.getString("parentCode",act));
         feedback.setMessages(new Gson().toJson(JsonUtils.getJsonArray("messages", act)));
         feedback.setUploaded(true);
+        feedback.setItem(JsonUtils.getString("item",act));
+        feedback.setState(JsonUtils.getString("state",act));
     }
 
     public void setMessages(JsonArray messages) {
@@ -199,5 +209,27 @@ public class RealmFeedback extends RealmObject {
         this.uploaded = uploaded;
     }
 
+    public String getItem() {
+        return item;
+    }
 
+    public void setItem(String item) {
+        this.item = item;
+    }
+
+    public String getParentCode() {
+        return parentCode;
+    }
+
+    public void setParentCode(String parentCode) {
+        this.parentCode = parentCode;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
 }

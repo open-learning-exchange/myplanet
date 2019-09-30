@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.team;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +17,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.List;
@@ -27,13 +30,15 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
     private List<RealmMyTeam> list;
     private Realm mRealm;
     private String type = "";
+    private FragmentManager fragmentManager;
 
 
-    public AdapterTeamList(Context context, List<RealmMyTeam> list, Realm mRealm) {
+    public AdapterTeamList(Context context, List<RealmMyTeam> list, Realm mRealm, FragmentManager fragmentManager) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
         this.user = new UserProfileDbHandler(context).getUserModel();
+        this.fragmentManager = fragmentManager;
     }
 
 
@@ -53,8 +58,6 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             boolean isMyTeam = list.get(position).isMyTeam(user.getId(), mRealm);
             showActionButton(isMyTeam, holder, position);
-
-
             holder.itemView.setOnClickListener(view -> {
                 if (context instanceof OnHomeItemClickListener) {
                     TeamDetailFragment f = new TeamDetailFragment();
@@ -64,6 +67,16 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     f.setArguments(b);
                     ((OnHomeItemClickListener) context).openCallFragment(f);
                 }
+            });
+            ((ViewHolderTeam) holder).feedback.setOnClickListener(v2->{
+                Bundle bundle = new Bundle();
+                if(list.get(position).getType().isEmpty()) bundle.putString("state","teams");
+                    else bundle.putString("state",list.get(position).getType()+"s");
+                bundle.putString("item",list.get(position).getId());
+                bundle.putString("parentCode","dev");
+                FeedbackFragment feedbackFragment = new FeedbackFragment();
+                feedbackFragment.show(fragmentManager,"");
+                feedbackFragment.setArguments(bundle);
             });
         }
     }
@@ -100,7 +113,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     class ViewHolderTeam extends RecyclerView.ViewHolder {
         TextView name, created, type;
-        Button action;
+        Button action,feedback;
 
         public ViewHolderTeam(View itemView) {
             super(itemView);
@@ -108,6 +121,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             created = itemView.findViewById(R.id.created);
             type = itemView.findViewById(R.id.type);
             action = itemView.findViewById(R.id.join_leave);
+            feedback = itemView.findViewById(R.id.btn_feedback);
         }
     }
 }
