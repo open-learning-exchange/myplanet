@@ -260,4 +260,14 @@
     <string name="credit">Credit</string>
     <string name="balance">Balance</string>
     <string name="total">Total</string>
+    <string name="location">Location</string>
+    <string name="start_date">Start Time</string>
+    <string name="click_here_to_pick_time">Click here to pick time</string>
+    <string name="start_time">Start Time</string>
+    <string name="end_date">End Date</string>
+    <string name="end_time">End Time</string>
+    <string name="daily">Daily</string>
+    <string name="weekly">Weekly</string>
+    <string name="recurring_frequency">Recurring Frequency</string>
+    <string name="filter_by_date">Date Filter</string>
 </resources>

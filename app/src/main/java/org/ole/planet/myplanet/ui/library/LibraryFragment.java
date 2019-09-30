@@ -1,14 +1,10 @@
 package org.ole.planet.myplanet.ui.library;
 
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -39,7 +35,9 @@ import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
 
-import static org.ole.planet.myplanet.model.RealmMyLibrary.*;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getArrayList;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -111,7 +109,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             f.setListener(this);
             f.show(getChildFragmentManager(), "");
         });
-        KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout),getActivity());
+        KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout), getActivity());
+        changeButtonStatus();
 
 
     }

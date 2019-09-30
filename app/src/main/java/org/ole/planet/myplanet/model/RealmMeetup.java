@@ -8,6 +8,7 @@ import com.google.gson.JsonObject;
 import org.json.JSONArray;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,8 +28,8 @@ public class RealmMeetup extends RealmObject {
     private String meetupId_rev;
     private String title;
     private String description;
-    private String startDate;
-    private String endDate;
+    private long startDate;
+    private long endDate;
     private String recurring;
     private String Day;
     private String startTime;
@@ -36,17 +37,26 @@ public class RealmMeetup extends RealmObject {
     private String category;
     private String meetupLocation;
     private String creator;
+    private String links;
+    private String teamId;
 
-    public static void insertMyMeetups(String userId, String meetupID, JsonObject meetupDoc, Realm mRealm) {
+    public static void insert(Realm mRealm, JsonObject meetupDoc) {
+        insert("", meetupDoc, mRealm);
+    }
 
-        RealmMeetup myMeetupsDB = mRealm.createObject(RealmMeetup.class, UUID.randomUUID().toString());
+    public static void insert(String userId, JsonObject meetupDoc, Realm mRealm) {
+        Utilities.log("INSERT MEETUP " + meetupDoc);
+        RealmMeetup myMeetupsDB = mRealm.where(RealmMeetup.class).equalTo("id", JsonUtils.getString("_id", meetupDoc)).findFirst();
+        if (myMeetupsDB == null) {
+            myMeetupsDB = mRealm.createObject(RealmMeetup.class, JsonUtils.getString("_id", meetupDoc));
+        }
+        myMeetupsDB.setMeetupId(JsonUtils.getString("_id", meetupDoc));
         myMeetupsDB.setUserId(userId);
-        myMeetupsDB.setMeetupId(meetupID);
         myMeetupsDB.setMeetupId_rev(JsonUtils.getString("_rev", meetupDoc));
         myMeetupsDB.setTitle(JsonUtils.getString("title", meetupDoc));
         myMeetupsDB.setDescription(JsonUtils.getString("description", meetupDoc));
-        myMeetupsDB.setStartDate(JsonUtils.getString("startDate", meetupDoc));
-        myMeetupsDB.setEndDate(JsonUtils.getString("endDate", meetupDoc));
+        myMeetupsDB.setStartDate(JsonUtils.getLong("startDate", meetupDoc));
+        myMeetupsDB.setEndDate(JsonUtils.getLong("endDate", meetupDoc));
         myMeetupsDB.setRecurring(JsonUtils.getString("recurring", meetupDoc));
         myMeetupsDB.setStartTime(JsonUtils.getString("startTime", meetupDoc));
         myMeetupsDB.setEndTime(JsonUtils.getString("endTime", meetupDoc));
@@ -54,8 +64,30 @@ public class RealmMeetup extends RealmObject {
         myMeetupsDB.setMeetupLocation(JsonUtils.getString("meetupLocation", meetupDoc));
         myMeetupsDB.setCreator(JsonUtils.getString("creator", meetupDoc));
         myMeetupsDB.setDay(JsonUtils.getJsonArray("day", meetupDoc).toString());
+        myMeetupsDB.setLinks(JsonUtils.getJsonObject("links", meetupDoc).toString());
+        myMeetupsDB.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("links", meetupDoc)));
     }
 
+    public static void insertMyMeetups(String userId, JsonObject resourceDoc, Realm mRealm) {
+
+    }
+
+
+    public String getTeamId() {
+        return teamId;
+    }
+
+    public void setTeamId(String teamId) {
+        this.teamId = teamId;
+    }
+
+    public String getLinks() {
+        return links;
+    }
+
+    public void setLinks(String links) {
+        this.links = links;
+    }
 
     public static JsonArray getMyMeetUpIds(Realm realm, String userId) {
         RealmResults<RealmMeetup> meetups = realm.where(RealmMeetup.class).isNotEmpty("userId")
@@ -63,7 +95,7 @@ public class RealmMeetup extends RealmObject {
 
         JsonArray ids = new JsonArray();
         for (RealmMeetup lib : meetups
-                ) {
+        ) {
             ids.add(lib.getMeetupId());
         }
         return ids;
@@ -126,19 +158,19 @@ public class RealmMeetup extends RealmObject {
         this.description = description;
     }
 
-    public String getStartDate() {
+    public long getStartDate() {
         return startDate;
     }
 
-    public void setStartDate(String startDate) {
+    public void setStartDate(long startDate) {
         this.startDate = startDate;
     }
 
-    public String getEndDate() {
+    public long getEndDate() {
         return endDate;
     }
 
-    public void setEndDate(String endDate) {
+    public void setEndDate(long endDate) {
         this.endDate = endDate;
     }
 
@@ -196,7 +228,7 @@ public class RealmMeetup extends RealmObject {
         map.put("Created By", checkNull(meetups.getCreator()));
         map.put("Category", checkNull(meetups.getCategory()));
         try {
-            map.put("Meetup Date", TimeUtils.getFormatedDate(Long.parseLong(meetups.getStartDate())) + " - " + TimeUtils.getFormatedDate(Long.parseLong(meetups.getEndDate())));
+            map.put("Meetup Date", TimeUtils.getFormatedDate((meetups.getStartDate())) + " - " + TimeUtils.getFormatedDate((meetups.getEndDate())));
         } catch (Exception e) {
         }
         map.put("Meetup Time", checkNull(meetups.getStartTime()) + " - " + checkNull(meetups.getEndTime()));

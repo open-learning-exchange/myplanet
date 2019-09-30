@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.ui.library;
 
-import android.content.DialogInterface;
+import android.os.Bundle;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -109,7 +108,7 @@ public class AddResourceActivity extends AppCompatActivity {
         resource.setAuthor(etAuthor.getText().toString());
         resource.setResource_id(id);
         resource.setYear(etYear.getText().toString());
-        resource.setDescription( etDescription.getText().toString());
+        resource.setDescription(etDescription.getText().toString());
         resource.setPublisher(etPublisher.getText().toString());
         resource.setLinkToLicense(etLinkToLicense.getText().toString());
         resource.setOpenWith(spnOpenWith.getSelectedItem().toString());

@@ -49,14 +49,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     //  private HashMap<String, RealmTag> tagMap;
     // private HashMap<String, RealmTag> tagMapWithName;
 
-    public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
-        this.ratingChangeListener = ratingChangeListener;
-    }
-
-    public List<RealmMyLibrary> getLibraryList() {
-        return libraryList;
-    }
-
     //    public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, HashMap<String, RealmTag> tagMap) {
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
         this.ratingMap = ratingMap;
@@ -77,6 +69,14 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
 
+    }
+
+    public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
+        this.ratingChangeListener = ratingChangeListener;
+    }
+
+    public List<RealmMyLibrary> getLibraryList() {
+        return libraryList;
     }
 
     public void setLibraryList(List<RealmMyLibrary> libraryList) {

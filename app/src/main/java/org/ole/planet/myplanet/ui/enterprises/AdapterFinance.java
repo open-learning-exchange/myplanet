@@ -21,13 +21,15 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
+import io.realm.RealmResults;
+
 public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private Context context;
-    private List<RealmMyTeam> list;
+    private RealmResults<RealmMyTeam> list;
 
 
-    public AdapterFinance(Context context, List<RealmMyTeam> list) {
+    public AdapterFinance(Context context, RealmResults<RealmMyTeam> list) {
         this.context = context;
         this.list = list;
     }
@@ -44,7 +46,7 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHolderFinance) {
             ((ViewHolderFinance) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
             ((ViewHolderFinance) holder).note.setText(list.get(position).getDescription());
-            Utilities.log("Type " + list.get(position).getType());
+            Utilities.log("Type " + list.get(position).getDate());
             if (TextUtils.equals(list.get(position).getType().toLowerCase(), "debit")) {
                 ((ViewHolderFinance) holder).debit.setText(list.get(position).getAmount() + "");
                 ((ViewHolderFinance) holder).credit.setText(" -");

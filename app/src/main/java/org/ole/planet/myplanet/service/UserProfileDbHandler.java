@@ -104,6 +104,7 @@ public class UserProfileDbHandler {
         if (model.getId().startsWith("guest")) {
             return;
         }
+        if (!mRealm.isInTransaction())
         mRealm.beginTransaction();
         RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser(model));
         offlineActivities.setType(KEY_RESOURCE_OPEN);
