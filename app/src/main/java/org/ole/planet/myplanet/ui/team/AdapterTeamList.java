@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -69,16 +70,20 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 }
             });
             ((ViewHolderTeam) holder).feedback.setOnClickListener(v2->{
-                Bundle bundle = new Bundle();
-                if(list.get(position).getType().isEmpty()) bundle.putString("state","teams");
-                    else bundle.putString("state",list.get(position).getType()+"s");
-                bundle.putString("item",list.get(position).getId());
-                bundle.putString("parentCode","dev");
                 FeedbackFragment feedbackFragment = new FeedbackFragment();
                 feedbackFragment.show(fragmentManager,"");
-                feedbackFragment.setArguments(bundle);
+                feedbackFragment.setArguments(getBundle(list.get(position)));
             });
         }
+    }
+
+    public Bundle getBundle(RealmMyTeam team){
+        Bundle bundle = new Bundle();
+        if(team.getType().isEmpty()) bundle.putString("state","teams");
+        else bundle.putString("state",team.getType()+"s");
+        bundle.putString("item",team.getId());
+        bundle.putString("parentCode","dev");
+        return bundle;
     }
 
     private void showActionButton(boolean isMyTeam, RecyclerView.ViewHolder holder, int position) {
