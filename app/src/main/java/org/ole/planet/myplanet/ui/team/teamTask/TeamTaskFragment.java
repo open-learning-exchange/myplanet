@@ -181,6 +181,16 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     }
 
     @Override
+    public void onDelete(RealmTeamTask task) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        task.deleteFromRealm();
+        Utilities.toast(getActivity(), "Task deleted successfully");
+        mRealm.commitTransaction();
+        showNoData(nodata, rvTask.getAdapter().getItemCount());
+    }
+
+    @Override
     public void onClickMore(RealmTeamTask realmTeamTask) {
         View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
         Spinner spnUser = v.findViewById(R.id.spn_user);

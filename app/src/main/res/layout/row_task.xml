@@ -50,6 +50,13 @@
 
     <ImageView
         android:layout_width="wrap_content"
+        app:srcCompat="@drawable/ic_delete"
+        android:layout_margin="@dimen/padding_small"
+        android:id="@+id/delete_task"
+        android:layout_height="wrap_content" />
+
+    <ImageView
+        android:layout_width="wrap_content"
         app:srcCompat="@drawable/ic_more"
         android:layout_margin="@dimen/padding_small"
         android:id="@+id/ic_more"
