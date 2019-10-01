@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.TextInputEditText;
@@ -45,8 +46,14 @@ import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Random;
 
 import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import pl.droidsonroids.gif.GifDrawable;
@@ -290,19 +297,43 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         handler.onDestory();
         editor.putBoolean(Constants.KEY_LOGIN, true).commit();
         //openDashboard();
-        try {
-            Cipher cipher = Cipher.getInstance("AES");
-            byte[] keyBytes   = new byte[]{1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4, 5,6,7,8,9,0,1,2};
-            String algorithm  = "0123456789abcdef";
-            SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
 
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-            String plainText  = "\"cat\":\"zuzu\"";
-            byte[] cipherText = cipher.doFinal(plainText.getBytes());
-            Log.e("Enc", "Result "+cipherText);
-        } catch (Exception err) {
-            err.printStackTrace();
+        Log.e("Enc", "Result "+encrypt("\"cat\":\"zuzu\""));
+
+    }
+
+    // String plaintext -> Base64-encoded String ciphertext
+    public static String encrypt(String plaintext) {
+        byte[] keyBytes   = new byte[]{1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4, 5,6,7,8,9,0,1,2};
+        try {
+            // Generate a random 16-byte initialization vector
+            byte initVector[] = new byte[16];
+            //(new Random()).nextBytes(initVector);
+            IvParameterSpec iv = new IvParameterSpec(initVector);
+
+            // prep the key
+            SecretKeySpec skeySpec = new SecretKeySpec(keyBytes, "AES");
+
+            // prep the AES Cipher
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+            cipher.init(Cipher.ENCRYPT_MODE, skeySpec, iv);
+
+            // Encode the plaintext as array of Bytes
+            byte[] cipherbytes = cipher.doFinal(plaintext.getBytes());
+
+            // Build the output message initVector + cipherbytes -> base64
+            //byte[] messagebytes = new byte[cipherbytes.length];
+
+           // System.arraycopy(initVector, 0, messagebytes, 0, 16);
+            //System.arraycopy(cipherbytes, 0, messagebytes, 16, cipherbytes.length);
+
+            // Return the cipherbytes as a Base64-encoded string
+            byte[] data = android.util.Base64.encode(cipherbytes, android.util.Base64.DEFAULT);
+            return new String(data);
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
+        return null;
     }
 
 
