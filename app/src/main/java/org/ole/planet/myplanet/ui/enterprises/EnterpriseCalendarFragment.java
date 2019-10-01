@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,7 +44,7 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment {
     List<RealmMeetup> list;
     TextView startDate, startTime, endDate, endTime;
     Calendar start, end;
-
+    RecyclerView rvCalendar;
     public EnterpriseCalendarFragment() {
     }
 
@@ -55,6 +57,7 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment {
         end = Calendar.getInstance();
         calendarView = v.findViewById(R.id.calendar);
         v.findViewById(R.id.add_event).setOnClickListener(view -> showMeetupAlert());
+        rvCalendar  = v.findViewById(R.id.rv_calendar);
         return v;
     }
 
@@ -145,15 +148,9 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         list = mRealm.where(RealmMeetup.class).equalTo("teamId", teamId).findAll();
-        Utilities.log(list.size() + "");
-        Calendar daySelected = Calendar.getInstance();
-        daySelected.add(Calendar.DAY_OF_MONTH, 5);
-        List<Calendar> li = new ArrayList<>();
-        for (RealmMeetup meetup : list
-        ) {
-            Calendar c = Calendar.getInstance();
-            c.setTimeInMillis(meetup.getStartDate());
-        }
+        rvCalendar.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rvCalendar.setAdapter(new AdapterCalendar(getActivity(), list));
+
     }
 
 
