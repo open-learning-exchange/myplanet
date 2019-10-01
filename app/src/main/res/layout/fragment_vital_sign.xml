@@ -20,13 +20,21 @@
             android:padding="@dimen/padding_small">
 
             <Button
-                style="@style/PrimaryButton"
+                android:theme="@style/PrimaryButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="right"
                 android:gravity="center"
                 android:id="@+id/add_new_record"
-                android:text="Add New Record" />
+                android:text="Add Vital Sign" />
+            <Button
+                android:theme="@style/PrimaryButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:gravity="center"
+                android:id="@+id/add_new_health"
+                android:text="Add Health Record" />
         </LinearLayout>
 
         <TextView

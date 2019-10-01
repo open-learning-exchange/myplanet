@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -149,12 +150,18 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).equalTo("uploaded", false).findAll();
+            List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).findAll();
             for (RealmFeedback feedback : feedbacks) {
                 try {
-                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute().body();
-                    if (object != null) {
-                        feedback.setUploaded(true);
+                    Response res;
+                    res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+                    if (res.body() != null) {
+                        Utilities.log(new Gson().toJson(res.body()));
+                        JsonObject r = (JsonObject) res.body();
+                        feedback.set_rev(r.get("rev").getAsString());
+                        feedback.set_id(r.get("id").getAsString());
+                    } else {
+                        Utilities.log("ERRRRRRRR " + res.errorBody().string());
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -168,14 +175,12 @@ public class UploadManager extends FileUploadService {
     public void uploadSubmitPhotos(SuccessListener listener) {
         mRealm = new DatabaseService(context).getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-
         mRealm.executeTransactionAsync(realm -> {
                     List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).equalTo("uploaded", false).findAll();
                     for (RealmSubmitPhotos sub : data) {
                         try {
                             JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)).execute().body();
                             if (object != null) {
-
                                 String _rev = JsonUtils.getString("rev", object);
                                 String _id = JsonUtils.getString("id", object);
                                 sub.setUploaded(true);
@@ -220,7 +225,6 @@ public class UploadManager extends FileUploadService {
                     listener.onSuccess("Unable to upload resource");
                 }
             });
-
         }
     }
 
@@ -234,7 +238,7 @@ public class UploadManager extends FileUploadService {
                 if (TextUtils.isEmpty(task.get_id())) {
                     JsonObject object = null;
                     try {
-                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(realm,task)).execute().body();
+                        object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(realm, task)).execute().body();
                         if (object != null) {
                             String _rev = JsonUtils.getString("rev", object);
                             String _id = JsonUtils.getString("id", object);
@@ -308,7 +312,6 @@ public class UploadManager extends FileUploadService {
                     log.setUploaded(true);
             } catch (IOException e) {
             }
-
         }
     }
 
@@ -384,7 +387,6 @@ public class UploadManager extends FileUploadService {
     public void uploadResourceActivities(String type) {
         mRealm = dbService.getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-
         String db = type.equals("sync") ? "admin_activities" : "resource_activities";
         mRealm.executeTransactionAsync(realm -> {
             RealmResults<RealmResourceActivity> activities;
@@ -403,9 +405,7 @@ public class UploadManager extends FileUploadService {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
         });
     }
-
 }

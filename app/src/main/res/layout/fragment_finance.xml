@@ -12,95 +12,109 @@
         android:orientation="vertical">
 
         <Button
-            android:layout_width="wrap_content"
-            android:textSize="18sp"
-            android:padding="@dimen/padding_normal"
-            android:layout_gravity="left"
-            android:text="@string/filter_by_date"
             android:id="@+id/btn_filter"
-            android:theme="@style/GuestStyle"
-            android:layout_height="wrap_content" />
-
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:padding="@dimen/padding_normal"
+            android:text="@string/filter_by_date"
+            android:textSize="18sp"
+            android:theme="@style/GuestStyle" />
 
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:paddingLeft="@dimen/padding_normal"
-            android:paddingRight="@dimen/padding_normal"
-            android:orientation="horizontal">
+            android:paddingRight="@dimen/padding_normal">
 
-            <TextView
-                android:id="@+id/date"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textStyle="bold"
-                android:textColor="@color/md_black_1000"
-                android:padding="@dimen/padding_small"
-                android:textSize="@dimen/text_size_mid"
-                android:text="@string/date" />
+                android:id="@+id/ll_date"
+                android:layout_weight="1">
+
+                <TextView
+                    android:id="@+id/date"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/date"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/img_date"
+                    android:layout_width="@dimen/icon_size_mid"
+                    android:layout_height="@dimen/icon_size_mid"
+                    android:layout_gravity="center"
+                    app:srcCompat="@drawable/ic_down" />
+
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/note"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:textColor="@color/md_black_1000"
-                android:textStyle="bold"
-                android:textSize="@dimen/text_size_mid"
                 android:padding="@dimen/padding_small"
-                android:text="@string/note" />
+                android:text="@string/note"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
 
 
             <TextView
                 android:id="@+id/credit"
-                android:textStyle="bold"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="@color/md_black_1000"
                 android:padding="@dimen/padding_small"
-                android:textSize="@dimen/text_size_mid"
                 android:text="@string/credit"
-                />
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/debit"
                 android:layout_width="0dp"
-                android:textStyle="bold"
                 android:layout_height="wrap_content"
-                android:textColor="@color/md_black_1000"
                 android:layout_weight="1"
-                android:textSize="@dimen/text_size_mid"
                 android:padding="@dimen/padding_small"
                 android:text="@string/debit"
-           />
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
 
 
             <TextView
                 android:id="@+id/balance"
-                android:textStyle="bold"
                 android:layout_width="0dp"
-                android:textColor="@color/md_black_1000"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="@dimen/padding_small"
                 android:layout_gravity="center"
+                android:layout_weight="1"
                 android:gravity="center"
-                android:textSize="@dimen/text_size_mid"
+                android:padding="@dimen/padding_small"
                 android:text="@string/balance"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold"
                 android:visibility="visible" />
 
         </LinearLayout>
+
         <View
             android:layout_width="match_parent"
-            android:background="@color/md_blue_grey_700"
-            android:layout_height="1dp"/>
+            android:layout_height="1dp"
+            android:background="@color/md_blue_grey_700" />
+
         <LinearLayout
-            android:background="@color/cardview_dark_background"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/cardview_dark_background"
             android:padding="@dimen/padding_normal">
 
             <TextView
@@ -148,8 +162,8 @@
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
                 android:text="@string/balance"
-                android:textSize="@dimen/text_size_mid"
                 android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_mid"
                 android:visibility="visible" />
 
 
