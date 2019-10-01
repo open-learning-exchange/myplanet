@@ -50,23 +50,24 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof ViewHolderTask) {
             ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
-            try{
+            try {
                 ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(Long.parseLong(list.get(position).getDeadline())));
-            }catch(Exception df){
+            } catch (Exception df) {
                 ((ViewHolderTask) holder).deadline.setText("Deadline : " + list.get(position).getDeadline());
             }
             showAssignee(holder, list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
-                if (listener != null)
-                    listener.onCheckChange(list.get(position), b);
+                if (listener != null) listener.onCheckChange(list.get(position), b);
             });
             ((ViewHolderTask) holder).icMore.setOnClickListener(view -> {
-                if (listener != null)
-                    listener.onClickMore(list.get(position));
+                if (listener != null) listener.onClickMore(list.get(position));
             });
             ((ViewHolderTask) holder).editTask.setOnClickListener(view -> {
+                if (listener != null) listener.onEdit(list.get(position));
+            });
+            ((ViewHolderTask) holder).deleteTask.setOnClickListener(view -> {
                 if (listener != null)
-                    listener.onEdit(list.get(position));
+                    listener.onDelete(list.get(position));
             });
         }
     }
@@ -93,13 +94,15 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
         void onEdit(RealmTeamTask task);
 
+        void onDelete(RealmTeamTask task);
+
         void onClickMore(RealmTeamTask realmTeamTask);
     }
 
     class ViewHolderTask extends RecyclerView.ViewHolder {
         CheckBox completed;
         TextView deadline, assignee;
-        ImageView icMore, editTask;
+        ImageView icMore, editTask, deleteTask;
 
         public ViewHolderTask(View itemView) {
             super(itemView);
@@ -108,6 +111,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             assignee = itemView.findViewById(R.id.assignee);
             icMore = itemView.findViewById(R.id.ic_more);
             editTask = itemView.findViewById(R.id.edit_task);
+            deleteTask = itemView.findViewById(R.id.delete_task);
         }
     }
 }

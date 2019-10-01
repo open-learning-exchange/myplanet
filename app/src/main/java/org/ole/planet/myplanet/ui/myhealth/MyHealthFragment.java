@@ -49,8 +49,10 @@ public class MyHealthFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_vital_sign, container, false);
         rvRecord = v.findViewById(R.id.rv_records);
         fab = v.findViewById(R.id.add_new_record);
+
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddVitalSignActivity.class).putExtra("userId", userId)));
+        v.findViewById(R.id.add_new_health).setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class)));
         return v;
     }
 
