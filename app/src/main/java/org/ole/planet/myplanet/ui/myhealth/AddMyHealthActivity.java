@@ -29,21 +29,6 @@ public class AddMyHealthActivity extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         realm = new DatabaseService(this).getRealmInstance();
         initViews();
-    }
-
-    private void initViews() {
-        fname = findViewById(R.id.et_fname);
-        mname = findViewById(R.id.et_mname);
-        lname = findViewById(R.id.et_lname);
-        email = findViewById(R.id.et_email);
-        phone = findViewById(R.id.et_phone);
-        birthplace = findViewById(R.id.et_birthplace);
-        birthdate = findViewById(R.id.et_birthdate);
-        emergencyNumber = findViewById(R.id.et_emergency);
-        contact = findViewById(R.id.et_contact);
-        specialNeed = findViewById(R.id.et_special_need);
-        otherNeed = findViewById(R.id.et_other_need);
-        contactType = findViewById(R.id.spn_contact_type);
         findViewById(R.id.btn_submit).setOnClickListener(view -> realm.executeTransactionAsync(realm -> {
             RealmMyHealth health = realm.createObject(RealmMyHealth.class, UUID.randomUUID().toString());
             health.setFirstName(fname.getEditText().getText().toString());
@@ -61,6 +46,22 @@ public class AddMyHealthActivity extends AppCompatActivity {
             Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
             finish();
         }));
+    }
+
+    private void initViews() {
+        fname = findViewById(R.id.et_fname);
+        mname = findViewById(R.id.et_mname);
+        lname = findViewById(R.id.et_lname);
+        email = findViewById(R.id.et_email);
+        phone = findViewById(R.id.et_phone);
+        birthplace = findViewById(R.id.et_birthplace);
+        birthdate = findViewById(R.id.et_birthdate);
+        emergencyNumber = findViewById(R.id.et_emergency);
+        contact = findViewById(R.id.et_contact);
+        specialNeed = findViewById(R.id.et_special_need);
+        otherNeed = findViewById(R.id.et_other_need);
+        contactType = findViewById(R.id.spn_contact_type);
+
     }
 
 
