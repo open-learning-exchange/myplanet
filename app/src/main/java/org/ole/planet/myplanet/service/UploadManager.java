@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -149,12 +150,18 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).equalTo("uploaded", false).findAll();
+            List<RealmFeedback> feedbacks = realm.where(RealmFeedback.class).findAll();
             for (RealmFeedback feedback : feedbacks) {
                 try {
-                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute().body();
-                    if (object != null) {
-                        feedback.setUploaded(true);
+                    Response res;
+                    res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
+                    if (res.body() != null) {
+                        Utilities.log(new Gson().toJson(res.body()));
+                        JsonObject r = (JsonObject) res.body();
+                        feedback.set_rev(r.get("rev").getAsString());
+                        feedback.set_id(r.get("id").getAsString());
+                    } else {
+                        Utilities.log("ERRRRRRRR " + res.errorBody().string());
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
