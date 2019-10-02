@@ -8,7 +8,7 @@
         android:id="@+id/name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_weight="2"
         android:padding="@dimen/padding_small"
         android:textColor="@color/md_black_1000"
         android:textStyle="bold" />
@@ -17,7 +17,7 @@
         android:id="@+id/created"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_weight="2"
         android:padding="@dimen/padding_small"
         android:textColor="@color/md_black_1000"
         android:alpha="0.8"/>
@@ -26,7 +26,7 @@
         android:id="@+id/type"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_weight="2"
         android:padding="@dimen/padding_small"
         android:textColor="@color/md_black_1000"
         android:alpha="0.8"/>
@@ -36,5 +36,14 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:textSize="10sp"
         android:text="Request To join" />
+
+    <Button
+        android:id="@+id/btn_feedback"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="10sp"
+        android:text="Feedback" />
 </LinearLayout>
