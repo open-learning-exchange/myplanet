@@ -10,6 +10,7 @@ import android.widget.Spinner;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyHealth;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.UUID;
@@ -20,7 +21,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
     Realm realm;
     TextInputLayout fname, mname, lname, email, phone, birthplace, birthdate, emergencyNumber, contact, specialNeed, otherNeed;
     Spinner contactType;
-
+    RealmUserModel userModel;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,6 +29,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         realm = new DatabaseService(this).getRealmInstance();
+        String id = getIntent().getStringExtra("userId");
+        userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
         initViews();
         findViewById(R.id.btn_submit).setOnClickListener(view -> realm.executeTransactionAsync(realm -> {
             RealmMyHealth health = realm.createObject(RealmMyHealth.class, UUID.randomUUID().toString());
@@ -61,7 +64,15 @@ public class AddMyHealthActivity extends AppCompatActivity {
         specialNeed = findViewById(R.id.et_special_need);
         otherNeed = findViewById(R.id.et_other_need);
         contactType = findViewById(R.id.spn_contact_type);
-
+        if (userModel!=null){
+            fname.getEditText().setText(userModel.getFirstName());
+            mname.getEditText().setText(userModel.getMiddleName());
+            mname.getEditText().setText(userModel.getLastName());
+            email.getEditText().setText(userModel.getEmail());
+            phone.getEditText().setText(userModel.getPhoneNumber());
+            birthdate.getEditText().setText(userModel.getDob());
+            birthplace.getEditText().setText(userModel.getBirthPlace());
+        }
     }
 
 
