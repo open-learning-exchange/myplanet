@@ -35,9 +35,11 @@ public class MyHealthFragment extends Fragment {
 
     RecyclerView rvRecord;
     Button fab;
+    TextView lblName;
     String userId;
     Realm mRealm;
     Spinner spnUsers;
+    RealmUserModel userModel;
 
     public MyHealthFragment() {
     }
@@ -49,7 +51,7 @@ public class MyHealthFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_vital_sign, container, false);
         rvRecord = v.findViewById(R.id.rv_records);
         fab = v.findViewById(R.id.add_new_record);
-
+        lblName = v.findViewById(R.id.lblHealthName);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddVitalSignActivity.class).putExtra("userId", userId)));
         v.findViewById(R.id.update_health).setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
@@ -67,6 +69,8 @@ public class MyHealthFragment extends Fragment {
         new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
                 .setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
             userId = ((RealmUserModel) spnUser.getSelectedItem()).getId();
+            userModel = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
+            lblName.setText(userModel.getFullName());
             showRecords();
         }).show();
         showRecords();
