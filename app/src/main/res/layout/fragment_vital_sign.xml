@@ -21,6 +21,13 @@
             android:padding="@dimen/padding_small">
 
             <Button
+                android:id="@+id/btnnew_patient"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="New Patient"
+                android:theme="@style/BlueButton" />
+            <Button
                 android:theme="@style/PrimaryButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -57,7 +64,8 @@
                 android:layout_weight="1"
                 android:text="--"
                 android:textAlignment="center"
-                android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                android:textSize="18sp"
                 android:textStyle="bold" />
 
             <ImageView
