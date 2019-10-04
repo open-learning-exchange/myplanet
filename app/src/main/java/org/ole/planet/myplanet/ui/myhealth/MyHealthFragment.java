@@ -92,7 +92,9 @@ public class MyHealthFragment extends Fragment {
                 .setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
                     userId = ((RealmUserModel) spnUser.getSelectedItem()).getId();
                     userModel = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-                    lblName.setText(userId);
+                    //String[] arr = userId.split(":");
+                    //lblName.setText(arr[arr.length - 1]);
+                    lblName.setText(userModel.getFullName());
                     showRecords();
                 }).show();
     }
