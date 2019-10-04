@@ -12,6 +12,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -34,11 +35,13 @@ import io.realm.Realm;
 public class MyHealthFragment extends Fragment {
 
     RecyclerView rvRecord;
-    Button fab;
+    Button fab,btnNewPatient;
+    TextView lblName;
     String userId;
     Realm mRealm;
     Spinner spnUsers;
-
+    RealmUserModel userModel;
+    AlertDialog showDialog;
     public MyHealthFragment() {
     }
 
@@ -49,10 +52,11 @@ public class MyHealthFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_vital_sign, container, false);
         rvRecord = v.findViewById(R.id.rv_records);
         fab = v.findViewById(R.id.add_new_record);
-
+        btnNewPatient = v.findViewById(R.id.btnnew_patient);
+        lblName = v.findViewById(R.id.lblHealthName);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddVitalSignActivity.class).putExtra("userId", userId)));
-        v.findViewById(R.id.add_new_health).setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
+        v.findViewById(R.id.update_health).setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
         return v;
     }
 
@@ -62,14 +66,29 @@ public class MyHealthFragment extends Fragment {
         View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
         Spinner spnUser = v.findViewById(R.id.spn_user);
         List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
+        btnNewPatient.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view){
+                selectPatient();
+            }
+        });
+        selectPatient();
+        showRecords();
+    }
+
+    private void selectPatient() {
+        View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
+        Spinner spnUser = v.findViewById(R.id.spn_user);
+        List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
         ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, userList);
         spnUser.setAdapter(adapter);
-        new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
+        showDialog = new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
                 .setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
-            userId = ((RealmUserModel) spnUser.getSelectedItem()).getId();
-            showRecords();
-        }).show();
-        showRecords();
+                    userId = ((RealmUserModel) spnUser.getSelectedItem()).getId();
+                    userModel = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
+                    lblName.setText(userModel.getFullName());
+                    showRecords();
+                }).show();
     }
 
     private void showRecords() {

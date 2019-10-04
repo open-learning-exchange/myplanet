@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -20,6 +21,13 @@
             android:padding="@dimen/padding_small">
 
             <Button
+                android:id="@+id/btnnew_patient"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="New Patient"
+                android:theme="@style/BlueButton" />
+            <Button
                 android:theme="@style/PrimaryButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -33,8 +41,40 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="right"
                 android:gravity="center"
-                android:id="@+id/add_new_health"
-                android:text="Add Health Record" />
+                android:id="@+id/update_health"
+                android:text="@string/update_health_record" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/imageView3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/health" />
+
+            <TextView
+                android:id="@+id/lblHealthName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="--"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/imageView2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/health" />
+
         </LinearLayout>
 
         <TextView
@@ -43,7 +83,7 @@
             android:layout_height="wrap_content"
             android:text="@string/vital_signs"
             android:textAlignment="center"
-            android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+            android:textAppearance="@style/TextAppearance.AppCompat.Body2"
             android:textStyle="bold" />
 
         <android.support.v7.widget.RecyclerView
