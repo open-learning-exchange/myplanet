@@ -7,6 +7,7 @@ public class RealmMyHealth extends RealmObject {
     @PrimaryKey
     private String id;
     private String firstName, middleName, lastName, email, phone, language, birthdate, birthPlace, emergency, contactType, contact, specialNeeds, otherNeeds;
+    private String userId;
 
 
     public String getId() {
@@ -119,5 +120,14 @@ public class RealmMyHealth extends RealmObject {
 
     public void setOtherNeeds(String otherNeeds) {
         this.otherNeeds = otherNeeds;
+    }
+
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }

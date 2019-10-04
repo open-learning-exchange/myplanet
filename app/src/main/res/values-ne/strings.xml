@@ -275,4 +275,6 @@
     <string name="special_needs">Special Needs</string>
     <string name="other_need">Other Needs</string>
     <string name="update_health_record">Update Health Record</string>
+    <string name="vital_sign">Vital Signs</string>
+    <string name="examination">Examination</string>
 </resources>
