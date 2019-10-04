@@ -11,14 +11,19 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 
 import java.util.List;
 
+import io.realm.Realm;
+
 public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmVitalSign> list;
-
+    RealmUserModel userModel;
+    Realm mRealm;
     public AdapterVitalSign(Context context, List<RealmVitalSign> list) {
         this.context = context;
         this.list = list;
@@ -33,6 +38,7 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int pos) {
+        mRealm = new DatabaseService(context).getRealmInstance();
         if (holder instanceof ViewHolderVitalSign) {
             if (pos == 0) {
                 ((ViewHolderVitalSign) holder).name.setText(Html.fromHtml("<b>Name</b>"));
@@ -42,7 +48,8 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
 
             } else {
                 int position = pos - 1;
-                ((ViewHolderVitalSign) holder).name.setText(list.get(position).getUserId());
+                userModel = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
+                ((ViewHolderVitalSign) holder).name.setText(userModel.getFullName());
                 ((ViewHolderVitalSign) holder).pulseRate.setText(list.get(position).getPulseRate() + "");
                 ((ViewHolderVitalSign) holder).respRate.setText(list.get(position).getRespirationRate() + "");
                 ((ViewHolderVitalSign) holder).bloodPressure.setText(String.format("%d/%d", list.get(position).getBloodPressureSystolic(), list.get(position).getBloodPressureDiastolic()));
