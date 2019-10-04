@@ -34,9 +34,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         userId = getIntent().getStringExtra("userId");
         userModel = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         initViews();
-        findViewById(R.id.btn_submit).setOnClickListener(view -> realm.executeTransactionAsync(realm -> {
-            createExamination(realm);
-        }, () -> {
+        findViewById(R.id.btn_submit).setOnClickListener(view -> realm.executeTransactionAsync(this::createExamination, () -> {
             Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
             finish();
         }));
