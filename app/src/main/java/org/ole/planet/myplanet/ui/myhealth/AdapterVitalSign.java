@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,34 +28,43 @@ public class AdapterVitalSign extends RecyclerView.Adapter<RecyclerView.ViewHold
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(context).inflate(R.layout.item_vital_sign, parent, false);
-        return new AdapterOtherInfo.ViewHolderOtherInfo(v);
+        return new ViewHolderVitalSign(v);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
-            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getUserId());
-            String desc = "";
-            desc += list.get(position).getBodyTemp() > 99 ? "Body temperature is high\n" : "Body temperature is normal\n";
-            desc += "Pulse rate : " + list.get(position).getPulseRate() + "\n";
-            desc += "Respiration Rate : " + list.get(position).getRespirationRate() + "\n";
-            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(desc);
-            holder.itemView.setOnClickListener(view -> context.startActivity(new Intent(context, MyHealthDetailActivity.class).putExtra("id", list.get(position).getId())));
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int pos) {
+        if (holder instanceof ViewHolderVitalSign) {
+            if (pos == 0) {
+                ((ViewHolderVitalSign) holder).name.setText(Html.fromHtml("<b>Name</b>"));
+                ((ViewHolderVitalSign) holder).pulseRate.setText(Html.fromHtml("<b>Pulse Rate</b>"));
+                ((ViewHolderVitalSign) holder).respRate.setText(Html.fromHtml("<b>Respiration Rate</b>"));
+                ((ViewHolderVitalSign) holder).bloodPressure.setText(Html.fromHtml("<b>Blood Pressure</b>"));
+
+            } else {
+                int position = pos - 1;
+                ((ViewHolderVitalSign) holder).name.setText(list.get(position).getUserId());
+                ((ViewHolderVitalSign) holder).pulseRate.setText(list.get(position).getPulseRate() + "");
+                ((ViewHolderVitalSign) holder).respRate.setText(list.get(position).getRespirationRate() + "");
+                ((ViewHolderVitalSign) holder).bloodPressure.setText(String.format("%d/%d", list.get(position).getBloodPressureSystolic(), list.get(position).getBloodPressureDiastolic()));
+                holder.itemView.setOnClickListener(view -> context.startActivity(new Intent(context, MyHealthDetailActivity.class).putExtra("id", list.get(position).getId())));
+            }
         }
     }
 
     @Override
     public int getItemCount() {
-        return list.size();
+        return list.size() + 1;
     }
 
-//    class ViewHolderVitalSign extends RecyclerView.ViewHolder {
-//        TextView username, description;
-//
-//        public ViewHolderVitalSign(View itemView) {
-//            super(itemView);
-//            username = itemView.findViewById(R.id.useranme);
-//            description = itemView.findViewById(R.id.description);
-//        }
-//    }
+    class ViewHolderVitalSign extends RecyclerView.ViewHolder {
+        TextView name, pulseRate, respRate, bloodPressure;
+
+        public ViewHolderVitalSign(View itemView) {
+            super(itemView);
+            name = itemView.findViewById(R.id.tv_title);
+            pulseRate = itemView.findViewById(R.id.tv_pulse_rate);
+            respRate = itemView.findViewById(R.id.tv_resp_rate);
+            bloodPressure = itemView.findViewById(R.id.tv_blood_pressure);
+        }
+    }
 }

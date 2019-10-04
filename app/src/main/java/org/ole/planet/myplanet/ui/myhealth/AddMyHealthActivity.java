@@ -22,6 +22,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
     TextInputLayout fname, mname, lname, email, phone, birthplace, birthdate, emergencyNumber, contact, specialNeed, otherNeed;
     Spinner contactType;
     RealmUserModel userModel;
+    String userId;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -29,8 +30,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         realm = new DatabaseService(this).getRealmInstance();
-        String id = getIntent().getStringExtra("userId");
-        userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
+        userId = getIntent().getStringExtra("userId");
+        userModel = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         initViews();
         findViewById(R.id.btn_submit).setOnClickListener(view -> realm.executeTransactionAsync(realm -> {
             RealmMyHealth health = realm.createObject(RealmMyHealth.class, UUID.randomUUID().toString());
@@ -45,6 +46,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
             health.setContactType(contactType.getSelectedItem().toString());
             health.setSpecialNeeds(specialNeed.getEditText().getText().toString());
             health.setOtherNeeds(otherNeed.getEditText().getText().toString());
+            health.setUserId(userId);
         }, () -> {
             Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
             finish();
