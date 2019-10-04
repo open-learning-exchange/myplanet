@@ -23,6 +23,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
     Spinner contactType;
     RealmUserModel userModel;
     String userId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,23 +35,27 @@ public class AddMyHealthActivity extends AppCompatActivity {
         userModel = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         initViews();
         findViewById(R.id.btn_submit).setOnClickListener(view -> realm.executeTransactionAsync(realm -> {
-            RealmMyHealth health = realm.createObject(RealmMyHealth.class, UUID.randomUUID().toString());
-            health.setFirstName(fname.getEditText().getText().toString());
-            health.setMiddleName(mname.getEditText().getText().toString());
-            health.setLastName(lname.getEditText().getText().toString());
-            health.setEmail(email.getEditText().getText().toString());
-            health.setBirthdate(birthdate.getEditText().getText().toString());
-            health.setBirthPlace(birthplace.getEditText().getText().toString());
-            health.setEmergency(emergencyNumber.getEditText().getText().toString());
-            health.setContact(contact.getEditText().getText().toString());
-            health.setContactType(contactType.getSelectedItem().toString());
-            health.setSpecialNeeds(specialNeed.getEditText().getText().toString());
-            health.setOtherNeeds(otherNeed.getEditText().getText().toString());
-            health.setUserId(userId);
+            createExamination(realm);
         }, () -> {
             Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
             finish();
         }));
+    }
+
+    private void createExamination(Realm realm) {
+        RealmMyHealth health = realm.createObject(RealmMyHealth.class, UUID.randomUUID().toString());
+        health.setFirstName(fname.getEditText().getText().toString());
+        health.setMiddleName(mname.getEditText().getText().toString());
+        health.setLastName(lname.getEditText().getText().toString());
+        health.setEmail(email.getEditText().getText().toString());
+        health.setBirthdate(birthdate.getEditText().getText().toString());
+        health.setBirthPlace(birthplace.getEditText().getText().toString());
+        health.setEmergency(emergencyNumber.getEditText().getText().toString());
+        health.setContact(contact.getEditText().getText().toString());
+        health.setContactType(contactType.getSelectedItem().toString());
+        health.setSpecialNeeds(specialNeed.getEditText().getText().toString());
+        health.setOtherNeeds(otherNeed.getEditText().getText().toString());
+        health.setUserId(userId);
     }
 
     private void initViews() {
@@ -66,7 +71,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         specialNeed = findViewById(R.id.et_special_need);
         otherNeed = findViewById(R.id.et_other_need);
         contactType = findViewById(R.id.spn_contact_type);
-        if (userModel!=null){
+        if (userModel != null) {
             fname.getEditText().setText(userModel.getFirstName());
             mname.getEditText().setText(userModel.getMiddleName());
             mname.getEditText().setText(userModel.getLastName());
