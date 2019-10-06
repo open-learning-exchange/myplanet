@@ -57,7 +57,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         health.setSpecialNeeds(specialNeed.getEditText().getText().toString());
         health.setOtherNeeds(otherNeed.getEditText().getText().toString());
         health.setUserId(userId);
-        Log.e("TAG", "Created with "+ userId + " health " + health.getId());
+//        Log.e("TAG", "Created with "+ userId + " health " + health.getId());
         finish();
     }
 
@@ -74,6 +74,10 @@ public class AddMyHealthActivity extends AppCompatActivity {
         specialNeed = findViewById(R.id.et_special_need);
         otherNeed = findViewById(R.id.et_other_need);
         contactType = findViewById(R.id.spn_contact_type);
+        populate();
+    }
+
+    public void populate(){
         if (userModel != null) {
             fname.getEditText().setText(userModel.getFirstName());
             mname.getEditText().setText(userModel.getMiddleName());
