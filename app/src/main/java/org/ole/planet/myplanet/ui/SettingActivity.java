@@ -98,6 +98,7 @@ public class SettingActivity extends AppCompatActivity {
             SwitchPreference survey = (SwitchPreference) findPreference("beta_survey");
             SwitchPreference rating = (SwitchPreference) findPreference("beta_rating");
             SwitchPreference myHealth = (SwitchPreference) findPreference("beta_myHealth");
+            SwitchPreference healthWorker = (SwitchPreference) findPreference("beta_healthWorker");
 
             beta.setOnPreferenceChangeListener((preference, o) -> {
                 if (beta.isChecked()) {
@@ -105,7 +106,6 @@ public class SettingActivity extends AppCompatActivity {
                     achievement.setChecked(true);
                     survey.setChecked(true);
                     rating.setChecked(true);
-                    //myHealth.setChecked(true);
                 }
 
                 return true;
