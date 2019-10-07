@@ -37,12 +37,13 @@
                 android:gravity="center" />
 
             <TextView
+                android:id="@+id/lblExamination"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_small"
+                android:text="@string/examination"
                 android:textColor="@color/md_white_1000"
-                android:textStyle="bold"
-                android:text="@string/examination" />
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/btnnew_patient"

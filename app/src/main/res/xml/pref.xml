@@ -43,6 +43,10 @@
             android:defaultValue="false"
             android:key="beta_myHealth"
             android:title="Beta Function for myHealth" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_healthWorker"
+            android:title="Beta Function for Health Worker" />
 
         <SwitchPreference
             android:defaultValue="true"
