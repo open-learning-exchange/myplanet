@@ -2,12 +2,15 @@ package org.ole.planet.myplanet.utilities;
 
 import android.util.Log;
 
+import com.github.kittinunf.fuel.util.Base64;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import de.rtner.misc.BinTools;
@@ -41,21 +44,68 @@ public class AndroidDecrypter {
         return "";
     }
 
-    public static byte[] encrypt(String s) throws Exception {
-        return encryptDecrypt(s, Cipher.ENCRYPT_MODE);
+    public static byte[] encrypt(String plainText, String key, String iv) throws Exception {
+        byte[] clean = plainText.getBytes();
+        // Generating IV.\n
+        int ivSize = 16;
+        byte[] ivBytes = new byte[ivSize];
+        System.arraycopy(hexStringToByteArray(iv), 0, ivBytes, 0, ivBytes.length);
+        IvParameterSpec ivParameterSpec = new IvParameterSpec(ivBytes);
+        // Hashing key.\n
+        byte[] keyBytes = new byte[32];
+        System.arraycopy(hexStringToByteArray(key), 0, keyBytes, 0, keyBytes.length);
+        SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, "AES");
+        // Encrypt.\n
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
+        byte[] encrypted = cipher.doFinal(clean);
+        // Combine IV and encrypted part.
+        byte[] encryptedIVAndText = new byte[ivSize + encrypted.length];
+        System.arraycopy(ivBytes, 0, encryptedIVAndText, 0, ivSize);
+        System.arraycopy(encrypted, 0, encryptedIVAndText, ivSize, encrypted.length);
+
+        return encrypted;
     }
 
-    public static byte[] encryptDecrypt(String s, int mode) throws Exception {
-        byte[] keyBytes = new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2};
-        String algorithm = "0123456789abcdef";
-        SecretKeySpec key = new SecretKeySpec(keyBytes, algorithm);
-        Cipher cipher = Cipher.getInstance("AES");
-        cipher.init(mode, key);
-        return cipher.doFinal(s.getBytes());
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
     }
 
-    public static byte[] decrypt(String s) throws Exception {
-        return encryptDecrypt(s, Cipher.DECRYPT_MODE);
+    private static String bytesToHex(byte[] hashInBytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : hashInBytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+
+    public static String decrypt(String encrypted, String key, String iv) throws Exception {
+        try {
+            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(), "AES");
+            IvParameterSpec ivSpec = new IvParameterSpec(hexStringToByteArray(iv));
+
+            Cipher ecipher = Cipher.getInstance("AES/CBC/PKCS7Padding");
+            ecipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+
+            byte[] raw = Base64.decode(encrypted, Base64.DEFAULT);
+
+            byte[] originalBytes = ecipher.doFinal(raw);
+
+            String original = new String(originalBytes, "UTF8");
+
+            return original;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
     }
 
 
