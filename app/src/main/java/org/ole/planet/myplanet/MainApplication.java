@@ -81,7 +81,7 @@ public class MainApplication extends Application implements Application.Activity
         createJob(60, TaskNotificationService.class);
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
-
+        /// Test Encryption
         String key = "0102030405060708090001020304050607080900010203040506070809000102";  // 64
         String iv = "00010203040506070809000102030405"; // 32
         String data = "{\"cat\":\"zuzu\"}"; //
@@ -92,6 +92,7 @@ public class MainApplication extends Application implements Application.Activity
         } catch (Exception e) {
             e.printStackTrace();
         }
+        //
     }
 
     public void createJob(int sec, Class jobClass) {
