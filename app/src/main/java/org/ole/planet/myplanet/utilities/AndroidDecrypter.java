@@ -1,15 +1,9 @@
 package org.ole.planet.myplanet.utilities;
 
-import android.util.Log;
-
-import com.github.kittinunf.fuel.util.Base64;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -26,7 +20,7 @@ public class AndroidDecrypter {
             MessageDigest digest = java.security.MessageDigest
                     .getInstance(MD5);
             digest.update(s.getBytes());
-            byte messageDigest[] = digest.digest();
+            byte[] messageDigest = digest.digest();
 
             // Create Hex String
             StringBuilder hexString = new StringBuilder();
@@ -44,7 +38,7 @@ public class AndroidDecrypter {
         return "";
     }
 
-    public static byte[] encrypt(String plainText, String key, String iv) throws Exception {
+    public static String encrypt(String plainText, String key, String iv) throws Exception {
         byte[] clean = plainText.getBytes();
         // Generating IV.\n
         int ivSize = 16;
@@ -63,8 +57,7 @@ public class AndroidDecrypter {
         byte[] encryptedIVAndText = new byte[ivSize + encrypted.length];
         System.arraycopy(ivBytes, 0, encryptedIVAndText, 0, ivSize);
         System.arraycopy(encrypted, 0, encryptedIVAndText, ivSize, encrypted.length);
-
-        return encrypted;
+        return bytesToHex(encrypted);
     }
 
     public static byte[] hexStringToByteArray(String s) {
@@ -72,7 +65,7 @@ public class AndroidDecrypter {
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
+                    + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
     }
@@ -86,21 +79,18 @@ public class AndroidDecrypter {
     }
 
 
-    public static String decrypt(String encrypted, String key, String iv) throws Exception {
+    public static String decrypt(String encrypted, String key, String initVector) {
         try {
-            SecretKeySpec skeySpec = new SecretKeySpec(key.getBytes(), "AES");
-            IvParameterSpec ivSpec = new IvParameterSpec(hexStringToByteArray(iv));
+            IvParameterSpec iv = new IvParameterSpec(hexStringToByteArray(initVector));
+            SecretKeySpec skeySpec = new SecretKeySpec(hexStringToByteArray(key), "AES");
 
-            Cipher ecipher = Cipher.getInstance("AES/CBC/PKCS7Padding");
-            ecipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+            cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
 
-            byte[] raw = Base64.decode(encrypted, Base64.DEFAULT);
+            byte[] original = cipher.doFinal(hexStringToByteArray(encrypted));
 
-            byte[] originalBytes = ecipher.doFinal(raw);
 
-            String original = new String(originalBytes, "UTF8");
-
-            return original;
+            return new String(original);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
@@ -117,11 +107,7 @@ public class AndroidDecrypter {
             ///byte[] dk = new PBKDF2Engine(p).deriveKey("password", 20);
             byte[] dk = new PBKDF2Engine(p).deriveKey(usr_rawPswd, 20);
             System.out.println(usr_ID + " Value " + BinTools.bin2hex(dk).toLowerCase());
-            if (db_PswdkeyValue.equals(BinTools.bin2hex(dk).toLowerCase())) {
-                return true;
-            } else {
-                return false;
-            }
+            return db_PswdkeyValue.equals(BinTools.bin2hex(dk).toLowerCase());
 
         } catch (Exception e) {
             e.printStackTrace();
