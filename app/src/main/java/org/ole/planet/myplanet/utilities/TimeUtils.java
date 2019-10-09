@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -51,6 +52,17 @@ public class TimeUtils {
         SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
         String datetime = dateformat.format(c.getTime());
         return datetime;
+    }
+
+    public static long currentDateLong() {
+        Calendar c = Calendar.getInstance();
+        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
+        try {
+            c.setTime(dateformat.parse(currentDate()));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return c.getTimeInMillis();
     }
 
     public static String formatDate(long date) {

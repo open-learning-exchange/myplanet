@@ -147,7 +147,7 @@ public class EnterpriseCalendarFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        list = mRealm.where(RealmMeetup.class).equalTo("teamId", teamId).findAll();
+        list = mRealm.where(RealmMeetup.class).equalTo("teamId", teamId).greaterThanOrEqualTo("endDate",TimeUtils.currentDateLong()).findAll();
         rvCalendar.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvCalendar.setAdapter(new AdapterCalendar(getActivity(), list));
 
