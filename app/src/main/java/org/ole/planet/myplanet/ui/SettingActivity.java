@@ -67,6 +67,7 @@ public class SettingActivity extends AppCompatActivity {
             user = profileDbHandler.getUserModel();
             dialog = new ProgressDialog(getActivity());
             setBetaToggleOn();
+            setAutoSyncToggleOn();
             ListPreference lp = (ListPreference) findPreference("app_language");
             lp.setOnPreferenceChangeListener((preference, o) -> {
                 LocaleHelper.setLocale(getActivity(), o.toString());
@@ -102,6 +103,42 @@ public class SettingActivity extends AppCompatActivity {
                 return true;
             });
 
+        }
+
+        public void setAutoSyncToggleOn() {
+            SwitchPreference autoSync = (SwitchPreference) findPreference("auto_sync_with_server");
+            SwitchPreference autoForceWeeklySync = (SwitchPreference) findPreference("force_weekly_sync");
+            SwitchPreference autoForceMonthlySync = (SwitchPreference) findPreference("force_monthly_sync");
+            autoSync.setOnPreferenceChangeListener((preference, o) -> {
+                if(autoSync.isChecked()){
+                    if(autoForceWeeklySync.isChecked()){
+                        autoForceMonthlySync.setChecked(false);
+                    }else if(autoForceMonthlySync.isChecked()){
+                        autoForceWeeklySync.setChecked(false);
+                    }else {
+                        autoForceWeeklySync.setChecked(true);
+                    }
+                }
+                return true;
+            });
+
+            autoForceWeeklySync.setOnPreferenceChangeListener((preference, o) -> {
+                if(autoSync.isChecked()) {
+                    autoForceMonthlySync.setChecked(false);
+                }else{
+                    autoForceMonthlySync.setChecked(true);
+                }
+                return true;
+            });
+
+            autoForceMonthlySync.setOnPreferenceChangeListener((preference, o) -> {
+                if(autoSync.isChecked()) {
+                    autoForceWeeklySync.setChecked(false);
+                }else{
+                    autoForceWeeklySync.setChecked(true);
+                }
+                return true;
+            });
         }
 //
 //        private void managerLogin() {
