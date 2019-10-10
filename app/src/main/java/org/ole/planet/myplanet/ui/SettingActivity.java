@@ -122,23 +122,8 @@ public class SettingActivity extends AppCompatActivity {
                 return true;
             });
 
-            autoForceWeeklySync.setOnPreferenceChangeListener((preference, o) -> {
-                if(autoSync.isChecked()) {
-                    autoForceMonthlySync.setChecked(false);
-                }else{
-                    autoForceMonthlySync.setChecked(true);
-                }
-                return true;
-            });
-
-            autoForceMonthlySync.setOnPreferenceChangeListener((preference, o) -> {
-                if(autoSync.isChecked()) {
-                    autoForceWeeklySync.setChecked(false);
-                }else{
-                    autoForceWeeklySync.setChecked(true);
-                }
-                return true;
-            });
+            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync);
+            autoForceSync(autoSync, autoForceMonthlySync,autoForceWeeklySync);
         }
 //
 //        private void managerLogin() {
@@ -188,6 +173,17 @@ public class SettingActivity extends AppCompatActivity {
 //              dialog.dismiss();
 //          });
 //        }
+    }
+
+    private static void autoForceSync(SwitchPreference autoSync, SwitchPreference autoForceA, SwitchPreference autoForceB) {
+        autoForceA.setOnPreferenceChangeListener((preference, o) -> {
+            if(autoSync.isChecked()) {
+                autoForceB.setChecked(false);
+            }else{
+                autoForceB.setChecked(true);
+            }
+            return true;
+        });
     }
 
 }
