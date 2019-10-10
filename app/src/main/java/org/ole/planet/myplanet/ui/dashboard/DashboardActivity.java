@@ -105,13 +105,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
         topbarSetting();
-        openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) ?
-                new BellDashboardFragment() : new DashboardFragment());
-
-        if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", true)) {
-            bellToolbar.setVisibility(View.VISIBLE);
-            navigationView.setVisibility(View.GONE);
-        }
+        openCallFragment(new BellDashboardFragment());
+        bellToolbar.setVisibility(View.VISIBLE);
+        //navigationView.setVisibility(View.GONE);
 
         findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
         bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
@@ -151,7 +147,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void topbarSetting() {
-        changeUITheme();
+        UITheme();
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -180,17 +176,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     }
 
-    private void changeUITheme() {
-        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
-            bellToolbar.setVisibility(View.VISIBLE);
-            mTopToolbar.setVisibility(View.GONE);
-            navigationView.setVisibility(View.GONE);
-
-        } else {
-            bellToolbar.setVisibility(View.GONE);
-            mTopToolbar.setVisibility(View.VISIBLE);
-            navigationView.setVisibility(View.VISIBLE);
-        }
+    private void UITheme() {
+        bellToolbar.setVisibility(View.VISIBLE);
+        mTopToolbar.setVisibility(View.GONE);
+        navigationView.setVisibility(View.GONE);
     }
 
 
@@ -239,8 +228,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private void menuAction(int selectedMenuId) {
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
-                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                        new BellDashboardFragment() : new DashboardFragment());
+                openCallFragment(new BellDashboardFragment());
                 break;
             case R.string.menu_library:
                 openCallFragment(new LibraryFragment());
@@ -269,8 +257,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 logout();
                 break;
             default:
-                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                        new BellDashboardFragment() : new DashboardFragment());
+                openCallFragment(new BellDashboardFragment());
                 break;
         }
     }
@@ -385,8 +372,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         } else if (item.getItemId() == R.id.menu_enterprises) {
             openEnterpriseFragment();
         } else if (item.getItemId() == R.id.menu_home) {
-            openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                    new BellDashboardFragment() : new DashboardFragment());
+            openCallFragment(new BellDashboardFragment());
         }
         return true;
     }

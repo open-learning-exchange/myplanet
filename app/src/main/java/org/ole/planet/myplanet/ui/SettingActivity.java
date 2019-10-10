@@ -65,16 +65,10 @@ public class SettingActivity extends AppCompatActivity {
             addPreferencesFromResource(R.xml.pref);
             profileDbHandler = new UserProfileDbHandler(getActivity());
             user = profileDbHandler.getUserModel();
-            SwitchPreference p = (SwitchPreference) findPreference("show_topbar");
-            p.setChecked(user.getShowTopbar());
-            p.setOnPreferenceChangeListener((preference, o) -> {
-                profileDbHandler.changeTopbarSetting((boolean) o);
-                return true;
-            });
             dialog = new ProgressDialog(getActivity());
             setBetaToggleOn();
+            setAutoSyncToggleOn();
             ListPreference lp = (ListPreference) findPreference("app_language");
-            // lp.setSummary(PreferenceManager.getDefaultSharedPreferences(getActivity()).getString("app_language", ""));
             lp.setOnPreferenceChangeListener((preference, o) -> {
                 LocaleHelper.setLocale(getActivity(), o.toString());
                 getActivity().recreate();
@@ -86,8 +80,6 @@ public class SettingActivity extends AppCompatActivity {
 //                managerLogin();
 //                return false;
 //            });
-
-
         }
 
 
@@ -111,6 +103,27 @@ public class SettingActivity extends AppCompatActivity {
                 return true;
             });
 
+        }
+
+        public void setAutoSyncToggleOn() {
+            SwitchPreference autoSync = (SwitchPreference) findPreference("auto_sync_with_server");
+            SwitchPreference autoForceWeeklySync = (SwitchPreference) findPreference("force_weekly_sync");
+            SwitchPreference autoForceMonthlySync = (SwitchPreference) findPreference("force_monthly_sync");
+            autoSync.setOnPreferenceChangeListener((preference, o) -> {
+                if(autoSync.isChecked()){
+                    if(autoForceWeeklySync.isChecked()){
+                        autoForceMonthlySync.setChecked(false);
+                    }else if(autoForceMonthlySync.isChecked()){
+                        autoForceWeeklySync.setChecked(false);
+                    }else {
+                        autoForceWeeklySync.setChecked(true);
+                    }
+                }
+                return true;
+            });
+
+            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync);
+            autoForceSync(autoSync, autoForceMonthlySync,autoForceWeeklySync);
         }
 //
 //        private void managerLogin() {
@@ -160,6 +173,17 @@ public class SettingActivity extends AppCompatActivity {
 //              dialog.dismiss();
 //          });
 //        }
+    }
+
+    private static void autoForceSync(SwitchPreference autoSync, SwitchPreference autoForceA, SwitchPreference autoForceB) {
+        autoForceA.setOnPreferenceChangeListener((preference, o) -> {
+            if(autoSync.isChecked()) {
+                autoForceB.setChecked(false);
+            }else{
+                autoForceB.setChecked(true);
+            }
+            return true;
+        });
     }
 
 }
