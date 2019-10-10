@@ -87,7 +87,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         BottomNavigationViewHelper.disableShiftMode(navigationView);
         bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
         TextView appName = findViewById(R.id.app_title_name);
-        appName.setText(profileDbHandler.getUserModel().getFullName()+"'s Planet");
+        try{
+            appName.setText(profileDbHandler.getUserModel().getFullName()+"'s Planet");
+        }catch (Exception err){
+        }
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
         if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
