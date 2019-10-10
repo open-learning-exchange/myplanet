@@ -65,16 +65,9 @@ public class SettingActivity extends AppCompatActivity {
             addPreferencesFromResource(R.xml.pref);
             profileDbHandler = new UserProfileDbHandler(getActivity());
             user = profileDbHandler.getUserModel();
-            SwitchPreference p = (SwitchPreference) findPreference("show_topbar");
-            p.setChecked(user.getShowTopbar());
-            p.setOnPreferenceChangeListener((preference, o) -> {
-                profileDbHandler.changeTopbarSetting((boolean) o);
-                return true;
-            });
             dialog = new ProgressDialog(getActivity());
             setBetaToggleOn();
             ListPreference lp = (ListPreference) findPreference("app_language");
-            // lp.setSummary(PreferenceManager.getDefaultSharedPreferences(getActivity()).getString("app_language", ""));
             lp.setOnPreferenceChangeListener((preference, o) -> {
                 LocaleHelper.setLocale(getActivity(), o.toString());
                 getActivity().recreate();
@@ -86,8 +79,6 @@ public class SettingActivity extends AppCompatActivity {
 //                managerLogin();
 //                return false;
 //            });
-
-
         }
 
 
