@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.Manifest;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.preference.SwitchPreference;
 import android.support.design.widget.TextInputEditText;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.content.LocalBroadcastManager;
@@ -31,7 +29,6 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
@@ -40,7 +37,6 @@ import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
@@ -61,6 +57,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
+    public static Calendar cal_today, cal_last_Sync;
     EditText serverUrl, serverUrlProtocol;
     EditText serverPassword;
     String processedUrl;
@@ -76,7 +73,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private CheckBox save, managerialLogin;
     private boolean isSync = false, isUpload = false, forceSync = false;
     private SwitchCompat switchChildMode;
-    public static Calendar cal_today , cal_last_Sync;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,9 +103,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private boolean forceSynceTrigger() {
-        if(Constants.autoSynFeature(Constants.KEY_AUTOSYNC_,getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY,getApplicationContext()) ){
+        if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
             return checkForceSync(7);
-        }else if(Constants.autoSynFeature(Constants.KEY_AUTOSYNC_,getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY,getApplicationContext()) ){
+        } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
             return checkForceSync(30);
         }
         return false;
@@ -128,22 +124,21 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         cal_today.setTimeInMillis(new Date().getTime());
         long msDiff = Calendar.getInstance().getTimeInMillis() - cal_last_Sync.getTimeInMillis();
         long daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff);
-        Log.e("Today's date ",""+cal_today.getTime());
-        Log.e("Last sync date ",""+cal_last_Sync.getTime());
-        if(daysDiff >= maxDays){
-            Log.e("Sync Date ","Expired - ");
+        Log.e("Today's date ", "" + cal_today.getTime());
+        Log.e("Last sync date ", "" + cal_last_Sync.getTime());
+        if (daysDiff >= maxDays) {
+            Log.e("Sync Date ", "Expired - ");
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-            alertDialogBuilder.setMessage("It has been more than "+ (daysDiff-1) +" days since you last synced this device." +
+            alertDialogBuilder.setMessage("It has been more than " + (daysDiff - 1) + " days since you last synced this device." +
                     "\nConnect it to the server over wifi and sync it to reactivate this tablet");
-            alertDialogBuilder.setPositiveButton("Okay", (arg0, arg1) -> Toast.makeText(getApplicationContext(),"Connect to the server over WiFi and sync your device to continue",Toast.LENGTH_LONG).show());
+            alertDialogBuilder.setPositiveButton("Okay", (arg0, arg1) -> Toast.makeText(getApplicationContext(), "Connect to the server over WiFi and sync your device to continue", Toast.LENGTH_LONG).show());
             alertDialogBuilder.show();
             return true;
-        }else{
-            Log.e("Sync Date ","Not up to  - "+ maxDays);
+        } else {
+            Log.e("Sync Date ", "Not up to  - " + maxDays);
             return false;
         }
     }
-
 
 
     public void declareElements() {
@@ -154,7 +149,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         save = findViewById(R.id.save);
         managerialLogin = findViewById(R.id.manager_login);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
-        btnSignIn.setOnClickListener(view ->submitForm());
+        btnSignIn.setOnClickListener(view -> submitForm());
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
         findViewById(R.id.become_member).setOnClickListener(v -> {
@@ -169,6 +164,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             recreate();
         });
     }
+
     private void becomeAMember() {
         if (!Utilities.getUrl().isEmpty()) {
             startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
@@ -273,7 +269,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
      * Form  Validation
      */
     private void submitForm() {
-        if(forceSynceTrigger()){
+        if (forceSynceTrigger()) {
             return;
         }
         SharedPreferences.Editor editor = settings.edit();
