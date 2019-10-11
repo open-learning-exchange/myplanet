@@ -9,7 +9,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.provider.Settings;
-import android.text.format.DateFormat;
 import android.util.Log;
 
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
@@ -33,9 +32,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
-import java.util.Calendar;
 import java.util.Date;
-import java.util.Locale;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -43,15 +40,9 @@ import io.realm.Realm;
 public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
     public static FirebaseJobDispatcher dispatcher;
     public static Context context;
-    SharedPreferences preferences;
+    public static SharedPreferences preferences;
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
-    Calendar cal_today , cal_last_Sync;
-
-    @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
-    }
 
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
@@ -64,6 +55,10 @@ public class MainApplication extends Application implements Application.Activity
 
     }
 
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
+    }
 
     @Override
     public void onCreate() {
@@ -86,7 +81,6 @@ public class MainApplication extends Application implements Application.Activity
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
 
-        checkForceSync();
         //todo
         //Delete bellow when fully implemented
         /// Test Encryption
@@ -94,27 +88,13 @@ public class MainApplication extends Application implements Application.Activity
         String iv = "00010203040506070809000102030405"; // 32
         String data = "{\"cat\":\"zuzu\"}"; //
         try {
-            Log.e("Enc ",AndroidDecrypter.encrypt(data,key,iv));
-            Log.e("Decyp ",AndroidDecrypter.decrypt("1620545cbde0bd053ac9d47fd3fdfa3b",key,iv));
+            Log.e("Enc ", AndroidDecrypter.encrypt(data, key, iv));
+            Log.e("Decyp ", AndroidDecrypter.decrypt("1620545cbde0bd053ac9d47fd3fdfa3b", key, iv));
 
         } catch (Exception e) {
             e.printStackTrace();
         }
         //
-    }
-
-    private void checkForceSync() {
-        cal_today = Calendar.getInstance(Locale.ENGLISH);
-        cal_last_Sync = Calendar.getInstance(Locale.ENGLISH);
-        cal_last_Sync.setTimeInMillis(preferences.getLong("LastSync", 0));
-        cal_today.setTimeInMillis(new Date().getTime());
-        Log.e("Call ",""+cal_today.getTime());
-        Log.e("Old Sync ",""+cal_last_Sync.getTime());
-        if(cal_today.compareTo(cal_last_Sync)>7){
-            Log.e("Sync Date ","True - ");
-        }else{
-            Log.e("Sync Date ","Not up to 7 - ");
-        }
     }
 
     public void createJob(int sec, Class jobClass) {
@@ -165,14 +145,6 @@ public class MainApplication extends Application implements Application.Activity
         NotificationUtil.cancellAll(this);
     }
 
-    private String getDateFromLong(long time) {
-        Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-        cal.setTimeInMillis(time * 1000);
-        String date = DateFormat.format("dd-MM-yyyy", cal).toString();
-        return date;
-    }
-
-
     public void handleUncaughtException(Throwable e) {
         e.printStackTrace();
         Utilities.log("Handle exception " + e.getMessage());
@@ -186,7 +158,7 @@ public class MainApplication extends Application implements Application.Activity
             log.setParentCode(model.getParentCode());
             log.setCreatedOn(model.getPlanetCode());
         }
-        log.setTime(new Date().getTime() +"");
+        log.setTime(new Date().getTime() + "");
         log.setPage("");
         log.setVersion(VersionUtils.getVersionName(this));
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);
