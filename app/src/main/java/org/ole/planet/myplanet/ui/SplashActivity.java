@@ -27,7 +27,7 @@ public class SplashActivity extends AppCompatActivity {
         getStarted = findViewById(R.id.get_started);
         FileUtils.copyAssets(this);
         SharedPreferences settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
-        if (settings.getBoolean(Constants.KEY_LOGIN, false)) {
+        if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_,getApplicationContext()) ) {
             Intent dashboard = new Intent(getApplicationContext(), DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(dashboard);
             finish();
