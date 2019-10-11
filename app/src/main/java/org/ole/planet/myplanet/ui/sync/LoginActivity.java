@@ -44,6 +44,8 @@ import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Locale;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
@@ -57,6 +59,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     String processedUrl;
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
+    private TextView txtVersion;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn, btnGuestLogin;
     private ImageButton imgBtnSetting;
@@ -89,6 +92,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         new GPSService(this);
         setUpChildMode();
+
+        lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
+        lblLastSyncDate.setText("<< Last sync with server : " + convertDate() + " >>");
     }
 
     private void showWifiDialog() {
@@ -186,7 +192,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
-        TextView txtVersion = findViewById(R.id.lblVersion);
+        txtVersion = findViewById(R.id.lblVersion);
         txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
         inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
