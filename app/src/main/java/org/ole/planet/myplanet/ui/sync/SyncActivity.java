@@ -35,14 +35,16 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
-    public TextView syncDate;
+    public TextView syncDate,lblLastSyncDate;
     public TextView intervalLabel, tvNodata;
     public Spinner spinner;
     public Switch syncSwitch;
@@ -61,7 +63,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         requestPermission();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
-
     }
 
     public void clearInternalStorage() {
@@ -157,8 +158,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncDropdownAdd();
     }
 
+
     // Converts OS date to human date
-    private String convertDate() {
+    public String convertDate() {
         // Context goes here
         long lastSynced = settings.getLong("LastSync", 0);
         if (lastSynced == 0) {
