@@ -82,7 +82,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
         syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> setSpinnerVisibility(isChecked));
-        syncSwitch.setChecked(settings.getBoolean("autoSync", false));
+        syncSwitch.setChecked(settings.getBoolean("autoSync", true));
         dateCheck(dialog);
     }
 
@@ -164,7 +164,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         // Context goes here
         long lastSynced = settings.getLong("LastSync", 0);
         if (lastSynced == 0) {
-            return "Last Sync Date: Never";
+            return " Never Synced";
         }
         return Utilities.getRelativeTime(lastSynced); // <=== modify this when implementing this method
     }
@@ -172,7 +172,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     // Create items in the spinner
     public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
-        list.add("10 Minutes");
         list.add("15 Minutes");
         list.add("30 Minutes");
         list.add("1 Hour");
@@ -180,7 +179,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
-        spinner.setSelection(settings.getInt("autoSyncPosition", 0));
     }
 
     public void saveSyncInfoToPreference() {
