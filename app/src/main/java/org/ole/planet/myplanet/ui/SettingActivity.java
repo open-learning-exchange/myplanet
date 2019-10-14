@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
 
@@ -114,14 +115,14 @@ public class SettingActivity extends AppCompatActivity {
             SwitchPreference autoSync = (SwitchPreference) findPreference("auto_sync_with_server");
             SwitchPreference autoForceWeeklySync = (SwitchPreference) findPreference("force_weekly_sync");
             SwitchPreference autoForceMonthlySync = (SwitchPreference) findPreference("force_monthly_sync");
-            Preference lastSyncDate =(Preference) findPreference("lastSyncDate");
+            Preference lastSyncDate = (Preference) findPreference("lastSyncDate");
             autoSync.setOnPreferenceChangeListener((preference, o) -> {
-                if(autoSync.isChecked()){
-                    if(autoForceWeeklySync.isChecked()){
+                if (autoSync.isChecked()) {
+                    if (autoForceWeeklySync.isChecked()) {
                         autoForceMonthlySync.setChecked(false);
-                    }else if(autoForceMonthlySync.isChecked()){
+                    } else if (autoForceMonthlySync.isChecked()) {
                         autoForceWeeklySync.setChecked(false);
-                    }else {
+                    } else {
                         autoForceWeeklySync.setChecked(true);
                     }
                 }
@@ -129,9 +130,12 @@ public class SettingActivity extends AppCompatActivity {
             });
 
             autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync);
-            autoForceSync(autoSync, autoForceMonthlySync,autoForceWeeklySync);
-            SharedPreferences settings= getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            lastSyncDate.setTitle("Last Synced: "+ TimeUtils.formatDateTZ(settings.getLong("LastSync",0)));
+            autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync);
+            SharedPreferences settings = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            long lastSynced = settings.getLong("LastSync", 0);
+            if (lastSynced == 0) {
+                lastSyncDate.setTitle("Last Synced: Never");
+            } else lastSyncDate.setTitle("Last Synced: " + Utilities.getRelativeTime(lastSynced));
         }
 //
 //        private void managerLogin() {
