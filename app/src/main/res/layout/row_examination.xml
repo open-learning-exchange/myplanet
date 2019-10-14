@@ -3,45 +3,46 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardElevation="0dp"
-    app:cardUseCompatPadding="true"
-    app:contentPadding="@dimen/padding_normal">
+    app:cardCornerRadius="@dimen/padding_small"
+    app:cardElevation="2dp"
+    app:contentPadding="@dimen/padding_small"
+    app:cardUseCompatPadding="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tv_title"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:padding="@dimen/padding_normal"
             android:textColor="@color/md_black_1000"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tv_pulse_rate"
-            android:layout_width="0dp"
+            android:id="@+id/tv_special_needs"
+            android:layout_width="match_parent"
+            android:lines="1"
+            android:ellipsize="end"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="@dimen/padding_normal" />
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal"
+
+            />
 
         <TextView
-            android:id="@+id/tv_resp_rate"
-            android:layout_width="0dp"
+            android:id="@+id/tv_other_needs"
+            android:lines="1"
+            android:ellipsize="end"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="@dimen/padding_normal" />
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal"
 
-        <TextView
-            android:id="@+id/tv_blood_pressure"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:padding="@dimen/padding_normal" />
+            />
     </LinearLayout>
 
 </android.support.v7.widget.CardView>

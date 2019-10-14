@@ -1,32 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="show_topbar"
-        android:title="@string/show_top_nav" />
 
     <ListPreference
         android:entries="@array/language"
         android:entryValues="@array/language_keys"
         android:key="app_language"
         android:title="@string/language" />
+
     <SwitchPreference
         android:defaultValue="true"
-        android:key="bell_theme"
-        android:title="BeLL Dashboard Theme" />
+        android:key="auto_sync_with_server"
+        android:title="Auto Sync Device" />
+
+    <PreferenceCategory
+        android:dependency="auto_sync_with_server"
+        android:title="Auto Sync">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="force_weekly_sync"
+            android:title="Force Weekly Sync" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="force_monthly_sync"
+            android:title="Force Monthly Sync" />
+
+    </PreferenceCategory>
+
     <SwitchPreference
         android:defaultValue="true"
         android:key="beta_function"
         android:title="Beta Functionality" />
-
-    <!--<PreferenceCategory android:title="Manager Mode"-->
-        <!--&gt;-->
-
-        <!--<Preference-->
-            <!--android:key="add_manager"-->
-            <!--android:title="Add Manager Account" />-->
-
-    <!--</PreferenceCategory>-->
 
     <PreferenceCategory
         android:dependency="beta_function"
@@ -43,6 +46,10 @@
             android:defaultValue="false"
             android:key="beta_myHealth"
             android:title="Beta Function for myHealth" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_healthWorker"
+            android:title="Beta Function for Health Worker" />
 
         <SwitchPreference
             android:defaultValue="true"

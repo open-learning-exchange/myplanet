@@ -1,12 +1,20 @@
 package org.ole.planet.myplanet.model;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import org.ole.planet.myplanet.utilities.JsonUtils;
+
+import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmMyHealth extends RealmObject {
     @PrimaryKey
     private String id;
-    private String firstName, middleName, lastName, email, phone, language, birthdate, birthPlace, emergency, contactType, contact, specialNeeds, otherNeeds;
+    private String firstName, middleName, lastName, email, phone, language, birthDate, birthPlace, emergency, contactType, contact, specialNeeds, otherNeeds;
+    private String userId;
+    private String _rev;
 
 
     public String getId() {
@@ -65,12 +73,12 @@ public class RealmMyHealth extends RealmObject {
         this.language = language;
     }
 
-    public String getBirthdate() {
-        return birthdate;
+    public String getBirthDate() {
+        return birthDate;
     }
 
-    public void setBirthdate(String birthdate) {
-        this.birthdate = birthdate;
+    public void setBirthDate(String birthDate) {
+        this.birthDate = birthDate;
     }
 
     public String getBirthPlace() {
@@ -119,5 +127,67 @@ public class RealmMyHealth extends RealmObject {
 
     public void setOtherNeeds(String otherNeeds) {
         this.otherNeeds = otherNeeds;
+    }
+
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String get_rev() {
+        return _rev;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
+    }
+
+    public JsonObject serialize(RealmMyHealth myHealth) {
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", getId());
+        object.addProperty("userId", getUserId());
+        object.addProperty("_rev", get_rev());
+        object.addProperty("firstName", getFirstName());
+        object.addProperty("lastName", getLastName());
+        object.addProperty("middleName", getMiddleName());
+        object.addProperty("email", getEmail());
+        object.addProperty("language", getLanguage());
+        object.addProperty("phoneNumber", getPhone());
+        object.addProperty("birthPlace", getBirthPlace());
+        object.addProperty("birthDate", getBirthDate());
+        object.addProperty("emergency", getEmergency());
+        object.addProperty("contact", getContact());
+        object.addProperty("contactType", getContactType());
+        object.addProperty("specialNeeds", getSpecialNeeds());
+        object.addProperty("otherNeeds", getOtherNeeds());
+        if (myHealth.get_rev() != null) object.addProperty("_rev", myHealth.get_rev());
+        return object;
+    }
+
+    public static void insert(Realm mRealm, JsonObject act) {
+        RealmMyHealth myHealth = mRealm.where(RealmMyHealth.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        if (myHealth == null)
+            myHealth = mRealm.createObject(RealmMyHealth.class, JsonUtils.getString("_id", act));
+        myHealth.setId(JsonUtils.getString("_id", act));
+        myHealth.setUserId(JsonUtils.getString("userId", act));
+        myHealth.set_rev(JsonUtils.getString("_rev", act));
+        myHealth.setFirstName(JsonUtils.getString("firstName", act));
+        myHealth.setLastName(JsonUtils.getString("lastName", act));
+        myHealth.setMiddleName(JsonUtils.getString("middleName", act));
+        myHealth.setLanguage(JsonUtils.getString("language", act));
+        myHealth.setEmail(JsonUtils.getString("email", act));
+        myHealth.setPhone(JsonUtils.getString("phoneNumber", act));
+        myHealth.setBirthPlace(JsonUtils.getString("birthPlace",act));
+        myHealth.setBirthDate(JsonUtils.getString("birthDate",act));
+        myHealth.setEmergency(JsonUtils.getString("emergency",act));
+        myHealth.setContact(JsonUtils.getString("contact",act));
+        myHealth.setContactType(JsonUtils.getString("contactType",act));
+        myHealth.setSpecialNeeds(JsonUtils.getString("specialNeeds",act));
+        myHealth.setOtherNeeds(JsonUtils.getString("otherNeeds",act));
+        myHealth.set_rev(JsonUtils.getString("_rev", act));
     }
 }

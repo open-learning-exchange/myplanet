@@ -20,6 +20,31 @@
             android:gravity="right"
             android:padding="@dimen/padding_small">
 
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/md_white_1000"
+                android:textStyle="bold"
+                android:padding="@dimen/padding_small"
+                android:text="@string/vital_sign" />
+
+            <android.support.v7.widget.SwitchCompat
+                android:layout_width="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:layout_height="wrap_content"
+                android:id="@+id/switch_health_mode"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/lblExamination"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
+                android:text="@string/examination"
+                android:textColor="@color/md_white_1000"
+                android:textStyle="bold" />
+
             <Button
                 android:id="@+id/btnnew_patient"
                 android:layout_width="wrap_content"

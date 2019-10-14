@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.provider.Settings;
+import android.util.Log;
 
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.service.StayOnLineService;
 import org.ole.planet.myplanet.service.TaskNotificationService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -38,14 +40,9 @@ import io.realm.Realm;
 public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
     public static FirebaseJobDispatcher dispatcher;
     public static Context context;
-    SharedPreferences preferences;
+    public static SharedPreferences preferences;
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
-
-    @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
-    }
 
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
@@ -58,6 +55,10 @@ public class MainApplication extends Application implements Application.Activity
 
     }
 
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
+    }
 
     @Override
     public void onCreate() {
@@ -79,6 +80,21 @@ public class MainApplication extends Application implements Application.Activity
         createJob(60, TaskNotificationService.class);
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
+
+        //todo
+        //Delete bellow when fully implemented
+        /// Test Encryption
+        String key = "0102030405060708090001020304050607080900010203040506070809000102";  // 64
+        String iv = "00010203040506070809000102030405"; // 32
+        String data = "{\"cat\":\"zuzu\"}"; //
+        try {
+            Log.e("Enc ", AndroidDecrypter.encrypt(data, key, iv));
+            Log.e("Decyp ", AndroidDecrypter.decrypt("1620545cbde0bd053ac9d47fd3fdfa3b", key, iv));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //
     }
 
     public void createJob(int sec, Class jobClass) {
@@ -129,7 +145,6 @@ public class MainApplication extends Application implements Application.Activity
         NotificationUtil.cancellAll(this);
     }
 
-
     public void handleUncaughtException(Throwable e) {
         e.printStackTrace();
         Utilities.log("Handle exception " + e.getMessage());
@@ -143,7 +158,7 @@ public class MainApplication extends Application implements Application.Activity
             log.setParentCode(model.getParentCode());
             log.setCreatedOn(model.getPlanetCode());
         }
-        log.setTime(new Date().getTime() +"");
+        log.setTime(new Date().getTime() + "");
         log.setPage("");
         log.setVersion(VersionUtils.getVersionName(this));
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);

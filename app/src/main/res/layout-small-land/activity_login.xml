@@ -122,6 +122,15 @@
                     android:background="@null"
                     android:scaleType="fitCenter" />
 
+                <TextView
+                    android:id="@+id/lblLastSyncDate"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="15dp"
+                    android:padding="@dimen/padding_normal"
+                    android:text="----"
+                    android:textAlignment="center" />
+
                 <ImageButton
                     android:id="@+id/imgBtnSetting"
                     android:layout_width="wrap_content"
