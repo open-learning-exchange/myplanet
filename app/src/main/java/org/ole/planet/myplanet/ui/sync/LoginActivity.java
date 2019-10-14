@@ -67,7 +67,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private CheckBox save, managerialLogin;
     private boolean isSync = false, isUpload = false, forceSync = false;
     private SwitchCompat switchChildMode;
-    private TextView lastSyncDate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,8 +121,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settings.edit().putBoolean("isChild", b).commit();
             recreate();
         });
-        lastSyncDate = findViewById(R.id.tv_lastDateSynced);
-        lastSyncDate.setText("Last Synced: "+ TimeUtils.formatDateTZ(settings.getLong("LastSync",0)));
     }
 
     private void becomeAMember() {
