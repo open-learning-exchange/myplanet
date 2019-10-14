@@ -88,12 +88,12 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-        LinearLayout llRating = v.findViewById(R.id.ll_rating);
-        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        TextView average = v.findViewById(R.id.average);
-        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        TextView tv_rating = v.findViewById(R.id.tv_rating);
-        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        LinearLayout llRating = v.findViewById(R.id.ll_rating);
+//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        TextView average = v.findViewById(R.id.average);
+//        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        TextView tv_rating = v.findViewById(R.id.tv_rating);
+//        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private void setLibraryData() {
