@@ -35,14 +35,16 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
-    public TextView syncDate;
+    public TextView syncDate,lblLastSyncDate;
     public TextView intervalLabel, tvNodata;
     public Spinner spinner;
     public Switch syncSwitch;
@@ -61,7 +63,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         requestPermission();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
-
     }
 
     public void clearInternalStorage() {
@@ -81,7 +82,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
         syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> setSpinnerVisibility(isChecked));
-        syncSwitch.setChecked(settings.getBoolean("autoSync", false));
+        syncSwitch.setChecked(settings.getBoolean("autoSync", true));
         dateCheck(dialog);
     }
 
@@ -157,12 +158,13 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncDropdownAdd();
     }
 
+
     // Converts OS date to human date
-    private String convertDate() {
+    public String convertDate() {
         // Context goes here
         long lastSynced = settings.getLong("LastSync", 0);
         if (lastSynced == 0) {
-            return "Last Sync Date: Never";
+            return " Never Synced";
         }
         return Utilities.getRelativeTime(lastSynced); // <=== modify this when implementing this method
     }
@@ -170,7 +172,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     // Create items in the spinner
     public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
-        list.add("10 Minutes");
         list.add("15 Minutes");
         list.add("30 Minutes");
         list.add("1 Hour");
@@ -178,7 +179,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
-        spinner.setSelection(settings.getInt("autoSyncPosition", 0));
     }
 
     public void saveSyncInfoToPreference() {

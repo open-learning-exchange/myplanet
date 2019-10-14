@@ -36,6 +36,9 @@ public class Constants {
     public static final String KEY_ACHIEVEMENT = "beta_achievement";
     public static final String KEY_MYHEALTH = "beta_myHealth";
     public static final String KEY_HEALTHWORKER = "beta_healthWorker";
+    public static final String KEY_AUTOSYNC_ = "auto_sync_with_server";
+    public static final String KEY_AUTOSYNC_WEEKLY = "force_weekly_sync";
+    public static final String KEY_AUTOSYNC_MONTHLY = "force_monthly_sync";
     public static final HashMap<Class, Integer> COLOR_MAP = new HashMap<>();
     public static HashMap<String, Class> classList = new HashMap<>();
 
@@ -91,6 +94,12 @@ public class Constants {
         return preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, false);
         //  }
 //        return true;
+    }
+
+
+    public static boolean autoSynFeature(String s, Context context) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        return preferences.getBoolean(s, false);
     }
 
 

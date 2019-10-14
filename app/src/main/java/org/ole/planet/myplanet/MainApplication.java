@@ -40,14 +40,9 @@ import io.realm.Realm;
 public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
     public static FirebaseJobDispatcher dispatcher;
     public static Context context;
-    SharedPreferences preferences;
+    public static SharedPreferences preferences;
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
-
-    @Override
-    protected void attachBaseContext(Context base) {
-        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
-    }
 
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
@@ -60,6 +55,10 @@ public class MainApplication extends Application implements Application.Activity
 
     }
 
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
+    }
 
     @Override
     public void onCreate() {
@@ -81,6 +80,7 @@ public class MainApplication extends Application implements Application.Activity
         createJob(60, TaskNotificationService.class);
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
+
         //todo
         //Delete bellow when fully implemented
         /// Test Encryption
@@ -88,8 +88,8 @@ public class MainApplication extends Application implements Application.Activity
         String iv = "00010203040506070809000102030405"; // 32
         String data = "{\"cat\":\"zuzu\"}"; //
         try {
-            Log.e("Enc ",AndroidDecrypter.encrypt(data,key,iv));
-            Log.e("Decyp ",AndroidDecrypter.decrypt("1620545cbde0bd053ac9d47fd3fdfa3b",key,iv));
+            Log.e("Enc ", AndroidDecrypter.encrypt(data, key, iv));
+            Log.e("Decyp ", AndroidDecrypter.decrypt("1620545cbde0bd053ac9d47fd3fdfa3b", key, iv));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -145,7 +145,6 @@ public class MainApplication extends Application implements Application.Activity
         NotificationUtil.cancellAll(this);
     }
 
-
     public void handleUncaughtException(Throwable e) {
         e.printStackTrace();
         Utilities.log("Handle exception " + e.getMessage());
@@ -159,7 +158,7 @@ public class MainApplication extends Application implements Application.Activity
             log.setParentCode(model.getParentCode());
             log.setCreatedOn(model.getPlanetCode());
         }
-        log.setTime(new Date().getTime() +"");
+        log.setTime(new Date().getTime() + "");
         log.setPage("");
         log.setVersion(VersionUtils.getVersionName(this));
         log.setType(RealmApkLog.ERROR_TYPE_CRASH);
