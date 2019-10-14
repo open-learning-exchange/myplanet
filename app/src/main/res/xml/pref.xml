@@ -7,11 +7,6 @@
         android:key="app_language"
         android:title="@string/language" />
 
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="auto_sync_with_server"
-        android:title="Auto Sync Device" />
-
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="Auto Sync">
@@ -23,13 +18,13 @@
             android:defaultValue="false"
             android:key="force_monthly_sync"
             android:title="Force Monthly Sync" />
+        <Preference
+            android:selectable="false"
+            android:enabled="true"
+            android:key="lastSyncDate"
+            android:title="Last Synced:" />
 
     </PreferenceCategory>
-
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="beta_function"
-        android:title="Beta Functionality" />
 
     <PreferenceCategory
         android:dependency="beta_function"
@@ -65,4 +60,15 @@
             android:key="beta_rating"
             android:title="Beta Function for Rating" />
     </PreferenceCategory>
+
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="auto_sync_with_server"
+        android:title="Auto Sync Device" />
+
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="beta_function"
+        android:title="Beta Functionality" />
+
 </PreferenceScreen>
