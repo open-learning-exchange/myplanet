@@ -140,7 +140,11 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         List<RealmTag> tags = realm.where(RealmTag.class).equalTo("db", "resources").equalTo("linkId", libraryList.get(position).getId()).findAll();
         for (RealmTag tag : tags) {
             RealmTag parent = realm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
-            chipCloud.addChip(parent.getName());
+            try{
+                chipCloud.addChip(parent.getName());
+            }catch (Exception err){
+                chipCloud.addChip("--");
+            }
             chipCloud.setListener((i, b, b1) -> {
                 if (b1 && listener != null) {
                     listener.onTagClicked(parent);
