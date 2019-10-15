@@ -179,16 +179,16 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     listener.onSelectedListChange(selectedItems);
                 }
             });
-            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
-                //  llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
-                ratingBar.setOnTouchListener((v1, event) -> {
-                    if (event.getAction() == MotionEvent.ACTION_UP)
-                        homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
-                    return true;
-                });
-            } else {
-                llRating.setOnClickListener(null);
-            }
+//            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
+            //  llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
+            ratingBar.setOnTouchListener((v1, event) -> {
+                if (event.getAction() == MotionEvent.ACTION_UP)
+                    homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
+                return true;
+            });
+//            } else {
+//                llRating.setOnClickListener(null);
+//            }
             flexboxDrawable = itemView.findViewById(R.id.flexbox_drawable);
         }
     }
