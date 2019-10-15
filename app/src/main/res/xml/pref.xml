@@ -55,14 +55,15 @@
             android:defaultValue="true"
             android:key="beta_achievement"
             android:title="Beta Function for Achievement" />
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="beta_survey"
-            android:title="Beta Function for Survey" />
+        <!--<SwitchPreference-->
+            <!--android:defaultValue="true"-->
+            <!--android:key="beta_survey"-->
+            <!--android:title="Beta Function for Survey" />-->
 
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="beta_rating"
-            android:title="Beta Function for Rating" />
+        <!--<SwitchPreference-->
+            <!--android:defaultValue="true"-->
+            <!---->
+            <!--android:key="beta_rating"-->
+            <!--android:title="Beta Function for Rating" />-->
     </PreferenceCategory>
 </PreferenceScreen>
