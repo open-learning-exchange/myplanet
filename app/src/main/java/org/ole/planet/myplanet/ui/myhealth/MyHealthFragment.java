@@ -42,7 +42,7 @@ public class MyHealthFragment extends Fragment {
     Realm mRealm;
     RealmUserModel userModel;
     AlertDialog showDialog;
-    TextView txtFullname, txtEmail, txtLanguage,txtDob;
+    TextView txtFullname, txtEmail, txtLanguage, txtDob, txtBirthPlace, txtEmergency, txtSpecial, txtOther;
     public UserProfileDbHandler profileDbHandler;
 
     public MyHealthFragment() {
@@ -59,6 +59,10 @@ public class MyHealthFragment extends Fragment {
         txtEmail = v.findViewById(R.id.txt_email);
         txtLanguage = v.findViewById(R.id.txt_language);
         txtDob = v.findViewById(R.id.txt_dob);
+        txtBirthPlace = v.findViewById(R.id.txt_birth_place);
+        txtEmergency = v.findViewById(R.id.txt_emergency_contact);
+        txtSpecial = v.findViewById(R.id.txt_special_needs);
+        txtOther = v.findViewById(R.id.txt_other_need);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         btnNewPatient = v.findViewById(R.id.btnnew_patient);
         btnNewPatient.setOnClickListener(view -> selectPatient());
@@ -112,6 +116,10 @@ public class MyHealthFragment extends Fragment {
         txtEmail.setText(myHealths.getEmail());
         txtLanguage.setText(myHealths.getLanguage());
         txtDob.setText(myHealths.getBirthDate());
+        txtOther.setText(myHealths.getOtherNeeds());
+        txtSpecial.setText(myHealths.getSpecialNeeds());
+        txtBirthPlace.setText(myHealths.getBirthPlace());
+        txtEmergency.setText("Name : " + myHealths.getEmergency() + "\nType : " + myHealths.getContactType() + "\nContact : " + myHealths.getContact());
         List<RealmExamination> list = mRealm.where(RealmExamination.class).equalTo("userId", userId).findAll();
         rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
