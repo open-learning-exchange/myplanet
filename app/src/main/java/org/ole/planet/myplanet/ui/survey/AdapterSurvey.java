@@ -83,8 +83,10 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             lastSubDate = itemView.findViewById(R.id.tv_date);
             startSurvey = itemView.findViewById(R.id.start_survey);
             sendSurvey = itemView.findViewById(R.id.send_survey);
-            startSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
-            sendSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
+//            startSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
+            startSurvey.setVisibility(View.VISIBLE);
+//            sendSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
+            sendSurvey.setVisibility(View.VISIBLE);
             sendSurvey.setOnClickListener(view -> {
                 RealmStepExam current = examList.get(getAdapterPosition());
                 if (listener != null)
