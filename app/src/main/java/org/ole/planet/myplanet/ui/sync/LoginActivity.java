@@ -98,7 +98,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         setUpChildMode();
 
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
-        lblLastSyncDate.setText("<< Last sync with server : " + convertDate() + " >>");
+//        lblLastSyncDate.setText("<< Last sync with server : " + convertDate() + " >>");
         forceSynceTrigger();
     }
 

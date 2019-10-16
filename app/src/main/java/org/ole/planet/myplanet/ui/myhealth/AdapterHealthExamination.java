@@ -15,9 +15,9 @@ import java.util.List;
 
 public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
-    private List<RealmMyHealth> list;
+    private List<RealmExamination> list;
 
-    public AdapterHealthExamination(Context context, List<RealmMyHealth> list) {
+    public AdapterHealthExamination(Context context, List<RealmExamination> list) {
         this.context = context;
         this.list = list;
     }
@@ -32,9 +32,9 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMyHealthExamination) {
-            ((ViewHolderMyHealthExamination) holder).name.setText(list.get(position).getFirstName());
-            ((ViewHolderMyHealthExamination) holder).specialNeed.setText(list.get(position).getSpecialNeeds());
-            ((ViewHolderMyHealthExamination) holder).otherNeed.setText(list.get(position).getOtherNeeds());
+            ((ViewHolderMyHealthExamination) holder).name.setText(list.get(position).getBp());
+            ((ViewHolderMyHealthExamination) holder).specialNeed.setText(list.get(position).getTemperature());
+            ((ViewHolderMyHealthExamination) holder).otherNeed.setText(list.get(position).getPulse());
         }
     }
 
