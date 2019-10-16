@@ -122,6 +122,7 @@ public class MyHealthFragment extends Fragment {
         txtEmergency.setText("Name : " + myHealths.getEmergency() + "\nType : " + myHealths.getContactType() + "\nContact : " + myHealths.getContact());
         List<RealmExamination> list = mRealm.where(RealmExamination.class).equalTo("userId", userId).findAll();
         rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
+        rvRecord.setNestedScrollingEnabled(false);
         rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
 
     }

@@ -32,9 +32,13 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMyHealthExamination) {
-            ((ViewHolderMyHealthExamination) holder).name.setText(list.get(position).getBp());
-            ((ViewHolderMyHealthExamination) holder).specialNeed.setText(list.get(position).getTemperature());
-            ((ViewHolderMyHealthExamination) holder).otherNeed.setText(list.get(position).getPulse());
+            ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature());
+            ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse());
+            ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
+            ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing());
+            ((ViewHolderMyHealthExamination) holder).height.setText(list.get(position).getHeight());
+            ((ViewHolderMyHealthExamination) holder).weight.setText(list.get(position).getWeight());
+            ((ViewHolderMyHealthExamination) holder).vision.setText(list.get(position).getVision());
         }
     }
 
@@ -44,13 +48,17 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     }
 
     class ViewHolderMyHealthExamination extends RecyclerView.ViewHolder {
-        TextView name, specialNeed, otherNeed;
+        TextView temp, pulse, bp, height, weight, vision, hearing;
 
         public ViewHolderMyHealthExamination(View itemView) {
             super(itemView);
-            name = itemView.findViewById(R.id.tv_title);
-            specialNeed = itemView.findViewById(R.id.tv_special_needs);
-            otherNeed = itemView.findViewById(R.id.tv_other_needs);
+            temp = itemView.findViewById(R.id.txt_temp);
+            pulse = itemView.findViewById(R.id.txt_pulse);
+            bp = itemView.findViewById(R.id.txt_bp);
+            height = itemView.findViewById(R.id.txt_height);
+            hearing = itemView.findViewById(R.id.txt_hearing);
+            weight = itemView.findViewById(R.id.txt_weight);
+            vision = itemView.findViewById(R.id.txt_vision);
         }
     }
 }
