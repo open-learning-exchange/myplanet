@@ -8,6 +8,7 @@ public class RealmExamination extends RealmObject {
     private String id;
     private String temperature, pulse, bp, height, weight, vision, hearing, notes, dionosis, treatments, medications, immunizationDate, allergies, xrays, labtests, referrals;
     private String userId;
+    private long created;
 
 
     public String getId() {
@@ -152,5 +153,13 @@ public class RealmExamination extends RealmObject {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public long getCreated() {
+        return created;
+    }
+
+    public void setCreated(long created) {
+        this.created = created;
     }
 }

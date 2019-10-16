@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     app:cardCornerRadius="@dimen/padding_small"
+    android:minWidth="100dp"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_small">
@@ -16,6 +17,12 @@
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/txt_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:textColor="@color/md_black_1000" />
+   <TextView
             android:id="@+id/txt_temp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

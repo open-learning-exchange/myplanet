@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyHealth;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.List;
 
@@ -32,7 +33,9 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMyHealthExamination) {
+
             ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature());
+            ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getCreated(), "MMM dd, yyyy"));
             ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse());
             ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
             ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing());
@@ -48,12 +51,13 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     }
 
     class ViewHolderMyHealthExamination extends RecyclerView.ViewHolder {
-        TextView temp, pulse, bp, height, weight, vision, hearing;
+        TextView temp, pulse, bp, height, weight, vision, hearing, date;
 
         public ViewHolderMyHealthExamination(View itemView) {
             super(itemView);
             temp = itemView.findViewById(R.id.txt_temp);
             pulse = itemView.findViewById(R.id.txt_pulse);
+            date = itemView.findViewById(R.id.txt_date);
             bp = itemView.findViewById(R.id.txt_bp);
             height = itemView.findViewById(R.id.txt_height);
             hearing = itemView.findViewById(R.id.txt_hearing);
