@@ -114,12 +114,12 @@ public class MyHealthFragment extends Fragment {
         RealmMyHealth myHealths = mRealm.where(RealmMyHealth.class).equalTo("userId", userId).findFirst();
         if (myHealths != null) {
             txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
-            txtEmail.setText(myHealths.getEmail());
-            txtLanguage.setText(myHealths.getLanguage());
-            txtDob.setText(myHealths.getBirthDate());
-            txtOther.setText(myHealths.getOtherNeeds());
-            txtSpecial.setText(myHealths.getSpecialNeeds());
-            txtBirthPlace.setText(myHealths.getBirthPlace());
+            txtEmail.setText(myHealths.getEmail().isEmpty() ? "N/A" : myHealths.getEmail());
+            txtLanguage.setText(myHealths.getLanguage().isEmpty() ? "N/A" : myHealths.getLanguage());
+            txtDob.setText(myHealths.getBirthDate().isEmpty() ? "N/A" : myHealths.getBirthDate());
+            txtOther.setText(myHealths.getOtherNeeds().isEmpty() ? "N/A" : myHealths.getOtherNeeds());
+            txtSpecial.setText(myHealths.getSpecialNeeds().isEmpty() ? "N/A" : myHealths.getSpecialNeeds());
+            txtBirthPlace.setText(myHealths.getBirthPlace().isEmpty() ? "N/A" : myHealths.getBirthPlace());
             txtEmergency.setText("Name : " + myHealths.getEmergency() + "\nType : " + myHealths.getContactType() + "\nContact : " + myHealths.getContact());
         }
         List<RealmExamination> list = mRealm.where(RealmExamination.class).equalTo("userId", userId).findAll();
