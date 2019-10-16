@@ -10,6 +10,7 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SwitchCompat;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -114,12 +115,12 @@ public class MyHealthFragment extends Fragment {
         RealmMyHealth myHealths = mRealm.where(RealmMyHealth.class).equalTo("userId", userId).findFirst();
         if (myHealths != null) {
             txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
-            txtEmail.setText(myHealths.getEmail().isEmpty() ? "N/A" : myHealths.getEmail());
-            txtLanguage.setText(myHealths.getLanguage().isEmpty() ? "N/A" : myHealths.getLanguage());
-            txtDob.setText(myHealths.getBirthDate().isEmpty() ? "N/A" : myHealths.getBirthDate());
-            txtOther.setText(myHealths.getOtherNeeds().isEmpty() ? "N/A" : myHealths.getOtherNeeds());
-            txtSpecial.setText(myHealths.getSpecialNeeds().isEmpty() ? "N/A" : myHealths.getSpecialNeeds());
-            txtBirthPlace.setText(myHealths.getBirthPlace().isEmpty() ? "N/A" : myHealths.getBirthPlace());
+            txtEmail.setText(TextUtils.isEmpty(myHealths.getEmail()) ? "N/A" : myHealths.getEmail());
+            txtLanguage.setText(TextUtils.isEmpty(myHealths.getLanguage()) ? "N/A" : myHealths.getLanguage());
+            txtDob.setText(TextUtils.isEmpty(myHealths.getBirthDate()) ? "N/A" : myHealths.getBirthDate());
+            txtOther.setText(TextUtils.isEmpty(myHealths.getOtherNeeds()) ? "N/A" : myHealths.getOtherNeeds());
+            txtSpecial.setText(TextUtils.isEmpty(myHealths.getSpecialNeeds()) ? "N/A" : myHealths.getSpecialNeeds());
+            txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthPlace()) ? "N/A" : myHealths.getBirthPlace());
             txtEmergency.setText("Name : " + myHealths.getEmergency() + "\nType : " + myHealths.getContactType() + "\nContact : " + myHealths.getContact());
         }
         List<RealmExamination> list = mRealm.where(RealmExamination.class).equalTo("userId", userId).findAll();
