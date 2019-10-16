@@ -30,9 +30,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:visibility="gone"
                     android:text="@string/new_patient"
-                    android:theme="@style/BlueButton" />
+                    android:theme="@style/BlueButton"
+                    android:visibility="gone" />
 
                 <Button
                     android:id="@+id/add_new_record"
@@ -56,8 +56,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:visibility="gone">
 
                 <ImageView
                     android:id="@+id/imageView3"
@@ -125,7 +125,8 @@
                                 android:id="@+id/txt_full_name"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small" />
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
 
                         </LinearLayout>
 
@@ -147,7 +148,8 @@
                                 android:id="@+id/txt_email"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small" />
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -168,7 +170,8 @@
                                 android:id="@+id/txt_language"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small" />
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -189,7 +192,8 @@
                                 android:id="@+id/txt_dob"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small" />
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
                         </LinearLayout>
 
 
@@ -217,7 +221,8 @@
                                 android:id="@+id/txt_birth_place"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small" />
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
 
                         </LinearLayout>
 
@@ -239,7 +244,8 @@
                                 android:id="@+id/txt_emergency_contact"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small" />
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
                         </LinearLayout>
 
 
@@ -262,7 +268,8 @@
                             android:id="@+id/txt_special_needs"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:padding="@dimen/padding_small" />
+                            android:padding="@dimen/padding_small"
+                            android:text="N/A" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -282,24 +289,26 @@
                             android:id="@+id/txt_other_need"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:padding="@dimen/padding_small" />
+                            android:padding="@dimen/padding_small"
+                            android:text="N/A" />
                     </LinearLayout>
 
 
                 </LinearLayout>
 
             </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <include layout="@layout/row_examination"/>
+                <include layout="@layout/row_examination" />
 
-            <android.support.v7.widget.RecyclerView
-                android:id="@+id/rv_records"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent" />
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/rv_records"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
 
 
             </LinearLayout>
