@@ -18,7 +18,7 @@ import io.realm.Realm;
 public class AddExaminationActivity extends AppCompatActivity {
     Realm mRealm;
     String userId;
-    EditText etTemperature, etPulseRate, etBloodPressure, etHeight, etWidth, etVision, etHearing,
+    EditText etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
             etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
 
 
@@ -27,7 +27,7 @@ public class AddExaminationActivity extends AppCompatActivity {
         etPulseRate = findViewById(R.id.et_pulse_rate);
         etBloodPressure = findViewById(R.id.et_bloodpressure);
         etHeight = findViewById(R.id.et_height);
-        etWidth = findViewById(R.id.et_width);
+        etWeight = findViewById(R.id.et_weight);
         etVision = findViewById(R.id.et_vision);
         etHearing = findViewById(R.id.et_hearing);
         etObservation = findViewById(R.id.et_observation);
@@ -65,7 +65,7 @@ public class AddExaminationActivity extends AppCompatActivity {
                 sign.setBp(etBloodPressure.getText().toString());
                 sign.setTemperature(etTemperature.getText().toString());
                 sign.setPulse(etPulseRate.getText().toString());
-                sign.setWeight(etWidth.getText().toString());
+                sign.setWeight(etWeight.getText().toString());
                 sign.setDionosis(etDiag.getText().toString());
                 sign.setHearing(etHearing.getText().toString());
                 sign.setHeight(etHeight.getText().toString());

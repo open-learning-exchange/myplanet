@@ -109,10 +109,10 @@
                     android:padding="@dimen/padding_small">
 
                     <EditText
-                        android:id="@+id/et_width"
+                        android:id="@+id/et_weight"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/width"
+                        android:hint="@string/weight"
                         android:inputType="numberDecimal" />
 
                 </android.support.design.widget.TextInputLayout>
