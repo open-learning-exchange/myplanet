@@ -112,14 +112,16 @@ public class MyHealthFragment extends Fragment {
 
     private void showRecords() {
         RealmMyHealth myHealths = mRealm.where(RealmMyHealth.class).equalTo("userId", userId).findFirst();
-        txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
-        txtEmail.setText(myHealths.getEmail());
-        txtLanguage.setText(myHealths.getLanguage());
-        txtDob.setText(myHealths.getBirthDate());
-        txtOther.setText(myHealths.getOtherNeeds());
-        txtSpecial.setText(myHealths.getSpecialNeeds());
-        txtBirthPlace.setText(myHealths.getBirthPlace());
-        txtEmergency.setText("Name : " + myHealths.getEmergency() + "\nType : " + myHealths.getContactType() + "\nContact : " + myHealths.getContact());
+        if (myHealths != null) {
+            txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
+            txtEmail.setText(myHealths.getEmail());
+            txtLanguage.setText(myHealths.getLanguage());
+            txtDob.setText(myHealths.getBirthDate());
+            txtOther.setText(myHealths.getOtherNeeds());
+            txtSpecial.setText(myHealths.getSpecialNeeds());
+            txtBirthPlace.setText(myHealths.getBirthPlace());
+            txtEmergency.setText("Name : " + myHealths.getEmergency() + "\nType : " + myHealths.getContactType() + "\nContact : " + myHealths.getContact());
+        }
         List<RealmExamination> list = mRealm.where(RealmExamination.class).equalTo("userId", userId).findAll();
         rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         rvRecord.setNestedScrollingEnabled(false);
