@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Date;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -77,6 +78,7 @@ public class AddExaminationActivity extends AppCompatActivity {
                 sign.setReferrals(etReferrals.getText().toString());
                 sign.setNotes(etObservation.getText().toString());
                 sign.setMedications(etMedications.getText().toString());
+                sign.setCreated(new Date().getTime());
                 sign.setUserId(userId);
             }, () -> {
                 Utilities.toast(AddExaminationActivity.this, "Record Saved");

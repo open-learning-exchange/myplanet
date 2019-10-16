@@ -95,6 +95,8 @@
                 <ImageView
                     android:id="@+id/user_image"
                     android:layout_width="@dimen/user_image_size"
+                    android:padding="@dimen/padding_normal"
+                    android:src="@drawable/profile"
                     android:layout_height="@dimen/user_image_size" />
 
                 <LinearLayout
@@ -199,6 +201,12 @@
 
                     </LinearLayout>
 
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@drawable/bg_grey"
+                        />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
@@ -250,6 +258,11 @@
 
 
                     </LinearLayout>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@drawable/bg_grey"
+                        />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -264,6 +277,7 @@
                             android:textColor="@color/colorPrimaryDark"
                             android:textStyle="bold" />
 
+
                         <TextView
                             android:id="@+id/txt_special_needs"
                             android:layout_width="match_parent"
@@ -272,6 +286,11 @@
                             android:text="N/A" />
                     </LinearLayout>
 
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@drawable/bg_grey"
+                        />
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
