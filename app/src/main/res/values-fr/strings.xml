@@ -279,4 +279,23 @@
     <string name="update_health_record">Update Health Record</string>
     <string name="vital_sign">Vital Signs</string>
     <string name="examination">Examination</string>
+    <string name="add_examination">Add Examination</string>
+    <string name="new_patient">New Patient</string>
+    <string name="height">Height</string>
+    <string name="width">Width</string>
+    <string name="vision">Vision</string>
+    <string name="hearing">Hearing</string>
+    <string name="vitals">Vitals</string>
+    <string name="condition_and_treatment">Condition and Treatment</string>
+    <string name="observation">Observation and Notes</string>
+    <string name="diagnosis">Diagnosis</string>
+    <string name="treatments">Treatments</string>
+    <string name="medications">Medications</string>
+    <string name="immunization">Immunization Dates</string>
+    <string name="allergies">Allergies</string>
+    <string name="xray">X-rays</string>
+    <string name="labtest">Lab Tests</string>
+    <string name="referrals">Referrals</string>
+    <string name="full_name">Full Name</string>
+    <string name="weight">Weight</string>
 </resources>

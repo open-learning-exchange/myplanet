@@ -140,7 +140,11 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         List<RealmTag> tags = realm.where(RealmTag.class).equalTo("db", "resources").equalTo("linkId", libraryList.get(position).getId()).findAll();
         for (RealmTag tag : tags) {
             RealmTag parent = realm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
-            chipCloud.addChip(parent.getName());
+            try{
+                chipCloud.addChip(parent.getName());
+            }catch (Exception err){
+                chipCloud.addChip("--");
+            }
             chipCloud.setListener((i, b, b1) -> {
                 if (b1 && listener != null) {
                     listener.onTagClicked(parent);
@@ -179,16 +183,16 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     listener.onSelectedListChange(selectedItems);
                 }
             });
-            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
-                //  llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
-                ratingBar.setOnTouchListener((v1, event) -> {
-                    if (event.getAction() == MotionEvent.ACTION_UP)
-                        homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
-                    return true;
-                });
-            } else {
-                llRating.setOnClickListener(null);
-            }
+//            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
+            //  llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
+            ratingBar.setOnTouchListener((v1, event) -> {
+                if (event.getAction() == MotionEvent.ACTION_UP)
+                    homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
+                return true;
+            });
+//            } else {
+//                llRating.setOnClickListener(null);
+//            }
             flexboxDrawable = itemView.findViewById(R.id.flexbox_drawable);
         }
     }

@@ -94,7 +94,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         btnResources = v.findViewById(R.id.btn_resources);
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
-        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
 

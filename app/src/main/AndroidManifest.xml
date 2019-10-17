@@ -39,7 +39,7 @@
             android:name=".ui.myhealth.MyHealthDetailActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.myhealth.AddVitalSignActivity"
+            android:name=".ui.myhealth.AddExaminationActivity"
             android:theme="@style/AppTheme" />
         <activity android:name=".ui.map.OfflineMapActivity" />
         <activity

@@ -14,6 +14,7 @@ import android.support.v7.widget.SwitchCompat;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -45,6 +46,10 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
@@ -53,11 +58,13 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
+    public static Calendar cal_today, cal_last_Sync;
     EditText serverUrl, serverUrlProtocol;
     EditText serverPassword;
     String processedUrl;
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
+    private TextView txtVersion;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn, btnGuestLogin;
     private ImageButton imgBtnSetting;
@@ -90,11 +97,47 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         new GPSService(this);
         setUpChildMode();
+
+        lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
+//        lblLastSyncDate.setText("<< Last sync with server : " + convertDate() + " >>");
+        forceSynceTrigger();
+    }
+
+    private boolean forceSynceTrigger() {
+        if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
+            return checkForceSync(7);
+        } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
+            return checkForceSync(30);
+        }
+        return false;
     }
 
     private void showWifiDialog() {
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
+        }
+    }
+
+    public boolean checkForceSync(int maxDays) {
+        cal_today = Calendar.getInstance(Locale.ENGLISH);
+        cal_last_Sync = Calendar.getInstance(Locale.ENGLISH);
+        cal_last_Sync.setTimeInMillis(settings.getLong("LastSync", 0));
+        cal_today.setTimeInMillis(new Date().getTime());
+        long msDiff = Calendar.getInstance().getTimeInMillis() - cal_last_Sync.getTimeInMillis();
+        long daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff);
+        Log.e("Today's date ", "" + cal_today.getTime());
+        Log.e("Last sync date ", "" + cal_last_Sync.getTime());
+        if (daysDiff >= maxDays) {
+            Log.e("Sync Date ", "Expired - ");
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+            alertDialogBuilder.setMessage("It has been more than " + (daysDiff - 1) + " days since you last synced this device." +
+                    "\nConnect it to the server over wifi and sync it to reactivate this tablet");
+            alertDialogBuilder.setPositiveButton("Okay", (arg0, arg1) -> Toast.makeText(getApplicationContext(), "Connect to the server over WiFi and sync your device to continue", Toast.LENGTH_LONG).show());
+            alertDialogBuilder.show();
+            return true;
+        } else {
+            Log.e("Sync Date ", "Not up to  - " + maxDays);
+            return false;
         }
     }
 
@@ -187,7 +230,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
-        TextView txtVersion = findViewById(R.id.lblVersion);
+        txtVersion = findViewById(R.id.lblVersion);
         txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
         inputName = findViewById(R.id.input_name);//editText
         inputPassword = findViewById(R.id.input_password);
@@ -227,6 +270,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
      * Form  Validation
      */
     private void submitForm() {
+        if (forceSynceTrigger()) {
+            return;
+        }
         SharedPreferences.Editor editor = settings.edit();
         if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
             return;
@@ -240,8 +286,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
         boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), managerialLogin.isChecked());
-
-
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             onLogin();
