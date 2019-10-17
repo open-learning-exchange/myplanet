@@ -1,27 +1,22 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SwitchCompat;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
@@ -42,14 +37,13 @@ import io.realm.Realm;
 public class MyHealthFragment extends Fragment {
 
     RecyclerView rvRecord;
-    Button fab, btnNewPatient,btnUpdateRecord;
-    TextView lblName, lblVitalSigns,lblExamination;
+    Button fab, btnNewPatient, btnUpdateRecord;
+    TextView lblName;
     String userId;
     Realm mRealm;
-    Spinner spnUsers;
     RealmUserModel userModel;
     AlertDialog showDialog;
-    SwitchCompat switchCompat;
+    TextView txtFullname, txtEmail, txtLanguage, txtDob, txtBirthPlace, txtEmergency, txtSpecial, txtOther;
     public UserProfileDbHandler profileDbHandler;
 
     public MyHealthFragment() {
@@ -62,20 +56,24 @@ public class MyHealthFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_vital_sign, container, false);
         rvRecord = v.findViewById(R.id.rv_records);
         lblName = v.findViewById(R.id.lblHealthName);
-        lblVitalSigns = v.findViewById(R.id.lblVitalSigns);
-        switchCompat = v.findViewById(R.id.switch_health_mode);
+        txtFullname = v.findViewById(R.id.txt_full_name);
+        txtEmail = v.findViewById(R.id.txt_email);
+        txtLanguage = v.findViewById(R.id.txt_language);
+        txtDob = v.findViewById(R.id.txt_dob);
+        txtBirthPlace = v.findViewById(R.id.txt_birth_place);
+        txtEmergency = v.findViewById(R.id.txt_emergency_contact);
+        txtSpecial = v.findViewById(R.id.txt_special_needs);
+        txtOther = v.findViewById(R.id.txt_other_need);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        btnNewPatient = v.findViewById(R.id.btnnew_patient);
-        btnNewPatient.setOnClickListener(view -> selectPatient());
-        btnNewPatient.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE :View.GONE );
+//        btnNewPatient = v.findViewById(R.id.btnnew_patient);
+//        btnNewPatient.setOnClickListener(view -> selectPatient());
+//        btnNewPatient.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         fab = v.findViewById(R.id.add_new_record);
-        fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddVitalSignActivity.class).putExtra("userId", userId)));
-        fab.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE :View.GONE );
+        fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddExaminationActivity.class).putExtra("userId", userId)));
+        fab.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         btnUpdateRecord = v.findViewById(R.id.update_health);
         btnUpdateRecord.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
-        btnUpdateRecord.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE :View.GONE );
-        lblExamination = v.findViewById(R.id.lblExamination);
-        lblExamination.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE :View.GONE );
+        btnUpdateRecord.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         return v;
     }
 
@@ -86,19 +84,16 @@ public class MyHealthFragment extends Fragment {
         Spinner spnUser = v.findViewById(R.id.spn_user);
         List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
         rvRecord.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
-        switchCompat.setOnCheckedChangeListener((compoundButton, b) -> showRecords());
         profileDbHandler = new UserProfileDbHandler(v.getContext());
-        userId=profileDbHandler.getUserModel().getId();
+        userId = profileDbHandler.getUserModel().getId();
         getHealthRecords(userId);
-        //selectPatient();
+//        selectPatient();
         //showRecords();
     }
 
-    private void getHealthRecords(String memberId){
+    private void getHealthRecords(String memberId) {
         userId = memberId;
         userModel = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-        //String[] arr = userId.split(":");
-        //lblName.setText(arr[arr.length - 1]);
         lblName.setText(userModel.getFullName());
         showRecords();
     }
@@ -117,17 +112,22 @@ public class MyHealthFragment extends Fragment {
     }
 
     private void showRecords() {
-        lblVitalSigns.setText(switchCompat.isChecked() ? R.string.examination : R.string.vital_sign);
-        if (!switchCompat.isChecked()) {
-            List<RealmVitalSign> list = mRealm.where(RealmVitalSign.class).equalTo("userId", userId).findAll();
-            rvRecord.setLayoutManager(new LinearLayoutManager(getActivity()));
-            rvRecord.setAdapter(new AdapterVitalSign(getActivity(), list));
-        } else {
-            List<RealmMyHealth> list = mRealm.where(RealmMyHealth.class).equalTo("userId", userId).findAll();
-            Utilities.log("LOG " + list.size());
-            rvRecord.setLayoutManager(new LinearLayoutManager(getActivity()));
-            rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
+        RealmMyHealth myHealths = mRealm.where(RealmMyHealth.class).equalTo("userId", userId).findFirst();
+        if (myHealths != null) {
+            txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
+            txtEmail.setText(TextUtils.isEmpty(myHealths.getEmail()) ? "N/A" : myHealths.getEmail());
+            txtLanguage.setText(TextUtils.isEmpty(myHealths.getLanguage()) ? "N/A" : myHealths.getLanguage());
+            txtDob.setText(TextUtils.isEmpty(myHealths.getBirthDate()) ? "N/A" : myHealths.getBirthDate());
+            txtOther.setText(TextUtils.isEmpty(myHealths.getOtherNeeds()) ? "N/A" : myHealths.getOtherNeeds());
+            txtSpecial.setText(TextUtils.isEmpty(myHealths.getSpecialNeeds()) ? "N/A" : myHealths.getSpecialNeeds());
+            txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthPlace()) ? "N/A" : myHealths.getBirthPlace());
+            txtEmergency.setText("Name : " + myHealths.getEmergency() + "\nType : " + myHealths.getContactType() + "\nContact : " + myHealths.getContact());
         }
+        List<RealmExamination> list = mRealm.where(RealmExamination.class).equalTo("userId", userId).findAll();
+        rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
+        rvRecord.setNestedScrollingEnabled(false);
+        rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
+
     }
 
 }
