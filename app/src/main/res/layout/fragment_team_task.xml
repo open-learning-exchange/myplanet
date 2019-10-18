@@ -23,15 +23,17 @@
         android:layout_height="wrap_content"
         app:tbgCheckedButton="@+id/btn_all">
 
-        <com.nex3z.togglebuttongroup.button.CircularToggle
+        <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_all"
+            android:padding="@dimen/padding_normal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="All Task"/>
 
-        <com.nex3z.togglebuttongroup.button.CircularToggle
+        <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_my"
             android:layout_width="wrap_content"
+            android:padding="@dimen/padding_normal"
             android:layout_height="wrap_content"
             android:text="My task"/>
 
