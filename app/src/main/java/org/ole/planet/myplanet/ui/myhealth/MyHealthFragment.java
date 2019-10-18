@@ -119,7 +119,6 @@ public class MyHealthFragment extends Fragment {
         RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
         if (mh != null) {
             String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
-            Utilities.log("Decrypted " + json);
             RealmMyHealth mm = new Gson().fromJson(json, RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
             txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
