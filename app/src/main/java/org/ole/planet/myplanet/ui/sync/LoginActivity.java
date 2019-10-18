@@ -99,10 +99,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         setUpChildMode();
 
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
-        forceSynceTrigger();
+        forceSyncTrigger();
     }
 
-    private boolean forceSynceTrigger() {
+    private boolean forceSyncTrigger() {
         lblLastSyncDate.setText("<< Last sync with server: " + Utilities.getRelativeTime(settings.getLong("LastSync", 0)));
         if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
             return checkForceSync(7);
@@ -270,7 +270,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
      * Form  Validation
      */
     private void submitForm() {
-        if (forceSynceTrigger()) {
+        if (forceSyncTrigger()) {
             return;
         }
         SharedPreferences.Editor editor = settings.edit();
