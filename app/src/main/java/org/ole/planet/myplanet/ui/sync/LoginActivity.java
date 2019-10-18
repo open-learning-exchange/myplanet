@@ -99,11 +99,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         setUpChildMode();
 
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
-//        lblLastSyncDate.setText("<< Last sync with server : " + convertDate() + " >>");
         forceSynceTrigger();
     }
 
     private boolean forceSynceTrigger() {
+        lblLastSyncDate.setText("<< Last sync with server: " + Utilities.getRelativeTime(settings.getLong("LastSync", 0)));
         if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
             return checkForceSync(7);
         } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
