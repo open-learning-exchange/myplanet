@@ -111,8 +111,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout), getActivity());
         changeButtonStatus();
-
-
+        tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
+        if(!isMyCourseLib) tvFragmentInfo.setText("Our Library");
     }
 
     private void initArrays() {

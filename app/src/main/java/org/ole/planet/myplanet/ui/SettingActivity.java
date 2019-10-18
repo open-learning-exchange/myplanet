@@ -3,8 +3,10 @@ package org.ole.planet.myplanet.ui;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.ListPreference;
+import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.SwitchPreference;
 import android.support.v7.app.AppCompatActivity;
@@ -15,6 +17,10 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
+import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
 
 public class SettingActivity extends AppCompatActivity {
     @Override
@@ -109,13 +115,14 @@ public class SettingActivity extends AppCompatActivity {
             SwitchPreference autoSync = (SwitchPreference) findPreference("auto_sync_with_server");
             SwitchPreference autoForceWeeklySync = (SwitchPreference) findPreference("force_weekly_sync");
             SwitchPreference autoForceMonthlySync = (SwitchPreference) findPreference("force_monthly_sync");
+            Preference lastSyncDate = (Preference) findPreference("lastSyncDate");
             autoSync.setOnPreferenceChangeListener((preference, o) -> {
-                if(autoSync.isChecked()){
-                    if(autoForceWeeklySync.isChecked()){
+                if (autoSync.isChecked()) {
+                    if (autoForceWeeklySync.isChecked()) {
                         autoForceMonthlySync.setChecked(false);
-                    }else if(autoForceMonthlySync.isChecked()){
+                    } else if (autoForceMonthlySync.isChecked()) {
                         autoForceWeeklySync.setChecked(false);
-                    }else {
+                    } else {
                         autoForceWeeklySync.setChecked(true);
                     }
                 }
@@ -123,7 +130,12 @@ public class SettingActivity extends AppCompatActivity {
             });
 
             autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync);
-            autoForceSync(autoSync, autoForceMonthlySync,autoForceWeeklySync);
+            autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync);
+            SharedPreferences settings = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            long lastSynced = settings.getLong("LastSync", 0);
+            if (lastSynced == 0) {
+                lastSyncDate.setTitle("Last Synced: Never");
+            } else lastSyncDate.setTitle("Last Synced: " + Utilities.getRelativeTime(lastSynced));
         }
 //
 //        private void managerLogin() {
