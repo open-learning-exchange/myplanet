@@ -7,8 +7,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 554
-        versionName "0.5.54"
+        versionCode 555
+        versionName "0.5.55"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -107,6 +107,7 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.0'
     implementation 'com.github.clans:fab:1.6.4'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
+    implementation 'com.nex3z:toggle-button-group:1.1.8'
 
     implementation project(':ChipCloud-3.0.5')
 }

@@ -21,6 +21,7 @@ import android.widget.ToggleButton;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.nex3z.togglebuttongroup.SingleSelectToggleGroup;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmTeamTask;
@@ -42,7 +43,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     RecyclerView rvTask;
     Calendar deadline;
     TextView datePicker, nodata;
-    ToggleButton taskButton;
+    SingleSelectToggleGroup taskButton;
     List<RealmTeamTask> list;
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         deadline = Calendar.getInstance();
@@ -147,10 +148,10 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
         setAdapter();
         showNoData(nodata, list.size());
-        taskButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        taskButton.setOnCheckedChangeListener(new SingleSelectToggleGroup.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                if (b) {
+            public void onCheckedChanged(SingleSelectToggleGroup group, int checkedId) {
+                if (checkedId == R.id.btn_my) {
                     list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("assignee", user.getId()).findAll();
                 } else {
                     list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
@@ -158,6 +159,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                 setAdapter();
             }
         });
+
     }
 
     private void setAdapter() {
