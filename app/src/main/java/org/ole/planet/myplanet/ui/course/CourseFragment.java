@@ -90,7 +90,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         showNoData(tvMessage, adapterCourses.getItemCount());
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_course_parent_layout), getActivity());
         changeButtonStatus();
-
+        if(!isMyCourseLib) tvFragmentInfo.setText("Our Courses");
     }
 
     private void initializeView() {
@@ -102,6 +102,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         imgSearch = getView().findViewById(R.id.img_search);
         tvMessage = getView().findViewById(R.id.tv_message);
         getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
+        tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
     }
 
     private void clearTags() {
