@@ -130,23 +130,15 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     public void checkFileExtension(RealmMyLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
         String extension = filenameArray[filenameArray.length - 1];
-        switch (extension) {
-            case "pdf":
-                openPdf(items);
-                break;
-            case "bmp":
-            case "gif":
-            case "jpg":
-            case "png":
-            case "webp":
-                openIntent(items, ImageViewerActivity.class);
-                break;
-            case "mp4":
-                playVideo("offline", items);
-                break;
-            default:
-                checkMoreFileExtensions(extension, items);
-                break;
+        String mimetype = Utilities.getMimeType(items.getResourceLocalAddress());
+        if (mimetype.contains("image")) {
+            openIntent(items, ImageViewerActivity.class);
+        } else if (mimetype.contains("pdf")) {
+            openPdf(items);
+        } else if (mimetype.contains("audio")) {
+            openIntent(items, AudioPlayerActivity.class);
+        } else {
+            checkMoreFileExtensions(extension, items);
         }
     }
 
@@ -161,9 +153,6 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
             case "csv":
                 openIntent(items, CSVViewerActivity.class);
                 break;
-            case "mp3":
-                openIntent(items, AudioPlayerActivity.class);
-                break;
             default:
                 Toast.makeText(getActivity(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
                 break;
@@ -172,7 +161,8 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     }
 
     public void openFileType(final RealmMyLibrary items, String videotype) {
-        if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
+        String mimetype = Utilities.getMimeType(items.getResourceLocalAddress());
+        if (mimetype.startsWith("video")) {
             playVideo(videotype, items);
         } else {
             checkFileExtension(items);
