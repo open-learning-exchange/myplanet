@@ -70,21 +70,25 @@ public class AddExaminationActivity extends AppCompatActivity {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
         if (health == null || health.getProfile() == null) {
-            health = new RealmMyHealth();
-            RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
-            profile.setFirstName(user.getFirstName());
-            profile.setMiddleName(user.getMiddleName());
-            profile.setLastName(user.getLastName());
-            profile.setLanguage(user.getLanguage());
-            profile.setBirthDate(user.getDob());
-            profile.setBirthplace(user.getBirthPlace());
-            profile.setEmail(user.getEmail());
-            profile.setPhone(user.getPhoneNumber());
-            health.setProfile(profile);
+          initHealth();
         }
         findViewById(R.id.btn_save).setOnClickListener(view -> {
             saveData();
         });
+    }
+
+    private void initHealth() {
+        health = new RealmMyHealth();
+        RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
+        profile.setFirstName(user.getFirstName());
+        profile.setMiddleName(user.getMiddleName());
+        profile.setLastName(user.getLastName());
+        profile.setLanguage(user.getLanguage());
+        profile.setBirthDate(user.getDob());
+        profile.setBirthplace(user.getBirthPlace());
+        profile.setEmail(user.getEmail());
+        profile.setPhone(user.getPhoneNumber());
+        health.setProfile(profile);
     }
 
     private void saveData() {
