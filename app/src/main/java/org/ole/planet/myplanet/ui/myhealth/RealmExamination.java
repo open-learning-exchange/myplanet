@@ -1,23 +1,9 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
-import io.realm.RealmObject;
-import io.realm.annotations.PrimaryKey;
 
-public class RealmExamination extends RealmObject {
-    @PrimaryKey
-    private String id;
-    private String temperature, pulse, bp, height, weight, vision, hearing, notes, dionosis, treatments, medications, immunizationDate, allergies, xrays, labtests, referrals;
-    private String userId;
-    private long created;
-
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
+public class RealmExamination {
+    private String temperature, pulse, bp, height, weight, vision, hearing, notes, diagnosis, treatments, medications, immunizations, allergies, xrays, tests, referrals;
+    private long date;
 
     public String getTemperature() {
         return temperature;
@@ -83,12 +69,12 @@ public class RealmExamination extends RealmObject {
         this.notes = notes;
     }
 
-    public String getDionosis() {
-        return dionosis;
+    public String getDiagnosis() {
+        return diagnosis;
     }
 
-    public void setDionosis(String dionosis) {
-        this.dionosis = dionosis;
+    public void setDiagnosis(String diagnosis) {
+        this.diagnosis = diagnosis;
     }
 
     public String getTreatments() {
@@ -107,12 +93,12 @@ public class RealmExamination extends RealmObject {
         this.medications = medications;
     }
 
-    public String getImmunizationDate() {
-        return immunizationDate;
+    public String getImmunizations() {
+        return immunizations;
     }
 
-    public void setImmunizationDate(String immunizationDate) {
-        this.immunizationDate = immunizationDate;
+    public void setImmunizations(String immunizations) {
+        this.immunizations = immunizations;
     }
 
     public String getAllergies() {
@@ -131,12 +117,12 @@ public class RealmExamination extends RealmObject {
         this.xrays = xrays;
     }
 
-    public String getLabtests() {
-        return labtests;
+    public String getTests() {
+        return tests;
     }
 
-    public void setLabtests(String labtests) {
-        this.labtests = labtests;
+    public void setTests(String tests) {
+        this.tests = tests;
     }
 
     public String getReferrals() {
@@ -147,19 +133,11 @@ public class RealmExamination extends RealmObject {
         this.referrals = referrals;
     }
 
-    public String getUserId() {
-        return userId;
+    public long getDate() {
+        return date;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public long getCreated() {
-        return created;
-    }
-
-    public void setCreated(long created) {
-        this.created = created;
+    public void setDate(long date) {
+        this.date = date;
     }
 }
