@@ -45,6 +45,8 @@ public class RealmUserModel extends RealmObject {
     private String birthPlace;
     private String communityName;
     private String userImage;
+    private String key;
+    private String iv;
     private boolean showTopbar;
 
 
@@ -68,7 +70,25 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("derived_key", getDerived_key());
         object.addProperty("salt", getSalt());
         object.addProperty("password_scheme", getPassword_scheme());
+        object.addProperty("key", getKey());
+        object.addProperty("iv", getIv());
         return object;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getIv() {
+        return iv;
+    }
+
+    public void setIv(String iv) {
+        this.iv = iv;
     }
 
     public String getLevel() {
@@ -140,6 +160,8 @@ public class RealmUserModel extends RealmObject {
         user.setDerived_key(JsonUtils.getString("derived_key", jsonDoc));
         user.setSalt(JsonUtils.getString("salt", jsonDoc));
         user.setDob(JsonUtils.getString("birthDate", jsonDoc));
+        user.setKey(JsonUtils.getString("key", jsonDoc));
+        user.setIv(JsonUtils.getString("iv", jsonDoc));
         user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);

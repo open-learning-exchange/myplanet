@@ -35,7 +35,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         if (holder instanceof ViewHolderMyHealthExamination) {
 
             ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature());
-            ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getCreated(), "MMM dd, yyyy"));
+            ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
             ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse());
             ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
             ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing());

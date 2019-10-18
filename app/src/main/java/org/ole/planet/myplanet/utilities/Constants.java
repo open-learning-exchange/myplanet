@@ -9,6 +9,8 @@ import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyHealth;
+import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
@@ -67,6 +69,7 @@ public class Constants {
         classList.put("teams", RealmMyTeam.class);
         classList.put("tasks", RealmTeamTask.class);
         classList.put("meetups", RealmMeetup.class);
+        classList.put("health", RealmMyHealthPojo.class);
     }
 
     public static class ShelfData {

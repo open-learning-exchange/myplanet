@@ -7,11 +7,20 @@ import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
+import com.google.gson.Gson;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyHealth;
+import org.ole.planet.myplanet.model.RealmMyHealthPojo;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -21,7 +30,9 @@ public class AddExaminationActivity extends AppCompatActivity {
     String userId;
     EditText etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
             etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
-
+    RealmUserModel user;
+    RealmMyHealthPojo pojo;
+    RealmMyHealth health = null;
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
@@ -50,40 +61,67 @@ public class AddExaminationActivity extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         initViews();
-        userId = getIntent().getStringExtra("userId");
+        user = new UserProfileDbHandler(this).getUserModel();
         mRealm = new DatabaseService(this).getRealmInstance();
+        userId = user.getId();
+        pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+
+        if (pojo != null) {
+            health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
+        }
+        if (health == null || health.getProfile() == null) {
+            health = new RealmMyHealth();
+            RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
+            profile.setFirstName(user.getFirstName());
+            profile.setMiddleName(user.getMiddleName());
+            profile.setLastName(user.getLastName());
+            profile.setLanguage(user.getLanguage());
+            profile.setBirthDate(user.getDob());
+            profile.setBirthplace(user.getBirthPlace());
+            profile.setEmail(user.getEmail());
+            profile.setPhone(user.getPhoneNumber());
+            health.setProfile(profile);
+        }
         findViewById(R.id.btn_save).setOnClickListener(view -> {
             saveData();
         });
-
     }
 
     private void saveData() {
         try {
-            mRealm.executeTransactionAsync(realm -> {
-                RealmExamination sign = realm.createObject(RealmExamination.class, UUID.randomUUID().toString());
-                sign.setAllergies(etAllergies.getText().toString());
-                sign.setBp(etBloodPressure.getText().toString());
-                sign.setTemperature(etTemperature.getText().toString());
-                sign.setPulse(etPulseRate.getText().toString());
-                sign.setWeight(etWeight.getText().toString());
-                sign.setDionosis(etDiag.getText().toString());
-                sign.setHearing(etHearing.getText().toString());
-                sign.setHeight(etHeight.getText().toString());
-                sign.setImmunizationDate(etImmunization.getText().toString());
-                sign.setLabtests(etLabtest.getText().toString());
-                sign.setXrays(etXray.getText().toString());
-                sign.setVision(etVision.getText().toString());
-                sign.setTreatments(etTretments.getText().toString());
-                sign.setReferrals(etReferrals.getText().toString());
-                sign.setNotes(etObservation.getText().toString());
-                sign.setMedications(etMedications.getText().toString());
-                sign.setCreated(new Date().getTime());
-                sign.setUserId(userId);
-            }, () -> {
-                Utilities.toast(AddExaminationActivity.this, "Record Saved");
-                finish();
-            });
+            RealmExamination sign = new RealmExamination();
+            sign.setAllergies(etAllergies.getText().toString());
+            sign.setBp(etBloodPressure.getText().toString());
+            sign.setTemperature(etTemperature.getText().toString());
+            sign.setPulse(etPulseRate.getText().toString());
+            sign.setWeight(etWeight.getText().toString());
+            sign.setDiagnosis(etDiag.getText().toString());
+            sign.setHearing(etHearing.getText().toString());
+            sign.setHeight(etHeight.getText().toString());
+            sign.setImmunizations(etImmunization.getText().toString());
+            sign.setTests(etLabtest.getText().toString());
+            sign.setXrays(etXray.getText().toString());
+            sign.setVision(etVision.getText().toString());
+            sign.setTreatments(etTretments.getText().toString());
+            sign.setReferrals(etReferrals.getText().toString());
+            sign.setNotes(etObservation.getText().toString());
+            sign.setMedications(etMedications.getText().toString());
+            sign.setDate(new Date().getTime());
+            List<RealmExamination> list = health.getEvents();
+            if (list == null) {
+                list = new ArrayList<>();
+            }
+            list.add(sign);
+            health.setEvents(list);
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            if (pojo == null){
+                pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
+            }
+            pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
+            mRealm.commitTransaction();
+            Utilities.toast(this, "Added successfully");
+            finish();
         } catch (Exception e) {
             Utilities.toast(this, "All fields are required");
         }
