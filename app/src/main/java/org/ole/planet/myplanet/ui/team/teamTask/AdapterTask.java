@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team.teamTask;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -69,6 +70,10 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (listener != null)
                     listener.onDelete(list.get(position));
             });
+            holder.itemView.setOnClickListener(view -> new AlertDialog.Builder(context)
+                    .setTitle(list.get(position).getTitle())
+                    .setMessage(list.get(position).getDescription())
+                    .setPositiveButton("Dismiss", null).show());
         }
     }
 
