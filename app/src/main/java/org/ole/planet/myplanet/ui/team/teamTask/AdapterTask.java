@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team.teamTask;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -14,6 +15,7 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.List;
@@ -69,6 +71,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (listener != null)
                     listener.onDelete(list.get(position));
             });
+            holder.itemView.setOnClickListener(view -> DialogUtils.showAlert(context, list.get(position).getTitle(), list.get(position).getDescription()));
         }
     }
 
