@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -137,7 +138,8 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     }
 
     private void setListAdapter() {
-        list = mRealm.where(RealmTag.class).equalTo("db", dbType).isNotEmpty("name").findAll();
+        list = mRealm.where(RealmTag.class).equalTo("db", dbType).isNotEmpty("name").equalTo("isAttached", false).findAll();
+
         selectedItemsList = (ArrayList<RealmTag>) recentList;
         List<RealmTag> allTags = mRealm.where(RealmTag.class).findAll();
         HashMap<String, List<RealmTag>> childMap = new HashMap<>();
