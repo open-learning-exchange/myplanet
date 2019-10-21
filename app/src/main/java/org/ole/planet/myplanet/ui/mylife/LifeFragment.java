@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.mylife;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.helper.ItemTouchHelper;
 
@@ -44,7 +45,8 @@ public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements O
         ItemTouchHelper.Callback callback = new SimpleItemTouchHelperCallback(adapterMyLife);
         mItemTouchHelper = new ItemTouchHelper(callback);
         mItemTouchHelper.attachToRecyclerView(recyclerView);
-
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recyclerView.getContext(), RecyclerView.VERTICAL);
+        recyclerView.addItemDecoration(dividerItemDecoration);
     }
 
     @Override
