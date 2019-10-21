@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rv_item_parent_layout"
     android:layout_width="match_parent"
-    android:layout_height="100dp"
+    android:layout_height="@dimen/_80dp"
     android:orientation="horizontal"
     android:padding="@dimen/padding_normal">
 
@@ -53,11 +53,11 @@
 
         <ImageButton
             android:id="@+id/drag_image_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_40dp"
             android:layout_alignParentEnd="true"
-            android:layout_marginTop="@dimen/_20dp"
-            android:layout_marginBottom="@dimen/_20dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
             android:scaleType="fitCenter"
             android:adjustViewBounds="true"
             android:background="@null"
