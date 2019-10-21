@@ -35,6 +35,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import io.realm.Sort;
+
 /**
  * A simple {@link Fragment} subclass.
  */
@@ -150,11 +152,11 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         showNoData(nodata, list.size());
         taskButton.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.btn_my) {
-                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", false).equalTo("assignee", user.getId()).findAll();
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", false).equalTo("assignee", user.getId()).sort("deadline", Sort.DESCENDING).findAll();
             } else if (checkedId == R.id.btn_completed) {
-                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", true).findAll();
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", true).sort("deadline", Sort.DESCENDING).findAll();
             } else {
-                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).sort("completed", Sort.ASCENDING).findAll();
             }
             setAdapter();
         });
