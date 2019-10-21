@@ -148,16 +148,15 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
         setAdapter();
         showNoData(nodata, list.size());
-        taskButton.setOnCheckedChangeListener(new SingleSelectToggleGroup.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(SingleSelectToggleGroup group, int checkedId) {
-                if (checkedId == R.id.btn_my) {
-                    list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("assignee", user.getId()).findAll();
-                } else {
-                    list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
-                }
-                setAdapter();
+        taskButton.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.btn_my) {
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", false).equalTo("assignee", user.getId()).findAll();
+            } else if (checkedId == R.id.btn_completed) {
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", true).findAll();
+            } else {
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).findAll();
             }
+            setAdapter();
         });
 
     }
