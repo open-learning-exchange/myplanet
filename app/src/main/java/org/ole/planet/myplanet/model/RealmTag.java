@@ -136,8 +136,8 @@ public class RealmTag extends RealmObject {
         tag.setDocType(JsonUtils.getString("docType", act));
         tag.setTagId(JsonUtils.getString("tagId", act));
         tag.setLinkId(JsonUtils.getString("linkId", act));
-
-        if (act.get("attachedTo").isJsonArray()) {
+        JsonElement el = act.get("attachedTo");
+        if (el!=null && el.isJsonArray()) {
             tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act));
         } else {
 //            String[] attachedTo = JsonUtils.getString("attachedTo", act).split("_");

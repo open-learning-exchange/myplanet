@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.model;
 
+import android.text.TextUtils;
+
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
@@ -116,6 +119,28 @@ public class RealmTeamLog extends RealmObject {
         ob.addProperty("teamType", log.getTeamType());
         ob.addProperty("time", log.getTime());
         ob.addProperty("teamId", log.getTeamId());
+        if (!TextUtils.isEmpty(log.get_rev())){
+            log.set_rev(log.get_rev());
+            log.set_id(log.get_id());
+        }
         return ob;
     }
+
+    public static void insert(Realm mRealm, JsonObject act) {
+        Utilities.log("Insert team visits");
+        RealmTeamLog tag = mRealm.where(RealmTeamLog.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        if (tag == null)
+            tag = mRealm.createObject(RealmTeamLog.class, JsonUtils.getString("_id", act));
+        tag.set_rev(JsonUtils.getString("_rev", act));
+        tag.setType(JsonUtils.getString("type", act));
+        tag.setUser(JsonUtils.getString("user", act));
+        tag.setCreatedOn(JsonUtils.getString("createdOn", act));
+        tag.setParentCode(JsonUtils.getString("parentCode", act));
+        tag.setTime(JsonUtils.getLong("time", act));
+        tag.setTeamId(JsonUtils.getString("teamId", act));
+        tag.setTeamType(JsonUtils.getString("teamType", act));
+    }
+
+
 }
+
