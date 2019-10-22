@@ -71,7 +71,7 @@ public class MyHealthFragment extends Fragment {
         txtOther = v.findViewById(R.id.txt_other_need);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fab = v.findViewById(R.id.add_new_record);
-        fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddExaminationActivity.class)));
+        fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddExaminationActivity.class).putExtra("userId", userId)));
         fab.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         btnUpdateRecord = v.findViewById(R.id.update_health);
         btnUpdateRecord.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
