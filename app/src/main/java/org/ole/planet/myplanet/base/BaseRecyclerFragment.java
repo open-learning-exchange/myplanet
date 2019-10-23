@@ -33,7 +33,7 @@ import io.realm.RealmObject;
 
 import static android.content.Context.MODE_PRIVATE;
 
-public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment implements OnRatingChangeListener {
+public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragment implements OnRatingChangeListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
     public Set<String> subjects, languages, mediums, levels;
@@ -43,7 +43,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
 
     public RecyclerView recyclerView;
     public TextView tvMessage, tvFragmentInfo;
-    public boolean isMyCourseLib;
     public TextView tvDelete;
     List<LI> list;
 
@@ -239,40 +238,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
         boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
         return (sub && lev && lan && med);
-    }
-
-    public List<LI> getList(Class c) {
-        if (c == RealmStepExam.class) {
-            return mRealm.where(c).equalTo("type", "surveys").findAll();
-        } else if (isMyCourseLib) {
-            return getMyLibItems(c);
-        } else {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).findAll());
-        }
-    }
-
-    public List<LI> getList(Class c, String orderBy) {
-        if (c == RealmStepExam.class) {
-            return mRealm.where(c).sort(orderBy).equalTo("type", "surveys").findAll();
-        } else if (isMyCourseLib) {
-            return getMyLibItems(c,orderBy);
-        } else {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).sort(orderBy).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).sort(orderBy).findAll());
-        }
-    }
-
-    private List<LI> getMyLibItems(Class c) {
-        if (c == RealmMyLibrary.class)
-            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
-        else
-            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
-    }
-
-    private List<LI> getMyLibItems(Class c, String orderBy) {
-        if (c == RealmMyLibrary.class)
-            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
-        else
-            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
     }
 
 }
