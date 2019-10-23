@@ -64,6 +64,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
                     homeItemClickListener.openCallFragment(new ReferenceFragment());
                 } else if (title.equals(getString(R.string.calendar))) {
                     homeItemClickListener.openCallFragment(new CalendarFragment());
+                }else if (title.equals(getString(R.string.my_survey))) {
+                    homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey"));
                 } else if (title.equals(getString(R.string.achievements))) {
                     homeItemClickListener.openCallFragment(new AchievementFragment());
                 } else if (title.equals(getString(R.string.mypersonals))) {
@@ -149,6 +151,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         myLifeList.add(new RealmMyLife("ic_messages", userId, getString(R.string.messeges)));
         myLifeList.add(new RealmMyLife("my_achievement", userId, getString(R.string.achievements)));
         myLifeList.add(new RealmMyLife("ic_submissions", userId, getString(R.string.submission)));
+        myLifeList.add(new RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)));
         myLifeList.add(new RealmMyLife("ic_news", userId, getString(R.string.news)));
         myLifeList.add(new RealmMyLife("ic_references", userId, getString(R.string.references)));
         myLifeList.add(new RealmMyLife("ic_help_wanted", userId, getString(R.string.help_wanted)));

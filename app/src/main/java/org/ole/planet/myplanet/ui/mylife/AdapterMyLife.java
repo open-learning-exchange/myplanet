@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.mylife;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
@@ -59,6 +60,9 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 return new NewsFragment();
             case  "ic_submissions":
                 return  new MySubmissionFragment();
+            case  "ic_my_survey":
+                Utilities.log("My survey");
+                return  MySubmissionFragment.newInstance("survey");
             case  "ic_myhealth":
                 return new MyHealthFragment();
             case  "ic_calendar":
