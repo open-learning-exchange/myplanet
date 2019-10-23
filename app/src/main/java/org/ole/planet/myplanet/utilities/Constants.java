@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
+import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 
 import java.util.ArrayList;
@@ -70,6 +71,7 @@ public class Constants {
         classList.put("tasks", RealmTeamTask.class);
         classList.put("meetups", RealmMeetup.class);
         classList.put("health", RealmMyHealthPojo.class);
+        classList.put("team_activities", RealmTeamLog.class);
     }
 
     public static class ShelfData {
