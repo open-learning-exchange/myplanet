@@ -251,11 +251,28 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
+    public List<LI> getList(Class c, String orderBy) {
+        if (c == RealmStepExam.class) {
+            return mRealm.where(c).sort(orderBy).equalTo("type", "surveys").findAll();
+        } else if (isMyCourseLib) {
+            return getMyLibItems(c,orderBy);
+        } else {
+            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).sort(orderBy).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+        }
+    }
+
     private List<LI> getMyLibItems(Class c) {
         if (c == RealmMyLibrary.class)
             return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
         else
             return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
+    }
+
+    private List<LI> getMyLibItems(Class c, String orderBy) {
+        if (c == RealmMyLibrary.class)
+            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+        else
+            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
     }
 
 }

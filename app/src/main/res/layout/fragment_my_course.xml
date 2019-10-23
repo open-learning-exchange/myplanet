@@ -84,7 +84,7 @@
                     android:visibility="gone" />
             </LinearLayout>
 
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
@@ -110,7 +110,24 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid" />
 
-            </LinearLayout>
+                <Button
+                    android:id="@+id/order_by_date_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:theme="@style/AccentButton"
+                    android:text="Order by Date"
+                    android:layout_toLeftOf="@id/order_by_title_button"
+                    />
+
+                <Button
+                    android:id="@+id/order_by_title_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:theme="@style/AccentButton"
+                    android:layout_alignParentRight="true"
+                    android:text="Order by Title" />
+
+            </RelativeLayout>
 
         </LinearLayout>
 
