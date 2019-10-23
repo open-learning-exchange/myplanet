@@ -114,18 +114,17 @@
                     android:id="@+id/order_by_date_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:theme="@style/AccentButton"
-                    android:text="Order by Date"
                     android:layout_toLeftOf="@id/order_by_title_button"
-                    />
+                    android:text="Order by Date"
+                    android:theme="@style/AccentButton" />
 
                 <Button
                     android:id="@+id/order_by_title_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:theme="@style/AccentButton"
                     android:layout_alignParentRight="true"
-                    android:text="Order by Title" />
+                    android:text="Order by Title"
+                    android:theme="@style/AccentButton" />
 
             </RelativeLayout>
 
