@@ -55,7 +55,22 @@ public class RealmSubmission extends RealmObject {
         sub.setLastUpdateTime(JsonUtils.getLong("lastUpdateTime", submission));
         sub.setParentId(JsonUtils.getString("parentId", submission));
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
-        sub.setUserId(JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission)));
+        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id",JsonUtils.getString("parentId", submission) ).findFirst();
+        if (exam == null){
+            RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), mRealm);
+        }
+        String userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission));
+        if (userId.contains("@")){
+            String[] us = userId.split("@");
+            if (us[0].startsWith("org.couchdb.user:")){
+                sub.setUserId(us[0]);
+            }else{
+                sub.setUserId("org.couchdb.user:" + us[0]);
+            }
+        }else{
+            sub.setUserId(userId);
+        }
+        Utilities.log("User id,, sub " + sub.getUser());
     }
 
 
@@ -83,6 +98,7 @@ public class RealmSubmission extends RealmObject {
         return object;
 
     }
+
 
     public long getLastUpdateTime() {
         return lastUpdateTime;
