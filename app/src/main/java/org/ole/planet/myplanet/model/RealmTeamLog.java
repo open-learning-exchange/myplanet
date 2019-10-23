@@ -19,6 +19,7 @@ import io.realm.annotations.PrimaryKey;
 
 public class RealmTeamLog extends RealmObject {
     @PrimaryKey
+    private String id;
     private String _id;
     private String _rev;
     private String teamId;
@@ -38,6 +39,18 @@ public class RealmTeamLog extends RealmObject {
         this._id = _id;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public boolean isUploaded() {
+        return uploaded;
+    }
+
     public String get_rev() {
         return _rev;
     }
@@ -50,8 +63,8 @@ public class RealmTeamLog extends RealmObject {
         return teamId;
     }
 
-    public static long getVisitCount(Realm realm, String userName){
-        return realm.where(RealmTeamLog.class).equalTo("type", "teamVisit").equalTo("user",userName).count();
+    public static long getVisitCount(Realm realm, String userName) {
+        return realm.where(RealmTeamLog.class).equalTo("type", "teamVisit").equalTo("user", userName).count();
     }
 
     public void setUploaded(boolean uploaded) {
@@ -119,19 +132,20 @@ public class RealmTeamLog extends RealmObject {
         ob.addProperty("teamType", log.getTeamType());
         ob.addProperty("time", log.getTime());
         ob.addProperty("teamId", log.getTeamId());
-        if (!TextUtils.isEmpty(log.get_rev())){
-            log.set_rev(log.get_rev());
-            log.set_id(log.get_id());
+        if (!TextUtils.isEmpty(log.get_rev())) {
+            ob.addProperty("_rev", log.get_rev());
+            ob.addProperty("_id", log.get_id());
         }
         return ob;
     }
 
     public static void insert(Realm mRealm, JsonObject act) {
         Utilities.log("Insert team visits");
-        RealmTeamLog tag = mRealm.where(RealmTeamLog.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        RealmTeamLog tag = mRealm.where(RealmTeamLog.class).equalTo("id", JsonUtils.getString("_id", act)).findFirst();
         if (tag == null)
             tag = mRealm.createObject(RealmTeamLog.class, JsonUtils.getString("_id", act));
         tag.set_rev(JsonUtils.getString("_rev", act));
+        tag.set_id(JsonUtils.getString("_id", act));
         tag.setType(JsonUtils.getString("type", act));
         tag.setUser(JsonUtils.getString("user", act));
         tag.setCreatedOn(JsonUtils.getString("createdOn", act));

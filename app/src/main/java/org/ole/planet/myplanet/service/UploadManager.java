@@ -324,12 +324,14 @@ public class UploadManager extends FileUploadService {
 
     private void uploadTeamActivities(Realm realm, ApiInterface apiInterface) {
         final RealmResults<RealmTeamLog> logs = realm.where(RealmTeamLog.class)
-                .equalTo("uploaded", false).findAll();
+                .findAll();
         for (RealmTeamLog log : logs) {
             try {
                 JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/team_activities", RealmTeamLog.serializeTeamActivities(log)).execute().body();
-                if (object != null)
-                    log.setUploaded(true);
+                if (object != null) {
+                    log.set_id(JsonUtils.getString("_id", object));
+                    log.set_rev(JsonUtils.getString("_rev", object));
+                }
             } catch (IOException e) {
             }
         }
