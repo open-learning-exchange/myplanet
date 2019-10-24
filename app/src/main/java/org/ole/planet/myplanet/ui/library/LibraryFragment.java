@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -53,7 +54,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     FlexboxLayout flexBoxTags;
     List<RealmTag> searchTags;
     ChipCloudConfig config;
-    Button clearTags;
+    Button clearTags, orderByDate, orderByTitle;
 
     public LibraryFragment() {
     }
@@ -113,6 +114,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         changeButtonStatus();
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
         if(!isMyCourseLib) tvFragmentInfo.setText("Our Library");
+        orderByDate = getView().findViewById(R.id.order_by_date_button);
+        orderByTitle = getView().findViewById(R.id.order_by_title_button);
+        orderByDate.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class,"uploadDate")));
+        orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class,"title")));
     }
 
     private void initArrays() {

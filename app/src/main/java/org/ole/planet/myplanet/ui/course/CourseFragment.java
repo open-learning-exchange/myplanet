@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
@@ -39,7 +40,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
-    Button btnRemove;
+    Button btnRemove, orderByDate,orderByTitle;
     List<RealmTag> searchTags;
 
     public CourseFragment() {
@@ -78,9 +79,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         // setSearchListener();
-        btnRemove.setOnClickListener(V -> {
-            deleteSelected(true);
-        });
+        btnRemove.setOnClickListener(V -> { deleteSelected(true); });
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -91,6 +90,14 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_course_parent_layout), getActivity());
         changeButtonStatus();
         if(!isMyCourseLib) tvFragmentInfo.setText("Our Courses");
+        additionalSetup();
+    }
+
+    public void additionalSetup(){
+        orderByDate = getView().findViewById(R.id.order_by_date_button);
+        orderByTitle = getView().findViewById(R.id.order_by_title_button);
+        orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class,"createdDate")));
+        orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class,"courseTitle")));
     }
 
     private void initializeView() {
