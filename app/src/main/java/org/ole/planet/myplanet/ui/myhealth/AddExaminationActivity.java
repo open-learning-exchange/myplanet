@@ -60,12 +60,12 @@ public class AddExaminationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_examination);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        initViews();
-        user = new UserProfileDbHandler(this).getUserModel();
+        initViews();;
         mRealm = new DatabaseService(this).getRealmInstance();
-        userId = user.getId();
+        userId = getIntent().getStringExtra("userId");
+        //userId = user.getId();
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-
+        user = new UserProfileDbHandler(this).getUserModel();
         if (pojo != null) {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }

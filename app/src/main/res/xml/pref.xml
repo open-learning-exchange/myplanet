@@ -44,7 +44,7 @@
         <SwitchPreference
             android:defaultValue="false"
             android:key="beta_healthWorker"
-            android:title="Beta Function for Health Worker" />
+            android:title="Beta Function for Health Care Provider" />
 
         <SwitchPreference
             android:defaultValue="true"
