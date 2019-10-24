@@ -55,31 +55,33 @@ public class RealmSubmission extends RealmObject {
         sub.setLastUpdateTime(JsonUtils.getLong("lastUpdateTime", submission));
         sub.setParentId(JsonUtils.getString("parentId", submission));
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
-        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id",JsonUtils.getString("parentId", submission) ).findFirst();
-        if (exam == null){
+        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("parentId", submission)).findFirst();
+        if (exam == null) {
             RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), mRealm);
         }
         String userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission));
-        if (userId.contains("@")){
+        if (userId.contains("@")) {
             String[] us = userId.split("@");
-            if (us[0].startsWith("org.couchdb.user:")){
+            if (us[0].startsWith("org.couchdb.user:")) {
                 sub.setUserId(us[0]);
-            }else{
+            } else {
                 sub.setUserId("org.couchdb.user:" + us[0]);
             }
-        }else{
+        } else {
             sub.setUserId(userId);
         }
-        Utilities.log("User id,, sub " + sub.getUser());
+        Utilities.log("User id,, sub " + userId +" "+ sub.getUser());
     }
 
 
     public static JsonObject serializeExamResult(Realm mRealm, RealmSubmission sub) {
         JsonObject object = new JsonObject();
-        RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", sub.userId).findFirst();
-        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", sub.parentId).findFirst();
+        RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", sub.getUserId()).findFirst();
+        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", sub.getParentId()).findFirst();
         if (!TextUtils.isEmpty(sub.get_id()))
             object.addProperty("_id", sub.get_id());
+        if (!TextUtils.isEmpty(sub.get_rev()))
+            object.addProperty("_id", sub.get_rev());
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
@@ -87,14 +89,15 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("lastUpdateTime", sub.getLastUpdateTime());
         object.addProperty("status", sub.getStatus());
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
-        object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
+        if (exam != null)
+            object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
         if (TextUtils.isEmpty(sub.getUser())) {
             object.add("user", user.serialize());
         } else {
             JsonParser parser = new JsonParser();
             object.add("user", parser.parse(sub.getUser()));
         }
-        Utilities.log("Serialize sub");
+        Utilities.log("Serialize sub" );
         return object;
 
     }
@@ -129,18 +132,19 @@ public class RealmSubmission extends RealmObject {
 
     public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm) throws IOException {
         JsonObject object;
-        if (sub.getUserId().startsWith("guest"))
+        if (!TextUtils.isEmpty(sub.getUserId()) && sub.getUserId().startsWith("guest"))
             return;
-        if (TextUtils.isEmpty(sub.get_id())) {
+//        if (TextUtils.isEmpty(sub.get_id())) {
             object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub)).execute().body();
-        } else {
-            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub)).execute().body();
-        }
+//        } else {
+//            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub)).execute().body();
+//        }
+        Utilities.log(object + " submission result");
         if (object != null) {
             sub.setUploaded(true);
+            sub.set_rev(JsonUtils.getString("_rev", object));
         }
     }
-
 
 
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
