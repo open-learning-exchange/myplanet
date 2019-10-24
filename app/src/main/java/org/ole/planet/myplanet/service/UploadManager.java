@@ -93,11 +93,12 @@ public class UploadManager extends FileUploadService {
         mRealm = dbService.getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmSubmission> submissions = realm.where(RealmSubmission.class).equalTo("status", "graded").equalTo("uploaded", false).findAll();
+            List<RealmSubmission> submissions = realm.where(RealmSubmission.class).equalTo("uploaded", false).findAll();
             for (RealmSubmission sub : submissions) {
                 try {
                     RealmSubmission.continueResultUpload(sub, apiInterface, realm);
                 } catch (IOException e) {
+                    Utilities.log("Upload exam result");
                     e.printStackTrace();
                 }
             }
@@ -195,7 +196,7 @@ public class UploadManager extends FileUploadService {
         mRealm = new DatabaseService(context).getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
-                    List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).equalTo("uploaded", false).findAll();
+                    List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).findAll();
                     for (RealmSubmitPhotos sub : data) {
                         try {
                             JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)).execute().body();
@@ -329,8 +330,8 @@ public class UploadManager extends FileUploadService {
             try {
                 JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/team_activities", RealmTeamLog.serializeTeamActivities(log)).execute().body();
                 if (object != null) {
-                    log.set_id(JsonUtils.getString("_id", object));
-                    log.set_rev(JsonUtils.getString("_rev", object));
+                    log.set_id(JsonUtils.getString("id", object));
+                    log.set_rev(JsonUtils.getString("rev", object));
                 }
             } catch (IOException e) {
             }

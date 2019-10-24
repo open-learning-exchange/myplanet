@@ -27,7 +27,7 @@ public class RealmStepExam extends RealmObject {
     private int noOfQuestions;
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
-        RealmStepExam myExam = mRealm.where(RealmStepExam.class).equalTo("id", exam.get("_id").getAsString()).findFirst();
+        RealmStepExam myExam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("_id", exam)).findFirst();
         if (myExam == null) {
             myExam = mRealm.createObject(RealmStepExam.class, exam.get("_id").getAsString());
         }
