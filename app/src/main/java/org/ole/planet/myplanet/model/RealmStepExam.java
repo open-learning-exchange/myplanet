@@ -30,7 +30,7 @@ public class RealmStepExam extends RealmObject {
         insertCourseStepsExams(myCoursesID, step_id, exam, mRealm);
     }
 
-    public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, JsonObject parentId, Realm mRealm) {
+    public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, String parentId, Realm mRealm) {
         RealmStepExam myExam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("_id", exam)).findFirst();
         if (myExam == null) {
             String id = JsonUtils.getString("_id", exam);
