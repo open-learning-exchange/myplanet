@@ -27,9 +27,14 @@ public class RealmStepExam extends RealmObject {
     private int noOfQuestions;
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
+        insertCourseStepsExams(myCoursesID, step_id, exam, mRealm);
+    }
+
+    public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, JsonObject parentId, Realm mRealm) {
         RealmStepExam myExam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("_id", exam)).findFirst();
         if (myExam == null) {
-            myExam = mRealm.createObject(RealmStepExam.class, exam.get("_id").getAsString());
+            String id = JsonUtils.getString("_id", exam);
+            myExam = mRealm.createObject(RealmStepExam.class, TextUtils.isEmpty(id) ? parentId : id);
         }
         checkIdsAndInsert(myCoursesID, step_id, myExam);
         myExam.setType(exam.has("type") ? JsonUtils.getString("type", exam) : "exam");
@@ -68,7 +73,6 @@ public class RealmStepExam extends RealmObject {
     }
 
 
-
     public static JsonObject serializeExam(Realm mRealm, RealmStepExam exam) {
         JsonObject object = new JsonObject();
         object.addProperty("name", exam.getName());
@@ -83,7 +87,7 @@ public class RealmStepExam extends RealmObject {
         String[] ids = new String[list.size()];
         int i = 0;
         for (RealmStepExam e : list
-                ) {
+        ) {
             if (e.getType().startsWith("survey"))
                 ids[i] = (e.getId());
             else

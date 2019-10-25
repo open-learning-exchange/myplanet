@@ -57,7 +57,7 @@ public class RealmSubmission extends RealmObject {
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("parentId", submission)).findFirst();
         if (exam == null) {
-            RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), mRealm);
+            RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission),JsonUtils.getString("parentId", submission), mRealm);
         }
         String userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission));
         if (userId.contains("@")) {
