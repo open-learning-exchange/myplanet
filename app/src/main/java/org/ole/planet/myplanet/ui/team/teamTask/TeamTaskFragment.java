@@ -176,7 +176,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             mRealm.beginTransaction();
         realmTeamTask.setCompleted(b);
         mRealm.commitTransaction();
-        rvTask.getAdapter().notifyDataSetChanged();
+        try{rvTask.getAdapter().notifyDataSetChanged();}catch(Exception err){}
     }
 
     @Override
