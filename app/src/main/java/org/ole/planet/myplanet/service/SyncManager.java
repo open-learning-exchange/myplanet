@@ -121,9 +121,9 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "submissions");
             TransactionSyncManager.syncDb(mRealm, "news");
             TransactionSyncManager.syncDb(mRealm, "feedback");
-            TransactionSyncManager.syncDb(mRealm, "login_activities");
             TransactionSyncManager.syncDb(mRealm, "teams");
             TransactionSyncManager.syncDb(mRealm, "tasks");
+            TransactionSyncManager.syncDb(mRealm, "login_activities");
             TransactionSyncManager.syncDb(mRealm, "meetups");
             TransactionSyncManager.syncDb(mRealm, "health");
             TransactionSyncManager.syncDb(mRealm, "team_activities");
