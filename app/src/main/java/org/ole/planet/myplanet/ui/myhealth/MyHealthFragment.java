@@ -9,7 +9,6 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SwitchCompat;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,7 +28,6 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +39,7 @@ import io.realm.Realm;
  */
 public class MyHealthFragment extends Fragment {
 
+    public UserProfileDbHandler profileDbHandler;
     RecyclerView rvRecord;
     Button fab, btnNewPatient, btnUpdateRecord;
     TextView lblName;
@@ -49,7 +48,6 @@ public class MyHealthFragment extends Fragment {
     RealmUserModel userModel;
     AlertDialog showDialog;
     TextView txtFullname, txtEmail, txtLanguage, txtDob, txtBirthPlace, txtEmergency, txtSpecial, txtOther;
-    public UserProfileDbHandler profileDbHandler;
 
     public MyHealthFragment() {
     }
@@ -136,6 +134,14 @@ public class MyHealthFragment extends Fragment {
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
             rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
+
+            List<RealmExamination> finalList = list;
+            rvRecord.post(new Runnable() {
+                @Override
+                public void run() {
+                    rvRecord.scrollToPosition(finalList.size() - 1);
+                }
+            });
         }
 
 
