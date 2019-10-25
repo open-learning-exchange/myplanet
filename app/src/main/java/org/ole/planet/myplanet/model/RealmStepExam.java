@@ -27,7 +27,7 @@ public class RealmStepExam extends RealmObject {
     private int noOfQuestions;
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
-        insertCourseStepsExams(myCoursesID, step_id, exam, mRealm);
+        insertCourseStepsExams(myCoursesID, step_id, exam,"", mRealm);
     }
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, String parentId, Realm mRealm) {
