@@ -74,7 +74,6 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     public void onError(String msg, boolean blockSync) {
         if (!blockSync) {
             SyncManager.getInstance().start(this);
-            UploadManager.getInstance().uploadUserActivities(this);
             UploadManager.getInstance().uploadExamResult(this);
             UploadManager.getInstance().uploadFeedback(this);
             UploadManager.getInstance().uploadAchievement();
@@ -87,6 +86,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
             UploadManager.getInstance().uploadTeamTask();
             UploadManager.getInstance().uploadHealth();
             UploadManager.getInstance().uploadCrashLog(this);
+            UploadManager.getInstance().uploadUserActivities(this);
             UploadManager.getInstance().uploadActivities(this);
         }
     }

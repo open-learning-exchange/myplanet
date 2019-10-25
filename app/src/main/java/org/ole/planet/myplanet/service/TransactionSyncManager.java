@@ -70,14 +70,12 @@ public class TransactionSyncManager {
         try {
             Method[] methods = Constants.classList.get(type).getMethods();
             for (Method m : methods) {
-                Utilities.log("M " + m.getName());
                 if ("insert".equals(m.getName())) {
                     m.invoke(null, mRealm, jsonDoc);
                     break;
                 }
             }
         } catch (Exception e) {
-            Utilities.log("Type " + type);
             e.printStackTrace();
         }
     }
