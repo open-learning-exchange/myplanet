@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.myhealth;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.RadioButton;
@@ -65,7 +66,12 @@ public class AddExaminationActivity extends AppCompatActivity {
         userId = getIntent().getStringExtra("userId");
         //userId = user.getId();
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-        user = new UserProfileDbHandler(this).getUserModel();
+        user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
+        if (TextUtils.isEmpty(user.getIv())){
+            Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
+            finish();
+            return;
+        }
         if (pojo != null) {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
@@ -78,6 +84,8 @@ public class AddExaminationActivity extends AppCompatActivity {
     }
 
     private void initHealth() {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
         profile.setFirstName(user.getFirstName());
@@ -89,6 +97,7 @@ public class AddExaminationActivity extends AppCompatActivity {
         profile.setEmail(user.getEmail());
         profile.setPhone(user.getPhoneNumber());
         health.setProfile(profile);
+        Utilities.log("Init health");
     }
 
     private void saveData() {
@@ -127,7 +136,8 @@ public class AddExaminationActivity extends AppCompatActivity {
             Utilities.toast(this, "Added successfully");
             finish();
         } catch (Exception e) {
-            Utilities.toast(this, "All fields are required");
+            e.printStackTrace();
+            Utilities.toast(this,"Unable to add health record.");
         }
     }
 

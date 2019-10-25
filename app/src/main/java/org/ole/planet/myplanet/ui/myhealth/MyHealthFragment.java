@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +49,8 @@ public class MyHealthFragment extends Fragment {
     Realm mRealm;
     RealmUserModel userModel;
     AlertDialog showDialog;
-    TextView txtFullname, txtEmail, txtLanguage, txtDob, txtBirthPlace, txtEmergency, txtSpecial, txtOther;
+    TextView txtFullname, txtEmail, txtLanguage, txtDob, txtBirthPlace, txtEmergency, txtSpecial, txtOther, txtMessage;
+    LinearLayout llUserDetail;
 
     public MyHealthFragment() {
     }
@@ -67,13 +70,19 @@ public class MyHealthFragment extends Fragment {
         txtEmergency = v.findViewById(R.id.txt_emergency_contact);
         txtSpecial = v.findViewById(R.id.txt_special_needs);
         txtOther = v.findViewById(R.id.txt_other_need);
+        llUserDetail = v.findViewById(R.id.layout_user_detail);
+        txtMessage = v.findViewById(R.id.tv_message);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fab = v.findViewById(R.id.add_new_record);
-        fab.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddExaminationActivity.class).putExtra("userId", userId)));
+        fab.setOnClickListener(view -> {
+//            RealmMyHealth myHealth = n
+            startActivity(new Intent(getActivity(), AddExaminationActivity.class).putExtra("userId", userId));
+        });
         fab.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         btnUpdateRecord = v.findViewById(R.id.update_health);
         btnUpdateRecord.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
         btnUpdateRecord.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
+        btnNewPatient = v.findViewById(R.id.btnnew_patient);
         return v;
     }
 
@@ -85,6 +94,9 @@ public class MyHealthFragment extends Fragment {
         profileDbHandler = new UserProfileDbHandler(v.getContext());
         userId = profileDbHandler.getUserModel().getId();
         getHealthRecords(userId);
+        selectPatient();
+        btnNewPatient.setOnClickListener(view -> selectPatient());
+        btnNewPatient.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private void getHealthRecords(String memberId) {
@@ -114,10 +126,12 @@ public class MyHealthFragment extends Fragment {
     }
 
     private void showRecords() {
+        Utilities.log("User ID " + userId);
         RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
         if (mh != null) {
-            String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
-            RealmMyHealth mm = new Gson().fromJson(json, RealmMyHealth.class);
+            llUserDetail.setVisibility(View.VISIBLE);
+            txtMessage.setVisibility(View.GONE);
+            RealmMyHealth mm = getHealthProfile(mh);
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
             txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
             txtEmail.setText(TextUtils.isEmpty(myHealths.getEmail()) ? "N/A" : myHealths.getEmail());
@@ -134,9 +148,18 @@ public class MyHealthFragment extends Fragment {
             rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
             List<RealmExamination> finalList = list;
             rvRecord.post(() -> rvRecord.scrollToPosition(finalList.size() - 1));
+        }else{
+            llUserDetail.setVisibility(View.GONE);
+            txtMessage.setText(R.string.no_records);
+            txtMessage.setVisibility(View.VISIBLE);
         }
 
 
+    }
+
+    private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
+        String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
+        return   new Gson().fromJson(json, RealmMyHealth.class);
     }
 
 }

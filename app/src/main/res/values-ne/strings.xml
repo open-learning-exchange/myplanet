@@ -296,4 +296,5 @@
     <string name="referrals">Referrals</string>
     <string name="full_name">Full Name</string>
     <string name="weight">Weight</string>
+    <string name="no_records">No records found</string>
 </resources>
