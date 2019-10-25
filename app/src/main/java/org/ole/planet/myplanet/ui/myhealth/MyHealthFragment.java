@@ -94,7 +94,7 @@ public class MyHealthFragment extends Fragment {
         profileDbHandler = new UserProfileDbHandler(v.getContext());
         userId = profileDbHandler.getUserModel().getId();
         getHealthRecords(userId);
-        selectPatient();
+//        selectPatient();
         btnNewPatient.setOnClickListener(view -> selectPatient());
         btnNewPatient.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
     }
