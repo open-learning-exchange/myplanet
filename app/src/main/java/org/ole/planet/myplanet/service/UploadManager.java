@@ -307,7 +307,6 @@ public class UploadManager extends FileUploadService {
         mRealm.executeTransactionAsync(realm -> {
             final RealmResults<RealmOfflineActivity> activities = realm.where(RealmOfflineActivity.class)
                     .isNull("_rev").equalTo("type", "login").findAll();
-            Utilities.log("Login Activities");
             for (RealmOfflineActivity act : activities) {
                 try {
                     if (act.getUserId().startsWith("guest"))

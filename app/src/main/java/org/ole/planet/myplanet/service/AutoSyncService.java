@@ -79,6 +79,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
             UploadManager.getInstance().uploadAchievement();
             UploadToShelfService.getInstance().uploadToshelf(this);
             UploadManager.getInstance().uploadResourceActivities("");
+            UploadManager.getInstance().uploadUserActivities(this);
             UploadManager.getInstance().uploadResourceActivities("sync");
             UploadManager.getInstance().uploadRating(this);
             UploadManager.getInstance().uploadNews();
@@ -86,7 +87,6 @@ public class AutoSyncService extends JobService implements SyncListener, Service
             UploadManager.getInstance().uploadTeamTask();
             UploadManager.getInstance().uploadHealth();
             UploadManager.getInstance().uploadCrashLog(this);
-            UploadManager.getInstance().uploadUserActivities(this);
             UploadManager.getInstance().uploadActivities(this);
         }
     }
