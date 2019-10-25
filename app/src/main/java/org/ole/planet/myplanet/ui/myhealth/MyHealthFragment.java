@@ -128,20 +128,12 @@ public class MyHealthFragment extends Fragment {
             txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthplace()) ? "N/A" : myHealths.getBirthplace());
             txtEmergency.setText("Name : " + myHealths.getEmergencyContactName() + "\nType : " + myHealths.getEmergencyContactName() + "\nContact : " + myHealths.getEmergencyContact());
             List<RealmExamination> list = mm.getEvents();
-            if (list == null) {
-                list = new ArrayList<>();
-            }
+            if (list == null) { list = new ArrayList<>(); }
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
             rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
-
             List<RealmExamination> finalList = list;
-            rvRecord.post(new Runnable() {
-                @Override
-                public void run() {
-                    rvRecord.scrollToPosition(finalList.size() - 1);
-                }
-            });
+            rvRecord.post(() -> rvRecord.scrollToPosition(finalList.size() - 1));
         }
 
 
