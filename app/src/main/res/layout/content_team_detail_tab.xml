@@ -39,7 +39,7 @@
         android:layout_weight="4"
         android:orientation="vertical">
 
-        <android.support.design.widget.AppBarLayout
+        <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/colorPrimaryLight">
@@ -79,7 +79,7 @@
                     android:text="@string/resources" />
 
             </com.google.android.material.tabs.TabLayout>
-        </android.support.design.widget.AppBarLayout>
+        </com.google.android.material.appbar.AppBarLayout>
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -122,7 +122,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <!--<android.support.design.widget.FloatingActionButton-->
+            <!--<com.google.android.material.floatingactionbutton.FloatingActionButton-->
             <!--android:layout_width="wrap_content"-->
             <!--android:layout_gravity="bottom|right"-->
             <!--app:srcCompat="@drawable/ic_messages"-->

@@ -125,7 +125,7 @@
                     android:background="@color/colorPrimary"
                     android:padding="8dp">
 
-                    <android.support.v7.widget.AppCompatSeekBar
+                    <androidx.appcompat.widget.AppCompatSeekBar
                         android:id="@+id/course_progress"
                         style="@style/Seekbar"
                         android:layout_width="0dp"

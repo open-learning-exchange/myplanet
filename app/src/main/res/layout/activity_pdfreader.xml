@@ -32,7 +32,7 @@
 
     </LinearLayout>
 
-    <!--<android.support.design.widget.FloatingActionButton-->
+    <!--<com.google.android.material.floatingactionbutton.FloatingActionButton-->
         <!--android:layout_width="wrap_content"-->
         <!--android:layout_gravity="bottom|end"-->
         <!--android:id="@+id/fab_record"-->
