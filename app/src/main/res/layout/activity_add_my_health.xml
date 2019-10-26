@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -7,7 +7,7 @@
     android:padding="@dimen/padding_large"
     tools:context=".ui.myhealth.AddMyHealthActivity">
 
-    <android.support.v4.widget.NestedScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -21,7 +21,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_fname"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -33,9 +33,9 @@
                         android:hint="@string/first_name"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_mname"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -47,9 +47,9 @@
                         android:hint="@string/middle_name"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_lname"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -61,7 +61,7 @@
                         android:hint="@string/last_name"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
 
@@ -70,7 +70,7 @@
                 android:layout_height="wrap_content">
 
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_email"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -83,9 +83,9 @@
                         android:inputType="textEmailAddress"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_phone"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -98,7 +98,7 @@
                         android:inputType="phone"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
 
@@ -107,7 +107,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_birthplace"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -119,9 +119,9 @@
                         android:hint="@string/birth_place"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_birthdate"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -133,7 +133,7 @@
                         android:hint="@string/birth_date"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
 
@@ -142,7 +142,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_emergency"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -154,7 +154,7 @@
                         android:hint="@string/emergency_contact"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <Spinner
                     android:id="@+id/spn_contact_type"
@@ -166,7 +166,7 @@
                     android:padding="@dimen/padding_normal" />
 
 
-                <android.support.design.widget.TextInputLayout
+                <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_contact"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -178,13 +178,13 @@
                         android:hint="@string/contact"
                         android:padding="@dimen/padding_normal" />
 
-                </android.support.design.widget.TextInputLayout>
+                </com.google.android.material.textfield.TextInputLayout>
 
 
             </LinearLayout>
 
 
-            <android.support.design.widget.TextInputLayout
+            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/et_special_need"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -196,9 +196,9 @@
                     android:lines="2"
                     android:padding="@dimen/padding_normal" />
 
-            </android.support.design.widget.TextInputLayout>
+            </com.google.android.material.textfield.TextInputLayout>
 
-            <android.support.design.widget.TextInputLayout
+            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/et_other_need"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -210,7 +210,7 @@
                     android:lines="2"
                     android:padding="@dimen/padding_normal" />
 
-            </android.support.design.widget.TextInputLayout>
+            </com.google.android.material.textfield.TextInputLayout>
 
 
             <Button
@@ -224,7 +224,7 @@
 
         </LinearLayout>
 
-    </android.support.v4.widget.NestedScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 
-</android.support.design.widget.CoordinatorLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

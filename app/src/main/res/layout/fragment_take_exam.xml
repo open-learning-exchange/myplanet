@@ -13,7 +13,7 @@
         android:orientation="vertical">
 
 
-        <android.support.v7.widget.CardView
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:cardCornerRadius="8dp"
@@ -92,7 +92,7 @@
                             android:id="@+id/ll_checkbox"
                             android:layout_height="wrap_content"/>
 
-                        <android.support.design.widget.TextInputLayout
+                        <com.google.android.material.textfield.TextInputLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:id="@+id/tl_answer"
@@ -104,7 +104,7 @@
                                 android:hint="@string/your_ans"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content" />
-                        </android.support.design.widget.TextInputLayout>
+                        </com.google.android.material.textfield.TextInputLayout>
 
                     </LinearLayout>
 
@@ -124,7 +124,7 @@
             </LinearLayout>
 
 
-        </android.support.v7.widget.CardView>
+        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 
