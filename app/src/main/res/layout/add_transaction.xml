@@ -13,7 +13,7 @@
         android:padding="@dimen/padding_normal" />
 
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tl_note"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -24,9 +24,9 @@
             android:layout_height="wrap_content"
             android:hint="@string/note" />
 
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tl_amount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -38,7 +38,7 @@
             android:inputType="number"
             android:hint="@string/amount" />
 
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
 
     <TextView

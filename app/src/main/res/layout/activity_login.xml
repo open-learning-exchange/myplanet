@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
@@ -75,7 +75,7 @@
                     android:layout_height="wrap_content"/>
 
 
-                <android.support.v7.widget.SwitchCompat
+                <androidx.appcompat.widget.SwitchCompat
                     android:layout_width="wrap_content"
                     android:text="@string/child_mode"
                     android:layout_gravity="center"
@@ -157,7 +157,7 @@
                     android:paddingLeft="40dp"
                     android:paddingRight="40dp">
 
-                    <android.support.design.widget.TextInputLayout
+                    <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/input_layout_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -174,9 +174,9 @@
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray"
                             android:textSize="10sp" />
-                    </android.support.design.widget.TextInputLayout>
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                    <android.support.design.widget.TextInputLayout
+                    <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -194,7 +194,7 @@
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray"
                             android:textSize="10sp" />
-                    </android.support.design.widget.TextInputLayout>
+                    </com.google.android.material.textfield.TextInputLayout>
 
                     <CheckBox
                         android:id="@+id/save"
@@ -249,4 +249,4 @@
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

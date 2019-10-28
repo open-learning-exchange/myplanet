@@ -2,15 +2,16 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.viewpager.widget.ViewPager;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -29,9 +30,6 @@ import java.util.List;
 
 import io.realm.Realm;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChangeListener, View.OnClickListener {
 
     CustomViewPager mViewPager;

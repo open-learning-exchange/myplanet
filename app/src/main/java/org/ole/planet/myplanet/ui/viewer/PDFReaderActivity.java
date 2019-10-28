@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.ui.viewer;
 
 import android.content.Intent;
-import android.media.MediaRecorder;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.support.v7.app.AppCompatActivity;
+
+import androidx.appcompat.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -22,19 +20,13 @@ import com.github.clans.fab.FloatingActionButton;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
-import org.ole.planet.myplanet.model.SourceFile;
 import org.ole.planet.myplanet.service.AudioRecorderService;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
-import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
 import org.ole.planet.myplanet.utilities.IntentUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 import io.realm.Realm;
 

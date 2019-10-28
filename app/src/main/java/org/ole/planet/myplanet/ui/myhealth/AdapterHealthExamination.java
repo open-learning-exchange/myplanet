@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.List;

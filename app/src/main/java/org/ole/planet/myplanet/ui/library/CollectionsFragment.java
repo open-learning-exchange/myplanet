@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.ui.library;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.design.widget.TextInputLayout;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
+import androidx.annotation.Nullable;
+
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -15,6 +15,8 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ExpandableListView;
+
+import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;

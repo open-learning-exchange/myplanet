@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/constraintLayout"
@@ -75,7 +75,7 @@
                     android:theme="@style/PrimaryFlatButton" />
 
 
-                <android.support.v7.widget.SwitchCompat
+                <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/switch_child_mode"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -156,7 +156,7 @@
                     android:gravity="center"
                     android:orientation="vertical">
 
-                    <android.support.design.widget.TextInputLayout
+                    <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/input_layout_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -172,9 +172,9 @@
                             android:singleLine="true"
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray" />
-                    </android.support.design.widget.TextInputLayout>
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                    <android.support.design.widget.TextInputLayout
+                    <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
                         android:hint="@string/hint_password"
@@ -191,7 +191,7 @@
                             android:inputType="textPassword"
                             android:textColor="@android:color/background_dark"
                             android:textColorHint="@android:color/darker_gray" />
-                    </android.support.design.widget.TextInputLayout>
+                    </com.google.android.material.textfield.TextInputLayout>
 
                     <CheckBox
                         android:id="@+id/save"
@@ -239,7 +239,7 @@
                 android:gravity="center"
                 android:orientation="horizontal">
 
-                <android.support.v7.widget.RecyclerView
+                <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_teams"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -256,4 +256,4 @@
         </LinearLayout>
     </LinearLayout>
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
