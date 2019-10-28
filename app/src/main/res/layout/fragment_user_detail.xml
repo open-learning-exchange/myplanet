@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.userprofile.UserDetailFragment">
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:layout_width="match_parent"
         android:id="@+id/rv_user_detail"
         android:layout_height="match_parent"/>

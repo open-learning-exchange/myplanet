@@ -20,7 +20,7 @@
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large" />
 
-        <android.support.design.widget.TextInputLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:id="@+id/tl_urgent"
             android:padding="@dimen/padding_normal"
@@ -45,7 +45,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/no" />
             </RadioGroup>
-        </android.support.design.widget.TextInputLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -54,7 +54,7 @@
             android:text="@string/feedback_type"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large" />
-        <android.support.design.widget.TextInputLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:id="@+id/tl_type"
             android:padding="@dimen/padding_normal"
@@ -85,9 +85,9 @@
                 android:layout_height="wrap_content"
                 android:text="@string/suggestion" />
         </RadioGroup>
-        </android.support.design.widget.TextInputLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <android.support.design.widget.TextInputLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tl_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -98,7 +98,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/your_feedback" />
-        </android.support.design.widget.TextInputLayout>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
             android:layout_width="wrap_content"

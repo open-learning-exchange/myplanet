@@ -3,9 +3,9 @@ package org.ole.planet.myplanet.ui.sync;
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -14,14 +14,12 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.github.kittinunf.fuel.Fuel;
-import com.github.kittinunf.fuel.core.FuelError;
-import com.github.kittinunf.fuel.core.Handler;
-import com.github.kittinunf.fuel.core.Request;
-import com.github.kittinunf.fuel.core.Response;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
+import org.ole.planet.myplanet.datamanager.ApiClient;
+import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -35,12 +33,14 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
@@ -118,29 +118,43 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
         progressDialog.show();
-        Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        apiInterface.isPlanetAvailable(processedUrl + "/_all_dbs").enqueue(new Callback<ResponseBody>() {
             @Override
-            public void success(Request request, Response response, String s) {
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     progressDialog.dismiss();
-                    List<String> myList = Arrays.asList(s.split(","));
+                    List<String> myList = Arrays.asList(response.body().string().split(","));
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
                         startSync();
                     }
                 } catch (Exception e) {
+                    alertDialogOkay("Device couldn't reach server. Check and try again");
+                    progressDialog.dismiss();
                 }
             }
 
             @Override
-            public void failure(Request request, Response response, FuelError fuelError) {
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
                 alertDialogOkay("Device couldn't reach server. Check and try again");
                 if (mRealm != null)
                     mRealm.close();
                 progressDialog.dismiss();
             }
         });
+//        Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
+//            @Override
+//            public void success(Request request, Response response, String s) {
+//
+//            }
+//
+//            @Override
+//            public void failure(Request request, Response response, FuelError fuelError) {
+//
+//            }
+//        });
         return connectionResult;
     }
 

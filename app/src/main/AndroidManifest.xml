@@ -31,13 +31,12 @@
         android:label="@string/app_project_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/MyMaterialTheme"
+        android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
             android:name=".ui.myhealth.AddMyHealthActivity"
             android:theme="@style/AppTheme" />
-        <activity
-            android:name=".ui.myhealth.MyHealthDetailActivity"
-            android:theme="@style/AppTheme" />
+
         <activity
             android:name=".ui.myhealth.AddExaminationActivity"
             android:theme="@style/AppTheme" />
@@ -84,7 +83,7 @@
             android:theme="@style/AppTheme" />
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">

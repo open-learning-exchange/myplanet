@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.ui.team;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;

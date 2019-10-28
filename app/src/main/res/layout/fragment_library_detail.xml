@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <android.support.v7.widget.CardView
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:cardCornerRadius="8dp"
@@ -62,7 +62,7 @@
 
                 </LinearLayout>
 
-                <android.support.v4.widget.NestedScrollView
+                <androidx.core.widget.NestedScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center">
@@ -106,7 +106,7 @@
                                         android:padding="4dp"
                                         android:textColor="@color/md_black_1000" />
 
-                                    <android.support.v7.widget.AppCompatRatingBar
+                                    <androidx.recyclerview.widget.RecyclerViewrt.v7.widget.AppCompatRatingBar
                                         android:id="@+id/rating_bar"
                                         style="@style/Base.Widget.AppCompat.RatingBar.Small"
                                         android:layout_width="wrap_content"
@@ -293,12 +293,12 @@
 
                         </LinearLayout>
                     </LinearLayout>
-                </android.support.v4.widget.NestedScrollView>
+                </androidx.core.widget.NestedScrollView>
 
             </LinearLayout>
 
 
-        </android.support.v7.widget.CardView>
+        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 

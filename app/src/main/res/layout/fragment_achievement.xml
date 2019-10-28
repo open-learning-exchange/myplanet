@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.userprofile.AchievementFragment">
 
-    <android.support.v4.widget.NestedScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -136,7 +136,7 @@
                     style="@style/Header"
                     android:text="References" />
 
-                <android.support.v7.widget.RecyclerView
+                <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_other_info"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -149,6 +149,6 @@
 
         </LinearLayout>
 
-    </android.support.v4.widget.NestedScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </FrameLayout>

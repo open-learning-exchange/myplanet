@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.ui.team.teamMember;
 
 
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.ole.planet.myplanet.base.BaseMemberFragment;
 import org.ole.planet.myplanet.model.RealmMyTeam;

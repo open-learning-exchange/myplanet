@@ -5,8 +5,8 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
-import android.support.annotation.NonNull;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -85,7 +85,7 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
             GradientDrawable border = new GradientDrawable();
             border.setColor(0xFFFFFFFF); //white background
             border.setStroke(1, context.getResources().getColor(R.color.black_overlay));
-            border.setGradientType(GradientDrawable.RECTANGLE);
+            border.setGradientType(GradientDrawable.LINEAR_GRADIENT);
             Drawable[] layers = {border};
             LayerDrawable layerDrawable = new LayerDrawable(layers);
             layerDrawable.setLayerInset(0, -10, 0, -10, 0);

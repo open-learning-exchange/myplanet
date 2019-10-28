@@ -2,16 +2,16 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.JsonObject;
 
@@ -35,9 +35,6 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView subjectLevel, gradeLevel, method, language, noOfExams;
     LinearLayout llRating;
