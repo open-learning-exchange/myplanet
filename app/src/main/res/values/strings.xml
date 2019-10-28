@@ -350,6 +350,7 @@
     <string name="full_name">Full Name</string>
     <string name="weight">Weight</string>
     <string name="no_records">No records found</string>
+    <string name="chats">Chats</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>

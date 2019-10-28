@@ -287,6 +287,7 @@
     <string name="full_name">Full Name</string>
     <string name="weight">Weight</string>
     <string name="no_records">No records found</string>
+    <string name="chats">Chats</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>
