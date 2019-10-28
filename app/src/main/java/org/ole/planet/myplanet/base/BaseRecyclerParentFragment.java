@@ -6,6 +6,8 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 
 import java.util.List;
 
+import io.realm.Sort;
+
 public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
     public boolean isMyCourseLib;
 
@@ -21,12 +23,16 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
     }
 
     public List<LI> getList(Class c, String orderBy) {
+        return getList(c, orderBy, Sort.ASCENDING);
+    }
+
+    public List<LI> getList(Class c, String orderBy, Sort sort) {
         if (c == RealmStepExam.class) {
-            return mRealm.where(c).sort(orderBy).equalTo("type", "surveys").findAll();
+            return mRealm.where(c).sort(orderBy, sort).equalTo("type", "surveys").findAll();
         } else if (isMyCourseLib) {
-            return getMyLibItems(c,orderBy);
+            return getMyLibItems(c, orderBy);
         } else {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).sort(orderBy).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).sort(orderBy, sort).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).sort(orderBy, sort).findAll());
         }
     }
 

@@ -366,4 +366,9 @@
         <item>Debit</item>
     </string-array>
 
+    <string-array name="sort_by_date">
+        <item>Sort By Name - Asc</item>
+        <item>Sort By Name - Desc</item>
+    </string-array>
+
 </resources>

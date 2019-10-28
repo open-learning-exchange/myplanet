@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission;
 
+import java.util.Comparator;
 import java.util.List;
 
 import io.realm.Realm;
@@ -36,7 +37,10 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (context instanceof OnHomeItemClickListener) {
             this.listener = (OnHomeItemClickListener) context;
         }
+
     }
+
+
 
     @NonNull
     @Override
