@@ -97,7 +97,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         } else if (c == RealmMyTeam.class) {
             db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
         } else if (c == RealmMyLife.class) {
-            myLifeListInit(flexboxLayout, c, view);
+            myLifeListInit(flexboxLayout);
             return;
         } else {
             db_myCourses = mRealm.where(c).contains("userId", userId, Case.INSENSITIVE).findAll();
@@ -113,17 +113,14 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         }
     }
 
-    private void myLifeListInit(FlexboxLayout flexboxLayout, Class c, View view) {
+    private void myLifeListInit(FlexboxLayout flexboxLayout) {
         List<RealmMyLife> db_myLife, raw_myLife;
         raw_myLife = RealmMyLife.getMyLifeByUserId(mRealm, settings);
         db_myLife = new ArrayList<>();
         for (RealmMyLife item : raw_myLife) if (item.isVisible()) db_myLife.add(item);
-        setCountText(db_myLife.size(), c, view);
-        LinearLayout[] myLifeArray = new LinearLayout[db_myLife.size()];
         int itemCnt = 0;
         for (final RealmObject items : db_myLife) {
-            setLinearLayoutProperties(myLifeArray, itemCnt, items, c);
-            flexboxLayout.addView(myLifeArray[itemCnt], params);
+            flexboxLayout.addView(getLayout(itemCnt, items), params);
             itemCnt++;
         }
     }
