@@ -37,7 +37,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
         list.add(MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
         list.add(MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         if (isMyTeam) {
-            list.add(MainApplication.context.getString(isEnterprise ? R.string.messages : R.string.discussion));
+            list.add(MainApplication.context.getString(R.string.chats));
             list.add(MainApplication.context.getString(R.string.task));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.applicants : R.string.requested_member));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.finances : R.string.courses));
