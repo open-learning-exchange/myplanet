@@ -208,6 +208,7 @@ public abstract class BaseResourceFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mRealm= new DatabaseService(getActivity()).getRealmInstance();
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
 

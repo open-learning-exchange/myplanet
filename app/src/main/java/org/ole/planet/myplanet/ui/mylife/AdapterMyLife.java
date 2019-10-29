@@ -19,6 +19,9 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyLife;
+import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment;
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
@@ -43,13 +46,14 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     private Context context;
     private List<RealmMyLife> myLifeList;
     private Realm mRealm;
-
+    private RealmUserModel user;
 
     public AdapterMyLife(Context context, List<RealmMyLife> myLifeList, Realm realm, OnStartDragListener onStartDragListener) {
         mDragStartListener = onStartDragListener;
         this.context = context;
         this.mRealm = realm;
         this.myLifeList = myLifeList;
+        user = new UserProfileDbHandler(context).getUserModel();
     }
 
     public static Fragment find_fragment(String frag) {
@@ -109,6 +113,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             if (!myLifeList.get(position).isVisible())
                 changeVisibility(holder, R.drawable.ic_visibility, HIDE);
             else changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
+
         }
 
 
