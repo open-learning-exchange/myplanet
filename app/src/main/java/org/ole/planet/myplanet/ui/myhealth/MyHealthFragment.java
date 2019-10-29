@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -110,12 +112,17 @@ public class MyHealthFragment extends Fragment {
     private void selectPatient() {
         View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
         Spinner spnUser = v.findViewById(R.id.spn_user);
+        RealmResults<RealmUserModel> userModelList = mRealm.where(RealmUserModel.class).findAll();
+        List<String> memberFullNameList = new ArrayList<>();
+        for(RealmUserModel um : userModelList){
+            memberFullNameList.add(um.getFullName());
+        }
         List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
-        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, userList);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, memberFullNameList);
         spnUser.setAdapter(adapter);
-        showDialog = new AlertDialog.Builder(getActivity()).setTitle("Select Patient")
+        showDialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.select_health_member))
                 .setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
-                    userId = ((RealmUserModel) spnUser.getSelectedItem()).getId();
+                    userId = (userList.get(spnUser.getSelectedItemPosition())).getId();
                     getHealthRecords(userId);
                 }).show();
     }
