@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.ui.dashboard;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
+
 import androidx.fragment.app.Fragment;
+
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -17,6 +20,9 @@ import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
 import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment;
@@ -51,10 +57,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         });
     }
 
-    public void handleClickMyLife(String title, String imageId, LinearLayout linearLayout) {
-        ((ImageView) linearLayout.getChildAt(0)).setImageResource(getResources().getIdentifier(imageId, "drawable", getActivity().getPackageName()));
-        (((TextView) linearLayout.getChildAt(1))).setText(title);
-        linearLayout.setOnClickListener(view -> {
+    public void handleClickMyLife(String title, View v) {
+        v.setOnClickListener(view -> {
             if (homeItemClickListener != null) {
                 if (title.equals(getString(R.string.submission))) {
                     homeItemClickListener.openCallFragment(new MySubmissionFragment());
@@ -64,7 +68,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
                     homeItemClickListener.openCallFragment(new ReferenceFragment());
                 } else if (title.equals(getString(R.string.calendar))) {
                     homeItemClickListener.openCallFragment(new CalendarFragment());
-                }else if (title.equals(getString(R.string.my_survey))) {
+                } else if (title.equals(getString(R.string.my_survey))) {
                     homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey"));
                 } else if (title.equals(getString(R.string.achievements))) {
                     homeItemClickListener.openCallFragment(new AchievementFragment());
@@ -111,38 +115,31 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         }
     }
 
-    public void setLinearLayoutProperties(LinearLayout[] linearLayoutArray, int itemCnt, final RealmObject obj, Class c) {
-        linearLayoutArray[itemCnt] = new LinearLayout(getContext());
-        linearLayoutArray[itemCnt].setOrientation(LinearLayout.VERTICAL);
-        linearLayoutArray[itemCnt].setMinimumWidth(R.dimen.user_image_size);
-        linearLayoutArray[itemCnt].setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        lp.gravity = Gravity.CENTER;
-        linearLayoutArray[itemCnt].setLayoutParams(lp);
-
-        TextView tv = new TextView(getContext());
-        tv.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams lp_tv = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp_tv.gravity = Gravity.CENTER;
-        tv.setPadding(8, 8, 8, 8);
-
-        ImageView imageView = new ImageView(getContext());
-        LinearLayout.LayoutParams lp_iv = new LinearLayout.LayoutParams(36, 36);
-        lp_iv.gravity = Gravity.CENTER;
-        imageView.setLayoutParams(lp_iv);
-
-        linearLayoutArray[itemCnt].addView(imageView);
-        linearLayoutArray[itemCnt].addView(tv);
-
-        tv.setTextColor(getResources().getColor(R.color.md_black_1000));
+    public View getLayout(int itemCnt, final RealmObject obj) {
+        View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_my_life, null);
+        ImageView img = v.findViewById(R.id.img);
+        TextView counter = v.findViewById(R.id.tv_count);
+        TextView name = v.findViewById(R.id.tv_name);
         if ((itemCnt % 2) == 0) {
-            linearLayoutArray[itemCnt].setBackgroundResource(R.drawable.light_rect);
+            v.setBackgroundResource(R.drawable.light_rect);
         } else {
-            linearLayoutArray[itemCnt].setBackgroundColor(getResources().getColor(R.color.md_grey_300));
+            v.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
         }
+        String title = ((RealmMyLife) obj).getTitle();
 
-        handleClickMyLife(((RealmMyLife) obj).getTitle(), ((RealmMyLife) obj).getImageId(), linearLayoutArray[itemCnt]);
-
+        img.setImageResource(getResources().getIdentifier(((RealmMyLife) obj).getImageId(), "drawable", getActivity().getPackageName()));
+        name.setText(title);
+        RealmUserModel user= new UserProfileDbHandler(getActivity()).getUserModel();
+        if (title.equals(getString(R.string.my_survey))) {
+            counter.setVisibility(View.VISIBLE);
+            int noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser( user.getId(), mRealm);
+            counter.setText(noOfSurvey +"");
+            Utilities.log("Count " + noOfSurvey);
+        } else {
+            counter.setVisibility(View.GONE);
+        }
+        handleClickMyLife(title, v);
+        return v;
     }
 
     public List<RealmMyLife> getMyLifeListBase(String userId) {

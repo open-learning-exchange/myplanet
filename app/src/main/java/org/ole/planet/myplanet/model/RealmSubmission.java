@@ -16,6 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
@@ -152,7 +153,7 @@ public class RealmSubmission extends RealmObject {
     }
 
     public static int getNoOfSurveySubmissionByUser(String userId, Realm mRealm) {
-        return mRealm.where(RealmSubmission.class).equalTo("userId", userId).equalTo("type", "survey").findAll().size();
+        return mRealm.where(RealmSubmission.class).equalTo("userId", userId).equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE).findAll().size();
     }
 
     public static String getRecentSubmissionDate(String id, String userId, Realm mRealm) {
