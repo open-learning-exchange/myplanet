@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Objects;
 
@@ -134,6 +135,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
     public void startUpload() {
         progressDialog.setMessage("Uploading data to server, please wait.....");
         progressDialog.show();
+        Utilities.log("Upload : upload started");
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
@@ -147,9 +149,8 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         UploadManager.getInstance().uploadTeamTask();
         UploadManager.getInstance().uploadCrashLog(this);
         UploadManager.getInstance().uploadHealth();
-        UploadManager.getInstance().uploadActivities(this);
         UploadManager.getInstance().uploadSubmitPhotos(this);
-
+        UploadManager.getInstance().uploadActivities(this);
         Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
     }
 

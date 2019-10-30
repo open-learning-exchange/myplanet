@@ -52,6 +52,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import io.realm.Realm;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
@@ -376,6 +377,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onSuccess(String s) {
+        Utilities.log("Sync completed ");
         if (progressDialog.isShowing() && s.contains("Crash"))
             progressDialog.dismiss();
         DialogUtils.showSnack(btnSignIn, s);
@@ -389,11 +391,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 continueSyncProcess();
             });
         } else {
-            if (!mRealm.isInTransaction()) {
-                mRealm.beginTransaction();
-                mRealm.deleteAll();
-                mRealm.commitTransaction();
-            }
+            mRealm.executeTransactionAsync(realm -> realm.deleteAll());
+//            if (!mRealm.isInTransaction()) {
+//                mRealm.beginTransaction();
+//                mRealm.deleteAll();
+//                mRealm.commitTransaction();
+//            }
         }
         builder.show();
     }
@@ -424,10 +427,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void continueSyncProcess() {
+        Utilities.log("Upload : Continue sync process");
         try {
             if (isSync) {
                 isServerReachable(processedUrl);
             } else if (isUpload) {
+                Utilities.log("Upload : Continue sync , Start upload");
                 startUpload();
             } else if (forceSync) {
                 isServerReachable(processedUrl);
