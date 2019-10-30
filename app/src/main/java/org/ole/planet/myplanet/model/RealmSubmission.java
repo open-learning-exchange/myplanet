@@ -21,6 +21,8 @@ import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.Sort;
+import okhttp3.Request;
+import retrofit2.Response;
 
 public class RealmSubmission extends RealmObject {
     @io.realm.annotations.PrimaryKey
@@ -82,7 +84,7 @@ public class RealmSubmission extends RealmObject {
         if (!TextUtils.isEmpty(sub.get_id()))
             object.addProperty("_id", sub.get_id());
         if (!TextUtils.isEmpty(sub.get_rev()))
-            object.addProperty("_id", sub.get_rev());
+            object.addProperty("_rev", sub.get_rev());
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
@@ -98,7 +100,7 @@ public class RealmSubmission extends RealmObject {
             JsonParser parser = new JsonParser();
             object.add("user", parser.parse(sub.getUser()));
         }
-        Utilities.log("Serialize sub" );
+        Utilities.log("Serialize sub"  + object);
         return object;
 
     }
@@ -132,15 +134,15 @@ public class RealmSubmission extends RealmObject {
     }
 
     public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm) throws IOException {
-        JsonObject object;
+        JsonObject object = null;
         if (!TextUtils.isEmpty(sub.getUserId()) && sub.getUserId().startsWith("guest"))
             return;
-//        if (TextUtils.isEmpty(sub.get_id())) {
+        if (TextUtils.isEmpty(sub.get_id())) {
             object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub)).execute().body();
-//        } else {
-//            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub)).execute().body();
-//        }
-        Utilities.log(object + " submission result");
+        } else {
+            Response r  = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub)).execute();
+            Utilities.log(r.errorBody().string() + " submission result " + r.body());
+        }
         if (object != null) {
             sub.setUploaded(true);
             sub.set_rev(JsonUtils.getString("_rev", object));
