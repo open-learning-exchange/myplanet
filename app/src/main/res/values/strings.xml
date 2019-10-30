@@ -351,6 +351,7 @@
     <string name="weight">Weight</string>
     <string name="no_records">No records found</string>
     <string name="chats">Chats</string>
+    <string name="select_health_member">Select Member</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
