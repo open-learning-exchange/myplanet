@@ -40,7 +40,6 @@ public class RealmSubmission extends RealmObject {
 
 
     public static void insert(Realm mRealm, JsonObject submission) {
-        Utilities.log("Insert submission  ");
         String id = JsonUtils.getString("_id", submission);
         RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
         if (sub == null) {
@@ -71,7 +70,6 @@ public class RealmSubmission extends RealmObject {
         } else {
             sub.setUserId(userId);
         }
-        Utilities.log("User id,, sub " + userId +" "+ sub.getUser());
     }
 
 
