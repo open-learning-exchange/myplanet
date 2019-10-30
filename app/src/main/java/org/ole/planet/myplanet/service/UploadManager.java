@@ -66,6 +66,7 @@ public class UploadManager extends FileUploadService {
         return instance;
     }
 
+
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
@@ -81,10 +82,10 @@ public class UploadManager extends FileUploadService {
                 }
 
                 @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) {
-                }
+                public void onFailure(Call<JsonObject> call, Throwable t) {}
             });
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -102,7 +103,9 @@ public class UploadManager extends FileUploadService {
                     e.printStackTrace();
                 }
             }
-        }, () -> listener.onSuccess("Result sync completed successfully"));
+        }, () -> listener.onSuccess("Result sync completed successfully"), (e)->{
+            e.printStackTrace();
+        });
         uploadCourseProgress();
     }
 
@@ -119,9 +122,7 @@ public class UploadManager extends FileUploadService {
                     if (ob == null) {
                         ResponseBody re = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute().errorBody();
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                } catch (IOException e) {}
             }
         });
     }
@@ -141,9 +142,7 @@ public class UploadManager extends FileUploadService {
                     if (object != null) {
                         sub.set_id(JsonUtils.getString("id", object));
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                } catch (IOException e) {}
             }
         });
     }
@@ -151,18 +150,14 @@ public class UploadManager extends FileUploadService {
     public void uploadHealth() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
-        mRealm.executeTransaction(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
-                for (RealmMyHealthPojo pojo : myHealths) {
-                    try {
-                        Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
-                    } catch (Exception e) {
-                    }
-                }
-
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
+            for (RealmMyHealthPojo pojo : myHealths) {
+                try {
+                    Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
+                } catch (Exception e) {}
             }
+
         });
     }
 
@@ -183,9 +178,7 @@ public class UploadManager extends FileUploadService {
                     } else {
                         Utilities.log("ERRRRRRRR " + res.errorBody().string());
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                } catch (IOException e) {}
 
             }
         }, () -> listener.onSuccess("Feedback sync completed successfully"));
@@ -209,9 +202,7 @@ public class UploadManager extends FileUploadService {
                                 uploadAttachment(_id, _rev, sub, listener);
                                 Utilities.log("Submitting photos to Realm");
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        } catch (Exception e) { }
                     }
                 }
         );
@@ -265,9 +256,7 @@ public class UploadManager extends FileUploadService {
                             task.set_rev(_rev);
                             task.set_id(_id);
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    } catch (IOException e) {}
 
                 }
             }
@@ -319,7 +308,9 @@ public class UploadManager extends FileUploadService {
 
             }
             uploadTeamActivities(realm, apiInterface);
-        }, () -> listener.onSuccess("Sync with server completed successfully"));
+        }, () -> {
+            listener.onSuccess("Sync with server completed successfully");
+        }, (e) -> listener.onSuccess(e.getMessage()));
     }
 
     private void uploadTeamActivities(Realm realm, ApiInterface apiInterface) {
@@ -333,8 +324,12 @@ public class UploadManager extends FileUploadService {
                     log.set_rev(JsonUtils.getString("rev", object));
                 }
             } catch (IOException e) {
+                e.printStackTrace();
             }
         }
+        Utilities.log("Upload team activities");
+
+
     }
 
     public void uploadRating(final SuccessListener listener) {
