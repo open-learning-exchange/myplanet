@@ -93,7 +93,7 @@ public class UploadManager extends FileUploadService {
         mRealm = dbService.getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmSubmission> submissions = realm.where(RealmSubmission.class).equalTo("uploaded", false).findAll();
+            List<RealmSubmission> submissions = realm.where(RealmSubmission.class).findAll();
             for (RealmSubmission sub : submissions) {
                 try {
                     RealmSubmission.continueResultUpload(sub, apiInterface, realm);
