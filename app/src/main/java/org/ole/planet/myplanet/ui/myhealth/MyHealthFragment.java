@@ -127,10 +127,27 @@ public class MyHealthFragment extends Fragment {
             memberFullNameList.add(um.getFullName());
             map.put(um.getFullName(), um.getId());
         }
-        List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, memberFullNameList);
         View alertHealth = LayoutInflater.from(getActivity()).inflate(R.layout.alert_health_list, null);
         EditText etSearch = alertHealth.findViewById(R.id.et_search);
+        setTextWatcher(etSearch, adapter);
+        ListView lv = alertHealth.findViewById(R.id.list);
+        lv.setAdapter(adapter);
+        lv.setOnItemClickListener((adapterView, view, i, l) -> {
+            userId = map.get(((TextView)view).getText().toString());
+            getHealthRecords(userId);
+            dialog.dismiss();
+        });
+        dialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.select_health_member))
+                .setView(alertHealth)
+                .setCancelable(false).setNegativeButton("Dismiss",null).create();
+
+
+        dialog.show();
+
+    }
+
+    private void setTextWatcher(EditText etSearch, ArrayAdapter<String> adapter) {
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -147,20 +164,6 @@ public class MyHealthFragment extends Fragment {
 
             }
         });
-        ListView lv = alertHealth.findViewById(R.id.list);
-        lv.setAdapter(adapter);
-        lv.setOnItemClickListener((adapterView, view, i, l) -> {
-            userId = map.get(((TextView)view).getText().toString());
-            getHealthRecords(userId);
-            dialog.dismiss();
-        });
-        dialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.select_health_member))
-                .setView(alertHealth)
-                .setCancelable(false).setNegativeButton("Dismiss",null).create();
-
-
-        dialog.show();
-
     }
 
     @Override
