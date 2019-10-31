@@ -149,14 +149,10 @@ public class MyHealthFragment extends Fragment {
         });
         ListView lv = alertHealth.findViewById(R.id.list);
         lv.setAdapter(adapter);
-        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                userId = map.get(((TextView)view).getText().toString());
-                Utilities.log("User id " + userId);
-                getHealthRecords(userId);
-                dialog.dismiss();
-            }
+        lv.setOnItemClickListener((adapterView, view, i, l) -> {
+            userId = map.get(((TextView)view).getText().toString());
+            getHealthRecords(userId);
+            dialog.dismiss();
         });
         dialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.select_health_member))
                 .setView(alertHealth)
