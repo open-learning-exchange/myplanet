@@ -42,9 +42,12 @@ public class RealmSubmission extends RealmObject {
 
 
     public static void insert(Realm mRealm, JsonObject submission) {
+        if (submission.has("_attachments")){
+            return;
+        }
         Utilities.log("Insert submission  ");
         String id = JsonUtils.getString("_id", submission);
-        RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
+        RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("_id", id).findFirst();
         if (sub == null) {
             sub = mRealm.createObject(RealmSubmission.class, id);
         }
@@ -60,7 +63,7 @@ public class RealmSubmission extends RealmObject {
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("parentId", submission)).findFirst();
         if (exam == null) {
-            RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission),JsonUtils.getString("parentId", submission), mRealm);
+            RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm);
         }
         String userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission));
         if (userId.contains("@")) {
@@ -73,7 +76,7 @@ public class RealmSubmission extends RealmObject {
         } else {
             sub.setUserId(userId);
         }
-        Utilities.log("User id,, sub " + userId +" "+ sub.getUser());
+        Utilities.log("User id,, sub " + userId + " " + sub.getUser());
     }
 
 
@@ -100,7 +103,7 @@ public class RealmSubmission extends RealmObject {
             JsonParser parser = new JsonParser();
             object.add("user", parser.parse(sub.getUser()));
         }
-        Utilities.log("Serialize sub"  + object);
+        Utilities.log("Serialize sub" + object);
         return object;
 
     }
@@ -140,12 +143,11 @@ public class RealmSubmission extends RealmObject {
         if (TextUtils.isEmpty(sub.get_id())) {
             object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub)).execute().body();
         } else {
-            Response r  = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub)).execute();
-            Utilities.log(r.errorBody().string() + " submission result " + r.body());
+            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub)).execute().body();
         }
         if (object != null) {
-            sub.setUploaded(true);
-            sub.set_rev(JsonUtils.getString("_rev", object));
+            sub.set_id(JsonUtils.getString("id", object));
+            sub.set_rev(JsonUtils.getString("rev", object));
         }
     }
 
