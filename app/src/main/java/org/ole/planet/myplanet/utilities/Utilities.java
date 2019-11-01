@@ -159,16 +159,8 @@ public class Utilities {
 
     public static String getMimeType(String url) {
         String type = null;
-        String extension = MimeTypeMap.getFileExtensionFromUrl(url);
-        if (extension != null) {
-            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-        }
-        if (type == null) {
-            if (url.endsWith("pdf"))
-                return "pdf";
-            if (url.endsWith("mp4") || url.endsWith("mkv") || url.endsWith("avi"))
-                return "video";
-        }
+        String extension = FileUtils.getFileExtension(url);
+        type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
         return type;
     }
 }
