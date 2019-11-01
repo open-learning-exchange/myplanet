@@ -1,11 +1,15 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
 
 import org.ole.planet.myplanet.R;
@@ -14,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
+import org.ole.planet.myplanet.utilities.DimenUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -22,7 +27,7 @@ import java.util.List;
 
 import io.realm.Realm;
 
-public class AddExaminationActivity extends AppCompatActivity {
+public class AddExaminationActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
     Realm mRealm;
     String userId;
     EditText etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
@@ -30,10 +35,12 @@ public class AddExaminationActivity extends AppCompatActivity {
     RealmUserModel user;
     RealmMyHealthPojo pojo;
     RealmMyHealth health = null;
+    FlexboxLayout flexboxLayout;
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
         etPulseRate = findViewById(R.id.et_pulse_rate);
+        flexboxLayout = findViewById(R.id.container_checkbox);
         etBloodPressure = findViewById(R.id.et_bloodpressure);
         etHeight = findViewById(R.id.et_height);
         etWeight = findViewById(R.id.et_weight);
@@ -57,13 +64,14 @@ public class AddExaminationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_examination);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        initViews();;
+        initViews();
+        ;
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
-        //userId = user.getId();
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-        if (TextUtils.isEmpty(user.getIv())){
+        showCheckbox();
+        if (TextUtils.isEmpty(user.getIv())) {
             Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
             finish();
             return;
@@ -72,11 +80,24 @@ public class AddExaminationActivity extends AppCompatActivity {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
         if (health == null || health.getProfile() == null) {
-          initHealth();
+            initHealth();
         }
         findViewById(R.id.btn_save).setOnClickListener(view -> {
             saveData();
         });
+    }
+
+    private void showCheckbox() {
+        String[] arr = getResources().getStringArray(R.array.diagnosis_list);
+        flexboxLayout.removeAllViews();
+        for (String s : arr) {
+            CheckBox c = new CheckBox(this);
+            c.setPadding(DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8));
+            c.setText(s);
+            c.setTag(s);
+            c.setOnCheckedChangeListener(this);
+            flexboxLayout.addView(c);
+        }
     }
 
     private void initHealth() {
@@ -124,7 +145,7 @@ public class AddExaminationActivity extends AppCompatActivity {
             health.setEvents(list);
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
-            if (pojo == null){
+            if (pojo == null) {
                 pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
             }
             pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
@@ -133,7 +154,7 @@ public class AddExaminationActivity extends AppCompatActivity {
             finish();
         } catch (Exception e) {
             e.printStackTrace();
-            Utilities.toast(this,"Unable to add health record.");
+            Utilities.toast(this, "Unable to add health record.");
         }
     }
 
@@ -143,5 +164,17 @@ public class AddExaminationActivity extends AppCompatActivity {
         if (item.getItemId() == android.R.id.home)
             finish();
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+        String text = compoundButton.getText().toString();
+        String diag = etDiag.getText().toString();
+        if (b) {
+                etDiag.setText(diag +"#" + text +" ");
+        }else{
+           diag =  diag.replace("#"+ text +" ", "");
+            etDiag.setText(diag);
+        }
     }
 }
