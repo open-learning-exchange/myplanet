@@ -178,6 +178,7 @@ public class MyHealthFragment extends Fragment {
             llUserDetail.setVisibility(View.VISIBLE);
             txtMessage.setVisibility(View.GONE);
             RealmMyHealth mm = getHealthProfile(mh);
+
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
             txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
             txtEmail.setText(TextUtils.isEmpty(myHealths.getEmail()) ? "N/A" : myHealths.getEmail());
@@ -206,6 +207,7 @@ public class MyHealthFragment extends Fragment {
     }
 
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
+        Utilities.log("User profile " + userModel.getName());
         String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
         return new Gson().fromJson(json, RealmMyHealth.class);
     }
