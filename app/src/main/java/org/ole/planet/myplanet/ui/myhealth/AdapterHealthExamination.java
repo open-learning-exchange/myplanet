@@ -52,19 +52,15 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         View v = LayoutInflater.from(context).inflate(R.layout.alert_examination, null);
         TextView tvVitals = v.findViewById(R.id.tv_vitals);
         TextView tvCondition = v.findViewById(R.id.tv_condition);
-        tvVitals.setText(
-                        "Temperature : " + realmExamination.getTemperature() + "\n" +
+        tvVitals.setText("Temperature : " + realmExamination.getTemperature() + "\n" +
                         "Pulse : " + realmExamination.getPulse() + "\n" +
                         "Blood Pressure : " + realmExamination.getBp() + "\n" +
                         "Height : " + realmExamination.getHeight() + "\n" +
                         "Weight : " + realmExamination.getWeight() + "\n" +
                         "Vision : " + realmExamination.getVision() + "\n" +
-                        "Hearing : " + realmExamination.getHearing() + "\n"
+                        "Hearing : " + realmExamination.getHearing() + "\n");
 
-        );
-
-        tvCondition.setText(
-                "Observations & Notes : " + realmExamination.getNotes() + "\n" +
+        tvCondition.setText("Observations & Notes : " + realmExamination.getNotes() + "\n" +
                 "Diagnosis : " + realmExamination.getDiagnosis() + "\n" +
                 "Treatments : " + realmExamination.getTreatments() + "\n" +
                 "Medications : " + realmExamination.getMedications() + "\n" +
@@ -72,9 +68,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 "Allergies : " + realmExamination.getAllergies() + "\n" +
                 "X-rays : " + realmExamination.getXrays() + "\n" +
                 "Lab Tests : " + realmExamination.getTests() + "\n" +
-                "Referrals : " + realmExamination.getReferrals() + "\n"
-
-        );
+                "Referrals : " + realmExamination.getReferrals() + "\n");
         new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
                 .setView(v)
                 .setPositiveButton("OK", null).show();
