@@ -4,7 +4,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -14,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatRatingBar;
@@ -145,7 +148,9 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     public void openFileType(final RealmMyLibrary items, String videotype) {
 
         String mimetype = Utilities.getMimeType(items.getResourceLocalAddress());
-        if (mimetype!=null){
+        Utilities.log("Mime type " + mimetype);
+        Utilities.log("Mime type " + items.getResourceLocalAddress());
+        if (mimetype == null) {
             Utilities.toast(getActivity(), "Unable to open resource");
             return;
         }
