@@ -143,9 +143,13 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     }
 
     public void openFileType(final RealmMyLibrary items, String videotype) {
-        String mimetype = Utilities.getMimeType(items.getResourceLocalAddress());
 
-        if (mimetype!=null && mimetype.startsWith("video")) {
+        String mimetype = Utilities.getMimeType(items.getResourceLocalAddress());
+        if (mimetype!=null){
+            Utilities.toast(getActivity(), "Unable to open resource");
+            return;
+        }
+        if (mimetype.startsWith("video")) {
             playVideo(videotype, items);
         } else {
             checkFileExtension(items);
