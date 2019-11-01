@@ -171,10 +171,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         String text = compoundButton.getText().toString();
         String diag = etDiag.getText().toString();
         if (b) {
-                etDiag.setText(text +"#" + diag);
+                etDiag.setText(diag +"#" + text +" ");
         }else{
-           diag =  diag.replace(text +"#", "");
-            etDiag.setText(diag.trim());
+           diag =  diag.replace("#"+ text +" ", "");
+            etDiag.setText(diag);
         }
     }
 }

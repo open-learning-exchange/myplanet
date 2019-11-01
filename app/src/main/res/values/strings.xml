@@ -384,14 +384,14 @@
         <item>Flu</item>
         <item>Influenza</item>
         <item>Ischaemic heat disease</item>
-        <item>Malaria,</item>
+        <item>Malaria</item>
         <item>Malnutrition</item>
         <item>Meningitis</item>
         <item>Neonatal sepsis and infections</item>
         <item>HIV/AIDS</item>
         <item>Pneumonia</item>
         <item>Stroke</item>
-        <item>tuberculosis</item>
+        <item>Tuberculosis</item>
     </string-array>
 
 </resources>
