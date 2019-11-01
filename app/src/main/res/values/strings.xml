@@ -357,7 +357,7 @@
         <item>Connect With Nation</item>
     </string-array>
 
- <string-array name="contact_type">
+    <string-array name="contact_type">
         <item>Phone</item>
         <item>Email</item>
     </string-array>
@@ -371,6 +371,27 @@
     <string-array name="sort_by_date">
         <item>Sort By Name - Asc</item>
         <item>Sort By Name - Desc</item>
+    </string-array>
+
+    <string-array name="diagnosis_list">
+        <item>Cancer</item>
+        <item>Cardiovascular disorders</item>
+        <item>Cirrhosis of the liver</item>
+        <item>Diabetes</item>
+        <item>Diarrhoea diseases</item>
+        <item>Ebola</item>
+        <item>Epilepsy</item>
+        <item>Flu</item>
+        <item>Influenza</item>
+        <item>Ischaemic heat disease</item>
+        <item>Malaria</item>
+        <item>Malnutrition</item>
+        <item>Meningitis</item>
+        <item>Neonatal sepsis and infections</item>
+        <item>HIV/AIDS</item>
+        <item>Pneumonia</item>
+        <item>Stroke</item>
+        <item>Tuberculosis</item>
     </string-array>
 
 </resources>
