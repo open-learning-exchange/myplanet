@@ -73,10 +73,11 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 "X-rays : " + realmExamination.getXrays() + "\n" +
                 "Lab Tests : " + realmExamination.getTests() + "\n" +
                 "Referrals : " + realmExamination.getReferrals() + "\n"
+
         );
         new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
                 .setView(v)
-                .setPositiveButton("OK", null);
+                .setPositiveButton("OK", null).show();
     }
 
     @Override
