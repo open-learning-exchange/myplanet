@@ -126,54 +126,41 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
 
     private int myTeamInit(FlexboxLayout flexboxLayout) {
         List<RealmObject> dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
-        long current = Calendar.getInstance().getTimeInMillis();
-        Calendar tomorrow = Calendar.getInstance();
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
         String userId = new UserProfileDbHandler(getActivity()).getUserModel().getId();
         int count = 0;
         for (RealmObject ob : dbMyTeam) {
             View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_home_my_team, flexboxLayout, false);
             TextView name = v.findViewById(R.id.tv_name);
-            ImageView imgTask = v.findViewById(R.id.img_task);
-            ImageView imgChat = v.findViewById(R.id.img_chat);
-
-            if ((count % 2) == 0) {
-                v.setBackgroundResource(R.drawable.light_rect);
-            } else {
-                v.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
-            }
+            setBackgroundColor(v, count);
             if (((RealmMyTeam) ob).getTeamType().equals("sync")) {
                 name.setTypeface(null, Typeface.BOLD);
             }
             handleClick(((RealmMyTeam) ob).getId(), ((RealmMyTeam) ob).getName(), new TeamDetailFragment(), name);
-
-            RealmTeamNotification notification = mRealm.where(RealmTeamNotification.class)
-                    .equalTo("parentId", ((RealmMyTeam) ob).getId())
-                    .equalTo("type", "chat")
-                    .findFirst();
-            long chatCount = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", ((RealmMyTeam) ob).getId()).count();
-            if (notification != null) {
-                if (notification.getLastCount() < chatCount) {
-                    imgChat.setVisibility(View.VISIBLE);
-                } else {
-                    imgChat.setVisibility(View.GONE);
-                }
-            }
-
-            List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("teamId",((RealmMyTeam) ob).getId() ).equalTo("completed", false).equalTo("assignee", userId)
-                    .between("expire", current, tomorrow.getTimeInMillis()).findAll();
-
-            Utilities.log("tasks " + tasks.size());
-            if (tasks.size() > 0) {
-                imgTask.setVisibility(View.VISIBLE);
-            } else {
-                imgTask.setVisibility(View.GONE);
-            }
+            showNotificationIcons(ob, v,userId);
             name.setText(((RealmMyTeam) ob).getName());
             flexboxLayout.addView(v);
             count++;
         }
         return dbMyTeam.size();
+    }
+
+    private void showNotificationIcons(RealmObject ob, View v, String userId) {
+        long current = Calendar.getInstance().getTimeInMillis();
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        ImageView imgTask = v.findViewById(R.id.img_task);
+        ImageView imgChat = v.findViewById(R.id.img_chat);
+        RealmTeamNotification notification = mRealm.where(RealmTeamNotification.class)
+                .equalTo("parentId", ((RealmMyTeam) ob).getId())
+                .equalTo("type", "chat")
+                .findFirst();
+        long chatCount = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", ((RealmMyTeam) ob).getId()).count();
+        if (notification != null) {
+            imgChat.setVisibility(notification.getLastCount() < chatCount ? View.VISIBLE : View.GONE);
+        }
+        List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("teamId",((RealmMyTeam) ob).getId() ).equalTo("completed", false).equalTo("assignee", userId)
+                .between("expire", current, tomorrow.getTimeInMillis()).findAll();
+        imgTask.setVisibility(tasks.size() > 0? View.VISIBLE: View.GONE);
     }
 
     private void myLifeListInit(FlexboxLayout flexboxLayout) {
