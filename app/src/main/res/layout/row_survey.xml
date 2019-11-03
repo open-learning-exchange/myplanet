@@ -66,17 +66,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Send Survey"
-                android:background="@drawable/buttongrey"
-                style="@style/GreyButtons"
+                android:theme="@style/AccentButton"
                 android:layout_marginRight="10dp"/>
 
             <Button
                 android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/buttongrey"
                 android:text="Take Survey"
-                style="@style/GreyButtons" />
+                android:theme="@style/AccentButton" />
 
         </LinearLayout>
 

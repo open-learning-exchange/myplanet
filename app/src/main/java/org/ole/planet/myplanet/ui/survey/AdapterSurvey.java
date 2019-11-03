@@ -1,13 +1,14 @@
 package org.ole.planet.myplanet.ui.survey;
 
 import android.content.Context;
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -16,7 +17,6 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission;
 
-import java.util.Comparator;
 import java.util.List;
 
 import io.realm.Realm;
@@ -39,7 +39,6 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         }
 
     }
-
 
 
     @NonNull
@@ -85,11 +84,10 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             noSubmission = itemView.findViewById(R.id.tv_no_submissions);
             lastSubDate = itemView.findViewById(R.id.tv_date);
             startSurvey = itemView.findViewById(R.id.start_survey);
-            sendSurvey = itemView.findViewById(R.id.send_survey);
-//            startSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
             startSurvey.setVisibility(View.VISIBLE);
-//            sendSurvey.setVisibility(Constants.showBetaFeature(Constants.KEY_SURVEY, context) ? View.VISIBLE : View.GONE);
-            sendSurvey.setVisibility(View.VISIBLE);
+            sendSurvey = itemView.findViewById(R.id.send_survey);
+            //Don't show sent survey feature
+            sendSurvey.setVisibility(View.GONE);
             sendSurvey.setOnClickListener(view -> {
                 RealmStepExam current = examList.get(getAdapterPosition());
                 if (listener != null)
