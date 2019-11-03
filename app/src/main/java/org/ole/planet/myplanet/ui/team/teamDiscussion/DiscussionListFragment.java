@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team.teamDiscussion;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
@@ -17,12 +18,16 @@ import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
+
+import io.realm.Realm;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -50,6 +55,16 @@ public class DiscussionListFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).findAll();
+        int count = realmNewsList.size();
+        mRealm.executeTransactionAsync(realm -> {
+            RealmTeamNotification notification = realm.where(RealmTeamNotification.class).equalTo("type", "chat").equalTo("parentId", teamId).findFirst();
+            if (notification == null){
+                notification = realm.createObject(RealmTeamNotification.class, UUID.randomUUID().toString());
+                notification.setParentId(teamId);
+                notification.setType("chat");
+            }
+            notification.setLastCount(count);
+        });
         rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
         showRecyclerView(realmNewsList);
     }
