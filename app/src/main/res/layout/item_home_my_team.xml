@@ -17,6 +17,7 @@
             app:srcCompat="@drawable/ic_messages"
             android:tint="@color/md_red_500"
             android:layout_width="@dimen/_20dp"
+            android:visibility="gone"
             android:layout_height="@dimen/_20dp" />
 
 
@@ -25,6 +26,7 @@
             android:layout_marginLeft="@dimen/padding_small"
             app:srcCompat="@drawable/ic_my_survey"
             android:layout_width="@dimen/_20dp"
+            android:visibility="gone"
             android:tint="@color/md_red_500"
             android:layout_height="@dimen/_20dp" />
 

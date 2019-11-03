@@ -155,7 +155,6 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
             if (notification != null) {
                 if (notification.getLastCount() < chatCount) {
                     imgChat.setVisibility(View.VISIBLE);
-                    imgChat.setImageResource(R.drawable.ic_warn);
                 } else {
                     imgChat.setVisibility(View.GONE);
                 }
@@ -167,7 +166,6 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
             Utilities.log("tasks " + tasks.size());
             if (tasks.size() > 0) {
                 imgTask.setVisibility(View.VISIBLE);
-                imgTask.setImageResource(R.drawable.ic_warn);
             } else {
                 imgTask.setVisibility(View.GONE);
             }
