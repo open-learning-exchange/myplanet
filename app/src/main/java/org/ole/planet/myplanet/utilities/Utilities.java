@@ -106,7 +106,7 @@ public class Utilities {
     public static void loadImage(String userImage, ImageView imageView) {
         if (!TextUtils.isEmpty(userImage)) {
             Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
-        }else{
+        } else {
             imageView.setImageResource(R.drawable.ole_logo);
         }
     }
@@ -159,10 +159,8 @@ public class Utilities {
 
     public static String getMimeType(String url) {
         String type = null;
-        String extension = MimeTypeMap.getFileExtensionFromUrl(url);
-        if (extension != null) {
-            type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
-        }
+        String extension = FileUtils.getFileExtension(url);
+        type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
         return type;
     }
 }

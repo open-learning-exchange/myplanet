@@ -36,7 +36,7 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:text="Cancel"
-                android:theme="@style/AccentButton" />
+                android:theme="@style/PrimaryButton" />
 
             <Button
                 android:id="@+id/send_survey"
