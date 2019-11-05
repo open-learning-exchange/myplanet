@@ -60,6 +60,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 ho.sendSurvey.setVisibility(View.GONE);
                 ho.startSurvey.setVisibility(View.GONE);
             }
+            ho.startSurvey.setText(examList.get(position).isFromNation() ? "Take Survey" : "Record Survey");
             String noOfSubmission = RealmSubmission.getNoOfSubmissionByUser(examList.get(position).getId(), userId, mRealm);
             String subDate = RealmSubmission.getRecentSubmissionDate(examList.get(position).getId(), userId, mRealm);
             ho.noSubmission.setText(noOfSubmission);
