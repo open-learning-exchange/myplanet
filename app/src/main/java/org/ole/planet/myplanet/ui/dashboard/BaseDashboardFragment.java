@@ -11,6 +11,7 @@ import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.NotificationCallback;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -22,23 +23,21 @@ import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-
-import javax.security.auth.callback.CallbackHandler;
 
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
 
-public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
+public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implements NotificationCallback {
     public UserProfileDbHandler profileDbHandler;
     String fullName;
     Realm mRealm;
@@ -136,7 +135,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
                 name.setTypeface(null, Typeface.BOLD);
             }
             handleClick(((RealmMyTeam) ob).getId(), ((RealmMyTeam) ob).getName(), new TeamDetailFragment(), name);
-            showNotificationIcons(ob, v,userId);
+            showNotificationIcons(ob, v, userId);
             name.setText(((RealmMyTeam) ob).getName());
             flexboxLayout.addView(v);
             count++;
@@ -158,9 +157,9 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         if (notification != null) {
             imgChat.setVisibility(notification.getLastCount() < chatCount ? View.VISIBLE : View.GONE);
         }
-        List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("teamId",((RealmMyTeam) ob).getId() ).equalTo("completed", false).equalTo("assignee", userId)
+        List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("teamId", ((RealmMyTeam) ob).getId()).equalTo("completed", false).equalTo("assignee", userId)
                 .between("expire", current, tomorrow.getTimeInMillis()).findAll();
-        imgTask.setVisibility(tasks.size() > 0? View.VISIBLE: View.GONE);
+        imgTask.setVisibility(tasks.size() > 0 ? View.VISIBLE : View.GONE);
     }
 
     private void myLifeListInit(FlexboxLayout flexboxLayout) {
@@ -235,11 +234,22 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         view.findViewById(R.id.txtFullName).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
+
         myLibraryDiv(view);
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife.class);
+//        showPendingSurveyDialog();
+//        showResourceDownloadDialog();
+        NotificationFragment fragment = new NotificationFragment();
+        fragment.callback = this;
+        fragment.resourceList = getLibraryList(mRealm);
+        fragment.show(getChildFragmentManager(), "");
+    }
+
+    @Override
+    public void showResourceDownloadDialog() {
         showDownloadDialog(getLibraryList(mRealm));
     }
 }

@@ -298,4 +298,5 @@
     <string name="no_records">No records found</string>
     <string name="chats">Chats</string>
     <string name="select_health_member">Select Member</string>
+    <string name="notifications">Notifications</string>
 </resources>

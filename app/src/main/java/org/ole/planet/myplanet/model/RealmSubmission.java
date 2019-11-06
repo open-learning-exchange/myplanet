@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.model;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -13,6 +15,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,8 +42,9 @@ public class RealmSubmission extends RealmObject {
     private String grade;
     private String status;
     private boolean uploaded;
+
     public static void insert(Realm mRealm, JsonObject submission) {
-        if (submission.has("_attachments")){
+        if (submission.has("_attachments")) {
             return;
         }
         String id = JsonUtils.getString("_id", submission);
@@ -255,5 +259,25 @@ public class RealmSubmission extends RealmObject {
     public void setUser(String user) {
         this.user = user;
     }
+
+
+    public static HashMap<String, RealmStepExam> getExamMap(Realm mRealm, List<RealmSubmission> submissions) {
+        HashMap<String, RealmStepExam> exams = new HashMap<>();
+        for (RealmSubmission sub : submissions) {
+            String id = sub.getParentId();
+            if (checkParentId(sub.getParentId())) {
+                id = sub.getParentId().split("@")[0];
+            }
+            RealmStepExam survey = mRealm.where(RealmStepExam.class).equalTo("id", id).findFirst();
+            if (survey != null)
+                exams.put(sub.getParentId(), survey);
+        }
+        return exams;
+    }
+
+    private static boolean checkParentId(String parentId) {
+        return parentId != null && parentId.contains("@");
+    }
+
 
 }
