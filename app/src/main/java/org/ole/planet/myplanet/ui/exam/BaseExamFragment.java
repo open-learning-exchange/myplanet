@@ -130,7 +130,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void showUserInfoDialog() {
-        if (!isMySurvey) {
+        if (!isMySurvey || !exam.isFromNation()) {
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction())
