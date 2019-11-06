@@ -61,7 +61,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
         var notificationList : MutableList<Notifications> = ArrayList()
         notificationList.add(Notifications(R.drawable.mylibrary, "${resourceList.size} resource not downloaded."))
-        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} Pending Survey."))
+        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} pending survey."))
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)
         rv_notifications.adapter = AdapterNotification(activity!!, notificationList, callback)
     }
