@@ -25,6 +25,7 @@ public class RealmStepExam extends RealmObject {
     private String passingPercentage;
     private String totalMarks;
     private int noOfQuestions;
+    private boolean isFromNation;
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
         insertCourseStepsExams(myCoursesID, step_id, exam,"", mRealm);
@@ -42,9 +43,17 @@ public class RealmStepExam extends RealmObject {
         myExam.setPassingPercentage(JsonUtils.getString("passingPercentage", exam));
         myExam.setTotalMarks(JsonUtils.getString("totalMarks", exam));
         myExam.setNoOfQuestions(JsonUtils.getJsonArray("questions", exam).size());
+        myExam.setFromNation(!TextUtils.isEmpty(parentId));
         RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
     }
 
+    public boolean isFromNation() {
+        return isFromNation;
+    }
+
+    public void setFromNation(boolean fromNation) {
+        isFromNation = fromNation;
+    }
 
     public void setNoOfQuestions(int noOfQuestions) {
         this.noOfQuestions = noOfQuestions;

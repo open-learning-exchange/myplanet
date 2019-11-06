@@ -81,7 +81,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         initExam();
         questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
-        if (!isMySurvey)
+//        if (!isMySurvey)
             sub = mRealm.where(RealmSubmission.class)
                     .equalTo("userId", user.getId())
                     .equalTo("parentId", exam.getId())
