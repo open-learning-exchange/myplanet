@@ -39,13 +39,10 @@ public class RealmSubmission extends RealmObject {
     private String grade;
     private String status;
     private boolean uploaded;
-
-
     public static void insert(Realm mRealm, JsonObject submission) {
         if (submission.has("_attachments")){
             return;
         }
-        Utilities.log("Insert submission  ");
         String id = JsonUtils.getString("_id", submission);
         RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("_id", id).findFirst();
         if (sub == null) {
@@ -76,9 +73,7 @@ public class RealmSubmission extends RealmObject {
         } else {
             sub.setUserId(userId);
         }
-        Utilities.log("User id,, sub " + userId + " " + sub.getUser());
     }
-
 
     public static JsonObject serializeExamResult(Realm mRealm, RealmSubmission sub) {
         JsonObject object = new JsonObject();

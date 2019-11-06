@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -16,14 +17,22 @@ import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyLife;
 import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.model.RealmTeamNotification;
+import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
+import javax.security.auth.callback.CallbackHandler;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -95,7 +104,9 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
         if (c == RealmMyCourse.class) {
             db_myCourses = RealmMyCourse.getMyByUserId(mRealm, settings);
         } else if (c == RealmMyTeam.class) {
-            db_myCourses = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
+            int i = myTeamInit(flexboxLayout);
+            setCountText(i, RealmMyTeam.class, view);
+            return;
         } else if (c == RealmMyLife.class) {
             myLifeListInit(flexboxLayout);
             return;
@@ -111,6 +122,45 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin {
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params);
             itemCnt++;
         }
+    }
+
+    private int myTeamInit(FlexboxLayout flexboxLayout) {
+        List<RealmObject> dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings);
+        String userId = new UserProfileDbHandler(getActivity()).getUserModel().getId();
+        int count = 0;
+        for (RealmObject ob : dbMyTeam) {
+            View v = LayoutInflater.from(getActivity()).inflate(R.layout.item_home_my_team, flexboxLayout, false);
+            TextView name = v.findViewById(R.id.tv_name);
+            setBackgroundColor(v, count);
+            if (((RealmMyTeam) ob).getTeamType().equals("sync")) {
+                name.setTypeface(null, Typeface.BOLD);
+            }
+            handleClick(((RealmMyTeam) ob).getId(), ((RealmMyTeam) ob).getName(), new TeamDetailFragment(), name);
+            showNotificationIcons(ob, v,userId);
+            name.setText(((RealmMyTeam) ob).getName());
+            flexboxLayout.addView(v);
+            count++;
+        }
+        return dbMyTeam.size();
+    }
+
+    private void showNotificationIcons(RealmObject ob, View v, String userId) {
+        long current = Calendar.getInstance().getTimeInMillis();
+        Calendar tomorrow = Calendar.getInstance();
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1);
+        ImageView imgTask = v.findViewById(R.id.img_task);
+        ImageView imgChat = v.findViewById(R.id.img_chat);
+        RealmTeamNotification notification = mRealm.where(RealmTeamNotification.class)
+                .equalTo("parentId", ((RealmMyTeam) ob).getId())
+                .equalTo("type", "chat")
+                .findFirst();
+        long chatCount = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", ((RealmMyTeam) ob).getId()).count();
+        if (notification != null) {
+            imgChat.setVisibility(notification.getLastCount() < chatCount ? View.VISIBLE : View.GONE);
+        }
+        List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("teamId",((RealmMyTeam) ob).getId() ).equalTo("completed", false).equalTo("assignee", userId)
+                .between("expire", current, tomorrow.getTimeInMillis()).findAll();
+        imgTask.setVisibility(tasks.size() > 0? View.VISIBLE: View.GONE);
     }
 
     private void myLifeListInit(FlexboxLayout flexboxLayout) {
