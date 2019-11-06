@@ -94,25 +94,14 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
             textViewArray[itemCnt].setText(((RealmMyLibrary) obj).getTitle());
         } else if (obj instanceof RealmMyCourse) {
             handleClick(((RealmMyCourse) obj).getCourseId(), ((RealmMyCourse) obj).getCourseTitle(), new TakeCourseFragment(), textViewArray[itemCnt]);
-        } else if (obj instanceof RealmMyTeam) {
-            if (((RealmMyTeam) obj).getTeamType().equals("sync")) {
-                textViewArray[itemCnt].setTypeface(null, Typeface.BOLD);
-            }
-            handleClick(((RealmMyTeam) obj).getId(), ((RealmMyTeam) obj).getName(), new TeamDetailFragment(), textViewArray[itemCnt]);
-        } else if (obj instanceof RealmMeetup) {
+        }else if (obj instanceof RealmMeetup) {
             handleClick(((RealmMeetup) obj).getMeetupId(), ((RealmMeetup) obj).getTitle(), new MyMeetupDetailFragment(), textViewArray[itemCnt]);
-        } else if (obj instanceof RealmMyLife) {
-            // handleClickMyLife(((RealmMyLife) obj).get_id(),((RealmMyLife) obj).getTitle(),((RealmMyLife) obj).getImageId(),li[itemCnt]);
         }
     }
 
     public void setTextColor(TextView textView, int itemCnt, Class c) {
         textView.setTextColor(getResources().getColor(R.color.md_black_1000));
-        if ((itemCnt % 2) == 0) {
-            textView.setBackgroundResource(R.drawable.light_rect);
-        } else {
-            textView.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
-        }
+        setBackgroundColor(textView, itemCnt);
     }
 
     public View getLayout(int itemCnt, final RealmObject obj) {
@@ -120,11 +109,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         ImageView img = v.findViewById(R.id.img);
         TextView counter = v.findViewById(R.id.tv_count);
         TextView name = v.findViewById(R.id.tv_name);
-        if ((itemCnt % 2) == 0) {
-            v.setBackgroundResource(R.drawable.light_rect);
-        } else {
-            v.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
-        }
+        setBackgroundColor(v, itemCnt);
         String title = ((RealmMyLife) obj).getTitle();
 
         img.setImageResource(getResources().getIdentifier(((RealmMyLife) obj).getImageId(), "drawable", getActivity().getPackageName()));
@@ -156,5 +141,13 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
         myLifeList.add(new RealmMyLife("ic_contacts", userId, getString(R.string.contacts)));
         myLifeList.add(new RealmMyLife("ic_mypersonals", userId, getString(R.string.mypersonals)));
         return myLifeList;
+    }
+
+    public void setBackgroundColor(View v, int count) {
+        if ((count % 2) == 0) {
+            v.setBackgroundResource(R.drawable.light_rect);
+        } else {
+            v.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
+        }
     }
 }
