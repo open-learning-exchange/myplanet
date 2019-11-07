@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.callback.NotificationCallback;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -42,7 +43,7 @@ import java.util.List;
 
 import io.realm.RealmObject;
 
-public class BaseDashboardFragmentPlugin extends BaseContainerFragment {
+public class BaseDashboardFragmentPlugin extends BaseContainerFragment  {
     public void handleClick(final String id, String title, final Fragment f, TextView v) {
         v.setText(title);
         v.setOnClickListener(view -> {

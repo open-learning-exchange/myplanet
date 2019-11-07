@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.ui.submission;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -43,6 +45,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     HashMap<String, RealmStepExam> exams;
     List<RealmSubmission> submissions;
     RealmUserModel user;
+
     public static Fragment newInstance(String type) {
         MySubmissionFragment fragment = new MySubmissionFragment();
         Bundle b = new Bundle();
@@ -82,7 +85,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         rvSurvey.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvSurvey.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         submissions = mRealm.where(RealmSubmission.class).findAll();
-        createHashMap(submissions);
+        exams = RealmSubmission.getExamMap(mRealm, submissions);
         setData("");
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -115,21 +118,6 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         }
     }
 
-    private void createHashMap(List<RealmSubmission> submissions) {
-        for (RealmSubmission sub : submissions) {
-            String id = sub.getParentId();
-            if (checkParentId(sub.getParentId())) {
-                id = sub.getParentId().split("@")[0];
-            }
-            RealmStepExam survey = mRealm.where(RealmStepExam.class).equalTo("id", id).findFirst();
-            if (survey != null)
-                exams.put(sub.getParentId(), survey);
-        }
-    }
-
-    private boolean checkParentId(String parentId) {
-        return parentId != null && parentId.contains("@");
-    }
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
