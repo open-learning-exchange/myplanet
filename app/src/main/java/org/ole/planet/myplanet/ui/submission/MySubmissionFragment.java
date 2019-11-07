@@ -133,7 +133,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     private void setData(String s) {
         RealmQuery q = null;
         if (type.equals("survey")) {
-            q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey");
+            q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("type", "survey");
         } else if (type.equals("survey_submission")) {
             q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).notEqualTo("status", "pending").equalTo("type", "survey");
         } else {
