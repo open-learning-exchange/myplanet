@@ -33,6 +33,7 @@ public class RealmTeamTask extends RealmObject {
         task.set_id(JsonUtils.getString("_id", obj));
         task.set_rev(JsonUtils.getString("_rev", obj));
         task.setTitle(JsonUtils.getString("title", obj));
+        task.setDeadline(JsonUtils.getLong("deadline", obj));
         task.setDescription(JsonUtils.getString("description", obj));
         task.setLink(new Gson().toJson(JsonUtils.getJsonObject("link", obj)));
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
