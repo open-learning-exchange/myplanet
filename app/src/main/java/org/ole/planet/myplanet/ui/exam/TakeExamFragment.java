@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.ui.exam;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.core.widget.NestedScrollView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,18 +30,16 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
 import io.realm.RealmList;
+import io.realm.RealmQuery;
 import io.realm.Sort;
+
 import org.ole.planet.myplanet.utilities.CameraUtils;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, CameraUtils.ImageCaptureCallback {
 
     TextView tvQuestionCount, header, body;
@@ -81,20 +81,23 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         initExam();
         questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
+        RealmQuery q = mRealm.where(RealmSubmission.class)
+                .equalTo("userId", user.getId())
+                .equalTo("parentId", exam.getId())
+                .sort("startTime", Sort.DESCENDING);
         if (!isMySurvey)
-            sub = mRealm.where(RealmSubmission.class)
-                    .equalTo("userId", user.getId())
-                    .equalTo("parentId", exam.getId())
-                    .sort("startTime", Sort.DESCENDING)
-                    .equalTo("status", "pending")
-                    .findFirst();
-//        Utilities.log("Ans size "  + sub.getAnswers().size());
+            q = q.equalTo("status", "pending");
+
+        sub = (RealmSubmission) q.findFirst();
+
         if (questions.size() > 0) {
             createSubmission();
             Utilities.log("Current index " + currentIndex);
             startExam(questions.get(currentIndex));
         } else {
             container.setVisibility(View.GONE);
+            btnSubmit.setVisibility(View.GONE);
+            tvQuestionCount.setText("No questions available");
             Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
         }
     }
@@ -102,6 +105,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private void createSubmission() {
         startTransaction();
+        if (sub != null && sub.getStatus().equals("complete")) {
+            sub.setAnswers(new RealmList<>());
+        }
         sub = RealmSubmission.createSubmission(sub, questions, mRealm);
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
@@ -128,7 +134,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         if (question.getType().equalsIgnoreCase("select")) {
             listChoices.setVisibility(View.VISIBLE);
             selectQuestion(question);
-        } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea") ) {
+        } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
             etAnswer.setVisibility(View.VISIBLE);
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
@@ -145,8 +151,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public void setButtonText() {
         if (currentIndex == questions.size() - 1) {
             btnSubmit.setText("Finish");
-        }
-        else {
+        } else {
             btnSubmit.setText("Submit");
         }
     }
@@ -193,7 +198,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public void onClick(View view) {
         if (view.getId() == R.id.btn_submit) {
             String type = questions.get(currentIndex).getType();
-           showTextInput(type);
+            showTextInput(type);
             if (showErrorMessage("Please select / write your answer to continue")) {
                 return;
             }
@@ -202,9 +207,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             boolean cont = updateAnsDb();
             try {
                 CameraUtils.CapturePhoto(this);
-            }
-            catch(Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
@@ -268,13 +271,13 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         Arrays.sort(ar1);
         Arrays.sort(ar2);
         Utilities.log(Arrays.toString(ar1) + " " + Arrays.toString(ar2));
-       return Arrays.equals(ar1, ar2);
+        return Arrays.equals(ar1, ar2);
 //        for (int i = 0; i < ar2.length; i++) {
 //            if (!ar1[i].equalsIgnoreCase(ar2[i]))
 //                return false;
 //        }
 
-     //   return true;
+        //   return true;
     }
 
     private void startTransaction() {
@@ -292,7 +295,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-        Utilities.log("b = " + b);
         if (b) {
             addAnswer(compoundButton);
         } else if (compoundButton.getTag() != null) {

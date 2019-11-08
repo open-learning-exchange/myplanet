@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.base;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -11,10 +12,12 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
@@ -29,9 +32,12 @@ import org.ole.planet.myplanet.model.Download;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
+import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.submission.AdapterMySubmission;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.DialogUtils;
@@ -39,6 +45,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Realm;
@@ -117,8 +124,30 @@ public abstract class BaseResourceFragment extends Fragment {
                 Utilities.log("Planet not available");
             }
         });
+    }
 
-
+    public void showPendingSurveyDialog() {
+        model = new UserProfileDbHandler(getActivity()).getUserModel();
+        List<RealmSubmission> list = mRealm.where(RealmSubmission.class).equalTo("userId", model.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll();
+        if (list.size() == 0) {
+            return;
+        }
+        HashMap<String, RealmStepExam> exams = RealmSubmission.getExamMap(mRealm, list);
+        ArrayAdapter arrayAdapter = new ArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, list) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                if (convertView ==null)
+                    convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
+                    if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
+                        ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                    else{
+                        ((TextView) convertView).setText("N/A");
+                    }
+                    return convertView;
+            }
+        };
+        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton("Dismiss", null).show();
     }
 
     public void startDownload(ArrayList urls) {
@@ -208,7 +237,7 @@ public abstract class BaseResourceFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mRealm= new DatabaseService(getActivity()).getRealmInstance();
+        mRealm = new DatabaseService(getActivity()).getRealmInstance();
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
 

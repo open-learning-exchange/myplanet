@@ -7,6 +7,7 @@ import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
 import android.widget.CompoundButton;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmAnswer;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
@@ -93,7 +94,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             currentIndex = currentIndex + 1;
             continueExam();
         } else {
-            Utilities.toast(getActivity(), "Invalid answer");
+            Utilities.toast(getActivity(), getString(R.string.incorrect_ans));
         }
     }
 
@@ -130,7 +131,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void showUserInfoDialog() {
-        if (!isMySurvey) {
+        if (!isMySurvey || !exam.isFromNation()) {
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction())
