@@ -20,7 +20,6 @@
             android:tint="@color/md_red_500"
             android:layout_width="@dimen/_24dp"
             android:layout_margin="@dimen/padding_small"
-
             android:visibility="gone"
             android:layout_height="@dimen/_24dp" />
 
@@ -28,7 +27,7 @@
         <ImageView
             android:id="@+id/img_task"
             android:layout_margin="@dimen/padding_small"
-            app:srcCompat="@drawable/ic_warning"
+            app:srcCompat="@drawable/ic_warn"
             android:layout_width="@dimen/_24dp"
             android:visibility="gone"
             android:tint="@color/md_red_500"
