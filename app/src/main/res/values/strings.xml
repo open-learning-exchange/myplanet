@@ -353,6 +353,7 @@
     <string name="chats">Chats</string>
     <string name="select_health_member">Select Member</string>
     <string name="notifications">Notifications</string>
+    <string name="diagnosis_note">Diagnosis Note</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
@@ -382,6 +383,7 @@
         <item>Diarrhoea diseases</item>
         <item>Ebola</item>
         <item>Epilepsy</item>
+        <item>Female genital mutilation (FGM)</item>
         <item>Influenza</item>
         <item>Ischaemic heat disease</item>
         <item>Malaria</item>

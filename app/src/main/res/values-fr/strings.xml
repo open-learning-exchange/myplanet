@@ -302,4 +302,5 @@
     <string name="chats">Chats</string>
     <string name="select_health_member">Select Member</string>
     <string name="notifications">Notifications</string>
+    <string name="diagnosis_note">Diagnosis Note</string>
 </resources>

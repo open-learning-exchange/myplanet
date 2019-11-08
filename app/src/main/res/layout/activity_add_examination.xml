@@ -202,7 +202,7 @@
                     android:id="@+id/et_diag"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/diagnosis" />
+                    android:hint="@string/diagnosis_note" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
