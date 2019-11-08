@@ -302,4 +302,5 @@
     <string name="chats">Chats</string>
     <string name="select_health_member">Select Member</string>
     <string name="notifications">Notifications</string>
+    <string name="incorrect_ans">Incorrect answer, please try again</string>
 </resources>
