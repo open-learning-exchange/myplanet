@@ -36,6 +36,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     RealmMyHealthPojo pojo;
     RealmMyHealth health = null;
     FlexboxLayout flexboxLayout;
+    String diag = "";
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
@@ -125,7 +126,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             sign.setTemperature(etTemperature.getText().toString());
             sign.setPulse(etPulseRate.getText().toString());
             sign.setWeight(etWeight.getText().toString());
-            sign.setDiagnosis(etDiag.getText().toString());
+            sign.setDiagnosisNote(etDiag.getText().toString());
+            sign.setDiagnosis(diag);
             sign.setHearing(etHearing.getText().toString());
             sign.setHeight(etHeight.getText().toString());
             sign.setImmunizations(etImmunization.getText().toString());
@@ -169,12 +171,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         String text = compoundButton.getText().toString();
-        String diag = etDiag.getText().toString();
+//        String diag = etDiag.getText().toString();
         if (b) {
-                etDiag.setText(diag +"#" + text +" ");
+              diag =   diag +"," + text +" ";
         }else{
-           diag =  diag.replace("#"+ text +" ", "");
-            etDiag.setText(diag);
+           diag =  diag.replace(","+ text +" ", "");
+//            etDiag.setText(diag);
         }
     }
 }
