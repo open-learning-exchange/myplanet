@@ -137,20 +137,17 @@ public abstract class BaseResourceFragment extends Fragment {
             @NonNull
             @Override
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-                if (convertView != null) {
+                if (convertView ==null)
+                    convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
                     if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
                         ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                    else{
+                        ((TextView) convertView).setText("N/A");
+                    }
                     return convertView;
-                }
-                return super.getView(position, convertView, parent);
             }
         };
-        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true);
-            }
-        }).setPositiveButton("Dismiss", null).show();
+        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton("Dismiss", null).show();
     }
 
     public void startDownload(ArrayList urls) {
