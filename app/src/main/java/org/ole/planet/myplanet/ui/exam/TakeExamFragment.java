@@ -102,6 +102,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             startExam(questions.get(currentIndex));
         } else {
             container.setVisibility(View.GONE);
+            btnSubmit.setVisibility(View.GONE);
             tvQuestionCount.setText("No questions available");
             Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
         }
