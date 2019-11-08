@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.security.PrivateKey;
+import java.sql.Time;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -18,9 +19,9 @@ import io.realm.annotations.PrimaryKey;
 public class RealmTeamTask extends RealmObject {
     @PrimaryKey
     private String id;
-    private String _id, _rev, title, deadline, description, link, sync, teamId;
+    private String _id, _rev, title, description, link, sync, teamId;
     private String assignee;
-    private long expire;
+    private long deadline;
     private boolean completed;
     private boolean notified;
 
@@ -33,7 +34,6 @@ public class RealmTeamTask extends RealmObject {
         task.set_rev(JsonUtils.getString("_rev", obj));
         task.setTitle(JsonUtils.getString("title", obj));
         task.setDescription(JsonUtils.getString("description", obj));
-        task.setDeadline(JsonUtils.getString("deadline", obj).replaceAll("T", " ").replaceAll(".000Z", ""));
         task.setLink(new Gson().toJson(JsonUtils.getJsonObject("link", obj)));
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
         task.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj)));
@@ -46,6 +46,7 @@ public class RealmTeamTask extends RealmObject {
     public boolean isNotified() {
         return notified;
     }
+
 
     public void setNotified(boolean notified) {
         this.notified = notified;
@@ -67,13 +68,12 @@ public class RealmTeamTask extends RealmObject {
         return object;
     }
 
-
-    public long getExpire() {
-        return expire;
+    public long getDeadline() {
+        return deadline;
     }
 
-    public void setExpire(long expire) {
-        this.expire = expire;
+    public void setDeadline(long deadline) {
+        this.deadline = deadline;
     }
 
     public String getAssignee() {
@@ -124,14 +124,6 @@ public class RealmTeamTask extends RealmObject {
         this.title = title;
     }
 
-    public String getDeadline() {
-        return deadline;
-    }
-
-    public void setDeadline(String deadline) {
-        this.deadline = deadline;
-        this.expire = TimeUtils.dateToLong(this.deadline);
-    }
 
     public String getDescription() {
         return description;

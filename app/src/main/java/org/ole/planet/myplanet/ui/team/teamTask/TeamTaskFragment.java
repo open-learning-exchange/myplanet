@@ -4,11 +4,13 @@ package org.ole.planet.myplanet.ui.team.teamTask;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,7 +67,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
                     deadline.set(Calendar.HOUR_OF_DAY, hourOfDay);
                     deadline.set(Calendar.MINUTE, minute);
                     if (datePicker != null)
-                        datePicker.setText(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+                        datePicker.setText(TimeUtils.formatDate(deadline.getTimeInMillis(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
                 }, deadline.get(Calendar.HOUR_OF_DAY), deadline.get(Calendar.MINUTE), true);
         timePickerDialog.show();
     }
@@ -92,9 +94,9 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         if (t != null) {
             title.setText(t.getTitle());
             description.setText(t.getDescription());
-            datePicker.setText(t.getDeadline());
+            datePicker.setText(TimeUtils.formatDate(t.getDeadline()));
             deadline = Calendar.getInstance();
-            deadline.setTime(new Date(t.getExpire()));
+            deadline.setTime(new Date(t.getDeadline()));
         }
 
         Calendar myCalendar = Calendar.getInstance();
@@ -122,7 +124,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             t = mRealm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
         t.setTitle(task);
         t.setDescription(desc);
-        t.setDeadline(TimeUtils.formatDateTZ(deadline.getTimeInMillis()));
+        t.setDeadline(deadline.getTimeInMillis());
         t.setTeamId(teamId);
         JsonObject ob = new JsonObject();
         ob.addProperty("teams", teamId);
@@ -174,7 +176,10 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             mRealm.beginTransaction();
         realmTeamTask.setCompleted(b);
         mRealm.commitTransaction();
-        try{rvTask.getAdapter().notifyDataSetChanged();}catch(Exception err){}
+        try {
+            rvTask.getAdapter().notifyDataSetChanged();
+        } catch (Exception err) {
+        }
     }
 
     @Override
@@ -206,8 +211,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
             realmTeamTask.setAssignee(userId);
+            Utilities.toast(getActivity(), getString(R.string.assign_task_to) + " " + user.getName());
             mRealm.commitTransaction();
-            Utilities.toast(getActivity(), getString(R.string.assign_task_to) + user.getName());
             adapter.notifyDataSetChanged();
         }).show();
     }

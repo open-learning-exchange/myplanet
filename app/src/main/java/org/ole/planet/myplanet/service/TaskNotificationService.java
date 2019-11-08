@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.Calendar;
 import java.util.List;
@@ -25,10 +26,10 @@ public class TaskNotificationService extends JobService {
         RealmUserModel user = new UserProfileDbHandler(this).getUserModel();
         if (user != null) {
             List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("completed", false).equalTo("assignee", user.getId()).equalTo("notified", false)
-                    .between("expire", current, tomorrow.getTimeInMillis()).findAll();
+                    .between("deadline", current, tomorrow.getTimeInMillis()).findAll();
             mRealm.beginTransaction();
             for (RealmTeamTask in : tasks) {
-                NotificationUtil.create(this, R.drawable.ole_logo, in.getTitle(), "Task expires on " + in.getDeadline());
+                NotificationUtil.create(this, R.drawable.ole_logo, in.getTitle(), "Task expires on " + TimeUtils.formatDate(in.getDeadline()));
                 in.setNotified(true);
             }
             mRealm.commitTransaction();
