@@ -30,8 +30,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -42,9 +40,6 @@ import io.realm.Sort;
 
 import org.ole.planet.myplanet.utilities.CameraUtils;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, CameraUtils.ImageCaptureCallback {
 
     TextView tvQuestionCount, header, body;
@@ -86,7 +81,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         initExam();
         questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
         tvQuestionCount.setText("Question : 1/" + questions.size());
-//        if (!isMySurvey)
         RealmQuery q = mRealm.where(RealmSubmission.class)
                 .equalTo("userId", user.getId())
                 .equalTo("parentId", exam.getId())
@@ -102,6 +96,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             startExam(questions.get(currentIndex));
         } else {
             container.setVisibility(View.GONE);
+            btnSubmit.setVisibility(View.GONE);
+            tvQuestionCount.setText("No questions available");
             Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
         }
     }
@@ -299,7 +295,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-        Utilities.log("b = " + b);
         if (b) {
             addAnswer(compoundButton);
         } else if (compoundButton.getTag() != null) {
