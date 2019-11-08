@@ -65,7 +65,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         initViews();
-        ;
+
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();

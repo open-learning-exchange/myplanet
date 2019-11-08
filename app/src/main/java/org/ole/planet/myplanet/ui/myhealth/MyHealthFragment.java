@@ -194,7 +194,7 @@ public class MyHealthFragment extends Fragment {
             }
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
-            rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list));
+            rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list,mh ));
             List<RealmExamination> finalList = list;
             rvRecord.post(() -> rvRecord.scrollToPosition(finalList.size() - 1));
         } else {
