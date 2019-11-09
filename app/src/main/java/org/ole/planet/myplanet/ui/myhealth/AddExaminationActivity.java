@@ -123,6 +123,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             CheckBox c = new CheckBox(this);
             if (examination!=null){
                 c.setChecked(examination.getDiagnosis().contains(s));
+                diag += examination.getDiagnosis().contains(s) ? s +"," : "";
             }
             c.setPadding(DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8));
             c.setText(s);
