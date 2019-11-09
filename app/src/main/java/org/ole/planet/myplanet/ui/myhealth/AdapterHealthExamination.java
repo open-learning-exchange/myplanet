@@ -70,6 +70,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
 
         tvCondition.setText("Observations & Notes : " + realmExamination.getNotes() + "\n" +
                 "Diagnosis : " + realmExamination.getDiagnosis() + "\n" +
+                "Diagnosis Note : " + realmExamination.getDiagnosisNote() + "\n" +
                 "Treatments : " + realmExamination.getTreatments() + "\n" +
                 "Medications : " + realmExamination.getMedications() + "\n" +
                 "Immunizations : " + realmExamination.getImmunizations() + "\n" +
