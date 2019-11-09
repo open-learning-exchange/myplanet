@@ -82,12 +82,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 .setPositiveButton("OK", null).create();
         long time = new Date().getTime() - 5000 * 60;
         if (realmExamination.getDate() >= time) {
-            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Edit", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialogInterface, int i) {
-                    context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("position", position).putExtra("health", mh.get_id()));
-                }
-            });
+            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Edit", (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("position", position).putExtra("userId", mh.get_id())));
         }
         dialog.show();
     }

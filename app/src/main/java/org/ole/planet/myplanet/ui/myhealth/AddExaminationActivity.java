@@ -82,9 +82,38 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         if (health == null || health.getProfile() == null) {
             initHealth();
         }
+        initExamination();
+
         findViewById(R.id.btn_save).setOnClickListener(view -> {
             saveData();
         });
+    }
+
+    private void initExamination() {
+        List<RealmExamination> list = health.getEvents();
+        Utilities.log("TEMP ");
+        if (getIntent().hasExtra("position") && list!=null){
+            int position = getIntent().getIntExtra("position",0);
+                RealmExamination examination = list.get(position);
+                Utilities.log("TEMP " + examination.getTemperature());
+                etTemperature.setText(examination.getTemperature());
+                etPulseRate.setText(examination.getPulse());
+                etBloodPressure.setText(examination.getBp());
+                etTemperature.setText(examination.getTemperature());
+                etHeight.setText(examination.getHeight());
+                etWeight.setText(examination.getHeight());
+                etVision.setText(examination.getHeight());
+                etHearing.setText(examination.getHeight());
+                etObservation.setText(examination.getHeight());
+                etDiag.setText(examination.getHeight());
+                etTretments.setText(examination.getHeight());
+                etMedications.setText(examination.getHeight());
+                etImmunization.setText(examination.getHeight());
+                etAllergies.setText(examination.getAllergies());
+                etXray.setText(examination.getXrays());
+                etLabtest.setText(examination.getTests());
+                etReferrals.setText(examination.getReferrals());
+        }
     }
 
     private void showCheckbox() {
@@ -141,7 +170,14 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             if (list == null) {
                 list = new ArrayList<>();
             }
-            list.add(sign);
+
+            if (getIntent().hasExtra("position")) {
+                int pos = getIntent().getIntExtra("position", 0);
+                list.remove(pos);
+                list.add(pos, sign);
+            } else {
+                list.add(sign);
+            }
             health.setEvents(list);
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
@@ -171,9 +207,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         String text = compoundButton.getText().toString();
         String diag = etDiag.getText().toString();
         if (b) {
-                etDiag.setText(diag +"#" + text +" ");
-        }else{
-           diag =  diag.replace("#"+ text +" ", "");
+            etDiag.setText(diag + "#" + text + " ");
+        } else {
+            diag = diag.replace("#" + text + " ", "");
             etDiag.setText(diag);
         }
     }
