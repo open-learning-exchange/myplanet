@@ -121,9 +121,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         flexboxLayout.removeAllViews();
         for (String s : arr) {
             CheckBox c = new CheckBox(this);
-            if (examination!=null){
+            if (examination != null) {
                 c.setChecked(examination.getDiagnosis().contains(s));
-                diag += examination.getDiagnosis().contains(s) ? s +"," : "";
+                diag += examination.getDiagnosis().contains(s) ? s + "," : "";
             }
             c.setPadding(DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8));
             c.setText(s);
@@ -151,38 +151,46 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void saveData() {
-        try {
-            RealmExamination sign = new RealmExamination();
-            sign.setAllergies(etAllergies.getText().toString());
-            sign.setBp(etBloodPressure.getText().toString());
-            sign.setTemperature(etTemperature.getText().toString());
-            sign.setPulse(etPulseRate.getText().toString());
-            sign.setWeight(etWeight.getText().toString());
-            sign.setDiagnosisNote(etDiag.getText().toString());
-            sign.setDiagnosis(diag);
-            sign.setHearing(etHearing.getText().toString());
-            sign.setHeight(etHeight.getText().toString());
-            sign.setImmunizations(etImmunization.getText().toString());
-            sign.setTests(etLabtest.getText().toString());
-            sign.setXrays(etXray.getText().toString());
-            sign.setVision(etVision.getText().toString());
-            sign.setTreatments(etTretments.getText().toString());
-            sign.setReferrals(etReferrals.getText().toString());
-            sign.setNotes(etObservation.getText().toString());
-            sign.setMedications(etMedications.getText().toString());
-            sign.setDate(new Date().getTime());
-            List<RealmExamination> list = health.getEvents();
-            if (list == null) {
-                list = new ArrayList<>();
-            }
 
-            if (getIntent().hasExtra("position")) {
-                int pos = getIntent().getIntExtra("position", 0);
-                list.remove(pos);
-                list.add(pos, sign);
-            } else {
-                list.add(sign);
-            }
+        RealmExamination sign = new RealmExamination();
+        sign.setAllergies(etAllergies.getText().toString());
+        sign.setBp(etBloodPressure.getText().toString());
+        sign.setTemperature(etTemperature.getText().toString());
+        sign.setPulse(etPulseRate.getText().toString());
+        sign.setWeight(etWeight.getText().toString());
+        sign.setDiagnosisNote(etDiag.getText().toString());
+        sign.setDiagnosis(diag);
+        sign.setHearing(etHearing.getText().toString());
+        sign.setHeight(etHeight.getText().toString());
+        sign.setImmunizations(etImmunization.getText().toString());
+        sign.setTests(etLabtest.getText().toString());
+        sign.setXrays(etXray.getText().toString());
+        sign.setVision(etVision.getText().toString());
+        sign.setTreatments(etTretments.getText().toString());
+        sign.setReferrals(etReferrals.getText().toString());
+        sign.setNotes(etObservation.getText().toString());
+        sign.setMedications(etMedications.getText().toString());
+        sign.setDate(new Date().getTime());
+        List<RealmExamination> list = health.getEvents();
+        if (list == null) {
+            list = new ArrayList<>();
+        }
+
+        if (getIntent().hasExtra("position")) {
+            int pos = getIntent().getIntExtra("position", 0);
+            list.remove(pos);
+            list.add(pos, sign);
+        } else {
+            list.add(sign);
+        }
+        createPojo(list);
+        Utilities.toast(this, "Added successfully");
+        finish();
+
+    }
+
+    private void createPojo(List<RealmExamination> list) {
+        try {
             health.setEvents(list);
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
@@ -191,10 +199,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             }
             pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
             mRealm.commitTransaction();
-            Utilities.toast(this, "Added successfully");
-            finish();
         } catch (Exception e) {
-            e.printStackTrace();
             Utilities.toast(this, "Unable to add health record.");
         }
     }

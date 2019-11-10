@@ -68,16 +68,8 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 "Vision : " + realmExamination.getVision() + "\n" +
                 "Hearing : " + realmExamination.getHearing() + "\n");
 
-        tvCondition.setText("Observations & Notes : " + realmExamination.getNotes() + "\n" +
-                "Diagnosis : " + realmExamination.getDiagnosis() + "\n" +
-                "Diagnosis Note : " + realmExamination.getDiagnosisNote() + "\n" +
-                "Treatments : " + realmExamination.getTreatments() + "\n" +
-                "Medications : " + realmExamination.getMedications() + "\n" +
-                "Immunizations : " + realmExamination.getImmunizations() + "\n" +
-                "Allergies : " + realmExamination.getAllergies() + "\n" +
-                "X-rays : " + realmExamination.getXrays() + "\n" +
-                "Lab Tests : " + realmExamination.getTests() + "\n" +
-                "Referrals : " + realmExamination.getReferrals() + "\n");
+        tvCondition.setText("Observations & Notes : " + realmExamination.getNotes() + "\n" + "Diagnosis : " + realmExamination.getDiagnosis() + "\n" + "Diagnosis Note : " + realmExamination.getDiagnosisNote() + "\n" +
+                "Treatments : " + realmExamination.getTreatments() + "\n" + "Medications : " + realmExamination.getMedications() + "\n" + "Immunizations : " + realmExamination.getImmunizations() + "\n" + "Allergies : " + realmExamination.getAllergies() + "\n" + "X-rays : " + realmExamination.getXrays() + "\n" + "Lab Tests : " + realmExamination.getTests() + "\n" + "Referrals : " + realmExamination.getReferrals() + "\n");
         AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
                 .setView(v)
                 .setPositiveButton("OK", null).create();
