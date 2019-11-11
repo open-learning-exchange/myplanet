@@ -158,7 +158,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
             imgChat.setVisibility(notification.getLastCount() < chatCount ? View.VISIBLE : View.GONE);
         }
         List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("teamId", ((RealmMyTeam) ob).getId()).equalTo("completed", false).equalTo("assignee", userId)
-                .between("expire", current, tomorrow.getTimeInMillis()).findAll();
+                .between("deadline", current, tomorrow.getTimeInMillis()).findAll();
         imgTask.setVisibility(tasks.size() > 0 ? View.VISIBLE : View.GONE);
     }
 
