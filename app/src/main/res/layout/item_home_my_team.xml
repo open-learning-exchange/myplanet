@@ -10,25 +10,28 @@
 
     <LinearLayout
         android:layout_width="match_parent"
+        android:layout_gravity="right"
+        android:gravity="right"
         android:layout_height="wrap_content">
 
         <ImageView
             android:id="@+id/img_chat"
-            app:srcCompat="@drawable/ic_messages"
+            app:srcCompat="@drawable/message_alert"
             android:tint="@color/md_red_500"
-            android:layout_width="@dimen/_20dp"
+            android:layout_width="@dimen/_24dp"
+            android:layout_margin="@dimen/padding_small"
             android:visibility="gone"
-            android:layout_height="@dimen/_20dp" />
+            android:layout_height="@dimen/_24dp" />
 
 
         <ImageView
             android:id="@+id/img_task"
-            android:layout_marginLeft="@dimen/padding_small"
-            app:srcCompat="@drawable/ic_my_survey"
-            android:layout_width="@dimen/_20dp"
+            android:layout_margin="@dimen/padding_small"
+            app:srcCompat="@drawable/ic_warn"
+            android:layout_width="@dimen/_24dp"
             android:visibility="gone"
             android:tint="@color/md_red_500"
-            android:layout_height="@dimen/_20dp" />
+            android:layout_height="@dimen/_24dp" />
 
     </LinearLayout>
 
