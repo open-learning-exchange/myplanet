@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.team.teamTask;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -51,11 +54,8 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof ViewHolderTask) {
             ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
-            try {
-                ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(Long.parseLong(list.get(position).getDeadline())));
-            } catch (Exception df) {
-                ((ViewHolderTask) holder).deadline.setText("Deadline : " + list.get(position).getDeadline());
-            }
+            Utilities.log(list.get(position).getDeadline() + "");
+            ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(list.get(position).getDeadline()));
             showAssignee(holder, list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) listener.onCheckChange(list.get(position), b);

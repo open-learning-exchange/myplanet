@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,11 +56,14 @@ public class HelpWantedFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        String boldName = "<b>" + "Name : " + "</b>";
+        String boldEmail = "<b>" + "Email : " + "</b>";
+        String boldPhone = "<b>" + "Phone Number : " + "</b>";
         if (manager != null) {
             llData.setVisibility(View.VISIBLE);
-            name.setText("Name : " + JsonUtils.getString("name", manager));
-            email.setText("Email : " + JsonUtils.getString("name", manager));
-            phone.setText("Phone Number : " + JsonUtils.getString("phoneNumber", manager));
+            name.setText(Html.fromHtml(boldName + JsonUtils.getString("name", manager)));
+            email.setText(Html.fromHtml(boldEmail + JsonUtils.getString("name", manager)));
+            phone.setText(Html.fromHtml(boldPhone + JsonUtils.getString("phoneNumber", manager)));
         }else{
             llData.setVisibility(View.GONE);
             nodata.setText("No data available");
