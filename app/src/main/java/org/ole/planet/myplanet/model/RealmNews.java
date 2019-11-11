@@ -50,7 +50,7 @@ public class RealmNews extends RealmObject {
 
     public static void insert(Realm mRealm, JsonObject doc) {
         Utilities.log("Insert news " + doc);
-        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", JsonUtils.getString("_id", doc)).findFirst();
+        RealmNews news = mRealm.where(RealmNews.class).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst();
         if (news == null) {
             news = mRealm.createObject(RealmNews.class, JsonUtils.getString("_id", doc));
         }
