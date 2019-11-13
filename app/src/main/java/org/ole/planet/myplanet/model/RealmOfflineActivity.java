@@ -132,6 +132,7 @@ public class RealmOfflineActivity extends RealmObject {
         ob.addProperty("createdOn", realm_offlineActivities.getCreatedOn());
         ob.addProperty("parentCode", realm_offlineActivities.getParentCode());
         ob.addProperty("androidId", NetworkUtils.getMacAddr());
+        ob.addProperty("deviceName", NetworkUtils.getDeviceName());
         if (realm_offlineActivities.get_id() != null) {
             ob.addProperty("_id", realm_offlineActivities.getLogoutTime());
         }
@@ -160,6 +161,7 @@ public class RealmOfflineActivity extends RealmObject {
         activities.setUserName(JsonUtils.getString("user", act));
         activities.setLogoutTime(JsonUtils.getLong("logoutTime", act));
         activities.setAndroidId(JsonUtils.getString("androidId", act));
+
     }
 
     public void changeRev(JsonObject r) {
