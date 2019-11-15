@@ -304,4 +304,6 @@
     <string name="notifications">Notifications</string>
     <string name="incorrect_ans">Incorrect answer, please try again</string>
     <string name="diagnosis_note">Diagnosis Note</string>
+    <string name="menu_community">Community</string>
+    <string name="library">Library</string>
 </resources>
