@@ -78,12 +78,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete);
-            if (tvDelete!=null) {
-                tvDelete.setVisibility(View.VISIBLE);
-                tvDelete.setOnClickListener(view -> deleteSelected(false));
+           initDeleteButton();
                 if (v.findViewById(R.id.tv_add) != null)
                     v.findViewById(R.id.tv_add).setVisibility(View.GONE);
-            }
+
         }
         tvMessage = v.findViewById(R.id.tv_message);
         selectedItems = new ArrayList<>();
@@ -95,6 +93,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         recyclerView.setAdapter(getAdapter());
         if (isMyCourseLib) showDownloadDialog(getLibraryList(mRealm));
         return v;
+    }
+
+    protected  void initDeleteButton(){
+        if (tvDelete!=null) {
+            tvDelete.setVisibility(View.VISIBLE);
+            tvDelete.setOnClickListener(view -> deleteSelected(false));
+        }
     }
 
     @Override
