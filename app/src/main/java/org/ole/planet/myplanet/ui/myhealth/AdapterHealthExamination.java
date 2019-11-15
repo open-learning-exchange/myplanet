@@ -6,23 +6,30 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.model.RealmMyHealth;
+import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
+import java.util.Date;
 import java.util.List;
 
 public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmExamination> list;
+    private RealmMyHealthPojo mh;
 
-    public AdapterHealthExamination(Context context, List<RealmExamination> list) {
+    public AdapterHealthExamination(Context context, List<RealmExamination> list, RealmMyHealthPojo mh) {
         this.context = context;
         this.list = list;
+        this.mh = mh;
     }
 
     @NonNull
@@ -44,35 +51,33 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
             ((ViewHolderMyHealthExamination) holder).height.setText(list.get(position).getHeight());
             ((ViewHolderMyHealthExamination) holder).weight.setText(list.get(position).getWeight());
             ((ViewHolderMyHealthExamination) holder).vision.setText(list.get(position).getVision());
-            holder.itemView.setOnClickListener(view -> showAlert(list.get(position)));
+            holder.itemView.setOnClickListener(view -> showAlert(position));
         }
     }
 
-    private void showAlert(RealmExamination realmExamination) {
+    private void showAlert(int position) {
+        RealmExamination realmExamination = list.get(position);
         View v = LayoutInflater.from(context).inflate(R.layout.alert_examination, null);
         TextView tvVitals = v.findViewById(R.id.tv_vitals);
         TextView tvCondition = v.findViewById(R.id.tv_condition);
         tvVitals.setText("Temperature : " + realmExamination.getTemperature() + "\n" +
-                        "Pulse : " + realmExamination.getPulse() + "\n" +
-                        "Blood Pressure : " + realmExamination.getBp() + "\n" +
-                        "Height : " + realmExamination.getHeight() + "\n" +
-                        "Weight : " + realmExamination.getWeight() + "\n" +
-                        "Vision : " + realmExamination.getVision() + "\n" +
-                        "Hearing : " + realmExamination.getHearing() + "\n");
+                "Pulse : " + realmExamination.getPulse() + "\n" +
+                "Blood Pressure : " + realmExamination.getBp() + "\n" +
+                "Height : " + realmExamination.getHeight() + "\n" +
+                "Weight : " + realmExamination.getWeight() + "\n" +
+                "Vision : " + realmExamination.getVision() + "\n" +
+                "Hearing : " + realmExamination.getHearing() + "\n");
 
-        tvCondition.setText("Observations & Notes : " + realmExamination.getNotes() + "\n" +
-                "Diagnosis : " + realmExamination.getDiagnosis() + "\n" +
-                "Diagnosis Note : " + realmExamination.getDiagnosisNote() + "\n" +
-                "Treatments : " + realmExamination.getTreatments() + "\n" +
-                "Medications : " + realmExamination.getMedications() + "\n" +
-                "Immunizations : " + realmExamination.getImmunizations() + "\n" +
-                "Allergies : " + realmExamination.getAllergies() + "\n" +
-                "X-rays : " + realmExamination.getXrays() + "\n" +
-                "Lab Tests : " + realmExamination.getTests() + "\n" +
-                "Referrals : " + realmExamination.getReferrals() + "\n");
-        new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
+        tvCondition.setText("Observations & Notes : " + realmExamination.getNotes() + "\n" + "Diagnosis : " + realmExamination.getDiagnosis() + "\n" + "Diagnosis Note : " + realmExamination.getDiagnosisNote() + "\n" +
+                "Treatments : " + realmExamination.getTreatments() + "\n" + "Medications : " + realmExamination.getMedications() + "\n" + "Immunizations : " + realmExamination.getImmunizations() + "\n" + "Allergies : " + realmExamination.getAllergies() + "\n" + "X-rays : " + realmExamination.getXrays() + "\n" + "Lab Tests : " + realmExamination.getTests() + "\n" + "Referrals : " + realmExamination.getReferrals() + "\n");
+        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
                 .setView(v)
-                .setPositiveButton("OK", null).show();
+                .setPositiveButton("OK", null).create();
+        long time = new Date().getTime() - 5000 * 60;
+        if (realmExamination.getDate() >= time) {
+            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Edit", (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("position", position).putExtra("userId", mh.get_id())));
+        }
+        dialog.show();
     }
 
     @Override

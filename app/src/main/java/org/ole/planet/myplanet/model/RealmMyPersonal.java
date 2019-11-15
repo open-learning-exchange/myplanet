@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import java.util.Date;
 
@@ -36,6 +37,8 @@ public class RealmMyPersonal extends RealmObject {
         object.addProperty("resourceType", "Activities");
         object.addProperty("private", true);
         JsonObject object1 = new JsonObject();
+        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object1.addProperty("users", personal.getUserId());
         object.add("privateFor", object1);
         object.addProperty("mediaType", FileUtils.getMediaType(personal.getPath()));

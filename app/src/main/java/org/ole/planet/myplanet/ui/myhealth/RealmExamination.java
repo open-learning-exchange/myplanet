@@ -1,7 +1,8 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
 
-public class RealmExamination {
+import java.io.Serializable;
+public class RealmExamination implements Serializable {
     private String temperature, pulse, bp, height, weight, vision, hearing, notes, diagnosis,diagnosisNote, treatments, medications, immunizations, allergies, xrays, tests, referrals;
     private long date;
 

@@ -10,6 +10,7 @@ import com.google.gson.JsonParser;
 
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -93,6 +94,8 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("startTime", sub.getStartTime());
         object.addProperty("lastUpdateTime", sub.getLastUpdateTime());
         object.addProperty("status", sub.getStatus());
+        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
         if (exam != null)
             object.add("parent", RealmStepExam.serializeExam(mRealm, exam));

@@ -47,6 +47,7 @@ public class TimeUtils {
     }
 
 
+
     public static String currentDate() {
         Calendar c = Calendar.getInstance();
         SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
