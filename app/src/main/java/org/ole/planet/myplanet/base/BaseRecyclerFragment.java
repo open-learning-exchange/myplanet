@@ -78,10 +78,12 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete);
-            tvDelete.setVisibility(View.VISIBLE);
-            tvDelete.setOnClickListener(view -> deleteSelected(false));
-            if (v.findViewById(R.id.tv_add) != null)
-                v.findViewById(R.id.tv_add).setVisibility(View.GONE);
+            if (tvDelete!=null) {
+                tvDelete.setVisibility(View.VISIBLE);
+                tvDelete.setOnClickListener(view -> deleteSelected(false));
+                if (v.findViewById(R.id.tv_add) != null)
+                    v.findViewById(R.id.tv_add).setVisibility(View.GONE);
+            }
         }
         tvMessage = v.findViewById(R.id.tv_message);
         selectedItems = new ArrayList<>();
