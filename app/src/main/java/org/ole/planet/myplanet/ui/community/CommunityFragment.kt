@@ -13,16 +13,19 @@ import io.realm.Sort
 import kotlinx.android.synthetic.main.fragment_community.*
 
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.utilities.Utilities
 
 /**
  * A simple [Fragment] subclass.
  */
-class CommunityFragment : Fragment() {
-    lateinit var mRealm: Realm;
+class CommunityFragment : BaseContainerFragment() {
     var user: RealmUserModel? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -32,14 +35,22 @@ class CommunityFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        val list = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
+        mRealm =  DatabaseService(activity!!).realmInstance
+        user = UserProfileDbHandler(activity!!).userModel
+        btn_library.setOnClickListener {
+            homeItemClickListener.openCallFragment(LibraryFragment())
+        }
+        val list = mRealm.where(RealmNews::class.java)
                 .equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("replyTo", "", Case.INSENSITIVE)
+                .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
                 .findAll()
+//        val list = mRealm.where(RealmNews::class.java).findAll();
         rv_community.layoutManager = LinearLayoutManager(activity!!)
-        rv_community.adapter = AdapterNews(activity, list, user, null)
-
+        Utilities.log("list size " + list.size)
+        var adapter = AdapterNews(activity, list, user, null);
+        adapter.setmRealm(mRealm)
+        rv_community.adapter = adapter
     }
 
 }

@@ -77,6 +77,11 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 ((ViewHolderNews) holder).tvName.setText(news.getUserName());
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
+            Utilities.log(list.get(position).getMessage());
+            Utilities.log(list.get(position).getMessagePlanetCode());
+            Utilities.log(list.get(position).getCreatedOn());
+            Utilities.log(list.get(position).getViewableBy());
+            Utilities.log(list.get(position).getDocType());
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessage());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)

@@ -52,17 +52,10 @@
                 android:layout_weight="1" />
 
 
-
-
         </LinearLayout>
 
 
-
-
-
-
-    <com.sa90.materialrcmenu.ArcMenu
-        android:id="@+id/arc_menu"
+    <com.sa90.materialarcmenu.ArcMenu
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
@@ -98,7 +91,7 @@
             android:src="@drawable/ic_add" />
 
 
-    </com.sa90.materialrcmenu.ArcMenu>
+    </com.sa90.materialarcmenu.ArcMenu>
 
 
 </FrameLayout>
