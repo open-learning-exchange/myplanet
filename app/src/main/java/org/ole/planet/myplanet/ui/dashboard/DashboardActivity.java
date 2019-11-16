@@ -229,6 +229,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void menuAction(int selectedMenuId) {
+        Utilities.log("Selected");
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
                 openCallFragment(new BellDashboardFragment());
@@ -243,10 +244,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 break;
             case R.string.menu_courses:
                 openCallFragment(new CourseFragment());
-                break;
-            case R.string.menu_community:
-                Utilities.log("Community");
-                openCallFragment(new CommunityFragment());
                 break;
             case R.string.txt_myLibrary:
                 openMyFragment(new LibraryFragment());
