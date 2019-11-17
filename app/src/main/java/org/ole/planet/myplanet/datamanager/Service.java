@@ -16,6 +16,7 @@ import java.io.IOException;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
+import retrofit2.Response;
 
 public class Service {
     private Context context;
@@ -28,7 +29,7 @@ public class Service {
 
     public void checkVersion(CheckVersionCallback callback, SharedPreferences settings) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-        if (settings.getString("couchdbURL", "").isEmpty()){
+        if (settings.getString("couchdbURL", "").isEmpty()) {
             callback.onError("Config not awailable.", true);
             return;
         }
@@ -37,8 +38,37 @@ public class Service {
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).commit();
                 if (response.body() != null) {
+                    MyPlanet p = response.body();
                     preferences.edit().putString("versionDetail", new Gson().toJson(response.body())).commit();
-                    checkForUpdate(response.body(), callback);
+                    retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+//                            checkForUpdate(response.body(), callback);
+                            String respones = null;
+                            try {
+                                respones = response.body().string();
+                                if (respones != null) {
+                                    int currentVersion = VersionUtils.getVersionCode(context);
+                                    if (respones.equals(p.getLatestapk()) && currentVersion < p.getMinapkcode()) {
+                                        callback.onUpdateAvailable(p, true);
+                                    }
+                                } else {
+                                    callback.onError("Planet up to date", false);
+
+                                }
+
+                            } catch (IOException e) {
+                                callback.onError("Version not found", true);
+                            }
+
+                        }
+
+                        @Override
+                        public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+                        }
+                    });
+
                 } else {
                     callback.onError("Version not found", true);
                 }
@@ -59,7 +89,7 @@ public class Service {
             public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
                 if (callback != null && response.code() == 200) {
                     callback.isAvailable();
-                }else{
+                } else {
                     callback.notAvailable();
                 }
             }
@@ -71,16 +101,16 @@ public class Service {
         });
     }
 
-    private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
-        int currentVersion = VersionUtils.getVersionCode(context);
-        if (currentVersion < body.getMinapkcode())
-            callback.onUpdateAvailable(body, false);
-        else if (currentVersion < body.getLatestapkcode()) {
-            callback.onUpdateAvailable(body, true);
-        } else {
-            callback.onError("Planet up to date", false);
-        }
-    }
+//    private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
+//        int currentVersion = VersionUtils.getVersionCode(context);
+//        if (currentVersion < body.getMinapkcode())
+//            callback.onUpdateAvailable(body, false);
+//        else if (currentVersion < body.getLatestapkcode()) {
+//            callback.onUpdateAvailable(body, true);
+//        } else {
+//            callback.onError("Planet up to date", false);
+//        }
+//    }
 
     public interface CheckVersionCallback {
         void onUpdateAvailable(MyPlanet info, boolean cancelable);
