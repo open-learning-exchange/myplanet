@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.model;
 
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.NetworkUtils;
+
 import io.realm.RealmObject;
 import io.realm.annotations.Ignore;
 import io.realm.annotations.PrimaryKey;
@@ -92,6 +94,10 @@ public class RealmApkLog extends RealmObject {
         object.addProperty("time", log.getTime());
         object.addProperty("version", log.getVersion());
         object.addProperty("createdOn", log.getCreatedOn());
+        object.addProperty("androidId", log.getCreatedOn());
+        object.addProperty("createdOn", log.getCreatedOn());
+        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("parentCode", log.getParentCode());
         return object;
     }
