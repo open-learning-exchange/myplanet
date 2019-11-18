@@ -143,9 +143,11 @@
                     <EditText
                         android:id="@+id/deviceName"
                         android:layout_width="wrap_content"
+                        android:minWidth="140dp"
                         android:layout_height="wrap_content"
                         android:hint="@string/device_name"
-                        android:inputType="number"
+                        android:inputType="text"
+                        android:maxLines="1"
                         android:textColor="@android:color/background_dark"
                         android:textColorHint="@android:color/darker_gray"
                         android:textSize="10sp" />
