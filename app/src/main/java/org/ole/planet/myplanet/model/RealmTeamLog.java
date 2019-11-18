@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
 import android.text.TextUtils;
 
 import com.google.gson.JsonObject;
@@ -123,7 +124,7 @@ public class RealmTeamLog extends RealmObject {
         this.teamType = teamType;
     }
 
-    public static JsonObject serializeTeamActivities(RealmTeamLog log) {
+    public static JsonObject serializeTeamActivities(RealmTeamLog log, Context context) {
         JsonObject ob = new JsonObject();
         ob.addProperty("user", log.getUser());
         ob.addProperty("type", log.getType());

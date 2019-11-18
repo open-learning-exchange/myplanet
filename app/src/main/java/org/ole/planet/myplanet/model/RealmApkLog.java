@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
+
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -86,7 +88,7 @@ public class RealmApkLog extends RealmObject {
         this.version = version;
     }
 
-    public static JsonObject serialize(RealmApkLog log) {
+    public static JsonObject serialize(RealmApkLog log, Context context) {
         JsonObject object = new JsonObject();
         object.addProperty("type", log.getType());
         object.addProperty("error", log.getError());
@@ -98,6 +100,7 @@ public class RealmApkLog extends RealmObject {
         object.addProperty("createdOn", log.getCreatedOn());
         object.addProperty("androidId", NetworkUtils.getMacAddr());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
+        object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object.addProperty("parentCode", log.getParentCode());
         return object;
     }
