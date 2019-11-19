@@ -248,7 +248,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         String protocol = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url_protocol)).getText().toString();
         String url = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_url)).getText().toString();
         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
-        settings.edit().putString("customDeviceName", ((EditText) dialog.getCustomView().findViewById(R.id.deviceName)).getText().toString()).apply();
+        settings.edit().putString("customDeviceName", ((EditText) dialog.getCustomView().findViewById(R.id.deviceName)).getText().toString()).commit();
         url = protocol + url;
         if (isUrlValid(url))
             processedUrl = setUrlParts(url, pin, this);
