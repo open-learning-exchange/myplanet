@@ -39,6 +39,7 @@ public class TransactionSyncManager {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
             try {
+
                 DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs").execute().body();
                 for (int i = 0; i < res.getRows().size(); i++) {
                     Rows doc = res.getRows().get(i);
