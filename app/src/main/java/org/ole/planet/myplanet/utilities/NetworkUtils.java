@@ -13,6 +13,7 @@ import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
 
 import java.io.IOException;
 import java.net.NetworkInterface;
@@ -106,6 +107,6 @@ public class NetworkUtils {
         return manufacturer.toUpperCase() + " " + model;
     }
     public static String getCustomDeviceName(Context context) {
-        return PreferenceManager.getDefaultSharedPreferences(context).getString("customDeviceName", "");
+        return  context.getSharedPreferences(DashboardFragment.PREFS_NAME, Context.MODE_PRIVATE).getString("customDeviceName", "");
     }
 }
