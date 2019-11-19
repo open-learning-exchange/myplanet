@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.community.CommunityFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:padding="@dimen/padding_large"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:layout_width="wrap_content"
+                android:text="@string/library"
+                android:id="@+id/btn_library"
+                android:theme="@style/PrimaryFlatButton"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.flexbox.FlexboxLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:id="@+id/flexbox_link"
+                android:orientation="horizontal"
+                android:layout_height="wrap_content"/>
+
+            <ImageView
+                android:layout_width="@dimen/_20dp"
+                android:src="@drawable/ic_delete"
+                android:id="@+id/ic_delete"
+                android:tint="@color/md_black_1000"
+                android:layout_height="@dimen/_20dp"/>
+
+            <ImageView
+                android:layout_width="@dimen/_20dp"
+                android:src="@drawable/ic_add"
+                android:id="@+id/ic_add"
+                android:tint="@color/md_black_1000"
+                android:layout_height="@dimen/_20dp"/>
+
+
+
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:id="@+id/rv_community"
+            android:layout_weight="1"/>
+
+
+
+    </LinearLayout>
+
+
+</FrameLayout>

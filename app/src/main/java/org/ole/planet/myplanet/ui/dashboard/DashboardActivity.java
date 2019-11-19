@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment;
+import org.ole.planet.myplanet.ui.community.CommunityFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
@@ -61,7 +62,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     AccountHeader headerResult;
     RealmUserModel user;
     private Drawer result = null;
-    private Toolbar mTopToolbar, bellToolbar;
+    private Toolbar mTopToolbar,bellToolbar;
     private GestureDetector mDetector;
   
     @Override
@@ -228,6 +229,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void menuAction(int selectedMenuId) {
+        Utilities.log("Selected");
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
                 openCallFragment(new BellDashboardFragment());

@@ -57,7 +57,6 @@ public class RealmNews extends RealmObject {
         news.setMessage(JsonUtils.getString("message", doc));
         news.set_rev(JsonUtils.getString("_rev", doc));
         news.set_id(JsonUtils.getString("_id", doc));
-        news.setTime(JsonUtils.getLong("time", doc));
         news.setViewableBy(JsonUtils.getString("viewableBy", doc));
         news.setDocType(JsonUtils.getString("docType", doc));
         news.setAvatar(JsonUtils.getString("avatar", doc));
@@ -73,6 +72,7 @@ public class RealmNews extends RealmObject {
         news.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", doc)));
         news.setUserId(JsonUtils.getString("_id", user));
         news.setUserName(JsonUtils.getString("name", user));
+        news.setTime(JsonUtils.getLong("time", doc));
     }
 
     public String getMessagePlanetCode() {
