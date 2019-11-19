@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
@@ -62,7 +63,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     public static Calendar cal_today, cal_last_Sync;
     EditText serverUrl, serverUrlProtocol;
-    EditText serverPassword;
+    EditText serverPassword,deviceName;
     String processedUrl;
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
@@ -353,6 +354,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
         protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
+        deviceName = dialog.getCustomView().findViewById(R.id.deviceName);
+        deviceName.setText(getDeviceName());
         protocol_semantics();
         dialog.show();
         sync(dialog);
@@ -499,5 +502,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     break;
             }
         }
+    }
+    public String getDeviceName(){
+        return settings.getString("customDeviceName",NetworkUtils.getDeviceName());
     }
 }
