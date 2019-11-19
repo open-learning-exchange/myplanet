@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -25,7 +27,7 @@ public class RealmMyPersonal extends RealmObject {
     private String path;
 
 
-    public static JsonObject serialize(RealmMyPersonal personal) {
+    public static JsonObject serialize(RealmMyPersonal personal, Context context) {
         JsonObject object = new JsonObject();
         object.addProperty("title", personal.getTitle());
         object.addProperty("uploadDate", new Date().getTime());
@@ -39,6 +41,7 @@ public class RealmMyPersonal extends RealmObject {
         JsonObject object1 = new JsonObject();
         object.addProperty("androidId", NetworkUtils.getMacAddr());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
+        object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object1.addProperty("users", personal.getUserId());
         object.add("privateFor", object1);
         object.addProperty("mediaType", FileUtils.getMediaType(personal.getPath()));

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
+
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -123,7 +125,7 @@ public class RealmOfflineActivity extends RealmObject {
         this.parentCode = parentCode;
     }
 
-    public static JsonObject serializeLoginActivities(RealmOfflineActivity realm_offlineActivities) {
+    public static JsonObject serializeLoginActivities(RealmOfflineActivity realm_offlineActivities, Context context) {
         JsonObject ob = new JsonObject();
         ob.addProperty("user", realm_offlineActivities.getUserName());
         ob.addProperty("type", realm_offlineActivities.getType());
@@ -133,6 +135,7 @@ public class RealmOfflineActivity extends RealmObject {
         ob.addProperty("parentCode", realm_offlineActivities.getParentCode());
         ob.addProperty("androidId", NetworkUtils.getMacAddr());
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
+        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         if (realm_offlineActivities.get_id() != null) {
             ob.addProperty("_id", realm_offlineActivities.getLogoutTime());
         }

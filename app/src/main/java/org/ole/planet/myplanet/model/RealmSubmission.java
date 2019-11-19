@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
@@ -80,7 +81,7 @@ public class RealmSubmission extends RealmObject {
         }
     }
 
-    public static JsonObject serializeExamResult(Realm mRealm, RealmSubmission sub) {
+    public static JsonObject serializeExamResult(Realm mRealm, RealmSubmission sub, Context context) {
         JsonObject object = new JsonObject();
         RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", sub.getUserId()).findFirst();
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", sub.getParentId()).findFirst();
@@ -96,6 +97,7 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("status", sub.getStatus());
         object.addProperty("androidId", NetworkUtils.getMacAddr());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
+        object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
         if (exam != null)
             object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
@@ -138,14 +140,14 @@ public class RealmSubmission extends RealmObject {
         return sub;
     }
 
-    public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm) throws IOException {
+    public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm,Context context) throws IOException {
         JsonObject object = null;
         if (!TextUtils.isEmpty(sub.getUserId()) && sub.getUserId().startsWith("guest"))
             return;
         if (TextUtils.isEmpty(sub.get_id())) {
-            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub)).execute().body();
+            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub,context)).execute().body();
         } else {
-            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub)).execute().body();
+            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub,context)).execute().body();
         }
         if (object != null) {
             sub.set_id(JsonUtils.getString("id", object));
