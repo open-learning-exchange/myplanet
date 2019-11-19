@@ -26,7 +26,7 @@
     <string name="menu_surveys">Surveys</string>
     <string name="menu_logout">Logout</string>
     <string name="menu_feedback">Feedback</string>
-    <string name="system_name">My Planet</string>
+    <string name="system_name">myPlanet</string>
     <string name="txt_myLibrary">myLibrary</string>
     <string name="txt_myCourses">myCourses</string>
     <string name="txt_myMeetups">myMeetups</string>
@@ -180,6 +180,8 @@
     <string name="choose_file">Choose File</string>
     <string name="file_downloadable">File downloadable</string>
     <string name="priority">Priority</string>
+    <string name="device_name">Device Name</string>
+
     <string name="status">Status</string>
     <string name="title_not_compulsary">Title</string>
     <string name="discussion">Discussion</string>
@@ -292,6 +294,8 @@
     <string name="notifications">Notifications</string>
     <string name="incorrect_ans">Incorrect answer, please try again</string>
     <string name="diagnosis_note">Diagnosis Note</string>
+    <string name="menu_community">Community</string>
+    <string name="library">Library</string>
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

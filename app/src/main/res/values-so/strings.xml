@@ -17,8 +17,9 @@
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
+    <string name="device_name">Device Name</string>
     <string name="title_activity_dashboard">Dashboard</string>
-    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Home</string>
     <string name="menu_library">Our Library</string>
     <string name="menu_courses">Our Courses</string>
@@ -301,4 +302,6 @@
     <string name="notifications">Notifications</string>
     <string name="incorrect_ans">Incorrect answer, please try again</string>
     <string name="diagnosis_note">Diagnosis Note</string>
+    <string name="menu_community">Community</string>
+    <string name="library">Library</string>
 </resources>
