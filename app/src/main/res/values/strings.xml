@@ -359,6 +359,7 @@
     <string name="library">Library</string>
     <string name="device_name">Device Name</string>
     <string name="enter_title">Enter title</string>
+    <string name="add_link">Add Link</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>

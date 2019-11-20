@@ -1,13 +1,17 @@
 package org.ole.planet.myplanet.ui.community
 
 
+import android.app.Dialog
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.FrameLayout
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
 import kotlinx.android.synthetic.main.alert_add_link.view.*
@@ -29,18 +33,35 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     }
 
     lateinit var mRealm: Realm;
+    lateinit var team: RealmMyTeam;
+
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
 
         val query = mRealm.where(RealmMyTeam::class.java)
                 .isEmpty("teamId")
                 .isNotEmpty("name")
-                .equalTo("type", if (spn_link.selectedItem.toString().equals("Enterprises")) "enterprises" else "")
+                .equalTo("type", if (spn_link.selectedItem.toString().equals("Enterprises")) "enterprise" else "")
                 .notEqualTo("status", "archived")
                 .findAll()
         rv_list.layoutManager = LinearLayoutManager(activity!!)
         Utilities.log("SIZE ${query}")
+        val adapter = AdapterTeam(activity!!, query, mRealm)
+        adapter.setTeamSelectedListener { team -> this.team = team; }
         rv_list.adapter = AdapterTeam(activity!!, query, mRealm)
     }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val bottomSheetDialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        bottomSheetDialog.setOnShowListener { d ->
+            val dialog = d as BottomSheetDialog
+            val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+            BottomSheetBehavior.from(bottomSheet!!).state = BottomSheetBehavior.STATE_EXPANDED
+            BottomSheetBehavior.from(bottomSheet).skipCollapsed = true
+            BottomSheetBehavior.from(bottomSheet).setHideable(true)
+        }
+        return bottomSheetDialog
+    }
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {

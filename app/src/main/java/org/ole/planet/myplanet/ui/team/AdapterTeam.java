@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -28,6 +30,15 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Realm mRealm;
     private OnUserSelectedListener listener;
     private List<RealmUserModel> users;
+    private OnTeamSelectedListener teamSelectedListener;
+
+    public interface OnTeamSelectedListener {
+        void onSelectedTeam(RealmMyTeam team);
+    }
+
+    public void setTeamSelectedListener(OnTeamSelectedListener teamSelectedListener) {
+        this.teamSelectedListener = teamSelectedListener;
+    }
 
     public AdapterTeam(Context context, List<RealmMyTeam> list, Realm mRealm) {
         this.context = context;
@@ -51,7 +62,10 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             ((ViewHolderTeam) holder).title.setText(list.get(position).getName());
             holder.itemView.setOnClickListener(view -> {
-                showUserList(list.get(position));
+                if (teamSelectedListener != null)
+                    teamSelectedListener.onSelectedTeam(list.get(position));
+                else
+                    showUserList(list.get(position));
             });
         }
     }
