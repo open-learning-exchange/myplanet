@@ -2,15 +2,18 @@ package org.ole.planet.myplanet.utilities;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.preference.PreferenceManager;
 import android.text.TextUtils;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
 
 import java.io.IOException;
 import java.net.NetworkInterface;
@@ -103,5 +106,7 @@ public class NetworkUtils {
         }
         return manufacturer.toUpperCase() + " " + model;
     }
-
+    public static String getCustomDeviceName(Context context) {
+        return  context.getSharedPreferences(DashboardFragment.PREFS_NAME, Context.MODE_PRIVATE).getString("customDeviceName", "");
+    }
 }

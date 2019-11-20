@@ -113,6 +113,7 @@ public class MyPlanet implements Serializable {
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
         postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
+        postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
         postJSON.addProperty("time", new Date().getTime());
         JsonObject gps = new JsonObject();

@@ -119,6 +119,7 @@
     <string name="add_a_reference">Add a Reference</string>
     <string name="learner">Learner</string>
     <string name="enter_username">Enter Username</string>
+    <string name="device_name">Device Name</string>
 
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
@@ -304,4 +305,6 @@
     <string name="notifications">Notifications</string>
     <string name="incorrect_ans">Incorrect answer, please try again</string>
     <string name="diagnosis_note">Diagnosis Note</string>
+    <string name="menu_community">Community</string>
+    <string name="library">Library</string>
 </resources>
