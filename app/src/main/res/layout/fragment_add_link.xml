@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.community.AddLinkFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/spn_link"
+            android:layout_width="match_parent"
+            android:entries="@array/add_link_options"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal" />
+
+
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:padding="@dimen/padding_normal"
+            android:layout_height="wrap_content"
+            >
+
+            <EditText
+                android:layout_width="match_parent"
+                android:id="@+id/et_name"
+                android:hint="@string/enter_title"
+                android:layout_height="wrap_content"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:layout_width="match_parent"
+            android:id="@+id/rv_list"
+            android:layout_height="0dp"
+            android:minHeight="300dp"
+            android:layout_weight="1"/>
+
+
+        <Button
+            android:layout_width="match_parent"
+            android:theme="@style/PrimaryButton"
+            android:id="@+id/btn_save"
+            android:text="@string/save"
+            android:layout_height="wrap_content"
+        />
+    </LinearLayout>
+
+</FrameLayout>
