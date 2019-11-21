@@ -82,13 +82,14 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setCreatedDate(JsonUtils.getLong("createdDate", doc));
         myTeams.setResourceId(JsonUtils.getString("resourceId", doc));
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
+        myTeams.setRoute(JsonUtils.getString("route", doc));
         myTeams.setType(JsonUtils.getString("type", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
         myTeams.setAmount(JsonUtils.getInt("amount", doc));
         myTeams.setDate(JsonUtils.getLong("date", doc));
 //        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
-        myTeams.setDocType(JsonUtils.getString("docType", doc).toString());
+        myTeams.setDocType(JsonUtils.getString("docType", doc));
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
         myTeams.courses = new RealmList<>();
         for (JsonElement e : coursesArray) {
