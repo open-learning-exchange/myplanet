@@ -93,6 +93,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 team.title = title
                 team.route = """/${type.toLowerCase()}/view/${selectedTeam!!._id}"""
                 dismiss()
+
             }
         }
 

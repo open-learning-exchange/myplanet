@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.community
 
 import android.content.DialogInterface
 import android.os.Bundle
+import android.os.Handler
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +12,7 @@ import android.widget.AdapterView
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
@@ -64,7 +66,13 @@ class CommunityFragment : BaseContainerFragment() {
         rv_community.adapter = adapter
         setFlexBox();
         ic_add.setOnClickListener {
-            AddLinkFragment().show(childFragmentManager, "")
+            var bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
+            bottomSheetDialog.show(childFragmentManager, "")
+            Handler().postDelayed({
+                bottomSheetDialog.dialog?.setOnDismissListener {
+                    setFlexBox()
+                }
+            }, 1000)
         }
 
     }
