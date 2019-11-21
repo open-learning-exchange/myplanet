@@ -37,6 +37,7 @@ import java.util.*
  */
 class CommunityFragment : BaseContainerFragment() {
 
+
     var user: RealmUserModel? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -61,11 +62,14 @@ class CommunityFragment : BaseContainerFragment() {
         var adapter = AdapterNews(activity, list, user, null)
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
+        setFlexBox();
         ic_add.setOnClickListener {
             AddLinkFragment().show(childFragmentManager, "")
         }
 
+    }
 
+    private fun setFlexBox() {
         val links = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("docType", "link")
                 .findAll()
@@ -78,9 +82,9 @@ class CommunityFragment : BaseContainerFragment() {
                 if (route.size >= 3) {
                     val f = TeamDetailFragment()
                     val b = Bundle()
-                    var teamObject = mRealm.where(RealmMyTeam::class.java).equalTo("_id",route[3] ).findFirst()
+                    var teamObject = mRealm.where(RealmMyTeam::class.java).equalTo("_id", route[3]).findFirst()
                     b.putString("id", route[3])
-                    b.putBoolean("isMyTeam",teamObject!!.isMyTeam(user?.id, mRealm) )
+                    b.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm))
                     f.arguments = b
                     (context as OnHomeItemClickListener).openCallFragment(f)
                 }
@@ -91,5 +95,9 @@ class CommunityFragment : BaseContainerFragment() {
 
     }
 
+    override fun onResume() {
+        super.onResume()
+        setFlexBox()
+    }
 
 }

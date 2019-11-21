@@ -19,6 +19,7 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
@@ -38,6 +39,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public void setTeamSelectedListener(OnTeamSelectedListener teamSelectedListener) {
         this.teamSelectedListener = teamSelectedListener;
+        Utilities.log("Team selected listener " + (teamSelectedListener==null));
     }
 
     public AdapterTeam(Context context, List<RealmMyTeam> list, Realm mRealm) {
@@ -62,8 +64,8 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             ((ViewHolderTeam) holder).title.setText(list.get(position).getName());
             holder.itemView.setOnClickListener(view -> {
-                if (teamSelectedListener != null)
-                    teamSelectedListener.onSelectedTeam(list.get(position));
+                if (this.teamSelectedListener != null)
+                   this.teamSelectedListener.onSelectedTeam(list.get(position));
                 else
                     showUserList(list.get(position));
             });

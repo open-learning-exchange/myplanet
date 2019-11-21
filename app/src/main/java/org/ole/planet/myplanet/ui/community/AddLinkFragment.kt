@@ -32,8 +32,8 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     override fun onNothingSelected(p0: AdapterView<*>?) {
     }
 
-    lateinit var mRealm: Realm;
-    lateinit var team: RealmMyTeam;
+    lateinit var mRealm: Realm
+    var selectedTeam: RealmMyTeam? = null;
 
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
 
@@ -46,8 +46,11 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         rv_list.layoutManager = LinearLayoutManager(activity!!)
         Utilities.log("SIZE ${query}")
         val adapter = AdapterTeam(activity!!, query, mRealm)
-        adapter.setTeamSelectedListener { team -> this.team = team; }
-        rv_list.adapter = AdapterTeam(activity!!, query, mRealm)
+        adapter.setTeamSelectedListener { team ->
+            this.selectedTeam = team;
+            Utilities.toast(activity!!, """Selected ${team.name}""")
+        }
+        rv_list.adapter = adapter
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -75,12 +78,21 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         btn_save.setOnClickListener {
             var type = spn_link?.selectedItem.toString()
             var title = et_name?.text.toString()
+            if (title.isNullOrEmpty()){
+                Utilities.toast(activity!!,"Title is required")
+                return@setOnClickListener
+            }
+            if (selectedTeam == null){
+                Utilities.toast(activity!!,"Please select link item from list")
+                return@setOnClickListener
+            }
 
             mRealm.executeTransaction {
                 var team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
                 team.docType = "link"
                 team.title = title
-                team.route = type + "/view/"
+                team.route = """/${type.toLowerCase()}/view/${selectedTeam!!._id}"""
+                dismiss()
             }
         }
 
