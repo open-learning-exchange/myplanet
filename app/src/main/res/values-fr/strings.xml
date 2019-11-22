@@ -307,4 +307,6 @@
     <string name="diagnosis_note">Diagnosis Note</string>
     <string name="menu_community">Community</string>
     <string name="library">Library</string>
+    <string name="enter_title">Enter title</string>
+    <string name="add_link">Add Link</string>
 </resources>
