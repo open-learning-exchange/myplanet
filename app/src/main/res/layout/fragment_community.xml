@@ -34,21 +34,28 @@
                 app:flexWrap="wrap"
                 android:layout_height="wrap_content"/>
 
-            <ImageView
-                android:layout_width="@dimen/_24dp"
-                android:src="@drawable/ic_delete"
-                android:layout_gravity="center_vertical"
-                android:id="@+id/ic_delete"
-                android:tint="@color/md_black_1000"
-                android:layout_height="@dimen/_24dp"/>
+         <LinearLayout
+             android:layout_width="wrap_content"
+             android:id="@+id/ll_edit_delete"
+             android:layout_height="wrap_content">
 
-            <ImageView
-                android:layout_width="@dimen/_24dp"
-                android:src="@drawable/ic_add"
-                android:layout_gravity="center_vertical"
-                android:id="@+id/ic_add"
-                android:tint="@color/md_black_1000"
-                android:layout_height="@dimen/_24dp"/>
+             <ImageView
+                 android:layout_width="@dimen/_24dp"
+                 android:src="@drawable/ic_delete"
+                 android:layout_gravity="center_vertical"
+                 android:id="@+id/ic_delete"
+                 android:tint="@color/md_black_1000"
+                 android:layout_height="@dimen/_24dp"/>
+
+             <ImageView
+                 android:layout_width="@dimen/_24dp"
+                 android:src="@drawable/ic_add"
+                 android:layout_gravity="center_vertical"
+                 android:id="@+id/ic_add"
+                 android:tint="@color/md_black_1000"
+                 android:layout_height="@dimen/_24dp"/>
+
+         </LinearLayout>
 
 
 
