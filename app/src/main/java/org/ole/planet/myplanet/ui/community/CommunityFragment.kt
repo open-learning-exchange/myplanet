@@ -65,6 +65,7 @@ class CommunityFragment : BaseContainerFragment() {
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
         setFlexBox();
+        ll_edit_delete.visibility =   if (user!!.isManager()) View.VISIBLE else View.GONE
         ic_add.setOnClickListener {
             var bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
