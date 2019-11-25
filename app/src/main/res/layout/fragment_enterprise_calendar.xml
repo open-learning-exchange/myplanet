@@ -15,10 +15,12 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-            <CalendarView
-                android:id="@+id/calendar"
+            <com.kizitonwose.calendarview.CalendarView
+                android:id="@+id/calendarView"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                app:cv_monthHeaderResource="@layout/calendar_day"
+                app:cv_dayViewResource="@layout/calendar_day" />
 
 
             <androidx.recyclerview.widget.RecyclerView
