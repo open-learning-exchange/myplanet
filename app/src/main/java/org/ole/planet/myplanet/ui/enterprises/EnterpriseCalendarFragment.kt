@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.appcompat.app.AlertDialog
@@ -17,6 +18,7 @@ import android.widget.CalendarView
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.DividerItemDecoration
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -153,12 +155,19 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
             override fun create(view: View) = DayViewContainer(view)
             override fun bind(container: DayViewContainer, day: CalendarDay) {
                 container.textView.text = day.date.dayOfMonth.toString()
+                if (day.owner == DayOwner.THIS_MONTH) {
+                    container.textView.setTextColor(Color.BLACK)
+                } else {
+                    container.textView.setTextColor(Color.GRAY)
+                    container.textView.textSize = 14.0f
+                }
             }
         }
 
         calendarView.inDateStyle = InDateStyle.ALL_MONTHS
         calendarView.outDateStyle = OutDateStyle.END_OF_ROW
         calendarView.scrollMode = ScrollMode.PAGED
+        calendarView.hasBoundaries = true
         calendarView.orientation = RecyclerView.HORIZONTAL
         val currentMonth = YearMonth.now()
         val firstMonth = currentMonth.minusMonths(10)
@@ -172,7 +181,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
             override fun create(view: View) = MonthViewContainer(view)
             override fun bind(container: MonthViewContainer, month: CalendarMonth) {
-                @SuppressLint("SetTextI18n") // Concatenation warning for `setText` call.
+                container.textView.setTextColor(activity!!.resources.getColor(R.color.colorPrimaryDark))
                 container.textView.text = "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
             }
         }
