@@ -198,9 +198,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
             }
         }
 
-
-
-
     }
 
     private fun getEvent(time: Long): RealmMeetup? {
