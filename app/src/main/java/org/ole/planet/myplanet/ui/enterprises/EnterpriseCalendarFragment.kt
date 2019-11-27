@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 
-import android.annotation.SuppressLint
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.fragment.app.Fragment
@@ -14,11 +12,9 @@ import androidx.recyclerview.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CalendarView
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
-import androidx.recyclerview.widget.DividerItemDecoration
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -113,6 +109,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         meetup.teamId = teamId
                         mRealm.commitTransaction()
                         Utilities.toast(activity, "Meetup added")
+                        rvCalendar.adapter?.notifyDataSetChanged()
                     }
                 }.setNegativeButton("Cancel", null).show()
     }
@@ -150,16 +147,27 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
         rvCalendar.layoutManager = LinearLayoutManager(activity)
         rvCalendar.adapter = AdapterCalendar(activity, list)
-
         calendarView.dayBinder = object : DayBinder<DayViewContainer> {
             override fun create(view: View) = DayViewContainer(view)
             override fun bind(container: DayViewContainer, day: CalendarDay) {
                 container.textView.text = day.date.dayOfMonth.toString()
+                var c = Calendar.getInstance()
+                c.set(Calendar.YEAR,day.date.year)
+                c.set(Calendar.MONTH,day.date.monthValue - 1)
+                c.set(Calendar.DAY_OF_MONTH,day.date.dayOfMonth)
+
+                var event = getEvent(c.timeInMillis)
                 if (day.owner == DayOwner.THIS_MONTH) {
                     container.textView.setTextColor(Color.BLACK)
                 } else {
                     container.textView.setTextColor(Color.GRAY)
                     container.textView.textSize = 14.0f
+                }
+
+                if (event != null) {
+                    Utilities.log(day.date.year.toString() + " event month " + (day.date.monthValue + 1 ).toString() + " " + day.date.dayOfMonth.toString() )
+                    container.textView.setBackgroundColor(resources.getColor(R.color.colorPrimaryDark))
+                    container.textView.setTextColor(resources.getColor(R.color.md_white_1000))
                 }
             }
         }
@@ -175,9 +183,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
         calendarView.setup(firstMonth, lastMonth, firstDayOfWeek)
         calendarView.scrollToMonth(currentMonth)
-        class MonthViewContainer(view: View) : ViewContainer(view) {
-            val textView = view.calendarDayText
-        }
+
         calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
             override fun create(view: View) = MonthViewContainer(view)
             override fun bind(container: MonthViewContainer, month: CalendarMonth) {
@@ -185,11 +191,33 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 container.textView.text = "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
             }
         }
-
-
-
     }
+
+    private fun getEvent(time: Long): RealmMeetup? {
+        for (realmMeetup in list) {
+            Utilities.log(TimeUtils.formatDate(time) + " start " + TimeUtils.formatDate(realmMeetup.startDate) + " end " + realmMeetup.endDate.toString())
+            if (time >=  getTimeMills(realmMeetup.startDate) && time <= realmMeetup.endDate) {
+                return realmMeetup
+            }
+        }
+        return null
+    }
+
+    private fun getTimeMills(time: Long): Long {
+        var c = Calendar.getInstance()
+        c.timeInMillis = time
+        c.set(Calendar.MINUTE, 0)
+        c.set(Calendar.HOUR, 0)
+        c.set(Calendar.MINUTE, 0)
+        c.set(Calendar.SECOND, 0)
+        return c.timeInMillis;
+    }
+
     class DayViewContainer(view: View) : ViewContainer(view) {
+        val textView = view.calendarDayText
+    }
+
+    class MonthViewContainer(view: View) : ViewContainer(view) {
         val textView = view.calendarDayText
     }
 
