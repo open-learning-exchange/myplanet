@@ -23,6 +23,7 @@ import com.kizitonwose.calendarview.ui.DayBinder
 import com.kizitonwose.calendarview.ui.MonthHeaderFooterBinder
 import com.kizitonwose.calendarview.ui.ViewContainer
 import kotlinx.android.synthetic.main.calendar_day.view.*
+import kotlinx.android.synthetic.main.calendar_month.view.*
 import kotlinx.android.synthetic.main.fragment_enterprise_calendar.*
 
 import org.ole.planet.myplanet.R
@@ -147,6 +148,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
         rvCalendar.layoutManager = LinearLayoutManager(activity)
         rvCalendar.adapter = AdapterCalendar(activity, list)
+
         calendarView.dayBinder = object : DayBinder<DayViewContainer> {
             override fun create(view: View) = DayViewContainer(view)
             override fun bind(container: DayViewContainer, day: CalendarDay) {
@@ -218,7 +220,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     class MonthViewContainer(view: View) : ViewContainer(view) {
-        val textView = view.calendarDayText
+        val textView = view.calendarMonthText
     }
 
 }
