@@ -160,6 +160,14 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         calendarView.setup(firstMonth, lastMonth, firstDayOfWeek)
         calendarView.scrollToMonth(currentMonth)
         setUpCalendar()
+        calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
+            override fun create(view: View) = MonthViewContainer(view)
+            override fun bind(container: MonthViewContainer, month: CalendarMonth) {
+                container.textView.setTextColor(activity!!.resources.getColor(R.color.colorPrimaryDark))
+                container.textView.text = "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
+            }
+        }
+
 
     }
 
@@ -173,7 +181,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 c.set(Calendar.YEAR, day.date.year)
                 c.set(Calendar.MONTH, day.date.monthValue - 1)
                 c.set(Calendar.DAY_OF_MONTH, day.date.dayOfMonth)
-
                 var event = getEvent(c.timeInMillis)
                 if (day.owner == DayOwner.THIS_MONTH) {
                     container.textView.setTextColor(Color.BLACK)
@@ -181,22 +188,13 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     container.textView.setTextColor(Color.GRAY)
                     container.textView.textSize = 14.0f
                 }
-
                 if (event != null) {
-                    Utilities.log(day.date.year.toString() + " event month " + (day.date.monthValue + 1).toString() + " " + day.date.dayOfMonth.toString())
                     container.textView.setBackgroundColor(resources.getColor(R.color.colorPrimaryDark))
                     container.textView.setTextColor(resources.getColor(R.color.md_white_1000))
                 }
             }
         }
 
-        calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
-            override fun create(view: View) = MonthViewContainer(view)
-            override fun bind(container: MonthViewContainer, month: CalendarMonth) {
-                container.textView.setTextColor(activity!!.resources.getColor(R.color.colorPrimaryDark))
-                container.textView.text = "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
-            }
-        }
 
     }
 
