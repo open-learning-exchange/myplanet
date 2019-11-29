@@ -200,12 +200,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun getEvent(time: Long): RealmMeetup? {
         for (realmMeetup in list) {
-            Utilities.log(TimeUtils.formatDate(time) + " start " + TimeUtils.formatDate(realmMeetup.startDate) + " end " + realmMeetup.endDate.toString())
-//            if(realmMeetup.startDate == realmMeetup.endDate){
-//               if(getTimeMills(realmMeetup.startDate) == time)
-//                   return realmMeetup
-//            }
-//            else
             if (time >= getTimeMills(realmMeetup.startDate, false) && time <= getTimeMills(realmMeetup.endDate, true)) {
                 return realmMeetup
             }
