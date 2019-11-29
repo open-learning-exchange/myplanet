@@ -200,21 +200,19 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun getEvent(time: Long): RealmMeetup? {
         for (realmMeetup in list) {
-            Utilities.log(TimeUtils.formatDate(time) + " start " + TimeUtils.formatDate(realmMeetup.startDate) + " end " + realmMeetup.endDate.toString())
-            if (time >= getTimeMills(realmMeetup.startDate) && time <= realmMeetup.endDate) {
+            if (time >= getTimeMills(realmMeetup.startDate, false) && time <= getTimeMills(realmMeetup.endDate, true)) {
                 return realmMeetup
             }
         }
         return null
     }
 
-    private fun getTimeMills(time: Long): Long {
+    private fun getTimeMills(time: Long, end: Boolean): Long {
         var c = Calendar.getInstance()
         c.timeInMillis = time
-        c.set(Calendar.MINUTE, 0)
-        c.set(Calendar.HOUR, 0)
-        c.set(Calendar.MINUTE, 0)
-        c.set(Calendar.SECOND, 0)
+        c.set(Calendar.MINUTE,if (end) 59 else 0)
+        c.set(Calendar.HOUR, if (end) 23 else 0)
+        c.set(Calendar.SECOND, if (end) 59 else 0)
         return c.timeInMillis;
     }
 
