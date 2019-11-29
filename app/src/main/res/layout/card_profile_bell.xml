@@ -203,7 +203,7 @@
                     android:id="@+id/fab_survey"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/my_survey"
+                    android:text="@string/menu_surveys"
                     android:theme="@style/PrimaryButton"
                     android:tint="@color/md_white_1000"
                     app:srcCompat="@drawable/ic_my_survey" />

@@ -76,9 +76,9 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             case 3:
                 openEnterpriseFragment();
                 break;
-            case 4:
-                openCallFragment(new SurveyFragment(), "survey");
-                break;
+//            case 4:
+//                openCallFragment(new SurveyFragment(), "survey");
+//                break;
             case 5:
                 openCallFragment(new CommunityFragment(), "community");
                 break;

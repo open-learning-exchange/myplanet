@@ -29,6 +29,7 @@ import kotlinx.android.synthetic.main.fragment_enterprise_calendar.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.threeten.bp.YearMonth
@@ -189,6 +190,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     container.textView.textSize = 14.0f
                 }
                 if (event != null) {
+                    container.textView.setOnClickListener { DialogUtils.showAlert(activity!!, event.title, event.description) }
                     container.textView.setBackgroundColor(resources.getColor(R.color.colorPrimaryDark))
                     container.textView.setTextColor(resources.getColor(R.color.md_white_1000))
                 }
@@ -200,21 +202,19 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun getEvent(time: Long): RealmMeetup? {
         for (realmMeetup in list) {
-            Utilities.log(TimeUtils.formatDate(time) + " start " + TimeUtils.formatDate(realmMeetup.startDate) + " end " + realmMeetup.endDate.toString())
-            if (time >= getTimeMills(realmMeetup.startDate) && time <= realmMeetup.endDate) {
+            if (time >= getTimeMills(realmMeetup.startDate, false) && time <= getTimeMills(realmMeetup.endDate, true)) {
                 return realmMeetup
             }
         }
         return null
     }
 
-    private fun getTimeMills(time: Long): Long {
+    private fun getTimeMills(time: Long, end: Boolean): Long {
         var c = Calendar.getInstance()
         c.timeInMillis = time
-        c.set(Calendar.MINUTE, 0)
-        c.set(Calendar.HOUR, 0)
-        c.set(Calendar.MINUTE, 0)
-        c.set(Calendar.SECOND, 0)
+        c.set(Calendar.MINUTE,if (end) 59 else 0)
+        c.set(Calendar.HOUR, if (end) 23 else 0)
+        c.set(Calendar.SECOND, if (end) 59 else 0)
         return c.timeInMillis;
     }
 
