@@ -190,9 +190,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     container.textView.textSize = 14.0f
                 }
                 if (event != null) {
-                    container.textView.setOnClickListener {
-                        DialogUtils.showAlert(activity!!, event.title, event.description)
-                    }
+                    container.textView.setOnClickListener { DialogUtils.showAlert(activity!!, event.title, event.description) }
                     container.textView.setBackgroundColor(resources.getColor(R.color.colorPrimaryDark))
                     container.textView.setTextColor(resources.getColor(R.color.md_white_1000))
                 }
