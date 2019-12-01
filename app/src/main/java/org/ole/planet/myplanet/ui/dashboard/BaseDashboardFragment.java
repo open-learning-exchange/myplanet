@@ -137,7 +137,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
             handleClick(((RealmMyTeam) ob).getId(), ((RealmMyTeam) ob).getName(), new TeamDetailFragment(), name);
             showNotificationIcons(ob, v, userId);
             name.setText(((RealmMyTeam) ob).getName());
-            flexboxLayout.addView(v);
+            flexboxLayout.addView(v,params);
             count++;
         }
         return dbMyTeam.size();
