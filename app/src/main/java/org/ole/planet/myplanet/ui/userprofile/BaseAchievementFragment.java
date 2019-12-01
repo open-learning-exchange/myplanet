@@ -33,7 +33,7 @@ import java.util.List;
 import io.realm.Realm;
 
 public class BaseAchievementFragment extends BaseContainerFragment {
-    EditText etPurpose, etGoals, etAchievement, etName, etMiddleName, etLastName, etBirthPlace;
+    EditText etPurpose, etGoals, etAchievement; //etName, etMiddleName, etLastName, etBirthPlace;
     Button btnAddAchievement, btnOther, btnUpdate, btnCancel;
     TextView tvDob;
     Realm mRealm;
@@ -59,12 +59,12 @@ public class BaseAchievementFragment extends BaseContainerFragment {
             etGoals.setText(achievement.getGoals());
             checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
-        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        //tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         resourceArray = new JsonArray();
-        etName.setText(user.getFirstName());
-        etMiddleName.setText(user.getMiddleName());
-        etLastName.setText(user.getLastName());
-        etBirthPlace.setText(user.getBirthPlace());
+        //etName.setText(user.getFirstName());
+        //etMiddleName.setText(user.getMiddleName());
+        //etLastName.setText(user.getLastName());
+        //etBirthPlace.setText(user.getBirthPlace());
     }
 
     public CheckboxListView createResourceList(View v, List<RealmMyLibrary> list, List<String> prevList) {
@@ -97,11 +97,11 @@ public class BaseAchievementFragment extends BaseContainerFragment {
 
 
     public void setUserInfo() {
-        user.setFirstName(etName.getText().toString());
-        user.setMiddleName(etMiddleName.getText().toString());
-        user.setLastName(etLastName.getText().toString());
-        user.setDob(tvDob.getText().toString());
-        user.setBirthPlace(etBirthPlace.getText().toString());
+        //user.setFirstName(etName.getText().toString());
+        //user.setMiddleName(etMiddleName.getText().toString());
+        //user.setLastName(etLastName.getText().toString());
+        //user.setDob(tvDob.getText().toString());
+        //user.setBirthPlace(etBirthPlace.getText().toString());
     }
 
     public void setAchievementInfo() {
