@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.ProgressDialog;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,7 @@ import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.NotificationCallback;
+import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -22,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.TransactionSyncManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
@@ -251,5 +254,29 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
     @Override
     public void showResourceDownloadDialog() {
         showDownloadDialog(getLibraryList(mRealm));
+    }
+
+    @Override
+    public void syncKeyId() {
+        ProgressDialog di  = new ProgressDialog(getActivity());
+        di.setMessage("Syncing health , please wait...");
+        TransactionSyncManager.syncKeyIv(mRealm,settings, new SyncListener() {
+            @Override
+            public void onSyncStarted() {
+                di.show();
+            }
+
+            @Override
+            public void onSyncComplete() {
+                di.dismiss();
+                Utilities.toast(getActivity(), "myHealth synced successfully");
+            }
+
+            @Override
+            public void onSyncFailed(String msg) {
+                di.dismiss();
+                Utilities.toast(getActivity(), "myHealth synced failed");
+            }
+        });
     }
 }

@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
@@ -14,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
@@ -34,6 +37,41 @@ public class TransactionSyncManager {
         return false;
     }
 
+
+    public static void syncKeyIv(Realm mRealm, SharedPreferences settings, SyncListener listener) {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        listener.onSyncStarted();
+        RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        String userName = settings.getString("loginUserName", "");
+        String password = settings.getString("loginUserPassword", "");
+        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        String header = "Basic " + Base64.encodeToString((userName + ":" +
+                password).getBytes(), Base64.NO_WRAP);
+        String id = model.getId();
+
+        mRealm.executeTransactionAsync(realm -> {
+            Response respone = null;
+            try {
+                RealmUserModel userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
+                Utilities.log(table);
+                respone = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
+                DocumentResponse ob = (DocumentResponse) respone.body();
+                if (ob.getRows().size() > 0){
+
+                    Rows r = ob.getRows().get(0);
+
+                    JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
+                    userModel.setKey(JsonUtils.getString("key", jsonDoc));
+                    userModel.setIv(JsonUtils.getString("iv", jsonDoc));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }, listener::onSyncComplete, error -> {
+            error.printStackTrace();
+            listener.onSyncFailed(error.getMessage());
+        });
+    }
 
     public static void syncDb(final Realm mRealm, final String table) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
