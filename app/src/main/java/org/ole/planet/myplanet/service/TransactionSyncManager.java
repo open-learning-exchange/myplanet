@@ -48,7 +48,6 @@ public class TransactionSyncManager {
         String header = "Basic " + Base64.encodeToString((userName + ":" +
                 password).getBytes(), Base64.NO_WRAP);
         String id = model.getId();
-
         mRealm.executeTransactionAsync(realm -> {
             Response respone = null;
             try {

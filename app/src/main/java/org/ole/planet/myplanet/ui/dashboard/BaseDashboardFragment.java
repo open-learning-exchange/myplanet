@@ -47,10 +47,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
     TextView txtFullName, txtVisits, txtRole;
     DatabaseService dbService;
     RealmUserModel model;
-    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-            250,
-            100
-    );
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(250, 100);
 
     void onLoaded(View v) {
         txtFullName = v.findViewById(R.id.txtFullName);
@@ -140,7 +137,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
             handleClick(((RealmMyTeam) ob).getId(), ((RealmMyTeam) ob).getName(), new TeamDetailFragment(), name);
             showNotificationIcons(ob, v, userId);
             name.setText(((RealmMyTeam) ob).getName());
-            flexboxLayout.addView(v,params);
+            flexboxLayout.addView(v, params);
             count++;
         }
         return dbMyTeam.size();
@@ -237,14 +234,11 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         view.findViewById(R.id.txtFullName).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
-
         myLibraryDiv(view);
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife.class);
-//        showPendingSurveyDialog();
-//        showResourceDownloadDialog();
         NotificationFragment fragment = new NotificationFragment();
         fragment.callback = this;
         fragment.resourceList = getLibraryList(mRealm);
@@ -258,9 +252,9 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
 
     @Override
     public void syncKeyId() {
-        ProgressDialog di  = new ProgressDialog(getActivity());
+        ProgressDialog di = new ProgressDialog(getActivity());
         di.setMessage("Syncing health , please wait...");
-        TransactionSyncManager.syncKeyIv(mRealm,settings, new SyncListener() {
+        TransactionSyncManager.syncKeyIv(mRealm, settings, new SyncListener() {
             @Override
             public void onSyncStarted() {
                 di.show();
