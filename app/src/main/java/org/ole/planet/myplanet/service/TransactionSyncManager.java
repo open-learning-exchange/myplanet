@@ -49,27 +49,20 @@ public class TransactionSyncManager {
                 password).getBytes(), Base64.NO_WRAP);
         String id = model.getId();
         mRealm.executeTransactionAsync(realm -> {
-            Response respone = null;
+            Response response;
             try {
                 RealmUserModel userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
                 Utilities.log(table);
-                respone = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
-                DocumentResponse ob = (DocumentResponse) respone.body();
+                response = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
+                DocumentResponse ob = (DocumentResponse) response.body();
                 if (ob.getRows().size() > 0){
-
                     Rows r = ob.getRows().get(0);
-
                     JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
                     userModel.setKey(JsonUtils.getString("key", jsonDoc));
                     userModel.setIv(JsonUtils.getString("iv", jsonDoc));
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }, listener::onSyncComplete, error -> {
-            error.printStackTrace();
-            listener.onSyncFailed(error.getMessage());
-        });
+            } catch (IOException e) {}
+        }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }
 
     public static void syncDb(final Realm mRealm, final String table) {
@@ -113,9 +106,7 @@ public class TransactionSyncManager {
                     break;
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) {}
     }
 
 
