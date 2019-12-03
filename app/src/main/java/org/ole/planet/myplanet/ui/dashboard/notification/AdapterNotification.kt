@@ -30,6 +30,7 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
                 when (position) {
                     0 -> callback.showResourceDownloadDialog()
                     1 -> callback.showPendingSurveyDialog()
+                    2 ->callback.syncKeyId()
                 }
             }
         }
