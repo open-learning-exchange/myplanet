@@ -33,6 +33,7 @@ public class Service {
             callback.onError("Config not awailable.", true);
             return;
         }
+        Utilities.log("Check version");
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
@@ -47,14 +48,18 @@ public class Service {
                             String respones = null;
                             try {
                                 respones = response.body().string();
+                                Utilities.log("Apk version " + respones);
                                 if (respones != null) {
                                     int currentVersion = VersionUtils.getVersionCode(context);
+                                    Utilities.log(p.getLatestapk() + " " + currentVersion + " " + p.getMinapkcode());
                                     if (respones.equals(p.getLatestapk()) && currentVersion < p.getMinapkcode()) {
                                         callback.onUpdateAvailable(p, true);
+                                    }else{
+                                        callback.onError("Planet up to date", false);
+
                                     }
                                 } else {
                                     callback.onError("Planet up to date", false);
-
                                 }
 
                             } catch (IOException e) {

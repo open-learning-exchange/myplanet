@@ -388,9 +388,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
         if (cancelable) {
-            builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
-                continueSyncProcess();
-            });
+            builder.setNegativeButton("Update Later", (dialogInterface, i) -> continueSyncProcess());
         } else {
             mRealm.executeTransactionAsync(realm -> realm.deleteAll());
 //            if (!mRealm.isInTransaction()) {
