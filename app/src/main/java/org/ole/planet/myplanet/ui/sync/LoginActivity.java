@@ -75,7 +75,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save, managerialLogin;
-    private boolean isSync = false, isUpload = false, forceSync = false;
+    private boolean isSync = false, forceSync = false;
     private SwitchCompat switchChildMode;
 
     @Override
@@ -89,7 +89,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         if (forceSync) {
-            isUpload = false;
             isSync = false;
             processedUrl = Utilities.getUrl();
         }
@@ -210,7 +209,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
-        isUpload = false;
         isSync = true;
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage();
@@ -228,8 +226,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         gifDrawable.stop();
         syncIcon.setOnClickListener(v -> {
             gifDrawable.reset();
-            isUpload = true;
             isSync = false;
+            forceSync = true;
             new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
@@ -434,10 +432,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         try {
             if (isSync) {
                 isServerReachable(processedUrl);
-            } else if (isUpload) {
-                Utilities.log("Upload : Continue sync , Start upload");
-                startUpload();
-            } else if (forceSync) {
+            }
+//            else if (isUpload) {
+//                Utilities.log("Upload : Continue sync , Start upload");
+//                startUpload();
+//            }
+
+            else if (forceSync) {
                 isServerReachable(processedUrl);
                 startUpload();
             }

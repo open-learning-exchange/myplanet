@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
-    <string name="app_project_name">My Planet</string>
+    <string name="app_project_name">myPlanet</string>
     <string name="action_settings">Settings</string>
     <string name="hint_name">Username</string>
     <string name="hint_password">Password</string>
@@ -12,7 +12,7 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.1.2)</string>
+    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.2.1)</string>
     <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">HTTP</string>
@@ -42,7 +42,7 @@
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
     <string name="submission">mySubmissions</string>
-    <string name="calendar">myCalendar</string>
+    <string name="calendar">Calendar</string>
     <string name="email">Email</string>
     <string name="documents">Documents</string>
     <string name="your_ans">Your Answer</string>
@@ -307,4 +307,10 @@
     <string name="diagnosis_note">Diagnosis Note</string>
     <string name="menu_community">Community</string>
     <string name="library">Library</string>
+    <string name="enter_title">Enter title</string>
+    <string name="add_link">Add Link</string>
+    <string name="chat">Chat</string>
+    <string name="members">Members</string>
+    <string name="tasks">Tasks</string>
+    <string name="join_requests">Join Requests</string>
 </resources>

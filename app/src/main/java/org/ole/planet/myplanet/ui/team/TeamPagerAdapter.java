@@ -37,16 +37,16 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
         list.add(MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
         list.add(MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         if (isMyTeam) {
-            list.add(MainApplication.context.getString(R.string.chats));
-            list.add(MainApplication.context.getString(R.string.task));
-            list.add(MainApplication.context.getString(isEnterprise ? R.string.applicants : R.string.requested_member));
+            list.add(MainApplication.context.getString(R.string.chat));
+            list.add( MainApplication.context.getString(R.string.calendar));
+            list.add(MainApplication.context.getString(R.string.tasks));
+            list.add(MainApplication.context.getString(isEnterprise ? R.string.applicants : R.string.join_requests));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.finances : R.string.courses));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.documents : R.string.resources));
             list.remove(0);
             list.remove(0);
             list.add(1, MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
-            list.add(2, MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
-            list.add( MainApplication.context.getString(R.string.calendar));
+            list.add(2, MainApplication.context.getString(isEnterprise ? R.string.team : R.string.members));
 
         }
     }
