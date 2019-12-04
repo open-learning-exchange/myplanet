@@ -178,7 +178,10 @@ public class MyHealthFragment extends Fragment {
             llUserDetail.setVisibility(View.VISIBLE);
             txtMessage.setVisibility(View.GONE);
             RealmMyHealth mm = getHealthProfile(mh);
-
+            if(mm == null){
+                Utilities.toast(getActivity(), "Health Record not available.");
+                return;
+            }
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
             txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
             txtEmail.setText(TextUtils.isEmpty(myHealths.getEmail()) ? "N/A" : myHealths.getEmail());
@@ -189,9 +192,6 @@ public class MyHealthFragment extends Fragment {
             txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthplace()) ? "N/A" : myHealths.getBirthplace());
             txtEmergency.setText("Name : " + myHealths.getEmergencyContactName() + "\nType : " + myHealths.getEmergencyContactName() + "\nContact : " + myHealths.getEmergencyContact());
             List<RealmExamination> list = mm.getEvents();
-            if (list == null) {
-                list = new ArrayList<>();
-            }
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
             rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list,mh ));
