@@ -17,6 +17,7 @@ import com.firebase.jobdispatcher.Job;
 import com.firebase.jobdispatcher.Lifetime;
 import com.firebase.jobdispatcher.RetryStrategy;
 import com.firebase.jobdispatcher.Trigger;
+import com.jakewharton.threetenabp.AndroidThreeTen;
 
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmApkLog;
@@ -68,6 +69,8 @@ public class MainApplication extends Application implements Application.Activity
         builder.detectFileUriExposure();
         dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         context = this;
+        AndroidThreeTen.init(this);
+
         Realm.init(this);
         preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {

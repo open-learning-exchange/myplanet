@@ -9,6 +9,7 @@ import android.preference.PreferenceManager;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -63,7 +64,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     public static Calendar cal_today, cal_last_Sync;
     EditText serverUrl, serverUrlProtocol;
-    EditText serverPassword,customDeviceName;
+    EditText serverPassword, customDeviceName;
     String processedUrl;
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
@@ -75,7 +76,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
     private CheckBox save, managerialLogin;
-    private boolean isSync = false, isUpload = false, forceSync = false;
+    private boolean isSync = false, forceSync = false;
     private SwitchCompat switchChildMode;
 
     @Override
@@ -89,7 +90,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         if (forceSync) {
-            isUpload = false;
             isSync = false;
             processedUrl = Utilities.getUrl();
         }
@@ -106,7 +106,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private boolean forceSyncTrigger() {
-        lblLastSyncDate.setText("<< Last sync with server: " + Utilities.getRelativeTime(settings.getLong("LastSync", 0))+" >>");
+        lblLastSyncDate.setText("<< Last sync with server: " + Utilities.getRelativeTime(settings.getLong("LastSync", 0)) + " >>");
         if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
             return checkForceSync(7);
         } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
@@ -210,12 +210,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
-        isUpload = false;
         isSync = true;
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage();
         }
-        new Service(this).checkVersion(this, settings);
+
+
+        new Service(this).isPlanetAvailable(new Service.PlanetAvailableListener() {
+            @Override
+            public void isAvailable() {
+                new Service(LoginActivity.this).checkVersion(LoginActivity.this, settings);
+
+            }
+
+            @Override
+            public void notAvailable() {
+                DialogUtils.showAlert(LoginActivity.this, "Error", "Planet server not reachable.");
+            }
+        });
     }
 
 
@@ -228,8 +240,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         gifDrawable.stop();
         syncIcon.setOnClickListener(v -> {
             gifDrawable.reset();
-            isUpload = true;
             isSync = false;
+            forceSync = true;
             new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
@@ -434,10 +446,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         try {
             if (isSync) {
                 isServerReachable(processedUrl);
-            } else if (isUpload) {
-                Utilities.log("Upload : Continue sync , Start upload");
-                startUpload();
-            } else if (forceSync) {
+            }
+//            else if (isUpload) {
+//                Utilities.log("Upload : Continue sync , Start upload");
+//                startUpload();
+//            }
+
+            else if (forceSync) {
                 isServerReachable(processedUrl);
                 startUpload();
             }
@@ -503,7 +518,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         }
     }
-    public String getCustomDeviceName(){
-        return settings.getString("customDeviceName",NetworkUtils.getDeviceName());
+
+    public String getCustomDeviceName() {
+        return settings.getString("customDeviceName", NetworkUtils.getDeviceName());
     }
 }
