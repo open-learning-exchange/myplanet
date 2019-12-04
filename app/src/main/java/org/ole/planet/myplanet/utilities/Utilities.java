@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 
+import java.math.BigInteger;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -122,6 +123,7 @@ public class Utilities {
 
     public static String getHeader() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        Utilities.log("User " + settings.getString("url_user", "") + " "  + settings.getString("url_pwd", ""));
         return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
                 settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
@@ -156,6 +158,9 @@ public class Utilities {
         return url + path;
     }
 
+    public static String toHex(String arg) {
+        return String.format("%x", new BigInteger(1, arg.getBytes()));
+    }
 
     public static String getMimeType(String url) {
         String type = null;
