@@ -129,8 +129,6 @@ public class RealmTag extends RealmObject {
         RealmTag tag = mRealm.where(RealmTag.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (tag == null)
             tag = mRealm.createObject(RealmTag.class, JsonUtils.getString("_id", act));
-        Utilities.log("Insert tag " + JsonUtils.getString("name", act));
-        Utilities.log("Insert tag " + JsonUtils.getString("_id", act));
         tag.set_rev(JsonUtils.getString("_rev", act));
         tag.set_id(JsonUtils.getString("_id", act));
         tag.setName(JsonUtils.getString("name", act));
