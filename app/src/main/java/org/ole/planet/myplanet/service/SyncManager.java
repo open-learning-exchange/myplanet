@@ -159,7 +159,7 @@ public class SyncManager {
 
     private void syncResource(ApiInterface dbClient, SyncListener listener) throws IOException {
         int skip = 0;
-        int limit = 1000;
+        int limit = 5000;
         List<String> newIds = new ArrayList<>();
         while (true) {
             JsonObject object = new JsonObject();
@@ -177,7 +177,7 @@ public class SyncManager {
                 skip = skip + limit;
             }
         }
-        RealmMyLibrary.removeDeletedResource(newIds, mRealm);
+       RealmMyLibrary.removeDeletedResource(newIds, mRealm);
     }
 
 
