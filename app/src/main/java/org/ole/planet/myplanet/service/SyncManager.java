@@ -8,6 +8,7 @@ import android.net.wifi.WifiManager;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
@@ -159,25 +160,35 @@ public class SyncManager {
 
     private void syncResource(ApiInterface dbClient, SyncListener listener) throws IOException {
         int skip = 0;
-        int limit = 5000;
+        int limit = 1000;
         List<String> newIds = new ArrayList<>();
+        final retrofit2.Call<JsonObject> allDocs = dbClient.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/resources/_all_docs");
+        Response<JsonObject> all = allDocs.execute();
+        JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
         while (true) {
-            JsonObject object = new JsonObject();
-            object.add("selector", new JsonObject());
-            object.addProperty("limit", limit);
-            object.addProperty("skip", skip);
-            Utilities.log("Url " + Utilities.getUrl() + "/resources/_find");
-            final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
-            Response<JsonObject> a = allDocs.execute();
-            List<String> ids = RealmMyLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
-            newIds.addAll(ids);
-            if (a.body().size() < limit) {
-                break;
-            } else {
-                skip = skip + limit;
+//            JsonObject object = new JsonObject();
+//            object.add("selector", new JsonObject());
+//            object.addProperty("limit", limit);
+//            object.addProperty("skip", skip);
+            if (rows.size() < limit){
+               List<String> keys =  getIds(rows);
+               break;
+            }else{
+
             }
+            List<String> ids = RealmMyLibrary.save(JsonUtils.getJsonArray("docs", all.body()), mRealm);
+            newIds.addAll(ids);
+
         }
        RealmMyLibrary.removeDeletedResource(newIds, mRealm);
+    }
+
+    private  List<String> getIds(JsonArray rows) {
+        List<String> ar = new ArrayList<>();
+        for(JsonElement el : rows){
+            ar.add(el.getAsJsonObject().get("id").getAsString());
+        }
+        return ar;
     }
 
 
