@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -159,38 +160,29 @@ public class SyncManager {
     }
 
     private void syncResource(ApiInterface dbClient, SyncListener listener) throws IOException {
-        int skip = 0;
-        int limit = 1000;
         List<String> newIds = new ArrayList<>();
-        final retrofit2.Call<JsonObject> allDocs = dbClient.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/resources/_all_docs");
+        final retrofit2.Call<JsonObject> allDocs = dbClient.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/resources/_all_docs?include_doc=false");
         Response<JsonObject> all = allDocs.execute();
         JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
-        while (true) {
-//            JsonObject object = new JsonObject();
-//            object.add("selector", new JsonObject());
-//            object.addProperty("limit", limit);
-//            object.addProperty("skip", skip);
-            if (rows.size() < limit){
-               List<String> keys =  getIds(rows);
-               break;
-            }else{
-
+        List<String> keys = new ArrayList<>();
+        for (int i = 0; i < rows.size(); i++) {
+            JsonObject object = rows.get(i).getAsJsonObject();
+            if (!TextUtils.isEmpty(JsonUtils.getString("id", object)))
+                keys.add(JsonUtils.getString("key", object));
+            if (i == rows.size() - 1 || keys.size() == 1000) {
+                JsonObject obj = new JsonObject();
+                obj.add("keys", new Gson().fromJson(new Gson().toJson(keys), JsonArray.class));
+                final Response<JsonObject> response = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj).execute();
+                if (response.body() != null) {
+                    List<String> ids = RealmMyLibrary.save(JsonUtils.getJsonArray("rows", response.body()), mRealm);
+                    newIds.addAll(ids);
+                }
+                keys.clear();
             }
-            List<String> ids = RealmMyLibrary.save(JsonUtils.getJsonArray("docs", all.body()), mRealm);
-            newIds.addAll(ids);
-
         }
-       RealmMyLibrary.removeDeletedResource(newIds, mRealm);
-    }
 
-    private  List<String> getIds(JsonArray rows) {
-        List<String> ar = new ArrayList<>();
-        for(JsonElement el : rows){
-            ar.add(el.getAsJsonObject().get("id").getAsString());
-        }
-        return ar;
+        RealmMyLibrary.removeDeletedResource(newIds, mRealm);
     }
-
 
     private void myLibraryTransactionSync() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);

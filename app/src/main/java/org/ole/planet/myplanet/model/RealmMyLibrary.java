@@ -667,7 +667,8 @@ public class RealmMyLibrary extends RealmObject {
         List<String> list = new ArrayList<>();
         for (int i = 0; i < allDocs.size(); i++) {
             JsonObject doc = allDocs.get(i).getAsJsonObject();
-            String id = JsonUtils.getString("_id", doc);
+            doc = JsonUtils.getJsonObject("doc", doc);
+            String id = JsonUtils.getString("_id",doc );
             list.add(id);
             RealmMyLibrary.insertResources(doc, mRealm);
         }
