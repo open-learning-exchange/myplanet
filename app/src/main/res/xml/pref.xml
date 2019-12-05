@@ -7,6 +7,11 @@
         android:key="app_language"
         android:title="@string/language" />
 
+    <SwitchPreference
+        android:defaultValue="false"
+        android:key="saveUsernameAndPassword"
+        android:title="@string/save_username_and_password" />
+
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="Auto Sync">
