@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
@@ -238,7 +239,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
 
     public void startSync() {
-        SyncManager.getInstance().start(this);
+        Utilities.log("Start sync");
+
+                SyncManager.getInstance().start(SyncActivity.this);
+
     }
 
     public String saveConfigAndContinue(MaterialDialog dialog) {

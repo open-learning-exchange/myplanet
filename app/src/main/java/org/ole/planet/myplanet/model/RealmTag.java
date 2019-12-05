@@ -137,19 +137,10 @@ public class RealmTag extends RealmObject {
         tag.setTagId(JsonUtils.getString("tagId", act));
         tag.setLinkId(JsonUtils.getString("linkId", act));
         JsonElement el = act.get("attachedTo");
-        if (el!=null && el.isJsonArray()) {
+        if (el != null && el.isJsonArray()) {
             tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act));
         } else {
-//            String[] attachedTo = JsonUtils.getString("attachedTo", act).split("_");
-//            Utilities.log(attachedTo.length + " attached to");
-//            Utilities.log( JsonUtils.getString("attachedTo", act) + " attached to");
-//            if (attachedTo.length > 1){
-//                for (int i = 1 ; i < attachedTo.length; i ++){
-//                    tag.attachedTo = new RealmList<>();
             tag.attachedTo.add(JsonUtils.getString("attachedTo", act));
-//                }
-//            }
-
         }
         tag.setAttached(tag.getAttachedTo().size() > 0);
     }
