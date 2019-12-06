@@ -41,8 +41,7 @@
                         android:id="@+id/et_temperature"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/body_temperature"
-                        android:inputType="numberDecimal" />
+                        android:hint="@string/body_temperature" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -57,8 +56,7 @@
                         android:id="@+id/et_pulse_rate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/pulse_rate"
-                        android:inputType="number" />
+                        android:hint="@string/pulse_rate" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -73,8 +71,7 @@
                         android:id="@+id/et_bloodpressure"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/blood_pressure"
-                        android:inputType="number" />
+                        android:hint="@string/blood_pressure" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -97,8 +94,7 @@
                         android:id="@+id/et_height"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/height"
-                        android:inputType="numberDecimal" />
+                        android:hint="@string/height" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -113,8 +109,7 @@
                         android:id="@+id/et_weight"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/weight"
-                        android:inputType="numberDecimal" />
+                        android:hint="@string/weight" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
