@@ -38,6 +38,8 @@
     <string name="download_all">Download All</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="add_to_mycourse">Add to my courses</string>
+    <string name="join_selected">Join Selected</string>
+    <string name="join">Join</string>
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
     <string name="submission">mySubmissions</string>
