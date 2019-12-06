@@ -213,7 +213,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
-            }m
+            }
         });
     }
 
