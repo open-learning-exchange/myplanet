@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
+
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,6 +39,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     Realm mRealm;
     RealmMyLibrary library;
     RealmUserModel userModel;
+    String openFrom = "";
 
     public LibraryDetailFragment() {
     }
@@ -47,7 +50,8 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             libraryId = getArguments().getString("libraryId");
-            Utilities.log("Library id " + libraryId);
+            if (getArguments().containsKey("openFrom"))
+                openFrom = getArguments().getString("openFrom");
         }
     }
 
@@ -97,7 +101,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     }
 
     private void setLibraryData() {
-        title.setText(library.getTitle());
+        title.setText(String.format("%s%s", openFrom.isEmpty() ? "" : openFrom + "-", library.getTitle()));
         author.setText(library.getAuthor());
         pubishedBy.setText(library.getPublisher());
         media.setText(library.getMediaType());

@@ -2,15 +2,18 @@ package org.ole.planet.myplanet.ui.team;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputLayout;
+
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -210,7 +213,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
-            }
+            }m
         });
     }
 
@@ -222,6 +225,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 LibraryDetailFragment f = new LibraryDetailFragment();
                 Bundle b = new Bundle();
                 b.putString("libraryId", libraries.get(i).getId());
+                b.putString("openFrom", team.getTeamType() + "-" + team.getTitle() );
                 f.setArguments(b);
                 homeItemClickListener.openCallFragment(f);
             }
