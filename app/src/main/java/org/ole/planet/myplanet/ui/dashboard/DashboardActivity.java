@@ -287,6 +287,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         Fragment f = new LibraryDetailFragment();
         Bundle b = new Bundle();
         b.putString("libraryId", library.getResource_id());
+        b.putString("openFrom", "Dashboard");
         f.setArguments(b);
         openCallFragment(f);
     }
