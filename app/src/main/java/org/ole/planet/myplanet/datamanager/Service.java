@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.datamanager;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import com.google.gson.Gson;
 
@@ -44,28 +45,25 @@ public class Service {
                     retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(new Callback<ResponseBody>() {
                         @Override
                         public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
-//                            checkForUpdate(response.body(), callback);
-                            String respones = null;
+                            String responses = null;
                             try {
-                                respones = response.body().string();
-                                Utilities.log("Apk version " + respones);
-                                if (respones != null) {
-                                    int currentVersion = VersionUtils.getVersionCode(context);
-                                    Utilities.log(p.getLatestapk() + " " + currentVersion + " " + p.getMinapkcode());
-                                    if (respones.equals(p.getLatestapk()) && currentVersion < p.getMinapkcode()) {
-                                        callback.onUpdateAvailable(p, true);
-                                    }else{
-                                        callback.onError("Planet up to date", false);
-
-                                    }
+                                responses = response.body().string();
+                                if (responses.isEmpty()) {
+                                    callback.onError("Planet up to date", false);
+                                    return;
+                                }
+                                int apkVersion = Integer.parseInt(responses.replaceAll("v", "").replaceAll(".", ""));
+                                int currentVersion = VersionUtils.getVersionCode(context);
+                                Utilities.log(p.getLatestapk() + " " + currentVersion + " " + p.getMinapkcode());
+                                if (currentVersion < p.getMinapkcode() && currentVersion < apkVersion) {
+                                    callback.onUpdateAvailable(p, true);
                                 } else {
                                     callback.onError("Planet up to date", false);
                                 }
 
-                            } catch (IOException e) {
+                            } catch (Exception e) {
                                 callback.onError("Version not found", true);
                             }
-
                         }
 
                         @Override
