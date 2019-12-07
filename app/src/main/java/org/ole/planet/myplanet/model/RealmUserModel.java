@@ -70,8 +70,8 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("derived_key", getDerived_key());
         object.addProperty("salt", getSalt());
         object.addProperty("password_scheme", getPassword_scheme());
-        object.addProperty("key", getKey());
-        object.addProperty("iv", getIv());
+//        object.addProperty("key", getKey());
+//        object.addProperty("iv", getIv());
         return object;
     }
 

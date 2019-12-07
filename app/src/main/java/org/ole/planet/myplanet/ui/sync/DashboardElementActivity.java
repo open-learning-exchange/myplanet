@@ -79,7 +79,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 //            case 4:
 //                openCallFragment(new SurveyFragment(), "survey");
 //                break;
-            case 5:
+            case 4:
                 openCallFragment(new CommunityFragment(), "community");
                 break;
         }

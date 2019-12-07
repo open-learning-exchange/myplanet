@@ -10,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
@@ -55,6 +56,7 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.fab_survey).setOnClickListener(v -> openHelperFragment(new SurveyFragment()));
         view.findViewById(R.id.fab_feedback).setOnClickListener(v -> openHelperFragment(new FeedbackListFragment()));
         view.findViewById(R.id.myLifeImageButton).setOnClickListener(v -> homeItemClickListener.openCallFragment(new LifeFragment()));
+        view.findViewById(R.id.fab_notification).setOnClickListener(v ->  showNotificationFragment());
     }
 
     private void openHelperFragment(Fragment f) {
