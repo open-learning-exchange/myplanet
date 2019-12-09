@@ -112,14 +112,14 @@
 
                 <Button
                     android:id="@+id/btn_submit"
+                    style="@style/YellowButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"
                     android:layout_margin="@dimen/padding_large"
+                    android:background="@drawable/buttonyellow"
                     android:padding="@dimen/padding_normal"
-                    android:text="Submit Answer"
-                    android:background="@drawable/buttongrey"
-                    style="@style/GreyButtons" />
+                    android:text="Submit Answer" />
 
             </LinearLayout>
 

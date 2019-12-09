@@ -38,14 +38,14 @@
 
                 <Button
                     android:id="@+id/btn_edit"
+                    style="@style/YellowButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/buttonyellow"
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
-                    android:text="@string/edit_achievement"
-                    android:background="@drawable/buttongrey"
                     android:padding="@dimen/padding_normal"
-                    style="@style/GreyButtons" />
+                    android:text="@string/edit_achievement" />
 
 
             </LinearLayout>

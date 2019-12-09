@@ -142,7 +142,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         tvStepTitle.setText(currentCourse.getCourseTitle());
         if (!currentCourse.getUserId().contains(userModel.getId())) {
             btnAddRemove.setVisibility(View.VISIBLE);
-            btnAddRemove.setText(getString(R.string.add_to_mycourses));
+            btnAddRemove.setText(getString(R.string.join));
         } else {
             btnAddRemove.setVisibility(View.GONE);
         }
