@@ -92,7 +92,13 @@
 
     <style name="GreyButtons" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_white_1000</item>
-        <item name="android:background">@color/md_grey_500</item>
+        <item name="android:background">@color/md_amber_500</item>
+        <item name="colorControlHighlight">@color/disable_color</item>
+    </style>
+
+    <style name="YellowButtons" parent="Theme.AppCompat">
+        <item name="android:textColor">@color/md_black_1000</item>
+        <item name="android:background">@color/md_amber_500</item>
         <item name="colorControlHighlight">@color/disable_color</item>
     </style>
 

@@ -46,14 +46,14 @@
 
                 <TextView
                     android:id="@+id/tv_add"
+                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
                     android:drawableLeft="@drawable/ic_add_library"
                     android:drawablePadding="4dp"
                     android:gravity="center"
-                    android:text="@string/add_to_mycourse"
+                    android:text="@string/join_selected"
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid" />
 
