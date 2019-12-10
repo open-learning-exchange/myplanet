@@ -239,6 +239,10 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife.class);
+        showNotificationFragment();
+    }
+
+  public void showNotificationFragment(){
         NotificationFragment fragment = new NotificationFragment();
         fragment.callback = this;
         fragment.resourceList = getLibraryList(mRealm);
