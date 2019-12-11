@@ -47,6 +47,8 @@ public class RealmNews extends RealmObject {
     private long time;
     private String createdOn;
     private String parentCode;
+    private String imageUrl;
+    private String imageName;
 
     public static void insert(Realm mRealm, JsonObject doc) {
         Utilities.log("Insert news " + doc);
@@ -73,6 +75,8 @@ public class RealmNews extends RealmObject {
         news.setUserId(JsonUtils.getString("_id", user));
         news.setUserName(JsonUtils.getString("name", user));
         news.setTime(JsonUtils.getLong("time", doc));
+        news.setImageUrl(JsonUtils.getString("imageUrl",doc));
+        news.setImageName(JsonUtils.getString("imageName",doc));
     }
 
     public String getMessagePlanetCode() {
@@ -165,6 +169,8 @@ public class RealmNews extends RealmObject {
         object.addProperty("createdOn", news.getCreatedOn());
         object.addProperty("replyTo", news.getReplyTo());
         object.addProperty("parentCode", news.getParentCode());
+        object.addProperty("imageName", news.getImageName());
+        object.addProperty("imageUrl",news.getImageUrl());
         object.add("user", new Gson().fromJson(news.getUser(), JsonObject.class));
         //  object.add("user", user.serialize());
         return object;
@@ -199,6 +205,8 @@ public class RealmNews extends RealmObject {
         news.setUserId(user.getId());
         news.setReplyTo(map.containsKey("replyTo") ? map.get("replyTo") : "");
         news.setUser(new Gson().toJson(user.serialize()));
+        news.setImageUrl(map.get("imageUrl"));
+        news.setImageName(map.get("imageName"));
         mRealm.commitTransaction();
         return news;
     }
@@ -265,5 +273,21 @@ public class RealmNews extends RealmObject {
 
     public void setParentCode(String parentCode) {
         this.parentCode = parentCode;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getImageName() {
+        return imageName;
+    }
+
+    public void setImageName(String imageName) {
+        this.imageName = imageName;
     }
 }
