@@ -313,4 +313,5 @@
     <string name="members">Members</string>
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
+    <string name="add_image">Add Image</string>
 </resources>

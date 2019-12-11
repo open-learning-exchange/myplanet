@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/news_fragment_parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
-    tools:context=".ui.news.NewsFragment"
-    android:id="@+id/news_fragment_parent_layout">
+    tools:context=".ui.news.NewsFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,8 +20,8 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tl_message"
                 android:layout_width="0dp"
-                android:layout_weight="4"
                 android:layout_height="wrap_content"
+                android:layout_weight="4"
                 android:hint="@string/what_would">
 
                 <EditText
@@ -32,21 +32,26 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+
             <Button
+                android:id="@+id/add_news_image"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/add_news_image"
-                android:text="+"/>
+                android:layout_gravity="center"
+                android:text="@string/add_image"
+                android:theme="@style/PrimaryButton" />
         </LinearLayout>
+
 
         <Button
             android:id="@+id/btn_submit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="@string/button_submit"
             android:minWidth="@dimen/user_image_size"
+            android:text="@string/button_submit"
             android:theme="@style/PrimaryButton" />
+
 
         <Button
             android:id="@+id/btn_main"
@@ -62,17 +67,17 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_news"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="@dimen/padding_normal" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_news"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="@dimen/padding_normal" />
 
-        <TextView
-            android:id="@+id/tv_message"
-            android:layout_width="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_height="wrap_content"/>
+            <TextView
+                android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" />
         </FrameLayout>
     </LinearLayout>
 

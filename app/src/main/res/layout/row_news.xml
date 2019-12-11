@@ -36,8 +36,8 @@
                 android:padding="8dp">
 
                 <ImageView
-                    android:layout_width="400dp"
-                    android:layout_height="400dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
                     android:id="@+id/img_news"
                     android:padding="@dimen/padding_small"
                     android:layout_gravity="center"/>

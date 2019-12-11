@@ -366,6 +366,7 @@
     <string name="members">Members</string>
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
+    <string name="add_image">Add Image</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
