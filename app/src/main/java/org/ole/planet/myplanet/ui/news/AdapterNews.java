@@ -6,6 +6,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.net.Uri;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,12 +17,15 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 
@@ -82,6 +87,17 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
+            Uri uri = Uri.parse(news.getImageUrl());
+            try {
+                Glide.with(context)
+                        .load(new File(news.getImageUrl()))
+                        .into(((ViewHolderNews) holder).newsImage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            if(news.getImageName().isEmpty()){
+                ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
+            }
             showReplyButton(holder, news, position);
         }
     }
@@ -189,7 +205,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     class ViewHolderNews extends RecyclerView.ViewHolder {
         TextView tvName, tvDate, tvMessage;
-        ImageView imgEdit, imgDelete, imgUser;
+        ImageView imgEdit, imgDelete, imgUser, newsImage;
         LinearLayout llEditDelete;
         Button btnReply, btnShowReply;
 
@@ -204,6 +220,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
             btnReply = itemView.findViewById(R.id.btn_reply);
             btnShowReply = itemView.findViewById(R.id.btn_show_reply);
+            newsImage = itemView.findViewById(R.id.img_news);
         }
     }
 }

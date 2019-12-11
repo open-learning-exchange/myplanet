@@ -9,9 +9,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -33,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.AudioRecorderService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
@@ -202,20 +205,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
     }
 
-    public String getRealPathFromURI(Context context, Uri contentUri) {
-        Cursor cursor = null;
-        try {
-            String[] proj = {MediaStore.Images.Media.DATA};
-            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            return cursor.getString(column_index);
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -229,9 +218,9 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 }
             } else {
                 url = data.getData();
-                path = getRealPathFromURI(getActivity(), url);
-                if (TextUtils.isEmpty(path)){
-                    path = getImagePath(url);
+                path = FileUtils.getRealPathFromURI(getActivity(), url);
+                if (TextUtils.isEmpty(path)) {
+                    path = FileUtils.getImagePath(getActivity(), url);
                 }
             }
             startIntent(path);
@@ -239,22 +228,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     }
 
-    public String getImagePath(Uri uri){
-        Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null);
-        cursor.moveToFirst();
-        String document_id = cursor.getString(0);
-        document_id = document_id.substring(document_id.lastIndexOf(":")+1);
-        cursor.close();
-
-        cursor =getContext().getContentResolver().query(
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
-        cursor.moveToFirst();
-        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-        cursor.close();
-
-        return path;
-    }
 
     private void startIntent(String path) {
         if (!TextUtils.isEmpty(path)) {
