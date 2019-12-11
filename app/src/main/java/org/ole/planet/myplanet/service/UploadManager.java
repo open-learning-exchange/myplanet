@@ -387,11 +387,12 @@ public class UploadManager extends FileUploadService {
                     if (object.body() != null) {
                         act.set_id(JsonUtils.getString("id", object.body()));
                         act.set_rev(JsonUtils.getString("rev", object.body()));
-                        uploadNewsAttachment(JsonUtils.getString("id", object.body()), JsonUtils.getString("rev", object.body()), act, new SuccessListener() {
-                            @Override
-                            public void onSuccess(String success) {
-                            }
-                        });
+                        if (!TextUtils.isEmpty(act.getImageUrl()))
+                            uploadNewsAttachment(JsonUtils.getString("id", object.body()), JsonUtils.getString("rev", object.body()), act, new SuccessListener() {
+                                @Override
+                                public void onSuccess(String success) {
+                                }
+                            });
 
                     }
 
