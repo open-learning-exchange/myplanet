@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -194,6 +195,13 @@ public class FileUtils {
                 cursor.close();
             }
         }
+    }
+
+    public static void openOleFolder(Activity context) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Uri uri = Uri.parse(Utilities.SD_PATH);
+        intent.setDataAndType(uri, "*/*");
+        context.startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
     }
 
 

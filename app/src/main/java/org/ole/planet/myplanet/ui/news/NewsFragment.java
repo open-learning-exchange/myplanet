@@ -101,7 +101,7 @@ public class NewsFragment extends BaseNewsFragment {
             RealmNews.createNews(map, mRealm, user);
             rvNews.getAdapter().notifyDataSetChanged();
         });
-        btnAddImage.setOnClickListener(v -> openOleFolder());
+        btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(getActivity()));
     }
 
     public void setData(List<RealmNews> list) {
@@ -131,12 +131,12 @@ public class NewsFragment extends BaseNewsFragment {
         }
     };
 
-    private void openOleFolder() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        Uri uri = Uri.parse(Utilities.SD_PATH);
-        intent.setDataAndType(uri, "*/*");
-        startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
-    }
+//    private void openOleFolder() {
+//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//        Uri uri = Uri.parse(Utilities.SD_PATH);
+//        intent.setDataAndType(uri, "*/*");
+//        startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
+//    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {

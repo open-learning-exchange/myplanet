@@ -122,7 +122,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             showAudioRecordAlert();
         });
         v.findViewById(R.id.ll_capture_image).setOnClickListener(view -> takePhoto());
-        v.findViewById(R.id.ll_draft).setOnClickListener(view -> openOleFolder());
+        v.findViewById(R.id.ll_draft).setOnClickListener(view -> FileUtils.openOleFolder(getActivity()));
         return v;
     }
 
@@ -178,12 +178,12 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         }
     }
 
-    private void openOleFolder() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        Uri uri = Uri.parse(Utilities.SD_PATH);
-        intent.setDataAndType(uri, "*/*");
-        startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
-    }
+//    private void openOleFolder() {
+//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//        Uri uri = Uri.parse(Utilities.SD_PATH);
+//        intent.setDataAndType(uri, "*/*");
+//        startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
+//    }
 
     private void dispatchTakeVideoIntent() {
 
