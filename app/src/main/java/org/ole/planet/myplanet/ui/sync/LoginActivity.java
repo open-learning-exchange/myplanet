@@ -90,9 +90,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         showWifiDialog();
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
+        processedUrl = Utilities.getUrl();
         if (forceSync) {
             isSync = false;
-            processedUrl = Utilities.getUrl();
+
         }
         if (getIntent().hasExtra("versionInfo")) {
             onUpdateAvailable((MyPlanet) getIntent().getSerializableExtra("versionInfo"), getIntent().getBooleanExtra("cancelable", false));
