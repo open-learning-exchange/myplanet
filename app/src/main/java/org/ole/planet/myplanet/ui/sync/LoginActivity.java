@@ -117,6 +117,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         return false;
     }
 
+
     private void showWifiDialog() {
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
             DialogUtils.showWifiSettingDialog(this);
