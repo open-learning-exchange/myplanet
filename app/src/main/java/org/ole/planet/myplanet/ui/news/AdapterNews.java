@@ -1,12 +1,14 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -87,18 +89,23 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-            Uri uri = Uri.parse(news.getImageUrl());
+            loadImage(holder, list.get(position).getImageUrl());
+            showReplyButton(holder, news, position);
+        }
+    }
+
+    private void loadImage(RecyclerView.ViewHolder holder, String imageUrl) {
+        Uri uri = Uri.parse(imageUrl);
+        if (TextUtils.isEmpty(imageUrl)) {
+            ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
+        } else {
             try {
                 Glide.with(context)
-                        .load(new File(news.getImageUrl()))
+                        .load(new File(imageUrl))
                         .into(((ViewHolderNews) holder).newsImage);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if(news.getImageName().isEmpty()){
-                ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
-            }
-            showReplyButton(holder, news, position);
         }
     }
 
@@ -148,7 +155,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         EditText et = v.findViewById(R.id.et_input);
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         if (isEdit)
-            et.setText(news.getMessage() +"");
+            et.setText(news.getMessage() + "");
         new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {

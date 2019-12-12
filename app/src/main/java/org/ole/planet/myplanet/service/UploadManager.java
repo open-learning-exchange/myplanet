@@ -393,7 +393,6 @@ public class UploadManager extends FileUploadService {
                                 public void onSuccess(String success) {
                                 }
                             });
-
                     }
 
                 } catch (Exception e) {
