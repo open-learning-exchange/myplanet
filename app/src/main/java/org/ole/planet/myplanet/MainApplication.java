@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
@@ -90,13 +91,15 @@ public class MainApplication extends Application implements Application.Activity
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.YEAR, -1);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
-            UsageStatsManager  mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+            UsageStatsManager mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
             List<UsageStats> queryUsageStats = mUsageStatsManager
                     .queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(),
                             System.currentTimeMillis());
-            Utilities.log("Usages Stats " + queryUsageStats.size() );
-            for (UsageStats s : queryUsageStats){
-                Utilities.log(s.getPackageName().equals(getPackageName()) + " package name");
+            Utilities.log("Usages Stats " + queryUsageStats.size());
+            for (UsageStats s : queryUsageStats) {
+                if (s.getPackageName().equals(getPackageName())) {
+                    Utilities.log("Last time used : " + TimeUtils.formatDate(s.getLastTimeUsed()) + " , Total foreground time :" + (s.getTotalTimeInForeground() / (1000 * 60 * 60)) + " min");
+                }
             }
         }
     }
