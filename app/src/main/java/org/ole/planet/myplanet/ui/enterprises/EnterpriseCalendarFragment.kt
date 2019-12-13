@@ -112,6 +112,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         mRealm.commitTransaction()
                         Utilities.toast(activity, "Meetup added")
                         rvCalendar.adapter?.notifyDataSetChanged()
+                        calendarView.notifyCalendarChanged()
                     }
                 }.setNegativeButton("Cancel", null).show()
     }
