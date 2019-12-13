@@ -3,6 +3,8 @@ package org.ole.planet.myplanet;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -33,7 +35,9 @@ import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -83,10 +87,21 @@ public class MainApplication extends Application implements Application.Activity
         createJob(60, TaskNotificationService.class);
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.YEAR, -1);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
+            UsageStatsManager  mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
+            List<UsageStats> queryUsageStats = mUsageStatsManager
+                    .queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(),
+                            System.currentTimeMillis());
+            Utilities.log("Usages Stats " + queryUsageStats.size() );
+            for (UsageStats s : queryUsageStats){
+                Utilities.log(s.getPackageName().equals(getPackageName()) + " package name");
+            }
+        }
     }
 
     public void createJob(int sec, Class jobClass) {
-        Utilities.log("Create job");
         Job myJob = dispatcher.newJobBuilder()
                 .setService(jobClass)
                 .setTag("ole")

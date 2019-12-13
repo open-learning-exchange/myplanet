@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
