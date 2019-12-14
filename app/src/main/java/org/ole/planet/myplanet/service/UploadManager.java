@@ -424,11 +424,8 @@ public class UploadManager extends FileUploadService {
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                 JsonObject object = response.body();
                 if (object != null) {
-                    if (!mRealm.isInTransaction())
-                        mRealm.beginTransaction();
                     String _rev = JsonUtils.getString("rev", object);
                     String _id = JsonUtils.getString("id", object);
-                    mRealm.commitTransaction();
                     uploadNewsAttachment(_id, _rev, news, success -> { });
                 }
             }
