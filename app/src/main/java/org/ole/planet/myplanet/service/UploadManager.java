@@ -381,7 +381,6 @@ public class UploadManager extends FileUploadService {
                     if (act.getUserId().startsWith("guest"))
                         continue;
                     Response<JsonObject> object;
-                    Utilities.log(RealmNews.serializeNews(act, userModel).toString());
                     if (TextUtils.isEmpty(act.get_id())) {
                         object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news", RealmNews.serializeNews(act, userModel)).execute();
                     } else {
@@ -391,11 +390,6 @@ public class UploadManager extends FileUploadService {
                         act.set_id(JsonUtils.getString("id", object.body()));
                         act.set_rev(JsonUtils.getString("rev", object.body()));
                         if (!TextUtils.isEmpty(act.getImageUrl()))
-//                            uploadNewsAttachment(JsonUtils.getString("id", object.body()), JsonUtils.getString("rev", object.body()), act, new SuccessListener() {
-//                                @Override
-//                                public void onSuccess(String success) {
-//                                }
-//                            });
                             uploadNewsImage(act);
                     }
 

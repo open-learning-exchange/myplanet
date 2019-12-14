@@ -20,8 +20,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
@@ -35,6 +37,7 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 
@@ -54,6 +57,7 @@ public class NewsFragment extends BaseNewsFragment {
     TextView tvMessage;
     AdapterNews adapterNews;
     String imageName = "", imageUrl = "";
+    ImageView thumb;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -64,6 +68,7 @@ public class NewsFragment extends BaseNewsFragment {
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
         tvMessage = v.findViewById(R.id.tv_message);
+        thumb = v.findViewById(R.id.thumb);
         btnAddImage = v.findViewById(R.id.add_news_image);
 //        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
@@ -131,17 +136,9 @@ public class NewsFragment extends BaseNewsFragment {
         }
     };
 
-//    private void openOleFolder() {
-//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-//        Uri uri = Uri.parse(Utilities.SD_PATH);
-//        intent.setDataAndType(uri, "*/*");
-//        startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
-//    }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Utilities.log("Path ...");
-
         if (resultCode == RESULT_OK) {
             Uri url = null;
             String path = "";
@@ -150,11 +147,16 @@ public class NewsFragment extends BaseNewsFragment {
             if (TextUtils.isEmpty(path)) {
                 path = getImagePath(url);
             }
-            Utilities.log("Path " + path);
             imageUrl = path;
             imageName = FileUtils.getFileNameFromUrl(path);
-        }else{
-            Utilities.log("RESULLL");
+            try {
+                thumb.setVisibility(View.VISIBLE);
+                Glide.with(getActivity())
+                        .load(new File(imageUrl))
+                        .into(thumb);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
     }
