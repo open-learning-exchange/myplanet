@@ -419,7 +419,6 @@ public class UploadManager extends FileUploadService {
         object1.addProperty(news.getViewableBy(), news.getViewableId());
         object.add("privateFor", object1);
         object.addProperty("mediaType", "image");
-        Utilities.log("NEWS IMAGE " + new Gson().toJson(object));
         apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", object).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -430,18 +429,12 @@ public class UploadManager extends FileUploadService {
                     String _rev = JsonUtils.getString("rev", object);
                     String _id = JsonUtils.getString("id", object);
                     mRealm.commitTransaction();
-                    uploadNewsAttachment(_id, _rev, news, new SuccessListener() {
-                        @Override
-                        public void onSuccess(String success) {
-
-                        }
-                    });
+                    uploadNewsAttachment(_id, _rev, news, success -> { });
                 }
             }
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
-//                listener.onSuccess("Unable to upload resource");
             }
         });
 
