@@ -33,10 +33,13 @@ import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 
 import io.realm.Realm;
@@ -388,18 +391,68 @@ public class UploadManager extends FileUploadService {
                         act.set_id(JsonUtils.getString("id", object.body()));
                         act.set_rev(JsonUtils.getString("rev", object.body()));
                         if (!TextUtils.isEmpty(act.getImageUrl()))
-                            uploadNewsAttachment(JsonUtils.getString("id", object.body()), JsonUtils.getString("rev", object.body()), act, new SuccessListener() {
-                                @Override
-                                public void onSuccess(String success) {
-                                }
-                            });
+//                            uploadNewsAttachment(JsonUtils.getString("id", object.body()), JsonUtils.getString("rev", object.body()), act, new SuccessListener() {
+//                                @Override
+//                                public void onSuccess(String success) {
+//                                }
+//                            });
+                            uploadNewsImage(act);
                     }
 
                 } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         });
     }
+
+
+    public void uploadNewsImage(RealmNews news) {
+        mRealm = new DatabaseService(context).getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        JsonObject object = new JsonObject();
+        object.addProperty("title", news.getImageName());
+        object.addProperty("createdDate", new Date().getTime());
+        object.addProperty("filename", news.getImageName());
+        object.addProperty("addedBy", news.getUserId());
+        object.addProperty("private", true);
+        object.addProperty("resideOn", news.getParentCode());
+        object.addProperty("sourcePlanet", news.getMessagePlanetCode());
+        JsonObject object1 = new JsonObject();
+        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("deviceName", NetworkUtils.getDeviceName());
+        object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
+        object1.addProperty(news.getViewableBy(), news.getViewableId());
+        object.add("privateFor", object1);
+        object.addProperty("mediaType", "image");
+        Utilities.log("NEWS IMAGE " + new Gson().toJson(object));
+        apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", object).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                JsonObject object = response.body();
+                if (object != null) {
+                    if (!mRealm.isInTransaction())
+                        mRealm.beginTransaction();
+                    String _rev = JsonUtils.getString("rev", object);
+                    String _id = JsonUtils.getString("id", object);
+                    mRealm.commitTransaction();
+                    uploadNewsAttachment(_id, _rev, news, new SuccessListener() {
+                        @Override
+                        public void onSuccess(String success) {
+
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+//                listener.onSuccess("Unable to upload resource");
+            }
+        });
+
+    }
+
 
     public void uploadCrashLog(final SuccessListener listener) {
         mRealm = dbService.getRealmInstance();

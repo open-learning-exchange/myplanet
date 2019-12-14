@@ -101,7 +101,7 @@ public class NewsFragment extends BaseNewsFragment {
             RealmNews.createNews(map, mRealm, user);
             rvNews.getAdapter().notifyDataSetChanged();
         });
-        btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(getActivity()));
+        btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
     }
 
     public void setData(List<RealmNews> list) {
@@ -140,6 +140,8 @@ public class NewsFragment extends BaseNewsFragment {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Utilities.log("Path ...");
+
         if (resultCode == RESULT_OK) {
             Uri url = null;
             String path = "";
@@ -148,8 +150,11 @@ public class NewsFragment extends BaseNewsFragment {
             if (TextUtils.isEmpty(path)) {
                 path = getImagePath(url);
             }
+            Utilities.log("Path " + path);
             imageUrl = path;
             imageName = FileUtils.getFileNameFromUrl(path);
+        }else{
+            Utilities.log("RESULLL");
         }
 
     }

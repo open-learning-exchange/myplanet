@@ -12,6 +12,7 @@ import android.os.StatFs;
 
 import androidx.core.content.FileProvider;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 import android.provider.MediaStore;
 import android.text.TextUtils;
@@ -197,7 +198,7 @@ public class FileUtils {
         }
     }
 
-    public static void openOleFolder(Activity context) {
+    public static void openOleFolder(Fragment context) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         Uri uri = Uri.parse(Utilities.SD_PATH);
         intent.setDataAndType(uri, "*/*");

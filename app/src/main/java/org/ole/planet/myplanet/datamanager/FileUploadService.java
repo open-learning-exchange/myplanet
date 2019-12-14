@@ -35,12 +35,12 @@ public class FileUploadService {
     }
 
 
-    public void uploadNewsAttachment(String id, String rev, RealmNews personal, SuccessListener listener) {
+    public void uploadNewsAttachment(String id, String rev, RealmNews news, SuccessListener listener) {
 
-        File f = new File(personal.getImageUrl());
-        String name = FileUtils.getFileNameFromUrl(personal.getImageUrl());
+        File f = new File(news.getImageUrl());
+        String name = FileUtils.getFileNameFromUrl(news.getImageUrl());
 
-        upload_doc(id, rev, "%s/news/%s/%s", f, name, listener);
+        upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
 
 

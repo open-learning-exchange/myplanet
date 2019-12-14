@@ -122,7 +122,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             showAudioRecordAlert();
         });
         v.findViewById(R.id.ll_capture_image).setOnClickListener(view -> takePhoto());
-        v.findViewById(R.id.ll_draft).setOnClickListener(view -> FileUtils.openOleFolder(getActivity()));
+        v.findViewById(R.id.ll_draft).setOnClickListener(view -> FileUtils.openOleFolder(this));
         return v;
     }
 

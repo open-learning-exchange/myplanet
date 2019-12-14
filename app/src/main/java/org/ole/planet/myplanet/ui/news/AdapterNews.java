@@ -95,11 +95,11 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void loadImage(RecyclerView.ViewHolder holder, String imageUrl) {
-        Uri uri = Uri.parse(imageUrl);
         if (TextUtils.isEmpty(imageUrl)) {
             ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
         } else {
             try {
+                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 Glide.with(context)
                         .load(new File(imageUrl))
                         .into(((ViewHolderNews) holder).newsImage);
