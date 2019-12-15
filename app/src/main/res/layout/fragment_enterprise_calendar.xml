@@ -21,6 +21,7 @@
                 app:cv_hasBoundaries="true"
                 app:cv_orientation="horizontal"
                 android:layout_gravity="center"
+                app:cv_scrollMode="paged"
                 android:layout_height="wrap_content"
                 app:cv_monthHeaderResource="@layout/calendar_month"
                 app:cv_dayViewResource="@layout/calendar_day" />
