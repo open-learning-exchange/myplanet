@@ -154,6 +154,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         calendarView.outDateStyle = OutDateStyle.END_OF_ROW
         calendarView.scrollMode = ScrollMode.PAGED
         calendarView.hasBoundaries = true
+        calendarView.dayWidth = 60
+        calendarView.dayHeight = 60
+
         calendarView.orientation = RecyclerView.HORIZONTAL
         val currentMonth = YearMonth.now()
         val firstMonth = currentMonth.minusMonths(10)
