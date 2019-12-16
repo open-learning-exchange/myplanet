@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
 
+import androidx.annotation.RequiresApi;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -148,18 +150,21 @@ public class MyPlanet implements Serializable {
             UsageStatsManager mUsageStatsManager = (UsageStatsManager) MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE);
             List<UsageStats> queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(),
                     System.currentTimeMillis());
-            Utilities.log("Usages Stats " + queryUsageStats.size());
             for (UsageStats s : queryUsageStats) {
-                if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
-                    JsonObject object = new JsonObject();
-                    object.addProperty("lastTimeUsed", s.getLastTimeUsed());
-                    object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
-                    object.addProperty("totalUsed", s.getLastTimeUsed() - s.getFirstTimeStamp());
-                    arr.add(object);
-                }
+               addStats(s, arr);
             }
         }
-        Utilities.log("Usages jon " + new Gson().toJson(arr));
         return arr;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private static void addStats(UsageStats s, JsonArray arr) {
+        if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
+            JsonObject object = new JsonObject();
+            object.addProperty("lastTimeUsed", s.getLastTimeUsed());
+            object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
+            object.addProperty("totalUsed", s.getLastTimeUsed() - s.getFirstTimeStamp());
+            arr.add(object);
+        }
     }
 }
