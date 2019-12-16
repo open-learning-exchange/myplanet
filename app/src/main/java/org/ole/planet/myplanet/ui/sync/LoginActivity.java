@@ -103,12 +103,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             new Service(this).checkVersion(this, settings);
         }
-        if (!getUsagesPermission(this)) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                Utilities.toast(this, "Please allow usages permission to myPlanet app.");
-                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
-            }
-        }
+       checkUsagesPermission();
         new GPSService(this);
         setUpChildMode();
 

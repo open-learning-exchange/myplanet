@@ -3,11 +3,16 @@ package org.ole.planet.myplanet.base;
 import android.Manifest;
 import android.app.AppOpsManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
+import android.provider.Settings;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
+
+import org.ole.planet.myplanet.utilities.Utilities;
 
 public abstract class PermissionActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE_FILE = 111;
@@ -18,6 +23,15 @@ public abstract class PermissionActivity extends AppCompatActivity {
         return result == PackageManager.PERMISSION_GRANTED;
     }
 
+
+    public void checkUsagesPermission(){
+        if (!getUsagesPermission(this)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Utilities.toast(this, "Please allow usages permission to myPlanet app.");
+                startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+            }
+        }
+    }
     public void requestPermission(String strPermission, int perCode) {
         ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
     }
