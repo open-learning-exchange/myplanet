@@ -29,8 +29,10 @@ public abstract class BaseTeamFragment extends BaseNewsFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
+        if (getParentFragment().getArguments() != null) {
             teamId = getParentFragment().getArguments().getString("id", "");
+        }else if(getArguments()!=null){
+            teamId = getArguments().getString("id", "");
         }
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
