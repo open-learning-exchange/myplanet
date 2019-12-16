@@ -76,9 +76,17 @@ public class UploadManager extends FileUploadService {
             apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getMyPlanetActivities(context, pref, model)).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                   try{
+                       Utilities.log(new Gson().toJson(response.body()));
+
+                   }catch (Exception e){
+                       e.printStackTrace();
+                   }
                     if (listener != null) {
                         listener.onSuccess("My planet activities uploaded successfully");
                     }
+
+
                 }
 
                 @Override

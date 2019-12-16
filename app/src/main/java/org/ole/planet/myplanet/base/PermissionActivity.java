@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.base;
 
 import android.Manifest;
+import android.app.AppOpsManager;
+import android.content.Context;
 import android.content.pm.PackageManager;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,6 +20,21 @@ public abstract class PermissionActivity extends AppCompatActivity {
 
     public void requestPermission(String strPermission, int perCode) {
         ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
+    }
+
+    public boolean getUsagesPermission(Context context) {
+        boolean granted = false;
+        AppOpsManager appOps = (AppOpsManager) context
+                .getSystemService(Context.APP_OPS_SERVICE);
+        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(), context.getPackageName());
+
+        if (mode == AppOpsManager.MODE_DEFAULT) {
+            granted = (context.checkCallingOrSelfPermission(android.Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED);
+        } else {
+            granted = (mode == AppOpsManager.MODE_ALLOWED);
+        }
+        return granted;
     }
 
     public void requestPermission() {

@@ -1,19 +1,31 @@
 package org.ole.planet.myplanet.model;
 
+import android.app.usage.UsageStats;
+import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.preference.PreferenceManager;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import org.json.JSONArray;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.Serializable;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+
+import static android.content.Context.MODE_PRIVATE;
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
 public class MyPlanet implements Serializable {
     private String planetVersion;
@@ -103,7 +115,7 @@ public class MyPlanet implements Serializable {
 
     public static JsonObject getMyPlanetActivities(Context context, SharedPreferences pref, RealmUserModel model) {
         JsonObject postJSON = new JsonObject();
-        SharedPreferences preferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences preferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
         if (planet != null)
@@ -117,11 +129,37 @@ public class MyPlanet implements Serializable {
         postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
         postJSON.addProperty("time", new Date().getTime());
-
+        postJSON.add("usages", getTabletUsages());
         JsonObject gps = new JsonObject();
         gps.addProperty("latitude", pref.getString("last_lat", ""));
         gps.addProperty("longitude", pref.getString("last_lng", ""));
         postJSON.add("gps", gps);
+        Utilities.log("MP " + new Gson().toJson(postJSON));
         return postJSON;
+    }
+
+
+    public static JsonArray getTabletUsages() {
+        Calendar cal = Calendar.getInstance();
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        cal.setTimeInMillis(settings.getLong("lastUsageUploaded", 0));
+        JsonArray arr = new JsonArray();
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
+            UsageStatsManager mUsageStatsManager = (UsageStatsManager) MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE);
+            List<UsageStats> queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(),
+                    System.currentTimeMillis());
+            Utilities.log("Usages Stats " + queryUsageStats.size());
+            for (UsageStats s : queryUsageStats) {
+                if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
+                    JsonObject object = new JsonObject();
+                    object.addProperty("lastTimeUsed", s.getLastTimeUsed());
+                    object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
+                    object.addProperty("totalUsed", s.getLastTimeUsed() - s.getFirstTimeStamp());
+                    arr.add(object);
+                }
+            }
+        }
+        Utilities.log("Usages jon " + new Gson().toJson(arr));
+        return arr;
     }
 }
