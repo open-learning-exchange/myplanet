@@ -130,11 +130,12 @@ public class RealmSubmitPhotos extends RealmObject {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", submit.getId());
         obj.addProperty("submission_id", submit.getSubmission_id());
+        obj.addProperty("type", "photo");
         obj.addProperty("course_id", submit.getCourse_id());
         obj.addProperty("exam_id", submit.getExam_id());
         obj.addProperty("member_id", submit.getMember_id());
         obj.addProperty("date", submit.getDate());
-        obj.addProperty("mad_address", submit.getMac_address());
+        obj.addProperty("mac_address", submit.getMac_address());
         obj.addProperty("photo_location", submit.getPhoto_location());
 
         return obj;

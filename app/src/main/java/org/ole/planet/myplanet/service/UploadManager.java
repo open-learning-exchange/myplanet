@@ -96,9 +96,11 @@ public class UploadManager extends FileUploadService {
         mRealm.executeTransactionAsync(realm -> {
             List<RealmSubmission> submissions = realm.where(RealmSubmission.class).findAll();
             for (RealmSubmission sub : submissions) {
-                try {
-                    RealmSubmission.continueResultUpload(sub, apiInterface, realm,context);
-                } catch (IOException e) {
+               try {
+                   if(sub.getAnswers().size()>0){
+                       RealmSubmission.continueResultUpload(sub, apiInterface, realm,context);
+                   }
+                } catch (Exception e) {
                     Utilities.log("Upload exam result");
                     e.printStackTrace();
                 }

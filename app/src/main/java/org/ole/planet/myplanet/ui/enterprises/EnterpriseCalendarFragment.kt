@@ -112,6 +112,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         mRealm.commitTransaction()
                         Utilities.toast(activity, "Meetup added")
                         rvCalendar.adapter?.notifyDataSetChanged()
+                        calendarView.notifyCalendarChanged()
                     }
                 }.setNegativeButton("Cancel", null).show()
     }
@@ -151,9 +152,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         rvCalendar.adapter = AdapterCalendar(activity, list)
         calendarView.inDateStyle = InDateStyle.ALL_MONTHS
         calendarView.outDateStyle = OutDateStyle.END_OF_ROW
-        calendarView.scrollMode = ScrollMode.PAGED
         calendarView.hasBoundaries = true
-        calendarView.orientation = RecyclerView.HORIZONTAL
+        calendarView.dayWidth = 60
+        calendarView.dayHeight = 60
         val currentMonth = YearMonth.now()
         val firstMonth = currentMonth.minusMonths(10)
         val lastMonth = currentMonth.plusMonths(10)
