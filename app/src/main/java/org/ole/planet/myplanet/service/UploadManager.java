@@ -75,49 +75,32 @@ public class UploadManager extends FileUploadService {
         if (model.isManager())
             return;
         try {
-
             apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + Build.ID).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
                     if (object != null) {
-                        Utilities.log("MY PLANET RESULT " + new Gson().toJson(response.body()));
-                        JsonObject obj = response.body();
-                        JsonArray usages = obj.getAsJsonArray("usages");
+                        JsonArray usages = object.getAsJsonArray("usages");
                         usages.addAll(MyPlanet.getTabletUsages(context, pref));
-                        obj.add("usages", usages);
+                        object.add("usages", usages);
                     } else {
                         object = MyPlanet.getMyPlanetActivities(context, pref, model);
                     }
-
                     apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", object).enqueue(new Callback<JsonObject>() {
                         @Override
                         public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                            try {
-                                Utilities.log(new Gson().toJson(response.body()));
-                            } catch (Exception e) {
-                            }
                             if (listener != null) {
                                 listener.onSuccess("My planet activities uploaded successfully");
                             }
-
-
                         }
-
                         @Override
-                        public void onFailure(Call<JsonObject> call, Throwable t) {
-                        }
+                        public void onFailure(Call<JsonObject> call, Throwable t) { }
                     });
-
                 }
-
                 @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) {
-                }
+                public void onFailure(Call<JsonObject> call, Throwable t) { }
             });
-
-        } catch (Exception e) {
-        }
+        } catch (Exception e) { }
     }
 
 
