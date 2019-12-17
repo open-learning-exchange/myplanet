@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -76,7 +75,8 @@ public class UploadManager extends FileUploadService {
         if (model.isManager())
             return;
         try {
-            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" +  Base64.encode(Build.ID.getBytes(), Base64.NO_WRAP).toString()).enqueue(new Callback<JsonObject>() {
+
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + Build.ID).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
@@ -100,6 +100,8 @@ public class UploadManager extends FileUploadService {
                             if (listener != null) {
                                 listener.onSuccess("My planet activities uploaded successfully");
                             }
+
+
                         }
 
                         @Override

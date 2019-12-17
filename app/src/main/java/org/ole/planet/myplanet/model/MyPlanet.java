@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
-import android.util.Base64;
 
 import androidx.annotation.RequiresApi;
 
@@ -123,7 +122,7 @@ public class MyPlanet implements Serializable {
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
         if (planet != null)
             postJSON.addProperty("planetVersion", planet.getPlanetVersion());
-        postJSON.addProperty("_id", Base64.encode(Build.ID.getBytes(), Base64.NO_WRAP).toString());
+        postJSON.addProperty("_id", Build.ID);
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());

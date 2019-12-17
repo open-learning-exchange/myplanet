@@ -125,7 +125,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     progressDialog.dismiss();
-                    Utilities.log("RES " + response.body().string());
+                    Utilities.log("RES " + response.body().string() + " \n\n\n" + processedUrl);
                     List<String> myList = Arrays.asList(response.body().string().split(","));
                     Utilities.log("List size "  + myList.size());
                     if (myList.size() < 8) {
