@@ -2,10 +2,13 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -73,27 +76,47 @@ public class UploadManager extends FileUploadService {
         if (model.isManager())
             return;
         try {
-            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getMyPlanetActivities(context, pref, model)).enqueue(new Callback<JsonObject>() {
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" +  Base64.encode(Build.ID.getBytes(), Base64.NO_WRAP).toString()).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                   try{
-                       Utilities.log(new Gson().toJson(response.body()));
-
-                   }catch (Exception e){
-                       e.printStackTrace();
-                   }
-                    if (listener != null) {
-                        listener.onSuccess("My planet activities uploaded successfully");
+                    JsonObject object = response.body();
+                    if (object != null) {
+                        Utilities.log("MY PLANET RESULT " + new Gson().toJson(response.body()));
+                        JsonObject obj = response.body();
+                        JsonArray usages = obj.getAsJsonArray("usages");
+                        usages.addAll(MyPlanet.getTabletUsages(context, pref));
+                        obj.add("usages", usages);
+                    } else {
+                        object = MyPlanet.getMyPlanetActivities(context, pref, model);
                     }
 
+                    apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", object).enqueue(new Callback<JsonObject>() {
+                        @Override
+                        public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                            try {
+                                Utilities.log(new Gson().toJson(response.body()));
+                            } catch (Exception e) {
+                            }
+                            if (listener != null) {
+                                listener.onSuccess("My planet activities uploaded successfully");
+                            }
+
+
+                        }
+
+                        @Override
+                        public void onFailure(Call<JsonObject> call, Throwable t) {
+                        }
+                    });
 
                 }
 
                 @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) {}
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                }
             });
+
         } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -104,18 +127,15 @@ public class UploadManager extends FileUploadService {
         mRealm.executeTransactionAsync(realm -> {
             List<RealmSubmission> submissions = realm.where(RealmSubmission.class).findAll();
             for (RealmSubmission sub : submissions) {
-               try {
-                   if(sub.getAnswers().size()>0){
-                       RealmSubmission.continueResultUpload(sub, apiInterface, realm,context);
-                   }
+                try {
+                    if (sub.getAnswers().size() > 0) {
+                        RealmSubmission.continueResultUpload(sub, apiInterface, realm, context);
+                    }
                 } catch (Exception e) {
                     Utilities.log("Upload exam result");
-                    e.printStackTrace();
                 }
             }
-        }, () -> listener.onSuccess("Result sync completed successfully"), (e)->{
-            e.printStackTrace();
-        });
+        }, () -> listener.onSuccess("Result sync completed successfully"), (e) -> { });
         uploadCourseProgress();
     }
 
@@ -132,7 +152,8 @@ public class UploadManager extends FileUploadService {
                     if (ob == null) {
                         ResponseBody re = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/achievements", RealmAchievement.serialize(sub)).execute().errorBody();
                     }
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                }
             }
         });
     }
@@ -152,7 +173,8 @@ public class UploadManager extends FileUploadService {
                     if (object != null) {
                         sub.set_id(JsonUtils.getString("id", object));
                     }
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                }
             }
         });
     }
@@ -165,7 +187,8 @@ public class UploadManager extends FileUploadService {
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
                     Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                }
             }
 
         });
@@ -188,7 +211,8 @@ public class UploadManager extends FileUploadService {
                     } else {
                         Utilities.log("ERRRRRRRR " + res.errorBody().string());
                     }
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                }
 
             }
         }, () -> listener.onSuccess("Feedback sync completed successfully"));
@@ -212,7 +236,8 @@ public class UploadManager extends FileUploadService {
                                 uploadAttachment(_id, _rev, sub, listener);
                                 Utilities.log("Submitting photos to Realm");
                             }
-                        } catch (Exception e) { }
+                        } catch (Exception e) {
+                        }
                     }
                 }
         );
@@ -224,7 +249,7 @@ public class UploadManager extends FileUploadService {
         mRealm = new DatabaseService(context).getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         if (!personal.isUploaded()) {
-            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", RealmMyPersonal.serialize(personal,context)).enqueue(new Callback<JsonObject>() {
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", RealmMyPersonal.serialize(personal, context)).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
@@ -266,7 +291,8 @@ public class UploadManager extends FileUploadService {
                             task.set_rev(_rev);
                             task.set_id(_id);
                         }
-                    } catch (IOException e) {}
+                    } catch (IOException e) {
+                    }
 
                 }
             }
@@ -289,7 +315,6 @@ public class UploadManager extends FileUploadService {
                         team.set_rev(JsonUtils.getString("rev", object));
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
 
             }
@@ -310,10 +335,9 @@ public class UploadManager extends FileUploadService {
                 try {
                     if (act.getUserId().startsWith("guest"))
                         continue;
-                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/login_activities", RealmOfflineActivity.serializeLoginActivities(act,context)).execute().body();
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context)).execute().body();
                     act.changeRev(object);
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
 
             }
@@ -328,13 +352,12 @@ public class UploadManager extends FileUploadService {
                 .findAll();
         for (RealmTeamLog log : logs) {
             try {
-                JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/team_activities", RealmTeamLog.serializeTeamActivities(log,context)).execute().body();
+                JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/team_activities", RealmTeamLog.serializeTeamActivities(log, context)).execute().body();
                 if (object != null) {
                     log.set_id(JsonUtils.getString("id", object));
                     log.set_rev(JsonUtils.getString("rev", object));
                 }
             } catch (IOException e) {
-                e.printStackTrace();
             }
         }
         Utilities.log("Upload team activities");
@@ -403,7 +426,7 @@ public class UploadManager extends FileUploadService {
             logs = realm.where(RealmApkLog.class).isNull("_rev").findAll();
             for (RealmApkLog act : logs) {
                 try {
-                    JsonObject o = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/apk_logs", RealmApkLog.serialize(act,context)).execute().body();
+                    JsonObject o = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/apk_logs", RealmApkLog.serialize(act, context)).execute().body();
                     if (o != null) act.set_rev(JsonUtils.getString("rev", o));
                 } catch (IOException e) {
                 }
@@ -430,7 +453,6 @@ public class UploadManager extends FileUploadService {
                         act.set_id(JsonUtils.getString("id", object));
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
         });

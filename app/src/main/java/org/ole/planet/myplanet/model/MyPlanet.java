@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.util.Base64;
 
 import androidx.annotation.RequiresApi;
 
@@ -122,26 +123,17 @@ public class MyPlanet implements Serializable {
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
         if (planet != null)
             postJSON.addProperty("planetVersion", planet.getPlanetVersion());
+        postJSON.addProperty("_id", Base64.encode(Build.ID.getBytes(), Base64.NO_WRAP).toString());
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
-        postJSON.addProperty("version", VersionUtils.getVersionCode(context));
-        postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
-        postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
-        postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
-        postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
-        postJSON.addProperty("time", new Date().getTime());
-        postJSON.add("usages", getTabletUsages());
-        JsonObject gps = new JsonObject();
-        gps.addProperty("latitude", pref.getString("last_lat", ""));
-        gps.addProperty("longitude", pref.getString("last_lng", ""));
-        postJSON.add("gps", gps);
-        Utilities.log("MP " + new Gson().toJson(postJSON));
+        postJSON.addProperty("macAddress", NetworkUtils.getMacAddr());
+        postJSON.add("usages", getTabletUsages(context, pref));
         return postJSON;
     }
 
 
-    public static JsonArray getTabletUsages() {
+    public static JsonArray getTabletUsages(Context context, SharedPreferences pref) {
         Calendar cal = Calendar.getInstance();
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         cal.setTimeInMillis(settings.getLong("lastUsageUploaded", 0));
@@ -151,19 +143,29 @@ public class MyPlanet implements Serializable {
             List<UsageStats> queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(),
                     System.currentTimeMillis());
             for (UsageStats s : queryUsageStats) {
-               addStats(s, arr);
+                addStats(s, arr, context, pref);
             }
         }
         return arr;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    private static void addStats(UsageStats s, JsonArray arr) {
+    private static void addStats(UsageStats s, JsonArray arr, Context context, SharedPreferences pref) {
         if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
             JsonObject object = new JsonObject();
             object.addProperty("lastTimeUsed", s.getLastTimeUsed());
             object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
             object.addProperty("totalUsed", s.getLastTimeUsed() - s.getFirstTimeStamp());
+            object.addProperty("version", VersionUtils.getVersionCode(context));
+            object.addProperty("versionName", VersionUtils.getVersionName(context));
+            object.addProperty("androidId", NetworkUtils.getMacAddr());
+            object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
+            object.addProperty("deviceName", NetworkUtils.getDeviceName());
+            object.addProperty("time", new Date().getTime());
+            JsonObject gps = new JsonObject();
+            gps.addProperty("latitude", pref.getString("last_lat", ""));
+            gps.addProperty("longitude", pref.getString("last_lng", ""));
+            object.add("gps", gps);
             arr.add(object);
         }
     }
