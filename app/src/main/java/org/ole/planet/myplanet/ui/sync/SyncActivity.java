@@ -125,7 +125,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     progressDialog.dismiss();
+                    Utilities.log("RES " + response.body().string());
                     List<String> myList = Arrays.asList(response.body().string().split(","));
+                    Utilities.log("List size "  + myList.size());
                     if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {

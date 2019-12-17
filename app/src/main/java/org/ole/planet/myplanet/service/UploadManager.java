@@ -100,8 +100,6 @@ public class UploadManager extends FileUploadService {
                             if (listener != null) {
                                 listener.onSuccess("My planet activities uploaded successfully");
                             }
-
-
                         }
 
                         @Override
