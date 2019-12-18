@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.datamanager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.gson.Gson;
 
@@ -52,7 +53,12 @@ public class Service {
                                     callback.onError("Planet up to date", false);
                                     return;
                                 }
-                                int apkVersion = Integer.parseInt(responses.replaceAll("v", "").replaceAll(".", ""));
+                                String vsn= responses.replaceAll("v", "");
+                                Log.e("Response ", vsn);
+                                vsn = vsn.replace(".", "");
+                                vsn = vsn.replace(".", "");
+                                Log.e("Response ", vsn);
+                                int apkVersion = Integer.parseInt(vsn);
                                 int currentVersion = VersionUtils.getVersionCode(context);
                                 Utilities.log(p.getLatestapk() + " " + currentVersion + " " + p.getMinapkcode());
                                 if (currentVersion < p.getMinapkcode() && currentVersion < apkVersion) {
@@ -62,7 +68,8 @@ public class Service {
                                 }
 
                             } catch (Exception e) {
-                                callback.onError("Version not found", true);
+                                Log.e("Error", e.getLocalizedMessage());
+                                callback.onError("Version not found - Sync blocked", true);
                             }
                         }
 
