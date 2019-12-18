@@ -411,6 +411,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 //                mRealm.commitTransaction();
 //            }
         }
+        builder.setCancelable(cancelable);
         builder.show();
     }
 

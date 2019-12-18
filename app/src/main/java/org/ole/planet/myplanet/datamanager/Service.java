@@ -53,13 +53,17 @@ public class Service {
                                     callback.onError("Planet up to date", false);
                                     return;
                                 }
-                                String vsn= responses.replaceAll("v", "");
+                                String vsn = responses.replaceAll("v", "");
                                 vsn = vsn.replaceAll("\\.", "");
                                 Log.e("Response ", vsn);
                                 int apkVersion = Integer.parseInt(vsn.startsWith("0") ? vsn.replace("0", "") : vsn);
                                 int currentVersion = VersionUtils.getVersionCode(context);
                                 Utilities.log(p.getLatestapk() + " " + currentVersion + " " + p.getMinapkcode());
-                                if (currentVersion < p.getMinapkcode() && currentVersion < apkVersion) {
+                                if (apkVersion > currentVersion ) {
+                                    callback.onUpdateAvailable(p, false);
+                                    return;
+                                }
+                                if (currentVersion < p.getMinapkcode() &&  apkVersion <= p.getMinapkcode()) {
                                     callback.onUpdateAvailable(p, true);
                                 } else {
                                     callback.onError("Planet up to date", false);
@@ -67,7 +71,7 @@ public class Service {
 
                             } catch (Exception e) {
                                 Log.e("Error", e.getLocalizedMessage());
-                                callback.onError("Version not found - Sync blocked", true);
+                                callback.onError("New apk version required  but not found on server - Contact admin", false);
                             }
                         }
 
