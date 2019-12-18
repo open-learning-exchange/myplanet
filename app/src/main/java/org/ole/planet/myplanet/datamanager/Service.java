@@ -48,17 +48,15 @@ public class Service {
                         public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                             String responses = null;
                             try {
-                                responses = response.body().string();
+                                responses = new Gson().fromJson(response.body().string(), String.class);
                                 if (responses.isEmpty()) {
                                     callback.onError("Planet up to date", false);
                                     return;
                                 }
                                 String vsn= responses.replaceAll("v", "");
+                                vsn = vsn.replaceAll("\\.", "");
                                 Log.e("Response ", vsn);
-                                vsn = vsn.replace(".", "");
-                                vsn = vsn.replace(".", "");
-                                Log.e("Response ", vsn);
-                                int apkVersion = Integer.parseInt(vsn);
+                                int apkVersion = Integer.parseInt(vsn.startsWith("0") ? vsn.replace("0", "") : vsn);
                                 int currentVersion = VersionUtils.getVersionCode(context);
                                 Utilities.log(p.getLatestapk() + " " + currentVersion + " " + p.getMinapkcode());
                                 if (currentVersion < p.getMinapkcode() && currentVersion < apkVersion) {
