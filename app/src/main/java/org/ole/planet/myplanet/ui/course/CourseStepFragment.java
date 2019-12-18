@@ -9,6 +9,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.mikepenz.fastadapter.IAdapter;
+import com.mikepenz.fastadapter.IItem;
+import com.mikepenz.fastadapter.listeners.OnClickListener;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
@@ -124,6 +129,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         setListeners();
     }
 
+
     private void hideTestIfNoQuestion() {
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
@@ -132,6 +138,8 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
                 btnExam.setText("Take Test [" + stepExams.size() + "]");
                 btnExam.setVisibility(View.VISIBLE);
             }
+        } else {
+            btnExam.setVisibility(View.INVISIBLE);
         }
     }
 
