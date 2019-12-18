@@ -13,8 +13,6 @@ if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ] -o [ "$TR
       else
         PACKAGE_VERSION=$(sed -n 's/.*name="app_version">\([^"]*\).*<\/string>/\1/p' < app/src/main/res/values/versions.xml)
       fi
-#       git push -d release latest
-#       git tag -d latest
       git tag -a v${PACKAGE_VERSION} -m "$TRAVIS_COMMIT_MESSAGE"
       git push release --tags
       echo -e "Done with tags.\n"
