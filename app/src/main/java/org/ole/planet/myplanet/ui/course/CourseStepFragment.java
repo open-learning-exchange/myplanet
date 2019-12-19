@@ -126,6 +126,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
 
     private void hideTestIfNoQuestion() {
+        btnExam.setVisibility(View.INVISIBLE);
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
@@ -133,8 +134,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
                 btnExam.setText("Take Test [" + stepExams.size() + "]");
                 btnExam.setVisibility(View.VISIBLE);
             }
-        } else {
-            btnExam.setVisibility(View.INVISIBLE);
         }
     }
 
