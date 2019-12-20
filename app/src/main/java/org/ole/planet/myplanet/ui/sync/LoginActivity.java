@@ -4,15 +4,18 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -31,6 +34,7 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
@@ -63,7 +67,7 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     public static Calendar cal_today, cal_last_Sync;
     EditText serverUrl, serverUrlProtocol;
-    EditText serverPassword,customDeviceName;
+    EditText serverPassword, customDeviceName;
     String processedUrl;
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
@@ -74,22 +78,23 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-    private CheckBox save, managerialLogin;
-    private boolean isSync = false, isUpload = false, forceSync = false;
+    private CheckBox managerialLogin;
+    private boolean isSync = false, forceSync = false;
     private SwitchCompat switchChildMode;
+    private SharedPreferences defaultPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         changeLogoColor();
+        defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
         declareElements();
         declareMoreElements();
         showWifiDialog();
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         if (forceSync) {
-            isUpload = false;
             isSync = false;
             processedUrl = Utilities.getUrl();
         }
@@ -98,6 +103,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             new Service(this).checkVersion(this, settings);
         }
+       checkUsagesPermission();
         new GPSService(this);
         setUpChildMode();
 
@@ -106,7 +112,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private boolean forceSyncTrigger() {
-        lblLastSyncDate.setText("<< Last sync with server: " + Utilities.getRelativeTime(settings.getLong("LastSync", 0))+" >>");
+        lblLastSyncDate.setText("<< Last sync with server: " + Utilities.getRelativeTime(settings.getLong("LastSync", 0)) + " >>");
         if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
             return checkForceSync(7);
         } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
@@ -150,7 +156,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         btnGuestLogin = findViewById(R.id.btn_guest_login);
-        save = findViewById(R.id.save);
         managerialLogin = findViewById(R.id.manager_login);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
@@ -210,12 +215,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
-        isUpload = false;
         isSync = true;
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage();
         }
-        new Service(this).checkVersion(this, settings);
+
+
+        new Service(this).isPlanetAvailable(new Service.PlanetAvailableListener() {
+            @Override
+            public void isAvailable() {
+                new Service(LoginActivity.this).checkVersion(LoginActivity.this, settings);
+
+            }
+
+            @Override
+            public void notAvailable() {
+                DialogUtils.showAlert(LoginActivity.this, "Error", "Planet server not reachable.");
+            }
+        });
     }
 
 
@@ -228,8 +245,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         gifDrawable.stop();
         syncIcon.setOnClickListener(v -> {
             gifDrawable.reset();
-            isUpload = true;
             isSync = false;
+            forceSync = true;
             new Service(this).checkVersion(this, settings);
         });
         declareHideKeyboardElements();
@@ -240,10 +257,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         setUplanguageButton();
-        if (settings.getBoolean("saveUsernameAndPassword", false)) {
+        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             inputName.setText(settings.getString("loginUserName", ""));
             inputPassword.setText(settings.getString("loginUserPassword", ""));
-            save.setChecked(true);
+//            save.setChecked(true);
         }
     }
 
@@ -283,8 +300,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
-        if (save.isChecked()) {
+//        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
+        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             editor.putString("loginUserName", inputName.getText().toString());
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
@@ -384,6 +401,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (progressDialog.isShowing() && s.contains("Crash"))
             progressDialog.dismiss();
         DialogUtils.showSnack(btnSignIn, s);
+        settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
     }
 
     @Override
@@ -434,10 +452,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         try {
             if (isSync) {
                 isServerReachable(processedUrl);
-            } else if (isUpload) {
-                Utilities.log("Upload : Continue sync , Start upload");
-                startUpload();
-            } else if (forceSync) {
+            }
+//            else if (isUpload) {
+//                Utilities.log("Upload : Continue sync , Start upload");
+//                startUpload();
+//            }
+
+            else if (forceSync) {
                 isServerReachable(processedUrl);
                 startUpload();
             }
@@ -503,7 +524,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         }
     }
-    public String getCustomDeviceName(){
-        return settings.getString("customDeviceName",NetworkUtils.getDeviceName());
+
+    public String getCustomDeviceName() {
+        return settings.getString("customDeviceName", NetworkUtils.getDeviceName());
     }
 }

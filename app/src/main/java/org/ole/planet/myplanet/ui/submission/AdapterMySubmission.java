@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONObject;
 import org.ole.planet.myplanet.R;
@@ -24,6 +25,8 @@ import java.util.List;
 
 import io.realm.Realm;
 
+import static io.realm.internal.SyncObjectServerFacade.getApplicationContext;
+
 public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnHomeItemClickListener listener;
     private Context context;
@@ -38,6 +41,9 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
         this.examHashMap = exams;
         if (context instanceof OnHomeItemClickListener) {
             this.listener = (OnHomeItemClickListener) context;
+        }
+        if (list != null && list.isEmpty()) {
+            Toast.makeText(getApplicationContext(), "No items", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -67,6 +73,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
                     openSubmissionDetail(listener, list.get(position).getId());
             });
         }
+
     }
 
     private void showSubmittedBy(TextView submitted_by, int position) {

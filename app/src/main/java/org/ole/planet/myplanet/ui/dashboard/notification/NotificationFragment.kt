@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.app.Dialog
 import android.os.Bundle
+import android.text.TextUtils
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -62,6 +63,11 @@ class NotificationFragment : BottomSheetDialogFragment() {
         var notificationList : MutableList<Notifications> = ArrayList()
         notificationList.add(Notifications(R.drawable.mylibrary, "${resourceList.size} resource not downloaded."))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} pending survey."))
+
+        if(TextUtils.isEmpty(model.key)){
+            notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
+
+        }
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)
         rv_notifications.adapter = AdapterNotification(activity!!, notificationList, callback)
     }

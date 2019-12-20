@@ -38,10 +38,12 @@
     <string name="download_all">Download All</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="add_to_mycourse">Add to my courses</string>
+    <string name="join_selected">Join Selected</string>
+    <string name="join">Join</string>
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
     <string name="submission">mySubmissions</string>
-    <string name="calendar">myCalendar</string>
+    <string name="calendar">Calendar</string>
     <string name="email">Email</string>
     <string name="documents">Documents</string>
     <string name="your_ans">Your Answer</string>
@@ -360,6 +362,10 @@
     <string name="device_name">Device Name</string>
     <string name="enter_title">Enter title</string>
     <string name="add_link">Add Link</string>
+    <string name="chat">Chat</string>
+    <string name="members">Members</string>
+    <string name="tasks">Tasks</string>
+    <string name="join_requests">Join Requests</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
@@ -394,7 +400,7 @@
         <item>Diarrhoea diseases</item>
         <item>Ebola</item>
         <item>Epilepsy</item>
-        <item>Female genital mutilation (FGM)</item>
+        <item>FGM</item>
         <item>Influenza</item>
         <item>Ischaemic heat disease</item>
         <item>Malaria</item>

@@ -163,7 +163,8 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
             if (childMap.containsKey(s)) {
                 l = childMap.get(s);
             }
-            l.add(t);
+            if (!l.contains(t))
+                l.add(t);
             childMap.put(s, l);
         }
 

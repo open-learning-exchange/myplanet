@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.ProgressDialog;
 import android.graphics.Typeface;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,7 @@ import com.google.android.flexbox.FlexboxLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.NotificationCallback;
+import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -22,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.TransactionSyncManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
@@ -44,10 +47,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
     TextView txtFullName, txtVisits, txtRole;
     DatabaseService dbService;
     RealmUserModel model;
-    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-            250,
-            100
-    );
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(250, 100);
 
     void onLoaded(View v) {
         txtFullName = v.findViewById(R.id.txtFullName);
@@ -137,7 +137,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
             handleClick(((RealmMyTeam) ob).getId(), ((RealmMyTeam) ob).getName(), new TeamDetailFragment(), name);
             showNotificationIcons(ob, v, userId);
             name.setText(((RealmMyTeam) ob).getName());
-            flexboxLayout.addView(v);
+            flexboxLayout.addView(v, params);
             count++;
         }
         return dbMyTeam.size();
@@ -234,14 +234,15 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         view.findViewById(R.id.txtFullName).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
-
         myLibraryDiv(view);
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup.class);
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife.class);
-//        showPendingSurveyDialog();
-//        showResourceDownloadDialog();
+        showNotificationFragment();
+    }
+
+  public void showNotificationFragment(){
         NotificationFragment fragment = new NotificationFragment();
         fragment.callback = this;
         fragment.resourceList = getLibraryList(mRealm);
@@ -251,5 +252,29 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
     @Override
     public void showResourceDownloadDialog() {
         showDownloadDialog(getLibraryList(mRealm));
+    }
+
+    @Override
+    public void syncKeyId() {
+        ProgressDialog di = new ProgressDialog(getActivity());
+        di.setMessage("Syncing health , please wait...");
+        TransactionSyncManager.syncKeyIv(mRealm, settings, new SyncListener() {
+            @Override
+            public void onSyncStarted() {
+                di.show();
+            }
+
+            @Override
+            public void onSyncComplete() {
+                di.dismiss();
+                Utilities.toast(getActivity(), "myHealth synced successfully");
+            }
+
+            @Override
+            public void onSyncFailed(String msg) {
+                di.dismiss();
+                Utilities.toast(getActivity(), "myHealth synced failed");
+            }
+        });
     }
 }

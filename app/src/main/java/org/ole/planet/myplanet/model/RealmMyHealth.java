@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.myhealth.RealmExamination;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
@@ -29,7 +30,7 @@ public class RealmMyHealth {
     }
 
     public List<RealmExamination> getEvents() {
-        return events;
+        return events == null ? new ArrayList<>() : events;
     }
 
     public void setEvents(List<RealmExamination> events) {

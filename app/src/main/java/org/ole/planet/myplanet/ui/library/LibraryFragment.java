@@ -142,33 +142,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
     }
 
-//    private void setSearchListener() {
-//        etSearch.addTextChangedListener(new TextWatcher() {
-//            @Override
-//            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//            }
-//
-//            @Override
-//            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//                if (!charSequence.toString().isEmpty()) {
-//                    String lastChar = charSequence.toString().substring(charSequence.length() - 1);
-//                    if (lastChar.equals(" ") || lastChar.equals("\n")) {
-//                        adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
-//                        etSearch.setText(etSearch.getText().toString().trim());
-//                        KeyboardUtils.hideSoftKeyboard(getActivity());
-//                        showNoData(tvMessage, adapterLibrary.getItemCount());
-//                    }
-//                }
-//            }
-//
-//            @Override
-//            public void afterTextChanged(Editable editable) {
-//
-//            }
-//        });
-//    }
-
 
     @Override
     public void onSelectedListChange(List<RealmMyLibrary> list) {
