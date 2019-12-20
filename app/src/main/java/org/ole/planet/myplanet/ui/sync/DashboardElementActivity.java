@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.community.CommunityFragment;
+import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
@@ -79,8 +80,8 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 //            case 4:
 //                openCallFragment(new SurveyFragment(), "survey");
 //                break;
-            case 5:
-                openCallFragment(new CommunityFragment(), "community");
+            case 4:
+                openCallFragment(new CommunityTabFragment(), "community");
                 break;
         }
     }

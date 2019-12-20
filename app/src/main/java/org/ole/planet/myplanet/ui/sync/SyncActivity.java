@@ -14,6 +14,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -125,8 +127,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     progressDialog.dismiss();
-                    List<String> myList = Arrays.asList(response.body().string().split(","));
-                    if (myList.size() < 8) {
+                    JsonArray arr = new Gson().fromJson(response.body().string(), JsonArray.class);
+                    if (arr.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
                         startSync();

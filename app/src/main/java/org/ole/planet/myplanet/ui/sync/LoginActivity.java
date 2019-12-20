@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
@@ -14,6 +15,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -32,6 +34,7 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
@@ -75,15 +78,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-    private CheckBox save, managerialLogin;
+    private CheckBox managerialLogin;
     private boolean isSync = false, forceSync = false;
     private SwitchCompat switchChildMode;
+    private SharedPreferences defaultPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         changeLogoColor();
+        defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
         declareElements();
         declareMoreElements();
         showWifiDialog();
@@ -98,6 +103,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             new Service(this).checkVersion(this, settings);
         }
+       checkUsagesPermission();
         new GPSService(this);
         setUpChildMode();
 
@@ -150,7 +156,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         btnGuestLogin = findViewById(R.id.btn_guest_login);
-        save = findViewById(R.id.save);
         managerialLogin = findViewById(R.id.manager_login);
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
@@ -252,10 +257,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         setUplanguageButton();
-        if (settings.getBoolean("saveUsernameAndPassword", false)) {
+        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             inputName.setText(settings.getString("loginUserName", ""));
             inputPassword.setText(settings.getString("loginUserPassword", ""));
-            save.setChecked(true);
+//            save.setChecked(true);
         }
     }
 
@@ -295,8 +300,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
-        if (save.isChecked()) {
+//        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
+        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             editor.putString("loginUserName", inputName.getText().toString());
             editor.putString("loginUserPassword", inputPassword.getText().toString());
         }
@@ -396,6 +401,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (progressDialog.isShowing() && s.contains("Crash"))
             progressDialog.dismiss();
         DialogUtils.showSnack(btnSignIn, s);
+        settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
     }
 
     @Override

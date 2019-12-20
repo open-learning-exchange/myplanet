@@ -74,6 +74,7 @@
 
                         </LinearLayout>
 
+
                         <RadioGroup
                             android:id="@+id/group_choices"
                             android:layout_width="0dp"
@@ -83,43 +84,55 @@
                             android:orientation="vertical"
                             android:visibility="gone" />
 
+
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:orientation="vertical"
                             android:layout_gravity="center"
                             android:gravity="center"
+                            android:visibility="gone"
                             android:id="@+id/ll_checkbox"
                             android:layout_height="wrap_content"/>
-
-                        <com.google.android.material.textfield.TextInputLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:id="@+id/tl_answer"
-                            android:layout_gravity="center"
-                            android:layout_weight="1">
-                            <EditText
-                                android:id="@+id/et_answer"
-                                android:layout_gravity="center_vertical"
-                                android:hint="@string/your_ans"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
-                        </com.google.android.material.textfield.TextInputLayout>
-
                     </LinearLayout>
 
                 </androidx.core.widget.NestedScrollView>
 
-                <Button
-                    android:id="@+id/btn_submit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="right"
-                    android:layout_margin="@dimen/padding_large"
-                    android:padding="@dimen/padding_normal"
-                    android:text="Submit Answer"
-                    android:background="@drawable/buttongrey"
-                    style="@style/GreyButtons" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:padding="@dimen/padding_small"
+                    android:layout_height="wrap_content">
+
+
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/tl_answer"
+                        android:layout_gravity="center"
+                        android:padding="@dimen/padding_normal"
+                        android:layout_weight="1">
+                        <EditText
+                            android:id="@+id/et_answer"
+                            android:layout_gravity="center_vertical"
+                            android:hint="@string/your_ans"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <Button
+                        android:id="@+id/btn_submit"
+                        style="@style/YellowButtons"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:background="@drawable/buttonyellow"
+                        android:padding="@dimen/padding_normal"
+                        android:text="Submit Answer" />
+
+                </LinearLayout>
+
+
 
             </LinearLayout>
 

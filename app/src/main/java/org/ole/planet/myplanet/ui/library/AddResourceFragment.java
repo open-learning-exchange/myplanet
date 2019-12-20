@@ -230,10 +230,30 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             } else {
                 url = data.getData();
                 path = getRealPathFromURI(getActivity(), url);
+                if (TextUtils.isEmpty(path)){
+                    path = getImagePath(url);
+                }
             }
             startIntent(path);
         }
 
+    }
+
+    public String getImagePath(Uri uri){
+        Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null);
+        cursor.moveToFirst();
+        String document_id = cursor.getString(0);
+        document_id = document_id.substring(document_id.lastIndexOf(":")+1);
+        cursor.close();
+
+        cursor =getContext().getContentResolver().query(
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+        cursor.moveToFirst();
+        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+        cursor.close();
+
+        return path;
     }
 
     private void startIntent(String path) {
