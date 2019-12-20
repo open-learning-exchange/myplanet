@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
@@ -14,6 +15,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -32,6 +34,7 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
@@ -75,16 +78,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-    private CheckBox   managerialLogin;
+    private CheckBox managerialLogin;
     private boolean isSync = false, forceSync = false;
     private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         changeLogoColor();
-        defaultPref= PreferenceManager.getDefaultSharedPreferences(this);
+        defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
         declareElements();
         declareMoreElements();
         showWifiDialog();
@@ -99,6 +103,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             new Service(this).checkVersion(this, settings);
         }
+       checkUsagesPermission();
         new GPSService(this);
         setUpChildMode();
 
@@ -396,6 +401,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (progressDialog.isShowing() && s.contains("Crash"))
             progressDialog.dismiss();
         DialogUtils.showSnack(btnSignIn, s);
+        settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
     }
 
     @Override
