@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -76,21 +78,32 @@ public class UploadManager extends FileUploadService {
         if (model.isManager())
             return;
         try {
-            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getMyPlanetActivities(context, pref, model)).enqueue(new Callback<JsonObject>() {
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + Build.ID).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                    if (listener != null) {
-                        listener.onSuccess("My planet activities uploaded successfully");
+                    JsonObject object = response.body();
+                    if (object != null) {
+                        JsonArray usages = object.getAsJsonArray("usages");
+                        usages.addAll(MyPlanet.getTabletUsages(context, pref));
+                        object.add("usages", usages);
+                    } else {
+                        object = MyPlanet.getMyPlanetActivities(context, pref, model);
                     }
+                    apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", object).enqueue(new Callback<JsonObject>() {
+                        @Override
+                        public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                            if (listener != null) {
+                                listener.onSuccess("My planet activities uploaded successfully");
+                            }
+                        }
+                        @Override
+                        public void onFailure(Call<JsonObject> call, Throwable t) { }
+                    });
                 }
-
                 @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) {
-                }
+                public void onFailure(Call<JsonObject> call, Throwable t) { }
             });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) { }
     }
 
 
@@ -106,7 +119,6 @@ public class UploadManager extends FileUploadService {
                     }
                 } catch (Exception e) {
                     Utilities.log("Upload exam result");
-                    e.printStackTrace();
                 }
             }
         }, () -> listener.onSuccess("Result sync completed successfully"), (e) -> {
@@ -291,7 +303,6 @@ public class UploadManager extends FileUploadService {
                         team.set_rev(JsonUtils.getString("rev", object));
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
 
             }
@@ -315,7 +326,6 @@ public class UploadManager extends FileUploadService {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context)).execute().body();
                     act.changeRev(object);
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
 
             }
@@ -336,7 +346,6 @@ public class UploadManager extends FileUploadService {
                     log.set_rev(JsonUtils.getString("rev", object));
                 }
             } catch (IOException e) {
-                e.printStackTrace();
             }
         }
         Utilities.log("Upload team activities");
@@ -473,7 +482,6 @@ public class UploadManager extends FileUploadService {
                         act.set_id(JsonUtils.getString("id", object));
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
         });

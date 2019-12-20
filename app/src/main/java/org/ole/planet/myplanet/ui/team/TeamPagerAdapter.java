@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -38,7 +39,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
         list.add(MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         if (isMyTeam) {
             list.add(MainApplication.context.getString(R.string.chat));
-            list.add( MainApplication.context.getString(R.string.calendar));
+            list.add(MainApplication.context.getString(R.string.calendar));
             list.add(MainApplication.context.getString(R.string.tasks));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.applicants : R.string.join_requests));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.finances : R.string.courses));
@@ -47,7 +48,6 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             list.remove(0);
             list.add(1, MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
             list.add(2, MainApplication.context.getString(isEnterprise ? R.string.team : R.string.members));
-
         }
     }
 
@@ -87,19 +87,19 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             case 2:
                 f = new JoinedMemberFragment();
                 break;
-            case 3:
+            case 4:
                 f = new TeamTaskFragment();
                 break;
-            case 4:
+            case 5:
                 f = new MembersFragment();
                 break;
-            case 5:
+            case 6:
                 f = getFragment();
                 break;
-            case 6:
+            case 7:
                 f = new TeamResourceFragment();
                 break;
-             case 7:
+            case 3:
                 f = new EnterpriseCalendarFragment();
                 break;
         }
