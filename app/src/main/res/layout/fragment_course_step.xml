@@ -35,8 +35,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Take Test"
-                android:visibility="gone"
-                android:theme="@style/PrimaryButton" />
+                android:theme="@style/PrimaryButton"
+                android:visibility="gone" />
 
         </LinearLayout>
 
