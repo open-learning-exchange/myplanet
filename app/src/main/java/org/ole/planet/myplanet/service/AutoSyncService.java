@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
+
 
 public class AutoSyncService extends JobService implements SyncListener, Service.CheckVersionCallback, SuccessListener {
     SharedPreferences preferences;
@@ -93,6 +95,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
 
     @Override
     public void onSuccess(String s) {
-
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
     }
 }
