@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.library.AddResourceActivity;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -107,6 +108,7 @@ public class NewsFragment extends BaseNewsFragment {
             rvNews.getAdapter().notifyDataSetChanged();
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
+        btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     public void setData(List<RealmNews> list) {
