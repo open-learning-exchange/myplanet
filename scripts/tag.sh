@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tag last commit as 'latest'.
 
-if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ] || [ "$TRAVIS_BRANCH" = "dev" -a "$TRAVIS_PULL_REQUEST" = "true" ]; then
+if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ] || [ "$TRAVIS_BRANCH" = "dev" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then
   git config --global user.email "leomaxi@outlook.com"
   git config --global user.name "leomaxi"
   # Is this not a build which was triggered by setting a new tag?
