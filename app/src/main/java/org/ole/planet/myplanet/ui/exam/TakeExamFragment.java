@@ -135,35 +135,13 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         etAnswer.setVisibility(View.GONE);
         listChoices.setVisibility(View.GONE);
         llCheckbox.setVisibility(View.GONE);
-        final Markwon markwon = Markwon.create(getActivity());
-        final MarkwonEditor editor = MarkwonEditor.create(markwon);
 
         if (question.getType().equalsIgnoreCase("select")) {
             listChoices.setVisibility(View.VISIBLE);
             etAnswer.setVisibility(View.GONE);
             selectQuestion(question);
         } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
-            etAnswer.setVisibility(View.VISIBLE);
-            if(question.getType().equalsIgnoreCase("textarea")){
-                etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor));
-            }else{
-                etAnswer.addTextChangedListener(new TextWatcher() {
-                    @Override
-                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                    }
-
-                    @Override
-                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-                    }
-
-                    @Override
-                    public void afterTextChanged(Editable editable) {
-
-                    }
-                });
-            }
+           setMarkdownViewAndShowInput(etAnswer, question.getType());
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
             etAnswer.setVisibility(View.GONE);
