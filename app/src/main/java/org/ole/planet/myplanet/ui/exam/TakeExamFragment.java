@@ -7,6 +7,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.core.widget.NestedScrollView;
 
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,6 +36,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.editor.MarkwonEditor;
+import io.noties.markwon.editor.MarkwonEditorTextWatcher;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.Sort;
@@ -130,18 +135,43 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         etAnswer.setVisibility(View.GONE);
         listChoices.setVisibility(View.GONE);
         llCheckbox.setVisibility(View.GONE);
+        final Markwon markwon = Markwon.create(getActivity());
+        final MarkwonEditor editor = MarkwonEditor.create(markwon);
 
         if (question.getType().equalsIgnoreCase("select")) {
             listChoices.setVisibility(View.VISIBLE);
+            etAnswer.setVisibility(View.GONE);
             selectQuestion(question);
         } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
             etAnswer.setVisibility(View.VISIBLE);
+            if(question.getType().equalsIgnoreCase("textarea")){
+                etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor));
+            }else{
+                etAnswer.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable editable) {
+
+                    }
+                });
+            }
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
+            etAnswer.setVisibility(View.GONE);
             showCheckBoxes(question);
         }
-        etAnswer.setText("");
+
         ans = "";
+        etAnswer.setText("");
         listAns.clear();
         header.setText(question.getHeader());
         body.setText(question.getBody());
