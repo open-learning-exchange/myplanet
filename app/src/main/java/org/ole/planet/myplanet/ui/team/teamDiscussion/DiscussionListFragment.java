@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -98,6 +99,8 @@ public class DiscussionListFragment extends BaseTeamFragment {
         TextInputLayout layout = v.findViewById(R.id.tl_input);
         thumb = v.findViewById(R.id.thumb);
         v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this));
+        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
+
         layout.setHint(getString(R.string.enter_message));
         new AlertDialog.Builder(getActivity())
                 .setView(v)

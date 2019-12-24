@@ -22,6 +22,7 @@
         android:orientation="horizontal"
         android:layout_gravity="center"
         android:gravity="center"
+        android:id="@+id/ll_image"
         android:layout_height="wrap_content">
         <ImageView
             android:layout_width="@dimen/_80dp"
