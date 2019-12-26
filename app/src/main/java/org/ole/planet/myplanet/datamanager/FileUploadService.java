@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.datamanager;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.callback.SuccessListener;
@@ -37,6 +38,7 @@ public class FileUploadService {
 
     public void uploadNewsAttachment(String id, String rev, JsonObject object, SuccessListener listener) {
         File f = new File(JsonUtils.getString("imageUrl", object));
+        Utilities.log( "IMAGE FILE URL  " + JsonUtils.getString("imageUrl", object));
         String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", object));
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
@@ -59,6 +61,7 @@ public class FileUploadService {
             String mimeType = connection.getContentType();
             RequestBody body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f));
             String url = String.format(format, Utilities.getUrl(), id, name);
+            Utilities.log("image url " + url);
             apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -71,6 +74,7 @@ public class FileUploadService {
                 }
             });
         } catch (IOException e) {
+            e.printStackTrace();
             listener.onSuccess("Unable to upload resource");
         }
     }
@@ -85,6 +89,7 @@ public class FileUploadService {
     }
 
     private void onDataReceived(JsonObject object, SuccessListener listener) {
+        Utilities.log("On data received " + new Gson().toJson(object));
         if (object != null) {
             if (JsonUtils.getBoolean("ok", object)) {
                 listener.onSuccess("Uploaded successfully");
