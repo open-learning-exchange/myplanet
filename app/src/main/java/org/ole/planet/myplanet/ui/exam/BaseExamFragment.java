@@ -4,8 +4,13 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
+
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -24,6 +29,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.editor.MarkwonEditor;
+import io.noties.markwon.editor.MarkwonEditorTextWatcher;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
@@ -203,4 +211,32 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         insert_into_submitPhotos(Submit_id);
         Utilities.log(photo_path);
     }
+
+
+    public void setMarkdownViewAndShowInput(EditText etAnswer, String type) {
+        etAnswer.setVisibility(View.VISIBLE);
+        final Markwon markwon = Markwon.create(getActivity());
+        final MarkwonEditor editor = MarkwonEditor.create(markwon);
+        if(type.equalsIgnoreCase("textarea")){
+            etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor));
+        }else{
+            etAnswer.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable editable) {
+
+                }
+            });
+        }
+    }
+
 }
