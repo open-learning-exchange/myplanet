@@ -31,30 +31,26 @@ public class FileUploadService {
         File f = new File(personal.getPath());
         String name = FileUtils.getFileNameFromUrl(personal.getPath());
 
-         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
-    }
-
-
-    public void uploadNewsAttachment(String id, String rev, RealmNews news, SuccessListener listener) {
-
-        File f = new File(news.getImageUrl());
-        String name = FileUtils.getFileNameFromUrl(news.getImageUrl());
-
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
 
+
+    public void uploadNewsAttachment(String id, String rev, JsonObject object, SuccessListener listener) {
+        File f = new File(JsonUtils.getString("imageUrl", object));
+        String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", object));
+        upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
+    }
 
 
     public void uploadAttachment(String id, String rev, RealmSubmitPhotos personal, SuccessListener listener) {
 
         File f = new File(personal.getPhoto_location());
         String name = FileUtils.getFileNameFromUrl(personal.getPhoto_location());
-       upload_doc(id, rev, "%s/submissions/%s/%s", f, name,  listener);
+        upload_doc(id, rev, "%s/submissions/%s/%s", f, name, listener);
     }
 
 
-    private void upload_doc(String id, String rev, String format, File f, String name, SuccessListener listener)
-    {
+    private void upload_doc(String id, String rev, String format, File f, String name, SuccessListener listener) {
 
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
 
@@ -78,7 +74,6 @@ public class FileUploadService {
             listener.onSuccess("Unable to upload resource");
         }
     }
-
 
 
     private Map<String, String> getHeaderMap(String mimeType, String rev) {

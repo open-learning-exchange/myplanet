@@ -25,20 +25,25 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
+import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.library.AddResourceActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -78,6 +83,8 @@ public class NewsFragment extends BaseNewsFragment {
         return v;
     }
 
+
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -86,10 +93,7 @@ public class NewsFragment extends BaseNewsFragment {
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("replyTo", "", Case.INSENSITIVE)
                 .findAll();
-//        btnShowMain.setOnClickListener(view -> {
-//            setData(list);
-//            btnShowMain.setVisibility(View.GONE);
-//        });
+
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
@@ -104,7 +108,11 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("viewableId", "");
             map.put("imageUrl", imageUrl);
             map.put("imageName", imageName);
-            RealmNews.createNews(map, mRealm, user);
+//            if (!TextUtils.isEmpty(imageUrl)) {
+//                createImage(map);
+//            }else{
+                RealmNews.createNews(map, mRealm, user);
+//            }
             rvNews.getAdapter().notifyDataSetChanged();
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
