@@ -41,13 +41,18 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URLConnection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -406,6 +411,15 @@ public class UploadManager extends FileUploadService {
         });
     }
 
+    private Map<String, String> getHeaderMap(String mimeType, String rev) {
+        Map<String, String> hashMap = new HashMap<>();
+        hashMap.put("Authorization", Utilities.getHeader());
+        hashMap.put("Content-Type", mimeType);
+        hashMap.put("If-Match", rev);
+        return hashMap;
+    }
+
+
     public void uploadNews() {
         mRealm = dbService.getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -418,36 +432,40 @@ public class UploadManager extends FileUploadService {
                     if (act.getUserId().startsWith("guest"))
                         continue;
                     JsonObject object = RealmNews.serializeNews(act, userModel);
+                    Utilities.log("..................news ........... Upload image...");
+                    RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
                     if (!TextUtils.isEmpty(act.getImageUrl())) {
-                        Utilities.log("..................news ........... Upload image...");
-                        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id",pref.getString("userId", "")).findFirst();
-                        uploadNewsImage(createImage(act, user), new UploadAttachmentListener() {
-                            @Override
-                            public void onUploaded(JsonObject response) {
-                                Utilities.log("Upload news af " + realm);
-                                JsonArray image = new JsonArray();
-                                JsonObject obj = new JsonObject();
-                                obj.addProperty("resourceId", JsonUtils.getString("id", response));
-                                obj.addProperty("filename", JsonUtils.getString("imageName", object));
-                                obj.addProperty("markdown", "![](resources/" + JsonUtils.getString("id", response) + "/" + act.getImageName() + ")");
-                                image.add(image);
-                                object.add("images", object);
-                                Utilities.log("Imagess " + new Gson().toJson(obj));
-                                try {
-                                    continueUploadNews(apiInterface, act, object);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            @Override
-                            public void onError(String message) {
-                                Utilities.toast(context, message);
-                            }
-                        });
+                        JsonObject ob = createImage(act, user);
+                        JsonObject response = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).execute().body();
+                        String _rev = JsonUtils.getString("rev", response);
+                        String _id = JsonUtils.getString("id", response);
+                        File f = new File(JsonUtils.getString("imageUrl", object));
+                        Utilities.log("IMAGE FILE URL  " + JsonUtils.getString("imageUrl", object));
+                        String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", object));
+                        String format = "%s/resources/%s/%s";
+                        URLConnection connection = f.toURL().openConnection();
+                        String mimeType = connection.getContentType();
+                        RequestBody body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f));
+                        String url = String.format(format, Utilities.getUrl(), _id, name);
+                        Response<JsonObject> res = apiInterface.uploadResource(getHeaderMap(mimeType, _rev), url, body).execute();
+                        JsonObject attachment = res.body();
+                        JsonArray image = new JsonArray();
+                        JsonObject resourceObject = new JsonObject();
+                        resourceObject.addProperty("resourceId", JsonUtils.getString("id", attachment));
+                        resourceObject.addProperty("filename", JsonUtils.getString("imageName", object));
+                        resourceObject.addProperty("markdown", "![](resources/" + JsonUtils.getString("id", attachment) + "/" + JsonUtils.getString("imageName", object) + ")");
+                        image.add(image);
+                        object.add("images", resourceObject);
+                    }
+                    Response<JsonObject> newsUploadResponse;
+                    if (TextUtils.isEmpty(act.get_id())) {
+                        newsUploadResponse = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news", object).execute();
                     } else {
-//                         object = RealmNews.serializeNews(act, userModel);
-                        continueUploadNews(apiInterface, act, object);
+                        newsUploadResponse = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), object).execute();
+                    }
+                    if (newsUploadResponse.body() != null) {
+                        act.set_id(JsonUtils.getString("id", newsUploadResponse.body()));
+                        act.set_rev(JsonUtils.getString("rev", newsUploadResponse.body()));
                     }
 
                 } catch (Exception e) {
@@ -455,50 +473,6 @@ public class UploadManager extends FileUploadService {
                 }
             }
         });
-    }
-
-    private void continueUploadNews(ApiInterface apiInterface, RealmNews act, JsonObject body) throws Exception {
-        Response<JsonObject> object;
-        Utilities.log(".................. Upload news");
-        if (TextUtils.isEmpty(act.get_id())) {
-            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news", body).execute();
-        } else {
-            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), body).execute();
-        }
-        Utilities.log(object.errorBody()+" error body");
-        if (object.body() != null) {
-            act.set_id(JsonUtils.getString("id", object.body()));
-            act.set_rev(JsonUtils.getString("rev", object.body()));
-        }
-    }
-
-
-    public void uploadNewsImage(JsonObject ob, UploadAttachmentListener listener) {
-        mRealm = new DatabaseService(context).getRealmInstance();
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).enqueue(new Callback<JsonObject>() {
-            @Override
-            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                JsonObject object = response.body();
-                if (object != null) {
-                    String _rev = JsonUtils.getString("rev", object);
-                    String _id = JsonUtils.getString("id", object);
-
-                    uploadNewsAttachment(_id, _rev, ob, success -> {
-                        Utilities.log("Upload news attachment, " + success);
-                        if (success.startsWith("Uploaded")) {
-                            listener.onUploaded(object);
-                        } else listener.onError("Unable to upload attatchment");
-                    });
-                }
-            }
-
-            @Override
-            public void onFailure(Call<JsonObject> call, Throwable t) {
-
-            }
-        });
-
     }
 
 
