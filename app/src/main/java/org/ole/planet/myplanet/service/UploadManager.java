@@ -453,7 +453,11 @@ public class UploadManager extends FileUploadService {
                         JsonObject resourceObject = new JsonObject();
                         resourceObject.addProperty("resourceId", JsonUtils.getString("id", attachment));
                         resourceObject.addProperty("filename", JsonUtils.getString("imageName", object));
-                        resourceObject.addProperty("markdown", "![](resources/" + JsonUtils.getString("id", attachment) + "/" + JsonUtils.getString("imageName", object) + ")");
+                        String markdown = "![](resources/" + JsonUtils.getString("id", attachment) + "/" + JsonUtils.getString("imageName", object) + ")";
+                        resourceObject.addProperty("markdown", markdown);
+                        String msg = JsonUtils.getString("message", object);
+                        msg += "\n" + markdown;
+                        object.addProperty("message", msg);
                         image.add(image);
                         object.add("images", resourceObject);
                     }
