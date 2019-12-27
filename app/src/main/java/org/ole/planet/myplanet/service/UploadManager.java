@@ -411,14 +411,6 @@ public class UploadManager extends FileUploadService {
         });
     }
 
-    private Map<String, String> getHeaderMap(String mimeType, String rev) {
-        Map<String, String> hashMap = new HashMap<>();
-        hashMap.put("Authorization", Utilities.getHeader());
-        hashMap.put("Content-Type", mimeType);
-        hashMap.put("If-Match", rev);
-        return hashMap;
-    }
-
 
     public void uploadNews() {
         mRealm = dbService.getRealmInstance();
@@ -426,13 +418,11 @@ public class UploadManager extends FileUploadService {
         RealmUserModel userModel = new UserProfileDbHandler(context).getUserModel();
         mRealm.executeTransactionAsync(realm -> {
             final RealmResults<RealmNews> activities = realm.where(RealmNews.class).isNull("_id").or().isEmpty("_id").findAll();
-            Utilities.log("..................news size ........... " + activities.size());
             for (RealmNews act : activities) {
                 try {
                     if (act.getUserId().startsWith("guest"))
                         continue;
                     JsonObject object = RealmNews.serializeNews(act, userModel);
-                    Utilities.log("..................news ........... Upload image...");
                     RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
                     if (!TextUtils.isEmpty(act.getImageUrl())) {
                         JsonObject ob = createImage(act, user);
