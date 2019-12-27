@@ -458,8 +458,8 @@ public class UploadManager extends FileUploadService {
                         String msg = JsonUtils.getString("message", object);
                         msg += "\n" + markdown;
                         object.addProperty("message", msg);
-                        image.add(image);
-                        object.add("images", resourceObject);
+                        image.add(resourceObject);s
+                        object.add("images", image);
                     }
                     Response<JsonObject> newsUploadResponse;
                     if (TextUtils.isEmpty(act.get_id())) {
