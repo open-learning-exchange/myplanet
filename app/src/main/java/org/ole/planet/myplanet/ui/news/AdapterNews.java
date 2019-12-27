@@ -24,6 +24,7 @@ import com.bumptech.glide.Glide;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -153,6 +154,8 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private void showEditAlert(String id, boolean isEdit) {
         View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
         EditText et = v.findViewById(R.id.et_input);
+        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, context) ? View.VISIBLE : View.GONE);
+
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         if (isEdit)
             et.setText(news.getMessage() + "");
