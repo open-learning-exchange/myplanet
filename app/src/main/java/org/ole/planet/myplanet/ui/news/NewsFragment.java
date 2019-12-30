@@ -91,6 +91,7 @@ public class NewsFragment extends BaseNewsFragment {
                 .equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("replyTo", "", Case.INSENSITIVE)
+                .sort("time", Sort.DESCENDING)
                 .findAll();
 
         setData(list);
