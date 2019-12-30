@@ -59,7 +59,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     RealmUserModel user;
     private Drawer result = null;
     private Toolbar mTopToolbar,bellToolbar;
-    private GestureDetector mDetector;
+//    private GestureDetector mDetector;
   
     @Override
     protected void attachBaseContext(Context base) {
@@ -130,7 +130,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 }
             }
         });
-        mDetector = new GestureDetector(this, new MyGestureListener());
+//        mDetector = new GestureDetector(this, new MyGestureListener());
     }
 
     private void checkUser() {
@@ -385,19 +385,19 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         return super.onCreateOptionsMenu(menu);
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        mDetector.onTouchEvent(ev);
-        return super.dispatchTouchEvent(ev);
-    }
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent ev) {
+////        mDetector.onTouchEvent(ev);
+//        return super.dispatchTouchEvent(ev);
+//    }
 
-
-    public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
-        @Override
-        public boolean onDoubleTap(MotionEvent e) {
-            openCallFragment(new ReferenceFragment());
-            Utilities.toast(getApplicationContext(), "References Opened");
-            return true;
-        }
-    }
+//
+//    public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+//        @Override
+//        public boolean onDoubleTap(MotionEvent e) {
+//            openCallFragment(new ReferenceFragment());
+//            Utilities.toast(getApplicationContext(), "References Opened");
+//            return true;
+//        }
+//    }
 }
