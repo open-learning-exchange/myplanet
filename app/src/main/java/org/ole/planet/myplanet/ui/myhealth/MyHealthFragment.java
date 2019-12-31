@@ -194,7 +194,7 @@ public class MyHealthFragment extends Fragment {
             List<RealmExamination> list = mm.getEvents();
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
-            rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list,mh ));
+            rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list,mh, userModel ));
             List<RealmExamination> finalList = list;
             rvRecord.post(() -> rvRecord.scrollToPosition(finalList.size() - 1));
         } else {
@@ -209,6 +209,7 @@ public class MyHealthFragment extends Fragment {
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
         Utilities.log("User profile " + userModel.getName());
         String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
+        Utilities.log("Health json "+ json);
         return new Gson().fromJson(json, RealmMyHealth.class);
     }
 

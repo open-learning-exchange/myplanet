@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +17,7 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.Date;
@@ -25,11 +27,12 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     private Context context;
     private List<RealmExamination> list;
     private RealmMyHealthPojo mh;
-
-    public AdapterHealthExamination(Context context, List<RealmExamination> list, RealmMyHealthPojo mh) {
+    private RealmUserModel userModel;
+    public AdapterHealthExamination(Context context, List<RealmExamination> list, RealmMyHealthPojo mh, RealmUserModel userModel) {
         this.context = context;
         this.list = list;
         this.mh = mh;
+        this.userModel = userModel;
     }
 
     @NonNull
@@ -45,6 +48,14 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
 
             ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature());
             ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
+            if(!TextUtils.isEmpty(list.get(position).getAddedBy()) && !TextUtils.equals(list.get(position).getAddedBy(), userModel.getId())){
+                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() +"\nAdded By "  + list.get(position).getAddedBy());
+                holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_grey_50));
+            }else{
+                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() +"\nSelf Examination" );
+                holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
+
+            }
             ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse());
             ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
             ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing());

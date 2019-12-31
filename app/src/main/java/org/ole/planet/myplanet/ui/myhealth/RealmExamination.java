@@ -5,6 +5,7 @@ import java.io.Serializable;
 public class RealmExamination implements Serializable {
     private String temperature, pulse, bp, height, weight, vision, hearing, notes, diagnosis,diagnosisNote, treatments, medications, immunizations, allergies, xrays, tests, referrals;
     private long date;
+    private String addedBy;
 
     public String getTemperature() {
         return temperature;
@@ -16,6 +17,14 @@ public class RealmExamination implements Serializable {
 
     public String getPulse() {
         return pulse;
+    }
+
+    public String getAddedBy() {
+        return addedBy;
+    }
+
+    public void setAddedBy(String addedBy) {
+        this.addedBy = addedBy;
     }
 
     public void setPulse(String pulse) {
