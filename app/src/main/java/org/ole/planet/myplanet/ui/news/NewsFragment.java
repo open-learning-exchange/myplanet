@@ -62,7 +62,6 @@ public class NewsFragment extends BaseNewsFragment {
     RealmUserModel user;
     TextView tvMessage;
     AdapterNews adapterNews;
-    String imageName = "", imageUrl = "";
     ImageView thumb;
 
     @Override

@@ -18,6 +18,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -93,6 +94,7 @@ public abstract class BaseNewsFragment extends Fragment implements AdapterNews.O
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        thumb = getView().findViewById(R.id.thumb);
         if (resultCode == RESULT_OK) {
             Uri url = null;
             String path = "";
