@@ -58,6 +58,7 @@ class CommunityFragment : BaseContainerFragment() {
                 .equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
+                .sort("time", Sort.DESCENDING)
                 .findAll()
         rv_community.layoutManager = LinearLayoutManager(activity!!)
         Utilities.log("list size " + list.size)
@@ -65,7 +66,7 @@ class CommunityFragment : BaseContainerFragment() {
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
         setFlexBox();
-        ll_edit_delete.visibility =   if (user!!.isManager()) View.VISIBLE else View.GONE
+        ll_edit_delete.visibility = if (user!!.isManager()) View.VISIBLE else View.GONE
         ic_add.setOnClickListener {
             var bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
