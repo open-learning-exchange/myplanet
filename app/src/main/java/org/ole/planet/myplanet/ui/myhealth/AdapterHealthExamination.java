@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,20 +17,30 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.Date;
 import java.util.List;
 
+import io.realm.Realm;
+
 public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmExamination> list;
     private RealmMyHealthPojo mh;
+    private RealmUserModel userModel;
+    private Realm mRealm;
 
-    public AdapterHealthExamination(Context context, List<RealmExamination> list, RealmMyHealthPojo mh) {
+    public AdapterHealthExamination(Context context, List<RealmExamination> list, RealmMyHealthPojo mh, RealmUserModel userModel) {
         this.context = context;
         this.list = list;
         this.mh = mh;
+        this.userModel = userModel;
+    }
+
+    public void setmRealm(Realm mRealm) {
+        this.mRealm = mRealm;
     }
 
     @NonNull
@@ -45,6 +56,21 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
 
             ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature());
             ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
+            if (!TextUtils.isEmpty(list.get(position).getAddedBy()) && !TextUtils.equals(list.get(position).getAddedBy(), userModel.getId())) {
+                RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getAddedBy()).findFirst();
+                String name = "";
+                if (model != null) {
+                    name = model.getFullName();
+                } else {
+                    name = list.get(position).getAddedBy().split(":")[1];
+                }
+                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\nAdded By " + name);
+                holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_grey_50));
+            } else {
+                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\nSelf Examination");
+                holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
+
+            }
             ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse());
             ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
             ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing());

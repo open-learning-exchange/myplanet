@@ -305,10 +305,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             return;
         }
 //        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
-        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
+//        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             editor.putString("loginUserName", inputName.getText().toString());
             editor.putString("loginUserPassword", inputPassword.getText().toString());
-        }
+//        }
         boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), managerialLogin.isChecked());
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();

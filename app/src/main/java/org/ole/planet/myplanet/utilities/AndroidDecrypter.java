@@ -89,7 +89,6 @@ public class AndroidDecrypter {
 
             byte[] original = cipher.doFinal(hexStringToByteArray(encrypted));
 
-
             return new String(original);
         } catch (Exception ex) {
             ex.printStackTrace();

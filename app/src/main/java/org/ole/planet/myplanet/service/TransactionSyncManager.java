@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -45,23 +46,22 @@ public class TransactionSyncManager {
         String userName = settings.getString("loginUserName", "");
         String password = settings.getString("loginUserPassword", "");
         String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
-        String header = "Basic " + Base64.encodeToString((userName + ":" +
-                password).getBytes(), Base64.NO_WRAP);
+        String header = "Basic " + Base64.encodeToString((userName + ":" + password).getBytes(), Base64.NO_WRAP);
         String id = model.getId();
         mRealm.executeTransactionAsync(realm -> {
             Response response;
             try {
                 RealmUserModel userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
-                Utilities.log(table);
                 response = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
                 DocumentResponse ob = (DocumentResponse) response.body();
-                if (ob.getRows().size() > 0){
+                if (ob!=null && ob.getRows().size() > 0){
                     Rows r = ob.getRows().get(0);
                     JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
                     userModel.setKey(JsonUtils.getString("key", jsonDoc));
                     userModel.setIv(JsonUtils.getString("iv", jsonDoc));
                 }
-            } catch (IOException e) {}
+            } catch (IOException e) {
+            }
         }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }
 

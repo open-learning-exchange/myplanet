@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.Notifications
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Utilities
 
 /**
  * A simple [Fragment] subclass.
@@ -56,6 +57,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         var model = UserProfileDbHandler(activity).userModel
+        Utilities.log( "key " + model.key)
         val surveyList = mRealm!!.where(RealmSubmission::class.java).equalTo("userId", model.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll()
         ic_back.setOnClickListener {
             dismiss()
@@ -66,7 +68,6 @@ class NotificationFragment : BottomSheetDialogFragment() {
 
         if(TextUtils.isEmpty(model.key)){
             notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
-
         }
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)
         rv_notifications.adapter = AdapterNotification(activity!!, notificationList, callback)
