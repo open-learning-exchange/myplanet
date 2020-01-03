@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utilities;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.provider.Settings;
 
 public class VersionUtils {
     public static int getVersionCode(Context context) {
@@ -23,4 +24,12 @@ public class VersionUtils {
         }
         return "";
     }
+
+    public static String  getAndroidId(Context context){
+        return Settings.Secure.getString(context.getContentResolver(),
+                Settings.Secure.ANDROID_ID) ;
+
+    }
+
+
 }

@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.ui.team.teamDiscussion;
 
 
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -9,11 +12,16 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
@@ -21,14 +29,19 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
+import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.Sort;
+
+import static android.app.Activity.RESULT_OK;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -82,6 +95,9 @@ public class DiscussionListFragment extends BaseTeamFragment {
     private void showAddMessage() {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
+        thumb = v.findViewById(R.id.thumb);
+        v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this));
+        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
         layout.setHint(getString(R.string.enter_message));
         new AlertDialog.Builder(getActivity())
                 .setView(v)
@@ -98,6 +114,8 @@ public class DiscussionListFragment extends BaseTeamFragment {
                     map.put("message", msg);
                     map.put("messageType", team.getTeamType());
                     map.put("messagePlanetCode", team.getTeamPlanetCode());
+                    map.put("imageUrl", imageUrl);
+                    map.put("imageName", imageName);
                     RealmNews.createNews(map, mRealm, user);
                     Utilities.log("discussion created");
                     rvDiscussion.getAdapter().notifyDataSetChanged();
@@ -108,4 +126,8 @@ public class DiscussionListFragment extends BaseTeamFragment {
     public void setData(List<RealmNews> list) {
         showRecyclerView(list);
     }
+
+
+
+
 }
