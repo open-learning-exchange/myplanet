@@ -52,10 +52,8 @@ public class TransactionSyncManager {
             Response response;
             try {
                 RealmUserModel userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
-                Utilities.log(table);
                 response = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
                 DocumentResponse ob = (DocumentResponse) response.body();
-                Utilities.log(new Gson().toJson(ob));
                 if (ob!=null && ob.getRows().size() > 0){
                     Rows r = ob.getRows().get(0);
                     JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
@@ -63,7 +61,6 @@ public class TransactionSyncManager {
                     userModel.setIv(JsonUtils.getString("iv", jsonDoc));
                 }
             } catch (IOException e) {
-                e.printStackTrace();
             }
         }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }

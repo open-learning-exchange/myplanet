@@ -76,15 +76,11 @@ public class AddMyHealthActivity extends AppCompatActivity {
             myHealth = new RealmMyHealth();
         myHealth.setProfile(health);
         if (healthPojo == null) {
-            Utilities.log("Profile is null");
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
         try {
-            Utilities.log("Health data " + new Gson().toJson(myHealth));
             healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        } catch (Exception e) {}
         finish();
     }
 
