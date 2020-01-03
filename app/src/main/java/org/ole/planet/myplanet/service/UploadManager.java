@@ -75,6 +75,15 @@ public class UploadManager extends FileUploadService {
         if (model.isManager())
             return;
         try {
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model)).enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                }
+            });
             apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + Build.ID).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -93,14 +102,19 @@ public class UploadManager extends FileUploadService {
                                 listener.onSuccess("My planet activities uploaded successfully");
                             }
                         }
+
                         @Override
-                        public void onFailure(Call<JsonObject> call, Throwable t) { }
+                        public void onFailure(Call<JsonObject> call, Throwable t) {
+                        }
                     });
                 }
+
                 @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) { }
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                }
             });
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
     }
 
 
@@ -118,7 +132,8 @@ public class UploadManager extends FileUploadService {
                     Utilities.log("Upload exam result");
                 }
             }
-        }, () -> listener.onSuccess("Result sync completed successfully"), (e) -> { });
+        }, () -> listener.onSuccess("Result sync completed successfully"), (e) -> {
+        });
         uploadCourseProgress();
     }
 

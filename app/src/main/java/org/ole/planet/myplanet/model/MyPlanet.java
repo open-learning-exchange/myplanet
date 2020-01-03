@@ -132,6 +132,31 @@ public class MyPlanet implements Serializable {
     }
 
 
+    public static JsonObject getNormalMyPlanetActivities(Context context, SharedPreferences pref, RealmUserModel model){
+        JsonObject postJSON = new JsonObject();
+        SharedPreferences preferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+        MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
+        if (planet != null)
+            postJSON.addProperty("planetVersion", planet.getPlanetVersion());
+        postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
+        postJSON.addProperty("parentCode", model.getParentCode());
+        postJSON.addProperty("createdOn", model.getPlanetCode());
+        postJSON.addProperty("macAddress", NetworkUtils.getMacAddr());
+        postJSON.addProperty("version", VersionUtils.getVersionCode(context));
+        postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
+        postJSON.addProperty("androidId", VersionUtils.getAndroidId(MainApplication.context));
+        postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
+        postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
+        postJSON.addProperty("time", new Date().getTime());
+        JsonObject gps = new JsonObject();
+        gps.addProperty("latitude", pref.getString("last_lat", ""));
+        gps.addProperty("longitude", pref.getString("last_lng", ""));
+        postJSON.add("gps", gps);
+        Utilities.log(postJSON.toString());
+        return postJSON;
+    }
+
     public static JsonArray getTabletUsages(Context context, SharedPreferences pref) {
         Calendar cal = Calendar.getInstance();
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
