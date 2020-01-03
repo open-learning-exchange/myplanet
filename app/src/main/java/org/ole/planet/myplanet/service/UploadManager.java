@@ -36,7 +36,9 @@ import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -75,7 +77,16 @@ public class UploadManager extends FileUploadService {
         if (model.isManager())
             return;
         try {
-            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + Build.ID).enqueue(new Callback<JsonObject>() {
+            apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model)).enqueue(new Callback<JsonObject>() {
+                @Override
+                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                }
+
+                @Override
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                }
+            });
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) +  "@" + NetworkUtils.getMacAddr()).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
@@ -93,14 +104,19 @@ public class UploadManager extends FileUploadService {
                                 listener.onSuccess("My planet activities uploaded successfully");
                             }
                         }
+
                         @Override
-                        public void onFailure(Call<JsonObject> call, Throwable t) { }
+                        public void onFailure(Call<JsonObject> call, Throwable t) {
+                        }
                     });
                 }
+
                 @Override
-                public void onFailure(Call<JsonObject> call, Throwable t) { }
+                public void onFailure(Call<JsonObject> call, Throwable t) {
+                }
             });
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
     }
 
 
@@ -118,7 +134,8 @@ public class UploadManager extends FileUploadService {
                     Utilities.log("Upload exam result");
                 }
             }
-        }, () -> listener.onSuccess("Result sync completed successfully"), (e) -> { });
+        }, () -> listener.onSuccess("Result sync completed successfully"), (e) -> {
+        });
         uploadCourseProgress();
     }
 
