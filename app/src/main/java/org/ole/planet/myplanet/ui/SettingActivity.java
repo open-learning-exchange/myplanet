@@ -97,13 +97,12 @@ public class SettingActivity extends AppCompatActivity {
             SwitchPreference rating = (SwitchPreference) findPreference("beta_rating");
             SwitchPreference myHealth = (SwitchPreference) findPreference("beta_myHealth");
             SwitchPreference healthWorker = (SwitchPreference) findPreference("beta_healthWorker");
+            SwitchPreference newsAddImage = (SwitchPreference) findPreference("beta_addImageToMessage");
 
             beta.setOnPreferenceChangeListener((preference, o) -> {
                 if (beta.isChecked()) {
                     course.setChecked(true);
                     achievement.setChecked(true);
-
-                    rating.setChecked(true);
                 }
 
                 return true;

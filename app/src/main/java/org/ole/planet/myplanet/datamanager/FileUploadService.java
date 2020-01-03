@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.datamanager;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
+import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -30,25 +32,18 @@ public class FileUploadService {
         File f = new File(personal.getPath());
         String name = FileUtils.getFileNameFromUrl(personal.getPath());
 
-         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
+        upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
-
-
-
 
     public void uploadAttachment(String id, String rev, RealmSubmitPhotos personal, SuccessListener listener) {
-
         File f = new File(personal.getPhoto_location());
         String name = FileUtils.getFileNameFromUrl(personal.getPhoto_location());
-       upload_doc(id, rev, "%s/submissions/%s/%s", f, name,  listener);
+        upload_doc(id, rev, "%s/submissions/%s/%s", f, name, listener);
     }
 
 
-    private void upload_doc(String id, String rev, String format, File f, String name, SuccessListener listener)
-    {
-
+    private void upload_doc(String id, String rev, String format, File f, String name, SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-
         try {
             URLConnection connection = f.toURL().openConnection();
             String mimeType = connection.getContentType();
@@ -66,13 +61,13 @@ public class FileUploadService {
                 }
             });
         } catch (IOException e) {
+            e.printStackTrace();
             listener.onSuccess("Unable to upload resource");
         }
     }
 
 
-
-    private Map<String, String> getHeaderMap(String mimeType, String rev) {
+    public static Map<String, String> getHeaderMap(String mimeType, String rev) {
         Map<String, String> hashMap = new HashMap<>();
         hashMap.put("Authorization", Utilities.getHeader());
         hashMap.put("Content-Type", mimeType);
@@ -81,6 +76,7 @@ public class FileUploadService {
     }
 
     private void onDataReceived(JsonObject object, SuccessListener listener) {
+        Utilities.log("On data received " + new Gson().toJson(object));
         if (object != null) {
             if (JsonUtils.getBoolean("ok", object)) {
                 listener.onSuccess("Uploaded successfully");

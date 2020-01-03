@@ -42,6 +42,8 @@ public class Constants {
     public static final String KEY_AUTOSYNC_ = "auto_sync_with_server";
     public static final String KEY_AUTOSYNC_WEEKLY = "force_weekly_sync";
     public static final String KEY_AUTOSYNC_MONTHLY = "force_monthly_sync";
+    public static final String KEY_NEWSADDIMAGE = "beta_addImageToMessage";
+
     public static final HashMap<Class, Integer> COLOR_MAP = new HashMap<>();
     public static HashMap<String, Class> classList = new HashMap<>();
 
