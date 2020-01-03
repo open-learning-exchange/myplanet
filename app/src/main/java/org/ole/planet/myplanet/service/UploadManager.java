@@ -36,7 +36,9 @@ import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -84,7 +86,7 @@ public class UploadManager extends FileUploadService {
                 public void onFailure(Call<JsonObject> call, Throwable t) {
                 }
             });
-            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + Build.ID).enqueue(new Callback<JsonObject>() {
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) +  "@" + NetworkUtils.getMacAddr()).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
