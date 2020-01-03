@@ -35,17 +35,7 @@ public class FileUploadService {
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
 
-
-    public void uploadNewsAttachment(String id, String rev, JsonObject object, SuccessListener listener) {
-        File f = new File(JsonUtils.getString("imageUrl", object));
-        Utilities.log( "IMAGE FILE URL  " + JsonUtils.getString("imageUrl", object));
-        String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", object));
-        upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
-    }
-
-
     public void uploadAttachment(String id, String rev, RealmSubmitPhotos personal, SuccessListener listener) {
-
         File f = new File(personal.getPhoto_location());
         String name = FileUtils.getFileNameFromUrl(personal.getPhoto_location());
         upload_doc(id, rev, "%s/submissions/%s/%s", f, name, listener);
@@ -53,15 +43,12 @@ public class FileUploadService {
 
 
     private void upload_doc(String id, String rev, String format, File f, String name, SuccessListener listener) {
-
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-
         try {
             URLConnection connection = f.toURL().openConnection();
             String mimeType = connection.getContentType();
             RequestBody body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f));
             String url = String.format(format, Utilities.getUrl(), id, name);
-            Utilities.log("image url " + url);
             apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -80,7 +67,7 @@ public class FileUploadService {
     }
 
 
-    private Map<String, String> getHeaderMap(String mimeType, String rev) {
+    public static Map<String, String> getHeaderMap(String mimeType, String rev) {
         Map<String, String> hashMap = new HashMap<>();
         hashMap.put("Authorization", Utilities.getHeader());
         hashMap.put("Content-Type", mimeType);

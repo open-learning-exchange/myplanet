@@ -84,7 +84,6 @@ public class NewsFragment extends BaseNewsFragment {
     }
 
 
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -92,6 +91,7 @@ public class NewsFragment extends BaseNewsFragment {
                 .equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("replyTo", "", Case.INSENSITIVE)
+                .sort("time", Sort.DESCENDING)
                 .findAll();
 
         setData(list);
@@ -111,7 +111,7 @@ public class NewsFragment extends BaseNewsFragment {
 //            if (!TextUtils.isEmpty(imageUrl)) {
 //                createImage(map);
 //            }else{
-                RealmNews.createNews(map, mRealm, user);
+            RealmNews.createNews(map, mRealm, user);
 //            }
             rvNews.getAdapter().notifyDataSetChanged();
         });
@@ -145,48 +145,5 @@ public class NewsFragment extends BaseNewsFragment {
             showNoData(tvMessage, adapterNews.getItemCount());
         }
     };
-
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK) {
-            Uri url = null;
-            String path = "";
-            url = data.getData();
-            path = FileUtils.getRealPathFromURI(getActivity(), url);
-            if (TextUtils.isEmpty(path)) {
-                path = getImagePath(url);
-            }
-            imageUrl = path;
-            imageName = FileUtils.getFileNameFromUrl(path);
-            try {
-                thumb.setVisibility(View.VISIBLE);
-                Glide.with(getActivity())
-                        .load(new File(imageUrl))
-                        .into(thumb);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-    }
-
-    public String getImagePath(Uri uri) {
-        Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null);
-        cursor.moveToFirst();
-        String document_id = cursor.getString(0);
-        document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
-        cursor.close();
-
-        cursor = getContext().getContentResolver().query(
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
-        cursor.moveToFirst();
-        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-        cursor.close();
-
-        return path;
-    }
-
 
 }
