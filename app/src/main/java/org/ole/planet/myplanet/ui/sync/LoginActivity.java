@@ -104,7 +104,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             new Service(this).checkVersion(this, settings);
         }
-       checkUsagesPermission();
+        checkUsagesPermission();
         new GPSService(this);
         setUpChildMode();
 
@@ -159,6 +159,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         btnGuestLogin = findViewById(R.id.btn_guest_login);
         managerialLogin = findViewById(R.id.manager_login);
+        TextView customDeviceName = findViewById(R.id.customDeviceName);
+        customDeviceName.setText(getCustomDeviceName());
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         if (!settings.contains("serverProtocol"))
