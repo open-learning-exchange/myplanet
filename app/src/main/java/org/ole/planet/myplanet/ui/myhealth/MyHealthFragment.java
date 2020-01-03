@@ -202,8 +202,6 @@ public class MyHealthFragment extends Fragment {
             txtMessage.setText(R.string.no_records);
             txtMessage.setVisibility(View.VISIBLE);
         }
-
-
     }
 
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {

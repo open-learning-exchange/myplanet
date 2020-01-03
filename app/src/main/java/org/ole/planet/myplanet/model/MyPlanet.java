@@ -122,7 +122,7 @@ public class MyPlanet implements Serializable {
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
         if (planet != null)
             postJSON.addProperty("planetVersion", planet.getPlanetVersion());
-        postJSON.addProperty("_id", Build.ID);
+        postJSON.addProperty("_id",VersionUtils.getAndroidId(MainApplication.context));
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
