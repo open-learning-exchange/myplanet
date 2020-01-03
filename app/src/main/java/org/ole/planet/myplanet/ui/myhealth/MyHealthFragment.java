@@ -209,8 +209,17 @@ public class MyHealthFragment extends Fragment {
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
         Utilities.log("User profile " + userModel.getName());
         String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
-        Utilities.log("Health json "+ json);
-        return new Gson().fromJson(json, RealmMyHealth.class);
+        if(json == null){
+            if(!userModel.getRealm().isInTransaction()){
+                userModel.getRealm().beginTransaction();
+            }
+            userModel.setIv("");
+            userModel.setKey("");
+            userModel.getRealm().commitTransaction();
+            return  null;
+        }else{
+            return new Gson().fromJson(json, RealmMyHealth.class);
+        }
     }
 
 }
