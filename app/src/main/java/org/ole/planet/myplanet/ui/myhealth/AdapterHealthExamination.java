@@ -64,7 +64,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 } else {
                     name = list.get(position).getAddedBy().split(":")[1];
                 }
-                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\nAdded By " + name);
+                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\n" + name);
                 holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_grey_50));
             } else {
                 ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\nSelf Examination");
