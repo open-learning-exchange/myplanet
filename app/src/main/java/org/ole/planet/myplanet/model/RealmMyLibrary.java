@@ -43,6 +43,7 @@ public class RealmMyLibrary extends RealmObject {
     private String linkToLicense;
     private String addedBy;
     private String uploadDate;
+    private long createdDate;
     private String openWith;
     private String articleDate;
     private String kind;
@@ -231,6 +232,7 @@ public class RealmMyLibrary extends RealmObject {
         resource.setOpenWith(JsonUtils.getString("openWith", doc));
         resource.setArticleDate(JsonUtils.getString("articleDate", doc));
         resource.setKind(JsonUtils.getString("kind", doc));
+        resource.setCreatedDate(JsonUtils.getLong("createdDate", doc));
         resource.setLanguage(JsonUtils.getString("language", doc));
         resource.setAuthor(JsonUtils.getString("author", doc));
         resource.setMediaType(JsonUtils.getString("mediaType", doc));
@@ -244,6 +246,13 @@ public class RealmMyLibrary extends RealmObject {
         resource.setLanguages(JsonUtils.getJsonArray("languages", doc), resource);
     }
 
+    public long getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(long createdDate) {
+        this.createdDate = createdDate;
+    }
 
     public JsonObject serializeResource() {
         JsonObject object = new JsonObject();

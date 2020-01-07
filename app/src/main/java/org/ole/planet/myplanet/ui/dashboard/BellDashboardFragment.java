@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -9,6 +10,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.DatePicker;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,8 +31,10 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 
 public class BellDashboardFragment extends BaseDashboardFragment {
@@ -56,20 +60,11 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
             new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
         });
-        forceDownloadNewsImages();
+
+       // forceDownloadNewsImages();
     }
 
-    private void forceDownloadNewsImages() {
-        List<RealmMyLibrary> imageList = mRealm.where(RealmMyLibrary.class).equalTo("isPrivate", true).equalTo("mediaType", "image").findAll();
-        ArrayList<String> urls = new ArrayList<>();
-        for (RealmMyLibrary library : imageList) {
-            String url = Utilities.getUrl(library, settings);
-            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url))
-                urls.add(url);
-        }
-        if (!urls.isEmpty())
-            startDownload(urls);
-    }
+
 
     private void declareElements(View view) {
         tvDate = view.findViewById(R.id.txt_date);
