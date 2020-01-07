@@ -49,6 +49,7 @@ public class RealmNews extends RealmObject {
     private String parentCode;
     private String imageUrl;
     private String imageName;
+    private RealmList<String> images;
 
     public static void insert(Realm mRealm, JsonObject doc) {
         RealmNews news = mRealm.where(RealmNews.class).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst();
@@ -75,8 +76,11 @@ public class RealmNews extends RealmObject {
         news.setUserName(JsonUtils.getString("name", user));
         news.setTime(JsonUtils.getLong("time", doc));
         news.setImageUrl(JsonUtils.getString("imageUrl",doc));
+        JsonArray images = JsonUtils.getJsonArray("images", doc);
+        news.setImages(images);
         news.setImageName(JsonUtils.getString("imageName",doc));
     }
+
 
     public String getMessagePlanetCode() {
         return messagePlanetCode;
@@ -84,6 +88,18 @@ public class RealmNews extends RealmObject {
 
     public void setMessagePlanetCode(String messagePlanetCode) {
         this.messagePlanetCode = messagePlanetCode;
+    }
+
+
+    public RealmList<String> getImages() {
+        return images;
+    }
+
+    public void setImages(JsonArray images) {
+       this.images =  new RealmList<>();
+       for (JsonElement ob: images){
+            this.images.add(JsonUtils.getString("resourceId", ob.getAsJsonObject()));
+       }
     }
 
     public String getMessageType() {

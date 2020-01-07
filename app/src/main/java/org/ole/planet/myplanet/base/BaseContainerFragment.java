@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.base;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -60,6 +62,19 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         if (object != null) {
             AdapterCourses.showRating(object, rating, timesRated, ratingBar);
         }
+    }
+
+    public void getUrlsAndStartDownload(List<RealmMyLibrary> lib, SharedPreferences settings, ArrayList<String> urls) {
+        for (RealmMyLibrary library : lib) {
+            String url = Utilities.getUrl(library, settings);
+            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url))
+                urls.add(url);
+        }
+        if (!urls.isEmpty())
+            startDownload(urls);
+        else
+            Utilities.toast(getActivity(),"No images to download.");
+
     }
 
     public void initRatingView(String type, String id, String title, OnRatingChangeListener listener) {

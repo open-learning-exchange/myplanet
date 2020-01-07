@@ -1,14 +1,21 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.DatePicker;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
@@ -17,8 +24,17 @@ import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.mylife.LifeFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
+import org.ole.planet.myplanet.utilities.DownloadUtils;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 
 public class BellDashboardFragment extends BaseDashboardFragment {
@@ -44,7 +60,11 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
             new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
         });
+
+       // forceDownloadNewsImages();
     }
+
+
 
     private void declareElements(View view) {
         tvDate = view.findViewById(R.id.txt_date);
@@ -56,7 +76,7 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.fab_survey).setOnClickListener(v -> openHelperFragment(new SurveyFragment()));
         view.findViewById(R.id.fab_feedback).setOnClickListener(v -> openHelperFragment(new FeedbackListFragment()));
         view.findViewById(R.id.myLifeImageButton).setOnClickListener(v -> homeItemClickListener.openCallFragment(new LifeFragment()));
-        view.findViewById(R.id.fab_notification).setOnClickListener(v ->  showNotificationFragment());
+        view.findViewById(R.id.fab_notification).setOnClickListener(v -> showNotificationFragment());
     }
 
     private void openHelperFragment(Fragment f) {

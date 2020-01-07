@@ -43,6 +43,7 @@ public class RealmMyLibrary extends RealmObject {
     private String linkToLicense;
     private String addedBy;
     private String uploadDate;
+    private long createdDate;
     private String openWith;
     private String articleDate;
     private String kind;
@@ -67,6 +68,7 @@ public class RealmMyLibrary extends RealmObject {
     private String courseId;
     private String stepId;
     private String downloaded;
+    private boolean isPrivate;
 
     public static List<RealmMyLibrary> getMyLibraryByUserId(Realm mRealm, SharedPreferences settings) {
         RealmResults<RealmMyLibrary> libs = mRealm.where(RealmMyLibrary.class).findAll();
@@ -156,6 +158,14 @@ public class RealmMyLibrary extends RealmObject {
         return medium;
     }
 
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean aPrivate) {
+        isPrivate = aPrivate;
+    }
+
     public void setMedium(String medium) {
         this.medium = medium;
     }
@@ -222,6 +232,7 @@ public class RealmMyLibrary extends RealmObject {
         resource.setOpenWith(JsonUtils.getString("openWith", doc));
         resource.setArticleDate(JsonUtils.getString("articleDate", doc));
         resource.setKind(JsonUtils.getString("kind", doc));
+        resource.setCreatedDate(JsonUtils.getLong("createdDate", doc));
         resource.setLanguage(JsonUtils.getString("language", doc));
         resource.setAuthor(JsonUtils.getString("author", doc));
         resource.setMediaType(JsonUtils.getString("mediaType", doc));
@@ -231,9 +242,17 @@ public class RealmMyLibrary extends RealmObject {
         resource.setSubject(JsonUtils.getJsonArray("subject", doc), resource);
         resource.setLevel(JsonUtils.getJsonArray("level", doc), resource);
         resource.setTag(JsonUtils.getJsonArray("tags", doc), resource);
+        resource.setPrivate(JsonUtils.getBoolean("private", doc));
         resource.setLanguages(JsonUtils.getJsonArray("languages", doc), resource);
     }
 
+    public long getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(long createdDate) {
+        this.createdDate = createdDate;
+    }
 
     public JsonObject serializeResource() {
         JsonObject object = new JsonObject();
