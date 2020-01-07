@@ -84,6 +84,9 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
             }
             if (!urls.isEmpty())
                 startDownload(urls);
+            else
+                Utilities.toast(getActivity(),"No images to download.");
+
         }, now.get(Calendar.YEAR),
                 now.get(Calendar.MONTH),
                 now.get(Calendar.DAY_OF_MONTH));
