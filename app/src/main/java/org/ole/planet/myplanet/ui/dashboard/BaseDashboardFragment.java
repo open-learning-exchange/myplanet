@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.graphics.Typeface;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -29,6 +31,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -63,6 +66,25 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         txtFullName.setText(fullName);
     }
 
+    public void forceDownloadNewsImages() {
+        if(mRealm == null)
+            mRealm =new DatabaseService(getActivity()).getRealmInstance();
+        Utilities.toast(getActivity(),"Please select starting date : ");
+        Calendar now = Calendar.getInstance();
+        DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
+            now.set(Calendar.YEAR, i);
+            now.set(Calendar.MONTH, i1 + 1);
+            now.set(Calendar.DAY_OF_MONTH, i2);
+            List<RealmMyLibrary> imageList = mRealm.where(RealmMyLibrary.class).equalTo("isPrivate", true).greaterThan("createdDate", now.getTimeInMillis()).equalTo("mediaType", "image").findAll();
+            ArrayList<String> urls = new ArrayList<>();
+           getUrlsAndStartDownload(imageList,settings, urls);
+
+        }, now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH));
+        dpd.setTitle("Read offline news from : ");
+        dpd.show();
+    }
 
     public void myLibraryDiv(View view) {
         TextView count = view.findViewById(R.id.count_library);
