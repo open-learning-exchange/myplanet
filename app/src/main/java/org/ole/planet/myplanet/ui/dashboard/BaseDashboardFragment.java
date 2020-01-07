@@ -64,11 +64,12 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         txtRole.setText(" - " + model.getRoleAsString());
         txtFullName.setText(fullName);
-        forceDownloadNewsImages();
     }
 
     public void forceDownloadNewsImages() {
-        Utilities.toast(getActivity(),"Please select starting date");
+        if(mRealm == null)
+            mRealm =new DatabaseService(getActivity()).getRealmInstance();
+        Utilities.toast(getActivity(),"Please select starting date : ");
         Calendar now = Calendar.getInstance();
         DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
             now.set(Calendar.YEAR, i);
