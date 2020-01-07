@@ -77,15 +77,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
             now.set(Calendar.DAY_OF_MONTH, i2);
             List<RealmMyLibrary> imageList = mRealm.where(RealmMyLibrary.class).equalTo("isPrivate", true).greaterThan("createdDate", now.getTimeInMillis()).equalTo("mediaType", "image").findAll();
             ArrayList<String> urls = new ArrayList<>();
-            for (RealmMyLibrary library : imageList) {
-                String url = Utilities.getUrl(library, settings);
-                if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url))
-                    urls.add(url);
-            }
-            if (!urls.isEmpty())
-                startDownload(urls);
-            else
-                Utilities.toast(getActivity(),"No images to download.");
+           getUrlsAndStartDownload(imageList,settings, urls);
 
         }, now.get(Calendar.YEAR),
                 now.get(Calendar.MONTH),

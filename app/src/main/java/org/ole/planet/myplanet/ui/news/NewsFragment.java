@@ -133,13 +133,7 @@ public class NewsFragment extends BaseNewsFragment {
         ArrayList<String> urls = new ArrayList<>();
         SharedPreferences settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).findAll();
-        for (RealmMyLibrary library : lib) {
-            String url = Utilities.getUrl(library, settings);
-            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url))
-                urls.add(url);
-        }
-        if (!urls.isEmpty())
-            startDownload(urls);
+        getUrlsAndStartDownload(lib,settings, urls);
         adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
@@ -147,6 +141,8 @@ public class NewsFragment extends BaseNewsFragment {
         rvNews.setAdapter(adapterNews);
         showNoData(tvMessage, adapterNews.getItemCount());
     }
+
+
 
     final private RecyclerView.AdapterDataObserver observer = new RecyclerView.AdapterDataObserver() {
         @Override
