@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.ui.sync;
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -47,7 +49,7 @@ import retrofit2.Response;
 
 public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener {
     public static final String PREFS_NAME = "OLE_PLANET";
-    public TextView syncDate,lblLastSyncDate;
+    public TextView syncDate, lblLastSyncDate;
     public TextView intervalLabel, tvNodata;
     public Spinner spinner;
     public Switch syncSwitch;
@@ -122,13 +124,16 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         progressDialog.setMessage("Connecting to server....");
         progressDialog.show();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        Utilities.log(processedUrl + "/_all_dbs");
         apiInterface.isPlanetAvailable(processedUrl + "/_all_dbs").enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 try {
                     progressDialog.dismiss();
-                    JsonArray arr = new Gson().fromJson(response.body().string(), JsonArray.class);
-                    if (arr.size() < 8) {
+                    String ss = response.body().string();
+                    List<String> myList = Arrays.asList(ss.split(","));
+                    Utilities.log("List size " + ss);
+                    if (myList.size() < 8) {
                         alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
                     } else {
                         startSync();
@@ -243,7 +248,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public void startSync() {
         Utilities.log("Start sync");
 
-                SyncManager.getInstance().start(SyncActivity.this);
+        SyncManager.getInstance().start(SyncActivity.this);
 
     }
 

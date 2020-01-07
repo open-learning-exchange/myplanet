@@ -164,7 +164,6 @@ public class RealmOfflineActivity extends RealmObject {
         activities.setUserName(JsonUtils.getString("user", act));
         activities.setLogoutTime(JsonUtils.getLong("logoutTime", act));
         activities.setAndroidId(JsonUtils.getString("androidId", act));
-
     }
 
     public void changeRev(JsonObject r) {

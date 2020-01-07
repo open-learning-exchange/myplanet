@@ -1,33 +1,56 @@
 package org.ole.planet.myplanet.ui.news;
 
 
+import android.content.Context;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import android.provider.MediaStore;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
+import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.library.AddResourceActivity;
+import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Case;
 import io.realm.Sort;
+
+import static android.app.Activity.RESULT_OK;
 
 public class NewsFragment extends BaseNewsFragment {
 
@@ -35,14 +58,11 @@ public class NewsFragment extends BaseNewsFragment {
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
-    Button btnSubmit;
+    Button btnSubmit, btnAddImage;
     RealmUserModel user;
     TextView tvMessage;
     AdapterNews adapterNews;
-
-    public NewsFragment() {
-    }
-
+    ImageView thumb;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -53,12 +73,15 @@ public class NewsFragment extends BaseNewsFragment {
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
         tvMessage = v.findViewById(R.id.tv_message);
+        thumb = v.findViewById(R.id.thumb);
+        btnAddImage = v.findViewById(R.id.add_news_image);
 //        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
-        KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout),getActivity());
+        KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());
         return v;
     }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -67,12 +90,9 @@ public class NewsFragment extends BaseNewsFragment {
                 .equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("replyTo", "", Case.INSENSITIVE)
-                .sort("time", Sort.DESCENDING)
+               // .sort("time", Sort.DESCENDING)
                 .findAll();
-//        btnShowMain.setOnClickListener(view -> {
-//            setData(list);
-//            btnShowMain.setVisibility(View.GONE);
-//        });
+
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
@@ -85,9 +105,17 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("message", message);
             map.put("viewableBy", "community");
             map.put("viewableId", "");
+            map.put("imageUrl", imageUrl);
+            map.put("imageName", imageName);
+//            if (!TextUtils.isEmpty(imageUrl)) {
+//                createImage(map);
+//            }else{
             RealmNews.createNews(map, mRealm, user);
+//            }
             rvNews.getAdapter().notifyDataSetChanged();
         });
+        btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
+        btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     public void setData(List<RealmNews> list) {
@@ -116,4 +144,5 @@ public class NewsFragment extends BaseNewsFragment {
             showNoData(tvMessage, adapterNews.getItemCount());
         }
     };
+
 }

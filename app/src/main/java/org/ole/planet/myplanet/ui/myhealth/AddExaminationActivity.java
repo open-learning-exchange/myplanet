@@ -154,6 +154,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
         RealmExamination sign = new RealmExamination();
         sign.setAllergies(etAllergies.getText().toString());
+        sign.setAddedBy(user.getId());
         sign.setBp(etBloodPressure.getText().toString());
         sign.setTemperature(etTemperature.getText().toString());
         sign.setPulse(etPulseRate.getText().toString());

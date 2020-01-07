@@ -194,7 +194,9 @@ public class MyHealthFragment extends Fragment {
             List<RealmExamination> list = mm.getEvents();
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
-            rvRecord.setAdapter(new AdapterHealthExamination(getActivity(), list,mh ));
+            AdapterHealthExamination adapter = new AdapterHealthExamination(getActivity(), list,mh, userModel );
+            adapter.setmRealm(mRealm);
+            rvRecord.setAdapter(adapter);
             List<RealmExamination> finalList = list;
             rvRecord.post(() -> rvRecord.scrollToPosition(finalList.size() - 1));
         } else {
@@ -202,14 +204,22 @@ public class MyHealthFragment extends Fragment {
             txtMessage.setText(R.string.no_records);
             txtMessage.setVisibility(View.VISIBLE);
         }
-
-
     }
 
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
         Utilities.log("User profile " + userModel.getName());
         String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
-        return new Gson().fromJson(json, RealmMyHealth.class);
+        if(json == null){
+            if(!userModel.getRealm().isInTransaction()){
+                userModel.getRealm().beginTransaction();
+            }
+            userModel.setIv("");
+            userModel.setKey("");
+            userModel.getRealm().commitTransaction();
+            return  null;
+        }else{
+            return new Gson().fromJson(json, RealmMyHealth.class);
+        }
     }
 
 }
