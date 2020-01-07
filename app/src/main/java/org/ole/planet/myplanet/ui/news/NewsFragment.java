@@ -132,7 +132,7 @@ public class NewsFragment extends BaseNewsFragment {
         }
         ArrayList<String> urls = new ArrayList<>();
         SharedPreferences settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).equalTo("resourceOffline", false).findAll();
+        List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).findAll();
         for (RealmMyLibrary library : lib) {
             String url = Utilities.getUrl(library, settings);
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url))

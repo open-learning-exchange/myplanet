@@ -98,7 +98,7 @@ public class RealmNews extends RealmObject {
     public void setImages(JsonArray images) {
        this.images =  new RealmList<>();
        for (JsonElement ob: images){
-            this.images.add(JsonUtils.getString("fileName", ob.getAsJsonObject()));
+            this.images.add(JsonUtils.getString("resourceId", ob.getAsJsonObject()));
        }
     }
 
