@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -31,11 +32,13 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.library.AddResourceActivity;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
@@ -43,6 +46,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -120,6 +124,22 @@ public class NewsFragment extends BaseNewsFragment {
 
     public void setData(List<RealmNews> list) {
         rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
+        List<String> resourceIds = new ArrayList<>();
+        for (RealmNews news : list){
+            if (news.getImages() != null && news.getImages().size() > 0) {
+                resourceIds.add(news.getImages().get(0));
+            }
+        }
+        ArrayList<String> urls = new ArrayList<>();
+        SharedPreferences settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).equalTo("resourceOffline", false).findAll();
+        for (RealmMyLibrary library : lib) {
+            String url = Utilities.getUrl(library, settings);
+            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url))
+                urls.add(url);
+        }
+        if (!urls.isEmpty())
+            startDownload(urls);
         adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
