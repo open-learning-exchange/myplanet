@@ -22,11 +22,13 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+
 import java.io.File;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -90,14 +92,15 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-            loadImage(holder, list.get(position).getImageUrl());
+            loadImage(holder, list.get(position));
             showReplyButton(holder, news, position);
         }
     }
 
-    private void loadImage(RecyclerView.ViewHolder holder, String imageUrl) {
+    private void loadImage(RecyclerView.ViewHolder holder, RealmNews news) {
+        String imageUrl = news.getImageUrl();
         if (TextUtils.isEmpty(imageUrl)) {
-            ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
+            loadRemoteImage(holder, news);
         } else {
             try {
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
@@ -108,6 +111,22 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void loadRemoteImage(RecyclerView.ViewHolder holder, RealmNews news) {
+        if (news.getImages() != null && news.getImages().size() > 0) {
+            RealmMyLibrary library = mRealm.where(RealmMyLibrary.class).equalTo("_id", news.getImages().get(0)).findFirst();
+            if (library != null) {
+                Glide.with(context)
+                        .load(new File(Utilities.SD_PATH, library.getId() + "/" + library.getResourceLocalAddress()))
+                        .into(((ViewHolderNews) holder).newsImage);
+                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                return;
+
+            }
+        }
+        ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
+
     }
 
     private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {

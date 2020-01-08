@@ -212,7 +212,7 @@ public abstract class BaseResourceFragment extends Fragment {
     }
 
     public List<RealmMyLibrary> getLibraryList(Realm mRealm) {
-        RealmResults<RealmMyLibrary> l = mRealm.where(RealmMyLibrary.class).findAll();
+        RealmResults<RealmMyLibrary> l = mRealm.where(RealmMyLibrary.class).equalTo("isPrivate", false).findAll();
         List<RealmMyLibrary> libList = new ArrayList<>();
         List<RealmMyLibrary> libraries = getLibraries(l);
         for (RealmMyLibrary item : libraries) {
