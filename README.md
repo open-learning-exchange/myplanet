@@ -1,6 +1,6 @@
-# Takeout
+# myPlanet
 
-Takeout is the Android port of the Planet web application. It will work with Planet like Take Home works with BeLL.
+myPlanet is the Android port of the Planet web application. It will work with Planet community / nation.
 
 ### App Screenshots:
 

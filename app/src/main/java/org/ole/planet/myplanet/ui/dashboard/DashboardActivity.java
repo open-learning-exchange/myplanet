@@ -115,19 +115,24 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 switch (item.getItemId()) {
                     case R.id.action_sync:
                         syncNow();
-                        return true;
+                        break;
                     case R.id.action_feedback:
                         openCallFragment(new FeedbackListFragment());
-                        return true;
+                        break;
                     case R.id.action_settings:
                         startActivity(new Intent(DashboardActivity.this, SettingActivity.class));
-                        return true;
+                        break;
+                    case R.id.action_disclaimer:
+                        startActivity(new Intent(DashboardActivity.this, DisclaimerActivity.class));
+                        break;
                     case R.id.action_logout:
                         logout();
-                        return true;
+                        break;
                     default:
-                        return false;
+                        break;
+
                 }
+                return true;
             }
         });
 //        mDetector = new GestureDetector(this, new MyGestureListener());
