@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.library;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
@@ -123,40 +124,24 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout), getActivity());
         changeButtonStatus();
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
-        if(!isMyCourseLib) tvFragmentInfo.setText("Our Library");
+        if (!isMyCourseLib) tvFragmentInfo.setText("Our Library");
         orderByDate = getView().findViewById(R.id.order_by_date_button);
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
-        orderByDate.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class,"uploadDate", sortByDate())));
-        orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class,"title")));
+        orderByDate.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate")));
+        orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title")));
 
         spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                Utilities.log("i " + i);
-                if (i == 0){
-                    recyclerView.setAdapter(new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class, "title", Sort.ASCENDING), map, mRealm));
-                }else{
-                    recyclerView.setAdapter(new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class, "title", Sort.DESCENDING), map, mRealm));
-                }
+                adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", i == 0 ? Sort.ASCENDING : Sort.DESCENDING));
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-
             }
         });
     }
 
-    public Sort sortByDate() {
-
-        if (sortAscending) {
-            sortAscending = false;
-            return Sort.DESCENDING;
-        } else {
-            sortAscending = true;
-            return Sort.ASCENDING;
-        }
-    }
 
     private void initArrays() {
         subjects = new HashSet<>();
