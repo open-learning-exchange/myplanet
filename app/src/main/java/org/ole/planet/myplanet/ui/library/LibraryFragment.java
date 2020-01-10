@@ -2,13 +2,17 @@ package org.ole.planet.myplanet.ui.library;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
@@ -21,7 +25,9 @@ import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmTag;
+import org.ole.planet.myplanet.ui.survey.AdapterSurvey;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -35,6 +41,7 @@ import java.util.Set;
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
+import io.realm.Sort;
 
 import static org.ole.planet.myplanet.model.RealmMyLibrary.getArrayList;
 import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
@@ -54,7 +61,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     FlexboxLayout flexBoxTags;
     List<RealmTag> searchTags;
     ChipCloudConfig config;
-    Button clearTags, orderByDate, orderByTitle;
+    Button clearTags, orderByTitle;
+
+    Spinner spn;
+    HashMap<String, JsonObject> map;
 
     public LibraryFragment() {
     }
@@ -67,7 +77,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "resource", model.getId());
+        map = RealmRating.getRatings(mRealm, "resource", model.getId());
         adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, mRealm);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
@@ -78,6 +88,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        spn = getView().findViewById(R.id.spn_sort);
         searchTags = new ArrayList<>();
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay);
         tvAddToLib = getView().findViewById(R.id.tv_add);
@@ -113,12 +124,23 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout), getActivity());
         changeButtonStatus();
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
-        if(!isMyCourseLib) tvFragmentInfo.setText("Our Library");
-        orderByDate = getView().findViewById(R.id.order_by_date_button);
+        if (!isMyCourseLib) tvFragmentInfo.setText("Our Library");
+
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
-        orderByDate.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class,"uploadDate")));
-        orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class,"title")));
+        orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title")));
+
+        spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", i == 0 ? Sort.ASCENDING : Sort.DESCENDING));
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+            }
+        });
     }
+
 
     private void initArrays() {
         subjects = new HashSet<>();
