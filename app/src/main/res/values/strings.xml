@@ -390,8 +390,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Sort By Name - Asc</item>
-        <item>Sort By Name - Desc</item>
+        <item>Sort By Date - Asc</item>
+        <item>Sort By Date - Desc</item>
     </string-array>
 
     <string-array name="diagnosis_list">

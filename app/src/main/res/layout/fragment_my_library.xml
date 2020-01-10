@@ -125,13 +125,13 @@
                     android:id="@+id/spn_sort"
                     android:layout_height="wrap_content"/>
 
-                <Button
-                    android:id="@+id/order_by_date_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_toLeftOf="@+id/order_by_title_button"
-                    android:text="Order by Date"
-                    android:theme="@style/AccentButton"/>
+<!--                <Button-->
+<!--                    android:id="@+id/order_by_date_button"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_toLeftOf="@+id/order_by_title_button"-->
+<!--                    android:text="Order by Date"-->
+<!--                    android:theme="@style/AccentButton"/>-->
 
                 <Button
                     android:id="@+id/order_by_title_button"
