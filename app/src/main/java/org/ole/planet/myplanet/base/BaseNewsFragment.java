@@ -35,7 +35,7 @@ import io.realm.Sort;
 
 import static android.app.Activity.RESULT_OK;
 
-public abstract class BaseNewsFragment extends Fragment implements AdapterNews.OnNewsItemClickListener {
+public abstract class BaseNewsFragment extends BaseContainerFragment implements AdapterNews.OnNewsItemClickListener {
 
     public Realm mRealm;
     public OnHomeItemClickListener homeItemClickListener;

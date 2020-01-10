@@ -25,6 +25,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="@dimen/padding_normal"
+            android:paddingRight="65dp"
             android:text="@string/app_name"
             android:id="@+id/app_title_name"
             android:textColor="@color/md_white_1000"
@@ -33,7 +34,7 @@
 
         <include
             layout="@layout/bell_actionbar_items"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1" />
 
