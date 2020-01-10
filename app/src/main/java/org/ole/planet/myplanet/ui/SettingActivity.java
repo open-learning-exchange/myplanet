@@ -63,11 +63,13 @@ public class SettingActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
     static boolean openDashboard = true;
+
     @Override
     public void finish() {
         super.finish();
-        if(openDashboard){
+        if (openDashboard) {
             startActivity(new Intent(this, DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
         }
     }
@@ -99,6 +101,11 @@ public class SettingActivity extends AppCompatActivity {
 //                managerLogin();
 //                return false;
 //            });
+            clearDataButtonInit();
+
+        }
+
+        private void clearDataButtonInit() {
             Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
             Preference preference = findPreference("reset_app");
             preference.setOnPreferenceClickListener(preference1 -> {
@@ -130,7 +137,6 @@ public class SettingActivity extends AppCompatActivity {
                 }).setNegativeButton("No", null).show();
                 return false;
             });
-
         }
 
 
