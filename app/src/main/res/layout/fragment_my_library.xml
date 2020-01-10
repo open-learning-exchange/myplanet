@@ -11,6 +11,8 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+
+
         <LinearLayout
             android:id="@+id/ll_actions"
             android:layout_width="match_parent"
@@ -21,11 +23,14 @@
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
 
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="right"
                 android:gravity="right">
+
+
 
                 <Button
                     android:id="@+id/btn_collections"
@@ -112,6 +117,13 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid" />
                 </LinearLayout>
+
+                <Spinner
+                    android:layout_width="wrap_content"
+                    android:entries="@array/sort_by_date"
+                    android:padding="@dimen/padding_normal"
+                    android:id="@+id/spn_sort"
+                    android:layout_height="wrap_content"/>
 
                 <Button
                     android:id="@+id/order_by_date_button"
