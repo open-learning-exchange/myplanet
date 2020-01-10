@@ -62,7 +62,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     List<RealmTag> searchTags;
     ChipCloudConfig config;
     Button clearTags, orderByTitle;
-    Boolean sortAscending = true;
+
     Spinner spn;
     HashMap<String, JsonObject> map;
 
