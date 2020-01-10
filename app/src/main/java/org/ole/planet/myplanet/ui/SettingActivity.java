@@ -119,21 +119,15 @@ public class SettingActivity extends AppCompatActivity {
 
                     });
                 }).setNegativeButton("No", null).show();
-
                 return false;
             });
 
-
             Preference pref_freeup = findPreference("freeup_space");
             pref_freeup.setOnPreferenceClickListener(preference1 -> {
-
-                new AlertDialog.Builder(getActivity()).setTitle("Are you sure want to delete all the files?").setPositiveButton("YES", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        File f = new File(Utilities.SD_PATH);
-                        deleteRecursive(f);
-                        Utilities.toast(getActivity(), "Data cleared");
-                    }
+                new AlertDialog.Builder(getActivity()).setTitle("Are you sure want to delete all the files?").setPositiveButton("YES", (dialogInterface, i) -> {
+                    File f = new File(Utilities.SD_PATH);
+                    deleteRecursive(f);
+                    Utilities.toast(getActivity(), "Data cleared");
                 }).setNegativeButton("No", null).show();
                 return false;
             });
