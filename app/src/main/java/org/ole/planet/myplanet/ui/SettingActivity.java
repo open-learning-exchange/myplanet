@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
@@ -29,6 +30,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 
 import static org.ole.planet.myplanet.base.BaseResourceFragment.settings;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
@@ -125,9 +127,17 @@ public class SettingActivity extends AppCompatActivity {
             Preference pref_freeup = findPreference("freeup_space");
             pref_freeup.setOnPreferenceClickListener(preference1 -> {
                 new AlertDialog.Builder(getActivity()).setTitle("Are you sure want to delete all the files?").setPositiveButton("YES", (dialogInterface, i) -> {
-                    File f = new File(Utilities.SD_PATH);
-                    deleteRecursive(f);
-                    Utilities.toast(getActivity(), "Data cleared");
+                    mRealm.executeTransactionAsync(realm -> {
+                        RealmResults<RealmMyLibrary> libraries = realm.where(RealmMyLibrary.class).findAll();
+                        for (RealmMyLibrary library : libraries)
+                            library.setResourceOffline(false);
+                    }, () -> {
+                        File f = new File(Utilities.SD_PATH);
+                        deleteRecursive(f);
+                        Utilities.toast(getActivity(), "Data cleared");
+                    }, error -> Utilities.toast(getActivity(), "Unable to clear files"));
+
+
                 }).setNegativeButton("No", null).show();
                 return false;
             });
