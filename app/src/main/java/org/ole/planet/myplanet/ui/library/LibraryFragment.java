@@ -61,7 +61,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     FlexboxLayout flexBoxTags;
     List<RealmTag> searchTags;
     ChipCloudConfig config;
-    Button clearTags, orderByDate, orderByTitle;
+    Button clearTags, orderByTitle;
     Boolean sortAscending = true;
     Spinner spn;
     HashMap<String, JsonObject> map;
@@ -125,9 +125,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         changeButtonStatus();
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
         if (!isMyCourseLib) tvFragmentInfo.setText("Our Library");
-        orderByDate = getView().findViewById(R.id.order_by_date_button);
+
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
-        orderByDate.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate")));
         orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title")));
 
         spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
