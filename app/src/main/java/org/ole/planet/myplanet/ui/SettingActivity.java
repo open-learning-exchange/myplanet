@@ -63,11 +63,13 @@ public class SettingActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-
+    static boolean openDashboard = true;
     @Override
     public void finish() {
         super.finish();
-        startActivity(new Intent(this, DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
+        if(openDashboard){
+            startActivity(new Intent(this, DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK));
+        }
     }
 
     public static class SettingFragment extends PreferenceFragment {
@@ -105,6 +107,7 @@ public class SettingActivity extends AppCompatActivity {
                     mRealm.executeTransactionAsync(realm -> realm.deleteAll(), () -> {
                         Utilities.toast(getActivity(), "Data cleared");
                         startActivity(new Intent(getActivity(), LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK));
+                        openDashboard = false;
                         getActivity().finish();
 
                     });
