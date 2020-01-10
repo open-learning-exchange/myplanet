@@ -369,6 +369,7 @@
     <string name="add_image">Add Image</string>
     <string name="addImageToMessage">Beta Add image to message</string>
     <string name="action_disclaimer">Disclaimer</string>
+    <string name="action_about">About</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>

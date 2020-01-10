@@ -94,7 +94,7 @@ public class Constants {
             "          <li>By visiting this page on our website: https://ole.org/contact</li>\n" +
             "      </ul>\n" +
             "      </td>";
-    public static final String ABOUT = "";
+    public static final String ABOUT = "<b>OPEN LEARNING EXCHANGE</b>";
     public static final HashMap<Class, Integer> COLOR_MAP = new HashMap<>();
     public static HashMap<String, Class> classList = new HashMap<>();
 

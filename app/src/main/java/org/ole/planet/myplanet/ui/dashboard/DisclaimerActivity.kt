@@ -14,8 +14,6 @@ class DisclaimerActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_disclaimer)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeButtonEnabled(true)
         tv_disclaimer.text = Html.fromHtml(Constants.DISCLAIMER)
     }
 

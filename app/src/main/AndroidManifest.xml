@@ -34,7 +34,9 @@
         android:theme="@style/MyMaterialTheme"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
-        <activity android:name=".ui.dashboard.AboutActivity"></activity>
+        <activity android:name=".ui.dashboard.AboutActivity"
+            android:theme="@style/AppTheme"
+            ></activity>
         <activity
             android:name=".ui.dashboard.DisclaimerActivity"
             android:theme="@style/AppTheme" />
