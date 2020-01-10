@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -11,16 +12,25 @@ import android.preference.PreferenceFragment;
 import android.preference.SwitchPreference;
 import android.view.MenuItem;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
+import org.ole.planet.myplanet.ui.sync.LoginActivity;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
+
+import io.realm.Realm;
+
+import static org.ole.planet.myplanet.base.BaseResourceFragment.settings;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
 
 public class SettingActivity extends AppCompatActivity {
@@ -87,8 +97,47 @@ public class SettingActivity extends AppCompatActivity {
 //                managerLogin();
 //                return false;
 //            });
+            Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
+            Preference preference = findPreference("reset_app");
+            preference.setOnPreferenceClickListener(preference1 -> {
+                new AlertDialog.Builder(getActivity()).setTitle("Are you sure??").setPositiveButton("YES", (dialogInterface, i) -> {
+                    settings.edit().clear();
+                    mRealm.executeTransactionAsync(realm -> realm.deleteAll(), () -> {
+                        Utilities.toast(getActivity(), "Data cleared");
+                        startActivity(new Intent(getActivity(), LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK));
+                        getActivity().finish();
+
+                    });
+                }).setNegativeButton("No", null).show();
+
+                return false;
+            });
+
+
+            Preference pref_freeup = findPreference("freeup_space");
+            pref_freeup.setOnPreferenceClickListener(preference1 -> {
+
+                new AlertDialog.Builder(getActivity()).setTitle("Are you sure want to delete all the files?").setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        File f = new File(Utilities.SD_PATH);
+                        deleteRecursive(f);
+                        Utilities.toast(getActivity(), "Data cleared");
+                    }
+                }).setNegativeButton("No", null).show();
+                return false;
+            });
+
         }
 
+
+        void deleteRecursive(File fileOrDirectory) {
+            if (fileOrDirectory.isDirectory())
+                for (File child : fileOrDirectory.listFiles())
+                    deleteRecursive(child);
+            fileOrDirectory.delete();
+
+        }
 
         public void setBetaToggleOn() {
             SwitchPreference beta = (SwitchPreference) findPreference("beta_function");
@@ -188,9 +237,9 @@ public class SettingActivity extends AppCompatActivity {
 
     private static void autoForceSync(SwitchPreference autoSync, SwitchPreference autoForceA, SwitchPreference autoForceB) {
         autoForceA.setOnPreferenceChangeListener((preference, o) -> {
-            if(autoSync.isChecked()) {
+            if (autoSync.isChecked()) {
                 autoForceB.setChecked(false);
-            }else{
+            } else {
                 autoForceB.setChecked(true);
             }
             return true;

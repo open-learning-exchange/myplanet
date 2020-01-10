@@ -368,6 +368,9 @@
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
     <string name="addImageToMessage">Beta Add image to message</string>
+    <string name="clear_data">Clear Data</string>
+    <string name="reset_app">Reset App</string>
+    <string name="freeup_space">Freeup Space</string>
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
