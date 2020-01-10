@@ -90,10 +90,10 @@ public class Constants {
             "<h2>Contact Us</h2>\n" +
             "<p>If you have any questions about this Disclaimer, You can contact Us:</p>\n" +
             "<ul>\n" +
-            "        <li>By email: myplanet@ole.org</li>\n" +
-            "          <li>By visiting this page on our website: https://ole.org/contact</li>\n" +
-            "      </ul>\n" +
-            "      </td>";
+            "        <li>By email: myplanet@ole.org</li>\n " +
+            "        <li>By visiting this page on our website: https://ole.org/contact</li>\n" +
+            "</ul>\n" +
+            " </td>";
     public static final String ABOUT = "" +
             "<td>\n" +
             "<h3>MyPlanet</h3>\n" +
