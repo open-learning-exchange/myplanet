@@ -215,17 +215,19 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             }
 
             boolean cont = updateAnsDb();
-
-            try {
-                if (isCertified)
-                    CameraUtils.CapturePhoto(this);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
+            capturePhone();
             checkAnsAndContinue(cont);
 
 
+        }
+    }
+
+    private void capturePhone() {
+        try {
+            if (isCertified)
+                CameraUtils.CapturePhoto(this);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
