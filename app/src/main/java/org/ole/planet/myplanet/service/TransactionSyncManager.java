@@ -66,6 +66,7 @@ public class TransactionSyncManager {
     }
 
     public static void syncDb(final Realm mRealm, final String table) {
+        Utilities.log("Sync table  " + table);
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
             try {
@@ -79,6 +80,7 @@ public class TransactionSyncManager {
                     }
                 }
             } catch (IOException e) {
+                e.printStackTrace();
             }
         });
     }
