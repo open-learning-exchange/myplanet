@@ -23,7 +23,7 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
     }
 
     public List<LI> getList(Class c, String orderBy) {
-        return getList(c, orderBy, Sort.ASCENDING);
+            return getList(c, orderBy, Sort.ASCENDING);
     }
 
     public List<LI> getList(Class c, String orderBy, Sort sort) {
