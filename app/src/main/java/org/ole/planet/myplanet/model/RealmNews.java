@@ -99,6 +99,7 @@ public class RealmNews extends RealmObject {
        this.images =  new RealmList<>();
        for (JsonElement ob: images){
             this.images.add(JsonUtils.getString("resourceId", ob.getAsJsonObject()));
+            this.message = this.message.replace(JsonUtils.getString("markdown", ob.getAsJsonObject()), "");
        }
     }
 
