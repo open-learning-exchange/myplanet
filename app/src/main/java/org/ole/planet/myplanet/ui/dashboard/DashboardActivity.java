@@ -125,6 +125,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                     case R.id.action_disclaimer:
                         startActivity(new Intent(DashboardActivity.this, DisclaimerActivity.class));
                         break;
+                    case R.id.action_about:
+                        startActivity(new Intent(DashboardActivity.this, AboutActivity.class));
+                        break;
                     case R.id.action_logout:
                         logout();
                         break;
