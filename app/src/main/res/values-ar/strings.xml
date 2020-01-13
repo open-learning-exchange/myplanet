@@ -309,6 +309,8 @@
     <string name="freeup_space">Free up disk space</string>
     <string name="action_disclaimer">Disclaimer</string>
 
+    <string name="action_about">About</string>
+
     <string-array name="info_type">
         <item>Languages</item>
         <item>Education</item>

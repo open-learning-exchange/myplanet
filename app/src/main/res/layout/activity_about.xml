@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/padding_normal"
+    tools:context=".ui.dashboard.AboutActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <ImageView
+            android:layout_width="@dimen/_200dp"
+            android:layout_gravity="center"
+            android:layout_height="@dimen/_200dp"
+            android:src="@drawable/ole_logo" />
+
+        <TextView
+            android:id="@+id/tv_disclaimer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textAlignment="textStart"
+            android:textColor="@color/md_black_1000" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
