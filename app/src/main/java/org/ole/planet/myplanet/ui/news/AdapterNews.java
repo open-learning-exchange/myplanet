@@ -104,10 +104,12 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
             try {
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                Utilities.log("image url " + news.getImageUrl());
                 Glide.with(context)
                         .load(new File(imageUrl))
                         .into(((ViewHolderNews) holder).newsImage);
             } catch (Exception e) {
+                loadRemoteImage(holder, news);
                 e.printStackTrace();
             }
         }
@@ -122,7 +124,6 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         .into(((ViewHolderNews) holder).newsImage);
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 return;
-
             }
         }
         ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
