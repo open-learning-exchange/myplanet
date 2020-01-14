@@ -3,23 +3,16 @@ package org.ole.planet.myplanet.ui.dashboard
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Html
-import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_disclaimer.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.utilities.Constants
 
-class DisclaimerActivity : BaseActivity() {
+class AboutActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_disclaimer)
-        tv_disclaimer.text = Html.fromHtml(Constants.DISCLAIMER)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if(item?.itemId == android.R.id.home)
-            finish()
-        return super.onOptionsItemSelected(item)
+        setContentView(R.layout.activity_about)
+        tv_disclaimer.text = Html.fromHtml(Constants.ABOUT)
     }
 }

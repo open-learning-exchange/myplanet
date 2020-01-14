@@ -20,4 +20,5 @@
     <dimen name="_80dp">80dp</dimen>
     <dimen name="_24dp">24dp</dimen>
     <dimen name="calendar_width">320dp</dimen>
+    <dimen name="_200dp">200dp</dimen>
 </resources>
