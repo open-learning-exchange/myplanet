@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.Arrays;
 import java.util.Date;
@@ -218,7 +219,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
+            KeyboardUtils.hideSoftKeyboard(getActivity());
             checkAnsAndContinue(cont);
 
 
