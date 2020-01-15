@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.community
 
 
 import android.content.DialogInterface
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import androidx.fragment.app.Fragment
@@ -11,7 +12,9 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Case
 import io.realm.Realm
@@ -47,6 +50,7 @@ class CommunityFragment : BaseContainerFragment() {
         return inflater.inflate(R.layout.fragment_community, container, false)
     }
 
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         mRealm = DatabaseService(activity!!).realmInstance
@@ -60,7 +64,10 @@ class CommunityFragment : BaseContainerFragment() {
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
                 .sort("time", Sort.DESCENDING)
                 .findAll()
-        rv_community.layoutManager = LinearLayoutManager(activity!!)
+//        rv_community.layoutManager = LinearLayoutManager(activity!!)
+        val orientation = resources.configuration.orientation
+        changeLayoutManager(orientation)
+
         Utilities.log("list size " + list.size)
         var adapter = AdapterNews(activity, list, user, null)
         adapter.setmRealm(mRealm)
@@ -108,6 +115,19 @@ class CommunityFragment : BaseContainerFragment() {
     override fun onResume() {
         super.onResume()
         setFlexBox()
+    }
+    override fun onConfigurationChanged(newConfig: Configuration?) {
+        super.onConfigurationChanged(newConfig)
+        val orientation = newConfig!!.orientation
+        changeLayoutManager(orientation)
+    }
+
+    private fun changeLayoutManager(orientation: Int) {
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            rv_community.layoutManager = GridLayoutManager(activity, 2)
+        } else {
+            rv_community.layoutManager = LinearLayoutManager(activity)
+        }
     }
 
 }

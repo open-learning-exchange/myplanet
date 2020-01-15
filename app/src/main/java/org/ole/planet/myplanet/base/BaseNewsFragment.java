@@ -2,12 +2,16 @@ package org.ole.planet.myplanet.base;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.provider.MediaStore;
 import android.text.TextUtils;
@@ -68,6 +72,8 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
         startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.getId()));
     }
 
+
+
     public abstract void setData(List<RealmNews> list);
 
     public void showNoData(View v, int count) {
@@ -116,4 +122,17 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
         }
 
     }
+
+
+    public void changeLayoutManager(int orientation, RecyclerView recyclerView) {
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2));
+        } else {
+            recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        }
+    }
+
+
+
+
 }
