@@ -124,6 +124,14 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     }
 
 
+    public void changeLayoutManager(int orientation, RecyclerView recyclerView) {
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2));
+        } else {
+            recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        }
+    }
+
 
 
 

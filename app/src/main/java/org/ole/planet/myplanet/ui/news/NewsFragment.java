@@ -108,7 +108,7 @@ public class NewsFragment extends BaseNewsFragment {
     }
 
     public void setData(List<RealmNews> list) {
-        changeLayoutManager(getResources().getConfiguration().orientation);
+        changeLayoutManager(getResources().getConfiguration().orientation, rvNews);
         List<String> resourceIds = new ArrayList<>();
         for (RealmNews news : list){
             if (news.getImages() != null && news.getImages().size() > 0) {
@@ -129,20 +129,13 @@ public class NewsFragment extends BaseNewsFragment {
 
 
 
-    public void changeLayoutManager(int orientation) {
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            rvNews.setLayoutManager(new GridLayoutManager(getActivity(), 2));
-        } else {
-            rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
-        }
-    }
 
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         int orientation = newConfig.orientation;
-        changeLayoutManager(orientation);
+        changeLayoutManager(orientation, rvNews);
     }
 
     final private RecyclerView.AdapterDataObserver observer = new RecyclerView.AdapterDataObserver() {

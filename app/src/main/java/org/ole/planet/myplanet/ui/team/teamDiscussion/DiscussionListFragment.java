@@ -81,25 +81,24 @@ public class DiscussionListFragment extends BaseTeamFragment {
             }
             notification.setLastCount(count);
         });
-        changeLayoutManager(getResources().getConfiguration().orientation);
+        changeLayoutManager(getResources().getConfiguration().orientation, rvDiscussion);
         showRecyclerView(realmNewsList);
     }
 
 
-    public void changeLayoutManager(int orientation) {
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            rvDiscussion.setLayoutManager(new GridLayoutManager(getActivity(), 2));
-        } else {
-            rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
-        }
-    }
+//    public void changeLayoutManager(int orientation) {
+//        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//            rvDiscussion.setLayoutManager(new GridLayoutManager(getActivity(), 2));
+//        } else {
+//            rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
+//        }
+//    }
 
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        int orientation = newConfig.orientation;
-        changeLayoutManager(orientation);
+        changeLayoutManager(newConfig.orientation, rvDiscussion);
     }
 
 
