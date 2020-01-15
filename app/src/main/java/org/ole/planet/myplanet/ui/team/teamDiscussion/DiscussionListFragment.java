@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team.teamDiscussion;
 
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -79,11 +81,30 @@ public class DiscussionListFragment extends BaseTeamFragment {
             }
             notification.setLastCount(count);
         });
-        rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
+        changeLayoutManager(getResources().getConfiguration().orientation);
         showRecyclerView(realmNewsList);
     }
 
+
+    public void changeLayoutManager(int orientation) {
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            rvDiscussion.setLayoutManager(new GridLayoutManager(getActivity(), 2));
+        } else {
+            rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
+        }
+    }
+
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        int orientation = newConfig.orientation;
+        changeLayoutManager(orientation);
+    }
+
+
     private void showRecyclerView(List<RealmNews> realmNewsList) {
+
         AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
@@ -126,7 +147,6 @@ public class DiscussionListFragment extends BaseTeamFragment {
     public void setData(List<RealmNews> list) {
         showRecyclerView(list);
     }
-
 
 
 

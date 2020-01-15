@@ -2,20 +2,16 @@ package org.ole.planet.myplanet.ui.news;
 
 
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.net.Uri;
+import android.content.res.Configuration;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.provider.MediaStore;
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,37 +20,26 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
-import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.UploadManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.library.AddResourceActivity;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
-import org.ole.planet.myplanet.utilities.NetworkUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Case;
 import io.realm.Sort;
-
-import static android.app.Activity.RESULT_OK;
 
 public class NewsFragment extends BaseNewsFragment {
 
@@ -123,7 +108,7 @@ public class NewsFragment extends BaseNewsFragment {
     }
 
     public void setData(List<RealmNews> list) {
-        rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
+        changeLayoutManager(getResources().getConfiguration().orientation);
         List<String> resourceIds = new ArrayList<>();
         for (RealmNews news : list){
             if (news.getImages() != null && news.getImages().size() > 0) {
@@ -143,6 +128,22 @@ public class NewsFragment extends BaseNewsFragment {
     }
 
 
+
+    public void changeLayoutManager(int orientation) {
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            rvNews.setLayoutManager(new GridLayoutManager(getActivity(), 2));
+        } else {
+            rvNews.setLayoutManager(new LinearLayoutManager(getActivity()));
+        }
+    }
+
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        int orientation = newConfig.orientation;
+        changeLayoutManager(orientation);
+    }
 
     final private RecyclerView.AdapterDataObserver observer = new RecyclerView.AdapterDataObserver() {
         @Override
