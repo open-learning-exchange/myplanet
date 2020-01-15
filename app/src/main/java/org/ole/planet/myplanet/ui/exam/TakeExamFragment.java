@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
@@ -215,14 +216,13 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             }
 
             boolean cont = updateAnsDb();
-            capturePhone();
+            capturePhoto();
+            KeyboardUtils.hideSoftKeyboard(getActivity());
             checkAnsAndContinue(cont);
-
-
         }
     }
 
-    private void capturePhone() {
+    private void capturePhoto() {
         try {
             if (isCertified)
                 CameraUtils.CapturePhoto(this);
