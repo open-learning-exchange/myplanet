@@ -66,11 +66,7 @@ class CommunityFragment : BaseContainerFragment() {
                 .findAll()
 //        rv_community.layoutManager = LinearLayoutManager(activity!!)
         val orientation = resources.configuration.orientation
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            rv_community.layoutManager = GridLayoutManager(activity, 2)
-        } else {
-            rv_community.layoutManager = LinearLayoutManager(activity)
-        }
+        changeLayoutManager(orientation)
 
         Utilities.log("list size " + list.size)
         var adapter = AdapterNews(activity, list, user, null)
