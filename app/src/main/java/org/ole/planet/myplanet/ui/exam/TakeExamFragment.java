@@ -216,11 +216,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             }
 
             boolean cont = updateAnsDb();
-            KeyboardUtils.hideSoftKeyboard(getActivity());
             capturePhoto();
+            KeyboardUtils.hideSoftKeyboard(getActivity());
             checkAnsAndContinue(cont);
-
-
         }
     }
 
