@@ -41,7 +41,6 @@
                     style="@style/YellowButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/buttonyellow"
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:padding="@dimen/padding_normal"
@@ -72,7 +71,7 @@
                             android:id="@+id/et_fname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:enabled="false"
+
                             android:hint="@string/first_name" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -87,7 +86,7 @@
                             android:id="@+id/et_mname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:enabled="false"
+
                             android:hint="@string/middle_name" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -102,7 +101,6 @@
                             android:id="@+id/et_lname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:enabled="false"
                             android:hint="@string/last_name" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -124,7 +122,6 @@
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:drawableRight="@drawable/ic_date"
-                        android:enabled="false"
                         android:foregroundGravity="center"
                         android:gravity="center_vertical"
                         android:padding="@dimen/padding_normal"
@@ -141,7 +138,6 @@
                             android:id="@+id/et_birthplace"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:enabled="false"
                             android:hint="@string/birth_place" />
 
                     </com.google.android.material.textfield.TextInputLayout>
