@@ -1,14 +1,20 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+
 import androidx.core.content.FileProvider;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -42,11 +48,12 @@ public class FileUtils {
         }
     }
 
-   public static byte[] fullyReadFileToBytes(File f) throws IOException {
+    public static byte[] fullyReadFileToBytes(File f) throws IOException {
         int size = (int) f.length();
-       byte[] bytes = new byte[size];
-       byte[] tmpBuff = new byte[size];
-        FileInputStream fis= new FileInputStream(f);;
+        byte[] bytes = new byte[size];
+        byte[] tmpBuff = new byte[size];
+        FileInputStream fis = new FileInputStream(f);
+        ;
         try {
 
             int read = fis.read(bytes, 0, size);
@@ -58,7 +65,7 @@ public class FileUtils {
                     remain -= read;
                 }
             }
-        }  catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
             throw e;
         } finally {
@@ -154,7 +161,7 @@ public class FileUtils {
                 InputStream in;
                 OutputStream out;
                 in = assetManager.open(s);
-                Utilities.log("MAP " +s);
+                Utilities.log("MAP " + s);
                 File outFile = new File(Environment.getExternalStorageDirectory() + "/osmdroid", s);
                 out = new FileOutputStream(outFile);
                 copyFile(in, out);
@@ -175,11 +182,52 @@ public class FileUtils {
         }
     }
 
+
+    public static String getRealPathFromURI(Context context, Uri contentUri) {
+        Cursor cursor = null;
+        try {
+            String[] proj = {MediaStore.Images.Media.DATA};
+            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
+            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+    }
+
+    public static void openOleFolder(Fragment context) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        Uri uri = Uri.parse(Utilities.SD_PATH);
+        intent.setDataAndType(uri, "*/*");
+        context.startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
+    }
+
+
+    public static String getImagePath(Context context, Uri uri) {
+        Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+        cursor.moveToFirst();
+        String document_id = cursor.getString(0);
+        document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
+        cursor.close();
+
+        cursor = context.getContentResolver().query(
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+        cursor.moveToFirst();
+        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+        cursor.close();
+
+        return path;
+    }
+
     public static String getMediaType(String path) {
         String ext = getFileExtension(path);
         if (ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("png"))
             return "image";
-        else if (ext.equalsIgnoreCase("mp4") )
+        else if (ext.equalsIgnoreCase("mp4"))
             return "mp4";
         else if (ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("aac"))
             return "audio";

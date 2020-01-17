@@ -94,16 +94,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         showWifiDialog();
         registerReceiver();
         forceSync = getIntent().getBooleanExtra("forceSync", false);
+        processedUrl = Utilities.getUrl();
         if (forceSync) {
             isSync = false;
-            processedUrl = Utilities.getUrl();
+
         }
         if (getIntent().hasExtra("versionInfo")) {
             onUpdateAvailable((MyPlanet) getIntent().getSerializableExtra("versionInfo"), getIntent().getBooleanExtra("cancelable", false));
         } else {
             new Service(this).checkVersion(this, settings);
         }
-       checkUsagesPermission();
+        checkUsagesPermission();
         new GPSService(this);
         setUpChildMode();
 
@@ -120,6 +121,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         return false;
     }
+
 
     private void showWifiDialog() {
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
@@ -157,6 +159,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         btnGuestLogin = findViewById(R.id.btn_guest_login);
         managerialLogin = findViewById(R.id.manager_login);
+        TextView customDeviceName = findViewById(R.id.customDeviceName);
+        customDeviceName.setText(getCustomDeviceName());
         btnSignIn = findViewById(R.id.btn_signin); //buttons
         btnSignIn.setOnClickListener(view -> submitForm());
         if (!settings.contains("serverProtocol"))
@@ -301,10 +305,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             return;
         }
 //        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
-        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
+//        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             editor.putString("loginUserName", inputName.getText().toString());
             editor.putString("loginUserPassword", inputPassword.getText().toString());
-        }
+//        }
         boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), managerialLogin.isChecked());
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();

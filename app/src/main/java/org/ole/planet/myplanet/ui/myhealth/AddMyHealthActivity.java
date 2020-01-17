@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.MenuItem;
@@ -17,6 +18,8 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.List;
+
 import io.realm.Realm;
 
 public class AddMyHealthActivity extends AppCompatActivity {
@@ -26,7 +29,9 @@ public class AddMyHealthActivity extends AppCompatActivity {
     RealmMyHealthPojo healthPojo;
     RealmUserModel userModelB;
     String userId;
-    String key,iv;
+    String key, iv;
+    RealmMyHealth myHealth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,16 +45,21 @@ public class AddMyHealthActivity extends AppCompatActivity {
 
         key = userModelB.getKey();
         iv = userModelB.getIv();
-        if (TextUtils.isEmpty(key) || TextUtils.isEmpty(iv)){
+        if (TextUtils.isEmpty(key) || TextUtils.isEmpty(iv)) {
             Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
             finish();
             return;
         }
         initViews();
-        findViewById(R.id.btn_submit).setOnClickListener(view -> realm.executeTransactionAsync(realm -> createMyHealth(realm), () -> Utilities.toast(AddMyHealthActivity.this, "My health saved successfully")));
+        findViewById(R.id.btn_submit).setOnClickListener(view -> {
+            createMyHealth();
+            Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
+        });
     }
 
-    private void createMyHealth(Realm realm) {
+    private void createMyHealth() {
+        if (!realm.isInTransaction())
+            realm.beginTransaction();
         RealmMyHealth.RealmMyHealthProfile health = new RealmMyHealth.RealmMyHealthProfile();
         health.setFirstName(fname.getEditText().getText().toString());
         health.setMiddleName(mname.getEditText().getText().toString());
@@ -62,17 +72,15 @@ public class AddMyHealthActivity extends AppCompatActivity {
         health.setEmergencyContactType(contactType.getSelectedItem().toString());
         health.setSpecialNeeds(specialNeed.getEditText().getText().toString());
         health.setNotes(otherNeed.getEditText().getText().toString());
-        RealmMyHealth health1 = new RealmMyHealth();
-        health1.setProfile(health);
+        if (myHealth == null)
+            myHealth = new RealmMyHealth();
+        myHealth.setProfile(health);
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
         try {
-            Utilities.log("Health data " + new Gson().toJson(health1));
-            healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health1), key, iv));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
+        } catch (Exception e) {}
         finish();
     }
 
@@ -94,7 +102,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
 
     public void populate() {
         if (healthPojo != null) {
-            RealmMyHealth.RealmMyHealthProfile health = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class).getProfile();
+            myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
+            RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
             fname.getEditText().setText(health.getFirstName());
             mname.getEditText().setText(health.getMiddleName());
             lname.getEditText().setText(health.getLastName());

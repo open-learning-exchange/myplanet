@@ -1,19 +1,29 @@
 package org.ole.planet.myplanet.ui.team.teamDiscussion;
 
 
+import android.content.Intent;
+import android.content.res.Configuration;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
@@ -21,13 +31,19 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
+import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
+import io.realm.Sort;
+
+import static android.app.Activity.RESULT_OK;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -54,22 +70,40 @@ public class DiscussionListFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).findAll();
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).sort("time", Sort.DESCENDING).findAll();
         int count = realmNewsList.size();
         mRealm.executeTransactionAsync(realm -> {
             RealmTeamNotification notification = realm.where(RealmTeamNotification.class).equalTo("type", "chat").equalTo("parentId", teamId).findFirst();
-            if (notification == null){
+            if (notification == null) {
                 notification = realm.createObject(RealmTeamNotification.class, UUID.randomUUID().toString());
                 notification.setParentId(teamId);
                 notification.setType("chat");
             }
             notification.setLastCount(count);
         });
-        rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
+        changeLayoutManager(getResources().getConfiguration().orientation, rvDiscussion);
         showRecyclerView(realmNewsList);
     }
 
+
+//    public void changeLayoutManager(int orientation) {
+//        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//            rvDiscussion.setLayoutManager(new GridLayoutManager(getActivity(), 2));
+//        } else {
+//            rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
+//        }
+//    }
+
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        changeLayoutManager(newConfig.orientation, rvDiscussion);
+    }
+
+
     private void showRecyclerView(List<RealmNews> realmNewsList) {
+
         AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
@@ -81,6 +115,9 @@ public class DiscussionListFragment extends BaseTeamFragment {
     private void showAddMessage() {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
+        thumb = v.findViewById(R.id.thumb);
+        v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this));
+        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
         layout.setHint(getString(R.string.enter_message));
         new AlertDialog.Builder(getActivity())
                 .setView(v)
@@ -97,6 +134,8 @@ public class DiscussionListFragment extends BaseTeamFragment {
                     map.put("message", msg);
                     map.put("messageType", team.getTeamType());
                     map.put("messagePlanetCode", team.getTeamPlanetCode());
+                    map.put("imageUrl", imageUrl);
+                    map.put("imageName", imageName);
                     RealmNews.createNews(map, mRealm, user);
                     Utilities.log("discussion created");
                     rvDiscussion.getAdapter().notifyDataSetChanged();
@@ -107,4 +146,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
     public void setData(List<RealmNews> list) {
         showRecyclerView(list);
     }
+
+
+
 }

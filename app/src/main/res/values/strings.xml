@@ -19,8 +19,8 @@
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">My Planet</string>
     <string name="menu_home">Home</string>
-    <string name="menu_library">Our Library</string>
-    <string name="menu_courses">Our Courses</string>
+    <string name="menu_library">Library</string>
+    <string name="menu_courses">Courses</string>
     <string name="menu_meetups">Meetups</string>
     <string name="menu_surveys">Surveys</string>
     <string name="menu_logout">Logout</string>
@@ -366,6 +366,15 @@
     <string name="members">Members</string>
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
+    <string name="add_image">Add Image</string>
+    <string name="addImageToMessage">Beta Add image to message</string>
+    <string name="clear_data">Clear Data</string>
+    <string name="reset_app">Reset App</string>
+    <string name="freeup_space">Free-up disk space</string>
+    <string name="action_disclaimer">Disclaimer</string>
+
+    <string name="action_about">About</string>
+
     <string-array name="team_type">
         <item>Local Team</item>
         <item>Connect With Nation</item>
@@ -388,8 +397,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Sort By Name - Asc</item>
-        <item>Sort By Name - Desc</item>
+        <item>Sort By Date - Asc</item>
+        <item>Sort By Date - Desc</item>
     </string-array>
 
     <string-array name="diagnosis_list">

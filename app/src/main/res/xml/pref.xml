@@ -12,9 +12,20 @@
         android:key="saveUsernameAndPassword"
         android:title="@string/save_username_and_password" />
 
+
+    <Preference android:key="reset_app"
+        android:title="@string/reset_app"
+        />
+
+
+    <Preference android:key="freeup_space"
+        android:title="@string/freeup_space"
+        />
+
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="Auto Sync">
+
         <SwitchPreference
             android:defaultValue="true"
             android:key="force_weekly_sync"
@@ -31,6 +42,7 @@
 
     </PreferenceCategory>
 
+
     <PreferenceCategory
         android:dependency="beta_function"
         android:title="Beta Functionality">
@@ -38,6 +50,10 @@
             android:defaultValue="true"
             android:key="beta_course"
             android:title="Beta Function for Course" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_addImageToMessage"
+            android:title="@string/addImageToMessage" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="beta_wifi_switch"
@@ -55,26 +71,20 @@
             android:defaultValue="true"
             android:key="beta_achievement"
             android:title="Beta Function for Achievement" />
-        <!--<SwitchPreference-->
-            <!--android:defaultValue="true"-->
-            <!--android:key="beta_survey"-->
-            <!--android:title="Beta Function for Survey" />-->
-
-        <!--<SwitchPreference-->
-            <!--android:defaultValue="true"-->
-            <!---->
-            <!--android:key="beta_rating"-->
-            <!--android:title="Beta Function for Rating" />-->
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:dependency=""
+        android:title="Main Controls">
+    <SwitchPreference
+        android:defaultValue="true"
+        android:key="beta_function"
+        android:title="All Beta Functions" />
 
     <SwitchPreference
         android:defaultValue="true"
         android:key="auto_sync_with_server"
         android:title="Auto Sync Device" />
-
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="beta_function"
-        android:title="Beta Functionality" />
+    </PreferenceCategory>
 
 </PreferenceScreen>

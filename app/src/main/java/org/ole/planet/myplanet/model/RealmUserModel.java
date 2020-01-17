@@ -70,8 +70,6 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("derived_key", getDerived_key());
         object.addProperty("salt", getSalt());
         object.addProperty("password_scheme", getPassword_scheme());
-//        object.addProperty("key", getKey());
-//        object.addProperty("iv", getIv());
         return object;
     }
 
@@ -160,8 +158,6 @@ public class RealmUserModel extends RealmObject {
         user.setDerived_key(JsonUtils.getString("derived_key", jsonDoc));
         user.setSalt(JsonUtils.getString("salt", jsonDoc));
         user.setDob(JsonUtils.getString("birthDate", jsonDoc));
-        user.setKey(JsonUtils.getString("key", jsonDoc));
-        user.setIv(JsonUtils.getString("iv", jsonDoc));
         user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);

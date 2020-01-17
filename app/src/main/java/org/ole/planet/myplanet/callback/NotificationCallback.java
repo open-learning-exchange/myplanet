@@ -6,4 +6,6 @@ public interface NotificationCallback {
     void showResourceDownloadDialog();
 
     void syncKeyId();
+
+    void forceDownloadNewsImages();
 }

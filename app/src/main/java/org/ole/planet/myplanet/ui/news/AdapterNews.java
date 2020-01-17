@@ -1,11 +1,15 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.net.Uri;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,12 +19,18 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -82,8 +92,42 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
+            loadImage(holder, list.get(position));
             showReplyButton(holder, news, position);
         }
+    }
+
+    private void loadImage(RecyclerView.ViewHolder holder, RealmNews news) {
+        String imageUrl = news.getImageUrl();
+        if (TextUtils.isEmpty(imageUrl)) {
+            loadRemoteImage(holder, news);
+        } else {
+            try {
+                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                Utilities.log("image url " + news.getImageUrl());
+                Glide.with(context)
+                        .load(new File(imageUrl))
+                        .into(((ViewHolderNews) holder).newsImage);
+            } catch (Exception e) {
+                loadRemoteImage(holder, news);
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void loadRemoteImage(RecyclerView.ViewHolder holder, RealmNews news) {
+        if (news.getImages() != null && news.getImages().size() > 0) {
+            RealmMyLibrary library = mRealm.where(RealmMyLibrary.class).equalTo("_id", news.getImages().get(0)).findFirst();
+            if (library != null) {
+                Glide.with(context)
+                        .load(new File(Utilities.SD_PATH, library.getId() + "/" + library.getResourceLocalAddress()))
+                        .into(((ViewHolderNews) holder).newsImage);
+                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                return;
+            }
+        }
+        ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
+
     }
 
     private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {
@@ -130,9 +174,11 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private void showEditAlert(String id, boolean isEdit) {
         View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
         EditText et = v.findViewById(R.id.et_input);
+        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, context) ? View.VISIBLE : View.GONE);
+
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         if (isEdit)
-            et.setText(news.getMessage() +"");
+            et.setText(news.getMessage() + "");
         new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
@@ -189,7 +235,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     class ViewHolderNews extends RecyclerView.ViewHolder {
         TextView tvName, tvDate, tvMessage;
-        ImageView imgEdit, imgDelete, imgUser;
+        ImageView imgEdit, imgDelete, imgUser, newsImage;
         LinearLayout llEditDelete;
         Button btnReply, btnShowReply;
 
@@ -204,6 +250,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
             btnReply = itemView.findViewById(R.id.btn_reply);
             btnShowReply = itemView.findViewById(R.id.btn_show_reply);
+            newsImage = itemView.findViewById(R.id.img_news);
         }
     }
 }

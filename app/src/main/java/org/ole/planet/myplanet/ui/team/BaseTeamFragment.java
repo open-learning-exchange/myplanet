@@ -1,7 +1,11 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
+
 import androidx.annotation.Nullable;
 
 import org.ole.planet.myplanet.base.BaseNewsFragment;

@@ -7,6 +7,8 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.core.widget.NestedScrollView;
 
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,16 +26,22 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmAnswer;
+import org.ole.planet.myplanet.model.RealmCertification;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.editor.MarkwonEditor;
+import io.noties.markwon.editor.MarkwonEditorTextWatcher;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.Sort;
@@ -48,7 +56,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     RadioGroup listChoices;
     LinearLayout llCheckbox;
 
-
+    boolean isCertified;
     NestedScrollView container;
 
     public TakeExamFragment() {
@@ -89,7 +97,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             q = q.equalTo("status", "pending");
 
         sub = (RealmSubmission) q.findFirst();
-
+        String courseId = exam.getCourseId();
+        isCertified = RealmCertification.isCourseCertified(mRealm, courseId);
         if (questions.size() > 0) {
             createSubmission();
             Utilities.log("Current index " + currentIndex);
@@ -133,15 +142,18 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
         if (question.getType().equalsIgnoreCase("select")) {
             listChoices.setVisibility(View.VISIBLE);
+            etAnswer.setVisibility(View.GONE);
             selectQuestion(question);
         } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
-            etAnswer.setVisibility(View.VISIBLE);
+            setMarkdownViewAndShowInput(etAnswer, question.getType());
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
+            etAnswer.setVisibility(View.GONE);
             showCheckBoxes(question);
         }
-        etAnswer.setText("");
+
         ans = "";
+        etAnswer.setText("");
         listAns.clear();
         header.setText(question.getHeader());
         body.setText(question.getBody());
@@ -203,17 +215,19 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
                 return;
             }
 
-
             boolean cont = updateAnsDb();
-            try {
-                CameraUtils.CapturePhoto(this);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
+            capturePhoto();
+            KeyboardUtils.hideSoftKeyboard(getActivity());
             checkAnsAndContinue(cont);
+        }
+    }
 
-
+    private void capturePhoto() {
+        try {
+            if (isCertified)
+                CameraUtils.CapturePhoto(this);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

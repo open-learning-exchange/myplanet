@@ -10,10 +10,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="@dimen/_40dp"
         android:baselineAligned="false"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
-        android:layout_margin="@dimen/_40dp"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintBottom_toTopOf="parent"
@@ -64,26 +64,26 @@
 
 
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/btn_lang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:entries="@array/language"
+                    android:padding="@dimen/padding_normal"
                     android:text="@string/language"
                     android:textColor="@android:color/white"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:padding="@dimen/padding_normal"
-                    android:layout_height="wrap_content"/>
+                    android:theme="@style/PrimaryFlatButton" />
 
 
                 <androidx.appcompat.widget.SwitchCompat
-                    android:layout_width="wrap_content"
-                    android:text="@string/child_mode"
-                    android:layout_gravity="center"
                     android:id="@+id/switch_child_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:gravity="center"
                     android:padding="@dimen/padding_normal"
-                    android:textColor="@color/md_white_1000"
-                    android:layout_height="wrap_content" />
+                    android:text="@string/child_mode"
+                    android:textColor="@color/md_white_1000" />
 
                 <TextView
                     android:id="@+id/lblVersion"
@@ -93,6 +93,14 @@
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/customDeviceName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white"
+                   />
 
             </LinearLayout>
         </LinearLayout>
@@ -115,8 +123,8 @@
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_marginLeft="10dp"
                     android:layout_alignParentLeft="true"
+                    android:layout_marginLeft="10dp"
                     android:layout_marginTop="6dp"
                     android:background="@null"
                     android:scaleType="fitCenter" />
@@ -196,15 +204,15 @@
                             android:textSize="10sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-<!--                    <CheckBox-->
-<!--                        android:id="@+id/save"-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:alpha="0.7"-->
-<!--                        android:fontFamily="sans-serif"-->
-<!--                        android:text="@string/save_username_and_password"-->
-<!--                        android:textColor="@color/material_drawer_dark_background"-->
-<!--                        android:textSize="12sp" />-->
+                    <!--                    <CheckBox-->
+                    <!--                        android:id="@+id/save"-->
+                    <!--                        android:layout_width="match_parent"-->
+                    <!--                        android:layout_height="wrap_content"-->
+                    <!--                        android:alpha="0.7"-->
+                    <!--                        android:fontFamily="sans-serif"-->
+                    <!--                        android:text="@string/save_username_and_password"-->
+                    <!--                        android:textColor="@color/material_drawer_dark_background"-->
+                    <!--                        android:textSize="12sp" />-->
 
 
                     <CheckBox
@@ -234,8 +242,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="@string/btn_guest_login"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:theme="@style/PrimaryFlatButton" />
 
                     <Button
                         android:id="@+id/become_member"
