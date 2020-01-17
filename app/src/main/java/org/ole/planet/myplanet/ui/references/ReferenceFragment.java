@@ -48,7 +48,7 @@ public class ReferenceFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_reference, container, false);
         List<Reference> list = new ArrayList<>();
         list.add(new Reference(getString(R.string.maps), android.R.drawable.ic_dialog_map));
-        list.add(new Reference(getString(R.string.dictionaries), R.drawable.ic_dictionary));
+        list.add(new Reference(getString(R.string.engilsh_dictionary), R.drawable.ic_dictionary));
         rvReference = v.findViewById(R.id.rv_references);
         rvReference.setLayoutManager(new GridLayoutManager(getActivity(), 3));
         setRecyclerAdapter(list);
