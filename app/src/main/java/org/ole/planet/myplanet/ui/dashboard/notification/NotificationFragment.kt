@@ -66,6 +66,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.mylibrary, "${resourceList.size} resource not downloaded."))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} pending survey."))
         notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
+        notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
 
         if(TextUtils.isEmpty(model.key)){
             notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
