@@ -41,7 +41,6 @@
                     style="@style/YellowButtons"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/buttonyellow"
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:padding="@dimen/padding_normal"
@@ -68,211 +67,208 @@
                         android:layout_weight="1"
                         android:padding="@dimen/padding_normal">
 
-                      <!--<<EditText
-                          android:id="@+id/et_fname"
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:enabled="false"
-                          android:hint="@string/first_name" />-->
+                        <EditText
+                            android:id="@+id/et_fname"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
 
-                  </com.google.android.material.textfield.TextInputLayout>
+                            android:hint="@string/first_name" />
 
-                  <com.google.android.material.textfield.TextInputLayout
-                      android:layout_width="0dp"
-                      android:layout_height="wrap_content"
-                      android:layout_weight="1"
-                      android:padding="@dimen/padding_normal">
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                    <!--<<EditText
-                          android:id="@+id/et_mname"
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:enabled="false"
-                          android:hint="@string/middle_name" />-->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_normal">
 
-                  </com.google.android.material.textfield.TextInputLayout>
+                        <EditText
+                            android:id="@+id/et_mname"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
 
-                  <com.google.android.material.textfield.TextInputLayout
-                      android:layout_width="0dp"
-                      android:layout_height="wrap_content"
-                      android:layout_weight="1"
-                      android:padding="@dimen/padding_normal">
+                            android:hint="@string/middle_name" />
 
-                    <!--<<EditText
-                        android:id="@+id/et_lname"
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_normal">
+
+                        <EditText
+                            android:id="@+id/et_lname"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/last_name" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+
+                </LinearLayout>
+
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+
+                    <TextView
+                        android:id="@+id/txt_dob"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackground"
+                        android:drawableRight="@drawable/ic_date"
+                        android:foregroundGravity="center"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/birth_date"
+                        android:textSize="@dimen/text_size_mid" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_normal">
+
+                        <EditText
+                            android:id="@+id/et_birthplace"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/birth_place" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+
+                </LinearLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal">
+
+                    <EditText
+                        android:id="@+id/et_purpose"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:enabled="false"
-                        android:hint="@string/last_name" />-->
+                        android:layout_gravity="center"
+                        android:hint="My Purpose - What are your educational and professional ambitions?"
+                        android:textSize="20sp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal">
+
+                    <EditText
+                        android:id="@+id/et_goals"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:hint="My Goals - What are your goals for next 10 years?"
+                        android:textSize="20sp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal">
+
+                    <EditText
+                        android:id="@+id/et_achievement"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
+                        android:textSize="20sp" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_small"
+                    android:text="Add any materials demonstrating your achievements below" />
+
+                <LinearLayout
+                    android:id="@+id/ll_attachment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <Button
+                    android:id="@+id/btn_achievement"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/add_an_achievement"
+                    android:theme="@style/PrimaryButton" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_small"
+                    android:text="Add any references below" />
+
+                <LinearLayout
+                    android:id="@+id/ll_other_info"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+
+                <Button
+                    android:id="@+id/btn_other"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+
+                    android:text="@string/add_a_reference"
+                    android:theme="@style/PrimaryButton" />
+
+                <CheckBox
+                    android:id="@+id/cb_send_to_nation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:padding="@dimen/padding_normal"
+                    android:text="Allow your achievements to be shared with the nation"
+                    android:textSize="@dimen/text_size_large" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="left">
+
+                    <Button
+                        android:id="@+id/btn_update"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/button_update"
+                        android:theme="@style/PrimaryButton" />
+
+                    <Button
+                        android:id="@+id/btn_cancel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/button_cancel"
+                        android:theme="@style/AccentButton" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+        </LinearLayout>
 
-
-              <!--<<TextView
-                  android:id="@+id/txt_dob"
-                  android:layout_width="0dp"
-                  android:layout_height="wrap_content"
-                  android:layout_gravity="center_vertical"
-                  android:layout_weight="1"
-                  android:background="?attr/selectableItemBackground"
-                  android:drawableRight="@drawable/ic_date"
-                  android:enabled="false"
-                  android:foregroundGravity="center"
-                  android:gravity="center_vertical"
-                  android:padding="@dimen/padding_normal"
-                  android:text="@string/birth_date"
-                  android:textSize="@dimen/text_size_mid" />-->
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_normal">
-
-                  <!--<<EditText
-                      android:id="@+id/et_birthplace"
-                      android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:enabled="false"
-                      android:hint="@string/birth_place" />-->
-
-              </com.google.android.material.textfield.TextInputLayout>
-
-
-          </LinearLayout>
-
-          <com.google.android.material.textfield.TextInputLayout
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:padding="@dimen/padding_normal">
-
-              <EditText
-                  android:id="@+id/et_purpose"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_gravity="center"
-                  android:hint="My Purpose - What are your educational and professional ambitions?"
-                  android:textSize="20sp" />
-
-          </com.google.android.material.textfield.TextInputLayout>
-
-          <com.google.android.material.textfield.TextInputLayout
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:padding="@dimen/padding_normal">
-
-              <EditText
-                  android:id="@+id/et_goals"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_gravity="center"
-                  android:hint="My Goals - What are your goals for next 10 years?"
-                  android:textSize="20sp" />
-
-          </com.google.android.material.textfield.TextInputLayout>
-
-          <com.google.android.material.textfield.TextInputLayout
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:padding="@dimen/padding_normal">
-
-              <EditText
-                  android:id="@+id/et_achievement"
-                  android:layout_width="match_parent"
-                  android:layout_height="wrap_content"
-                  android:layout_gravity="center"
-                  android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
-                  android:textSize="20sp" />
-
-          </com.google.android.material.textfield.TextInputLayout>
-
-
-          <TextView
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:padding="@dimen/padding_small"
-              android:text="Add any materials demonstrating your achievements below" />
-
-          <LinearLayout
-              android:id="@+id/ll_attachment"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:orientation="vertical" />
-
-          <Button
-              android:id="@+id/btn_achievement"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:padding="@dimen/padding_normal"
-              android:text="@string/add_an_achievement"
-              android:theme="@style/PrimaryButton" />
-
-          <TextView
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:padding="@dimen/padding_small"
-              android:text="Add any references below" />
-
-          <LinearLayout
-              android:id="@+id/ll_other_info"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:orientation="vertical" />
-
-
-          <Button
-              android:id="@+id/btn_other"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:padding="@dimen/padding_normal"
-
-              android:text="@string/add_a_reference"
-              android:theme="@style/PrimaryButton" />
-
-          <CheckBox
-              android:id="@+id/cb_send_to_nation"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:layout_gravity="center"
-              android:padding="@dimen/padding_normal"
-              android:text="Allow your achievements to be shared with the nation"
-              android:textSize="@dimen/text_size_large" />
-
-          <LinearLayout
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:layout_gravity="left">
-
-              <Button
-                  android:id="@+id/btn_update"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="@string/button_update"
-                  android:theme="@style/PrimaryButton" />
-
-              <Button
-                  android:id="@+id/btn_cancel"
-                  android:layout_width="wrap_content"
-                  android:layout_height="wrap_content"
-                  android:text="@string/button_cancel"
-                  android:theme="@style/AccentButton" />
-
-          </LinearLayout>
-
-      </LinearLayout>
-
-
-  </LinearLayout>
-
-</androidx.core.widget.NestedScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 
 </FrameLayout>

@@ -3,10 +3,13 @@ package org.ole.planet.myplanet.ui.userprofile;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+
 import com.google.android.material.textfield.TextInputLayout;
+
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatTextView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -77,12 +80,12 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
         btnAddAchievement.setOnClickListener(vi -> showAddachievementAlert(null));
         btnOther.setOnClickListener(view -> showreferenceDialog(null));
-        /*tvDob.setOnClickListener(view -> {
+        tvDob.setOnClickListener(view -> {
             Calendar now = Calendar.getInstance();
             DatePickerDialog dpd = new DatePickerDialog(getActivity(), this, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
             dpd.getDatePicker().setMaxDate(Calendar.getInstance().getTimeInMillis());
             dpd.show();
-        });*/
+        });
     }
 
 
@@ -92,11 +95,11 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         llOthers = v.findViewById(R.id.ll_other_info);
         etPurpose = v.findViewById(R.id.et_purpose);
         etAchievement = v.findViewById(R.id.et_achievement);
-        /*etName = v.findViewById(R.id.et_fname);
+        etName = v.findViewById(R.id.et_fname);
         etMiddleName = v.findViewById(R.id.et_mname);
         etLastName = v.findViewById(R.id.et_lname);
         etBirthPlace = v.findViewById(R.id.et_birthplace);
-        tvDob = v.findViewById(R.id.txt_dob);*/
+        tvDob = v.findViewById(R.id.txt_dob);
         btnAddAchievement = v.findViewById(R.id.btn_achievement);
         btnOther = v.findViewById(R.id.btn_other);
         btnUpdate = v.findViewById(R.id.btn_update);
@@ -271,6 +274,6 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
 
     @Override
     public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
-        //tvDob.setText(String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2));
+        tvDob.setText(String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2));
     }
 }
