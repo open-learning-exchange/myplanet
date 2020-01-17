@@ -135,7 +135,7 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment  {
         myLifeList.add(new RealmMyLife("my_achievement", userId, getString(R.string.achievements)));
         myLifeList.add(new RealmMyLife("ic_submissions", userId, getString(R.string.submission)));
         myLifeList.add(new RealmMyLife("ic_my_survey", userId, getString(R.string.my_survey)));
-        myLifeList.add(new RealmMyLife("ic_news", userId, getString(R.string.news)));
+//        myLifeList.add(new RealmMyLife("ic_news", userId, getString(R.string.news)));
         myLifeList.add(new RealmMyLife("ic_references", userId, getString(R.string.references)));
         myLifeList.add(new RealmMyLife("ic_help_wanted", userId, getString(R.string.help_wanted)));
         myLifeList.add(new RealmMyLife("ic_calendar", userId, getString(R.string.calendar)));

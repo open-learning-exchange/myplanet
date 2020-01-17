@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.community
 
 
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
@@ -33,6 +34,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
@@ -40,7 +42,10 @@ import java.util.*
 /**
  * A simple [Fragment] subclass.
  */
-class CommunityFragment : BaseContainerFragment() {
+class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
+    override fun showReply(news: RealmNews?) {
+        startActivity(Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id))
+    }
 
 
     var user: RealmUserModel? = null
@@ -70,6 +75,7 @@ class CommunityFragment : BaseContainerFragment() {
 
         Utilities.log("list size " + list.size)
         var adapter = AdapterNews(activity, list, user, null)
+        adapter.setListener(this)
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
         setFlexBox();
