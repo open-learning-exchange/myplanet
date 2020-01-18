@@ -78,7 +78,10 @@ class DictionaryActivity : AppCompatActivity() {
                 }
             }
         } else {
-            Utilities.toast(this, "Please download dictionary first")
+            val list = ArrayList<String>()
+            list.add(Constants.DICTIONARY_URL)
+            Utilities.toast(this, "Downloading started, please check notification...")
+            Utilities.openDownloadService(this, list)
         }
     }
 
