@@ -65,9 +65,10 @@ class DictionaryActivity : AppCompatActivity() {
             } else {
                 Utilities.log("List " + list?.size)
                 btn_search.setOnClickListener {
-                    var dict = mRealm.where(RealmDictionary::class.java)?.contains("word", et_search.text.toString(), Case.INSENSITIVE)?.findFirst()
+                    var dict = mRealm.where(RealmDictionary::class.java)?.equalTo("word", et_search.text.toString(), Case.INSENSITIVE)?.findFirst()
                     if (dict != null) {
                         tv_result.text = dict?.word + "\n" +
+                                "Meaning : " + dict?.meaning + "\n" +
                                 "Definition : " + dict?.definition + "\n" +
                                 "Synonym : " + dict?.synonym + "\n" +
                                 "Antonoym : " + dict?.antonoym + "\n"
