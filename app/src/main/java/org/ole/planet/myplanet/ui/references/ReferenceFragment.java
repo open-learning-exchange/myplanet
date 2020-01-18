@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.Reference;
-import org.ole.planet.myplanet.ui.dictionary.DictionaryFragment;
+import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity;
 import org.ole.planet.myplanet.ui.map.OfflineMapActivity;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -71,9 +71,10 @@ public class ReferenceFragment extends Fragment {
                     holder.itemView.setOnClickListener(view -> {
                         if (position == 0) startActivity(new Intent(getActivity(), OfflineMapActivity.class));
                         else {
-                            if (homeItemClickListener!=null){
-                                homeItemClickListener.openCallFragment(new DictionaryFragment());
-                            }
+//                            if (homeItemClickListener!=null){
+//
+//                            }
+                            startActivity(new Intent(getActivity(), DictionaryActivity.class));
                         };
                     });
                 }
