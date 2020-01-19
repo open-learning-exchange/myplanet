@@ -32,7 +32,7 @@ import java.util.concurrent.Executors
  */
 class DictionaryActivity : AppCompatActivity() {
     lateinit var mRealm: Realm;
-    lateinit var list: RealmResults;
+    var list: RealmResults<RealmDictionary>? = null;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_dictionary)
