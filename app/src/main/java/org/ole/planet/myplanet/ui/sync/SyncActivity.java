@@ -134,7 +134,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     List<String> myList = Arrays.asList(ss.split(","));
                     Utilities.log("List size " + ss);
                     if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
+                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet ServerActivity");
                     } else {
                         startSync();
                     }
@@ -213,7 +213,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode) {
         this.settings = settings;
         if (mRealm.isEmpty()) {
-            alertDialogOkay("Server not configured properly. Connect this device with Planet server");
+            alertDialogOkay("ServerActivity not configured properly. Connect this device with Planet server");
             return false;
         } else {
             return checkName(username, password, isManagerMode);

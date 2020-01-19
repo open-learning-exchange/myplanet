@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
 
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.wifichat.WifiMainActivity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +79,8 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment  {
                     homeItemClickListener.openCallFragment(new MyPersonalsFragment());
                 } else if (title.equals(getString(R.string.help_wanted))) {
                     homeItemClickListener.openCallFragment(new HelpWantedFragment());
+                } else if (title.equals(getString(R.string.messeges))) {
+                   startActivity(new Intent(getActivity(), WifiMainActivity.class));
                 } else if (title.equals(getString(R.string.myhealth)) && Constants.showBetaFeature(Constants.KEY_MYHEALTH, getActivity())) {
                     homeItemClickListener.openCallFragment(new MyHealthFragment());
                 } else {

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.mylife;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 
 import androidx.annotation.NonNull;
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment;
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.wifichat.WifiMainActivity;
 
 import java.util.List;
 
@@ -104,6 +106,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             if (fragment != null) {
                 ((ViewHolderMyLife) holder).imageView.setOnClickListener(view -> transactionFragment(fragment, view));
             }
+
             ((ViewHolderMyLife) holder).dragImageButton.setOnTouchListener((v, event) -> {
                 if (event.getActionMasked() == MotionEvent.ACTION_DOWN)
                     mDragStartListener.onStartDrag(holder);
@@ -113,6 +116,7 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             if (!myLifeList.get(position).isVisible())
                 changeVisibility(holder, R.drawable.ic_visibility, HIDE);
             else changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
+
 
         }
 

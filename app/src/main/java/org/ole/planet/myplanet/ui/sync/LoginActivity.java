@@ -196,7 +196,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 .setView(v)
                 .setPositiveButton("Login", (dialogInterface, i) -> {
                     if (mRealm.isEmpty()) {
-                        alertDialogOkay("Server not configured properly. Connect this device with Planet server");
+                        alertDialogOkay("ServerActivity not configured properly. Connect this device with Planet server");
                         return;
                     }
                     String username = etUserName.getText().toString().toLowerCase();

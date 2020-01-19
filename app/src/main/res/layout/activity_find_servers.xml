@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.bluffmaster.FindServers"
+    android:background="#119">
+
+    <Button
+        android:id="@+id/button4"
+        android:layout_width="344dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="5sp"
+        android:layout_marginLeft="10sp"
+        android:layout_marginRight="10sp"
+        android:alpha="0.2"
+        android:background="#fff"
+        android:onClick="scanForServers"
+        android:text="Scan"
+        android:textColor="#000"
+        android:textStyle="bold"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="462dp"/>
+
+    <ListView
+        android:id="@+id/server_list"
+        android:layout_width="351dp"
+        android:layout_height="451dp"
+        tools:layout_editor_absoluteX="5dp"
+        tools:layout_editor_absoluteY="1dp"
+        android:alpha="0.4"
+        android:background="#000"
+        android:layout_marginRight="10sp"
+        android:layout_marginLeft="10sp"
+        android:layout_marginBottom="3sp"
+        android:layout_marginTop="5sp"
+        android:layout_centerHorizontal="true"
+        android:layout_above="@+id/button4"
+        android:layout_alignParentTop="true"/>
+</RelativeLayout>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.bluffmaster.MainActivity"
+    android:background="#119">
+
+
+    <EditText
+        android:id="@+id/server_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="44dp"
+        android:ems="10"
+        android:gravity="center"
+        android:textColor="#fff"
+        android:hint="Enter Server Name "
+        android:inputType="textPersonName"
+        android:onClick="clearText"
+        android:layout_below="@+id/user_name"
+        android:layout_centerHorizontal="true"
+        android:textSize="20sp"/>
+
+    <Button
+        android:id="@+id/start_server_button"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/server_name"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="64dp"
+        android:alpha="0.5"
+        android:background="#fff"
+        android:fontFamily="sans-serif"
+        android:onClick="startChatServer"
+        android:paddingLeft="10sp"
+        android:paddingRight="10sp"
+        android:text="Start Server"
+        android:textColor="@android:color/background_dark"
+        android:textStyle="bold"/>
+
+    <Button
+        android:id="@+id/button2"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="45dp"
+        android:alpha="0.5"
+        android:background="#fff"
+        android:onClick="connectToChatServer"
+        android:paddingLeft="10sp"
+        android:paddingRight="10sp"
+        android:text="Join Server"
+        android:textColor="@android:color/background_dark"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/user_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/server_name"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/server_name"
+        android:layout_marginTop="57dp"
+        android:ems="10"
+        android:gravity="center"
+        android:hint="Your Name"
+        android:inputType="textPersonName"
+        android:textColor="#fff"
+        android:textSize="20sp"/>
+</RelativeLayout>
