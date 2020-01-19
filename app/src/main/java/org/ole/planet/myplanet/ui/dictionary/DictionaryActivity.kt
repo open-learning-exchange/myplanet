@@ -18,6 +18,7 @@ import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_dictionary.*
 
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utilities.Constants
@@ -30,7 +31,7 @@ import java.util.concurrent.Executors
 /**
  * A simple [Fragment] subclass.
  */
-class DictionaryActivity : AppCompatActivity() {
+class DictionaryActivity : BaseActivity() {
     lateinit var mRealm: Realm;
     var list: RealmResults<RealmDictionary>? = null;
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,10 +96,5 @@ class DictionaryActivity : AppCompatActivity() {
         }
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if (item?.itemId == android.R.id.home)
-            finish()
-        return super.onOptionsItemSelected(item)
-    }
 
 }
