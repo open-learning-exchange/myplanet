@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
 import android.os.PersistableBundle
+import android.text.Html
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -83,11 +84,11 @@ class DictionaryActivity : AppCompatActivity() {
         btn_search.setOnClickListener {
             var dict = mRealm.where(RealmDictionary::class.java)?.equalTo("word", et_search.text.toString(), Case.INSENSITIVE)?.findFirst()
             if (dict != null) {
-                tv_result.text = dict?.word + "\n" +
-                        "Meaning : " + dict?.meaning + "\n" +
-                        "Definition : " + dict?.definition + "\n" +
-                        "Synonym : " + dict?.synonym + "\n" +
-                        "Antonoym : " + dict?.antonoym + "\n"
+                tv_result.text = Html.fromHtml(dict?.word + "\n" +
+                        "<b>Meaning : </b>" + dict?.meaning + "\n" +
+                        "<b>Definition : </b>" + dict?.definition + "\n" +
+                        "<b>Synonym : </b>" + dict?.synonym + "\n" +
+                        "<b>Antonoym : </b>" + dict?.antonoym + "\n")
             } else {
                 Utilities.toast(this, "Word not available in our database.")
             }
