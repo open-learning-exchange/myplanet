@@ -92,7 +92,7 @@ class CommunityFragment : BaseContainerFragment() {
                 .findAll()
         flexbox_link.removeAllViews()
         links.forEach { team ->
-            var b = Button(activity!!)
+           var b: Button = LayoutInflater.from(activity).inflate(R.layout.button_single, null) as Button;
             b.text = team.title
             b.setOnClickListener {
                 val route = team.route.split("/")
@@ -107,9 +107,7 @@ class CommunityFragment : BaseContainerFragment() {
                 }
             }
             flexbox_link.addView(b)
-
         }
-
     }
 
     override fun onResume() {
