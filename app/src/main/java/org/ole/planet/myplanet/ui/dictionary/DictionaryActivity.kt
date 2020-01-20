@@ -10,6 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.text.HtmlCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
@@ -85,11 +86,10 @@ class DictionaryActivity : BaseActivity() {
         btn_search.setOnClickListener {
             var dict = mRealm.where(RealmDictionary::class.java)?.equalTo("word", et_search.text.toString(), Case.INSENSITIVE)?.findFirst()
             if (dict != null) {
-                tv_result.text = Html.fromHtml(dict?.word + "\n" +
-                        "<b>Meaning : </b>" + dict?.meaning + "\n" +
-                        "<b>Definition : </b>" + dict?.definition + "\n" +
-                        "<b>Synonym : </b>" + dict?.synonym + "\n" +
-                        "<b>Antonoym : </b>" + dict?.antonoym + "\n")
+                tv_result.text = HtmlCompat.fromHtml("Definition of '<b>"+ dict?.word + "</b>'<br/><br/>\n " +
+                        "<b>" + dict?.definition + "\n</b><br/><br/><br/>" +
+                        "<b>Synonym : </b>" + dict?.synonym + "\n<br/><br/>" +
+                        "<b>Antonoym : </b>" + dict?.antonoym + "\n<br/>", HtmlCompat.FROM_HTML_MODE_LEGACY)
             } else {
                 Utilities.toast(this, "Word not available in our database.")
             }
