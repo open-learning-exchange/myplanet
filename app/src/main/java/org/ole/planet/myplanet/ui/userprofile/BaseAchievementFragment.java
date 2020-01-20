@@ -97,11 +97,11 @@ public class BaseAchievementFragment extends BaseContainerFragment {
 
 
     public void setUserInfo() {
-        user.setFirstName(etName.getText().toString());
-        user.setMiddleName(etMiddleName.getText().toString());
-        user.setLastName(etLastName.getText().toString());
-        user.setDob(tvDob.getText().toString());
-        user.setBirthPlace(etBirthPlace.getText().toString());
+        //user.setFirstName(etName.getText().toString());
+        //user.setMiddleName(etMiddleName.getText().toString());
+        //user.setLastName(etLastName.getText().toString());
+        //user.setDob(tvDob.getText().toString());
+        //user.setBirthPlace(etBirthPlace.getText().toString());
     }
 
     public void setAchievementInfo() {
