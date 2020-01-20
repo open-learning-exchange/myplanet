@@ -99,16 +99,16 @@ public class Constants {
     public static final String ABOUT = "" +
             "<td>\n" +
             "<h3>MyPlanet</h3>\n" +
-            "<p>myPlanet is a learning tool that is designed to work  with Planet web application. It has been used to improve early education, secondary schools, village health, youth workforce development, and economic and community development.</p>\n" +
+            "<p>myPlanet is a learning tool that is designed to work with Planet web application. It has been used to improve early education, secondary schools, village health, youth workforce development, and economic and community development.</p>\n" +
             "<p>Planet houses is a repository of free, open access and public domain resources to benefit all learners.</p>\n" +
             "\n" +
-            "<p>myPlanet is designed to be available to everyone, everywhere, all the time. It is portable, affordable, scalable and sustainable. It  runs on any android device such as tablets and mobile phones. It functions off, as well as on, the Internet. </p>\n" +
-            "<p>This application enables schools and communities to have a complete multi-media library and learning system that periodically connects with Planet. Configured devices can contain learners own personal dashboard.  " +
-            "This ensures learners can read books on  thier shelf and  take courses  offline  i.e without  connnection to a central server. Learners are encouraged to rate, one to five stars, the resources they use and the courses they take. Periodically learners can syncs with a server. " +
+            "<p>myPlanet is designed to be available to everyone, everywhere, all the time. It is portable, affordable, scalable and sustainable. It runs on any android device such as tablets and mobile phones. It functions off, as well as on, the Internet. </p>\n" +
+            "<p>This application enables schools and communities to have a complete multi-media library and learning system that periodically connects with Planet. Configured devices can contain the learners' personal dashboard.  " +
+            "This ensures learners can read books on their shelf and take courses offline - i.e without connection to a central server. Learners are encouraged to rate from one to five stars the resources they use and the courses they take. Periodically learners can sync with a server. " +
             "Activity data are uploaded and new resources are downloaded in a matter of a few minutes unto myPlanet for offline use.\n" +
             "\n" +
-            "<p>The dashboard also contains: a record of achievements, a calendar of events, and an internal chat system for communicating with fellow members.</p>\n" +
-            "<p>myPlanet has been proven highly effective in improving learning opportunities for over fifty thousand learners in more than 100 locations, in schools  throughout Nepal, Ghana, Kenya and Rwanda, with Syrian refugees in Jordan, Somali refugees in Kenya, and village health workers in Uganda.</p>"+
+            "<p>The dashboard also contains a record of achievements, a calendar of events, and an internal chat system for communicating with fellow members.</p>\n" +
+            "<p>myPlanet has been proven highly effective in improving learning opportunities for over fifty thousand learners in more than 100 locations, in schools throughout Nepal, Ghana, Kenya, and Rwanda, with Syrian refugees in Jordan, Somali refugees in Kenya, and village health workers in Uganda.</p>"+
             "      </td>";
     public static final HashMap<Class, Integer> COLOR_MAP = new HashMap<>();
     public static HashMap<String, Class> classList = new HashMap<>();
