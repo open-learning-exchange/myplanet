@@ -27,6 +27,7 @@ public class RealmStepExam extends RealmObject {
     private String type;
     private String stepId;
     private String courseId;
+    private String sourcePlanet;
     private String passingPercentage;
     private int noOfQuestions;
     private boolean isFromNation;
@@ -47,12 +48,21 @@ public class RealmStepExam extends RealmObject {
         myExam.setPassingPercentage(JsonUtils.getString("passingPercentage", exam));
         myExam.set_rev(JsonUtils.getString("_rev", exam));
         myExam.setCreatedBy(JsonUtils.getString("createdBy", exam));
+        myExam.setSourcePlanet(JsonUtils.getString("sourcePlanet", exam));
         myExam.setCreatedDate(JsonUtils.getLong("createdDate", exam));
         myExam.setUpdatedDate(JsonUtils.getLong("updatedDate", exam));
         myExam.setTotalMarks(JsonUtils.getInt("totalMarks", exam));
         myExam.setNoOfQuestions(JsonUtils.getJsonArray("questions", exam).size());
         myExam.setFromNation(!TextUtils.isEmpty(parentId));
         RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
+    }
+
+    public String getSourcePlanet() {
+        return sourcePlanet;
+    }
+
+    public void setSourcePlanet(String sourcePlanet) {
+        this.sourcePlanet = sourcePlanet;
     }
 
     public boolean isFromNation() {
@@ -99,6 +109,7 @@ public class RealmStepExam extends RealmObject {
         object.addProperty("type", exam.getType());
         object.addProperty("updatedDate", exam.getUpdatedDate());
         object.addProperty("createdDate", exam.getCreatedDate());
+        object.addProperty("sourcePlanet", exam.getSourcePlanet());
         object.addProperty("totalMarks", exam.getCreatedDate());
         object.addProperty("createdBy", exam.getCreatedBy());
         RealmResults<RealmExamQuestion> question = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
