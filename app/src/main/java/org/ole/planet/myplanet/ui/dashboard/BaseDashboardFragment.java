@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.NotificationCallback;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -31,9 +32,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment;
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment;
+import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -67,9 +71,9 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
     }
 
     public void forceDownloadNewsImages() {
-        if(mRealm == null)
-            mRealm =new DatabaseService(getActivity()).getRealmInstance();
-        Utilities.toast(getActivity(),"Please select starting date : ");
+        if (mRealm == null)
+            mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        Utilities.toast(getActivity(), "Please select starting date : ");
         Calendar now = Calendar.getInstance();
         DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
             now.set(Calendar.YEAR, i);
@@ -77,13 +81,25 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
             now.set(Calendar.DAY_OF_MONTH, i2);
             List<RealmMyLibrary> imageList = mRealm.where(RealmMyLibrary.class).equalTo("isPrivate", true).greaterThan("createdDate", now.getTimeInMillis()).equalTo("mediaType", "image").findAll();
             ArrayList<String> urls = new ArrayList<>();
-           getUrlsAndStartDownload(imageList,settings, urls);
+            getUrlsAndStartDownload(imageList, settings, urls);
 
         }, now.get(Calendar.YEAR),
                 now.get(Calendar.MONTH),
                 now.get(Calendar.DAY_OF_MONTH));
         dpd.setTitle("Read offline news from : ");
         dpd.show();
+    }
+
+    @Override
+    public void downloadDictionary() {
+        ArrayList<String> list = new ArrayList<>();
+        list.add(Constants.DICTIONARY_URL);
+        if (!FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
+            Utilities.toast(getActivity(), "Downloading started, please check notification...");
+            Utilities.openDownloadService(getActivity(), list);
+        } else {
+            Utilities.toast(getActivity(), "File already exists...");
+        }
     }
 
     public void myLibraryDiv(View view) {
@@ -264,7 +280,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         showNotificationFragment();
     }
 
-  public void showNotificationFragment(){
+    public void showNotificationFragment() {
         NotificationFragment fragment = new NotificationFragment();
         fragment.callback = this;
         fragment.resourceList = getLibraryList(mRealm);

@@ -84,6 +84,8 @@
         <activity android:name=".ui.viewer.TextFileViewerActivity" />
         <activity android:name=".ui.viewer.MarkdownViewerActivity" />
         <activity android:name=".ui.viewer.CSVViewerActivity" />
+        <activity android:name=".ui.dictionary.DictionaryActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.SettingActivity"
             android:theme="@style/AppTheme" />
