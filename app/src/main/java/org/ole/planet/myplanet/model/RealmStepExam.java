@@ -18,12 +18,16 @@ import io.realm.annotations.PrimaryKey;
 public class RealmStepExam extends RealmObject {
     @PrimaryKey
     private String id;
+    private String _rev;
+    private long createdDate;
+    private long updatedDate;
+    private String createdBy;
+    private int totalMarks;
     private String name;
     private String type;
     private String stepId;
     private String courseId;
     private String passingPercentage;
-    private String totalMarks;
     private int noOfQuestions;
     private boolean isFromNation;
 
@@ -41,7 +45,11 @@ public class RealmStepExam extends RealmObject {
         myExam.setType(exam.has("type") ? JsonUtils.getString("type", exam) : "exam");
         myExam.setName(JsonUtils.getString("name", exam));
         myExam.setPassingPercentage(JsonUtils.getString("passingPercentage", exam));
-        myExam.setTotalMarks(JsonUtils.getString("totalMarks", exam));
+        myExam.set_rev(JsonUtils.getString("_rev", exam));
+        myExam.setCreatedBy(JsonUtils.getString("createdBy", exam));
+        myExam.setCreatedDate(JsonUtils.getLong("createdDate", exam));
+        myExam.setUpdatedDate(JsonUtils.getLong("updatedDate", exam));
+        myExam.setTotalMarks(JsonUtils.getInt("totalMarks", exam));
         myExam.setNoOfQuestions(JsonUtils.getJsonArray("questions", exam).size());
         myExam.setFromNation(!TextUtils.isEmpty(parentId));
         RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
@@ -84,12 +92,26 @@ public class RealmStepExam extends RealmObject {
 
     public static JsonObject serializeExam(Realm mRealm, RealmStepExam exam) {
         JsonObject object = new JsonObject();
+        object.addProperty("_id", exam.getId());
+        object.addProperty("_rev", exam.get_rev());
         object.addProperty("name", exam.getName());
         object.addProperty("passingPercentage", exam.getPassingPercentage());
         object.addProperty("type", exam.getType());
+        object.addProperty("updatedDate", exam.getUpdatedDate());
+        object.addProperty("createdDate", exam.getCreatedDate());
+        object.addProperty("totalMarks", exam.getCreatedDate());
+        object.addProperty("createdBy", exam.getCreatedBy());
         RealmResults<RealmExamQuestion> question = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
         object.add("questions", RealmExamQuestion.serializeQuestions(mRealm, question));
         return object;
+    }
+
+    public long getUpdatedDate() {
+        return updatedDate;
+    }
+
+    public void setUpdatedDate(long updatedDate) {
+        this.updatedDate = updatedDate;
     }
 
     public static String[] getIds(List<RealmStepExam> list) {
@@ -124,11 +146,11 @@ public class RealmStepExam extends RealmObject {
         this.type = type;
     }
 
-    public String getTotalMarks() {
+    public int getTotalMarks() {
         return totalMarks;
     }
 
-    public void setTotalMarks(String totalMarks) {
+    public void setTotalMarks(int totalMarks) {
         this.totalMarks = totalMarks;
     }
 
@@ -138,6 +160,31 @@ public class RealmStepExam extends RealmObject {
 
     public void setStepId(String stepId) {
         this.stepId = stepId;
+    }
+
+
+    public String get_rev() {
+        return _rev;
+    }
+
+    public void set_rev(String _rev) {
+        this._rev = _rev;
+    }
+
+    public long getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(long createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 
     public String getCourseId() {
