@@ -8,4 +8,5 @@ public interface NotificationCallback {
     void syncKeyId();
 
     void forceDownloadNewsImages();
+    void downloadDictionary();
 }
