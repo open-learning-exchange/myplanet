@@ -68,7 +68,7 @@ public class SendSurveyFragment extends BaseDialogFragment {
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .equalTo("status", "pending")
                 .findFirst();
-        sub = RealmSubmission.createSubmission(sub, questions, mRealm);
+        sub = RealmSubmission.createSubmission(sub, mRealm);
         sub.setParentId(id);
         sub.setUserId(userId);
         sub.setType("survey");

@@ -148,8 +148,8 @@ public class RealmSubmission extends RealmObject {
                 .findFirst() != null;
     }
 
-    public static RealmSubmission createSubmission(RealmSubmission sub, List<RealmExamQuestion> questions, Realm mRealm) {
-        if (sub == null || sub.getStatus().equals("complete"))
+    public static RealmSubmission createSubmission(RealmSubmission sub, Realm mRealm) {
+        if (sub == null || (sub.getStatus().equals("complete") && sub.getType().equals("exam")))
             sub = mRealm.createObject(RealmSubmission.class, UUID.randomUUID().toString());
         sub.setLastUpdateTime(new Date().getTime());
         return sub;

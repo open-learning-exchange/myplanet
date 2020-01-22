@@ -117,7 +117,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 //        if (sub != null && sub.getStatus().equals("complete")) {
 //            sub.setAnswers(new RealmList<>());
 //        }
-        sub = RealmSubmission.createSubmission(sub, questions, mRealm);
+        sub = RealmSubmission.createSubmission(sub, mRealm);
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
         sub.setStatus("pending");
@@ -125,6 +125,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         sub.setStartTime(new Date().getTime());
         if (sub.getAnswers() != null) {
             currentIndex = sub.getAnswers().size();
+        }
+        if (sub.getAnswers().size() == questions.size() && isMySurvey){
+            currentIndex = 0;
         }
         mRealm.commitTransaction();
     }
@@ -258,6 +261,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else {
             flag = checkCorrectAns(answer, que);
         }
+        if(isMySurvey && list.size() > currentIndex)
+            list.remove(currentIndex);
         list.add(currentIndex, answer);
         sub.setAnswers(list);
         mRealm.commitTransaction();
