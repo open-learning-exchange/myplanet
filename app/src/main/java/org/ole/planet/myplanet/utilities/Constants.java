@@ -29,7 +29,7 @@ import java.util.Map;
 
 public class Constants {
     public static final String KEY_LOGIN = "isLoggedIn";
-    public static final String  DICTIONARY_URL =  "http://treehouses.media.mit.edu:8000/output.json";
+    public static final String  DICTIONARY_URL =  "http://157.245.241.39:8000/output.json";
     public static List<ShelfData> shelfDataList;
     public static final String KEY_RATING = "beta_rating";
     public static final String KEY_EXAM = "beta_course";
