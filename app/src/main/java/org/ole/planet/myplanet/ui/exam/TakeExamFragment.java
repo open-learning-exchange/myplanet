@@ -139,17 +139,21 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         etAnswer.setVisibility(View.GONE);
         listChoices.setVisibility(View.GONE);
         llCheckbox.setVisibility(View.GONE);
-
+        String oldAnswer = "";
+        if (sub.getAnswers().size() > currentIndex) {
+            oldAnswer = sub.getAnswers().get(currentIndex).getValue();
+        }
         if (question.getType().equalsIgnoreCase("select")) {
             listChoices.setVisibility(View.VISIBLE);
             etAnswer.setVisibility(View.GONE);
-            selectQuestion(question);
+            selectQuestion(question, oldAnswer);
         } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
+            etAnswer.setText(oldAnswer);
             setMarkdownViewAndShowInput(etAnswer, question.getType());
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
             etAnswer.setVisibility(View.GONE);
-            showCheckBoxes(question);
+            showCheckBoxes(question, oldAnswer);
         }
 
         ans = "";
@@ -168,40 +172,42 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
     }
 
-    private void showCheckBoxes(RealmExamQuestion question) {
+    private void showCheckBoxes(RealmExamQuestion question, String oldAnswer) {
         JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
-            addCompoundButton(choices.get(i).getAsJsonObject(), false);
+            addCompoundButton(choices.get(i).getAsJsonObject(), false, oldAnswer);
         }
     }
 
-    private void selectQuestion(RealmExamQuestion question) {
+    private void selectQuestion(RealmExamQuestion question, String oldAnswer) {
         JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
             if (choices.get(i).isJsonObject()) {
-                addCompoundButton(choices.get(i).getAsJsonObject(), true);
+                addCompoundButton(choices.get(i).getAsJsonObject(), true, oldAnswer);
             } else {
-                addRadioButton(JsonUtils.getString(choices, i));
+                addRadioButton(JsonUtils.getString(choices, i), oldAnswer);
             }
         }
     }
 
 
-    public void addRadioButton(String choice) {
+    public void addRadioButton(String choice, String oldAnswer) {
         RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
         rdBtn.setText(choice);
+        rdBtn.setChecked(choice.equals(oldAnswer));
         rdBtn.setOnCheckedChangeListener(this);
         listChoices.addView(rdBtn);
     }
 
-    public void addCompoundButton(JsonObject choice, boolean isRadio) {
+    public void addCompoundButton(JsonObject choice, boolean isRadio, String oldAnswer) {
         CompoundButton rdBtn = (CompoundButton) LayoutInflater.from(getActivity()).inflate(isRadio ? R.layout.item_radio_btn : R.layout.item_checkbox, null);
         rdBtn.setText(JsonUtils.getString("text", choice));
         rdBtn.setTag(JsonUtils.getString("id", choice));
+        rdBtn.setChecked(JsonUtils.getString("id", choice).equals(oldAnswer));
         rdBtn.setOnCheckedChangeListener(this);
-        if (isRadio)
+        if (isRadio) {
             listChoices.addView(rdBtn);
-        else
+        } else
             llCheckbox.addView(rdBtn);
     }
 
