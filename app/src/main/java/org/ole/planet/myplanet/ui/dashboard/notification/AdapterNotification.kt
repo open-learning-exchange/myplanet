@@ -31,7 +31,8 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
                     0 -> callback.showResourceDownloadDialog()
                     1 -> callback.showPendingSurveyDialog()
                     2 ->callback.forceDownloadNewsImages()
-                    3 ->callback.syncKeyId()
+                    3 ->callback.downloadDictionary()
+                    4 ->callback.syncKeyId()
                 }
             }
         }

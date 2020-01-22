@@ -17,9 +17,5 @@ class DisclaimerActivity : BaseActivity() {
         tv_disclaimer.text = Html.fromHtml(Constants.DISCLAIMER)
     }
 
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        if(item?.itemId == android.R.id.home)
-            finish()
-        return super.onOptionsItemSelected(item)
-    }
+
 }

@@ -4,8 +4,13 @@ import android.content.Context;
 
 import org.ole.planet.myplanet.MainApplication;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import io.realm.internal.IOException;
 
 public class DatabaseService {
 
