@@ -130,16 +130,12 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public void startExam(RealmExamQuestion question) {
         tvQuestionCount.setText("Question : " + (currentIndex + 1) + "/" + questions.size());
         setButtonText();
-
         listChoices.removeAllViews();
         llCheckbox.removeAllViews();
         etAnswer.setVisibility(View.GONE);
         listChoices.setVisibility(View.GONE);
         llCheckbox.setVisibility(View.GONE);
-
-        ans = "";
-        etAnswer.setText("");
-        listAns.clear();
+        clearAnswer();
         if (sub.getAnswers().size() > currentIndex) {
             ans = sub.getAnswers().get(currentIndex).getValue();
         }
@@ -157,6 +153,12 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         header.setText(question.getHeader());
         body.setText(question.getBody());
         btnSubmit.setOnClickListener(this);
+    }
+
+    private void clearAnswer() {
+        ans = "";
+        etAnswer.setText("");
+        listAns.clear();
     }
 
     public void setButtonText() {
