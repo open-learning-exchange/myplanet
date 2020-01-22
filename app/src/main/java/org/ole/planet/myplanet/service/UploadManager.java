@@ -79,7 +79,6 @@ public class UploadManager extends FileUploadService {
         return instance;
     }
 
-
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
