@@ -26,12 +26,15 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmAnswer;
+import org.ole.planet.myplanet.model.RealmCertification;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -53,7 +56,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     RadioGroup listChoices;
     LinearLayout llCheckbox;
 
-
+    boolean isCertified;
     NestedScrollView container;
 
     public TakeExamFragment() {
@@ -94,7 +97,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             q = q.equalTo("status", "pending");
 
         sub = (RealmSubmission) q.findFirst();
-
+        String courseId = exam.getCourseId();
+        isCertified = RealmCertification.isCourseCertified(mRealm, courseId);
         if (questions.size() > 0) {
             createSubmission();
             Utilities.log("Current index " + currentIndex);
@@ -141,7 +145,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             etAnswer.setVisibility(View.GONE);
             selectQuestion(question);
         } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
-           setMarkdownViewAndShowInput(etAnswer, question.getType());
+            setMarkdownViewAndShowInput(etAnswer, question.getType());
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
             etAnswer.setVisibility(View.GONE);
@@ -211,17 +215,19 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
                 return;
             }
 
-
             boolean cont = updateAnsDb();
-            try {
-                CameraUtils.CapturePhoto(this);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
+            capturePhoto();
+            KeyboardUtils.hideSoftKeyboard(getActivity());
             checkAnsAndContinue(cont);
+        }
+    }
 
-
+    private void capturePhoto() {
+        try {
+            if (isCertified)
+                CameraUtils.CapturePhoto(this);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

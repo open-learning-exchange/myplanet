@@ -92,7 +92,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-            loadImage(holder, list.get(position));
+            loadImage(holder, news);
             showReplyButton(holder, news, position);
         }
     }
@@ -104,10 +104,12 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         } else {
             try {
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                Utilities.log("image url " + news.getImageUrl());
                 Glide.with(context)
                         .load(new File(imageUrl))
                         .into(((ViewHolderNews) holder).newsImage);
             } catch (Exception e) {
+                loadRemoteImage(holder, news);
                 e.printStackTrace();
             }
         }
@@ -122,7 +124,6 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         .into(((ViewHolderNews) holder).newsImage);
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 return;
-
             }
         }
         ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);

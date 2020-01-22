@@ -23,7 +23,7 @@
     <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"/>
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
 
     <application xmlns:tools="http://schemas.android.com/tools"
         android:name=".MainApplication"
@@ -34,10 +34,15 @@
         android:theme="@style/MyMaterialTheme"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
+        <activity android:name=".ui.dashboard.AboutActivity"
+            android:theme="@style/AppTheme"
+            ></activity>
+        <activity
+            android:name=".ui.dashboard.DisclaimerActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.myhealth.AddMyHealthActivity"
             android:theme="@style/AppTheme" />
-
         <activity
             android:name=".ui.myhealth.AddExaminationActivity"
             android:theme="@style/AppTheme" />
@@ -79,6 +84,8 @@
         <activity android:name=".ui.viewer.TextFileViewerActivity" />
         <activity android:name=".ui.viewer.MarkdownViewerActivity" />
         <activity android:name=".ui.viewer.CSVViewerActivity" />
+        <activity android:name=".ui.dictionary.DictionaryActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.SettingActivity"
             android:theme="@style/AppTheme" />

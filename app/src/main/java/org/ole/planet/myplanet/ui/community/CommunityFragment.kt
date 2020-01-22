@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.community
 
 
 import android.content.DialogInterface
+import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import androidx.fragment.app.Fragment
@@ -11,7 +13,9 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.Button
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Case
 import io.realm.Realm
@@ -30,6 +34,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
@@ -37,7 +42,10 @@ import java.util.*
 /**
  * A simple [Fragment] subclass.
  */
-class CommunityFragment : BaseContainerFragment() {
+class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
+    override fun showReply(news: RealmNews?) {
+        startActivity(Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id))
+    }
 
 
     var user: RealmUserModel? = null
@@ -46,6 +54,7 @@ class CommunityFragment : BaseContainerFragment() {
 
         return inflater.inflate(R.layout.fragment_community, container, false)
     }
+
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
@@ -60,9 +69,13 @@ class CommunityFragment : BaseContainerFragment() {
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
                 .sort("time", Sort.DESCENDING)
                 .findAll()
-        rv_community.layoutManager = LinearLayoutManager(activity!!)
+//        rv_community.layoutManager = LinearLayoutManager(activity!!)
+        val orientation = resources.configuration.orientation
+        changeLayoutManager(orientation)
+
         Utilities.log("list size " + list.size)
         var adapter = AdapterNews(activity, list, user, null)
+        adapter.setListener(this)
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
         setFlexBox();
@@ -85,7 +98,7 @@ class CommunityFragment : BaseContainerFragment() {
                 .findAll()
         flexbox_link.removeAllViews()
         links.forEach { team ->
-            var b = Button(activity!!)
+           var b: Button = LayoutInflater.from(activity).inflate(R.layout.button_single, null) as Button;
             b.text = team.title
             b.setOnClickListener {
                 val route = team.route.split("/")
@@ -100,14 +113,25 @@ class CommunityFragment : BaseContainerFragment() {
                 }
             }
             flexbox_link.addView(b)
-
         }
-
     }
 
     override fun onResume() {
         super.onResume()
         setFlexBox()
+    }
+    override fun onConfigurationChanged(newConfig: Configuration?) {
+        super.onConfigurationChanged(newConfig)
+        val orientation = newConfig!!.orientation
+        changeLayoutManager(orientation)
+    }
+
+    private fun changeLayoutManager(orientation: Int) {
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            rv_community.layoutManager = GridLayoutManager(activity, 2)
+        } else {
+            rv_community.layoutManager = LinearLayoutManager(activity)
+        }
     }
 
 }

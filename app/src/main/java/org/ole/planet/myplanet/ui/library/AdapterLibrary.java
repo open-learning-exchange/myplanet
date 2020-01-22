@@ -56,6 +56,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.realm = realm;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
+
 //        this.tagMap = tagMap;
 //        this.tagMapWithName = new HashMap<>();
 //        for (String key : tagMap.keySet()

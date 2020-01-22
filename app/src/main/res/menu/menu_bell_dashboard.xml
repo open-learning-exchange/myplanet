@@ -11,6 +11,19 @@
         android:icon="@drawable/feedback"
         android:title="@string/menu_feedback"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_about"
+        android:icon="@drawable/ic_my_survey"
+        android:title="@string/action_about"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_disclaimer"
+        android:icon="@drawable/ic_my_survey"
+        android:title="@string/action_disclaimer"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/action_settings"
         android:icon="@drawable/settings"
