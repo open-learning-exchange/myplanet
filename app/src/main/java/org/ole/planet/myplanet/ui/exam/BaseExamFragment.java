@@ -213,7 +213,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
 
-    public void setMarkdownViewAndShowInput(EditText etAnswer, String type) {
+    public void setMarkdownViewAndShowInput(EditText etAnswer, String type, String oldAnswer) {
         etAnswer.setVisibility(View.VISIBLE);
         final Markwon markwon = Markwon.create(getActivity());
         final MarkwonEditor editor = MarkwonEditor.create(markwon);
@@ -237,6 +237,8 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
                 }
             });
         }
+
+        etAnswer.setText(oldAnswer);
     }
 
 }
