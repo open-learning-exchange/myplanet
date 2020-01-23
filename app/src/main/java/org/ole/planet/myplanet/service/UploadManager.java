@@ -79,10 +79,11 @@ public class UploadManager extends FileUploadService {
         return instance;
     }
 
-
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        if(model == null)
+            return;
         if (model.isManager())
             return;
         try {
@@ -356,6 +357,8 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
+        if(model == null)
+            return;
         if (model.isManager())
             return;
         mRealm.executeTransactionAsync(realm -> {
