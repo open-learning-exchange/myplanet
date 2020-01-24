@@ -15,6 +15,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:padding="@dimen/padding_large"
+            android:id="@+id/ll_links"
+            android:visibility="gone"
             android:background="@color/md_grey_300"
             android:layout_height="wrap_content">
 

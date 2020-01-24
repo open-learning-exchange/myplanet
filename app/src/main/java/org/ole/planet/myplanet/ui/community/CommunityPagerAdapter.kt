@@ -7,27 +7,29 @@ import androidx.fragment.app.FragmentStatePagerAdapter
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 
-class CommunityPagerAdapter(fm: FragmentManager, val id: String) : FragmentStatePagerAdapter(fm) {
-    var titles = arrayOf("News", "Community Leaders", "Finances", "Calendar")
+class CommunityPagerAdapter(fm: FragmentManager, val id: String, var fromLogin: Boolean) : FragmentStatePagerAdapter(fm) {
+    var titles = arrayOf("News", "Community Leaders", "Calendar", "Finances")
+    var titles_login = arrayOf("News", "Community Leaders", "Calendar")
     override fun getItem(position: Int): Fragment {
+        var fragment: Fragment;
         if (position == 0) {
-            return CommunityFragment()
-        }else if( position == 1){
-            return LeadersFragment()
-        }else if(position ==2){
-            return FinanceFragment();
+            fragment = CommunityFragment()
+        } else if (position == 1) {
+            fragment = LeadersFragment()
+        } else if (position == 2) {
+            fragment = EnterpriseCalendarFragment()
+        } else {
+            fragment =  FinanceFragment();
         }
-        else {
-            var f = EnterpriseCalendarFragment()
-            val b = Bundle()
-            b.putString("id", id)
-            f.arguments = b
-            return f
-        }
+        val b = Bundle()
+        b.putString("id", id)
+        b.putBoolean("fromLogin", fromLogin)
+        fragment.arguments = b
+        return fragment;
     }
 
     override fun getCount(): Int {
-        return titles.size
+        return if (fromLogin) titles_login.size else titles.size
     }
 
     override fun getPageTitle(position: Int): CharSequence? {
