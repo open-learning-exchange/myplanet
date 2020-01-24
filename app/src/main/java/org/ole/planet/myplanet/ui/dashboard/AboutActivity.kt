@@ -13,6 +13,7 @@ class AboutActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_about)
+        initActionBar()
         tv_disclaimer.text = Html.fromHtml(Constants.ABOUT)
     }
 }
