@@ -39,7 +39,6 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
         this.currentUser = new UserProfileDbHandler(context).getUserModel();
         RealmMyTeam leaderTeam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (leaderTeam != null) {
-            Utilities.log("Team leader " + leaderTeam.isLeader() + " " + leaderTeam.getUserId());
             this.teamLeaderId = leaderTeam.getUserId();
         }
     }
