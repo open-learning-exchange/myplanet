@@ -12,6 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/text_margin"
-        android:text="@string/large_text" />
+        android:id="@+id/tv_detail"
+        />
 
 </androidx.core.widget.NestedScrollView>
