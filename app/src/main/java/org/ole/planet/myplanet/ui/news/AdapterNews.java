@@ -7,6 +7,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
@@ -94,6 +95,9 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
             loadImage(holder, news);
             showReplyButton(holder, news, position);
+            holder.itemView.setOnClickListener(v->{
+                context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId()));
+            });
         }
     }
 
