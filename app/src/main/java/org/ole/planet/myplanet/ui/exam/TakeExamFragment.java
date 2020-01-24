@@ -227,7 +227,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private void capturePhoto() {
         try {
-            if (isCertified)
+            if (isCertified && !isMySurvey)
                 CameraUtils.CapturePhoto(this);
         } catch (Exception e) {
             e.printStackTrace();
