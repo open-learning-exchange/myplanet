@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
 
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -10,18 +9,12 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.Button
-import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Case
-import io.realm.Realm
 import io.realm.Sort
-import kotlinx.android.synthetic.main.alert_add_link.view.*
-import kotlinx.android.synthetic.main.custom_tab.view.*
 import kotlinx.android.synthetic.main.fragment_community.*
 
 import org.ole.planet.myplanet.R
@@ -37,14 +30,13 @@ import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.*
 
 /**
  * A simple [Fragment] subclass.
  */
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
-    override fun showReply(news: RealmNews?) {
-        startActivity(Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id))
+    override fun showReply(news: RealmNews, fromLogin: Boolean) {
+        startActivity(Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id).putExtra("fromLogin", fromLogin))
     }
 
 
@@ -76,6 +68,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         Utilities.log("list size " + list.size)
         var adapter = AdapterNews(activity, list, user, null)
         adapter.setListener(this)
+        adapter.setFromLogin(arguments!!.getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
         setFlexBox();

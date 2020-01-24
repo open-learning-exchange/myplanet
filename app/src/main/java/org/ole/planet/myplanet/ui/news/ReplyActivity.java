@@ -52,11 +52,12 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
         newsAdapter = new AdapterNews(this, list, user, news);
         newsAdapter.setListener(this);
         newsAdapter.setmRealm(mRealm);
+        newsAdapter.setFromLogin(getIntent().getBooleanExtra("fromLogin", false));
         rvReply.setAdapter(newsAdapter);
     }
 
     @Override
-    public void showReply(RealmNews news) {
+    public void showReply(RealmNews news, boolean fromLogin) {
         startActivity(new Intent(this, ReplyActivity.class).putExtra("id", news.getId()));
     }
 

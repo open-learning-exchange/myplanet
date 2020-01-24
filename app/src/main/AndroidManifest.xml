@@ -30,14 +30,18 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_project_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:largeHeap="true"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/MyMaterialTheme"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
-        <activity android:name=".ui.dashboard.AboutActivity"
-            android:theme="@style/AppTheme"
-            ></activity>
+        <activity
+            android:name=".ui.news.NewsDetailActivity"
+            android:label="@string/title_activity_news_detail"
+            android:theme="@style/MyMaterialTheme.NoActionBar"></activity>
+        <activity
+            android:name=".ui.dashboard.AboutActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.dashboard.DisclaimerActivity"
             android:theme="@style/AppTheme" />
@@ -85,7 +89,8 @@
         <activity android:name=".ui.viewer.TextFileViewerActivity" />
         <activity android:name=".ui.viewer.MarkdownViewerActivity" />
         <activity android:name=".ui.viewer.CSVViewerActivity" />
-        <activity android:name=".ui.dictionary.DictionaryActivity"
+        <activity
+            android:name=".ui.dictionary.DictionaryActivity"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.SettingActivity"
