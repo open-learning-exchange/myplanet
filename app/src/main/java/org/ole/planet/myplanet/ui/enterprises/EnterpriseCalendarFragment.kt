@@ -56,6 +56,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         val v = inflater.inflate(R.layout.fragment_enterprise_calendar, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
+        v.findViewById<View>(R.id.add_event).visibility = if (arguments!!.getBoolean("fromLogin", false)) View.GONE else View.VISIBLE
         v.findViewById<View>(R.id.add_event).setOnClickListener { view -> showMeetupAlert() }
         rvCalendar = v.findViewById(R.id.rv_calendar)
         return v
@@ -211,7 +212,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private fun getTimeMills(time: Long, end: Boolean): Long {
         var c = Calendar.getInstance()
         c.timeInMillis = time
-        c.set(Calendar.MINUTE,if (end) 59 else 0)
+        c.set(Calendar.MINUTE, if (end) 59 else 0)
         c.set(Calendar.HOUR, if (end) 23 else 0)
         c.set(Calendar.SECOND, if (end) 59 else 0)
         return c.timeInMillis;
