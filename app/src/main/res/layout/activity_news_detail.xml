@@ -10,7 +10,7 @@
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/_200dp"
+        android:layout_height="300dp"
         android:fitsSystemWindows="true"
         android:theme="@style/MyMaterialTheme.AppBarOverlay">
 
@@ -27,7 +27,8 @@
             <ImageView
                 android:layout_width="match_parent"
                 android:id="@+id/img"
-                android:layout_height="@dimen/_200dp"/>
+                android:scaleType="centerCrop"
+                android:layout_height="300dp"/>
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
