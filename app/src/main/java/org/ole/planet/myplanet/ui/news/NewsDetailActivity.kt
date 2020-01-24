@@ -18,8 +18,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
 class NewsDetailActivity : BaseActivity() {
-    var news: RealmNews? = null;
-    lateinit var realm: Realm;
+    var news: RealmNews? = null
+    lateinit var realm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_news_detail)
@@ -33,24 +33,24 @@ class NewsDetailActivity : BaseActivity() {
             finish()
             return
         }
-        title = news?.userName
-        tv_detail.text = news?.message;
+        initViews()
+    }
 
+    private fun initViews() {
+        title = news?.userName
+        tv_detail.text = news?.message
         val imageUrl = news?.imageUrl
         if (TextUtils.isEmpty(imageUrl)) {
             loadImage()
         } else {
             try {
                 img.visibility = View.VISIBLE
-                Utilities.log("image url " + news?.imageUrl)
                 Glide.with(this)
                         .load(File(imageUrl))
                         .into(img)
             } catch (e: Exception) {
                 loadImage()
-                e.printStackTrace()
             }
-
         }
     }
 
