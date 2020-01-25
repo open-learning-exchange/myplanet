@@ -47,6 +47,10 @@ public interface ApiInterface {
     @GET
     Call<MyPlanet> checkVersion(@Url String serverUrl);
 
+
+    @GET
+    Call<ResponseBody> getApkVersion(@Url String url);
+
     @GET
     Call<ResponseBody> isPlanetAvailable(@Url String serverUrl);
 }

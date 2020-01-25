@@ -1,15 +1,9 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.cardview.widget.CardView;
-import androidx.recyclerview.widget.RecyclerView;
-
+import android.content.Intent;
 import android.net.Uri;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +12,11 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -45,10 +43,15 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private RealmUserModel currentUser;
     private OnNewsItemClickListener listener;
     private RealmNews parentNews;
+    private boolean fromLogin;
+
+    public void setFromLogin(boolean fromLogin) {
+        this.fromLogin = fromLogin;
+    }
 
 
     public interface OnNewsItemClickListener {
-        void showReply(RealmNews news);
+        void showReply(RealmNews news, boolean fromLogin);
     }
 
     public void setListener(OnNewsItemClickListener listener) {
@@ -93,7 +96,12 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
             loadImage(holder, news);
+            ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE: View.VISIBLE);
+            ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE: View.VISIBLE);
             showReplyButton(holder, news, position);
+            holder.itemView.setOnClickListener(v->{
+                context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId()));
+            });
         }
     }
 
@@ -131,6 +139,8 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {
+        if (this.listener == null || this.fromLogin)
+            ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
         ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews.getId(), false));
         List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
                 .equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE)
@@ -141,7 +151,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
         ((ViewHolderNews) holder).btnShowReply.setOnClickListener(view -> {
             if (listener != null) {
-                listener.showReply(finalNews);
+                listener.showReply(finalNews, fromLogin);
             }
         });
     }

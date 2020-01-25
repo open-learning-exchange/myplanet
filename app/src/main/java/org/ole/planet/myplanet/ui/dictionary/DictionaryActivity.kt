@@ -38,8 +38,7 @@ class DictionaryActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_dictionary)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setHomeButtonEnabled(true)
+        initActionBar()
         title = "Dictionary"
         mRealm = DatabaseService(this).realmInstance;
         list = mRealm?.where(RealmDictionary::class.java)?.findAll()

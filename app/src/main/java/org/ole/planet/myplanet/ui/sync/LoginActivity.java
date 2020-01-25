@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
@@ -110,6 +111,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
         forceSyncTrigger();
+        if (!Utilities.getUrl().isEmpty())
+            new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
     }
 
     private boolean forceSyncTrigger() {
@@ -306,8 +309,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
 //        editor.putBoolean("saveUsernameAndPassword", save.isChecked());
 //        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-            editor.putString("loginUserName", inputName.getText().toString());
-            editor.putString("loginUserPassword", inputPassword.getText().toString());
+        editor.putString("loginUserName", inputName.getText().toString());
+        editor.putString("loginUserPassword", inputPassword.getText().toString());
 //        }
         boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), managerialLogin.isChecked());
         if (isLoggedIn) {
@@ -412,9 +415,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
         if (cancelable) {
-            builder.setNegativeButton("Update Later", (dialogInterface, i) -> {
-                continueSyncProcess();
-            });
+            builder.setNegativeButton("Update Later", (dialogInterface, i) -> continueSyncProcess());
         } else {
             mRealm.executeTransactionAsync(realm -> realm.deleteAll());
 //            if (!mRealm.isInTransaction()) {
@@ -423,6 +424,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 //                mRealm.commitTransaction();
 //            }
         }
+        builder.setCancelable(cancelable);
         builder.show();
     }
 
