@@ -11,59 +11,72 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tl_message"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:hint="@string/what_would">
-
-                <EditText
-                    android:id="@+id/et_message"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="@dimen/profile_card_bell" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-         <LinearLayout
-             android:layout_width="wrap_content"
-             android:orientation="vertical"
-             android:layout_gravity="center"
-             android:gravity="center"
-             android:layout_height="wrap_content">
-            <ImageView
-                android:layout_width="@dimen/_80dp"
-                android:id="@+id/thumb"
-                android:visibility="gone"
-                android:layout_height="@dimen/_80dp"/>
-
-            <Button
-                android:id="@+id/add_news_image"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/add_image"
-                android:theme="@style/PrimaryButton" />
-         </LinearLayout>
-        </LinearLayout>
-
-
         <Button
-            android:id="@+id/btn_submit"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:minWidth="@dimen/user_image_size"
-            android:text="@string/button_submit"
-            android:theme="@style/PrimaryButton" />
+            android:id="@+id/btn_add_story"
+            android:text="@string/add_story"
+            android:layout_height="wrap_content"/>
+   <LinearLayout
+       android:layout_width="match_parent"
+       android:id="@+id/ll_add_news"
+       android:orientation="vertical"
+       android:visibility="gone"
+       android:layout_height="wrap_content">
 
+       <LinearLayout
+           android:layout_width="match_parent"
+           android:layout_height="wrap_content"
+           android:orientation="horizontal">
+
+           <com.google.android.material.textfield.TextInputLayout
+               android:id="@+id/tl_message"
+               android:layout_width="0dp"
+               android:layout_height="wrap_content"
+               android:layout_weight="4"
+               android:hint="@string/what_would">
+
+               <EditText
+                   android:id="@+id/et_message"
+                   android:layout_width="match_parent"
+                   android:layout_height="wrap_content"
+                   android:minHeight="@dimen/profile_card_bell" />
+
+           </com.google.android.material.textfield.TextInputLayout>
+
+           <LinearLayout
+               android:layout_width="wrap_content"
+               android:orientation="vertical"
+               android:layout_gravity="center"
+               android:gravity="center"
+               android:layout_height="wrap_content">
+               <ImageView
+                   android:layout_width="@dimen/_80dp"
+                   android:id="@+id/thumb"
+                   android:visibility="gone"
+                   android:layout_height="@dimen/_80dp"/>
+
+               <Button
+                   android:id="@+id/add_news_image"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:layout_gravity="center"
+                   android:text="@string/add_image"
+                   android:theme="@style/PrimaryButton" />
+
+               <Button
+                   android:id="@+id/btn_submit"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:layout_gravity="center"
+                   android:minWidth="@dimen/user_image_size"
+                   android:text="@string/button_submit"
+                   android:theme="@style/PrimaryButton" />
+           </LinearLayout>
+       </LinearLayout>
+
+
+
+   </LinearLayout>
 
         <Button
             android:id="@+id/btn_main"
