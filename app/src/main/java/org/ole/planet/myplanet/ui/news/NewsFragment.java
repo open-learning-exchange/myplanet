@@ -76,6 +76,10 @@ public class NewsFragment extends BaseNewsFragment {
             llAddNews.setVisibility(llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
             btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? "Hide Add Story" : "Add Story");
         });
+        if (getArguments().getBoolean("fromLogin")) {
+            btnAddStory.setVisibility(View.GONE);
+            llAddNews.setVisibility(View.GONE);
+        }
         return v;
     }
 
@@ -83,16 +87,8 @@ public class NewsFragment extends BaseNewsFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        if(getArguments().getBoolean("fromLogin")){
-            btnAddStory.setVisibility(View.GONE);
-            llAddNews.setVisibility(View.GONE);
-        }
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("docType", "message", Case.INSENSITIVE)
-                .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("createdOn", user.getPlanetCode(), Case.INSENSITIVE)
-                .findAll();
 
+        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).equalTo("viewableBy", "community", Case.INSENSITIVE).equalTo("createdOn", user.getPlanetCode(), Case.INSENSITIVE).findAll();
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
