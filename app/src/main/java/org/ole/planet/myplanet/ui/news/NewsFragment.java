@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.material.textfield.TextInputLayout;
@@ -47,7 +48,8 @@ public class NewsFragment extends BaseNewsFragment {
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
-    Button btnSubmit, btnAddImage;
+    Button btnSubmit, btnAddImage, btnAddStory;
+    LinearLayout llAddNews;
     RealmUserModel user;
     TextView tvMessage;
     AdapterNews adapterNews;
@@ -62,12 +64,22 @@ public class NewsFragment extends BaseNewsFragment {
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
         tvMessage = v.findViewById(R.id.tv_message);
+        llAddNews = v.findViewById(R.id.ll_add_news);
+        btnAddStory = v.findViewById(R.id.btn_add_story);
         thumb = v.findViewById(R.id.thumb);
         btnAddImage = v.findViewById(R.id.add_news_image);
 //        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());
+        btnAddStory.setOnClickListener(view -> {
+            llAddNews.setVisibility(llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+            btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? "Hide Add Story" : "Add Story");
+        });
+        if (getArguments().getBoolean("fromLogin")) {
+            btnAddStory.setVisibility(View.GONE);
+            llAddNews.setVisibility(View.GONE);
+        }
         return v;
     }
 
@@ -75,13 +87,8 @@ public class NewsFragment extends BaseNewsFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("docType", "message", Case.INSENSITIVE)
-                .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("replyTo", "", Case.INSENSITIVE)
-               // .sort("time", Sort.DESCENDING)
-                .findAll();
 
+        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).equalTo("viewableBy", "community", Case.INSENSITIVE).equalTo("createdOn", user.getPlanetCode(), Case.INSENSITIVE).findAll();
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString();
@@ -96,11 +103,7 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("viewableId", "");
             map.put("imageUrl", imageUrl);
             map.put("imageName", imageName);
-//            if (!TextUtils.isEmpty(imageUrl)) {
-//                createImage(map);
-//            }else{
             RealmNews.createNews(map, mRealm, user);
-//            }
             rvNews.getAdapter().notifyDataSetChanged();
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
@@ -110,7 +113,7 @@ public class NewsFragment extends BaseNewsFragment {
     public void setData(List<RealmNews> list) {
         changeLayoutManager(getResources().getConfiguration().orientation, rvNews);
         List<String> resourceIds = new ArrayList<>();
-        for (RealmNews news : list){
+        for (RealmNews news : list) {
             if (news.getImages() != null && news.getImages().size() > 0) {
                 resourceIds.add(news.getImages().get(0));
             }
@@ -118,7 +121,7 @@ public class NewsFragment extends BaseNewsFragment {
         ArrayList<String> urls = new ArrayList<>();
         SharedPreferences settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).findAll();
-        getUrlsAndStartDownload(lib,settings, urls);
+        getUrlsAndStartDownload(lib, settings, urls);
         adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
@@ -126,9 +129,6 @@ public class NewsFragment extends BaseNewsFragment {
         rvNews.setAdapter(adapterNews);
         showNoData(tvMessage, adapterNews.getItemCount());
     }
-
-
-
 
 
     @Override

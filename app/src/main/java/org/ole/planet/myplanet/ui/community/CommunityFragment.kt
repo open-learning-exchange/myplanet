@@ -85,6 +85,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     }
 
+
     private fun setFlexBox() {
         val links = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("docType", "link")
