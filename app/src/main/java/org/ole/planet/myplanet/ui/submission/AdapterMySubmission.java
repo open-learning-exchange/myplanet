@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
@@ -95,6 +96,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     public static void openSurvey(OnHomeItemClickListener listener, String id, boolean isMySurvey) {
+        Utilities.log("EXAM ID " + id);
         if (listener != null) {
             Bundle b = new Bundle();
             b.putString("type", "survey");

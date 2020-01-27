@@ -148,21 +148,21 @@ public class RealmSubmission extends RealmObject {
                 .findFirst() != null;
     }
 
-    public static RealmSubmission createSubmission(RealmSubmission sub, List<RealmExamQuestion> questions, Realm mRealm) {
-        if (sub == null || questions.size() == sub.getAnswers().size())
+    public static RealmSubmission createSubmission(RealmSubmission sub, Realm mRealm) {
+        if (sub == null || (sub.getStatus().equals("complete") && sub.getType().equals("exam")))
             sub = mRealm.createObject(RealmSubmission.class, UUID.randomUUID().toString());
         sub.setLastUpdateTime(new Date().getTime());
         return sub;
     }
 
-    public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm,Context context) throws IOException {
+    public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm, Context context) throws IOException {
         JsonObject object = null;
         if (!TextUtils.isEmpty(sub.getUserId()) && sub.getUserId().startsWith("guest"))
             return;
         if (TextUtils.isEmpty(sub.get_id())) {
-            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub,context)).execute().body();
+            object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub, context)).execute().body();
         } else {
-            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub,context)).execute().body();
+            object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub.get_id(), RealmSubmission.serializeExamResult(realm, sub, context)).execute().body();
         }
         if (object != null) {
             sub.set_id(JsonUtils.getString("id", object));

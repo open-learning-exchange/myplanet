@@ -54,7 +54,10 @@ public class RealmStepExam extends RealmObject {
         myExam.setTotalMarks(JsonUtils.getInt("totalMarks", exam));
         myExam.setNoOfQuestions(JsonUtils.getJsonArray("questions", exam).size());
         myExam.setFromNation(!TextUtils.isEmpty(parentId));
-        RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
+        RealmResults oldQuestions = mRealm.where(RealmExamQuestion.class).equalTo("examId",  JsonUtils.getString("_id", exam)).findAll();
+        if(oldQuestions==null ||  oldQuestions.isEmpty() ){
+            RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
+        }
     }
 
     public String getSourcePlanet() {

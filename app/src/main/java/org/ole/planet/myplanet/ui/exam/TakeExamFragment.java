@@ -4,11 +4,8 @@ package org.ole.planet.myplanet.ui.exam;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.core.widget.NestedScrollView;
 
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,9 +36,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
-import io.noties.markwon.Markwon;
-import io.noties.markwon.editor.MarkwonEditor;
-import io.noties.markwon.editor.MarkwonEditorTextWatcher;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.Sort;
@@ -93,7 +87,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
                 .equalTo("userId", user.getId())
                 .equalTo("parentId", exam.getId())
                 .sort("startTime", Sort.DESCENDING);
-        if (!isMySurvey)
+        if (type.equals("exam"))
             q = q.equalTo("status", "pending");
 
         sub = (RealmSubmission) q.findFirst();
@@ -114,10 +108,10 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private void createSubmission() {
         startTransaction();
-        if (sub != null && sub.getStatus().equals("complete")) {
-            sub.setAnswers(new RealmList<>());
-        }
-        sub = RealmSubmission.createSubmission(sub, questions, mRealm);
+//        if (sub != null && sub.getStatus().equals("complete")) {
+//            sub.setAnswers(new RealmList<>());
+//        }
+        sub = RealmSubmission.createSubmission(sub, mRealm);
         sub.setParentId(exam.getId());
         sub.setUserId(user.getId());
         sub.setStatus("pending");
@@ -126,6 +120,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         if (sub.getAnswers() != null) {
             currentIndex = sub.getAnswers().size();
         }
+        if (sub.getAnswers().size() == questions.size() && sub.getType().equals("survey")) {
+            currentIndex = 0;
+        }
         mRealm.commitTransaction();
     }
 
@@ -133,31 +130,35 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public void startExam(RealmExamQuestion question) {
         tvQuestionCount.setText("Question : " + (currentIndex + 1) + "/" + questions.size());
         setButtonText();
-
         listChoices.removeAllViews();
         llCheckbox.removeAllViews();
         etAnswer.setVisibility(View.GONE);
         listChoices.setVisibility(View.GONE);
         llCheckbox.setVisibility(View.GONE);
-
+        clearAnswer();
+        if (sub.getAnswers().size() > currentIndex) {
+            ans = sub.getAnswers().get(currentIndex).getValue();
+        }
         if (question.getType().equalsIgnoreCase("select")) {
             listChoices.setVisibility(View.VISIBLE);
             etAnswer.setVisibility(View.GONE);
-            selectQuestion(question);
+            selectQuestion(question, ans);
         } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
-            setMarkdownViewAndShowInput(etAnswer, question.getType());
+            setMarkdownViewAndShowInput(etAnswer, question.getType(), ans);
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
             llCheckbox.setVisibility(View.VISIBLE);
             etAnswer.setVisibility(View.GONE);
-            showCheckBoxes(question);
+            showCheckBoxes(question, ans);
         }
-
-        ans = "";
-        etAnswer.setText("");
-        listAns.clear();
         header.setText(question.getHeader());
         body.setText(question.getBody());
         btnSubmit.setOnClickListener(this);
+    }
+
+    private void clearAnswer() {
+        ans = "";
+        etAnswer.setText("");
+        listAns.clear();
     }
 
     public void setButtonText() {
@@ -168,36 +169,38 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
     }
 
-    private void showCheckBoxes(RealmExamQuestion question) {
+    private void showCheckBoxes(RealmExamQuestion question, String oldAnswer) {
         JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
-            addCompoundButton(choices.get(i).getAsJsonObject(), false);
+            addCompoundButton(choices.get(i).getAsJsonObject(), false, oldAnswer);
         }
     }
 
-    private void selectQuestion(RealmExamQuestion question) {
+    private void selectQuestion(RealmExamQuestion question, String oldAnswer) {
         JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
         for (int i = 0; i < choices.size(); i++) {
             if (choices.get(i).isJsonObject()) {
-                addCompoundButton(choices.get(i).getAsJsonObject(), true);
+                addCompoundButton(choices.get(i).getAsJsonObject(), true, oldAnswer);
             } else {
-                addRadioButton(JsonUtils.getString(choices, i));
+                addRadioButton(JsonUtils.getString(choices, i), oldAnswer);
             }
         }
     }
 
 
-    public void addRadioButton(String choice) {
+    public void addRadioButton(String choice,String oldAnswer) {
         RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
         rdBtn.setText(choice);
+        rdBtn.setChecked(choice.equals(oldAnswer));
         rdBtn.setOnCheckedChangeListener(this);
         listChoices.addView(rdBtn);
     }
 
-    public void addCompoundButton(JsonObject choice, boolean isRadio) {
+    public void addCompoundButton(JsonObject choice, boolean isRadio, String oldAnswer) {
         CompoundButton rdBtn = (CompoundButton) LayoutInflater.from(getActivity()).inflate(isRadio ? R.layout.item_radio_btn : R.layout.item_checkbox, null);
         rdBtn.setText(JsonUtils.getString("text", choice));
         rdBtn.setTag(JsonUtils.getString("id", choice));
+        rdBtn.setChecked(JsonUtils.getString("id", choice).equals(oldAnswer));
         rdBtn.setOnCheckedChangeListener(this);
         if (isRadio)
             listChoices.addView(rdBtn);
@@ -224,7 +227,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private void capturePhoto() {
         try {
-            if (isCertified)
+            if (isCertified && !isMySurvey)
                 CameraUtils.CapturePhoto(this);
         } catch (Exception e) {
             e.printStackTrace();
@@ -258,6 +261,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else {
             flag = checkCorrectAns(answer, que);
         }
+        if (sub.getType().equals("survey") && list.size() > currentIndex)
+            list.remove(currentIndex);
         list.add(currentIndex, answer);
         sub.setAnswers(list);
         mRealm.commitTransaction();

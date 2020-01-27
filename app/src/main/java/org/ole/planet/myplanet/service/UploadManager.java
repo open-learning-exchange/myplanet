@@ -96,7 +96,7 @@ public class UploadManager extends FileUploadService {
                 public void onFailure(Call<JsonObject> call, Throwable t) {
                 }
             });
-            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) +  "@" + NetworkUtils.getMacAddr()).enqueue(new Callback<JsonObject>() {
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getMacAddr()).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
