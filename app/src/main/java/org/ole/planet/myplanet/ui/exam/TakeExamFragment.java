@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
+import io.noties.markwon.Markwon;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.Sort;
@@ -49,7 +50,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     Button btnSubmit;
     RadioGroup listChoices;
     LinearLayout llCheckbox;
-
+    Markwon markwon;
     boolean isCertified;
     NestedScrollView container;
 
@@ -70,7 +71,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         btnSubmit = view.findViewById(R.id.btn_submit);
         listChoices = view.findViewById(R.id.group_choices);
         container = view.findViewById(R.id.container);
-
+        markwon = Markwon.create(getActivity());
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
         user = dbHandler.getUserModel();
         return view;
@@ -151,7 +152,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             showCheckBoxes(question, ans);
         }
         header.setText(question.getHeader());
-        body.setText(question.getBody());
+       // body.setText(question.getBody());
+        markwon.setMarkdown(body, question.getBody());
         btnSubmit.setOnClickListener(this);
     }
 
