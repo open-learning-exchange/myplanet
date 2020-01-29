@@ -123,10 +123,13 @@ public class RealmUserModel extends RealmObject {
     public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
+            if(!mRealm.isInTransaction())
+                mRealm.beginTransaction();
             if (user == null) {
                 user = mRealm.createObject(RealmUserModel.class, JsonUtils.getString("_id", jsonDoc));
             }
             insertIntoUsers(jsonDoc, user, settings);
+            mRealm.commitTransaction();
             return user;
         } catch (Exception err) {
             err.printStackTrace();
@@ -382,7 +385,7 @@ public class RealmUserModel extends RealmObject {
 
     public boolean isManager() {
         JsonArray roles = getRoles();
-        boolean isManager = roles.toString().toLowerCase().contains("manager");
+        boolean isManager = roles.toString().toLowerCase().contains("manager") || isUserAdmin;
         return (isManager);
     }
 
