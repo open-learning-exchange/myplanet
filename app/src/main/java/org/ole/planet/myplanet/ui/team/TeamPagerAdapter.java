@@ -79,28 +79,28 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
         Fragment f = null;
         switch (position) {
             case 0:
-                f = new DiscussionListFragment(); //chat
+                f = new DiscussionListFragment();
                 break;
             case 1:
-                f = new PlanFragment(); //mission&services
+                f = new PlanFragment();
                 break;
             case 2:
-                f = new JoinedMemberFragment(); //team
+                f = new JoinedMemberFragment();
                 break;
             case 3:
-                f = new TeamTaskFragment();//formerly 4 tasks
+                f = new TeamTaskFragment();
                 break;
             case 4:
-                f = new EnterpriseCalendarFragment(); //from 7 - calendar
+                f = new EnterpriseCalendarFragment();
                 break;
             case 5:
                 f = getFragment(); //finances
                 break;
             case 6:
-                f = new TeamResourceFragment();//possibly documents
+                f = new TeamResourceFragment();
                 break;
             case 7:
-                f = new MembersFragment(); //applicants
+                f = new MembersFragment();
                 break;
         }
         return f;
@@ -117,31 +117,3 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
 
 }
-//        switch (position) {
-//                case 0:
-//                f = new DiscussionListFragment();
-//                break;
-//                case 1:
-//                f = new PlanFragment();
-//                break;
-//                case 2:
-//                f = new JoinedMemberFragment();
-//                break;
-//                case 4:
-//                f = new TeamTaskFragment();
-//                break;
-//                case 5:
-//                f = new MembersFragment();
-//                break;
-//                case 6:
-//                f = getFragment();
-//                break;
-//                case 7:
-//                f = new TeamResourceFragment();
-//                break;
-//                case 3:
-//                f = new EnterpriseCalendarFragment();
-//                break;
-//                }
-//                return f;
-//                }
