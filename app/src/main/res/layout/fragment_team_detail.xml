@@ -19,7 +19,7 @@
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar"
-                app:title="My Plannet"
+                app:title="My Planet"
                 android:layout_width="match_parent"
                 android:layout_height="?attr/actionBarSize" />
 

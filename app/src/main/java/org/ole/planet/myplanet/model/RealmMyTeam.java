@@ -69,6 +69,7 @@ public class RealmMyTeam extends RealmObject {
         if (myTeams == null) {
             myTeams = mRealm.createObject(RealmMyTeam.class, teamId);
         }
+        Utilities.log(teamId);
         myTeams.setUser_id(JsonUtils.getString("userId", doc));
         myTeams.setTeamId(JsonUtils.getString("teamId", doc));
         myTeams.set_id(JsonUtils.getString("_id", doc));
