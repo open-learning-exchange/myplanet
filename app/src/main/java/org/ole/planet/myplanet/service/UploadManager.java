@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.model.RealmNewsLog;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
@@ -79,10 +80,32 @@ public class UploadManager extends FileUploadService {
         return instance;
     }
 
+
+    public void uploadNewsActivities() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm = dbService.getRealmInstance();
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmNewsLog> newsLog = realm.where(RealmNewsLog.class).isNull("_id").or().isEmpty("_id").findAll();
+
+            for (RealmNewsLog news : newsLog) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplane_activities", RealmNewsLog.serialize(news)).execute().body();
+                    Utilities.log("Team upload " + new Gson().toJson(object));
+                    if (object != null) {
+                        news.set_id(JsonUtils.getString("id", object));
+                        news.set_rev(JsonUtils.getString("rev", object));
+                    }
+                } catch (IOException e) {
+                }
+
+            }
+        });
+    }
+
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        if(model == null)
+        if (model == null)
             return;
         if (model.isManager())
             return;
@@ -357,7 +380,7 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        if(model == null)
+        if (model == null)
             return;
         if (model.isManager())
             return;
@@ -480,6 +503,7 @@ public class UploadManager extends FileUploadService {
                 }
             }
         });
+        uploadNewsActivities();
     }
 
 

@@ -14,8 +14,13 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmNewsLog
+import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.w3c.dom.UserDataHandler
 import java.io.File
+import java.util.*
 
 class NewsDetailActivity : BaseActivity() {
     var news: RealmNews? = null
@@ -32,6 +37,16 @@ class NewsDetailActivity : BaseActivity() {
             Utilities.toast(this, "New not available")
             finish()
             return
+        }
+        var user = UserProfileDbHandler(this).userModel
+        var userId = user.id
+        realm.executeTransactionAsync {
+            var newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
+            newsLog.androidId = NetworkUtils.getMacAddr()
+            newsLog.type = "news"
+            newsLog.time = Date().time
+            if (user != null)
+                newsLog.userId =userId
         }
         initViews()
     }

@@ -42,13 +42,13 @@
         <com.google.android.material.appbar.AppBarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimaryLight">
+            android:background="@color/md_white_1000">
 
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tab_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:tabBackground="@color/colorPrimaryLight"
+                app:tabBackground="@color/md_white_1000"
                 app:tabMode="scrollable"
                 app:tabSelectedTextColor="@color/md_white_1000">
 
