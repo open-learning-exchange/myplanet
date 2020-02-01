@@ -39,11 +39,11 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
         list.add(MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
         if (isMyTeam) {
             list.add(MainApplication.context.getString(R.string.chat));
-            list.add(MainApplication.context.getString(R.string.calendar));
             list.add(MainApplication.context.getString(R.string.tasks));
-            list.add(MainApplication.context.getString(isEnterprise ? R.string.applicants : R.string.join_requests));
+            list.add(MainApplication.context.getString(R.string.calendar));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.finances : R.string.courses));
             list.add(MainApplication.context.getString(isEnterprise ? R.string.documents : R.string.resources));
+            list.add(MainApplication.context.getString(isEnterprise ? R.string.applicants : R.string.join_requests));
             list.remove(0);
             list.remove(0);
             list.add(1, MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
@@ -87,20 +87,20 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
             case 2:
                 f = new JoinedMemberFragment();
                 break;
-            case 4:
+            case 3:
                 f = new TeamTaskFragment();
                 break;
+            case 4:
+                f = new EnterpriseCalendarFragment();
+                break;
             case 5:
-                f = new MembersFragment();
+                f = getFragment(); //finances
                 break;
             case 6:
-                f = getFragment();
-                break;
-            case 7:
                 f = new TeamResourceFragment();
                 break;
-            case 3:
-                f = new EnterpriseCalendarFragment();
+            case 7:
+                f = new MembersFragment();
                 break;
         }
         return f;
