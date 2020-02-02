@@ -120,6 +120,11 @@ public class FinanceFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        if (user.isManager() || user.isLeader()){
+            fab.setVisibility(View.VISIBLE);
+        }else{
+            fab.setVisibility(View.GONE);
+        }
         fab.setOnClickListener(view -> addTransaction());
         list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
