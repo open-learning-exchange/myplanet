@@ -15,6 +15,7 @@
         android:layout_width="wrap_content"
         android:layout_gravity="bottom|right"
         android:padding="8dp"
+        android:src="@drawable/ic_add"
         android:id="@+id/fab"
         android:layout_height="wrap_content"/>
 
