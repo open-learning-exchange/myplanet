@@ -124,7 +124,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout), getActivity());
         changeButtonStatus();
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
-        if (!isMyCourseLib) tvFragmentInfo.setText("Our Library");
+        //if (!isMyCourseLib) tvFragmentInfo.setText("Our Library");
 
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
         orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title")));

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="padding_small">0dp</dimen>
+    <dimen name="text_size_small">10sp</dimen>
+    <dimen name="image_size_home_card">20dp</dimen>
+    <dimen name="padding_large">0dp</dimen>
+    <dimen name="text_size_mid">15sp</dimen>
+    <dimen name="layout_height">20dp</dimen>
+    <dimen name="padding_normal">6dp</dimen>
+</resources>
