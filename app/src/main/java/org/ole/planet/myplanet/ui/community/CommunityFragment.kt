@@ -71,49 +71,15 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         adapter.setFromLogin(arguments!!.getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
-        setFlexBox();
+      //  setFlexBox();
         ll_edit_delete.visibility = if (user!!.isManager()) View.VISIBLE else View.GONE
-        ic_add.setOnClickListener {
-            var bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
-            bottomSheetDialog.show(childFragmentManager, "")
-            Handler().postDelayed({
-                bottomSheetDialog.dialog?.setOnDismissListener {
-                    setFlexBox()
-                }
-            }, 1000)
-        }
+
 
     }
 
 
-    private fun setFlexBox() {
-        val links = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("docType", "link")
-                .findAll()
-        flexbox_link.removeAllViews()
-        links.forEach { team ->
-           var b: Button = LayoutInflater.from(activity).inflate(R.layout.button_single, null) as Button;
-            b.text = team.title
-            b.setOnClickListener {
-                val route = team.route.split("/")
-                if (route.size >= 3) {
-                    val f = TeamDetailFragment()
-                    val b = Bundle()
-                    var teamObject = mRealm.where(RealmMyTeam::class.java).equalTo("_id", route[3]).findFirst()
-                    b.putString("id", route[3])
-                    b.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm))
-                    f.arguments = b
-                    (context as OnHomeItemClickListener).openCallFragment(f)
-                }
-            }
-            flexbox_link.addView(b)
-        }
-    }
 
-    override fun onResume() {
-        super.onResume()
-        setFlexBox()
-    }
+
     override fun onConfigurationChanged(newConfig: Configuration?) {
         super.onConfigurationChanged(newConfig)
         val orientation = newConfig!!.orientation

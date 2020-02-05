@@ -44,6 +44,12 @@
                     android:theme="@style/AccentButton"
                     android:textColor="@color/md_white_1000" />
 
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
@@ -82,6 +88,8 @@
                     android:text="@string/leave"
                     android:theme="@style/AccentButton"
                     android:visibility="gone" />
+
+
             </LinearLayout>
 
             <RelativeLayout

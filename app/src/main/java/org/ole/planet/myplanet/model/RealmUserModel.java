@@ -163,6 +163,7 @@ public class RealmUserModel extends RealmObject {
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
+        settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).commit();
     }
 
     public String getBirthPlace() {

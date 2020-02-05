@@ -82,7 +82,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (holder instanceof ViewHolderNews) {
             RealmNews news = getNews(holder, position);
             RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
-            if (userModel != null) {
+            if (userModel != null && currentUser!=null) {
                 ((ViewHolderNews) holder).tvName.setText(userModel.getName());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
                 showHideButtons(userModel, holder);
