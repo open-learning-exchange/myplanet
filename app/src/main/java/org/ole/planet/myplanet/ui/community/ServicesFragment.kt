@@ -47,6 +47,10 @@ class ServicesFragment : Fragment() {
             }, 1000)
         }
         setRecyclerView()
+        if(user!!.isManager || user!!.isLeader)
+            fab.visibility = View.VISIBLE
+        else
+            fab.visibility = View.GONE
     }
 
 
