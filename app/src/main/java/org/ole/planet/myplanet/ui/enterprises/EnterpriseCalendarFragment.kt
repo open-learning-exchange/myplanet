@@ -56,10 +56,25 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         val v = inflater.inflate(R.layout.fragment_enterprise_calendar, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
-        v.findViewById<View>(R.id.add_event).visibility = if (arguments!!.getBoolean("fromLogin", false)) View.GONE else View.VISIBLE
+        var fab = v.findViewById<View>(R.id.add_event)
+        showHideFab(fab)
         v.findViewById<View>(R.id.add_event).setOnClickListener { view -> showMeetupAlert() }
         rvCalendar = v.findViewById(R.id.rv_calendar)
         return v
+    }
+
+    private fun showHideFab(fab: View) {
+         if (arguments!!.getBoolean("fromLogin", false)){
+             fab.visibility = View.GONE
+         }  else if(user!=null){
+            if(user.isManager || user.isLeader)
+                fab.visibility = View.VISIBLE
+            else
+                fab.visibility = View.GONE
+        }else{
+            fab.visibility = View.GONE
+
+        }
     }
 
 
@@ -148,6 +163,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        Utilities.log(teamId)
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
         rvCalendar.layoutManager = LinearLayoutManager(activity)
         rvCalendar.adapter = AdapterCalendar(activity, list)

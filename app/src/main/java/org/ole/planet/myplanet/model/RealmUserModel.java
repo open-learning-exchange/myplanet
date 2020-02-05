@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -163,7 +164,11 @@ public class RealmUserModel extends RealmObject {
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
-        settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).commit();
+        if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
+            settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).commit();
+        }
+        if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc)))
+            settings.edit().putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).commit();
     }
 
     public String getBirthPlace() {
@@ -392,6 +397,7 @@ public class RealmUserModel extends RealmObject {
         JsonArray roles = getRoles();
         return roles.toString().toLowerCase().contains("leader");
     }
+
 
     @Override
     public String toString() {
