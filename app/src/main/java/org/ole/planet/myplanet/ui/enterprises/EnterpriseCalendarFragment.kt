@@ -64,8 +64,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     private fun showHideFab(fab: View) {
-        fab.visibility = if (arguments!!.getBoolean("fromLogin", false)) View.GONE else View.VISIBLE
-        if(user!=null){
+         if (arguments!!.getBoolean("fromLogin", false)){
+             fab.visibility = View.GONE
+         }  else if(user!=null){
             if(user.isManager || user.isLeader)
                 fab.visibility = View.VISIBLE
             else
@@ -162,6 +163,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        Utilities.log(teamId)
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
         rvCalendar.layoutManager = LinearLayoutManager(activity)
         rvCalendar.adapter = AdapterCalendar(activity, list)
