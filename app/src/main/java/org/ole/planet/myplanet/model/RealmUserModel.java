@@ -50,7 +50,6 @@ public class RealmUserModel extends RealmObject {
     private boolean showTopbar;
 
 
-
     public JsonObject serialize() {
         JsonObject object = new JsonObject();
         object.addProperty("_id", getId());
@@ -119,11 +118,10 @@ public class RealmUserModel extends RealmObject {
     }
 
 
-
     public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
-            if(!mRealm.isInTransaction())
+            if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
             if (user == null) {
                 user = mRealm.createObject(RealmUserModel.class, JsonUtils.getString("_id", jsonDoc));
