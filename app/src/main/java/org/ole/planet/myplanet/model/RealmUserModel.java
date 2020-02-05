@@ -390,6 +390,11 @@ public class RealmUserModel extends RealmObject {
         return (isManager);
     }
 
+    public boolean isLeader() {
+        JsonArray roles = getRoles();
+        return  roles.toString().toLowerCase().contains("leader");
+    }
+
 
     @Override
     public String toString() {
