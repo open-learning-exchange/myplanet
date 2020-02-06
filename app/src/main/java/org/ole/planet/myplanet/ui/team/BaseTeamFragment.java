@@ -35,12 +35,13 @@ public abstract class BaseTeamFragment extends BaseNewsFragment {
         super.onCreate(savedInstanceState);
         if (getParentFragment().getArguments() != null) {
             teamId = getParentFragment().getArguments().getString("id", "");
-        }else if(getArguments()!=null){
+        } else if (getArguments() != null) {
             teamId = getArguments().getString("id", "");
         }
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
-        user = mRealm.copyFromRealm(new UserProfileDbHandler(getActivity()).getUserModel());
+        if (new UserProfileDbHandler(getActivity()).getUserModel() != null)
+            user = mRealm.copyFromRealm(new UserProfileDbHandler(getActivity()).getUserModel());
         Utilities.log("Team id " + teamId);
         team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);

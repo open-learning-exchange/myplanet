@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.community
 
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -13,6 +14,7 @@ import kotlinx.android.synthetic.main.fragment_team_detail.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamPagerAdapter
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -30,8 +32,11 @@ class CommunityTabFragment : BaseTeamFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        var settings = activity!!.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        var sParentcode = settings.getString("parentCode", "")
+
         var user = UserProfileDbHandler(activity!!).userModel
-        view_pager.adapter = CommunityPagerAdapter(childFragmentManager, user.planetCode + "@" + user.parentCode, false)
+        view_pager.adapter = CommunityPagerAdapter(childFragmentManager, user.planetCode + "@" + sParentcode, false)
         tab_layout.setupWithViewPager(view_pager)
         title.text = user.planetCode
         subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)

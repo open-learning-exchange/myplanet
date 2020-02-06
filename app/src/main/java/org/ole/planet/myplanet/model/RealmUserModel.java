@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -48,7 +49,6 @@ public class RealmUserModel extends RealmObject {
     private String key;
     private String iv;
     private boolean showTopbar;
-
 
 
     public JsonObject serialize() {
@@ -119,11 +119,10 @@ public class RealmUserModel extends RealmObject {
     }
 
 
-
     public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
-            if(!mRealm.isInTransaction())
+            if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
             if (user == null) {
                 user = mRealm.createObject(RealmUserModel.class, JsonUtils.getString("_id", jsonDoc));
@@ -165,7 +164,11 @@ public class RealmUserModel extends RealmObject {
         user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
-        settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).commit();
+        if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
+            settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).commit();
+        }
+        if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc)))
+            settings.edit().putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).commit();
     }
 
     public String getBirthPlace() {
@@ -388,6 +391,11 @@ public class RealmUserModel extends RealmObject {
         JsonArray roles = getRoles();
         boolean isManager = roles.toString().toLowerCase().contains("manager") || isUserAdmin;
         return (isManager);
+    }
+
+    public boolean isLeader() {
+        JsonArray roles = getRoles();
+        return roles.toString().toLowerCase().contains("leader");
     }
 
 
