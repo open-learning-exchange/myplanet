@@ -7,8 +7,11 @@ import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.google.android.material.tabs.TabLayout;
 
@@ -18,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.UUID;
@@ -48,12 +52,26 @@ public class TeamDetailFragment extends Fragment {
         teamId = getArguments().getString("id");
         tabLayout = v.findViewById(R.id.tab_layout);
         viewPager = v.findViewById(R.id.view_pager);
+        Button leave = v.findViewById(R.id.btn_leave);
+        RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
+        if (team == null){
+            leave.setVisibility(View.GONE);
+        }else{
+
+            leave.setOnClickListener(vi -> {
+                team.leave(user, mRealm);
+                Utilities.toast(getActivity(), "Left team");
+                viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
+            });
+        }
         return v;
     }
+
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {

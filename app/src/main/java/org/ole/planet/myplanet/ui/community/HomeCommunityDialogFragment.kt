@@ -29,10 +29,11 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun initCommunityTab() {
-            var s_planetCode = PreferenceManager.getDefaultSharedPreferences(activity!!).getString("planetCode", "")
-            view_pager.adapter = CommunityPagerAdapter(childFragmentManager, s_planetCode + "@" + s_planetCode, true)
-            toolbar.title = s_planetCode
-            toolbar.subtitle = TimeUtils.getFormatedDateWithTime(Date().time)
-            tab_layout.setupWithViewPager(view_pager)
+        var s_planetCode = PreferenceManager.getDefaultSharedPreferences(activity!!).getString("planetCode", "")
+        view_pager.adapter = CommunityPagerAdapter(childFragmentManager, s_planetCode + "@" + s_planetCode, true)
+        title.text = s_planetCode
+        subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
+        btn_leave.visibility = View.GONE
+        tab_layout.setupWithViewPager(view_pager)
     }
 }
