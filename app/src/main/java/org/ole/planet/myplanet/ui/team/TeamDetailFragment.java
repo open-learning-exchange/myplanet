@@ -58,7 +58,7 @@ public class TeamDetailFragment extends Fragment {
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
-        if (team == null){
+        if (team == null || !isMyTeam){
             leave.setVisibility(View.GONE);
         }else{
 
@@ -66,6 +66,7 @@ public class TeamDetailFragment extends Fragment {
                 team.leave(user, mRealm);
                 Utilities.toast(getActivity(), "Left team");
                 viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
+                leave.setVisibility(View.GONE);
             });
         }
         return v;
