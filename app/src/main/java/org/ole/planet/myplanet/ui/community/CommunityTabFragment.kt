@@ -12,11 +12,13 @@ import com.google.android.material.tabs.TabLayout
 import kotlinx.android.synthetic.main.fragment_team_detail.*
 
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamPagerAdapter
 import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
 
 /**
@@ -36,8 +38,9 @@ class CommunityTabFragment : Fragment() {
         var user = UserProfileDbHandler(activity!!).userModel
         view_pager.adapter = CommunityPagerAdapter(childFragmentManager, user.planetCode + "@" + sParentcode, false)
         tab_layout.setupWithViewPager(view_pager)
-        toolbar.title = user.planetCode
-        toolbar.subtitle = TimeUtils.getFormatedDateWithTime(Date().time)
+        title.text = user.planetCode
+        subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
+        ll_action_buttons.visibility = View.GONE
         tab_layout.setupWithViewPager(view_pager)
     }
 }
