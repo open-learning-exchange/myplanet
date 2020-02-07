@@ -111,8 +111,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
         forceSyncTrigger();
-        if (!Utilities.getUrl().isEmpty())
+        Button btnOpenCommunity = findViewById(R.id.open_community);
+        if (!Utilities.getUrl().isEmpty()){
+            btnOpenCommunity.setVisibility(View.VISIBLE);
+            btnOpenCommunity.setOnClickListener(v->{
+                new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
+            });
             new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
+        }else{
+            btnOpenCommunity.setVisibility(View.GONE);
+        }
     }
 
     private boolean forceSyncTrigger() {
