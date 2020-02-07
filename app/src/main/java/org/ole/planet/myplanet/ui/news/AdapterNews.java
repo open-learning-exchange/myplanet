@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,24 +44,19 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private RealmNews parentNews;
     private boolean fromLogin;
 
-    public void setFromLogin(boolean fromLogin) {
-        this.fromLogin = fromLogin;
-    }
-
-
-    public interface OnNewsItemClickListener {
-        void showReply(RealmNews news, boolean fromLogin);
-    }
-
-    public void setListener(OnNewsItemClickListener listener) {
-        this.listener = listener;
-    }
-
     public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
         this.context = context;
         this.list = list;
         this.currentUser = user;
         this.parentNews = parentNews;
+    }
+
+    public void setFromLogin(boolean fromLogin) {
+        this.fromLogin = fromLogin;
+    }
+
+    public void setListener(OnNewsItemClickListener listener) {
+        this.listener = listener;
     }
 
     public void setmRealm(Realm mRealm) {
@@ -76,13 +70,12 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return new ViewHolderNews(v);
     }
 
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderNews) {
             RealmNews news = getNews(holder, position);
             RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
-            if (userModel != null && currentUser!=null) {
+            if (userModel != null && currentUser != null) {
                 ((ViewHolderNews) holder).tvName.setText(userModel.getName());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
                 showHideButtons(userModel, holder);
@@ -96,10 +89,10 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
             loadImage(holder, news);
-            ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE: View.VISIBLE);
-            ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE: View.VISIBLE);
+            ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+            ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             showReplyButton(holder, news, position);
-            holder.itemView.setOnClickListener(v->{
+            holder.itemView.setOnClickListener(v -> {
                 context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId()));
             });
         }
@@ -236,11 +229,15 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         notifyDataSetChanged();
     }
 
-
     @Override
     public int getItemCount() {
         Utilities.log("Parent news  " + (parentNews == null));
         return parentNews == null ? list.size() : list.size() + 1;
+    }
+
+
+    public interface OnNewsItemClickListener {
+        void showReply(RealmNews news, boolean fromLogin);
     }
 
     class ViewHolderNews extends RecyclerView.ViewHolder {
