@@ -14,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
@@ -50,6 +51,8 @@ public class TeamResourceFragment extends BaseTeamFragment {
         rvResource = getView().findViewById(R.id.rv_resource);
         tvNodata = getView().findViewById(R.id.tv_nodata);
         showLibraryList();
+        if(MainApplication.showDownload)
+            showResourceListDialog();
         getView().findViewById(R.id.fab_add_resource).setOnClickListener(view -> showResourceListDialog());
     }
 

@@ -26,12 +26,14 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun initCommunityTab() {
-        btn_leave.visibility = View.GONE
+        ll_action_buttons.visibility = View.GONE
         var settings = activity!!.getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
         var sPlanetcode = settings.getString("planetCode", "")
         var sParentcode = settings.getString("parentCode", "")
         view_pager.adapter = CommunityPagerAdapter(childFragmentManager, sPlanetcode + "@" + sParentcode, true)
         title.text = sPlanetcode
+        title.setTextColor(resources.getColor(R.color.md_black_1000))
+        subtitle.setTextColor(resources.getColor(R.color.md_black_1000))
         subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
         tab_layout.setupWithViewPager(view_pager)
     }

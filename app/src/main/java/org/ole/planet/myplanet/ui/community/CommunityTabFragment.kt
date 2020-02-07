@@ -40,7 +40,7 @@ class CommunityTabFragment : Fragment() {
         tab_layout.setupWithViewPager(view_pager)
         title.text = user.planetCode
         subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
-        btn_leave.visibility = View.GONE
+        ll_action_buttons.visibility = View.GONE
         tab_layout.setupWithViewPager(view_pager)
     }
 }

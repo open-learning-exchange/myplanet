@@ -12,9 +12,11 @@ import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 
 import com.google.android.material.tabs.TabLayout;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
@@ -38,7 +40,7 @@ public class TeamDetailFragment extends Fragment {
     Realm mRealm;
     RealmMyTeam team;
     String teamId;
-
+    LinearLayout llButtons;
     public TeamDetailFragment() {
     }
 
@@ -52,6 +54,7 @@ public class TeamDetailFragment extends Fragment {
         teamId = getArguments().getString("id");
         tabLayout = v.findViewById(R.id.tab_layout);
         viewPager = v.findViewById(R.id.view_pager);
+        llButtons = v.findViewById(R.id.ll_action_buttons);
         Button leave = v.findViewById(R.id.btn_leave);
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
@@ -59,14 +62,21 @@ public class TeamDetailFragment extends Fragment {
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
         if (team == null || !isMyTeam){
-            leave.setVisibility(View.GONE);
+            llButtons.setVisibility(View.GONE);
         }else{
 
             leave.setOnClickListener(vi -> {
                 team.leave(user, mRealm);
                 Utilities.toast(getActivity(), "Left team");
                 viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
-                leave.setVisibility(View.GONE);
+                llButtons.setVisibility(View.GONE);
+            });
+
+            v.findViewById(R.id.btn_add_doc).setOnClickListener(view -> {
+                MainApplication.showDownload = true;
+                viewPager.setCurrentItem(6);
+                MainApplication.showDownload = false;
+
             });
         }
         return v;
