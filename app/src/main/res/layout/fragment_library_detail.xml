@@ -26,6 +26,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/colorPrimary"
+                    android:layout_gravity="center_vertical"
                     android:minHeight="?attr/actionBarSize"
                     android:padding="8dp">
 
@@ -45,7 +46,6 @@
                         style="@style/YellowButtons"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="right"
                         android:layout_marginRight="10dp"
                         android:background="@drawable/buttonyellow"
                         android:padding="10dp"
@@ -55,6 +55,7 @@
                         android:id="@+id/btn_remove"
                         style="@style/YellowButtons"
                         android:layout_width="wrap_content"
+                        android:layout_gravity="center_vertical"
                         android:layout_height="wrap_content"
                         android:background="@drawable/buttonyellow"
                         android:padding="10dp"
