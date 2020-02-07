@@ -125,6 +125,7 @@ public class NewsFragment extends BaseNewsFragment {
         getUrlsAndStartDownload(lib, settings, urls);
         adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
+        adapterNews.setFromLogin(getArguments().getBoolean("fromLogin"));
         adapterNews.setListener(this);
         adapterNews.registerAdapterDataObserver(observer);
         rvNews.setAdapter(adapterNews);
