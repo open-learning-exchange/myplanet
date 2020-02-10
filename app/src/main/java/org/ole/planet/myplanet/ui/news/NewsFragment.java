@@ -107,6 +107,9 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("imageUrl", imageUrl);
             map.put("imageName", imageName);
             RealmNews.createNews(map, mRealm, user);
+            imageName = "";
+            imageUrl = "";
+            thumb.setVisibility(View.GONE);
             rvNews.getAdapter().notifyDataSetChanged();
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
