@@ -102,6 +102,8 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("message", message);
             map.put("viewableBy", "community");
             map.put("viewableId", "");
+            map.put("messageType","sync");
+            map.put("messagePlanetCode", user.getPlanetCode());
             map.put("imageUrl", imageUrl);
             map.put("imageName", imageName);
             RealmNews.createNews(map, mRealm, user);
