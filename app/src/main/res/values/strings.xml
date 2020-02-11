@@ -513,5 +513,6 @@
         "when a user tries to pick up one of cards.\n\n"
     </string>
     <string name="add_story">Add Story</string>
+    <string name="txt_myprogress">myProgress</string>
 
 </resources>
