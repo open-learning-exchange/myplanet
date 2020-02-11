@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.exam;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
@@ -57,7 +58,6 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     String Submit_id = "";
 
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +77,10 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             id = getArguments().getString("id");
             if (isMySurvey) {
                 sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
-                id = sub.getParentId();
+                if (sub.getParentId().contains("@"))
+                    id = sub.getParentId().split("@")[0];
+                else
+                    id = sub.getParentId();
             }
             Utilities.log("Id " + id);
         }
@@ -185,8 +188,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     abstract void startExam(RealmExamQuestion question);
 
 
-    public void insert_into_submitPhotos(String submit_id)
-    {
+    public void insert_into_submitPhotos(String submit_id) {
         mRealm.beginTransaction();
         RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class, UUID.randomUUID().toString());
         submit.setSubmission_id(submit_id);
@@ -217,9 +219,9 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         etAnswer.setVisibility(View.VISIBLE);
         final Markwon markwon = Markwon.create(getActivity());
         final MarkwonEditor editor = MarkwonEditor.create(markwon);
-        if(type.equalsIgnoreCase("textarea")){
+        if (type.equalsIgnoreCase("textarea")) {
             etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor));
-        }else{
+        } else {
             etAnswer.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
