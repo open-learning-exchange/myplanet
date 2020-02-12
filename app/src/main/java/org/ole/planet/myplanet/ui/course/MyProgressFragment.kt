@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.android.synthetic.main.fragment_my_progress.*
@@ -38,14 +39,24 @@ class MyProgressFragment : Fragment() {
         var realm = DatabaseService(activity!!).realmInstance
         var user = UserProfileDbHandler(activity!!).userModel
         var mycourses = RealmMyCourse.getMyCourseByUserId(user.getId(), realm.where(RealmMyCourse::class.java).findAll())
-        var arr =  JsonArray()
+        var arr = JsonArray()
         mycourses.forEach {
             var obj = JsonObject()
             obj.addProperty("courseName", it.courseTitle)
-            var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id).contains("parentId", it.courseId).equalTo("type","exam").findAll()
-            var noOfSteps  = realm.where(RealmCourseStep::class.java).equalTo("courseId", it.courseId).findAll()
+            var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id).contains("parentId", it.courseId).equalTo("type", "exam").findAll()
+            var noOfSteps = realm.where(RealmCourseStep::class.java).equalTo("courseId", it.courseId).findAll()
+            var totalMistakes = 0;
+            submissions.map {
+                var answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
 
+                answers.map {
+                    totalMistakes += it.mistakes
+                }
+                obj.addProperty("mistakes", totalMistakes)
+            }
+            arr.add(obj)
         }
+        Utilities.log("${Gson().toJson(arr)}")
 //        var examsMap = RealmSubmission.getExamMap(realm, submissions)
 //        rv_myprogress.layoutManager = LinearLayoutManager(activity!!)
 //        rv_myprogress.adapter = AdapterMyProgress(activity!!,realm, submissions, examsMap)
