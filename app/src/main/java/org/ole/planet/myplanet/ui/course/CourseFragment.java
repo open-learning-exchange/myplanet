@@ -2,16 +2,20 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.View;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -41,7 +45,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
-    Button btnRemove, orderByDate,orderByTitle;
+    Button btnRemove, orderByDate, orderByTitle;
     List<RealmTag> searchTags;
 
     public CourseFragment() {
@@ -74,13 +78,20 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             btnRemove.setVisibility(View.VISIBLE);
         }
 
+        View bottomSheet = getView().findViewById(R.id.card_filter);
+
+        getView().findViewById(R.id.filter).setOnClickListener(view -> {
+            bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ?View.GONE : View.VISIBLE);
+        });
         imgSearch.setOnClickListener(view -> {
             adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         // setSearchListener();
-        btnRemove.setOnClickListener(V -> { deleteSelected(true); });
+        btnRemove.setOnClickListener(V -> {
+            deleteSelected(true);
+        });
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -90,15 +101,15 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         showNoData(tvMessage, adapterCourses.getItemCount());
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_course_parent_layout), getActivity());
         changeButtonStatus();
-        if(!isMyCourseLib) tvFragmentInfo.setText("Our Courses");
+        if (!isMyCourseLib) tvFragmentInfo.setText("Our Courses");
         additionalSetup();
     }
 
-    public void additionalSetup(){
+    public void additionalSetup() {
         orderByDate = getView().findViewById(R.id.order_by_date_button);
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
-        orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class,"createdDate")));
-        orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class,"courseTitle")));
+        orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate")));
+        orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle")));
     }
 
     private void initializeView() {
