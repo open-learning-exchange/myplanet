@@ -78,19 +78,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             btnRemove.setVisibility(View.VISIBLE);
         }
 
-        View bottomSheet = getView().findViewById(R.id.card_filter);
-
-        getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ?View.GONE : View.VISIBLE));
-
         imgSearch.setOnClickListener(view -> {
             adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
-        // setSearchListener();
-        btnRemove.setOnClickListener(V -> {
-            deleteSelected(true);
-        });
+        btnRemove.setOnClickListener(V -> deleteSelected(true));
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -105,6 +98,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     }
 
     public void additionalSetup() {
+        View bottomSheet = getView().findViewById(R.id.card_filter);
+        getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
         orderByDate = getView().findViewById(R.id.order_by_date_button);
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
         orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate")));
