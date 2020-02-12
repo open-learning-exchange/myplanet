@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -100,6 +101,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
+            ((ViewHolderLibrary) holder).tvDate.setText(TimeUtils.formatDate(libraryList.get(position).getCreatedDate(), "MMM dd, yyyy"));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
             ((ViewHolderLibrary) holder).ivDownloaded.setImageResource(libraryList.get(position).isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
@@ -144,7 +146,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        TextView title, desc, rating, timesRated, average;
+        TextView title, desc, rating, tvDate,timesRated, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;
@@ -158,6 +160,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             rating = itemView.findViewById(R.id.rating);
             timesRated = itemView.findViewById(R.id.times_rated);
             ratingBar = itemView.findViewById(R.id.rating_bar);
+            tvDate = itemView.findViewById(R.id.tv_date);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
             ivDownloaded = itemView.findViewById(R.id.iv_downloaded);

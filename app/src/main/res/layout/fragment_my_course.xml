@@ -38,7 +38,8 @@
                     android:padding="@dimen/padding_normal"
                     android:text="My Courses"
                     android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_large" />
+                    android:textSize="@dimen/text_size_large"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_add"
@@ -75,38 +76,40 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
+                    android:background="@drawable/buttonblue"
                     android:text="@string/leave"
-                    android:theme="@style/AccentButton"
+                    android:textColor="@color/md_white_1000"
                     android:visibility="gone" />
 
 
             </LinearLayout>
 
 
-         <LinearLayout
-             android:layout_width="match_parent"
-             android:layout_height="wrap_content">
-             <TextView
-                 android:id="@+id/tv_selected"
-                 android:layout_width="0dp"
-                 android:layout_weight="1"
-                 android:layout_height="wrap_content"
-                 android:layout_gravity="center"
-                 android:gravity="center"
-                 android:padding="@dimen/padding_normal"
-                 android:textColor="@color/md_white_1000"
-                 android:textSize="@dimen/text_size_mid" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    android:id="@+id/tv_selected"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid" />
 
 
-             <Button
-                 android:id="@+id/filter"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content"
-                 android:text="@string/more_action"
-                 android:textColor="@color/md_white_1000"
-                 android:theme="@style/AccentButton" />
+                <Button
+                    android:id="@+id/filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/more_action"
+                    android:textColor="@color/md_white_1000"
+                    android:theme="@style/AccentButton" />
 
-         </LinearLayout>
+            </LinearLayout>
 
 
         </LinearLayout>
@@ -133,76 +136,74 @@
     </LinearLayout>
 
 
-   <androidx.cardview.widget.CardView
-       android:layout_width="match_parent"
-       android:id="@+id/card_filter"
-       android:layout_gravity="bottom"
-       android:animateLayoutChanges="true"
-       app:cardCornerRadius="8dp"
-       android:elevation="2dp"
-       android:visibility="visible"
-       android:layout_height="wrap_content">
-       <LinearLayout
-           android:layout_width="match_parent"
-           android:layout_height="wrap_content"
-           android:layout_gravity="right"
-           android:gravity="right"
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_filter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:animateLayoutChanges="true"
+        android:elevation="2dp"
+        android:visibility="visible"
+        app:cardCornerRadius="8dp">
 
-           android:background="@drawable/custom_border"
-           android:id="@+id/ll_filter"
-           android:padding="@dimen/padding_normal"
-           android:orientation="vertical"
-           app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+        <LinearLayout
+            android:id="@+id/ll_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
 
-           <TextView
-               android:layout_width="match_parent"
-               android:text="Filter"
-               android:textSize="18sp"
-               android:textStyle="bold"
-               android:textColor="@color/colorPrimaryDark"
-               android:padding="@dimen/padding_normal"
-               android:layout_height="wrap_content"/>
-           <Button
-               android:id="@+id/order_by_date_button"
-               android:layout_width="match_parent"
-               android:layout_height="wrap_content"
-               android:text="Order by Date"
-               android:layout_margin="4dp"
-               android:textColor="@color/md_white_1000"
-               android:background="@drawable/buttonblue"
-              />
+            android:background="@drawable/custom_border"
+            android:gravity="right"
+            android:orientation="vertical"
+            android:padding="@dimen/padding_normal"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-           <Button
-               android:id="@+id/order_by_title_button"
-               android:layout_width="match_parent"
-               android:textColor="@color/md_white_1000"
-               android:layout_height="wrap_content"
-               android:layout_margin="4dp"
-               android:background="@drawable/buttonblue"
-               android:text="Order by Title"
-               />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:text="Filter"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
-           <Button
-               android:id="@+id/btn_collections"
-               android:layout_width="match_parent"
-               android:textColor="@color/md_white_1000"
-               android:layout_height="wrap_content"
-               android:text="@string/collections"
-               android:layout_margin="4dp"
-               android:background="@drawable/buttonblue"
-               />
+            <Button
+                android:id="@+id/order_by_date_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:background="@drawable/buttonblue"
+                android:text="Order by Date"
+                android:textColor="@color/md_white_1000" />
 
-           <Button
-               android:id="@+id/btn_clear_tags"
-               android:layout_width="match_parent"
-               android:textColor="@color/md_white_1000"
-               android:layout_height="wrap_content"
-               android:text="@string/clear_tags"
-               android:layout_margin="4dp"
-               android:background="@drawable/buttonblue"
-               />
+            <Button
+                android:id="@+id/order_by_title_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:background="@drawable/buttonblue"
+                android:text="Order by Title"
+                android:textColor="@color/md_white_1000" />
 
-       </LinearLayout>
-   </androidx.cardview.widget.CardView>
+            <Button
+                android:id="@+id/btn_collections"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:background="@drawable/buttonblue"
+                android:text="@string/collections"
+                android:textColor="@color/md_white_1000" />
+
+            <Button
+                android:id="@+id/btn_clear_tags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="4dp"
+                android:background="@drawable/buttonblue"
+                android:text="@string/clear_tags"
+                android:textColor="@color/md_white_1000" />
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
