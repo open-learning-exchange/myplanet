@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -119,6 +120,11 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
             displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);
+            try{
+                ((ViewHoldercourse) holder).tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
+            }catch (Exception e){
+
+            }
 //            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
             ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
@@ -202,7 +208,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
     class ViewHoldercourse extends RecyclerView.ViewHolder {
-        TextView title, desc, grad_level, subject_level, ratingCount, average;
+        TextView title, desc, grad_level, subject_level,tvDate, ratingCount, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         SeekBar progressBar;
@@ -217,6 +223,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             average = itemView.findViewById(R.id.rating);
             ratingCount = itemView.findViewById(R.id.times_rated);
             flexboxLayout = itemView.findViewById(R.id.flexbox_drawable);
+            tvDate = itemView.findViewById(R.id.tv_date);
             ratingBar = itemView.findViewById(R.id.rating_bar);
             subject_level = itemView.findViewById(R.id.subject_level);
             checkBox = itemView.findViewById(R.id.checkbox);
