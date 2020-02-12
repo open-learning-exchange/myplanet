@@ -51,8 +51,17 @@
                 app:alignItems="flex_start"
                 app:flexWrap="wrap"
                 app:showDivider="middle" />
+            <TextView
+                android:id="@+id/tv_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="@dimen/_16dp"
+                android:textColor="@color/colorPrimary" />
+
 
         </LinearLayout>
+
+
 
         <ImageView
             android:id="@+id/iv_downloaded"
@@ -60,6 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="@dimen/padding_small" />
+
 
         <LinearLayout
             android:id="@+id/ll_rating"
@@ -121,12 +131,6 @@
                 android:layout_gravity="center"
                 android:text="Average" />
 
-            <TextView
-                android:id="@+id/tv_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/padding_small"
-                android:textColor="@color/colorPrimary" />
 
         </LinearLayout>
 

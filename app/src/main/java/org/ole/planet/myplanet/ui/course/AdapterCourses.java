@@ -125,15 +125,11 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }catch (Exception e){
 
             }
-//            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
             ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
                     homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
                 return true;
             });
-//            } else {
-//                ((ViewHoldercourse) holder).llRating.setOnClickListener(null);
-//            }
 
             ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
                 Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
