@@ -80,9 +80,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
         View bottomSheet = getView().findViewById(R.id.card_filter);
 
-        getView().findViewById(R.id.filter).setOnClickListener(view -> {
-            bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ?View.GONE : View.VISIBLE);
-        });
+        getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ?View.GONE : View.VISIBLE));
+
         imgSearch.setOnClickListener(view -> {
             adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());

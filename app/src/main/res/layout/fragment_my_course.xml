@@ -138,16 +138,17 @@
        android:id="@+id/card_filter"
        android:layout_gravity="bottom"
        android:animateLayoutChanges="true"
-       app:cardElevation="8dp"
-       app:cardUseCompatPadding="true"
-       android:visibility="gone"
+       app:cardCornerRadius="8dp"
+       android:elevation="2dp"
+       android:visibility="visible"
        android:layout_height="wrap_content">
        <LinearLayout
            android:layout_width="match_parent"
            android:layout_height="wrap_content"
            android:layout_gravity="right"
            android:gravity="right"
-           android:background="@color/md_white_1000"
+
+           android:background="@drawable/custom_border"
            android:id="@+id/ll_filter"
            android:padding="@dimen/padding_normal"
            android:orientation="vertical"
@@ -166,29 +167,40 @@
                android:layout_width="match_parent"
                android:layout_height="wrap_content"
                android:text="Order by Date"
-               android:theme="@style/AccentButton" />
+               android:layout_margin="4dp"
+               android:textColor="@color/md_white_1000"
+               android:background="@drawable/buttonblue"
+              />
 
            <Button
                android:id="@+id/order_by_title_button"
                android:layout_width="match_parent"
+               android:textColor="@color/md_white_1000"
                android:layout_height="wrap_content"
+               android:layout_margin="4dp"
+               android:background="@drawable/buttonblue"
                android:text="Order by Title"
-               android:theme="@style/AccentButton" />
+               />
 
            <Button
                android:id="@+id/btn_collections"
                android:layout_width="match_parent"
+               android:textColor="@color/md_white_1000"
                android:layout_height="wrap_content"
                android:text="@string/collections"
-               android:theme="@style/AccentButton" />
+               android:layout_margin="4dp"
+               android:background="@drawable/buttonblue"
+               />
 
            <Button
                android:id="@+id/btn_clear_tags"
                android:layout_width="match_parent"
+               android:textColor="@color/md_white_1000"
                android:layout_height="wrap_content"
                android:text="@string/clear_tags"
-               android:textColor="@color/md_white_1000"
-               android:theme="@style/AccentButton" />
+               android:layout_margin="4dp"
+               android:background="@drawable/buttonblue"
+               />
 
        </LinearLayout>
    </androidx.cardview.widget.CardView>
