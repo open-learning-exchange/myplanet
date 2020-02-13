@@ -60,7 +60,12 @@
                 <!--style="@style/Base.Widget.AppCompat.ProgressBar.Horizontal"-->
                 <!--android:layout_width="match_parent"-->
                 <!--android:layout_height="wrap_content" />-->
-
+                <TextView
+                    android:id="@+id/tv_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/colorPrimary" />
 
             </LinearLayout>
 
@@ -83,7 +88,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
 
+
+
+
             </LinearLayout>
+
 
             <LinearLayout
                 android:id="@+id/ll_rating"
@@ -122,7 +131,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-
+                android:gravity="center"
                 android:orientation="vertical"
                 android:padding="4dp">
 
@@ -143,7 +152,11 @@
                     android:id="@+id/average"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
                     android:text="Average" />
+
+
 
             </LinearLayout>
 

@@ -320,4 +320,5 @@
     <string name="engilsh_dictionary">English Dictionary</string>
     <string name="add_story">Add Story</string>
     <string name="txt_myprogress">myProgress</string>
+    <string name="more_action">Filter</string>
 </resources>

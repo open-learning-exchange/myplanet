@@ -15,10 +15,7 @@ import kotlinx.android.synthetic.main.fragment_my_progress.*
 
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 import org.w3c.dom.UserDataHandler
@@ -46,20 +43,27 @@ class MyProgressFragment : Fragment() {
             var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id).contains("parentId", it.courseId).equalTo("type", "exam").findAll()
             var noOfSteps = realm.where(RealmCourseStep::class.java).equalTo("courseId", it.courseId).findAll()
             var totalMistakes = 0;
+            var exams = realm.where(RealmStepExam::class.java).equalTo("courseId", it.courseId).findAll()
             submissions.map {
                 var answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
-
-                answers.map {
-                    totalMistakes += it.mistakes
+                var mistakesMap = HashMap<String, Int>();
+                answers.map { r->
+                    totalMistakes += r.mistakes
+                    var question = realm.where(RealmExamQuestion::class.java).equalTo("id", r.questionId).findFirst()
+                       if (mistakesMap.containsKey(question!!.examId)){
+                           mistakesMap[question!!.examId] = mistakesMap[question!!.examId]!!.plus(r.mistakes)
+                       }else{
+                           mistakesMap[question!!.examId] = r.mistakes
+                       }
                 }
+                obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
                 obj.addProperty("mistakes", totalMistakes)
             }
             arr.add(obj)
         }
         Utilities.log("${Gson().toJson(arr)}")
-//        var examsMap = RealmSubmission.getExamMap(realm, submissions)
-//        rv_myprogress.layoutManager = LinearLayoutManager(activity!!)
-//        rv_myprogress.adapter = AdapterMyProgress(activity!!,realm, submissions, examsMap)
+        rv_myprogress.layoutManager = LinearLayoutManager(activity!!)
+        rv_myprogress.adapter = AdapterMyProgress(activity!!, arr)
     }
 
 }
