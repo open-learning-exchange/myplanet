@@ -41,7 +41,6 @@ class MyProgressFragment : Fragment() {
             var obj = JsonObject()
             obj.addProperty("courseName", it.courseTitle)
             var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id).contains("parentId", it.courseId).equalTo("type", "exam").findAll()
-            var noOfSteps = realm.where(RealmCourseStep::class.java).equalTo("courseId", it.courseId).findAll()
             var totalMistakes = 0;
             var exams = realm.where(RealmStepExam::class.java).equalTo("courseId", it.courseId).findAll()
             var examIds: List<String> = exams.map {
@@ -52,7 +51,6 @@ class MyProgressFragment : Fragment() {
                 var answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
                 var mistakesMap = HashMap<String, Int>();
                 answers.map { r ->
-                    Utilities.log("total mistkes " + totalMistakes)
                     var question = realm.where(RealmExamQuestion::class.java).equalTo("id", r.questionId).findFirst()
                     if (examIds.contains(question!!.examId)) {
                         totalMistakes += r.mistakes
@@ -68,7 +66,6 @@ class MyProgressFragment : Fragment() {
             }
             arr.add(obj)
         }
-        Utilities.log("${Gson().toJson(arr)}")
         rv_myprogress.layoutManager = LinearLayoutManager(activity!!)
         rv_myprogress.adapter = AdapterMyProgress(activity!!, arr)
     }
