@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.realm.Realm
 import kotlinx.android.synthetic.main.item_progress.view.*
 import kotlinx.android.synthetic.main.row_my_progress.view.*
@@ -28,12 +29,15 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyProgress) {
             holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
+            if(list[position].asJsonObject.has("progress")){
+                holder.tvDescription.text ="Passed : " + list[position].asJsonObject["progress"].asJsonObject["passed"].asBoolean + " Current step : " + list[position].asJsonObject["progress"].asJsonObject["stepNum"].asString
+            }
             if (list[position].asJsonObject.has("mistakes"))
                 holder.tvTotal.text = list[position].asJsonObject["mistakes"].asString
             else
                 holder.tvTotal.text = "0"
 
-            if(list[position].asJsonObject.has("stepMistake")) {
+            if (list[position].asJsonObject.has("stepMistake")) {
                 var stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
                 holder.llProgress.removeAllViews()
                 if (stepMistake.keySet().size > 0) {
@@ -60,6 +64,7 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
         var tvTitle: TextView = itemView.tv_title
         var tvTotal: TextView = itemView.tv_total
         var llProgress: LinearLayout = itemView.ll_progress
+        var tvDescription: TextView = itemView.tv_description
 
     }
 }

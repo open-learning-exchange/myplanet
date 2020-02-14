@@ -37,9 +37,11 @@ class MyProgressFragment : Fragment() {
         var user = UserProfileDbHandler(activity!!).userModel
         var mycourses = RealmMyCourse.getMyCourseByUserId(user.getId(), realm.where(RealmMyCourse::class.java).findAll())
         var arr = JsonArray()
+      var courseProgress =  RealmCourseProgress.getCourseProgress(realm, user.id)
         mycourses.forEach {
             var obj = JsonObject()
             obj.addProperty("courseName", it.courseTitle)
+            obj.add("progress", courseProgress[it.id])
             var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id).contains("parentId", it.courseId).equalTo("type", "exam").findAll()
             var totalMistakes = 0;
             var exams = realm.where(RealmStepExam::class.java).equalTo("courseId", it.courseId).findAll()
@@ -61,6 +63,7 @@ class MyProgressFragment : Fragment() {
                         }
                     }
                 }
+
                 obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
                 obj.addProperty("mistakes", totalMistakes)
             }
