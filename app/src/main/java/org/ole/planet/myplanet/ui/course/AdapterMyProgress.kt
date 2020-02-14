@@ -26,7 +26,7 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
         if (holder is ViewHolderMyProgress) {
             holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
             if (list[position].asJsonObject.has("progress")) {
-                holder.tvDescription.text = "Current step : " + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString()
+                holder.tvDescription.text = "Current step : " + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() +" of " + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
             }
             if (list[position].asJsonObject.has("mistakes"))
                 holder.tvTotal.text = list[position].asJsonObject["mistakes"].asString
