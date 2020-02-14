@@ -51,7 +51,7 @@
             android:key="beta_course"
             android:title="Beta Function for Course" />
         <SwitchPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="beta_addImageToMessage"
             android:title="@string/addImageToMessage" />
         <SwitchPreference

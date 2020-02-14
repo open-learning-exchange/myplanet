@@ -165,6 +165,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     public void declareElements() {
+        if(!defaultPref.contains("beta_addImageToMessage")){
+            defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
+        }
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
