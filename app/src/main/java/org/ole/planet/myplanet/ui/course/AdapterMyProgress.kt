@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.course
 
 import android.content.Context
-import android.content.Intent
+import android.text.Html
 import androidx.recyclerview.widget.RecyclerView
 
 import android.view.LayoutInflater
@@ -10,14 +10,10 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.realm.Realm
 import kotlinx.android.synthetic.main.item_progress.view.*
 import kotlinx.android.synthetic.main.row_my_progress.view.*
 
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterMyProgress(private val context: Context, private val list: JsonArray) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -36,21 +32,24 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
                 holder.tvTotal.text = list[position].asJsonObject["mistakes"].asString
             else
                 holder.tvTotal.text = "0"
+            showStepMistakes(holder, position);
+        }
+    }
 
-            if (list[position].asJsonObject.has("stepMistake")) {
-                var stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
-                holder.llProgress.removeAllViews()
-                if (stepMistake.keySet().size > 0) {
+    private fun showStepMistakes(holder: ViewHolderMyProgress, position: Int) {
+        if (list[position].asJsonObject.has("stepMistake")) {
+            var stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
+            holder.llProgress.removeAllViews()
+            if (stepMistake.keySet().size > 0) {
+                var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
+                stepView.step.text = Html.fromHtml("<b>Step</b>")
+                stepView.mistake.text = Html.fromHtml("<b>Mistake</b>")
+                holder.llProgress.addView(stepView)
+                stepMistake.keySet().forEach {
                     var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
-                    stepView.step.text = "Step"
-                    stepView.mistake.text = "Mistake"
+                    stepView.step.text = (it.toInt().plus(1).toString())
+                    stepView.mistake.text = stepMistake[it].asInt.toString()
                     holder.llProgress.addView(stepView)
-                    stepMistake.keySet().forEach {
-                        var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
-                        stepView.step.text = (it.toInt().plus(1).toString())
-                        stepView.mistake.text = stepMistake[it].asInt.toString()
-                        holder.llProgress.addView(stepView)
-                    }
                 }
             }
         }
