@@ -75,6 +75,8 @@
             android:id="@+id/ll_progress"
             android:layout_width="0dp"
             android:layout_weight="1"
+            android:layout_gravity="center"
+            android:gravity="center"
             android:layout_height="wrap_content"
             android:orientation="vertical" />
     </LinearLayout>
