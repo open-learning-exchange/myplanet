@@ -29,8 +29,8 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyProgress) {
             holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
-            if(list[position].asJsonObject.has("progress")){
-                holder.tvDescription.text ="Passed : " + list[position].asJsonObject["progress"].asJsonObject["passed"].asBoolean + " Current step : " + list[position].asJsonObject["progress"].asJsonObject["stepNum"].asString
+            if (list[position].asJsonObject.has("progress")) {
+                holder.tvDescription.text = "Current step : " + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString()
             }
             if (list[position].asJsonObject.has("mistakes"))
                 holder.tvTotal.text = list[position].asJsonObject["mistakes"].asString

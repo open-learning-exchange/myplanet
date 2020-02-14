@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_my_progress.*
 
 import org.ole.planet.myplanet.R
@@ -48,29 +50,32 @@ class MyProgressFragment : Fragment() {
             var examIds: List<String> = exams.map {
                 it.id as String
             }
-            Utilities.log(Gson().toJson(examIds))
-            submissions.map {
-                var answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
-                var mistakesMap = HashMap<String, Int>();
-                answers.map { r ->
-                    var question = realm.where(RealmExamQuestion::class.java).equalTo("id", r.questionId).findFirst()
-                    if (examIds.contains(question!!.examId)) {
-                        totalMistakes += r.mistakes
-                        if (mistakesMap.containsKey(question!!.examId)) {
-                            mistakesMap[examIds.indexOf(question!!.examId).toString()] = mistakesMap[question!!.examId]!!.plus(r.mistakes)
-                        } else {
-                            mistakesMap[examIds.indexOf(question!!.examId).toString()] = r.mistakes
-                        }
-                    }
-                }
-
-                obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
-                obj.addProperty("mistakes", totalMistakes)
-            }
+            submissionMap(submissions, realm, examIds, totalMistakes, obj)
             arr.add(obj)
         }
         rv_myprogress.layoutManager = LinearLayoutManager(activity!!)
         rv_myprogress.adapter = AdapterMyProgress(activity!!, arr)
+    }
+
+    private fun submissionMap(submissions: RealmResults<RealmSubmission>, realm: Realm, examIds: List<String>, totalMistakes: Int, obj: JsonObject) {
+        var totalMistakes1 = totalMistakes
+        submissions.map {
+            var answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
+            var mistakesMap = HashMap<String, Int>();
+            answers.map { r ->
+                var question = realm.where(RealmExamQuestion::class.java).equalTo("id", r.questionId).findFirst()
+                if (examIds.contains(question!!.examId)) {
+                    totalMistakes1 += r.mistakes
+                    if (mistakesMap.containsKey(question!!.examId)) {
+                        mistakesMap[examIds.indexOf(question!!.examId).toString()] = mistakesMap[question!!.examId]!!.plus(r.mistakes)
+                    } else {
+                        mistakesMap[examIds.indexOf(question!!.examId).toString()] = r.mistakes
+                    }
+                }
+            }
+            obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
+            obj.addProperty("mistakes", totalMistakes1)
+        }
     }
 
 }
