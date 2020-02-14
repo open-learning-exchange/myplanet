@@ -44,17 +44,24 @@ class MyProgressFragment : Fragment() {
             var noOfSteps = realm.where(RealmCourseStep::class.java).equalTo("courseId", it.courseId).findAll()
             var totalMistakes = 0;
             var exams = realm.where(RealmStepExam::class.java).equalTo("courseId", it.courseId).findAll()
+            var examIds: List<String> = exams.map {
+                it.id as String
+            }
+            Utilities.log(Gson().toJson(examIds))
             submissions.map {
                 var answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
                 var mistakesMap = HashMap<String, Int>();
-                answers.map { r->
-                    totalMistakes += r.mistakes
+                answers.map { r ->
+                    Utilities.log("total mistkes " + totalMistakes)
                     var question = realm.where(RealmExamQuestion::class.java).equalTo("id", r.questionId).findFirst()
-                       if (mistakesMap.containsKey(question!!.examId)){
-                           mistakesMap[question!!.examId] = mistakesMap[question!!.examId]!!.plus(r.mistakes)
-                       }else{
-                           mistakesMap[question!!.examId] = r.mistakes
-                       }
+                    if (examIds.contains(question!!.examId)) {
+                        totalMistakes += r.mistakes
+                        if (mistakesMap.containsKey(question!!.examId)) {
+                            mistakesMap[examIds.indexOf(question!!.examId).toString()] = mistakesMap[question!!.examId]!!.plus(r.mistakes)
+                        } else {
+                            mistakesMap[examIds.indexOf(question!!.examId).toString()] = r.mistakes
+                        }
+                    }
                 }
                 obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
                 obj.addProperty("mistakes", totalMistakes)

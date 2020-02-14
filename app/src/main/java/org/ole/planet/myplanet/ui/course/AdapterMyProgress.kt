@@ -11,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.gson.JsonArray
 import io.realm.Realm
+import kotlinx.android.synthetic.main.item_progress.view.*
 import kotlinx.android.synthetic.main.row_my_progress.view.*
 
 import org.ole.planet.myplanet.R
@@ -33,14 +34,16 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
                 holder.tvTotal.text = "0"
             var stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
             holder.llProgress.removeAllViews()
-            if(stepMistake.keySet().size > 0){
-                var text = TextView(context)
-                text.text =  "Step  Mistake"
-                holder.llProgress.addView(text)
+            if (stepMistake.keySet().size > 0) {
+                var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
+                stepView.step.text = "Step"
+                stepView.mistake.text = "Mistake"
+                holder.llProgress.addView(stepView)
                 stepMistake.keySet().forEach {
-                    var text = TextView(context)
-                    text.text = it + "  " + stepMistake[it].asInt.toString()
-                    holder.llProgress.addView(text)
+                    var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
+                    stepView.step.text = (it.toInt().plus(1).toString())
+                    stepView.mistake.text = stepMistake[it].asInt.toString()
+                    holder.llProgress.addView(stepView)
                 }
             }
         }
