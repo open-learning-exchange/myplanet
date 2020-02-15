@@ -152,7 +152,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             showCheckBoxes(question, ans);
         }
         header.setText(question.getHeader());
-       // body.setText(question.getBody());
+        // body.setText(question.getBody());
         markwon.setMarkdown(body, question.getBody());
         btnSubmit.setOnClickListener(this);
     }
@@ -190,7 +190,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     }
 
 
-    public void addRadioButton(String choice,String oldAnswer) {
+    public void addRadioButton(String choice, String oldAnswer) {
         RadioButton rdBtn = (RadioButton) LayoutInflater.from(getActivity()).inflate(R.layout.item_radio_btn, null);
         rdBtn.setText(choice);
         rdBtn.setChecked(choice.equals(oldAnswer));
@@ -263,15 +263,19 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else {
             flag = checkCorrectAns(answer, que);
         }
-        if (sub.getType().equals("survey") && list.size() > currentIndex)
-            list.remove(currentIndex);
-       else if (list.size() > currentIndex && !isLastAnsvalid){
-            list.remove(currentIndex);
-        }
+        removeOldAnswer(list);
         list.add(currentIndex, answer);
         sub.setAnswers(list);
         mRealm.commitTransaction();
         return flag;
+    }
+
+    private void removeOldAnswer(RealmList<RealmAnswer> list) {
+        if (sub.getType().equals("survey") && list.size() > currentIndex)
+            list.remove(currentIndex);
+        else if (list.size() > currentIndex && !isLastAnsvalid) {
+            list.remove(currentIndex);
+        }
     }
 
     private boolean checkCorrectAns(RealmAnswer answer, RealmExamQuestion que) {
