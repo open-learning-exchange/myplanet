@@ -248,11 +248,11 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         startTransaction();
         sub.setStatus(currentIndex == questions.size() - 1 ? "graded" : "pending");
         RealmList<RealmAnswer> list = sub.getAnswers();
-        RealmAnswer answer = mRealm.copyFromRealm(createAnswer(list));
+        RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
         answer.setQuestionId(que.getId());
         answer.setValue(ans);
-        answer.setValueChoices(listAns);
+        answer.setValueChoices(listAns, isLastAnsvalid);
         answer.setSubmissionId(sub.getId());
         Submit_id = answer.getSubmissionId();
 
@@ -265,6 +265,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
         if (sub.getType().equals("survey") && list.size() > currentIndex)
             list.remove(currentIndex);
+       else if (list.size() > currentIndex && !isLastAnsvalid){
+            list.remove(currentIndex);
+        }
         list.add(currentIndex, answer);
         sub.setAnswers(list);
         mRealm.commitTransaction();
