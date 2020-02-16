@@ -43,6 +43,7 @@ class MyProgressFragment : Fragment() {
         mycourses.forEach {
             var obj = JsonObject()
             obj.addProperty("courseName", it.courseTitle)
+            obj.addProperty("courseId", it.courseId)
             obj.add("progress", courseProgress[it.id])
             var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id).contains("parentId", it.courseId).equalTo("type", "exam").findAll()
             var totalMistakes = 0;

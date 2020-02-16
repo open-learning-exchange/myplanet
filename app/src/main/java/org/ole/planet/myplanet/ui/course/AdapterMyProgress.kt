@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.course
 
 import android.content.Context
+import android.content.Intent
 import android.text.Html
 import androidx.recyclerview.widget.RecyclerView
 
@@ -33,6 +34,9 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
             else
                 holder.tvTotal.text = "0"
             showStepMistakes(holder, position);
+            holder.itemView.setOnClickListener {
+                context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId",list[position].asJsonObject["courseId"].asString))
+            }
         }
     }
 
