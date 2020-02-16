@@ -24,9 +24,11 @@ class CourseProgressActivity : BaseActivity() {
         var user = UserProfileDbHandler(this).userModel
         var courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
         var progress = courseProgress[courseId]
+        var course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         if (progress != null) {
             progressView.setProgress((progress["current"].asInt.div(progress["max"].asInt)) * 100, true)
         }
+        tv_course.text = course!!.courseTitle
         tv_progress.text = "Progress " + courseProgress[courseId]!!["current"].asString + " of " + courseProgress[courseId]!!["max"].asString
         rv_progress.layoutManager = GridLayoutManager(this, 4)
         var steps = realm.where(RealmCourseStep::class.java).contains("courseId", courseId).findAll()

@@ -36,7 +36,7 @@
 
         <TextView
             android:layout_width="wrap_content"
-            android:id="@+id/tv_progress"
+            android:id="@+id/tv_course"
             android:textSize="18sp"
             android:layout_gravity="center"
             android:gravity="center"
@@ -44,6 +44,17 @@
             android:textColor="@color/md_black_1000"
             android:layout_height="wrap_content"/>
 
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:id="@+id/tv_progress"
+            android:textSize="16sp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="8dp"
+            android:textColor="@color/md_black_1000"
+            android:layout_height="wrap_content"/>
 
 
 
