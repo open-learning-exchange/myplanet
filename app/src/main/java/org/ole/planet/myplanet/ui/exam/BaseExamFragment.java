@@ -100,11 +100,14 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         }
     }
 
+    boolean isLastAnsvalid;
     public void checkAnsAndContinue(boolean cont) {
         if (cont) {
+            isLastAnsvalid = true;
             currentIndex = currentIndex + 1;
             continueExam();
         } else {
+            isLastAnsvalid = false;
             Utilities.toast(getActivity(), getString(R.string.incorrect_ans));
         }
     }
