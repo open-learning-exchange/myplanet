@@ -277,7 +277,7 @@ public class UploadManager extends FileUploadService {
         mRealm = new DatabaseService(context).getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
-                    List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).findAll();
+                    List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).equalTo("uploaded", false).findAll();
                     for (RealmSubmitPhotos sub : data) {
                         try {
                             JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)).execute().body();

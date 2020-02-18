@@ -70,7 +70,9 @@ public class RealmAnswer extends RealmObject {
         return valueChoices;
     }
 
-    public void setValueChoices(HashMap<String, String> map) {
+    public void setValueChoices(HashMap<String, String> map, boolean isLastAnsvalid) {
+        if (!isLastAnsvalid)
+            this.valueChoices.clear();
         for (String key : map.keySet()) {
             this.valueChoices.add(map.get(key));
         }
