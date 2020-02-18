@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.course
 
 import android.content.Context
+import android.content.Intent
 import android.text.Html
 import androidx.recyclerview.widget.RecyclerView
 
@@ -26,13 +27,17 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
         if (holder is ViewHolderMyProgress) {
             holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
             if (list[position].asJsonObject.has("progress")) {
-                holder.tvDescription.text = "Current step : " + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() +" of " + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
+                holder.tvDescription.text = "Current step : " + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() + " of " + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
+                holder.itemView.setOnClickListener {
+                    context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", list[position].asJsonObject["courseId"].asString))
+                }
             }
             if (list[position].asJsonObject.has("mistakes"))
                 holder.tvTotal.text = list[position].asJsonObject["mistakes"].asString
             else
                 holder.tvTotal.text = "0"
             showStepMistakes(holder, position);
+
         }
     }
 

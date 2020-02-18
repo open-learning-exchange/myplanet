@@ -94,7 +94,11 @@ public class RealmSubmission extends RealmObject {
     public static JsonObject serializeExamResult(Realm mRealm, RealmSubmission sub, Context context) {
         JsonObject object = new JsonObject();
         RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", sub.getUserId()).findFirst();
-        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", sub.getParentId()).findFirst();
+        String examId = sub.getParentId();
+        if (sub.getParentId().contains("@")) {
+            examId = sub.getParentId().split("@")[0];
+        }
+        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", examId).findFirst();
         if (!TextUtils.isEmpty(sub.get_id()))
             object.addProperty("_id", sub.get_id());
         if (!TextUtils.isEmpty(sub.get_rev()))

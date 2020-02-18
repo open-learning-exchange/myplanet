@@ -35,10 +35,12 @@
         android:theme="@style/MyMaterialTheme"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
+        <activity android:name=".ui.course.CourseProgressActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.news.NewsDetailActivity"
             android:label="@string/title_activity_news_detail"
-            android:theme="@style/MyMaterialTheme.NoActionBar"></activity>
+            android:theme="@style/MyMaterialTheme.NoActionBar" />
         <activity
             android:name=".ui.dashboard.AboutActivity"
             android:theme="@style/AppTheme" />

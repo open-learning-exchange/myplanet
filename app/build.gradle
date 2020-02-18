@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 704
-        versionName "0.7.4"
+        versionCode 705
+        versionName "0.7.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -115,6 +115,8 @@ dependencies {
     implementation "io.noties.markwon:editor:4.2.0"
     implementation "androidx.core:core-ktx:+"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
+
 
 }
 realm {

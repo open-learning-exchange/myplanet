@@ -24,4 +24,5 @@ public abstract class BaseActivity extends AppCompatActivity {
             finish();
         return super.onOptionsItemSelected(item);
     }
+
 }
