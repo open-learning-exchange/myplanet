@@ -75,7 +75,7 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v -> openHelperFragment(new LibraryFragment()));
         view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> openHelperFragment(new CourseFragment()));
         view.findViewById(R.id.fab_my_progress).setOnClickListener(v -> openHelperFragment(new MyProgressFragment()));
-        view.findViewById(R.id.fab_my_activity).setOnClickListener(v -> openHelperFragment(new MyProgressFragment()));
+        view.findViewById(R.id.fab_my_activity).setOnClickListener(v -> openHelperFragment(new MyActivityFragment()));
         view.findViewById(R.id.fab_survey).setOnClickListener(v -> openHelperFragment(new SurveyFragment()));
         view.findViewById(R.id.fab_feedback).setOnClickListener(v -> openHelperFragment(new FeedbackListFragment()));
         view.findViewById(R.id.myLifeImageButton).setOnClickListener(v -> homeItemClickListener.openCallFragment(new LifeFragment()));
