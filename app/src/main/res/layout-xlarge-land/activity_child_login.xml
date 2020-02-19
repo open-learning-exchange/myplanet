@@ -109,6 +109,7 @@
                     android:layout_gravity="center"
                     android:id="@+id/open_community"
                     android:text="Open Community"
+                    android:textColor="@color/md_white_1000"
                     android:gravity="center"
                     android:theme="@style/PrimaryFlatButton"
                     android:layout_height="wrap_content"/>

@@ -111,6 +111,7 @@
                     android:id="@+id/open_community"
                     android:text="Open Community"
                     android:gravity="center"
+                    android:textColor="@color/md_white_1000"
                     android:theme="@style/PrimaryFlatButton"
                     android:layout_height="wrap_content"/>
 
