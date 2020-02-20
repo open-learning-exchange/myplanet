@@ -2,11 +2,10 @@ package org.ole.planet.myplanet.ui.course
 
 
 import android.os.Bundle
-import android.service.autofill.UserData
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -14,13 +13,10 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
 import kotlinx.android.synthetic.main.fragment_my_progress.*
-
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Utilities
-import org.w3c.dom.UserDataHandler
 
 /**
  * A simple [Fragment] subclass.
