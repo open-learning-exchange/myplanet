@@ -1,20 +1,13 @@
 package org.ole.planet.myplanet.ui.course
 
 import android.content.Context
-import android.content.Intent
-import android.text.Html
-import androidx.recyclerview.widget.RecyclerView
-
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonArray
-import kotlinx.android.synthetic.main.item_progress.view.*
-import kotlinx.android.synthetic.main.row_my_progress.view.*
 import kotlinx.android.synthetic.main.row_my_progress_grid.view.*
-
 import org.ole.planet.myplanet.R
 
 class AdapterProgressGrid(private val context: Context, private val list: JsonArray) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {

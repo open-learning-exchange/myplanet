@@ -2,20 +2,16 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.View;
-import android.view.ViewTreeObserver;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -24,7 +20,6 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
