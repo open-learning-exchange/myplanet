@@ -33,7 +33,7 @@
                     android:layout_gravity="center"
                     android:background="@color/colorPrimary"
                     android:gravity="center_vertical"
-                    android:padding="@dimen/padding_large"
+                    android:padding="@dimen/padding_normal"
                     android:text="@string/step"
                     android:textAllCaps="true"
                     android:textColor="@color/md_white_1000"
