@@ -401,7 +401,7 @@ public class RealmUserModel extends RealmObject {
 
     @Override
     public String toString() {
-        return " - " + name;
+        return " - " + firstName + " " + lastName;
     }
 
 }
