@@ -89,7 +89,7 @@ public class AdapterNews extends BaseNewsAdapter {
             RealmNews news = getNews(holder, position);
             RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
             if (userModel != null && currentUser != null) {
-                ((ViewHolderNews) holder).tvName.setText(userModel.getName());
+                ((ViewHolderNews) holder).tvName.setText(userModel.toString());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
                 showHideButtons(userModel, holder);
             } else {
