@@ -27,6 +27,7 @@ import com.google.android.material.chip.ChipDrawable;
 import com.google.android.material.chip.ChipGroup;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseNewsAdapter;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -45,11 +46,10 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.Sort;
 
-public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterNews extends BaseNewsAdapter {
     private Context context;
     private List<RealmNews> list;
-    private Realm mRealm;
-    private RealmUserModel currentUser;
+
     private OnNewsItemClickListener listener;
     private RealmNews parentNews;
     private boolean fromLogin;
@@ -98,17 +98,14 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessage());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
-            ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
+            ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
             loadImage(holder, news);
             ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             showReplyButton(holder, news, position);
-            holder.itemView.setOnClickListener(v -> {
-                context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId()));
-            });
+            holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
             addLabels(holder, position);
             showChips(holder, position);
         }
@@ -137,19 +134,15 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final ChipCloud chipCloud = new ChipCloud(context, ((ViewHolderNews) holder).fbChips, config);
 
         for (String s : list.get(position).getLabels()) {
-            for (String key : Constants.LABELS.keySet()) {
-                if (s.equals(Constants.LABELS.get(key))) {
-                    chipCloud.addChip(key);
-                    break;
-                }
-            }
+            chipCloud.addChip(getLabel(s));
             chipCloud.setDeleteListener((i, s1) -> {
                 if (!mRealm.isInTransaction())
                     mRealm.beginTransaction();
                 list.get(position).getLabels().remove(Constants.LABELS.get(s1));
                 mRealm.commitTransaction();
-            });
+                ((ViewHolderNews) holder).btnAddLabel.setEnabled(list.get(position).getLabels().size() < 3);
 
+            });
         }
         ((ViewHolderNews) holder).btnAddLabel.setEnabled(list.get(position).getLabels().size() < 3);
     }
@@ -252,20 +245,6 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }).setNegativeButton(R.string.cancel, null).show();
     }
 
-    private void postReply(String s, RealmNews news) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        HashMap<String, String> map = new HashMap<>();
-        map.put("message", s);
-        map.put("viewableBy", news.getViewableBy());
-        map.put("viewableId", news.getViewableId());
-        map.put("replyTo", news.getId());
-        map.put("messageType", news.getMessageType());
-        map.put("messagePlanetCode", news.getMessagePlanetCode());
-        RealmNews.createNews(map, mRealm, currentUser);
-        notifyDataSetChanged();
-    }
-
     private void deletePost(String id) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
@@ -299,27 +278,5 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         void showReply(RealmNews news, boolean fromLogin);
     }
 
-    class ViewHolderNews extends RecyclerView.ViewHolder {
-        TextView tvName, tvDate, tvMessage;
-        ImageView imgEdit, imgDelete, imgUser, newsImage;
-        LinearLayout llEditDelete;
-        FlexboxLayout fbChips;
-        Button btnReply, btnShowReply, btnAddLabel;
 
-        public ViewHolderNews(View itemView) {
-            super(itemView);
-            tvDate = itemView.findViewById(R.id.tv_date);
-            tvName = itemView.findViewById(R.id.tv_name);
-            tvMessage = itemView.findViewById(R.id.tv_message);
-            imgDelete = itemView.findViewById(R.id.img_delete);
-            imgEdit = itemView.findViewById(R.id.img_edit);
-            imgUser = itemView.findViewById(R.id.img_user);
-            llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
-            btnReply = itemView.findViewById(R.id.btn_reply);
-            btnShowReply = itemView.findViewById(R.id.btn_show_reply);
-            btnAddLabel = itemView.findViewById(R.id.btn_add_label);
-            newsImage = itemView.findViewById(R.id.img_news);
-            fbChips = itemView.findViewById(R.id.fb_chips);
-        }
-    }
 }
