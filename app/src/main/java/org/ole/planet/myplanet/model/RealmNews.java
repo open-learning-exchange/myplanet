@@ -94,9 +94,10 @@ public class RealmNews extends RealmObject {
 
     public JsonArray getLabelsArray() {
         JsonArray array = new JsonArray();
-        for (String s : labels) {
+        for (String s : this.labels) {
             array.add(s);
         }
+        Utilities.log("LABELS ARRAY" + new Gson().toJson(array));
         return array;
     }
 
@@ -106,6 +107,7 @@ public class RealmNews extends RealmObject {
 
     public void addLabel(String label) {
         if (!this.labels.contains(label)) {
+            Utilities.log("Added");
             this.labels.add(label);
         }
     }

@@ -453,7 +453,7 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel userModel = new UserProfileDbHandler(context).getUserModel();
         mRealm.executeTransactionAsync(realm -> {
-            final RealmResults<RealmNews> activities = realm.where(RealmNews.class).isNull("_id").or().isEmpty("_id").findAll();
+            final RealmResults<RealmNews> activities = realm.where(RealmNews.class).findAll();
             for (RealmNews act : activities) {
                 try {
                     if (act.getUserId().startsWith("guest"))

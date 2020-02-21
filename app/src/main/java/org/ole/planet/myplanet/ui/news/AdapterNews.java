@@ -220,7 +220,6 @@ public class AdapterNews extends BaseNewsAdapter {
 
     private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
         if (currentUser.getId().equals(userModel.getId())) {
-
             ((ViewHolderNews) holder).llEditDelete.setVisibility(View.VISIBLE);
             ((ViewHolderNews) holder).btnAddLabel.setVisibility(View.VISIBLE);
         } else {
