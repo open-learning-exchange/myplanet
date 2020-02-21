@@ -153,24 +153,24 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     private void saveData() {
 
         RealmExamination sign = new RealmExamination();
-        sign.setAllergies(etAllergies.getText().toString());
+        sign.setAllergies(etAllergies.getText().toString().trim());
         sign.setAddedBy(user.getId());
-        sign.setBp(etBloodPressure.getText().toString());
-        sign.setTemperature(etTemperature.getText().toString());
-        sign.setPulse(etPulseRate.getText().toString());
-        sign.setWeight(etWeight.getText().toString());
-        sign.setDiagnosisNote(etDiag.getText().toString());
+        sign.setBp(etBloodPressure.getText().toString().trim());
+        sign.setTemperature(etTemperature.getText().toString().trim());
+        sign.setPulse(etPulseRate.getText().toString().trim());
+        sign.setWeight(etWeight.getText().toString().trim());
+        sign.setDiagnosisNote(etDiag.getText().toString().trim());
         sign.setDiagnosis(diag);
-        sign.setHearing(etHearing.getText().toString());
-        sign.setHeight(etHeight.getText().toString());
-        sign.setImmunizations(etImmunization.getText().toString());
-        sign.setTests(etLabtest.getText().toString());
-        sign.setXrays(etXray.getText().toString());
-        sign.setVision(etVision.getText().toString());
-        sign.setTreatments(etTretments.getText().toString());
-        sign.setReferrals(etReferrals.getText().toString());
-        sign.setNotes(etObservation.getText().toString());
-        sign.setMedications(etMedications.getText().toString());
+        sign.setHearing(etHearing.getText().toString().trim());
+        sign.setHeight(etHeight.getText().toString().trim());
+        sign.setImmunizations(etImmunization.getText().toString().trim());
+        sign.setTests(etLabtest.getText().toString().trim());
+        sign.setXrays(etXray.getText().toString().trim());
+        sign.setVision(etVision.getText().toString().trim());
+        sign.setTreatments(etTretments.getText().toString().trim());
+        sign.setReferrals(etReferrals.getText().toString().trim());
+        sign.setNotes(etObservation.getText().toString().trim());
+        sign.setMedications(etMedications.getText().toString().trim());
         sign.setDate(new Date().getTime());
         List<RealmExamination> list = health.getEvents();
         if (list == null) {
@@ -215,7 +215,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-        String text = compoundButton.getText().toString();
+        String text = compoundButton.getText().toString().trim();
         if (b) {
             diag = diag + "," + text + " ";
         } else {

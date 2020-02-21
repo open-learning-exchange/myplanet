@@ -117,7 +117,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 .setView(v)
                 .setTitle("Add Message")
                 .setPositiveButton("Save", (dialogInterface, i) -> {
-                    String msg = layout.getEditText().getText().toString();
+                    String msg = layout.getEditText().getText().toString().trim();
                     if (msg.isEmpty()) {
                         Utilities.toast(getActivity(), "Message is required");
                         return;
