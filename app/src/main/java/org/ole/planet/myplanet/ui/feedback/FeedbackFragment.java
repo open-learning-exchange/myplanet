@@ -88,7 +88,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     }
 
     private void validateAndSaveData() {
-        final String message = etMessage.getText().toString();
+        final String message = etMessage.getText().toString().trim();
         if (message.isEmpty()) {
             tlMessage.setError("Please enter feedback.");
             return;
