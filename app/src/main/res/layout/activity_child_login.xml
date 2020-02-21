@@ -111,6 +111,7 @@
                     android:text="Open Community"
                     android:gravity="center"
                     android:theme="@style/PrimaryFlatButton"
+                    android:textColor="@color/md_white_1000"
                     android:layout_height="wrap_content"/>
 
 
