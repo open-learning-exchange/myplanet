@@ -4,12 +4,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -18,6 +21,10 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.flexbox.FlexboxLayout;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipDrawable;
+import com.google.android.material.chip.ChipGroup;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -31,6 +38,9 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 
+import fisk.chipcloud.ChipCloud;
+import fisk.chipcloud.ChipCloudConfig;
+import fisk.chipcloud.ChipDeletedListener;
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.Sort;
@@ -43,12 +53,15 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private OnNewsItemClickListener listener;
     private RealmNews parentNews;
     private boolean fromLogin;
+    private ChipCloudConfig config;
 
     public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
         this.context = context;
         this.list = list;
         this.currentUser = user;
         this.parentNews = parentNews;
+        config = Utilities.getCloudConfig()
+                .selectMode(ChipCloud.SelectMode.close);
     }
 
     public void setFromLogin(boolean fromLogin) {
@@ -91,12 +104,56 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             loadImage(holder, news);
             ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+            ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             showReplyButton(holder, news, position);
             holder.itemView.setOnClickListener(v -> {
                 context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId()));
             });
+            addLabels(holder, position);
+            showChips(holder, position);
         }
     }
+
+    private void addLabels(RecyclerView.ViewHolder holder, int position) {
+        ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
+            PopupMenu menu = new PopupMenu(context, ((ViewHolderNews) holder).btnAddLabel);
+            MenuInflater inflater = menu.getMenuInflater();
+            inflater.inflate(R.menu.menu_add_label, menu.getMenu());
+            menu.setOnMenuItemClickListener(menuItem -> {
+                if (!mRealm.isInTransaction())
+                    mRealm.beginTransaction();
+                list.get(position).addLabel(Constants.LABELS.get(menuItem.getTitle() + ""));
+                Utilities.toast(context, "Label added.");
+                mRealm.commitTransaction();
+                showChips(holder, position);
+                return false;
+            });
+            menu.show();
+        });
+    }
+
+    private void showChips(RecyclerView.ViewHolder holder, int position) {
+        ((ViewHolderNews) holder).fbChips.removeAllViews();
+        final ChipCloud chipCloud = new ChipCloud(context, ((ViewHolderNews) holder).fbChips, config);
+
+        for (String s : list.get(position).getLabels()) {
+            for (String key : Constants.LABELS.keySet()) {
+                if (s.equals(Constants.LABELS.get(key))) {
+                    chipCloud.addChip(key);
+                    break;
+                }
+            }
+            chipCloud.setDeleteListener((i, s1) -> {
+                if (!mRealm.isInTransaction())
+                    mRealm.beginTransaction();
+                list.get(position).getLabels().remove(Constants.LABELS.get(s1));
+                mRealm.commitTransaction();
+            });
+
+        }
+        ((ViewHolderNews) holder).btnAddLabel.setEnabled(list.get(position).getLabels().size() < 3);
+    }
+
 
     private void loadImage(RecyclerView.ViewHolder holder, RealmNews news) {
         String imageUrl = news.getImageUrl();
@@ -142,11 +199,13 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
         if (position == 0 && parentNews != null)
             ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
+
         ((ViewHolderNews) holder).btnShowReply.setOnClickListener(view -> {
             if (listener != null) {
                 listener.showReply(finalNews, fromLogin);
             }
         });
+
     }
 
     private RealmNews getNews(RecyclerView.ViewHolder holder, int position) {
@@ -244,7 +303,8 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         TextView tvName, tvDate, tvMessage;
         ImageView imgEdit, imgDelete, imgUser, newsImage;
         LinearLayout llEditDelete;
-        Button btnReply, btnShowReply;
+        FlexboxLayout fbChips;
+        Button btnReply, btnShowReply, btnAddLabel;
 
         public ViewHolderNews(View itemView) {
             super(itemView);
@@ -257,7 +317,9 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
             btnReply = itemView.findViewById(R.id.btn_reply);
             btnShowReply = itemView.findViewById(R.id.btn_show_reply);
+            btnAddLabel = itemView.findViewById(R.id.btn_add_label);
             newsImage = itemView.findViewById(R.id.img_news);
+            fbChips = itemView.findViewById(R.id.fb_chips);
         }
     }
 }

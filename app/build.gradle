@@ -21,6 +21,9 @@ android {
             }
         }
     }
+    configurations.all {
+        resolutionStrategy.force 'com.google.android.material:material:1.0.0'
+    }
     buildTypes {
         release {
             minifyEnabled false
