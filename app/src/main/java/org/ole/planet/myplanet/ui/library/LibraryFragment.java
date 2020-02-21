@@ -124,15 +124,17 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout), getActivity());
         changeButtonStatus();
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
-        //if (!isMyCourseLib) tvFragmentInfo.setText("Our Library");
-
-        orderByTitle = getView().findViewById(R.id.order_by_title_button);
-        orderByTitle.setOnClickListener(view -> adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title")));
 
         spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", i == 0 ? Sort.ASCENDING : Sort.DESCENDING));
+                if(i == 0){
+                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", Sort.ASCENDING));
+                }else if(i == 1){
+                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", Sort.DESCENDING));
+                }else{
+                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title"));
+                }
             }
 
             @Override

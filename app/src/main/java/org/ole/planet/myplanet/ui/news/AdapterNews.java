@@ -89,7 +89,7 @@ public class AdapterNews extends BaseNewsAdapter {
             RealmNews news = getNews(holder, position);
             RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
             if (userModel != null && currentUser != null) {
-                ((ViewHolderNews) holder).tvName.setText(userModel.getName());
+                ((ViewHolderNews) holder).tvName.setText(userModel.toString());
                 Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
                 showHideButtons(userModel, holder);
             } else {
@@ -220,9 +220,12 @@ public class AdapterNews extends BaseNewsAdapter {
 
     private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
         if (currentUser.getId().equals(userModel.getId())) {
+
             ((ViewHolderNews) holder).llEditDelete.setVisibility(View.VISIBLE);
+            ((ViewHolderNews) holder).btnAddLabel.setVisibility(View.VISIBLE);
         } else {
             ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
+            ((ViewHolderNews) holder).btnAddLabel.setVisibility(View.GONE);
         }
     }
 
