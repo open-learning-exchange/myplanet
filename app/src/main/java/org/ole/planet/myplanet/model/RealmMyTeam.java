@@ -56,6 +56,7 @@ public class RealmMyTeam extends RealmObject {
     private String type;
     private int amount;
     private long date;
+    private boolean isPublic;
 
     public String getRoute() {
         return route;
@@ -93,6 +94,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setDate(JsonUtils.getLong("date", doc));
 //        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
         myTeams.setDocType(JsonUtils.getString("docType", doc));
+        myTeams.setPublic(JsonUtils.getBoolean("public", doc));
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
         myTeams.courses = new RealmList<>();
         for (JsonElement e : coursesArray) {
@@ -100,6 +102,14 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public void setPublic(boolean aPublic) {
+        isPublic = aPublic;
     }
 
     public String getType() {
@@ -269,6 +279,7 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("amount", team.getAmount());
         object.addProperty("route", team.getRoute());
         object.addProperty("date", team.getDate());
+        object.addProperty("public", team.isPublic());
         if (TextUtils.equals(team.getTeamType(), "debit")) {
             object.addProperty("amount", team.getAmount());
         } else if (TextUtils.equals(team.getTeamType(), "credit")) {
