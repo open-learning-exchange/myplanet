@@ -94,22 +94,7 @@ public class NewsFragment extends BaseNewsFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 //        .equalTo("viewableBy", "community", Case.INSENSITIVE)
-        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).equalTo("createdOn",
-                settings.getString("planetCode", ""), Case.INSENSITIVE).findAll();
-        List<RealmNews> list = new ArrayList<>();
-        for (RealmNews news : allNews) {
-            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
-                list.add(news);
-            } else if (!TextUtils.isEmpty(news.getViewIn())) {
-                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
-                for (JsonElement e : ar) {
-                    JsonObject ob = e.getAsJsonObject();
-                    if (ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode())) {
-                        list.add(news);
-                    }
-                }
-            }
-        }
+        List<RealmNews> list = getNewsList();
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString().trim();
@@ -134,6 +119,26 @@ public class NewsFragment extends BaseNewsFragment {
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
         btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
+    }
+
+    private List<RealmNews> getNewsList() {
+        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).equalTo("createdOn",
+                settings.getString("planetCode", ""), Case.INSENSITIVE).findAll();
+        List<RealmNews> list = new ArrayList<>();
+        for (RealmNews news : allNews) {
+            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
+                list.add(news);
+            } else if (!TextUtils.isEmpty(news.getViewIn())) {
+                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+                for (JsonElement e : ar) {
+                    JsonObject ob = e.getAsJsonObject();
+                    if (ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode())) {
+                        list.add(news);
+                    }
+                }
+            }
+        }
+        return list;
     }
 
     public void setData(List<RealmNews> list) {

@@ -246,7 +246,9 @@ public class RealmNews extends RealmObject {
             object.addProperty("viewableBy", news.getViewableBy());
         }
         if (!TextUtils.isEmpty(news.getViewIn())) {
-            object.add("viewIn", new Gson().fromJson(news.getViewIn(), JsonArray.class));
+            JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+            if (ar.size() > 0)
+                object.add("viewIn", ar);
         }
     }
 
