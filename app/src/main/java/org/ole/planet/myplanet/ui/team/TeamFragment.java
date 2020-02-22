@@ -81,7 +81,7 @@ public class TeamFragment extends Fragment {
         new AlertDialog.Builder(getActivity()).setTitle(String.format("Enter %s Detail", type == null ? "Team" : "Enterprise"))
                 .setView(v)
                 .setPositiveButton("Save", (dialogInterface, i) -> {
-                    String name = etName.getText().toString();
+                    String name = etName.getText().toString().trim();
                     String desc = etDescription.getText().toString();
                     String type = spnType.getSelectedItemPosition() == 0 ? "local" : "sync";
                     if (name.isEmpty()) {

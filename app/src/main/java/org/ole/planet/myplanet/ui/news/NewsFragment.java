@@ -92,7 +92,7 @@ public class NewsFragment extends BaseNewsFragment {
                 settings.getString("planetCode", ""), Case.INSENSITIVE).findAll();
         setData(list);
         btnSubmit.setOnClickListener(view -> {
-            String message = etMessage.getText().toString();
+            String message = etMessage.getText().toString().trim();
             if (message.isEmpty()) {
                 tlMessage.setError("Please enter message");
                 return;

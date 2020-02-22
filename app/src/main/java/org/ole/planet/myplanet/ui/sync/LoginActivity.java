@@ -213,7 +213,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         alertDialogOkay("Server not configured properly. Connect this device with Planet server");
                         return;
                     }
-                    String username = etUserName.getText().toString().toLowerCase();
+                    String username = etUserName.getText().toString().toLowerCase().trim();
                     if (username.isEmpty()) {
                         Utilities.toast(this, "Username cannot be empty");
                         return;

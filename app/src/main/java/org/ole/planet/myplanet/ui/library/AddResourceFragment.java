@@ -72,12 +72,12 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         String userId = realmUserModel.getId();
         String userName = realmUserModel.getName();
         new AlertDialog.Builder(context).setTitle("Enter resource detail").setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
-            String title = etTitle.getText().toString();
+            String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {
                 Utilities.toast(context, "Title is required.");
                 return;
             }
-            String desc = etDesc.getText().toString();
+            String desc = etDesc.getText().toString().trim();
             Realm realm = new DatabaseService(context).getRealmInstance();
             realm.executeTransactionAsync(realm1 -> {
                 RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());

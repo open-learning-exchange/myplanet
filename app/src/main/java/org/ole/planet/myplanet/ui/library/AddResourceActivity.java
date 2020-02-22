@@ -90,7 +90,7 @@ public class AddResourceActivity extends AppCompatActivity {
     }
 
     private void saveResource() {
-        String title = etTitle.getText().toString();
+        String title = etTitle.getText().toString().trim();
         if (!validate(title)) return;
         mRealm.executeTransactionAsync(realm -> {
             String id = UUID.randomUUID().toString();
@@ -105,13 +105,13 @@ public class AddResourceActivity extends AppCompatActivity {
     }
 
     private void createResource(RealmMyLibrary resource, String id) {
-        resource.setAddedBy(tvAddedBy.getText().toString());
-        resource.setAuthor(etAuthor.getText().toString());
+        resource.setAddedBy(tvAddedBy.getText().toString().trim());
+        resource.setAuthor(etAuthor.getText().toString().trim());
         resource.setResource_id(id);
-        resource.setYear(etYear.getText().toString());
-        resource.setDescription(etDescription.getText().toString());
-        resource.setPublisher(etPublisher.getText().toString());
-        resource.setLinkToLicense(etLinkToLicense.getText().toString());
+        resource.setYear(etYear.getText().toString().trim());
+        resource.setDescription(etDescription.getText().toString().trim());
+        resource.setPublisher(etPublisher.getText().toString().trim());
+        resource.setLinkToLicense(etLinkToLicense.getText().toString().trim());
         resource.setOpenWith(spnOpenWith.getSelectedItem().toString());
         resource.setLanguage(spnLang.getSelectedItem().toString());
         resource.setMediaType(spnMedia.getSelectedItem().toString());

@@ -29,6 +29,8 @@ import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
+import static org.apache.commons.lang3.StringUtils.trim;
+
 public class RealmMyTeam extends RealmObject {
     @PrimaryKey
     private String id;
@@ -242,11 +244,11 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public String getTitle() {
-        return title;
+        return trim(title);
     }
 
     public void setTitle(String title) {
-        this.title = title;
+        this.title = trim(title);
     }
 
     public static JsonObject serialize(RealmMyTeam team) {
@@ -355,11 +357,11 @@ public class RealmMyTeam extends RealmObject {
 
 
     public String getName() {
-        return name;
+        return trim(name);
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.name = trim(name);
     }
 
     public String getDescription() {
