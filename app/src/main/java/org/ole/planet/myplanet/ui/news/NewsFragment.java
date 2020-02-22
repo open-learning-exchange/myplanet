@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.preference.PreferenceManager;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +24,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
@@ -88,8 +93,23 @@ public class NewsFragment extends BaseNewsFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).equalTo("viewableBy", "community", Case.INSENSITIVE).equalTo("createdOn",
+//        .equalTo("viewableBy", "community", Case.INSENSITIVE)
+        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).equalTo("createdOn",
                 settings.getString("planetCode", ""), Case.INSENSITIVE).findAll();
+        List<RealmNews> list = new ArrayList<>();
+        for (RealmNews news : allNews) {
+            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
+                list.add(news);
+            } else if (!TextUtils.isEmpty(news.getViewIn())) {
+                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+                for (JsonElement e : ar) {
+                    JsonObject ob = e.getAsJsonObject();
+                    if (ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode())) {
+                        list.add(news);
+                    }
+                }
+            }
+        }
         setData(list);
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString().trim();
@@ -100,9 +120,9 @@ public class NewsFragment extends BaseNewsFragment {
             etMessage.setText("");
             HashMap<String, String> map = new HashMap<>();
             map.put("message", message);
-            map.put("viewableBy", "community");
-            map.put("viewableId", "");
-            map.put("messageType","sync");
+            map.put("viewInId", user.getPlanetCode() + "@" + user.getParentCode());
+            map.put("viewInSection", "community");
+            map.put("messageType", "sync");
             map.put("messagePlanetCode", user.getPlanetCode());
             map.put("imageUrl", imageUrl);
             map.put("imageName", imageName);

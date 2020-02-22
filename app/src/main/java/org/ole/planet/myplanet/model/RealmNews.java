@@ -51,6 +51,7 @@ public class RealmNews extends RealmObject {
     private String imageName;
     private RealmList<String> images;
     private RealmList<String> labels;
+    private String viewIn;
 
     public static void insert(Realm mRealm, JsonObject doc) {
         RealmNews news = mRealm.where(RealmNews.class).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst();
@@ -80,8 +81,18 @@ public class RealmNews extends RealmObject {
         JsonArray images = JsonUtils.getJsonArray("images", doc);
         news.setImages(images);
         JsonArray labels = JsonUtils.getJsonArray("labels", doc);
+        news.setViewIn(new Gson().toJson(JsonUtils.getJsonArray("viewIn", doc)));
         news.setLabels(labels);
         news.setImageName(JsonUtils.getString("imageName", doc));
+    }
+
+
+    public String getViewIn() {
+        return viewIn;
+    }
+
+    public void setViewIn(String viewIn) {
+        this.viewIn = viewIn;
     }
 
     public void setImages(RealmList<String> images) {
@@ -214,8 +225,13 @@ public class RealmNews extends RealmObject {
         object.addProperty("time", news.getTime());
         object.addProperty("createdOn", news.getCreatedOn());
         object.addProperty("docType", news.getDocType());
-        object.addProperty("viewableId", news.getViewableId());
-        object.addProperty("viewableBy", news.getViewableBy());
+        if (!TextUtils.isEmpty(news.getViewableId())) {
+            object.addProperty("viewableId", news.getViewableId());
+            object.addProperty("viewableBy", news.getViewableBy());
+        }
+        if (!TextUtils.isEmpty(news.getViewIn())){
+            object.add("viewIn", new Gson().fromJson(news.getViewIn(), JsonArray.class));
+        }
         object.addProperty("avatar", news.getAvatar());
         object.addProperty("messageType", news.getMessageType());
         object.addProperty("messagePlanetCode", news.getMessagePlanetCode());
@@ -245,14 +261,18 @@ public class RealmNews extends RealmObject {
         news.setMessage(map.get("message"));
         news.setTime(new Date().getTime());
         news.setCreatedOn(user.getPlanetCode());
-        news.setViewableId(map.get("viewableId"));
         news.setAvatar("");
         news.setDocType("message");
-        news.setViewableBy(map.get("viewableBy"));
         news.setUserName(user.getName());
         news.setParentCode(user.getParentCode());
         news.setMessagePlanetCode(map.get("messagePlanetCode"));
         news.setMessageType(map.get("messageType"));
+        JsonArray viewInArray = new JsonArray();
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", map.get("viewInId"));
+        object.addProperty("section", map.get("viewInSection"));
+        viewInArray.add(object);
+        news.setViewIn(new Gson().toJson(viewInArray));
         try {
             news.setUpdatedDate(Long.parseLong(map.get("updatedDate")));
         } catch (Exception e) {

@@ -106,12 +106,12 @@ public class AdapterNews extends BaseNewsAdapter {
             ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             showReplyButton(holder, news, position);
             holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
-            addLabels(holder, position);
-            showChips(holder, position);
+            addLabels(holder, news);
+            showChips(holder, news);
         }
     }
 
-    private void addLabels(RecyclerView.ViewHolder holder, int position) {
+    private void addLabels(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
             PopupMenu menu = new PopupMenu(context, ((ViewHolderNews) holder).btnAddLabel);
             MenuInflater inflater = menu.getMenuInflater();
@@ -119,32 +119,31 @@ public class AdapterNews extends BaseNewsAdapter {
             menu.setOnMenuItemClickListener(menuItem -> {
                 if (!mRealm.isInTransaction())
                     mRealm.beginTransaction();
-                list.get(position).addLabel(Constants.LABELS.get(menuItem.getTitle() + ""));
+                news.addLabel(Constants.LABELS.get(menuItem.getTitle() + ""));
                 Utilities.toast(context, "Label added.");
                 mRealm.commitTransaction();
-                showChips(holder, position);
+                showChips(holder, news);
                 return false;
             });
             menu.show();
         });
     }
 
-    private void showChips(RecyclerView.ViewHolder holder, int position) {
+    private void showChips(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).fbChips.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, ((ViewHolderNews) holder).fbChips, config);
 
-        for (String s : list.get(position).getLabels()) {
+        for (String s : news.getLabels()) {
             chipCloud.addChip(getLabel(s));
             chipCloud.setDeleteListener((i, s1) -> {
                 if (!mRealm.isInTransaction())
                     mRealm.beginTransaction();
-                list.get(position).getLabels().remove(Constants.LABELS.get(s1));
+                news.getLabels().remove(Constants.LABELS.get(s1));
                 mRealm.commitTransaction();
-                ((ViewHolderNews) holder).btnAddLabel.setEnabled(list.get(position).getLabels().size() < 3);
-
+                ((ViewHolderNews) holder).btnAddLabel.setEnabled(news.getLabels().size() < 3);
             });
         }
-        ((ViewHolderNews) holder).btnAddLabel.setEnabled(list.get(position).getLabels().size() < 3);
+        ((ViewHolderNews) holder).btnAddLabel.setEnabled(news.getLabels().size() < 3);
     }
 
 

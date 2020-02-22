@@ -25,6 +25,10 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmNews;
@@ -36,6 +40,7 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -70,7 +75,22 @@ public class DiscussionListFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).sort("time", Sort.DESCENDING).findAll();
+//        .equalTo("viewableBy", "teams").equalTo("viewableId", team.getId())
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).findAll();
+        List<RealmNews> list = new ArrayList<>();
+        for (RealmNews news : realmNewsList){
+            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team.getId())){
+                list.add(news);
+            }else if(!TextUtils.isEmpty(news.getViewIn())){
+                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+                for (JsonElement e : ar){
+                    JsonObject ob = e.getAsJsonObject();
+                    if (ob.get("_id").getAsString().equalsIgnoreCase(team.getId())){
+                        list.add(news);
+                    }
+                }
+            }
+        }
         int count = realmNewsList.size();
         mRealm.executeTransactionAsync(realm -> {
             RealmTeamNotification notification = realm.where(RealmTeamNotification.class).equalTo("type", "chat").equalTo("parentId", teamId).findFirst();
@@ -129,8 +149,8 @@ public class DiscussionListFragment extends BaseTeamFragment {
                         return;
                     }
                     HashMap<String, String> map = new HashMap<>();
-                    map.put("viewableBy", "teams");
-                    map.put("viewableId", teamId);
+                    map.put("viewInId", teamId);
+                    map.put("viewInSection", "teams");
                     map.put("message", msg);
                     map.put("messageType", team.getTeamType());
                     map.put("messagePlanetCode", team.getTeamPlanetCode());
