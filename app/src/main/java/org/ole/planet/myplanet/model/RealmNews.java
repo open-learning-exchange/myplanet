@@ -225,13 +225,7 @@ public class RealmNews extends RealmObject {
         object.addProperty("time", news.getTime());
         object.addProperty("createdOn", news.getCreatedOn());
         object.addProperty("docType", news.getDocType());
-        if (!TextUtils.isEmpty(news.getViewableId())) {
-            object.addProperty("viewableId", news.getViewableId());
-            object.addProperty("viewableBy", news.getViewableBy());
-        }
-        if (!TextUtils.isEmpty(news.getViewIn())){
-            object.add("viewIn", new Gson().fromJson(news.getViewIn(), JsonArray.class));
-        }
+        addViewIn(object, news);
         object.addProperty("avatar", news.getAvatar());
         object.addProperty("messageType", news.getMessageType());
         object.addProperty("messagePlanetCode", news.getMessagePlanetCode());
@@ -244,6 +238,16 @@ public class RealmNews extends RealmObject {
         object.add("user", new Gson().fromJson(news.getUser(), JsonObject.class));
         //  object.add("user", user.serialize());
         return object;
+    }
+
+    private static void addViewIn(JsonObject object, RealmNews news) {
+        if (!TextUtils.isEmpty(news.getViewableId())) {
+            object.addProperty("viewableId", news.getViewableId());
+            object.addProperty("viewableBy", news.getViewableBy());
+        }
+        if (!TextUtils.isEmpty(news.getViewIn())) {
+            object.add("viewIn", new Gson().fromJson(news.getViewIn(), JsonArray.class));
+        }
     }
 
     public String getReplyTo() {
@@ -267,12 +271,7 @@ public class RealmNews extends RealmObject {
         news.setParentCode(user.getParentCode());
         news.setMessagePlanetCode(map.get("messagePlanetCode"));
         news.setMessageType(map.get("messageType"));
-        JsonArray viewInArray = new JsonArray();
-        JsonObject object = new JsonObject();
-        object.addProperty("_id", map.get("viewInId"));
-        object.addProperty("section", map.get("viewInSection"));
-        viewInArray.add(object);
-        news.setViewIn(new Gson().toJson(viewInArray));
+        news.setViewIn(getViewInJson(map));
         try {
             news.setUpdatedDate(Long.parseLong(map.get("updatedDate")));
         } catch (Exception e) {
@@ -284,6 +283,15 @@ public class RealmNews extends RealmObject {
         news.setImageName(map.get("imageName"));
         mRealm.commitTransaction();
         return news;
+    }
+
+    public static String getViewInJson(HashMap<String, String> map) {
+        JsonArray viewInArray = new JsonArray();
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", map.get("viewInId"));
+        object.addProperty("section", map.get("viewInSection"));
+        viewInArray.add(object);
+        return new Gson().toJson(viewInArray);
     }
 
     public String getId() {

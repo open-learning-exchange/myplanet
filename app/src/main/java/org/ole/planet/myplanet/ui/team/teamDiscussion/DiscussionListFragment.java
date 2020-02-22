@@ -75,22 +75,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-//        .equalTo("viewableBy", "teams").equalTo("viewableId", team.getId())
-        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).findAll();
-        List<RealmNews> list = new ArrayList<>();
-        for (RealmNews news : realmNewsList){
-            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team.getId())){
-                list.add(news);
-            }else if(!TextUtils.isEmpty(news.getViewIn())){
-                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
-                for (JsonElement e : ar){
-                    JsonObject ob = e.getAsJsonObject();
-                    if (ob.get("_id").getAsString().equalsIgnoreCase(team.getId())){
-                        list.add(news);
-                    }
-                }
-            }
-        }
+        List<RealmNews> realmNewsList = getNews();
         int count = realmNewsList.size();
         mRealm.executeTransactionAsync(realm -> {
             RealmTeamNotification notification = realm.where(RealmTeamNotification.class).equalTo("type", "chat").equalTo("parentId", teamId).findFirst();
@@ -103,6 +88,25 @@ public class DiscussionListFragment extends BaseTeamFragment {
         });
         changeLayoutManager(getResources().getConfiguration().orientation, rvDiscussion);
         showRecyclerView(realmNewsList);
+    }
+
+    private List<RealmNews> getNews() {
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).findAll();
+        List<RealmNews> list = new ArrayList<>();
+        for (RealmNews news : realmNewsList) {
+            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team.getId())) {
+                list.add(news);
+            } else if (!TextUtils.isEmpty(news.getViewIn())) {
+                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+                for (JsonElement e : ar) {
+                    JsonObject ob = e.getAsJsonObject();
+                    if (ob.get("_id").getAsString().equalsIgnoreCase(team.getId())) {
+                        list.add(news);
+                    }
+                }
+            }
+        }
+        return list;
     }
 
 
@@ -166,7 +170,6 @@ public class DiscussionListFragment extends BaseTeamFragment {
     public void setData(List<RealmNews> list) {
         showRecyclerView(list);
     }
-
 
 
 }
