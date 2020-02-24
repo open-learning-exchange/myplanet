@@ -65,8 +65,7 @@ public class AdapterNews extends BaseNewsAdapter {
         this.list = list;
         this.currentUser = user;
         this.parentNews = parentNews;
-        config = Utilities.getCloudConfig()
-                .selectMode(ChipCloud.SelectMode.close);
+        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
     }
 
     public void setFromLogin(boolean fromLogin) {
@@ -161,12 +160,9 @@ public class AdapterNews extends BaseNewsAdapter {
             try {
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 Utilities.log("image url " + news.getImageUrl());
-                Glide.with(context)
-                        .load(new File(imageUrl))
-                        .into(((ViewHolderNews) holder).newsImage);
+                Glide.with(context).load(new File(imageUrl)).into(((ViewHolderNews) holder).newsImage);
             } catch (Exception e) {
                 loadRemoteImage(holder, news);
-                e.printStackTrace();
             }
         }
     }
@@ -178,9 +174,7 @@ public class AdapterNews extends BaseNewsAdapter {
             String resourceId = JsonUtils.getString("resourceId", ob.getAsJsonObject());
             RealmMyLibrary library = mRealm.where(RealmMyLibrary.class).equalTo("_id", resourceId).findFirst();
             if (library != null) {
-                Glide.with(context)
-                        .load(new File(Utilities.SD_PATH, library.getId() + "/" + library.getResourceLocalAddress()))
-                        .into(((ViewHolderNews) holder).newsImage);
+                Glide.with(context).load(new File(Utilities.SD_PATH, library.getId() + "/" + library.getResourceLocalAddress())).into(((ViewHolderNews) holder).newsImage);
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 return;
             }
@@ -193,9 +187,7 @@ public class AdapterNews extends BaseNewsAdapter {
         if (this.listener == null || this.fromLogin)
             ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
         ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews.getId(), false));
-        List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE)
-                .findAll();
+        List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE).findAll();
         ((ViewHolderNews) holder).btnShowReply.setText(String.format("Show replies (%d)", replies.size()));
         ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
         if (position == 0 && parentNews != null)
@@ -206,7 +198,6 @@ public class AdapterNews extends BaseNewsAdapter {
                 listener.showReply(finalNews, fromLogin);
             }
         });
-
     }
 
     private RealmNews getNews(RecyclerView.ViewHolder holder, int position) {
@@ -244,8 +235,7 @@ public class AdapterNews extends BaseNewsAdapter {
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         if (isEdit)
             et.setText(news.getMessage() + "");
-        new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit)
-                .setView(v)
+        new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit).setView(v)
                 .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
                     String s = et.getText().toString();
                     if (isEdit)
