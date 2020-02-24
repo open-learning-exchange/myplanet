@@ -25,6 +25,10 @@ import com.google.android.flexbox.FlexboxLayout;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipDrawable;
 import com.google.android.material.chip.ChipGroup;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsAdapter;
@@ -32,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -96,7 +101,8 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).tvName.setText(news.getUserName());
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
-            ((ViewHolderNews) holder).tvMessage.setText(news.getMessage());
+
+            ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
@@ -166,8 +172,11 @@ public class AdapterNews extends BaseNewsAdapter {
     }
 
     private void loadRemoteImage(RecyclerView.ViewHolder holder, RealmNews news) {
-        if (news.getImages() != null && news.getImages().size() > 0) {
-            RealmMyLibrary library = mRealm.where(RealmMyLibrary.class).equalTo("_id", news.getImages().get(0)).findFirst();
+        Utilities.log(news.getImages());
+        if (news.getImagesArray().size() > 0) {
+            JsonObject ob = news.getImagesArray().get(0).getAsJsonObject();
+            String resourceId = JsonUtils.getString("resourceId", ob.getAsJsonObject());
+            RealmMyLibrary library = mRealm.where(RealmMyLibrary.class).equalTo("_id", resourceId).findFirst();
             if (library != null) {
                 Glide.with(context)
                         .load(new File(Utilities.SD_PATH, library.getId() + "/" + library.getResourceLocalAddress()))
@@ -205,14 +214,14 @@ public class AdapterNews extends BaseNewsAdapter {
         if (parentNews != null) {
             if (position == 0) {
                 ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_blue_50));
-                news = mRealm.copyFromRealm(parentNews);
+                news = parentNews;
             } else {
                 ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
-                news = mRealm.copyFromRealm(list.get(position - 1));
+                news = list.get(position - 1);
             }
         } else {
             ((CardView) holder.itemView).setCardBackgroundColor(context.getResources().getColor(R.color.md_white_1000));
-            news = mRealm.copyFromRealm(list.get(position));
+            news = list.get(position);
         }
         return news;
     }

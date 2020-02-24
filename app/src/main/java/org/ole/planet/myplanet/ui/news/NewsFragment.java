@@ -39,7 +39,9 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,21 +124,30 @@ public class NewsFragment extends BaseNewsFragment {
     }
 
     private List<RealmNews> getNewsList() {
-        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).equalTo("createdOn",
-                settings.getString("planetCode", ""), Case.INSENSITIVE).findAll();
+        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).findAll();
+        Utilities.log("NEWS SIZE " + allNews.size());
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : allNews) {
+            Utilities.log("News " + news.getMessage());
             if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
                 list.add(news);
-            } else if (!TextUtils.isEmpty(news.getViewIn())) {
+                Utilities.log("Added " + news.getMessage());
+                continue;
+            }
+
+            if (!TextUtils.isEmpty(news.getViewIn())) {
                 JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
+                    Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode()) + " nn " + news.getViewIn());
                     if (ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode())) {
                         list.add(news);
+                        Utilities.log("Added " + news.getMessage());
                     }
+
                 }
             }
+
         }
         return list;
     }
@@ -145,8 +156,10 @@ public class NewsFragment extends BaseNewsFragment {
         changeLayoutManager(getResources().getConfiguration().orientation, rvNews);
         List<String> resourceIds = new ArrayList<>();
         for (RealmNews news : list) {
-            if (news.getImages() != null && news.getImages().size() > 0) {
-                resourceIds.add(news.getImages().get(0));
+            if (news.getImagesArray().size() > 0) {
+                JsonObject ob = news.getImagesArray().get(0).getAsJsonObject();
+                String resourceId = JsonUtils.getString("resourceId", ob.getAsJsonObject());
+                resourceIds.add(resourceId);
             }
         }
         ArrayList<String> urls = new ArrayList<>();
