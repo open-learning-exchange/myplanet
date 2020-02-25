@@ -29,7 +29,7 @@ import java.util.Map;
 
 public class Constants {
     public static final String KEY_LOGIN = "isLoggedIn";
-    public static final String  DICTIONARY_URL =  "http://157.245.241.39:8000/output.json";
+    public static final String DICTIONARY_URL = "http://157.245.241.39:8000/output.json";
     public static List<ShelfData> shelfDataList;
     public static final String KEY_RATING = "beta_rating";
     public static final String KEY_EXAM = "beta_course";
@@ -108,14 +108,16 @@ public class Constants {
             "Activity data are uploaded and new resources are downloaded in a matter of a few minutes unto myPlanet for offline use.\n" +
             "\n" +
             "<p>The dashboard also contains a record of achievements, a calendar of events, and an internal chat system for communicating with fellow members.</p>\n" +
-            "<p>myPlanet has been proven highly effective in improving learning opportunities for over fifty thousand learners in more than 100 locations, in schools throughout Nepal, Ghana, Kenya, and Rwanda, with Syrian refugees in Jordan, Somali refugees in Kenya, and village health workers in Uganda.</p>"+
+            "<p>myPlanet has been proven highly effective in improving learning opportunities for over fifty thousand learners in more than 100 locations, in schools throughout Nepal, Ghana, Kenya, and Rwanda, with Syrian refugees in Jordan, Somali refugees in Kenya, and village health workers in Uganda.</p>" +
             "      </td>";
     public static final HashMap<Class, Integer> COLOR_MAP = new HashMap<>();
     public static HashMap<String, Class> classList = new HashMap<>();
+    public static HashMap<String, String> LABELS = new HashMap<>();
 
     static {
         initClasses();
         shelfDataList = new ArrayList<>();
+        LABELS = new HashMap<>();
         shelfDataList.add(new ShelfData("resourceIds", "resources", "resourceId", RealmMyLibrary.class));
         shelfDataList.add(new ShelfData("meetupIds", "meetups", "meetupId", RealmMeetup.class));
         shelfDataList.add(new ShelfData("courseIds", "courses", "courseId", RealmMyCourse.class));
@@ -124,6 +126,9 @@ public class Constants {
         COLOR_MAP.put(RealmMyCourse.class, R.color.md_amber_200);
         COLOR_MAP.put(RealmMyTeam.class, R.color.md_green_200);
         COLOR_MAP.put(RealmMeetup.class, R.color.md_purple_200);
+        LABELS.put("Help Wanted", "help");
+        LABELS.put("Offer", "offer");
+        LABELS.put("Request for advice", "advice");
     }
 
     private static void initClasses() {

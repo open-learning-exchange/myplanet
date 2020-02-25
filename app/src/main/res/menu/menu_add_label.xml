@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/help_wanted"
+        android:title="Help Wanted" />
+
+
+
+    <item
+        android:id="@+id/offer"
+        android:title="Offer" />
+
+
+    <item
+        android:id="@+id/request_for_advice"
+        android:title="Request for advice" />
+
+</menu>

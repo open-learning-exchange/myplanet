@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.ui.news
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_news_detail.*
@@ -16,9 +14,9 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.w3c.dom.UserDataHandler
 import java.io.File
 import java.util.*
 
@@ -70,11 +68,13 @@ class NewsDetailActivity : BaseActivity() {
     }
 
     private fun loadImage() {
-        if (news?.images != null && news?.images!!.size > 0) {
-            val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", news!!.images[0]).findFirst()
+        if (news?.imagesArray!!.size() > 0) {
+            val ob = news!!.imagesArray[0].asJsonObject
+            val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
+            val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
             if (library != null) {
                 Glide.with(this)
-                        .load(File(Utilities.SD_PATH, library!!.getId() + "/" + library!!.getResourceLocalAddress()))
+                        .load(File(Utilities.SD_PATH, library.id + "/" + library.resourceLocalAddress))
                         .into(img)
                 img.visibility = View.VISIBLE
                 return

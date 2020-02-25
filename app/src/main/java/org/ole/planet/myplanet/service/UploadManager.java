@@ -453,7 +453,7 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel userModel = new UserProfileDbHandler(context).getUserModel();
         mRealm.executeTransactionAsync(realm -> {
-            final RealmResults<RealmNews> activities = realm.where(RealmNews.class).isNull("_id").or().isEmpty("_id").findAll();
+            final RealmResults<RealmNews> activities = realm.where(RealmNews.class).findAll();
             for (RealmNews act : activities) {
                 try {
                     if (act.getUserId().startsWith("guest"))
@@ -465,6 +465,7 @@ public class UploadManager extends FileUploadService {
                         JsonObject response = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).execute().body();
                         String _rev = JsonUtils.getString("rev", response);
                         String _id = JsonUtils.getString("id", response);
+                        JsonArray image = act.getImagesArray();
                         File f = new File(JsonUtils.getString("imageUrl", object));
                         Utilities.log("IMAGE FILE URL  " + JsonUtils.getString("imageUrl", object));
                         String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", object));
@@ -475,7 +476,6 @@ public class UploadManager extends FileUploadService {
                         String url = String.format(format, Utilities.getUrl(), _id, name);
                         Response<JsonObject> res = apiInterface.uploadResource(getHeaderMap(mimeType, _rev), url, body).execute();
                         JsonObject attachment = res.body();
-                        JsonArray image = new JsonArray();
                         JsonObject resourceObject = new JsonObject();
                         resourceObject.addProperty("resourceId", JsonUtils.getString("id", attachment));
                         resourceObject.addProperty("filename", JsonUtils.getString("imageName", object));
