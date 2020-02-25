@@ -356,6 +356,19 @@ public class RealmNews extends RealmObject {
         return msg;
     }
 
+    public boolean isCommunityNews() {
+        JsonArray array = new Gson().fromJson(getViewIn(), JsonArray.class);
+        boolean isCommunity = false;
+        for (JsonElement e : array) {
+            JsonObject object = e.getAsJsonObject();
+            if (object.get("section").getAsString().equalsIgnoreCase("community")) {
+                isCommunity = true;
+                break;
+            }
+        }
+        return isCommunity;
+    }
+
     public void setMessage(String message) {
         this.message = message;
     }

@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
@@ -101,6 +102,20 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
 
+            ((ViewHolderNews) holder).btnShare.setVisibility((news.isCommunityNews() || fromLogin) ? View.GONE : View.VISIBLE);
+            ((ViewHolderNews) holder).btnShare.setOnClickListener(view -> {
+                JsonArray array = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+                JsonObject ob = new JsonObject();
+                ob.addProperty("section", "community");
+                ob.addProperty("_id", currentUser.getPlanetCode() + "@" + currentUser.getParentCode() );
+                ob.addProperty("sharedDate", Calendar.getInstance().getTimeInMillis());
+                array.add(ob);
+                if (!mRealm.isInTransaction())
+                    mRealm.beginTransaction();
+                news.setViewIn(new Gson().toJson(array));
+                mRealm.commitTransaction();
+                Utilities.toast(context, "Shared to community");
+            });
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
@@ -180,7 +195,6 @@ public class AdapterNews extends BaseNewsAdapter {
             }
         }
         ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
-
     }
 
     private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {

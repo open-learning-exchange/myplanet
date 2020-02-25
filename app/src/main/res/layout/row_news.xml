@@ -119,6 +119,14 @@
                 android:text="@string/add_label"
                 android:theme="@style/PrimaryFlatButton" />
 
+            <Button
+                android:id="@+id/btn_share"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:text="@string/share_with_community"
+                android:theme="@style/PrimaryFlatButton" />
+
             <LinearLayout
                 android:id="@+id/ll_edit_delete"
                 android:layout_width="wrap_content"

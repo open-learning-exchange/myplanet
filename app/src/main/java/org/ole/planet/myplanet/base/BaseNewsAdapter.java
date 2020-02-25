@@ -52,7 +52,7 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
         public ImageView imgEdit, imgDelete, imgUser, newsImage;
         public LinearLayout llEditDelete;
         public FlexboxLayout fbChips;
-        public Button btnReply, btnShowReply, btnAddLabel;
+        public Button btnReply, btnShowReply, btnAddLabel, btnShare;
 
         public ViewHolderNews(View itemView) {
             super(itemView);
@@ -66,6 +66,7 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
             btnReply = itemView.findViewById(R.id.btn_reply);
             btnShowReply = itemView.findViewById(R.id.btn_show_reply);
             btnAddLabel = itemView.findViewById(R.id.btn_add_label);
+            btnShare = itemView.findViewById(R.id.btn_share);
             newsImage = itemView.findViewById(R.id.img_news);
             fbChips = itemView.findViewById(R.id.fb_chips);
         }
