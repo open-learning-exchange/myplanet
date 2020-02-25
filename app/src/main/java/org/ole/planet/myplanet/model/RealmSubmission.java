@@ -48,6 +48,7 @@ public class RealmSubmission extends RealmObject {
     private String sender;
     private String source;
     private String parentCode;
+    private String parent;
 
 
     public static void insert(Realm mRealm, JsonObject submission) {
@@ -72,6 +73,7 @@ public class RealmSubmission extends RealmObject {
         sub.setSender(JsonUtils.getString("sender", submission));
         sub.setSource(JsonUtils.getString("source", submission));
         sub.setParentCode(JsonUtils.getString("parentCode", submission));
+        sub.setParent(JsonUtils.getString("parent", submission));
         //
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
 //        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("parentId", submission)).findFirst();
@@ -116,6 +118,8 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("sender", sub.getSender());
         object.addProperty("source", sub.getSource());
         object.addProperty("parentCode", sub.getParentCode());
+        object.addProperty("parent", sub.getParent());
+
         //
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
         if (exam != null)
@@ -308,6 +312,14 @@ public class RealmSubmission extends RealmObject {
         this.parentCode = parentCode;
     }
 
+    public String getParent() {
+        return parent;
+    }
+
+    public void setParent(String parent) {
+        this.parent = parent;
+    }
+
 
     public static HashMap<String, RealmStepExam> getExamMap(Realm mRealm, List<RealmSubmission> submissions) {
         HashMap<String, RealmStepExam> exams = new HashMap<>();
@@ -326,6 +338,5 @@ public class RealmSubmission extends RealmObject {
     private static boolean checkParentId(String parentId) {
         return parentId != null && parentId.contains("@");
     }
-
 
 }
