@@ -53,12 +53,12 @@ import io.realm.Realm;
 import io.realm.Sort;
 
 public class AdapterNews extends BaseNewsAdapter {
-    private Context context;
+
     private List<RealmNews> list;
 
     private OnNewsItemClickListener listener;
     private RealmNews parentNews;
-    private boolean fromLogin;
+
     private ChipCloudConfig config;
 
     public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
@@ -102,36 +102,22 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
 
-            ((ViewHolderNews) holder).btnShare.setVisibility((news.isCommunityNews() || fromLogin) ? View.GONE : View.VISIBLE);
-            ((ViewHolderNews) holder).btnShare.setOnClickListener(view -> {
-                JsonArray array = new Gson().fromJson(news.getViewIn(), JsonArray.class);
-                JsonObject ob = new JsonObject();
-                ob.addProperty("section", "community");
-                ob.addProperty("_id", currentUser.getPlanetCode() + "@" + currentUser.getParentCode() );
-                ob.addProperty("sharedDate", Calendar.getInstance().getTimeInMillis());
-                array.add(ob);
-                if (!mRealm.isInTransaction())
-                    mRealm.beginTransaction();
-                news.setViewIn(new Gson().toJson(array));
-                mRealm.commitTransaction();
-                Utilities.toast(context, "Shared to community");
-                ((ViewHolderNews) holder).btnShare.setVisibility( View.GONE);
-
-            });
+            showShareButton(holder, news);
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-            loadImage(holder, news);
             ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-            ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+            loadImage(holder, news);
             showReplyButton(holder, news, position);
             holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
             addLabels(holder, news);
             showChips(holder, news);
         }
     }
+
+
 
     private void addLabels(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
