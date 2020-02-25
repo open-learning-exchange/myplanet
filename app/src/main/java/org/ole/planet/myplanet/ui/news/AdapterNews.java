@@ -115,6 +115,8 @@ public class AdapterNews extends BaseNewsAdapter {
                 news.setViewIn(new Gson().toJson(array));
                 mRealm.commitTransaction();
                 Utilities.toast(context, "Shared to community");
+                ((ViewHolderNews) holder).btnShare.setVisibility( View.GONE);
+
             });
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));

@@ -348,12 +348,12 @@ public class RealmNews extends RealmObject {
     }
 
     public String getMessageWithoutMarkdown() {
-        String msg = "";
+        String ms = message;
+        Utilities.log(ms);
         for (JsonElement ob : getImagesArray()) {
-            String ms = message;
-            msg = ms.replace(JsonUtils.getString("markdown", ob.getAsJsonObject()), "");
+            ms = ms.replace(JsonUtils.getString("markdown", ob.getAsJsonObject()), "");
         }
-        return msg;
+        return ms;
     }
 
     public boolean isCommunityNews() {
