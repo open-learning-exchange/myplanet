@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
@@ -52,12 +53,12 @@ import io.realm.Realm;
 import io.realm.Sort;
 
 public class AdapterNews extends BaseNewsAdapter {
-    private Context context;
+
     private List<RealmNews> list;
 
     private OnNewsItemClickListener listener;
     private RealmNews parentNews;
-    private boolean fromLogin;
+
     private ChipCloudConfig config;
 
     public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
@@ -101,20 +102,22 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
             }
 
+            showShareButton(holder, news);
             ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
             ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
             ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
             ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-            loadImage(holder, news);
             ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
             ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-            ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+            loadImage(holder, news);
             showReplyButton(holder, news, position);
             holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
             addLabels(holder, news);
             showChips(holder, news);
         }
     }
+
+
 
     private void addLabels(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
@@ -180,7 +183,6 @@ public class AdapterNews extends BaseNewsAdapter {
             }
         }
         ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
-
     }
 
     private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {
