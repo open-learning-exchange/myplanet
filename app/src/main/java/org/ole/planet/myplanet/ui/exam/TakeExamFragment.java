@@ -6,6 +6,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.core.widget.NestedScrollView;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -86,7 +87,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         tvQuestionCount.setText("Question : 1/" + questions.size());
         RealmQuery q = mRealm.where(RealmSubmission.class)
                 .equalTo("userId", user.getId())
-                .equalTo("parentId", exam.getId())
+                .equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id)
                 .sort("startTime", Sort.DESCENDING);
         if (type.equals("exam"))
             q = q.equalTo("status", "pending");
@@ -113,7 +114,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 //            sub.setAnswers(new RealmList<>());
 //        }
         sub = RealmSubmission.createSubmission(sub, mRealm);
-        sub.setParentId(exam.getId() + "@" + exam.getCourseId());
+
+        sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
         sub.setUserId(user.getId());
         sub.setStatus("pending");
         sub.setType(type);

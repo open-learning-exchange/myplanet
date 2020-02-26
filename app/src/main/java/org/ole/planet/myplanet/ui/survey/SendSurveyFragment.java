@@ -65,12 +65,13 @@ public class SendSurveyFragment extends BaseDialogFragment {
         mRealm.beginTransaction();
         RealmSubmission sub = mRealm.where(RealmSubmission.class)
                 .equalTo("userId", userId)
-                .equalTo("parentId", id + "@" + exam.getCourseId() )
+                .equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId() ) ) ? id + "@"+exam.getCourseId() : id  )
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .equalTo("status", "pending")
                 .findFirst();
         sub = RealmSubmission.createSubmission(sub, mRealm);
-        sub.setParentId(id + "@" + exam.getCourseId());
+        sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@"+exam.getCourseId() : id );
+     //   sub.setParentId(id + "@" + exam.getCourseId());
         sub.setUserId(userId);
         sub.setType("survey");
         sub.setStatus("pending");
