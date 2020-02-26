@@ -2,11 +2,14 @@ package org.ole.planet.myplanet.ui.team;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -75,6 +78,7 @@ public class TeamFragment extends Fragment {
         EditText etName = v.findViewById(R.id.et_name);
         EditText etDescription = v.findViewById(R.id.et_description);
         Spinner spnType = v.findViewById(R.id.spn_team_type);
+        SwitchCompat switchPublic = v.findViewById(R.id.switch_public);
         if (type != null) {
             spnType.setVisibility(View.GONE);
         }
@@ -83,13 +87,14 @@ public class TeamFragment extends Fragment {
                 .setPositiveButton("Save", (dialogInterface, i) -> {
                     String name = etName.getText().toString().trim();
                     String desc = etDescription.getText().toString();
+                    boolean isPublic = switchPublic.isChecked();
                     String type = spnType.getSelectedItemPosition() == 0 ? "local" : "sync";
                     if (name.isEmpty()) {
                         Utilities.toast(getActivity(), "Name is required");
                     } else if (type.isEmpty()) {
                         Utilities.toast(getActivity(), "Type is required");
                     } else {
-                        createTeam(name, desc, type);
+                        createTeam(name, desc, type, isPublic);
                         Utilities.toast(getActivity(), "Team Created");
                         setTeamList();
 
@@ -97,7 +102,7 @@ public class TeamFragment extends Fragment {
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    public void createTeam(String name, String desc, String type) {
+    public void createTeam(String name, String desc, String type, boolean isPublic) {
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
@@ -109,6 +114,7 @@ public class TeamFragment extends Fragment {
         team.setName(name);
         team.setDescription(desc);
         team.setTeamId("");
+        team.setPublic(isPublic);
         team.setType(this.type == null ? "team" : "enterprise");
         team.setUser_id(user.getId());
         team.setParentCode(user.getParentCode());
@@ -145,7 +151,7 @@ public class TeamFragment extends Fragment {
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE);
                 AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), getList(query), mRealm, getChildFragmentManager());
-                Utilities.log("Adapter size " + adapterTeamList.getItemCount() );
+                Utilities.log("Adapter size " + adapterTeamList.getItemCount());
                 rvTeamList.setAdapter(adapterTeamList);
             }
 
@@ -167,7 +173,7 @@ public class TeamFragment extends Fragment {
 
     private void setTeamList() {
         RealmQuery<RealmMyTeam> query = mRealm.where(RealmMyTeam.class).isEmpty("teamId").notEqualTo("status", "archived");
-        AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), getList(query), mRealm,getChildFragmentManager());
+        AdapterTeamList adapterTeamList = new AdapterTeamList(getActivity(), getList(query), mRealm, getChildFragmentManager());
         adapterTeamList.setType(type);
         getView().findViewById(R.id.type).setVisibility(type == null ? View.VISIBLE : View.GONE);
         rvTeamList.setAdapter(adapterTeamList);
