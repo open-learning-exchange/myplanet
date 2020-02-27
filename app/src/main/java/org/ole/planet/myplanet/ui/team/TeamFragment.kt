@@ -68,13 +68,10 @@ class TeamFragment : Fragment() {
             map["desc"] = v.et_description.text.toString()
             map["services"] = v.et_services.text.toString()
             map["rules"] = v.et_rules.text.toString()
-            val isPublic = v.switch_public.isChecked
-            val type = if (v.spn_team_type.selectedItemPosition == 0) "local" else "sync"
             when {
                 name.isEmpty() -> Utilities.toast(activity, "Name is required")
-                type.isEmpty() -> Utilities.toast(activity, "Type is required")
                 else -> {
-                    createTeam(name, type, map, isPublic)
+                    createTeam(name, if (v.spn_team_type.selectedItemPosition == 0) "local" else "sync", map, v.switch_public.isChecked)
                     Utilities.toast(activity, "Team Created")
                     setTeamList()
                 }
@@ -124,9 +121,9 @@ class TeamFragment : Fragment() {
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE)
                 val adapterTeamList = AdapterTeamList(activity, getList(query), mRealm, childFragmentManager)
-                Utilities.log("Adapter size " + adapterTeamList.itemCount)
                 rvTeamList!!.adapter = adapterTeamList
             }
+
             override fun afterTextChanged(editable: Editable) {}
         })
     }
