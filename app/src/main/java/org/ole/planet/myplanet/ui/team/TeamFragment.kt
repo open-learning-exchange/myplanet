@@ -74,9 +74,7 @@ class TeamFragment : Fragment() {
                     createTeam(name, if (v.spn_team_type.selectedItemPosition == 0) "local" else "sync", map, v.switch_public.isChecked)
                     Utilities.toast(activity, "Team Created")
                     setTeamList()
-                }
-            }
-        }.setNegativeButton("Cancel", null).show()
+                } } }.setNegativeButton("Cancel", null).show()
     }
 
     fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
