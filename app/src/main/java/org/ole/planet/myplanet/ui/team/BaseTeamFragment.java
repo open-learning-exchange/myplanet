@@ -43,7 +43,7 @@ public abstract class BaseTeamFragment extends BaseNewsFragment {
         if (new UserProfileDbHandler(getActivity()).getUserModel() != null)
             user = mRealm.copyFromRealm(new UserProfileDbHandler(getActivity()).getUserModel());
         Utilities.log("Team id " + teamId);
-        team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).findFirst();
+        team = mRealm.where(RealmMyTeam.class).equalTo("id", teamId).findFirst();
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
     }
 
