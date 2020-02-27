@@ -77,16 +77,25 @@ public class TeamFragment extends Fragment {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_create_team, null);
         EditText etName = v.findViewById(R.id.et_name);
         EditText etDescription = v.findViewById(R.id.et_description);
+        EditText etServices = v.findViewById(R.id.et_services);
+        EditText etRules = v.findViewById(R.id.et_rules);
         Spinner spnType = v.findViewById(R.id.spn_team_type);
         SwitchCompat switchPublic = v.findViewById(R.id.switch_public);
         if (type != null) {
             spnType.setVisibility(View.GONE);
+            etDescription.setHint("What is your enterprise's Mission?");
+        } else {
+            etServices.setVisibility(View.GONE);
+            etRules.setVisibility(View.GONE);
+            etDescription.setHint("Description");
         }
         new AlertDialog.Builder(getActivity()).setTitle(String.format("Enter %s Detail", type == null ? "Team" : "Enterprise"))
                 .setView(v)
                 .setPositiveButton("Save", (dialogInterface, i) -> {
                     String name = etName.getText().toString().trim();
                     String desc = etDescription.getText().toString();
+                    String services = etDescription.getText().toString();
+                    String rules = etDescription.getText().toString();
                     boolean isPublic = switchPublic.isChecked();
                     String type = spnType.getSelectedItemPosition() == 0 ? "local" : "sync";
                     if (name.isEmpty()) {
@@ -94,7 +103,7 @@ public class TeamFragment extends Fragment {
                     } else if (type.isEmpty()) {
                         Utilities.toast(getActivity(), "Type is required");
                     } else {
-                        createTeam(name, desc, type, isPublic);
+                        createTeam(name, desc, type, services, rules, isPublic);
                         Utilities.toast(getActivity(), "Team Created");
                         setTeamList();
 
@@ -102,15 +111,18 @@ public class TeamFragment extends Fragment {
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    public void createTeam(String name, String desc, String type, boolean isPublic) {
+    public void createTeam(String name, String desc, String type, String services, String rules, boolean isPublic) {
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
         team.setStatus("active");
         team.setCreatedDate(new Date().getTime());
-        if (type != null)
+        if (type != null) {
+            team.setServices(services);
+            team.setRules(rules);
             team.setTeamType(type);
+        }
         team.setName(name);
         team.setDescription(desc);
         team.setTeamId("");
