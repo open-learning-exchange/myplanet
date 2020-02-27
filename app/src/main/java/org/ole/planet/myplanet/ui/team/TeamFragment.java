@@ -94,8 +94,8 @@ public class TeamFragment extends Fragment {
                 .setPositiveButton("Save", (dialogInterface, i) -> {
                     String name = etName.getText().toString().trim();
                     String desc = etDescription.getText().toString();
-                    String services = etDescription.getText().toString();
-                    String rules = etDescription.getText().toString();
+                    String services = etServices.getText().toString();
+                    String rules = etRules.getText().toString();
                     boolean isPublic = switchPublic.isChecked();
                     String type = spnType.getSelectedItemPosition() == 0 ? "local" : "sync";
                     if (name.isEmpty()) {
@@ -121,12 +121,15 @@ public class TeamFragment extends Fragment {
         if (type != null) {
             team.setServices(services);
             team.setRules(rules);
+
+        }else {
             team.setTeamType(type);
         }
         team.setName(name);
         team.setDescription(desc);
         team.setTeamId("");
         team.setPublic(isPublic);
+        Utilities.log(this.type);
         team.setType(this.type == null ? "team" : "enterprise");
         team.setUser_id(user.getId());
         team.setParentCode(user.getParentCode());

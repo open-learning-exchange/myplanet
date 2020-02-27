@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -39,6 +40,9 @@ public class PlanFragment extends BaseTeamFragment {
         if (team != null) {
             description = getView().findViewById(R.id.tv_description);
             date = getView().findViewById(R.id.tv_date);
+            Utilities.log(team.getType());
+            Utilities.log(team.getServices());
+            Utilities.log(team.getRules());
             if (team.getType().equalsIgnoreCase("enterprise")) {
                 description.setText(Html.fromHtml("<b>What is your enterprise's Mission?</b><br/>" + team.getDescription() +
                         "<br/><b>What are the Services your enterprise provides?</b><br/>" + team.getServices() + "<br/>" +
