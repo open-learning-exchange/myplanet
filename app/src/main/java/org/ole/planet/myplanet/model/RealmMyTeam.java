@@ -52,6 +52,8 @@ public class RealmMyTeam extends RealmObject {
     private String docType;
     private String title;
     private String route;
+    private String services;
+    private String rules;
     private boolean isLeader;
     private String type;
     private int amount;
@@ -88,6 +90,8 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
         myTeams.setRoute(JsonUtils.getString("route", doc));
         myTeams.setType(JsonUtils.getString("type", doc));
+        myTeams.setServices(JsonUtils.getString("services", doc));
+        myTeams.setRules(JsonUtils.getString("rules", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
         myTeams.setAmount(JsonUtils.getInt("amount", doc));
@@ -102,6 +106,22 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public String getServices() {
+        return services;
+    }
+
+    public void setServices(String services) {
+        this.services = services;
+    }
+
+    public String getRules() {
+        return rules;
+    }
+
+    public void setRules(String rules) {
+        this.rules = rules;
     }
 
     public boolean isPublic() {
@@ -280,6 +300,8 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("route", team.getRoute());
         object.addProperty("date", team.getDate());
         object.addProperty("public", team.isPublic());
+        object.addProperty("services", team.getServices());
+        object.addProperty("rules", team.getRules());
         if (TextUtils.equals(team.getTeamType(), "debit")) {
             object.addProperty("amount", team.getAmount());
         } else if (TextUtils.equals(team.getTeamType(), "credit")) {
