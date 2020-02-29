@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.course.CourseProgressActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_normal">
+
+        <com.vaibhavlakhera.circularprogressview.CircularProgressView
+            android:id="@+id/progressView"
+            android:layout_width="164dp"
+            android:layout_height="164dp"
+            android:layout_gravity="center"
+            app:animate="true"
+            app:animateDuration="600"
+            app:fillColor="@color/colorPrimary"
+            app:progressColor="#FFF"
+            app:progressInterpolator="@android:anim/accelerate_decelerate_interpolator"
+            app:progressRoundCap="true"
+            app:progressTextColor="#FFF"
+            app:progressTextEnabled="true"
+            app:progressTextSize="32sp"
+            app:progressTextType="progress"
+            app:progressValue="10"
+            app:progressWidth="12dp"
+            app:startAngle="270"
+            app:totalColor="@color/colorPrimaryDark"
+            app:totalValue="100"
+            app:totalWidth="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:id="@+id/tv_course"
+            android:textSize="18sp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="8dp"
+            android:textColor="@color/md_black_1000"
+            android:layout_height="wrap_content"/>
+
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:id="@+id/tv_progress"
+            android:textSize="16sp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="8dp"
+            android:textColor="@color/md_black_1000"
+            android:layout_height="wrap_content"/>
+
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Steps"
+            android:padding="8dp"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:textColor="@color/md_black_1000"
+            android:textSize="18sp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_progress"
+            android:padding="8dp"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+            android:layout_height="wrap_content"
+           />
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -321,4 +321,12 @@
     <string name="action_disclaimer">Disclaimer</string>
     <string name="action_about">About</string>
     <string name="engilsh_dictionary">English Dictionary</string>
+    <string name="add_story">Add Story</string>
+    <string name="txt_myprogress">myProgress</string>
+    <string name="more_action">Filter</string>
+    <string name="my_progress">My Progress</string>
+    <string name="add_label">Add Label</string>
+    <string name="share_with_community">Share with community</string>
+    <string name="services">What are the Services your enterprise provides?</string>
+    <string name="rules">What are the Rules of your enterprise</string>
 </resources>

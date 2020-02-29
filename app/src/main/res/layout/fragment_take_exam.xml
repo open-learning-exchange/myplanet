@@ -33,7 +33,7 @@
                     android:layout_gravity="center"
                     android:background="@color/colorPrimary"
                     android:gravity="center_vertical"
-                    android:padding="@dimen/padding_large"
+                    android:padding="@dimen/padding_normal"
                     android:text="@string/step"
                     android:textAllCaps="true"
                     android:textColor="@color/md_white_1000"
@@ -41,34 +41,37 @@
                     android:textStyle="bold" />
 
                 <androidx.core.widget.NestedScrollView
+                    android:id="@+id/container"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_margin="@dimen/padding_large"
-                    android:id="@+id/container"
                     android:layout_weight="1">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        >
+                        android:orientation="vertical">
 
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
                             android:layout_gravity="center"
                             android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/tv_header"
                                 style="@style/HeaderText"
-                                android:layout_gravity="center"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content" />
+                                android:textSize="18sp"
+                                android:textColor="@color/md_black_1000"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center" />
 
                             <TextView
                                 android:id="@+id/tv_body"
                                 android:layout_width="match_parent"
+                                android:textSize="16sp"
+                                android:textColor="@color/md_black_1000"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_normal" />
 
@@ -77,23 +80,21 @@
 
                         <RadioGroup
                             android:id="@+id/group_choices"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
                             android:layout_gravity="center_vertical"
                             android:orientation="vertical"
                             android:visibility="gone" />
 
 
                         <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical"
+                            android:id="@+id/ll_checkbox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:gravity="center"
-                            android:visibility="gone"
-                            android:id="@+id/ll_checkbox"
-                            android:layout_height="wrap_content"/>
+                            android:orientation="vertical"
+                            android:visibility="gone" />
                     </LinearLayout>
 
                 </androidx.core.widget.NestedScrollView>
@@ -101,25 +102,26 @@
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:padding="@dimen/padding_small"
-                    android:layout_height="wrap_content">
-
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_small">
 
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tl_answer"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:id="@+id/tl_answer"
                         android:layout_gravity="center"
-                        android:padding="@dimen/padding_normal"
-                        android:layout_weight="1">
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_normal">
+
                         <EditText
                             android:id="@+id/et_answer"
-                            android:layout_gravity="center_vertical"
-                            android:hint="@string/your_ans"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:hint="@string/your_ans" />
                     </com.google.android.material.textfield.TextInputLayout>
+
                     <Button
                         android:id="@+id/btn_submit"
                         style="@style/YellowButtons"
@@ -131,7 +133,6 @@
                         android:text="Submit Answer" />
 
                 </LinearLayout>
-
 
 
             </LinearLayout>

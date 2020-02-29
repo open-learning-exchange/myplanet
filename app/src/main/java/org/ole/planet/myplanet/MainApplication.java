@@ -50,6 +50,7 @@ public class MainApplication extends Application implements Application.Activity
     public static SharedPreferences preferences;
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
+    public static boolean showDownload = false;
 
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {

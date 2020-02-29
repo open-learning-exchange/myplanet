@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ import java.util.List;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
+import io.noties.markwon.Markwon;
 import io.realm.Realm;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -50,11 +51,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnRatingChangeListener ratingChangeListener;
     private Realm mRealm;
     private ChipCloudConfig config;
+    private Markwon markwon;
 
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
         this.context = context;
         this.courseList = courseList;
+        markwon = Markwon.create(context);
         this.selectedItems = new ArrayList<>();
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
@@ -108,20 +111,23 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHoldercourse) {
             ((ViewHoldercourse) holder).title.setText(courseList.get(position).getCourseTitle());
             ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
+            markwon.setMarkdown(((ViewHoldercourse) holder).desc, courseList.get(position).getDescription());
+
             ((ViewHoldercourse) holder).grad_level.setText("Grade Level  : " + courseList.get(position).getGradeLevel());
             ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " + courseList.get(position).getSubjectLevel());
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
             displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);
-//            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
+            try{
+                ((ViewHoldercourse) holder).tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
+            }catch (Exception e){
+
+            }
             ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
                     homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
                 return true;
             });
-//            } else {
-//                ((ViewHoldercourse) holder).llRating.setOnClickListener(null);
-//            }
 
             ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
                 Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
@@ -196,7 +202,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
     class ViewHoldercourse extends RecyclerView.ViewHolder {
-        TextView title, desc, grad_level, subject_level, ratingCount, average;
+        TextView title, desc, grad_level, subject_level,tvDate, ratingCount, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         SeekBar progressBar;
@@ -211,6 +217,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             average = itemView.findViewById(R.id.rating);
             ratingCount = itemView.findViewById(R.id.times_rated);
             flexboxLayout = itemView.findViewById(R.id.flexbox_drawable);
+            tvDate = itemView.findViewById(R.id.tv_date);
             ratingBar = itemView.findViewById(R.id.rating_bar);
             subject_level = itemView.findViewById(R.id.subject_level);
             checkBox = itemView.findViewById(R.id.checkbox);

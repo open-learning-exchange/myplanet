@@ -2,15 +2,15 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.JsonObject;
 
@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
@@ -41,7 +40,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
-    Button btnRemove, orderByDate,orderByTitle;
+    Button btnRemove, orderByDate, orderByTitle;
     List<RealmTag> searchTags;
 
     public CourseFragment() {
@@ -79,8 +78,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
-        // setSearchListener();
-        btnRemove.setOnClickListener(V -> { deleteSelected(true); });
+        btnRemove.setOnClickListener(V -> deleteSelected(true));
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -90,15 +88,17 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         showNoData(tvMessage, adapterCourses.getItemCount());
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_course_parent_layout), getActivity());
         changeButtonStatus();
-        if(!isMyCourseLib) tvFragmentInfo.setText("Our Courses");
+        if (!isMyCourseLib) tvFragmentInfo.setText("Our Courses");
         additionalSetup();
     }
 
-    public void additionalSetup(){
+    public void additionalSetup() {
+        View bottomSheet = getView().findViewById(R.id.card_filter);
+        getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
         orderByDate = getView().findViewById(R.id.order_by_date_button);
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
-        orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class,"createdDate")));
-        orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class,"courseTitle")));
+        orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate")));
+        orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle")));
     }
 
     private void initializeView() {

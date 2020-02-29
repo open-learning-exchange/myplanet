@@ -12,15 +12,22 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.preference.PreferenceManager;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
@@ -32,7 +39,9 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +56,8 @@ public class NewsFragment extends BaseNewsFragment {
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
-    Button btnSubmit, btnAddImage;
+    Button btnSubmit, btnAddImage, btnAddStory;
+    LinearLayout llAddNews;
     RealmUserModel user;
     TextView tvMessage;
     AdapterNews adapterNews;
@@ -62,12 +72,22 @@ public class NewsFragment extends BaseNewsFragment {
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
         tvMessage = v.findViewById(R.id.tv_message);
+        llAddNews = v.findViewById(R.id.ll_add_news);
+        btnAddStory = v.findViewById(R.id.btn_add_story);
         thumb = v.findViewById(R.id.thumb);
         btnAddImage = v.findViewById(R.id.add_news_image);
 //        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());
+        btnAddStory.setOnClickListener(view -> {
+            llAddNews.setVisibility(llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+            btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? "Hide Add Story" : "Add Story");
+        });
+        if (getArguments().getBoolean("fromLogin")) {
+            btnAddStory.setVisibility(View.GONE);
+            llAddNews.setVisibility(View.GONE);
+        }
         return v;
     }
 
@@ -75,16 +95,11 @@ public class NewsFragment extends BaseNewsFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("docType", "message", Case.INSENSITIVE)
-                .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("replyTo", "", Case.INSENSITIVE)
-               // .sort("time", Sort.DESCENDING)
-                .findAll();
-
+//        .equalTo("viewableBy", "community", Case.INSENSITIVE)
+        List<RealmNews> list = getNewsList();
         setData(list);
         btnSubmit.setOnClickListener(view -> {
-            String message = etMessage.getText().toString();
+            String message = etMessage.getText().toString().trim();
             if (message.isEmpty()) {
                 tlMessage.setError("Please enter message");
                 return;
@@ -92,43 +107,73 @@ public class NewsFragment extends BaseNewsFragment {
             etMessage.setText("");
             HashMap<String, String> map = new HashMap<>();
             map.put("message", message);
-            map.put("viewableBy", "community");
-            map.put("viewableId", "");
+            map.put("viewInId", user.getPlanetCode() + "@" + user.getParentCode());
+            map.put("viewInSection", "community");
+            map.put("messageType", "sync");
+            map.put("messagePlanetCode", user.getPlanetCode());
             map.put("imageUrl", imageUrl);
             map.put("imageName", imageName);
-//            if (!TextUtils.isEmpty(imageUrl)) {
-//                createImage(map);
-//            }else{
             RealmNews.createNews(map, mRealm, user);
-//            }
+            imageName = "";
+            imageUrl = "";
+            thumb.setVisibility(View.GONE);
             rvNews.getAdapter().notifyDataSetChanged();
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
         btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
+    private List<RealmNews> getNewsList() {
+        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).findAll();
+        Utilities.log("NEWS SIZE " + allNews.size());
+        List<RealmNews> list = new ArrayList<>();
+        for (RealmNews news : allNews) {
+            Utilities.log("News " + news.getMessage());
+            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
+                list.add(news);
+                Utilities.log("Added " + news.getMessage());
+                continue;
+            }
+
+            if (!TextUtils.isEmpty(news.getViewIn())) {
+                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+                for (JsonElement e : ar) {
+                    JsonObject ob = e.getAsJsonObject();
+                    Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode()) + " nn " + news.getViewIn());
+                    if (ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode())) {
+                        list.add(news);
+                        Utilities.log("Added " + news.getMessage());
+                    }
+
+                }
+            }
+
+        }
+        return list;
+    }
+
     public void setData(List<RealmNews> list) {
         changeLayoutManager(getResources().getConfiguration().orientation, rvNews);
         List<String> resourceIds = new ArrayList<>();
-        for (RealmNews news : list){
-            if (news.getImages() != null && news.getImages().size() > 0) {
-                resourceIds.add(news.getImages().get(0));
+        for (RealmNews news : list) {
+            if (news.getImagesArray().size() > 0) {
+                JsonObject ob = news.getImagesArray().get(0).getAsJsonObject();
+                String resourceId = JsonUtils.getString("resourceId", ob.getAsJsonObject());
+                resourceIds.add(resourceId);
             }
         }
         ArrayList<String> urls = new ArrayList<>();
         SharedPreferences settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).findAll();
-        getUrlsAndStartDownload(lib,settings, urls);
+        getUrlsAndStartDownload(lib, settings, urls);
         adapterNews = new AdapterNews(getActivity(), list, user, null);
         adapterNews.setmRealm(mRealm);
+        adapterNews.setFromLogin(getArguments().getBoolean("fromLogin"));
         adapterNews.setListener(this);
         adapterNews.registerAdapterDataObserver(observer);
         rvNews.setAdapter(adapterNews);
         showNoData(tvMessage, adapterNews.getItemCount());
     }
-
-
-
 
 
     @Override

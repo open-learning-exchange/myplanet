@@ -29,6 +29,8 @@ import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
+import static org.apache.commons.lang3.StringUtils.trim;
+
 public class RealmMyTeam extends RealmObject {
     @PrimaryKey
     private String id;
@@ -50,10 +52,13 @@ public class RealmMyTeam extends RealmObject {
     private String docType;
     private String title;
     private String route;
+    private String services;
+    private String rules;
     private boolean isLeader;
     private String type;
     private int amount;
     private long date;
+    private boolean isPublic;
 
     public String getRoute() {
         return route;
@@ -69,6 +74,7 @@ public class RealmMyTeam extends RealmObject {
         if (myTeams == null) {
             myTeams = mRealm.createObject(RealmMyTeam.class, teamId);
         }
+        Utilities.log(teamId);
         myTeams.setUser_id(JsonUtils.getString("userId", doc));
         myTeams.setTeamId(JsonUtils.getString("teamId", doc));
         myTeams.set_id(JsonUtils.getString("_id", doc));
@@ -84,12 +90,15 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setTeamType(JsonUtils.getString("teamType", doc));
         myTeams.setRoute(JsonUtils.getString("route", doc));
         myTeams.setType(JsonUtils.getString("type", doc));
+        myTeams.setServices(JsonUtils.getString("services", doc));
+        myTeams.setRules(JsonUtils.getString("rules", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
         myTeams.setAmount(JsonUtils.getInt("amount", doc));
         myTeams.setDate(JsonUtils.getLong("date", doc));
 //        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
         myTeams.setDocType(JsonUtils.getString("docType", doc));
+        myTeams.setPublic(JsonUtils.getBoolean("public", doc));
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);
         myTeams.courses = new RealmList<>();
         for (JsonElement e : coursesArray) {
@@ -97,6 +106,30 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public String getServices() {
+        return services;
+    }
+
+    public void setServices(String services) {
+        this.services = services;
+    }
+
+    public String getRules() {
+        return rules;
+    }
+
+    public void setRules(String rules) {
+        this.rules = rules;
+    }
+
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public void setPublic(boolean aPublic) {
+        isPublic = aPublic;
     }
 
     public String getType() {
@@ -241,11 +274,11 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public String getTitle() {
-        return title;
+        return trim(title);
     }
 
     public void setTitle(String title) {
-        this.title = title;
+        this.title = trim(title);
     }
 
     public static JsonObject serialize(RealmMyTeam team) {
@@ -266,6 +299,9 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("amount", team.getAmount());
         object.addProperty("route", team.getRoute());
         object.addProperty("date", team.getDate());
+        object.addProperty("public", team.isPublic());
+        object.addProperty("services", team.getServices());
+        object.addProperty("rules", team.getRules());
         if (TextUtils.equals(team.getTeamType(), "debit")) {
             object.addProperty("amount", team.getAmount());
         } else if (TextUtils.equals(team.getTeamType(), "credit")) {
@@ -354,11 +390,11 @@ public class RealmMyTeam extends RealmObject {
 
 
     public String getName() {
-        return name;
+        return trim(name);
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.name = trim(name);
     }
 
     public String getDescription() {

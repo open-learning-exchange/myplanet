@@ -17,7 +17,7 @@
         android:focusableInTouchMode="true"
         android:orientation="horizontal"
         android:weightSum="10"
-        android:layout_margin="@dimen/_60dp"
+        android:layout_margin="@dimen/_40dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintBottom_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -47,8 +47,8 @@
 
                 <ImageView
                     android:id="@+id/logoImageView"
-                    android:layout_width="wrap_content"
-                    android:layout_height="0dp"
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
                     android:layout_weight="4"
                     android:contentDescription="TODO"
                     app:srcCompat="@drawable/ole_logo" />
@@ -100,9 +100,21 @@
                     android:id="@+id/customDeviceName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:textSize="12sp"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     />
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_gravity="center"
+                    android:id="@+id/open_community"
+                    android:text="Open Community"
+                    android:textColor="@color/md_white_1000"
+                    android:gravity="center"
+                    android:theme="@style/PrimaryFlatButton"
+                    android:layout_height="wrap_content"/>
+
 
             </LinearLayout>
         </LinearLayout>

@@ -162,7 +162,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         setPrevReference(ar, object);
         AlertDialog d = DialogUtils.getAlertDialog(getActivity(), "Add Reference", v);
         d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
-            String name = etName.getText().toString();
+            String name = etName.getText().toString().trim();
             if (name.isEmpty()) {
                 tlName.setError("Name is required.");
                 return;
@@ -202,8 +202,8 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         btnAddResource.setOnClickListener(view -> showResourseListDialog(prevList));
         new AlertDialog.Builder(getActivity()).setTitle("Add Achievement").setIcon(R.drawable.ic_edit).setView(v).setCancelable(false)
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
-                    String desc = etDescription.getText().toString();
-                    String title = etTitle.getText().toString();
+                    String desc = etDescription.getText().toString().trim();
+                    String title = etTitle.getText().toString().trim();
                     if (title.isEmpty()) {
                         Toast.makeText(getActivity(), "Title is required", Toast.LENGTH_SHORT).show();
                         return;

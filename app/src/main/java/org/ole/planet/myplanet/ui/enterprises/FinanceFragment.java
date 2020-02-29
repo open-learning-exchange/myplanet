@@ -120,6 +120,11 @@ public class FinanceFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        if (user.isManager() || user.isLeader()){
+            fab.setVisibility(View.VISIBLE);
+        }else{
+            fab.setVisibility(View.GONE);
+        }
         fab.setOnClickListener(view -> addTransaction());
         list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
@@ -151,8 +156,8 @@ public class FinanceFragment extends BaseTeamFragment {
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String type = spnType.getSelectedItem().toString();
                     Utilities.log(type + " type");
-                    String note = tlNote.getEditText().getText().toString();
-                    String amount = tlAmount.getEditText().getText().toString();
+                    String note = tlNote.getEditText().getText().toString().trim();
+                    String amount = tlAmount.getEditText().getText().toString().trim();
 
                     if (note.isEmpty()) {
                         Utilities.toast(getActivity(), "Note is required");

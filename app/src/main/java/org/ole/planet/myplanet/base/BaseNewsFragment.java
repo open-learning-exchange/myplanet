@@ -8,7 +8,6 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,9 +15,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 
@@ -33,9 +30,7 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import java.io.File;
 import java.util.List;
 
-import io.realm.Case;
 import io.realm.Realm;
-import io.realm.Sort;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -68,8 +63,8 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     }
 
     @Override
-    public void showReply(RealmNews news) {
-        startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.getId()));
+    public void showReply(RealmNews news, boolean fromLogin) {
+        startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.getId()).putExtra("fromLogin", fromLogin));
     }
 
 

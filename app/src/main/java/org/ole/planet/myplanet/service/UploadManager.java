@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.model.RealmNewsLog;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
@@ -79,10 +80,32 @@ public class UploadManager extends FileUploadService {
         return instance;
     }
 
+
+    public void uploadNewsActivities() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm = dbService.getRealmInstance();
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmNewsLog> newsLog = realm.where(RealmNewsLog.class).isNull("_id").or().isEmpty("_id").findAll();
+
+            for (RealmNewsLog news : newsLog) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", RealmNewsLog.serialize(news)).execute().body();
+                    Utilities.log("Team upload " + new Gson().toJson(object));
+                    if (object != null) {
+                        news.set_id(JsonUtils.getString("id", object));
+                        news.set_rev(JsonUtils.getString("rev", object));
+                    }
+                } catch (IOException e) {
+                }
+
+            }
+        });
+    }
+
     public void uploadActivities(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        if(model == null)
+        if (model == null)
             return;
         if (model.isManager())
             return;
@@ -96,7 +119,7 @@ public class UploadManager extends FileUploadService {
                 public void onFailure(Call<JsonObject> call, Throwable t) {
                 }
             });
-            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) +  "@" + NetworkUtils.getMacAddr()).enqueue(new Callback<JsonObject>() {
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getMacAddr()).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
@@ -254,7 +277,7 @@ public class UploadManager extends FileUploadService {
         mRealm = new DatabaseService(context).getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
-                    List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).findAll();
+                    List<RealmSubmitPhotos> data = realm.where(RealmSubmitPhotos.class).equalTo("uploaded", false).findAll();
                     for (RealmSubmitPhotos sub : data) {
                         try {
                             JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub)).execute().body();
@@ -357,7 +380,7 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        if(model == null)
+        if (model == null)
             return;
         if (model.isManager())
             return;
@@ -430,7 +453,7 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         RealmUserModel userModel = new UserProfileDbHandler(context).getUserModel();
         mRealm.executeTransactionAsync(realm -> {
-            final RealmResults<RealmNews> activities = realm.where(RealmNews.class).isNull("_id").or().isEmpty("_id").findAll();
+            final RealmResults<RealmNews> activities = realm.where(RealmNews.class).findAll();
             for (RealmNews act : activities) {
                 try {
                     if (act.getUserId().startsWith("guest"))
@@ -442,6 +465,7 @@ public class UploadManager extends FileUploadService {
                         JsonObject response = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).execute().body();
                         String _rev = JsonUtils.getString("rev", response);
                         String _id = JsonUtils.getString("id", response);
+                        JsonArray image = act.getImagesArray();
                         File f = new File(JsonUtils.getString("imageUrl", object));
                         Utilities.log("IMAGE FILE URL  " + JsonUtils.getString("imageUrl", object));
                         String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", object));
@@ -452,7 +476,6 @@ public class UploadManager extends FileUploadService {
                         String url = String.format(format, Utilities.getUrl(), _id, name);
                         Response<JsonObject> res = apiInterface.uploadResource(getHeaderMap(mimeType, _rev), url, body).execute();
                         JsonObject attachment = res.body();
-                        JsonArray image = new JsonArray();
                         JsonObject resourceObject = new JsonObject();
                         resourceObject.addProperty("resourceId", JsonUtils.getString("id", attachment));
                         resourceObject.addProperty("filename", JsonUtils.getString("imageName", object));
@@ -480,6 +503,7 @@ public class UploadManager extends FileUploadService {
                 }
             }
         });
+        uploadNewsActivities();
     }
 
 

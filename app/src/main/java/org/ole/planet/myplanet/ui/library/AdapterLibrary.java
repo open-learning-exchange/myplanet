@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.AppCompatRatingBar;
 import androidx.recyclerview.widget.RecyclerView;
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ import java.util.List;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
+import io.noties.markwon.Markwon;
 import io.realm.Realm;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -45,25 +48,17 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnHomeItemClickListener homeItemClickListener;
     private HashMap<String, JsonObject> ratingMap;
     private OnRatingChangeListener ratingChangeListener;
-    private Realm realm;
-    //  private HashMap<String, RealmTag> tagMap;
-    // private HashMap<String, RealmTag> tagMapWithName;
+    private Markwon markwon;
 
-    //    public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, HashMap<String, RealmTag> tagMap) {
+    private Realm realm;
+
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
         this.ratingMap = ratingMap;
         this.context = context;
+        markwon = Markwon.create(context);
         this.realm = realm;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
-
-//        this.tagMap = tagMap;
-//        this.tagMapWithName = new HashMap<>();
-//        for (String key : tagMap.keySet()
-//        ) {
-//            RealmTag tag = tagMap.get(key);
-//            this.tagMapWithName.put(tag.getName(), tag);
-//        }
         config = Utilities.getCloudConfig()
                 .selectMode(ChipCloud.SelectMode.single);
         if (context instanceof OnHomeItemClickListener) {
@@ -101,10 +96,12 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHolderLibrary) {
             Utilities.log("On bind " + position);
             ((ViewHolderLibrary) holder).title.setText(libraryList.get(position).getTitle());
-            ((ViewHolderLibrary) holder).desc.setText(libraryList.get(position).getDescription());
+            Utilities.log(libraryList.get(position).getDescription());
+            markwon.setMarkdown(((ViewHolderLibrary) holder).desc, libraryList.get(position).getDescription());
             ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + " Total");
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
+            ((ViewHolderLibrary) holder).tvDate.setText(TimeUtils.formatDate(libraryList.get(position).getCreatedDate(), "MMM dd, yyyy"));
             displayTagCloud(((ViewHolderLibrary) holder).flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
             ((ViewHolderLibrary) holder).ivDownloaded.setImageResource(libraryList.get(position).isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
@@ -127,23 +124,12 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
-//        for (String s : libraryList.get(position).getTag()) {
-//            if (tagMap.containsKey(s)) {
-//                chipCloud.addChip(tagMap.get(s));
-//                chipCloud.setListener((i, b, b1) -> {
-//                    if (b1 && listener != null) {
-//                        listener.onTagClicked(tagMapWithName.get(chipCloud.getLabel(i)));
-//                    }
-//                });
-//            }
-//        }
-
         List<RealmTag> tags = realm.where(RealmTag.class).equalTo("db", "resources").equalTo("linkId", libraryList.get(position).getId()).findAll();
         for (RealmTag tag : tags) {
             RealmTag parent = realm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
-            try{
+            try {
                 chipCloud.addChip(parent.getName());
-            }catch (Exception err){
+            } catch (Exception err) {
                 chipCloud.addChip("--");
             }
             chipCloud.setListener((i, b, b1) -> {
@@ -160,7 +146,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        TextView title, desc, rating, timesRated, average;
+        TextView title, desc, rating, tvDate,timesRated, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;
@@ -174,6 +160,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             rating = itemView.findViewById(R.id.rating);
             timesRated = itemView.findViewById(R.id.times_rated);
             ratingBar = itemView.findViewById(R.id.rating_bar);
+            tvDate = itemView.findViewById(R.id.tv_date);
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
             ivDownloaded = itemView.findViewById(R.id.iv_downloaded);
@@ -184,16 +171,11 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     listener.onSelectedListChange(selectedItems);
                 }
             });
-//            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
-            //  llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener));
             ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
                     homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
                 return true;
             });
-//            } else {
-//                llRating.setOnClickListener(null);
-//            }
             flexboxDrawable = itemView.findViewById(R.id.flexbox_drawable);
         }
     }

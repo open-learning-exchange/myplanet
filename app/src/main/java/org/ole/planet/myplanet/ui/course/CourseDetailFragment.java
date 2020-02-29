@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
 

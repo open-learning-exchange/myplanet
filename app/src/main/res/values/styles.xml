@@ -16,8 +16,6 @@
     </style>
 
 
-
-
     <style name="FullscreenTheme" parent="MaterialDrawerTheme.Light.DarkToolbar.TranslucentStatus">
         <item name="android:actionBarStyle">@style/FullscreenActionBarStyle</item>
         <item name="android:windowActionBarOverlay">false</item>
@@ -73,6 +71,11 @@
         <item name="android:textSize">@dimen/text_size_mid</item>
     </style>
 
+    <style name="RejectButton" parent="Theme.AppCompat">
+        <item name="colorButtonNormal">@color/colorAccent</item>
+        <item name="colorControlHighlight">@color/colorAccent</item>
+    </style>
+
     <style name="PrimaryButton" parent="Theme.AppCompat">
         <item name="colorButtonNormal">@color/colorPrimary</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
@@ -98,8 +101,10 @@
 
     <style name="YellowButtons" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_black_1000</item>
+        <item name="android:padding">8dp</item>
         <item name="android:background">@color/md_amber_500</item>
         <item name="colorControlHighlight">@color/disable_color</item>
+        <item name="android:layout_margin">8dp</item>
     </style>
 
     <style name="PrimaryFlatButton" parent="Theme.AppCompat.Light">
@@ -125,4 +130,13 @@
         <item name="android:textColor">@color/md_black_1000</item>
         <item name="android:layout_height">wrap_content</item>
     </style>
+
+    <style name="MyMaterialTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="MyMaterialTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+
+    <style name="MyMaterialTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 </resources>

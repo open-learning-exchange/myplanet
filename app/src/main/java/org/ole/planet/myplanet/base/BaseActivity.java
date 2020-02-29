@@ -11,6 +11,9 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstanceStat) {
         super.onCreate(savedInstanceStat);
+    }
+
+    public void initActionBar() {
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
@@ -21,4 +24,5 @@ public abstract class BaseActivity extends AppCompatActivity {
             finish();
         return super.onOptionsItemSelected(item);
     }
+
 }

@@ -98,11 +98,23 @@
                 <TextView
                     android:id="@+id/customDeviceName"
                     android:layout_width="match_parent"
+                    android:textSize="12sp"
                     android:layout_height="wrap_content"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     />
 
+
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_gravity="center"
+                    android:id="@+id/open_community"
+                    android:text="Open Community"
+                    android:textColor="@color/md_white_1000"
+                    android:gravity="center"
+                    android:theme="@style/PrimaryFlatButton"
+                    android:layout_height="wrap_content"/>
 
             </LinearLayout>
         </LinearLayout>
