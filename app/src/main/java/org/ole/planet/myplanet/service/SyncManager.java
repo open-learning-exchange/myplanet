@@ -41,7 +41,7 @@ import io.realm.Realm;
 import retrofit2.Response;
 
 public class SyncManager {
-    static final String PREFS_NAME = "OLE_PLANET";
+    public static final String PREFS_NAME = "OLE_PLANET";
     private static SyncManager ourInstance;
     Thread td;
     private SharedPreferences settings;
