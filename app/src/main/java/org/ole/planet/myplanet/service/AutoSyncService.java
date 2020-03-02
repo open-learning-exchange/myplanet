@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 
+import org.ole.planet.myplanet.service.SyncManager;
 import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
 
