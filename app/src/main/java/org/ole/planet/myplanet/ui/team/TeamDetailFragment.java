@@ -64,7 +64,6 @@ public class TeamDetailFragment extends Fragment {
         if (team == null || !isMyTeam){
             llButtons.setVisibility(View.GONE);
         }else{
-
             leave.setOnClickListener(vi -> {
                 team.leave(user, mRealm);
                 Utilities.toast(getActivity(), "Left team");

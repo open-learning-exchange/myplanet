@@ -61,17 +61,17 @@ public class AddMyHealthActivity extends AppCompatActivity {
         if (!realm.isInTransaction())
             realm.beginTransaction();
         RealmMyHealth.RealmMyHealthProfile health = new RealmMyHealth.RealmMyHealthProfile();
-        health.setFirstName(fname.getEditText().getText().toString());
-        health.setMiddleName(mname.getEditText().getText().toString());
-        health.setLastName(lname.getEditText().getText().toString());
-        health.setEmail(email.getEditText().getText().toString());
-        health.setBirthDate(birthdate.getEditText().getText().toString());
-        health.setBirthplace(birthplace.getEditText().getText().toString());
-        health.setEmergencyContactName(emergencyNumber.getEditText().getText().toString());
-        health.setEmergencyContact(contact.getEditText().getText().toString());
+        health.setFirstName(fname.getEditText().getText().toString().trim());
+        health.setMiddleName(mname.getEditText().getText().toString().trim());
+        health.setLastName(lname.getEditText().getText().toString().trim());
+        health.setEmail(email.getEditText().getText().toString().trim());
+        health.setBirthDate(birthdate.getEditText().getText().toString().trim());
+        health.setBirthplace(birthplace.getEditText().getText().toString().trim());
+        health.setEmergencyContactName(emergencyNumber.getEditText().getText().toString().trim());
+        health.setEmergencyContact(contact.getEditText().getText().toString().trim());
         health.setEmergencyContactType(contactType.getSelectedItem().toString());
-        health.setSpecialNeeds(specialNeed.getEditText().getText().toString());
-        health.setNotes(otherNeed.getEditText().getText().toString());
+        health.setSpecialNeeds(specialNeed.getEditText().getText().toString().trim());
+        health.setNotes(otherNeed.getEditText().getText().toString().trim());
         if (myHealth == null)
             myHealth = new RealmMyHealth();
         myHealth.setProfile(health);

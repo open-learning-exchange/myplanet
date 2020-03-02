@@ -2,8 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
+    android:layout_height="wrap_content">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -20,22 +19,25 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/radio_protocol"
-                android:textSize="@dimen/_20dp"/>
+                android:textSize="@dimen/_20dp" />
+
             <RadioGroup
                 android:id="@+id/radio_protocol"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
-            <RadioButton
-                android:id="@+id/radio_http"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/radio_http"/>
-            <RadioButton
-                android:id="@+id/radio_https"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/radio_https"/>
+
+                <RadioButton
+                    android:id="@+id/radio_http"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/radio_http" />
+
+                <RadioButton
+                    android:id="@+id/radio_https"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/radio_https" />
 
             </RadioGroup>
 
@@ -64,10 +66,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textUri"
-            android:visibility="gone"
             android:singleLine="true"
+            android:text="@string/http_protocol"
             android:textSize="18sp"
-            android:text="@string/http_protocol"/>
+            android:visibility="gone" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/input_layout_password"
@@ -135,19 +137,21 @@
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/til_device_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
+
                     <EditText
                         android:id="@+id/deviceName"
                         android:layout_width="wrap_content"
-                        android:minWidth="140dp"
                         android:layout_height="wrap_content"
                         android:hint="@string/device_name"
                         android:inputType="text"
                         android:maxLines="1"
+                        android:minWidth="140dp"
                         android:textColor="@android:color/background_dark"
                         android:textColorHint="@android:color/darker_gray"
                         android:textSize="10sp" />

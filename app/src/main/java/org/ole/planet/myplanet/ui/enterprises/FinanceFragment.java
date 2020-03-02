@@ -156,8 +156,8 @@ public class FinanceFragment extends BaseTeamFragment {
                 .setPositiveButton("Submit", (dialogInterface, i) -> {
                     String type = spnType.getSelectedItem().toString();
                     Utilities.log(type + " type");
-                    String note = tlNote.getEditText().getText().toString();
-                    String amount = tlAmount.getEditText().getText().toString();
+                    String note = tlNote.getEditText().getText().toString().trim();
+                    String amount = tlAmount.getEditText().getText().toString().trim();
 
                     if (note.isEmpty()) {
                         Utilities.toast(getActivity(), "Note is required");

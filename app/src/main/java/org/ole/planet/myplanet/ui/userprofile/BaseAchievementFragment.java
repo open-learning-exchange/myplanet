@@ -105,9 +105,9 @@ public class BaseAchievementFragment extends BaseContainerFragment {
     }
 
     public void setAchievementInfo() {
-        achievement.setAchievementsHeader(etAchievement.getText().toString());
-        achievement.setGoals(etGoals.getText().toString());
-        achievement.setPurpose(etPurpose.getText().toString());
+        achievement.setAchievementsHeader(etAchievement.getText().toString().trim());
+        achievement.setGoals(etGoals.getText().toString().trim());
+        achievement.setPurpose(etPurpose.getText().toString().trim());
         achievement.setAchievements(achievementArray);
         achievement.setreferences(referenceArray);
         achievement.setSendToNation(checkBox.isChecked() + "");

@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 709
-        versionName "0.7.9"
+        versionCode 718
+        versionName "0.7.18"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -20,6 +20,9 @@ android {
                 outputFileName = new File("myPlanet-build.apk")
             }
         }
+    }
+    configurations.all {
+        resolutionStrategy.force 'com.google.android.material:material:1.0.0'
     }
     buildTypes {
         release {

@@ -131,8 +131,8 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
         new AlertDialog.Builder(context).setTitle("Edit Personal").setIcon(R.drawable.ic_edit)
                 .setView(v)
                 .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
-                    String title = etTitle.getText().toString();
-                    String desc = etDesc.getText().toString();
+                    String title = etTitle.getText().toString().trim();
+                    String desc = etDesc.getText().toString().trim();
                     if (title.isEmpty()) {
                         Utilities.toast(context, "Please enter title");
                         return;
