@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,7 +32,11 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
     private Realm mRealm;
     private String type = "";
     private FragmentManager fragmentManager;
+    private OnClickTeamItem teamListener;
 
+    interface OnClickTeamItem {
+        void onEditTeam(RealmMyTeam team);
+    }
 
     public AdapterTeamList(Context context, List<RealmMyTeam> list, Realm mRealm, FragmentManager fragmentManager) {
         this.context = context;
@@ -41,6 +46,9 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
         this.fragmentManager = fragmentManager;
     }
 
+    public void setTeamListener(OnClickTeamItem teamListener) {
+        this.teamListener = teamListener;
+    }
 
     @NonNull
     @Override
@@ -55,6 +63,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderTeam) holder).created.setText(TimeUtils.getFormatedDate(list.get(position).getCreatedDate()));
             ((ViewHolderTeam) holder).type.setText(list.get(position).getTeamType());
             ((ViewHolderTeam) holder).type.setVisibility(type == null ? View.VISIBLE : View.GONE);
+            ((ViewHolderTeam) holder).editTeam.setVisibility(RealmMyTeam.getTeamLeader(list.get(position).getId(), mRealm).equals(user.getId()) ? View.VISIBLE : View.GONE);
             ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             boolean isMyTeam = list.get(position).isMyTeam(user.getId(), mRealm);
             showActionButton(isMyTeam, holder, position);
@@ -68,20 +77,24 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     ((OnHomeItemClickListener) context).openCallFragment(f);
                 }
             });
-            ((ViewHolderTeam) holder).feedback.setOnClickListener(v2->{
+            ((ViewHolderTeam) holder).feedback.setOnClickListener(v2 -> {
                 FeedbackFragment feedbackFragment = new FeedbackFragment();
-                feedbackFragment.show(fragmentManager,"");
+                feedbackFragment.show(fragmentManager, "");
                 feedbackFragment.setArguments(getBundle(list.get(position)));
+            });
+            ((ViewHolderTeam) holder).editTeam.setOnClickListener(view -> {
+                teamListener.onEditTeam(list.get(position));
             });
         }
     }
 
-    public Bundle getBundle(RealmMyTeam team){
+
+    public Bundle getBundle(RealmMyTeam team) {
         Bundle bundle = new Bundle();
-        if(team.getType().isEmpty()) bundle.putString("state","teams");
-        else bundle.putString("state",team.getType()+"s");
-        bundle.putString("item",team.getId());
-        bundle.putString("parentCode","dev");
+        if (team.getType().isEmpty()) bundle.putString("state", "teams");
+        else bundle.putString("state", team.getType() + "s");
+        bundle.putString("item", team.getId());
+        bundle.putString("parentCode", "dev");
         return bundle;
     }
 
@@ -117,7 +130,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     class ViewHolderTeam extends RecyclerView.ViewHolder {
         TextView name, created, type;
-        Button action,feedback;
+        Button action, feedback, editTeam;
 
         public ViewHolderTeam(View itemView) {
             super(itemView);
@@ -125,6 +138,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             created = itemView.findViewById(R.id.created);
             type = itemView.findViewById(R.id.type);
             action = itemView.findViewById(R.id.join_leave);
+            editTeam = itemView.findViewById(R.id.edit_team);
             feedback = itemView.findViewById(R.id.btn_feedback);
         }
     }

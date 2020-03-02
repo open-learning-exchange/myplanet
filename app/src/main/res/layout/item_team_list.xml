@@ -40,6 +40,15 @@
         android:text="Request To join" />
 
     <Button
+        android:id="@+id/edit_team"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="10sp"
+        android:visibility="gone"
+        android:text="Edit" />
+
+    <Button
         android:id="@+id/btn_feedback"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
