@@ -42,7 +42,7 @@
 
         </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>
 
-        <com.github.mikephil.charting.charts.LineChart
+        <com.github.mikephil.charting.charts.BarChart
             android:id="@+id/chart"
             android:layout_width="match_parent"
             android:layout_height="300dp" />

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import java.text.DateFormatSymbols;
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,9 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.github.mikephil.charting.components.Description
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
 import io.realm.Realm
 import kotlinx.android.synthetic.main.fragment_my_activity.*
@@ -44,10 +43,11 @@ class MyActivityFragment : Fragment() {
         var resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id).between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis).findAll()
 
         var countMap = HashMap<String, Int>();
-        var format = SimpleDateFormat("yyyy-mm")
+        var format = SimpleDateFormat("MMM")
         resourceActivity.forEach {
 
             var d = format.format(it.loginTime)
+            Utilities.log(d)
             if (countMap.containsKey(d)) {
                 countMap[d] = countMap[d]!!.plus(1)
             } else {
@@ -55,33 +55,46 @@ class MyActivityFragment : Fragment() {
             }
         }
         Utilities.log("${resourceActivity.size} size map : ${countMap.size} ")
-        var entries = ArrayList<Entry>()
-        var i = 1;
+        var entries = ArrayList<BarEntry>()
+        var i = 0;
         for (entry in countMap.keys) {
             var key = format.parse(entry)
-            var en = Entry(key.time.toFloat(), countMap[entry]!!.toFloat())
+            var en = BarEntry( key.month.toFloat(), countMap[entry]!!.toFloat())
             entries.add(en)
             i = i.plus(1)
         }
         Utilities.log("${entries.size} size")
-        val dataSet = LineDataSet(entries, "No of login ")
+        val dataSet = BarDataSet(entries, "No of login ")
 
-        val lineData = LineData(dataSet)
+        val lineData = BarData(dataSet)
         chart.setData(lineData)
         var d = Description()
         d.text = "Login Activity chart"
         chart.description = d
         chart.xAxis.valueFormatter = object: ValueFormatter(){
-            private val mFormat = SimpleDateFormat("MMM", Locale.ENGLISH)
-
             override fun getFormattedValue(value: Float): String {
-                val millis: Long = value.toLong()
-                return mFormat.format(Date(millis))
+                Utilities.log("value ${value.toInt()}")
+                return getMonth(value.toInt())
             }
         }
         chart.invalidate()
 
 
+    }
+
+    public fun  getMonth( month: Int) : String {
+        return  DateFormatSymbols().months[month];
+    }
+
+    private fun getXAxisValues(): ArrayList<String>? {
+        val xAxis = ArrayList<String>()
+        xAxis.add("JAN")
+        xAxis.add("FEB")
+        xAxis.add("MAR")
+        xAxis.add("APR")
+        xAxis.add("MAY")
+        xAxis.add("JUN")
+        return xAxis
     }
 
 }
