@@ -44,7 +44,7 @@ class NewsDetailActivity : BaseActivity() {
             newsLog.type = "news"
             newsLog.time = Date().time
             if (user != null)
-                newsLog.userId =userId
+                newsLog.userId = userId
         }
         initViews()
     }
