@@ -221,7 +221,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             if (showErrorMessage("Please select / write your answer to continue")) {
                 return;
             }
-
             boolean cont = updateAnsDb();
             capturePhoto();
             KeyboardUtils.hideSoftKeyboard(getActivity());
