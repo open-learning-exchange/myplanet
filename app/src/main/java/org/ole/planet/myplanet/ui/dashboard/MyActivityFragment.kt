@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import com.github.mikephil.charting.components.Description
 import com.github.mikephil.charting.data.*
 import com.github.mikephil.charting.formatter.ValueFormatter
+import com.google.gson.Gson
 import io.realm.Realm
 import kotlinx.android.synthetic.main.fragment_my_activity.*
 import org.ole.planet.myplanet.R
@@ -63,6 +64,8 @@ class MyActivityFragment : Fragment() {
             entries.add(en)
             i = i.plus(1)
         }
+        var e = Gson().toJson(countMap)
+        Utilities.log("$e")
         Utilities.log("${entries.size} size")
         val dataSet = BarDataSet(entries, "No of login ")
 
@@ -85,16 +88,4 @@ class MyActivityFragment : Fragment() {
     public fun  getMonth( month: Int) : String {
         return  DateFormatSymbols().months[month];
     }
-
-    private fun getXAxisValues(): ArrayList<String>? {
-        val xAxis = ArrayList<String>()
-        xAxis.add("JAN")
-        xAxis.add("FEB")
-        xAxis.add("MAR")
-        xAxis.add("APR")
-        xAxis.add("MAY")
-        xAxis.add("JUN")
-        return xAxis
-    }
-
 }
