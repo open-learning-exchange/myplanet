@@ -82,7 +82,6 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
                 else
                     id = sub.getParentId();
             }
-            Utilities.log("Id " + id);
         }
     }
 
