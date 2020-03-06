@@ -688,8 +688,10 @@ public class RealmMyLibrary extends RealmObject {
             JsonObject doc = allDocs.get(i).getAsJsonObject();
             doc = JsonUtils.getJsonObject("doc", doc);
             String id = JsonUtils.getString("_id",doc );
-            list.add(id);
-            RealmMyLibrary.insertResources(doc, mRealm);
+            if (!id.startsWith("_design")){
+                list.add(id);
+                RealmMyLibrary.insertResources(doc, mRealm);
+            }
         }
         return list;
     }

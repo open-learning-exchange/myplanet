@@ -54,6 +54,7 @@ public class RealmNews extends RealmObject {
     private String viewIn;
 
     public static void insert(Realm mRealm, JsonObject doc) {
+        Utilities.log("sync nnews " + new  Gson().toJson(doc));
         RealmNews news = mRealm.where(RealmNews.class).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst();
         if (news == null) {
             news = mRealm.createObject(RealmNews.class, JsonUtils.getString("_id", doc));

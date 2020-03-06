@@ -197,7 +197,6 @@ public class SyncManager {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
         });
     }
 
