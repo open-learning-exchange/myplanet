@@ -71,72 +71,54 @@ public class TransactionSyncManager {
         }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }
 
-//    public static void syncDb(final Realm mRealm, final String table) {
-//        Utilities.log("Sync table  " + table);
-//        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-//        mRealm.executeTransactionAsync(realm -> {
-//            try {
-//                DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs").execute().body();
-//                for (int i = 0; i < res.getRows().size(); i++) {
-//                    Rows doc = res.getRows().get(i);
-//                    try {
-//                        processDoc(apiInterface, doc, realm, table);
-//                    } catch (Exception e) {
-//                    }
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        });
-//    }
 
-
-    public static void syncDb(Realm realm, String table)  {
+    public static void syncDb(Realm realm, String table) {
         realm.executeTransactionAsync(mRealm -> {
             ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
             final retrofit2.Call<JsonObject> allDocs = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false");
             Response<JsonObject> all = null;
             try {
                 all = allDocs.execute();
-
-            JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
-            List<String> keys = new ArrayList<>();
-            for (int i = 0; i < rows.size(); i++) {
-                JsonObject object = rows.get(i).getAsJsonObject();
-                if (!TextUtils.isEmpty(JsonUtils.getString("id", object)))
-                    keys.add(JsonUtils.getString("key", object));
-                if (i == rows.size() - 1 || keys.size() == 1000) {
-                    JsonObject obj = new JsonObject();
-                    obj.add("keys", new Gson().fromJson(new Gson().toJson(keys), JsonArray.class));
-                    final Response<JsonObject> response = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute();
-                    if (response.body() != null) {
-                        JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
-                        insertDocs(arr, mRealm, table);
+                JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
+                List<String> keys = new ArrayList<>();
+                for (int i = 0; i < rows.size(); i++) {
+                    JsonObject object = rows.get(i).getAsJsonObject();
+                    if (!TextUtils.isEmpty(JsonUtils.getString("id", object)))
+                        keys.add(JsonUtils.getString("key", object));
+                    if (i == rows.size() - 1 || keys.size() == 1000) {
+                        JsonObject obj = new JsonObject();
+                        obj.add("keys", new Gson().fromJson(new Gson().toJson(keys), JsonArray.class));
+                        final Response<JsonObject> response = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute();
+                        if (response.body() != null) {
+                            JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
+                            insertDocs(arr, mRealm, table);
+                        }
+                        keys.clear();
                     }
-                    keys.clear();
                 }
-            }
-            } catch (IOException e) {
-            }
+            } catch (IOException e) { }
         });
-
     }
 
-    private static void insertDocs(JsonArray arr, Realm mRealm, String table){
-        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+    private static void insertDocs(JsonArray arr, Realm mRealm, String table) {
         for (JsonElement j : arr) {
             JsonObject jsonDoc = j.getAsJsonObject();
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
             String id = JsonUtils.getString("_id", jsonDoc);
             if (!id.startsWith("_design")) {
-                if (table.equals("exams")) {
-                    RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
-                } else if (table.equals("tablet_users")) {
-                    RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
-                } else {
-                    callMethod(mRealm, jsonDoc, table);
-                }
+                continueInsert(mRealm, table,jsonDoc);
             }
+        }
+    }
+
+    private static void continueInsert(Realm mRealm, String table, JsonObject jsonDoc) {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        if (table.equals("exams")) {
+            RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
+        } else if (table.equals("tablet_users")) {
+            RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
+        } else {
+            callMethod(mRealm, jsonDoc, table);
         }
     }
 
