@@ -111,12 +111,15 @@ public class TransactionSyncManager {
                         for (JsonElement j : arr) {
                             JsonObject jsonDoc = j.getAsJsonObject();
                             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
-                            if (table.equals("exams")) {
-                                RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
-                            } else if (table.equals("tablet_users")) {
-                                RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
-                            } else {
-                                callMethod(mRealm, jsonDoc, table);
+                            String id = JsonUtils.getString("_id", jsonDoc);
+                            if (!id.startsWith("_design")) {
+                                if (table.equals("exams")) {
+                                    RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
+                                } else if (table.equals("tablet_users")) {
+                                    RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
+                                } else {
+                                    callMethod(mRealm, jsonDoc, table);
+                                }
                             }
                         }
                     }
