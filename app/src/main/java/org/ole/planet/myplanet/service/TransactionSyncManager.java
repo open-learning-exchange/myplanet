@@ -2,9 +2,12 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import android.util.Base64;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -12,6 +15,7 @@ import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
@@ -22,6 +26,8 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 import io.realm.Realm;
 import retrofit2.Response;
@@ -54,7 +60,7 @@ public class TransactionSyncManager {
                 RealmUserModel userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
                 response = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
                 DocumentResponse ob = (DocumentResponse) response.body();
-                if (ob!=null && ob.getRows().size() > 0){
+                if (ob != null && ob.getRows().size() > 0) {
                     Rows r = ob.getRows().get(0);
                     JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
                     userModel.setKey(JsonUtils.getString("key", jsonDoc));
@@ -65,24 +71,60 @@ public class TransactionSyncManager {
         }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }
 
-    public static void syncDb(final Realm mRealm, final String table) {
-        Utilities.log("Sync table  " + table);
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        mRealm.executeTransactionAsync(realm -> {
-            try {
+//    public static void syncDb(final Realm mRealm, final String table) {
+//        Utilities.log("Sync table  " + table);
+//        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+//        mRealm.executeTransactionAsync(realm -> {
+//            try {
+//                DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs").execute().body();
+//                for (int i = 0; i < res.getRows().size(); i++) {
+//                    Rows doc = res.getRows().get(i);
+//                    try {
+//                        processDoc(apiInterface, doc, realm, table);
+//                    } catch (Exception e) {
+//                    }
+//                }
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//    }
 
-                DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs").execute().body();
-                for (int i = 0; i < res.getRows().size(); i++) {
-                    Rows doc = res.getRows().get(i);
-                    try {
-                        processDoc(apiInterface, doc, realm, table);
-                    } catch (Exception e) {
+    public static void syncDb(Realm mRealm, String table) {
+        try {
+            ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+            final retrofit2.Call<JsonObject> allDocs = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false");
+            Response<JsonObject> all = allDocs.execute();
+            JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
+            List<String> keys = new ArrayList<>();
+            SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+            for (int i = 0; i < rows.size(); i++) {
+                JsonObject object = rows.get(i).getAsJsonObject();
+                if (!TextUtils.isEmpty(JsonUtils.getString("id", object)))
+                    keys.add(JsonUtils.getString("key", object));
+                if (i == rows.size() - 1 || keys.size() == 1000) {
+                    JsonObject obj = new JsonObject();
+                    obj.add("keys", new Gson().fromJson(new Gson().toJson(keys), JsonArray.class));
+                    final Response<JsonObject> response = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute();
+                    if (response.body() != null) {
+                        JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
+                        for (JsonElement j : arr) {
+                            JsonObject jsonDoc = j.getAsJsonObject();
+                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
+                            if (table.equals("exams")) {
+                                RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
+                            } else if (table.equals("tablet_users")) {
+                                RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
+                            } else {
+                                callMethod(mRealm, jsonDoc, table);
+                            }
+                        }
                     }
+                    keys.clear();
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-        });
+        } catch (Exception e) {
+        }
     }
 
     private static void processDoc(ApiInterface dbClient, Rows doc, Realm mRealm, String type) throws Exception {
@@ -108,7 +150,8 @@ public class TransactionSyncManager {
                     break;
                 }
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
     }
 
 
