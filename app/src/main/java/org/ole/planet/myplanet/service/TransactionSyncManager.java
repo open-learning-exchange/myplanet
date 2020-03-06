@@ -90,14 +90,17 @@ public class TransactionSyncManager {
 //        });
 //    }
 
-    public static void syncDb(Realm mRealm, String table) {
-        try {
+
+    public static void syncDb(Realm realm, String table)  {
+        realm.executeTransactionAsync(mRealm -> {
             ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
             final retrofit2.Call<JsonObject> allDocs = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false");
-            Response<JsonObject> all = allDocs.execute();
+            Response<JsonObject> all = null;
+            try {
+                all = allDocs.execute();
+
             JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
             List<String> keys = new ArrayList<>();
-            SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
             for (int i = 0; i < rows.size(); i++) {
                 JsonObject object = rows.get(i).getAsJsonObject();
                 if (!TextUtils.isEmpty(JsonUtils.getString("id", object)))
@@ -108,38 +111,31 @@ public class TransactionSyncManager {
                     final Response<JsonObject> response = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute();
                     if (response.body() != null) {
                         JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
-                        for (JsonElement j : arr) {
-                            JsonObject jsonDoc = j.getAsJsonObject();
-                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
-                            String id = JsonUtils.getString("_id", jsonDoc);
-                            if (!id.startsWith("_design")) {
-                                if (table.equals("exams")) {
-                                    RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
-                                } else if (table.equals("tablet_users")) {
-                                    RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
-                                } else {
-                                    callMethod(mRealm, jsonDoc, table);
-                                }
-                            }
-                        }
+                        insertDocs(arr, mRealm, table);
                     }
                     keys.clear();
                 }
             }
-        } catch (Exception e) {
-        }
+            } catch (IOException e) {
+            }
+        });
+
     }
 
-    private static void processDoc(ApiInterface dbClient, Rows doc, Realm mRealm, String type) throws Exception {
+    private static void insertDocs(JsonArray arr, Realm mRealm, String table){
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        if (!doc.getId().equalsIgnoreCase("_design/_auth")) {
-            JsonObject jsonDoc = dbClient.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + type + "/" + doc.getId()).execute().body();
-            if (type.equals("exams")) {
-                RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
-            } else if (type.equals("tablet_users")) {
-                RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
-            } else {
-                callMethod(mRealm, jsonDoc, type);
+        for (JsonElement j : arr) {
+            JsonObject jsonDoc = j.getAsJsonObject();
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
+            String id = JsonUtils.getString("_id", jsonDoc);
+            if (!id.startsWith("_design")) {
+                if (table.equals("exams")) {
+                    RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
+                } else if (table.equals("tablet_users")) {
+                    RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
+                } else {
+                    callMethod(mRealm, jsonDoc, table);
+                }
             }
         }
     }
