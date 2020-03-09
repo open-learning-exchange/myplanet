@@ -119,7 +119,7 @@ dependencies {
     implementation "androidx.core:core-ktx:+"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
-
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 
 }
 realm {
