@@ -79,7 +79,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-    private CheckBox managerialLogin;
+//    private CheckBox managerialLogin;
     private boolean isSync = false, forceSync = false;
     private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
@@ -172,7 +172,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputLayoutPassword = findViewById(R.id.input_layout_password);
         imgBtnSetting = findViewById(R.id.imgBtnSetting);
         btnGuestLogin = findViewById(R.id.btn_guest_login);
-        managerialLogin = findViewById(R.id.manager_login);
+//        managerialLogin = findViewById(R.id.manager_login);
         TextView customDeviceName = findViewById(R.id.customDeviceName);
         customDeviceName.setText(getCustomDeviceName());
         btnSignIn = findViewById(R.id.btn_signin); //buttons
@@ -323,11 +323,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor.putString("loginUserName", inputName.getText().toString());
         editor.putString("loginUserPassword", inputPassword.getText().toString());
 //        }
-        boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), managerialLogin.isChecked());
+        boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(),false );
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             onLogin();
-        } else if (managerialLogin.isChecked()) {
+        } else {
             ManagerSync.getInstance().login(inputName.getText().toString(), inputPassword.getText().toString(), new SyncListener() {
                 @Override
                 public void onSyncStarted() {
@@ -355,9 +355,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 }
 
             });
-        } else {
-            alertDialogOkay(getString(R.string.err_msg_login));
         }
+//        else {
+//            alertDialogOkay(getString(R.string.err_msg_login));
+//        }
         editor.commit();
 
     }
