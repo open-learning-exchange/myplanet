@@ -229,6 +229,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:alpha="0.7"
+                        android:visibility="gone"
                         android:fontFamily="sans-serif"
                         android:text="@string/managerial_login"
                         android:textColor="@color/material_drawer_dark_background"
