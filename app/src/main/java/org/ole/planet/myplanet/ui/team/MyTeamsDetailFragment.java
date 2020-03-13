@@ -260,7 +260,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
                 TextView tv = convertView.findViewById(android.R.id.text1);
-                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName()) + " visits )");
+                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName(), teamId) + " visits )");
                 return convertView;
             }
         });
