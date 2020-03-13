@@ -405,7 +405,7 @@ public class UploadManager extends FileUploadService {
     }
 
     private void uploadTeamActivities(Realm realm, ApiInterface apiInterface) {
-        final RealmResults<RealmTeamLog> logs = realm.where(RealmTeamLog.class)
+        final RealmResults<RealmTeamLog> logs = realm.where(RealmTeamLog.class).isNull("_rev")
                 .findAll();
         for (RealmTeamLog log : logs) {
             try {
