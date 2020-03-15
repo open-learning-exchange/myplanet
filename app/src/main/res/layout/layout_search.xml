@@ -36,6 +36,7 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
         android:layout_weight="1">
 
         <EditText
@@ -43,7 +44,7 @@
             android:maxLines="1"
             android:inputType="text"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/layout_height"
+            android:layout_height="40dp"
             android:layout_gravity="center"
             android:gravity="bottom"
             android:hint="@string/search"
