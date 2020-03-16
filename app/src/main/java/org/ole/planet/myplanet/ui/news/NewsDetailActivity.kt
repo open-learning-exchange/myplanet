@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.os.Bundle
+import android.text.Html
 import android.text.TextUtils
 import android.view.View
 import com.bumptech.glide.Glide
@@ -47,11 +48,23 @@ class NewsDetailActivity : BaseActivity() {
                 newsLog.userId = userId
         }
         initViews()
+
     }
 
     private fun initViews() {
         title = news?.userName
-        tv_detail.text = news?.message
+        var msg: String = news!!.message
+        news?.imagesArray?.forEach {
+            val ob = it.asJsonObject
+            val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
+            val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
+            Utilities.log(markDown)
+            val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
+         msg =   msg.replace(markDown, "<br/><img width=\"70%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"><br/>", false)
+            Utilities.log("Replace " + msg + " " + markDown)
+        }
+        Utilities.log(msg)
+        tv_detail.loadDataWithBaseURL(null, "<html><body>" + msg + "</body></html>", "text/html", "utf-8", null)
         val imageUrl = news?.imageUrl
         if (TextUtils.isEmpty(imageUrl)) {
             loadImage()

@@ -121,6 +121,8 @@ dependencies {
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 
+
+
 }
 realm {
     syncEnabled = true
