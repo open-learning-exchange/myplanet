@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 718
-        versionName "0.7.18"
+        versionCode 732
+        versionName "0.7.32"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
@@ -119,6 +119,8 @@ dependencies {
     implementation "androidx.core:core-ktx:+"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+
 
 
 }

@@ -5,14 +5,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +14,9 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
@@ -139,12 +134,11 @@ public class NewsFragment extends BaseNewsFragment {
                 JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
-                    Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode()) + " nn " + news.getViewIn());
-                    if (ob.get("_id").getAsString().equalsIgnoreCase(user.getPlanetCode() + "@" + user.getParentCode())) {
-                        list.add(news);
-                        Utilities.log("Added " + news.getMessage());
-                    }
-
+                        Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase( user!= null? (user.getPlanetCode()+ "@" + user.getParentCode()) : "" ) + " nn " + news.getViewIn());
+                        if (ob.get("_id").getAsString().equalsIgnoreCase( user!= null? user.getPlanetCode() + "@" + user.getParentCode() :"")) {
+                            list.add(news);
+                            Utilities.log("Added " + news.getMessage());
+                        }
                 }
             }
 

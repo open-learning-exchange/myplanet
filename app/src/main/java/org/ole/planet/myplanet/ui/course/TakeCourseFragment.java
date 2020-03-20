@@ -15,6 +15,7 @@ import androidx.viewpager.widget.ViewPager;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmCourseActivity;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmCourseStep;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -146,6 +147,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         } else {
             btnAddRemove.setVisibility(View.GONE);
         }
+        RealmCourseActivity.createActivity(mRealm, userModel, currentCourse);
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());

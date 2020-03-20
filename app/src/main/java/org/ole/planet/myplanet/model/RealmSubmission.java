@@ -76,6 +76,7 @@ public class RealmSubmission extends RealmObject {
         sub.setParentCode(JsonUtils.getString("parentCode", submission));
         sub.setParent(new Gson().toJson(JsonUtils.getJsonObject("parent", submission)));
         //
+
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
 //        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("parentId", submission)).findFirst();
         RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm);
@@ -121,10 +122,11 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("parentCode", sub.getParentCode());
         JsonObject parent = new Gson().fromJson(sub.getParent(), JsonObject.class);
         object.add("parent",parent );
-
+        Utilities.log("Parent " + sub.getParent());
         //
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
-        if (exam != null && parent!=null)
+        Utilities.log("Parent Exam "  + (exam == null) );
+        if (exam != null && parent==null)
             object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
         if (TextUtils.isEmpty(sub.getUser())) {
             object.add("user", user.serialize());

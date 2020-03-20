@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.UUID;
 
 import br.tiagohm.markdownview.MarkdownView;
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -131,8 +133,10 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
+            long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.getCourseId()).notEqualTo("status", "pending", Case.INSENSITIVE).count();
+
             if (questions != null && questions.size() > 0) {
-                btnExam.setText("Take Test [" + stepExams.size() + "]");
+                btnExam.setText((submissionsCount > 0 ? "Retake Test" : "Take Test") + " [" + stepExams.size() + "]");
                 btnExam.setVisibility(View.VISIBLE);
             }
         }

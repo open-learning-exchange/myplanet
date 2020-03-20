@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.datamanager.FileUploadService;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmApkLog;
+import org.ole.planet.myplanet.model.RealmCourseActivity;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMyHealth;
@@ -404,7 +405,7 @@ public class UploadManager extends FileUploadService {
     }
 
     private void uploadTeamActivities(Realm realm, ApiInterface apiInterface) {
-        final RealmResults<RealmTeamLog> logs = realm.where(RealmTeamLog.class)
+        final RealmResults<RealmTeamLog> logs = realm.where(RealmTeamLog.class).isNull("_rev")
                 .findAll();
         for (RealmTeamLog log : logs) {
             try {
@@ -537,6 +538,26 @@ public class UploadManager extends FileUploadService {
             for (RealmResourceActivity act : activities) {
                 try {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + db, RealmResourceActivity.serializeResourceActivities(act)).execute().body();
+                    if (object != null) {
+                        act.set_rev(JsonUtils.getString("rev", object));
+                        act.set_id(JsonUtils.getString("id", object));
+                    }
+                } catch (IOException e) {
+                }
+            }
+        });
+    }
+
+
+    public void uploadCourseActivities() {
+        mRealm = dbService.getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm.executeTransactionAsync(realm -> {
+            RealmResults<RealmCourseActivity> activities;
+                activities = realm.where(RealmCourseActivity.class).isNull("_rev").notEqualTo("type", "sync").findAll();
+            for (RealmCourseActivity act : activities) {
+                try {
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/course_activities"  , RealmCourseActivity.serializeSerialize(act)).execute().body();
                     if (object != null) {
                         act.set_rev(JsonUtils.getString("rev", object));
                         act.set_id(JsonUtils.getString("id", object));

@@ -53,6 +53,7 @@ public class RealmMyTeam extends RealmObject {
     private String title;
     private String route;
     private String services;
+    private String createdBy;
     private String rules;
     private boolean isLeader;
     private String type;
@@ -93,6 +94,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setServices(JsonUtils.getString("services", doc));
         myTeams.setRules(JsonUtils.getString("rules", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
+        myTeams.setCreatedBy(JsonUtils.getString("createdBy", doc));
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
         myTeams.setAmount(JsonUtils.getInt("amount", doc));
         myTeams.setDate(JsonUtils.getLong("date", doc));
@@ -106,6 +108,14 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 
     public String getServices() {
@@ -179,6 +189,11 @@ public class RealmMyTeam extends RealmObject {
     public static String getTeamCreator(String teamId, Realm realm) {
         RealmMyTeam teams = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).findFirst();
         return teams.getUserId();
+    }
+
+    public static String getTeamLeader(String teamId, Realm realm) {
+        RealmMyTeam team = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
+        return team == null ? "" : team.getUserId();
     }
 
     public String getResourceId() {
@@ -283,6 +298,9 @@ public class RealmMyTeam extends RealmObject {
 
     public static JsonObject serialize(RealmMyTeam team) {
         JsonObject object = new JsonObject();
+        if (!TextUtils.isEmpty(team.get_id())) {
+            object.addProperty("_id", team.get_id());
+        }
         object.addProperty("teamId", team.getTeamId());
         object.addProperty("name", team.getName());
         object.addProperty("userId", team.getUser_id());
@@ -301,6 +319,7 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("date", team.getDate());
         object.addProperty("public", team.isPublic());
         object.addProperty("services", team.getServices());
+        object.addProperty("createdBy", team.getCreatedBy());
         object.addProperty("rules", team.getRules());
         if (TextUtils.equals(team.getTeamType(), "debit")) {
             object.addProperty("amount", team.getAmount());

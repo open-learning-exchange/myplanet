@@ -14,7 +14,7 @@ import io.realm.Realm;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
-public class RealmResourceActivity extends RealmObject {
+public class RealmCourseActivity extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id;
@@ -27,7 +27,7 @@ public class RealmResourceActivity extends RealmObject {
 
     private String title;
 
-    private String resourceId;
+    private String courseId;
 
 
     private String parentCode;
@@ -69,12 +69,12 @@ public class RealmResourceActivity extends RealmObject {
         this.title = title;
     }
 
-    public String getResourceId() {
-        return resourceId;
+    public String getCourseId() {
+        return courseId;
     }
 
-    public void setResourceId(String resourceId) {
-        this.resourceId = resourceId;
+    public void setCourseId(String courseId) {
+        this.courseId = courseId;
     }
 
     public String get_id() {
@@ -110,44 +110,34 @@ public class RealmResourceActivity extends RealmObject {
     }
 
 
-    public static JsonObject serializeResourceActivities(RealmResourceActivity realm_resourceActivities) {
+    public static void createActivity(Realm realm, RealmUserModel userModel, RealmMyCourse course) {
+        if (!realm.isInTransaction())
+            realm.beginTransaction();
+        RealmCourseActivity activity = realm.createObject(RealmCourseActivity.class, UUID.randomUUID().toString());
+        activity.setType("visit");
+        activity.setTitle(course.getCourseTitle());
+        activity.setCourseId(course.getCourseId());
+        activity.setTime(new Date().getTime());
+        activity.setParentCode(userModel.getParentCode());
+        activity.setCreatedOn(userModel.getPlanetCode());
+        activity.setCreatedOn(userModel.getPlanetCode());
+        activity.setUser(userModel.getName());
+        realm.commitTransaction();
+    }
+
+    public static JsonObject serializeSerialize(RealmCourseActivity realm_courseActivities) {
         JsonObject ob = new JsonObject();
-        ob.addProperty("user", realm_resourceActivities.getUser());
-        ob.addProperty("resourceId", realm_resourceActivities.getResourceId());
-        ob.addProperty("type", realm_resourceActivities.getType());
-        ob.addProperty("title", realm_resourceActivities.getTitle());
-        ob.addProperty("time", realm_resourceActivities.getTime());
-        ob.addProperty("createdOn", realm_resourceActivities.getCreatedOn());
-        ob.addProperty("parentCode", realm_resourceActivities.getParentCode());
+        ob.addProperty("user", realm_courseActivities.getUser());
+        ob.addProperty("courseId", realm_courseActivities.getCourseId());
+        ob.addProperty("type", realm_courseActivities.getType());
+        ob.addProperty("title", realm_courseActivities.getTitle());
+        ob.addProperty("time", realm_courseActivities.getTime());
+        ob.addProperty("createdOn", realm_courseActivities.getCreatedOn());
+        ob.addProperty("parentCode", realm_courseActivities.getParentCode());
         ob.addProperty("androidId", NetworkUtils.getMacAddr());
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
         return ob;
     }
 
-
-    public static void onSynced(Realm mRealm, SharedPreferences settings) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", ""))
-                .findFirst();
-        if (user == null) {
-            Utilities.log("User is null");
-            return;
-        }
-        if (user.getId().startsWith("guest")){
-            return;
-        }
-        RealmResourceActivity activities = mRealm.createObject(RealmResourceActivity.class, UUID.randomUUID().toString());
-        activities.setUser(user.getName());
-        activities.set_rev(null);
-        activities.set_id(null);
-        activities.setParentCode(user.getParentCode());
-        activities.setCreatedOn(user.getPlanetCode());
-        activities.setType("sync");
-        activities.setTime(new Date().getTime());
-        Utilities.log("Saved Sync Activity");
-
-        mRealm.commitTransaction();
-    }
 
 }

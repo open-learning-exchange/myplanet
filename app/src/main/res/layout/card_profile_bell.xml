@@ -13,9 +13,9 @@
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imageView"
-            android:layout_gravity="center"
             android:layout_width="@dimen/_60dp"
             android:layout_height="@dimen/_60dp"
+            android:layout_gravity="center"
             android:src="@drawable/profile"
             app:civ_border_color="@color/colorPrimaryDark"
             app:civ_border_width="2dp" />
@@ -185,45 +185,52 @@
 
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:gravity="right">
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="right"-->
+<!--                android:gravity="right">-->
 
-                <Button
-                    android:id="@+id/fab_my_progress"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/my_progress"
-                    android:theme="@style/PrimaryButton"
-                   />
+<!--                <Button-->
+<!--                    android:id="@+id/fab_my_activity"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="@string/my_activity"-->
+<!--                    android:theme="@style/PrimaryButton" />-->
 
-                <Button
-                    android:id="@+id/fab_notification"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/notifications"
-                    android:theme="@style/PrimaryButton"
-                    app:srcCompat="@drawable/notifications" />
+<!--                <Button-->
+<!--                    android:id="@+id/fab_my_progress"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="@string/my_progress"-->
+<!--                    android:theme="@style/PrimaryButton" />-->
 
-                <Button
-                    android:id="@+id/fab_survey"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/menu_surveys"
-                    android:theme="@style/PrimaryButton"
-                    android:tint="@color/md_white_1000"
-                    app:srcCompat="@drawable/ic_my_survey" />
+<!--                <Button-->
+<!--                    android:id="@+id/fab_notification"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="@string/notifications"-->
+<!--                    android:theme="@style/PrimaryButton"-->
+<!--                    app:srcCompat="@drawable/notifications" />-->
+
+<!--                <Button-->
+<!--                    android:id="@+id/fab_survey"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="@string/menu_surveys"-->
+<!--                    android:theme="@style/PrimaryButton"-->
+<!--                    android:tint="@color/md_white_1000"-->
+<!--                    app:srcCompat="@drawable/ic_my_survey" />-->
 
                 <Button
                     android:id="@+id/fab_feedback"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:visibility="gone"
                     android:text="@string/menu_feedback"
                     android:theme="@style/PrimaryButton"
                     app:srcCompat="@drawable/feedback" />
-            </LinearLayout>
+<!--            </LinearLayout>-->
 
         </LinearLayout>
 

@@ -64,8 +64,8 @@ public class RealmTeamLog extends RealmObject {
         return teamId;
     }
 
-    public static long getVisitCount(Realm realm, String userName) {
-        return realm.where(RealmTeamLog.class).equalTo("type", "teamVisit").equalTo("user", userName).count();
+    public static long getVisitCount(Realm realm, String userName, String teamId) {
+        return realm.where(RealmTeamLog.class).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count();
     }
 
     public void setUploaded(boolean uploaded) {

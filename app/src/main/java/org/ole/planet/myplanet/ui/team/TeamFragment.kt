@@ -28,7 +28,7 @@ import java.util.*
 /**
  * A simple [Fragment] subclass.
  */
-class TeamFragment : Fragment() {
+class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     var mRealm: Realm? = null
     var rvTeamList: RecyclerView? = null
     var etSearch: EditText? = null
@@ -48,11 +48,11 @@ class TeamFragment : Fragment() {
         rvTeamList = v.findViewById(R.id.rv_team_list)
         etSearch = v.findViewById(R.id.et_search)
         mRealm = DatabaseService(activity).realmInstance
-        v.findViewById<View>(R.id.add_team).setOnClickListener { view: View? -> createTeamAlert() }
+        v.findViewById<View>(R.id.add_team).setOnClickListener { view: View? -> createTeamAlert(null) }
         return v
     }
 
-    private fun createTeamAlert() {
+    private fun createTeamAlert(team: RealmMyTeam?) {
         val v = LayoutInflater.from(activity).inflate(R.layout.alert_create_team, null)
         if (type != null) {
             v.spn_team_type.visibility = View.GONE
@@ -61,6 +61,12 @@ class TeamFragment : Fragment() {
             v.et_services.visibility = View.GONE
             v.et_rules.visibility = View.GONE
             v.et_description.hint = "Description"
+        }
+        if (team != null) {
+            v.et_services.setText(team.services)
+            v.et_rules.setText(team.rules)
+            v.et_description.setText(team.description)
+            v.et_name.setText(team.name)
         }
         AlertDialog.Builder(activity!!).setTitle(String.format("Enter %s Detail", if (type == null) "Team" else "Enterprise")).setView(v).setPositiveButton("Save") { dialogInterface: DialogInterface?, i: Int ->
             val map = HashMap<String, String>()
@@ -71,10 +77,22 @@ class TeamFragment : Fragment() {
             when {
                 name.isEmpty() -> Utilities.toast(activity, "Name is required")
                 else -> {
-                    createTeam(name, if (v.spn_team_type.selectedItemPosition == 0) "local" else "sync", map, v.switch_public.isChecked)
+                    if (team == null) {
+                        createTeam(name, if (v.spn_team_type.selectedItemPosition == 0) "local" else "sync", map, v.switch_public.isChecked)
+                    } else {
+                        if (!team.realm.isInTransaction)
+                            team.realm.beginTransaction()
+                        team.name = name
+                        team.services = v.et_services.text.toString()
+                        team.rules = v.et_rules.text.toString()
+                        team.description = v.et_description.text.toString()
+                        team.realm.commitTransaction()
+                    }
                     Utilities.toast(activity, "Team Created")
                     setTeamList()
-                } } }.setNegativeButton("Cancel", null).show()
+                }
+            }
+        }.setNegativeButton("Cancel", null).show()
     }
 
     fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
@@ -119,6 +137,7 @@ class TeamFragment : Fragment() {
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE)
                 val adapterTeamList = AdapterTeamList(activity, getList(query), mRealm, childFragmentManager)
+                adapterTeamList.setTeamListener(this@TeamFragment)
                 rvTeamList!!.adapter = adapterTeamList
             }
 
@@ -140,7 +159,12 @@ class TeamFragment : Fragment() {
         val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived")
         val adapterTeamList = AdapterTeamList(activity, getList(query), mRealm, childFragmentManager)
         adapterTeamList.setType(type)
+        adapterTeamList.setTeamListener(this@TeamFragment)
         view!!.findViewById<View>(R.id.type).visibility = if (type == null) View.VISIBLE else View.GONE
         rvTeamList!!.adapter = adapterTeamList
+    }
+
+    override fun onEditTeam(team: RealmMyTeam?) {
+        createTeamAlert(team!!)
     }
 }

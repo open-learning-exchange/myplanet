@@ -54,7 +54,7 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderUser) {
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
-            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName()) + " visits )");
+            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " visits )");
 
             if (this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId())) {
                 ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);

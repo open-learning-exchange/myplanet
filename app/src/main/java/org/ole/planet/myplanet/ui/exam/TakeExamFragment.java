@@ -115,7 +115,12 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 //        }
         sub = RealmSubmission.createSubmission(sub, mRealm);
 
-        sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
+        Utilities.log("Set parent id " + id);
+        if (TextUtils.isEmpty(id)){
+            sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? exam.getId() + "@" + exam.getCourseId() : exam.getId());
+        }else{
+            sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
+        }
         sub.setUserId(user.getId());
         sub.setStatus("pending");
         sub.setType(type);
@@ -221,7 +226,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             if (showErrorMessage("Please select / write your answer to continue")) {
                 return;
             }
-
             boolean cont = updateAnsDb();
             capturePhoto();
             KeyboardUtils.hideSoftKeyboard(getActivity());

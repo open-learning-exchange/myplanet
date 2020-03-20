@@ -58,10 +58,10 @@ public class TeamDetailFragment extends Fragment {
         Button leave = v.findViewById(R.id.btn_leave);
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
+        team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
-        if (team == null || !isMyTeam){
+        if (!isMyTeam){
             llButtons.setVisibility(View.GONE);
         }else{
             leave.setOnClickListener(vi -> {
@@ -96,6 +96,7 @@ public class TeamDetailFragment extends Fragment {
         if (!mRealm.isInTransaction()) {
             mRealm.beginTransaction();
         }
+        Utilities.log("Crete team log");
         RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
         log.setTeamId(teamId);
         log.setUser(user.getName());
