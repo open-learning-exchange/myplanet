@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
@@ -116,6 +117,8 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             wifiStatusSwitch();
         } else if (id == R.id.menu_logout) {
             logout();
+        } else if (id == R.id.action_feedback) {
+            openCallFragment(new FeedbackFragment(), getString(R.string.menu_feedback));
         } else if (id == R.id.action_setting) {
             startActivity(new Intent(this, SettingActivity.class));
         } else if (id == R.id.action_sync) {
