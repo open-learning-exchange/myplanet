@@ -11,7 +11,7 @@
     <string name="btn_sync_cancel">Cancel</string>
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
-    <string name="err_msg_login">Username and password do not match</string>
+    <string name="err_msg_login">Username and/or password do not match</string>
     <string name="hint_serverURl">Planet Server Address</string>
     <string name="hint_serverPin">Server Pin (Get this pin from an administrator)</string>
     <string name="title_activity_dashboard">Dashboard</string>
