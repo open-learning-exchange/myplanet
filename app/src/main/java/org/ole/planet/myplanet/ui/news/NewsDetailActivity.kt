@@ -60,7 +60,7 @@ class NewsDetailActivity : BaseActivity() {
             val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
             Utilities.log(markDown)
             val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-         msg =   msg.replace(markDown, "<br/><img width=\"70%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"><br/>", false)
+         msg =   msg.replace(markDown, "<br/><img width=\"50%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"><br/>", false)
             Utilities.log("Replace " + msg + " " + markDown)
         }
         Utilities.log(msg)
