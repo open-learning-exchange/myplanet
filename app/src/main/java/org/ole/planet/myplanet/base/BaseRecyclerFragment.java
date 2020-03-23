@@ -227,7 +227,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
         for (RealmTag tg : tags) {
             long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.getId()).count();
-            if (count > 0)
+            if (count > 0 && !libraries.contains(library))
                 libraries.add(library);
         }
     }
