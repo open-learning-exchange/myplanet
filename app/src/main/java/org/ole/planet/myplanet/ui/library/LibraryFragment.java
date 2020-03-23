@@ -267,7 +267,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
     private boolean filterApplied() {
-        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch.getText().toString().isEmpty() )
+        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch.getText().toString().isEmpty() );
     }
 
     private void saveSearchActivity() {
@@ -289,7 +289,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             filter.add("mediaType", getJsonArrayFromList(mediums));
             activity.setFilter(new Gson().toJson(filter));
             mRealm.commitTransaction();
-
         }
     }
 
