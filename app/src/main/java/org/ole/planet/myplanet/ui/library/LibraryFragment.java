@@ -262,27 +262,35 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public void onPause() {
         super.onPause();
+
         saveSearchActivity();
     }
 
+    private boolean filterApplied() {
+        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch.getText().toString().isEmpty() )
+    }
+
     private void saveSearchActivity() {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
-        activity.setUser(model.getName());
-        activity.setTime(Calendar.getInstance().getTimeInMillis());
-        activity.setCreatedOn(model.getPlanetCode());
-        activity.setParentCode(model.getParentCode());
-        activity.setText(etSearch.getText().toString());
-        activity.setType("resources");
-        JsonObject filter = new JsonObject();
-        filter.add("tags", RealmTag.getTagsArray(searchTags));
-        filter.add("subjects", getJsonArrayFromList(subjects));
-        filter.add("language", getJsonArrayFromList(subjects));
-        filter.add("level", getJsonArrayFromList(levels));
-        filter.add("mediaType", getJsonArrayFromList(mediums));
-        activity.setFilter(new Gson().toJson(filter));
-        mRealm.commitTransaction();
+        if (filterApplied()) {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
+            activity.setUser(model.getName());
+            activity.setTime(Calendar.getInstance().getTimeInMillis());
+            activity.setCreatedOn(model.getPlanetCode());
+            activity.setParentCode(model.getParentCode());
+            activity.setText(etSearch.getText().toString());
+            activity.setType("resources");
+            JsonObject filter = new JsonObject();
+            filter.add("tags", RealmTag.getTagsArray(searchTags));
+            filter.add("subjects", getJsonArrayFromList(subjects));
+            filter.add("language", getJsonArrayFromList(languages));
+            filter.add("level", getJsonArrayFromList(levels));
+            filter.add("mediaType", getJsonArrayFromList(mediums));
+            activity.setFilter(new Gson().toJson(filter));
+            mRealm.commitTransaction();
+
+        }
     }
 
     public JsonArray getJsonArrayFromList(Set<String> list) {

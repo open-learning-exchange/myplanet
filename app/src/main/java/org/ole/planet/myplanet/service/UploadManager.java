@@ -531,7 +531,7 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
             RealmResults<RealmSearchActivity> logs;
-            logs = realm.where(RealmSearchActivity.class).isNull("_rev").findAll();
+            logs = realm.where(RealmSearchActivity.class).isEmpty("_rev").findAll();
             for (RealmSearchActivity act : logs) {
                 try {
                     JsonObject o = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/search_activities", act.serialize()).execute().body();
