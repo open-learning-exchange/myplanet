@@ -27,8 +27,8 @@
             <ImageView
                 android:layout_width="match_parent"
                 android:id="@+id/img"
+                android:background="@color/colorPrimary"
                 android:visibility="visible"
-                android:scaleType="centerCrop"
                 android:layout_height="300dp"/>
 
 
