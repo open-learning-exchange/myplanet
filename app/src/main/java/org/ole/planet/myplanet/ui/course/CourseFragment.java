@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.ui.course;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -24,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +44,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     ImageView imgSearch;
     AdapterCourses adapterCourses;
     Button btnRemove, orderByDate, orderByTitle;
+    Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
 
     public CourseFragment() {
@@ -107,11 +111,30 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         etSearch = getView().findViewById(R.id.et_search);
         tvSelected = getView().findViewById(R.id.tv_selected);
         btnRemove = getView().findViewById(R.id.btn_remove);
+        spnGrade = getView().findViewById(R.id.spn_grade);
+        spnSubject = getView().findViewById(R.id.spn_subject);
         imgSearch = getView().findViewById(R.id.img_search);
         tvMessage = getView().findViewById(R.id.tv_message);
         getView().findViewById(R.id.tl_tags).setVisibility(View.GONE);
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
+        spnGrade.setOnItemSelectedListener(itemSelectedListener);
+        spnSubject.setOnItemSelectedListener(itemSelectedListener);
     }
+
+    private AdapterView.OnItemSelectedListener   itemSelectedListener = new AdapterView.OnItemSelectedListener() {
+        @Override
+        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+            Utilities.log("On item selected");
+            gradeLevel = spnGrade.getSelectedItem().toString().equals("All") ? "" : spnGrade.getSelectedItem().toString();
+            subjectLevel = spnSubject.getSelectedItem().toString().equals("All") ? "" : spnSubject.getSelectedItem().toString();
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
+        }
+
+        @Override
+        public void onNothingSelected(AdapterView<?> adapterView) {
+
+        }
+    };
 
     private void clearTags() {
         getView().findViewById(R.id.btn_clear_tags).setOnClickListener(vi -> {
