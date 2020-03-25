@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmNewsLog;
 import org.ole.planet.myplanet.model.RealmOfflineActivity;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmResourceActivity;
+import org.ole.planet.myplanet.model.RealmSearchActivity;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.model.RealmTeamLog;
@@ -522,6 +523,23 @@ public class UploadManager extends FileUploadService {
                 }
             }
         }, () -> listener.onSuccess("Crash log uploaded."));
+    }
+
+
+    public void uploadSearchActivity() {
+        mRealm = dbService.getRealmInstance();
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm.executeTransactionAsync(realm -> {
+            RealmResults<RealmSearchActivity> logs;
+            logs = realm.where(RealmSearchActivity.class).isEmpty("_rev").findAll();
+            for (RealmSearchActivity act : logs) {
+                try {
+                    JsonObject o = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/search_activities", act.serialize()).execute().body();
+                    if (o != null) act.set_rev(JsonUtils.getString("rev", o));
+                } catch (IOException e) {
+                }
+            }
+        });
     }
 
     public void uploadResourceActivities(String type) {
