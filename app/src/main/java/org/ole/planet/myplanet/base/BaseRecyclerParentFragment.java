@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.base;
 
+import com.google.gson.JsonArray;
+
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 
 import java.util.List;
+import java.util.Set;
 
 import io.realm.Sort;
 
@@ -48,5 +51,13 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
             return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
         else
             return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+    }
+
+    public JsonArray getJsonArrayFromList(Set<String> list) {
+        JsonArray array = new JsonArray();
+        for (String s : list) {
+            array.add(s);
+        }
+        return array;
     }
 }

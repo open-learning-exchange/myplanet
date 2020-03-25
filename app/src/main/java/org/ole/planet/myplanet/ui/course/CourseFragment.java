@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -23,14 +24,17 @@ import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.model.RealmSearchActivity;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -215,5 +219,34 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 onTagClicked(tag);
             }
         }
+    }
+
+    private boolean filterApplied() {
+        return !(searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty() && etSearch.getText().toString().isEmpty() );
+    }
+    private void saveSearchActivity() {
+        if (filterApplied()) {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
+            activity.setUser(model.getName());
+            activity.setTime(Calendar.getInstance().getTimeInMillis());
+            activity.setCreatedOn(model.getPlanetCode());
+            activity.setParentCode(model.getParentCode());
+            activity.setText(etSearch.getText().toString());
+            activity.setType("courses");
+            JsonObject filter = new JsonObject();
+            filter.add("tags", RealmTag.getTagsArray(searchTags));
+            filter.addProperty("doc.gradeLevel", gradeLevel);
+            filter.addProperty("doc.subjectLevel",subjectLevel );
+            activity.setFilter(new Gson().toJson(filter));
+            mRealm.commitTransaction();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        saveSearchActivity();
     }
 }
