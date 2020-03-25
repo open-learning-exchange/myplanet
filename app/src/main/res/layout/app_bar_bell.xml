@@ -14,10 +14,12 @@
         android:layout_height="wrap_content">
 
         <ImageView
-            android:layout_width="@dimen/_60dp"
-            android:layout_height="@dimen/_60dp"
+            android:layout_width="@dimen/_50dp"
+            android:layout_height="@dimen/_50dp"
             android:padding="@dimen/padding_normal"
+            android:id="@+id/img_logo"
             android:src="@drawable/ole_logo"
+            android:layout_gravity="center"
             android:tint="@color/md_white_1000" />
 
         <TextView
