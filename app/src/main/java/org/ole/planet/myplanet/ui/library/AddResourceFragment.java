@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.library;
 
 
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -43,6 +44,8 @@ import java.util.Date;
 import java.util.UUID;
 
 import io.realm.Realm;
+import nl.bravobit.ffmpeg.FFcommandExecuteResponseHandler;
+import nl.bravobit.ffmpeg.FFmpeg;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -230,14 +233,56 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
 
     private void startIntent(String path) {
+
         if (!TextUtils.isEmpty(path)) {
-            if (type == 0) {
-                startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", path));
+            if (path.endsWith("3gp") && FFmpeg.getInstance(getActivity()).isSupported()) {
+                ProgressDialog pg = new ProgressDialog(getActivity());
+                pg.setMessage("Please wait....");
+                FFmpeg ffmpeg = FFmpeg.getInstance(getActivity());
+                ffmpeg.execute(new String[]{"ffmpeg -i " + path + "-c copy " + path.replace("3gp", "mp4")}, new FFcommandExecuteResponseHandler() {
+                    @Override
+                    public void onSuccess(String message) {
+                        Utilities.log("success " +  message);
+                        addResource(path.replace("3gp", "mp4"));
+                        pg.dismiss();
+                    }
+
+                    @Override
+                    public void onProgress(String message) {
+
+                    }
+
+                    @Override
+                    public void onFailure(String message) {
+                        Utilities.log("Failure " +  message);
+
+                        pg.dismiss();
+                        addResource(path);
+                    }
+
+                    @Override
+                    public void onStart() {
+                        pg.show();
+                    }
+
+                    @Override
+                    public void onFinish() {
+                    }
+                });
             } else {
-                showAlert(getActivity(), path);
+                addResource(path);
             }
+
         } else {
             Utilities.toast(getActivity(), "Invalid resource url");
+        }
+    }
+
+    private void addResource(String path) {
+        if (type == 0) {
+            startActivity(new Intent(getActivity(), AddResourceActivity.class).putExtra("resource_local_url", path));
+        } else {
+            showAlert(getActivity(), path);
         }
     }
 }
