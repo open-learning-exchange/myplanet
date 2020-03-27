@@ -230,31 +230,24 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             ffmpeg.execute(new String[]{"ffmpeg -i " + path + " -c copy " + path.replace("3gp", "mp4")}, new FFcommandExecuteResponseHandler() {
                 @Override
                 public void onSuccess(String message) {
-                    Utilities.log("success " +  message);
                     addResource(path.replace("3gp", "mp4"));
                     pg.dismiss();
                 }
 
                 @Override
-                public void onProgress(String message) {
-                }
+                public void onProgress(String message) { }
 
                 @Override
                 public void onFailure(String message) {
-                    Utilities.log("Failure " +  message);
-
                     pg.dismiss();
                     addResource(path);
                 }
 
                 @Override
-                public void onStart() {
-                    pg.show();
-                }
+                public void onStart() { pg.show(); }
 
                 @Override
-                public void onFinish() {
-                }
+                public void onFinish() { }
             });
         } else {
             addResource(path);
