@@ -64,7 +64,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     File output;
 
     public AddResourceFragment() {
-        // Required empty public constructor
     }
 
     public static void showAlert(Context context, String path) {
@@ -131,10 +130,17 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     private void showAudioRecordAlert() {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_sound_recorder, null);
-        initViews(v);
+        tvTime = v.findViewById(R.id.tv_time);
+        floatingActionButton = v.findViewById(R.id.fab_record);
         AlertDialog dialog = new AlertDialog.Builder(getActivity()).setTitle("Record Audio").setView(v).setCancelable(false).create();
         createAudioRecorderService(dialog);
-        floatingActionButton.setOnClickListener(view -> startStopRecording(audioRecorderService));
+        floatingActionButton.setOnClickListener(view -> {
+            if (!audioRecorderService.isRecording()) {
+                audioRecorderService.startRecording();
+            } else {
+                audioRecorderService.stopRecording();
+            }
+        });
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Dismiss", (dialogInterface, i) -> {
             if (audioRecorderService != null && audioRecorderService.isRecording()) {
                 audioRecorderService.forceStop();
@@ -142,7 +148,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             dialog.dismiss();
         });
         dialog.show();
-
     }
 
     private void createAudioRecorderService(AlertDialog dialog) {
@@ -168,32 +173,9 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         });
     }
 
-    private void initViews(View v) {
-        tvTime = v.findViewById(R.id.tv_time);
-        floatingActionButton = v.findViewById(R.id.fab_record);
-    }
-
-    private void startStopRecording(AudioRecorderService audioRecorderService) {
-        if (!audioRecorderService.isRecording()) {
-            audioRecorderService.startRecording();
-        } else {
-            audioRecorderService.stopRecording();
-        }
-    }
-
-//    private void openOleFolder() {
-//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-//        Uri uri = Uri.parse(Utilities.SD_PATH);
-//        intent.setDataAndType(uri, "*/*");
-//        startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
-//    }
-
     private void dispatchTakeVideoIntent() {
-
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-//        Uri photoURI = FileProvider.getUriForFile(getActivity(), , new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString() + ".mp4"));
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString() + ".mp4")));
-//        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
@@ -233,48 +215,49 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
 
     private void startIntent(String path) {
-
         if (!TextUtils.isEmpty(path)) {
-            if (path.endsWith("3gp") && FFmpeg.getInstance(getActivity()).isSupported()) {
-                ProgressDialog pg = new ProgressDialog(getActivity());
-                pg.setMessage("Please wait....");
-                FFmpeg ffmpeg = FFmpeg.getInstance(getActivity());
-                ffmpeg.execute(new String[]{"ffmpeg -i " + path + "-c copy " + path.replace("3gp", "mp4")}, new FFcommandExecuteResponseHandler() {
-                    @Override
-                    public void onSuccess(String message) {
-                        Utilities.log("success " +  message);
-                        addResource(path.replace("3gp", "mp4"));
-                        pg.dismiss();
-                    }
-
-                    @Override
-                    public void onProgress(String message) {
-
-                    }
-
-                    @Override
-                    public void onFailure(String message) {
-                        Utilities.log("Failure " +  message);
-
-                        pg.dismiss();
-                        addResource(path);
-                    }
-
-                    @Override
-                    public void onStart() {
-                        pg.show();
-                    }
-
-                    @Override
-                    public void onFinish() {
-                    }
-                });
-            } else {
-                addResource(path);
-            }
-
+         continueAddResource(path);
         } else {
             Utilities.toast(getActivity(), "Invalid resource url");
+        }
+    }
+
+    private void continueAddResource(String path) {
+        if (path.endsWith("3gp") && FFmpeg.getInstance(getActivity()).isSupported()) {
+            ProgressDialog pg = new ProgressDialog(getActivity());
+            pg.setMessage("Please wait....");
+            FFmpeg ffmpeg = FFmpeg.getInstance(getActivity());
+            ffmpeg.execute(new String[]{"ffmpeg -i " + path + " -c copy " + path.replace("3gp", "mp4")}, new FFcommandExecuteResponseHandler() {
+                @Override
+                public void onSuccess(String message) {
+                    Utilities.log("success " +  message);
+                    addResource(path.replace("3gp", "mp4"));
+                    pg.dismiss();
+                }
+
+                @Override
+                public void onProgress(String message) {
+                }
+
+                @Override
+                public void onFailure(String message) {
+                    Utilities.log("Failure " +  message);
+
+                    pg.dismiss();
+                    addResource(path);
+                }
+
+                @Override
+                public void onStart() {
+                    pg.show();
+                }
+
+                @Override
+                public void onFinish() {
+                }
+            });
+        } else {
+            addResource(path);
         }
     }
 
