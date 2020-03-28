@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 
@@ -119,6 +120,7 @@ public class AddResourceActivity extends AppCompatActivity {
         resource.setSubject(subjects);
         resource.setUserId(new RealmList<>());
         resource.setLevel(levels);
+        resource.setCreatedDate(Calendar.getInstance().getTimeInMillis());
         resource.setResourceFor(resourceFor);
         resource.setResourceLocalAddress(resourceUrl);
         resource.setResourceOffline(true);

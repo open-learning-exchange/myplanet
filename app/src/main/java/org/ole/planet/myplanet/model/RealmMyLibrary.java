@@ -14,8 +14,11 @@ import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -130,6 +133,37 @@ public class RealmMyLibrary extends RealmObject {
             }
         }
     }
+
+    public static JsonObject serialize(RealmMyLibrary personal,RealmUserModel user) {
+        JsonObject object = new JsonObject();
+        object.addProperty("title", personal.getTitle());
+        object.addProperty("uploadDate", new Date().getTime());
+        object.addProperty("createdDate", personal.getCreatedDate());
+        object.addProperty("filename", FileUtils.getFileNameFromUrl(personal.getResourceLocalAddress()));
+        object.addProperty("author", user.getName());
+        object.addProperty("addedBy", user.getId());
+        object.addProperty("medium", personal.getMedium());
+        object.addProperty("description", personal.getDescription());
+        object.addProperty("year", personal.getYear());
+        object.addProperty("language", personal.getLanguage());
+        object.add("subject", JsonUtils.getAsJsonArray(personal.getSubject()));
+        object.add("level", JsonUtils.getAsJsonArray(personal.getLevel()));
+        object.addProperty("resourceType", "Activities");
+        object.addProperty("openWith", personal.getOpenWith());
+        object.add("resourceFor", JsonUtils.getAsJsonArray(personal.getResourceFor()));
+        object.addProperty("private", false);
+        object.addProperty("isDownloadable", "");
+        object.addProperty("sourcePlanet", user.getPlanetCode());
+        object.addProperty("resideOn", user.getPlanetCode());
+        object.addProperty("updatedDate", Calendar.getInstance().getTimeInMillis());
+        object.addProperty("createdDate", personal.getCreatedDate());
+        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("deviceName", NetworkUtils.getDeviceName());
+        object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
+        object.addProperty("mediaType", personal.getMediaType());
+        return object;
+    }
+
 
 
     public String getDownloaded() {
