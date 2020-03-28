@@ -292,11 +292,5 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         }
     }
 
-    public JsonArray getJsonArrayFromList(Set<String> list) {
-        JsonArray array = new JsonArray();
-        for (String s : list) {
-            array.add(s);
-        }
-        return array;
-    }
+
 }

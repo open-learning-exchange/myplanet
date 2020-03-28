@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.base;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,6 +41,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     public static SharedPreferences settings;
     public Set<String> subjects, languages, mediums, levels;
     public List<LI> selectedItems;
+    public String gradeLevel = "", subjectLevel = "";
     public DatabaseService realmService;
     public UserProfileDbHandler profileDbHandler;
 
@@ -78,9 +81,9 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete);
-           initDeleteButton();
-                if (v.findViewById(R.id.tv_add) != null)
-                    v.findViewById(R.id.tv_add).setVisibility(View.GONE);
+            initDeleteButton();
+            if (v.findViewById(R.id.tv_add) != null)
+                v.findViewById(R.id.tv_add).setVisibility(View.GONE);
 
         }
         tvMessage = v.findViewById(R.id.tv_message);
@@ -95,8 +98,8 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         return v;
     }
 
-    protected  void initDeleteButton(){
-        if (tvDelete!=null) {
+    protected void initDeleteButton() {
+        if (tvDelete != null) {
             tvDelete.setVisibility(View.VISIBLE);
             tvDelete.setOnClickListener(view -> deleteSelected(false));
         }
@@ -209,9 +212,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         return libraries;
     }
 
+
     public List<RealmMyCourse> filterCourseByTag(String s, List<RealmTag> tags) {
         if (tags.size() == 0 && s.isEmpty()) {
-            return (List<RealmMyCourse>) getList(RealmMyCourse.class);
+            return applyCourseFilter((List<RealmMyCourse>) getList(RealmMyCourse.class));
         }
         List<RealmMyCourse> list = (List<RealmMyCourse>) getData(s, RealmMyCourse.class);
         if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.getId(), list);
@@ -221,7 +225,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         for (RealmMyCourse course : list) {
             checkAndAddToList(course, courses, tags);
         }
-        return courses;
+        return applyCourseFilter(list);
     }
 
     private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
@@ -236,6 +240,21 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
             if (isValidFilter(l)) newList.add(l);
+        }
+        return newList;
+    }
+
+    public List<RealmMyCourse> applyCourseFilter(List<RealmMyCourse> courses) {
+        Utilities.log("apply course filter");
+        if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel))
+            return courses;
+        List<RealmMyCourse> newList = new ArrayList<>();
+        for (RealmMyCourse l : courses) {
+            Utilities.log("grade " + gradeLevel);
+            Utilities.log("subject " + subjectLevel);
+            if (TextUtils.equals(l.getGradeLevel(), gradeLevel) || TextUtils.equals(l.getSubjectLevel(), subjectLevel)) {
+                newList.add(l);
+            }
         }
         return newList;
     }
