@@ -109,6 +109,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         //navigationView.setVisibility(View.GONE);
 
         findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
+        findViewById(R.id.img_logo).setOnClickListener(view -> result.openDrawer());
         bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {

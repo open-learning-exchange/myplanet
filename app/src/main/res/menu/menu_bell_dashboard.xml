@@ -8,9 +8,9 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_feedback"
-        android:icon="@drawable/feedback"
+        android:icon="@drawable/ic_feedback"
         android:title="@string/menu_feedback"
-        app:showAsAction="never" />
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/action_about"

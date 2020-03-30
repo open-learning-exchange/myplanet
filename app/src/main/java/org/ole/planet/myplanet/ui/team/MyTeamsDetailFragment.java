@@ -128,7 +128,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                     map.put("message", msg);
                     map.put("messageType", team.getTeamType());
                     map.put("messagePlanetCode", team.getTeamPlanetCode());
-                    RealmNews.createNews(map, mRealm, user);
+                    RealmNews.createNews(map, mRealm, user, imageList);
                     rvDiscussion.getAdapter().notifyDataSetChanged();
                 }).setNegativeButton("Cancel", null).show();
     }

@@ -26,13 +26,12 @@
        <LinearLayout
            android:layout_width="match_parent"
            android:layout_height="wrap_content"
-           android:orientation="horizontal">
+           android:orientation="vertical">
 
            <com.google.android.material.textfield.TextInputLayout
                android:id="@+id/tl_message"
-               android:layout_width="0dp"
+               android:layout_width="match_parent"
                android:layout_height="wrap_content"
-               android:layout_weight="4"
                android:hint="@string/what_would">
 
                <EditText
@@ -44,24 +43,11 @@
            </com.google.android.material.textfield.TextInputLayout>
 
            <LinearLayout
-               android:layout_width="wrap_content"
-               android:orientation="vertical"
+               android:layout_width="match_parent"
+               android:orientation="horizontal"
                android:layout_gravity="center"
-               android:gravity="center"
+               android:gravity="left"
                android:layout_height="wrap_content">
-               <ImageView
-                   android:layout_width="@dimen/_80dp"
-                   android:id="@+id/thumb"
-                   android:visibility="gone"
-                   android:layout_height="@dimen/_80dp"/>
-
-               <Button
-                   android:id="@+id/add_news_image"
-                   android:layout_width="wrap_content"
-                   android:layout_height="wrap_content"
-                   android:layout_gravity="center"
-                   android:text="@string/add_image"
-                   android:theme="@style/PrimaryButton" />
 
                <Button
                    android:id="@+id/btn_submit"
@@ -71,6 +57,32 @@
                    android:minWidth="@dimen/user_image_size"
                    android:text="@string/button_submit"
                    android:theme="@style/PrimaryButton" />
+
+
+               <Button
+                   android:id="@+id/add_news_image"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:layout_gravity="center"
+                   android:text="@string/add_image"
+                   android:theme="@style/PrimaryButton" />
+
+               <HorizontalScrollView
+                   android:layout_width="match_parent"
+                   android:layout_height="wrap_content"
+                   >
+                   <LinearLayout
+                       android:layout_width="match_parent"
+                       android:id="@+id/ll_images"
+                       android:layout_gravity="center"
+                       android:layout_height="wrap_content"/>
+               </HorizontalScrollView>
+
+<!--               <ImageView-->
+<!--                   android:layout_width="@dimen/_80dp"-->
+<!--                   android:id="@+id/thumb"-->
+<!--                   android:visibility="gone"-->
+<!--                   android:layout_height="@dimen/_80dp"/>-->
            </LinearLayout>
        </LinearLayout>
 

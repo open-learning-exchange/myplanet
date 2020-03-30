@@ -164,6 +164,14 @@ public class RealmTag extends RealmObject {
         return attachedTo;
     }
 
+    public static JsonArray getTagsArray(List<RealmTag> list){
+        JsonArray array = new JsonArray();
+        for (RealmTag t : list){
+            array.add(t.get_id());
+        }
+        return array;
+    }
+
     public void setAttachedTo(RealmList<String> attachedTo) {
         this.attachedTo = attachedTo;
     }

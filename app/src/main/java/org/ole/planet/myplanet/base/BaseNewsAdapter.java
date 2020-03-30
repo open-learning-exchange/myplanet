@@ -69,7 +69,7 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
         map.put("replyTo", news.getId());
         map.put("messageType", news.getMessageType());
         map.put("messagePlanetCode", news.getMessagePlanetCode());
-        RealmNews.createNews(map, mRealm, currentUser);
+        RealmNews.createNews(map, mRealm, currentUser, null);
         notifyDataSetChanged();
     }
 

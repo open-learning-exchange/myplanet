@@ -60,24 +60,24 @@ class NewsDetailActivity : BaseActivity() {
             val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
             Utilities.log(markDown)
             val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-         msg =   msg.replace(markDown, "<br/><img width=\"70%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"><br/>", false)
+         msg =   msg.replace(markDown, "<br/><img width=\"50%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"><br/>", false)
             Utilities.log("Replace " + msg + " " + markDown)
         }
         Utilities.log(msg)
         tv_detail.loadDataWithBaseURL(null, "<html><body>" + msg + "</body></html>", "text/html", "utf-8", null)
-        val imageUrl = news?.imageUrl
-        if (TextUtils.isEmpty(imageUrl)) {
-            loadImage()
-        } else {
-            try {
-                img.visibility = View.VISIBLE
-                Glide.with(this)
-                        .load(File(imageUrl))
-                        .into(img)
-            } catch (e: Exception) {
+//        val imageUrl = news?.imageUrl
+//        if (TextUtils.isEmpty(imageUrl)) {
+//            loadImage()
+//        } else {
+//            try {
+//                img.visibility = View.VISIBLE
+//                Glide.with(this)
+//                        .load(File(imageUrl))
+//                        .into(img)
+//            } catch (e: Exception) {
                 loadImage()
-            }
-        }
+//            }
+//        }
     }
 
     private fun loadImage() {

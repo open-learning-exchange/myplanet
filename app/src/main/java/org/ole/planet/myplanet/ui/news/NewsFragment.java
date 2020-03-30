@@ -56,8 +56,8 @@ public class NewsFragment extends BaseNewsFragment {
     RealmUserModel user;
     TextView tvMessage;
     AdapterNews adapterNews;
-    ImageView thumb;
 
+    //    ImageView thumb;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -67,9 +67,10 @@ public class NewsFragment extends BaseNewsFragment {
         tlMessage = v.findViewById(R.id.tl_message);
         btnSubmit = v.findViewById(R.id.btn_submit);
         tvMessage = v.findViewById(R.id.tv_message);
+        llImage = v.findViewById(R.id.ll_image);
         llAddNews = v.findViewById(R.id.ll_add_news);
         btnAddStory = v.findViewById(R.id.btn_add_story);
-        thumb = v.findViewById(R.id.thumb);
+//        thumb = v.findViewById(R.id.thumb);
         btnAddImage = v.findViewById(R.id.add_news_image);
 //        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
@@ -106,12 +107,12 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("viewInSection", "community");
             map.put("messageType", "sync");
             map.put("messagePlanetCode", user.getPlanetCode());
-            map.put("imageUrl", imageUrl);
-            map.put("imageName", imageName);
-            RealmNews.createNews(map, mRealm, user);
-            imageName = "";
-            imageUrl = "";
-            thumb.setVisibility(View.GONE);
+//            map.put("imageUrl", imageUrl);
+//            map.put("imageName", imageName);
+            Utilities.log("IMage size "  + imageList.size() );
+            RealmNews.createNews(map, mRealm, user, imageList);
+            imageList.clear();
+            llImage.removeAllViews();
             rvNews.getAdapter().notifyDataSetChanged();
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
@@ -134,11 +135,11 @@ public class NewsFragment extends BaseNewsFragment {
                 JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
-                        Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase( user!= null? (user.getPlanetCode()+ "@" + user.getParentCode()) : "" ) + " nn " + news.getViewIn());
-                        if (ob.get("_id").getAsString().equalsIgnoreCase( user!= null? user.getPlanetCode() + "@" + user.getParentCode() :"")) {
-                            list.add(news);
-                            Utilities.log("Added " + news.getMessage());
-                        }
+                    Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase(user != null ? (user.getPlanetCode() + "@" + user.getParentCode()) : "") + " nn " + news.getViewIn());
+                    if (ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {
+                        list.add(news);
+                        Utilities.log("Added " + news.getMessage());
+                    }
                 }
             }
 
