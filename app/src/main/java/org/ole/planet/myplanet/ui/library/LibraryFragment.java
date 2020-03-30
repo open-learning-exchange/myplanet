@@ -16,6 +16,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -25,6 +27,7 @@ import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
+import org.ole.planet.myplanet.model.RealmSearchActivity;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.survey.AdapterSurvey;
@@ -32,11 +35,13 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
@@ -128,11 +133,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if(i == 0){
+                if (i == 0) {
                     adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", Sort.ASCENDING));
-                }else if(i == 1){
+                } else if (i == 1) {
                     adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", Sort.DESCENDING));
-                }else{
+                } else {
                     adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title"));
                 }
             }
@@ -154,6 +159,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     private void clearTagsButton() {
         clearTags.setOnClickListener(vi -> {
+            saveSearchActivity();
             searchTags.clear();
             etSearch.setText("");
             tvSelected.setText("");
@@ -186,7 +192,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         showNoData(tvMessage, adapterLibrary.getItemCount());
 
     }
-
 
     @Override
     public void onTagSelected(RealmTag tag) {
@@ -252,6 +257,39 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         b.put("mediums", mediums);
         b.put("levels", levels);
         return b;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        saveSearchActivity();
+    }
+
+    private boolean filterApplied() {
+        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch.getText().toString().isEmpty() );
+    }
+
+    private void saveSearchActivity() {
+        if (filterApplied()) {
+            if (!mRealm.isInTransaction())
+                mRealm.beginTransaction();
+            RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
+            activity.setUser(model.getName());
+            activity.setTime(Calendar.getInstance().getTimeInMillis());
+            activity.setCreatedOn(model.getPlanetCode());
+            activity.setParentCode(model.getParentCode());
+            activity.setText(etSearch.getText().toString());
+            activity.setType("resources");
+            JsonObject filter = new JsonObject();
+            filter.add("tags", RealmTag.getTagsArray(searchTags));
+            filter.add("subjects", getJsonArrayFromList(subjects));
+            filter.add("language", getJsonArrayFromList(languages));
+            filter.add("level", getJsonArrayFromList(levels));
+            filter.add("mediaType", getJsonArrayFromList(mediums));
+            activity.setFilter(new Gson().toJson(filter));
+            mRealm.commitTransaction();
+        }
     }
 
 

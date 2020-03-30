@@ -14,10 +14,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import com.bumptech.glide.Glide;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -26,11 +30,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
 import org.ole.planet.myplanet.ui.news.ReplyActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
+import io.realm.RealmList;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -39,12 +46,13 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     public Realm mRealm;
     public OnHomeItemClickListener homeItemClickListener;
     public UserProfileDbHandler profileDbHandler;
-    protected String imageName = "", imageUrl = "";
-    protected ImageView thumb;
+    protected RealmList<String> imageList;
+    protected LinearLayout llImage;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        imageList = new RealmList<>();
         profileDbHandler = new UserProfileDbHandler(getActivity());
     }
 
@@ -66,7 +74,6 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     public void showReply(RealmNews news, boolean fromLogin) {
         startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.getId()).putExtra("fromLogin", fromLogin));
     }
-
 
 
     public abstract void setData(List<RealmNews> list);
@@ -95,7 +102,7 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        thumb = getView().findViewById(R.id.thumb);
+        llImage = getView().findViewById(R.id.ll_images);
         if (resultCode == RESULT_OK) {
             Uri url = null;
             String path = "";
@@ -104,13 +111,22 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
             if (TextUtils.isEmpty(path)) {
                 path = getImagePath(url);
             }
-            imageUrl = path;
-            imageName = FileUtils.getFileNameFromUrl(path);
+            JsonObject object = new JsonObject();
+            object.addProperty("imageUrl", path);
+            object.addProperty("fileName", FileUtils.getFileNameFromUrl(path));
+            imageList.add(new Gson().toJson(object));
             try {
-                thumb.setVisibility(View.VISIBLE);
-                Glide.with(getActivity())
-                        .load(new File(imageUrl))
-                        .into(thumb);
+                llImage.removeAllViews();
+                llImage.setVisibility(View.VISIBLE);
+                for (String img : imageList) {
+                    JsonObject ob = new Gson().fromJson(img, JsonObject.class);
+                    View inflater = LayoutInflater.from(getActivity()).inflate(R.layout.image_thumb, null);
+                    ImageView imgView = inflater.findViewById(R.id.thumb);
+                    Glide.with(getActivity())
+                            .load(new File(JsonUtils.getString("imageUrl", ob)))
+                            .into(imgView);
+                    llImage.addView(inflater);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -126,8 +142,6 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
             recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         }
     }
-
-
 
 
 }
