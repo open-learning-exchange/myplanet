@@ -499,6 +499,7 @@ public class UploadManager extends FileUploadService {
                         newsUploadResponse = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), object).execute();
                     }
                     if (newsUploadResponse.body() != null) {
+                        act.getImageUrls().clear();
                         act.set_id(JsonUtils.getString("id", newsUploadResponse.body()));
                         act.set_rev(JsonUtils.getString("rev", newsUploadResponse.body()));
                     }
