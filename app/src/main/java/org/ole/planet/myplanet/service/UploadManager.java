@@ -176,12 +176,11 @@ public class UploadManager extends FileUploadService {
     }
 
 
-    public JsonObject createImage(RealmNews news, RealmUserModel user) {
+    public JsonObject createImage(RealmUserModel user, JsonObject imgObject) {
         JsonObject object = new JsonObject();
-        object.addProperty("title", news.getImageName());
+        object.addProperty("title", JsonUtils.getString("fileName", imgObject));
         object.addProperty("createdDate", new Date().getTime());
-        object.addProperty("filename", news.getImageName());
-        object.addProperty("imageUrl", news.getImageUrl());
+        object.addProperty("filename", JsonUtils.getString("fileName", imgObject));
         object.addProperty("addedBy", user.getId());
         object.addProperty("private", true);
         object.addProperty("resideOn", user.getParentCode());
@@ -461,34 +460,38 @@ public class UploadManager extends FileUploadService {
                     if (act.getUserId().startsWith("guest"))
                         continue;
                     JsonObject object = RealmNews.serializeNews(act, userModel);
+                    JsonArray image = act.getImagesArray();
                     RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
-                    if (!TextUtils.isEmpty(act.getImageUrl())) {
-                        JsonObject ob = createImage(act, user);
-                        JsonObject response = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).execute().body();
-                        String _rev = JsonUtils.getString("rev", response);
-                        String _id = JsonUtils.getString("id", response);
-                        JsonArray image = act.getImagesArray();
-                        File f = new File(JsonUtils.getString("imageUrl", object));
-                        Utilities.log("IMAGE FILE URL  " + JsonUtils.getString("imageUrl", object));
-                        String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", object));
-                        String format = "%s/resources/%s/%s";
-                        URLConnection connection = f.toURL().openConnection();
-                        String mimeType = connection.getContentType();
-                        RequestBody body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f));
-                        String url = String.format(format, Utilities.getUrl(), _id, name);
-                        Response<JsonObject> res = apiInterface.uploadResource(getHeaderMap(mimeType, _rev), url, body).execute();
-                        JsonObject attachment = res.body();
-                        JsonObject resourceObject = new JsonObject();
-                        resourceObject.addProperty("resourceId", JsonUtils.getString("id", attachment));
-                        resourceObject.addProperty("filename", JsonUtils.getString("imageName", object));
-                        String markdown = "![](resources/" + JsonUtils.getString("id", attachment) + "/" + JsonUtils.getString("imageName", object) + ")";
-                        resourceObject.addProperty("markdown", markdown);
-                        String msg = JsonUtils.getString("message", object);
-                        msg += "\n" + markdown;
-                        object.addProperty("message", msg);
-                        image.add(resourceObject);
-                        object.add("images", image);
+                    if (act.getImageUrls() != null) {
+                        for (String imageobject : act.getImageUrls()) {
+                            JsonObject imgObject = new Gson().fromJson(imageobject, JsonObject.class);
+                            JsonObject ob = createImage(user, imgObject);
+                            JsonObject response = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).execute().body();
+                            String _rev = JsonUtils.getString("rev", response);
+                            String _id = JsonUtils.getString("id", response);
+                            File f = new File(JsonUtils.getString("imageUrl", imgObject));
+                            Utilities.log("IMAGE FILE URL  " + JsonUtils.getString("imageUrl", imgObject));
+                            String name = FileUtils.getFileNameFromUrl(JsonUtils.getString("imageUrl", imgObject));
+                            String format = "%s/resources/%s/%s";
+                            URLConnection connection = f.toURL().openConnection();
+                            String mimeType = connection.getContentType();
+                            RequestBody body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f));
+                            String url = String.format(format, Utilities.getUrl(), _id, name);
+                            Response<JsonObject> res = apiInterface.uploadResource(getHeaderMap(mimeType, _rev), url, body).execute();
+                            JsonObject attachment = res.body();
+                            JsonObject resourceObject = new JsonObject();
+                            resourceObject.addProperty("resourceId", JsonUtils.getString("id", attachment));
+                            resourceObject.addProperty("filename", JsonUtils.getString("fileName", imgObject));
+                            String markdown = "![](resources/" + JsonUtils.getString("id", attachment) + "/" + JsonUtils.getString("fileName", imgObject) + ")";
+                            resourceObject.addProperty("markdown", markdown);
+                            String msg = JsonUtils.getString("message", object);
+                            msg += "\n" + markdown;
+                            object.addProperty("message", msg);
+                            image.add(resourceObject);
+                        }
                     }
+                    act.setImages(new Gson().toJson(image));
+                    object.add("images", image);
                     Response<JsonObject> newsUploadResponse;
                     if (TextUtils.isEmpty(act.get_id())) {
                         newsUploadResponse = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news", object).execute();
@@ -496,6 +499,7 @@ public class UploadManager extends FileUploadService {
                         newsUploadResponse = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), object).execute();
                     }
                     if (newsUploadResponse.body() != null) {
+                        act.getImageUrls().clear();
                         act.set_id(JsonUtils.getString("id", newsUploadResponse.body()));
                         act.set_rev(JsonUtils.getString("rev", newsUploadResponse.body()));
                     }
@@ -572,10 +576,10 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
             RealmResults<RealmCourseActivity> activities;
-                activities = realm.where(RealmCourseActivity.class).isNull("_rev").notEqualTo("type", "sync").findAll();
+            activities = realm.where(RealmCourseActivity.class).isNull("_rev").notEqualTo("type", "sync").findAll();
             for (RealmCourseActivity act : activities) {
                 try {
-                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/course_activities"  , RealmCourseActivity.serializeSerialize(act)).execute().body();
+                    JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/course_activities", RealmCourseActivity.serializeSerialize(act)).execute().body();
                     if (object != null) {
                         act.set_rev(JsonUtils.getString("rev", object));
                         act.set_id(JsonUtils.getString("id", object));

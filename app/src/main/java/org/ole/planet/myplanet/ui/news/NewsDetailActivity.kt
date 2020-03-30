@@ -65,19 +65,19 @@ class NewsDetailActivity : BaseActivity() {
         }
         Utilities.log(msg)
         tv_detail.loadDataWithBaseURL(null, "<html><body>" + msg + "</body></html>", "text/html", "utf-8", null)
-        val imageUrl = news?.imageUrl
-        if (TextUtils.isEmpty(imageUrl)) {
-            loadImage()
-        } else {
-            try {
-                img.visibility = View.VISIBLE
-                Glide.with(this)
-                        .load(File(imageUrl))
-                        .into(img)
-            } catch (e: Exception) {
+//        val imageUrl = news?.imageUrl
+//        if (TextUtils.isEmpty(imageUrl)) {
+//            loadImage()
+//        } else {
+//            try {
+//                img.visibility = View.VISIBLE
+//                Glide.with(this)
+//                        .load(File(imageUrl))
+//                        .into(img)
+//            } catch (e: Exception) {
                 loadImage()
-            }
-        }
+//            }
+//        }
     }
 
     private fun loadImage() {

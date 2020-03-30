@@ -139,7 +139,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
     private void showAddMessage() {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
-        thumb = v.findViewById(R.id.thumb);
+//        thumb = v.findViewById(R.id.thumb);
         v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this));
         v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
         layout.setHint(getString(R.string.enter_message));
@@ -158,9 +158,9 @@ public class DiscussionListFragment extends BaseTeamFragment {
                     map.put("message", msg);
                     map.put("messageType", team.getTeamType());
                     map.put("messagePlanetCode", team.getTeamPlanetCode());
-                    map.put("imageUrl", imageUrl);
-                    map.put("imageName", imageName);
-                    RealmNews.createNews(map, mRealm, user);
+//                    map.put("imageUrl", imageUrl);
+//                    map.put("imageName", imageName);
+                    RealmNews.createNews(map, mRealm, user, imageList);
                     Utilities.log("discussion created");
                     rvDiscussion.getAdapter().notifyDataSetChanged();
                 }).setNegativeButton("Cancel", null).show();

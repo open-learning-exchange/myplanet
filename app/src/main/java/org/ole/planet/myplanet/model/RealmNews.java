@@ -47,8 +47,7 @@ public class RealmNews extends RealmObject {
     private long time;
     private String createdOn;
     private String parentCode;
-    private String imageUrl;
-    private String imageName;
+    private RealmList<String> imageUrls;
     private String images;
     private RealmList<String> labels;
     private String viewIn;
@@ -76,7 +75,6 @@ public class RealmNews extends RealmObject {
         news.setUserId(JsonUtils.getString("_id", user));
         news.setUserName(JsonUtils.getString("name", user));
         news.setTime(JsonUtils.getLong("time", doc));
-        news.setImageUrl(JsonUtils.getString("imageUrl", doc));
         JsonArray images = JsonUtils.getJsonArray("images", doc);
         String message = JsonUtils.getString("message", doc);
 //        for (JsonElement ob : images) {
@@ -87,7 +85,7 @@ public class RealmNews extends RealmObject {
         JsonArray labels = JsonUtils.getJsonArray("labels", doc);
         news.setViewIn(new Gson().toJson(JsonUtils.getJsonArray("viewIn", doc)));
         news.setLabels(labels);
-        news.setImageName(JsonUtils.getString("imageName", doc));
+//        news.setImageName(JsonUtils.getString("imageName", doc));
     }
 
     public String getImages() {
@@ -247,8 +245,8 @@ public class RealmNews extends RealmObject {
         object.addProperty("createdOn", news.getCreatedOn());
         object.addProperty("replyTo", news.getReplyTo());
         object.addProperty("parentCode", news.getParentCode());
-        object.addProperty("imageName", news.getImageName());
-        object.addProperty("imageUrl", news.getImageUrl());
+//        object.addProperty("imageName", news.getImageName());
+//        object.addProperty("imageUrl", news.getImageUrls());
         object.add("images", news.getImagesArray());
         object.add("labels", news.getLabelsArray());
         object.add("user", new Gson().fromJson(news.getUser(), JsonObject.class));
@@ -276,7 +274,7 @@ public class RealmNews extends RealmObject {
         this.replyTo = replyTo;
     }
 
-    public static RealmNews createNews(HashMap<String, String> map, Realm mRealm, RealmUserModel user) {
+    public static RealmNews createNews(HashMap<String, String> map, Realm mRealm, RealmUserModel user, RealmList<String> imageUrls) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         RealmNews news = mRealm.createObject(RealmNews.class, UUID.randomUUID().toString());
@@ -297,8 +295,8 @@ public class RealmNews extends RealmObject {
         news.setUserId(user.getId());
         news.setReplyTo(map.containsKey("replyTo") ? map.get("replyTo") : "");
         news.setUser(new Gson().toJson(user.serialize()));
-        news.setImageUrl(map.get("imageUrl"));
-        news.setImageName(map.get("imageName"));
+        news.setImageUrls(imageUrls);
+//        news.setImageName(map.get("imageName"));
         mRealm.commitTransaction();
         return news;
     }
@@ -398,19 +396,20 @@ public class RealmNews extends RealmObject {
         this.parentCode = parentCode;
     }
 
-    public String getImageUrl() {
-        return imageUrl;
+    public RealmList<String> getImageUrls() {
+        return imageUrls;
     }
 
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
+    public void setImageUrls(RealmList<String> imageUrls) {
+        this.imageUrls = imageUrls;
     }
 
-    public String getImageName() {
-        return imageName;
-    }
 
-    public void setImageName(String imageName) {
-        this.imageName = imageName;
-    }
+
+
+
+
+//    public void setImageName(String imageN ame) {
+//        this.imageName = imageName;
+//    }
 }
