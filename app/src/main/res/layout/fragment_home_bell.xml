@@ -49,50 +49,74 @@
                 layout="@layout/home_card_mylife"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
+
                 android:layout_weight="1" />
 
 
         </LinearLayout>
 
 
-<!--    <com.sa90.materialarcmenu.ArcMenu-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_gravity="bottom|end"-->
-<!--        android:layout_margin="@dimen/padding_large"-->
-<!--        app:menu_scr="@drawable/ic_dashboard"-->
-<!--        app:menu_open="arc_left">-->
+    <com.github.clans.fab.FloatingActionMenu
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        app:menu_icon="@drawable/ic_dashboard"
+        app:menu_scr="@drawable/ic_dashboard"
+        app:menu_open="arc_left">
 
 
-<!--        <com.google.android.material.floatingactionbutton.FloatingActionButton-->
+        <com.github.clans.fab.FloatingActionButton
+            android:layout_width="wrap_content"
+            android:id="@+id/fab_my_activity"
+            android:src="@drawable/ic_progress"
+            android:tint="@color/md_white_1000"
+            app:fab_label="@string/my_activity"
+            android:layout_height="wrap_content" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:layout_width="wrap_content"
+            android:id="@+id/fab_my_progress"
+            android:src="@drawable/ic_progress"
+            android:tint="@color/md_white_1000"
+            app:fab_label="@string/my_progress"
+            android:layout_height="wrap_content" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:layout_width="wrap_content"
+            android:id="@+id/fab_notification"
+            android:src="@drawable/notifications"
+            app:fab_label="@string/notifications"
+            android:tint="@color/md_white_1000"
+            android:layout_height="wrap_content" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:layout_width="wrap_content"
+            android:src="@drawable/ic_survey"
+            android:tint="@color/md_white_1000"
+            android:id="@+id/fab_survey"
+            app:fab_label="@string/menu_surveys"
+            android:layout_height="wrap_content" />
+
+<!--        <com.github.clans.fab.FloatingActionButton-->
 <!--            android:layout_width="wrap_content"-->
-<!--            android:id="@+id/fab_notification"-->
-<!--            app:srcCompat="@drawable/notifications"-->
-<!--            android:layout_height="wrap_content" />-->
-
-<!--        <com.google.android.material.floatingactionbutton.FloatingActionButton-->
-<!--            android:layout_width="wrap_content"-->
-<!--            app:srcCompat="@drawable/ic_my_survey"-->
-<!--            android:tint="@color/md_white_1000"-->
-<!--            android:id="@+id/fab_survey"-->
-<!--            android:layout_height="wrap_content" />-->
-
-<!--        <com.google.android.material.floatingactionbutton.FloatingActionButton-->
-<!--            android:layout_width="wrap_content"-->
-<!--            app:srcCompat="@drawable/feedback"-->
+<!--            android:src="@drawable/ic_feedback"-->
+<!--            app:fab_label="@string/menu_feedback"-->
+<!--            -->
 <!--            android:id="@+id/fab_feedback"-->
 <!--            android:layout_height="wrap_content" />-->
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <com.github.clans.fab.FloatingActionButton
             android:id="@+id/add_resource"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
+            app:fab_label="@string/add_res"
             android:layout_margin="@dimen/padding_large"
             android:src="@drawable/ic_add" />
 
+    </com.github.clans.fab.FloatingActionMenu>
 
-<!--    </com.sa90.materialarcmenu.ArcMenu>-->
 
 
 </FrameLayout>
