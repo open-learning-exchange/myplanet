@@ -156,18 +156,18 @@ public class AdapterNews extends BaseNewsAdapter {
 
 
     private void loadImage(RecyclerView.ViewHolder holder, RealmNews news) {
-        String imageUrl = news.getImageUrl();
-        if (TextUtils.isEmpty(imageUrl)) {
-            loadRemoteImage(holder, news);
-        } else {
-            try {
-                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
-                Utilities.log("image url " + news.getImageUrl());
-                Glide.with(context).load(new File(imageUrl)).into(((ViewHolderNews) holder).newsImage);
-            } catch (Exception e) {
+//        String imageUrl = news.getImageUrl();
+//        if (TextUtils.isEmpty(imageUrl)) {
+//            loadRemoteImage(holder, news);
+//        } else {
+//            try {
+//                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+//                Utilities.log("image url " + news.getImageUrl());
+//                Glide.with(context).load(new File(imageUrl)).into(((ViewHolderNews) holder).newsImage);
+//            } catch (Exception e) {
                 loadRemoteImage(holder, news);
-            }
-        }
+//            }
+//        }
     }
 
     private void loadRemoteImage(RecyclerView.ViewHolder holder, RealmNews news) {
