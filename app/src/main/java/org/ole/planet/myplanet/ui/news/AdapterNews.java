@@ -68,7 +68,10 @@ public class AdapterNews extends BaseNewsAdapter {
         this.parentNews = parentNews;
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
     }
-
+    public void addItem(RealmNews news){
+        list.add(news);
+        notifyDataSetChanged();
+    }
     public void setFromLogin(boolean fromLogin) {
         this.fromLogin = fromLogin;
     }

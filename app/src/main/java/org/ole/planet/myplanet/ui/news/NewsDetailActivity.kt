@@ -70,7 +70,6 @@ class NewsDetailActivity : BaseActivity() {
             loadImage()
         }
         tv_detail.loadDataWithBaseURL(null, "<html><body>$msg</body></html>", "text/html", "utf-8", null)
-
     }
 
     private fun loadLocalImage(): String {

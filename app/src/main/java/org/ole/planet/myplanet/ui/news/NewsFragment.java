@@ -67,6 +67,7 @@ public class NewsFragment extends BaseNewsFragment {
         btnSubmit = v.findViewById(R.id.btn_submit);
         tvMessage = v.findViewById(R.id.tv_message);
         llImage = v.findViewById(R.id.ll_image);
+        llImage = v.findViewById(R.id.ll_images);
         llAddNews = v.findViewById(R.id.ll_add_news);
         btnAddStory = v.findViewById(R.id.btn_add_story);
 //        thumb = v.findViewById(R.id.thumb);
@@ -106,10 +107,10 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("viewInSection", "community");
             map.put("messageType", "sync");
             map.put("messagePlanetCode", user.getPlanetCode());
-            RealmNews.createNews(map, mRealm, user, imageList);
+            RealmNews n = RealmNews.createNews(map, mRealm, user, imageList);
             imageList.clear();
             llImage.removeAllViews();
-            adapterNews.notifyDataSetChanged();
+            adapterNews.addItem(n);
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
         btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
