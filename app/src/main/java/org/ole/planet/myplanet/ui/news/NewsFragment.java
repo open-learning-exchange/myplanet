@@ -57,7 +57,6 @@ public class NewsFragment extends BaseNewsFragment {
     TextView tvMessage;
     AdapterNews adapterNews;
 
-    //    ImageView thumb;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -107,13 +106,10 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("viewInSection", "community");
             map.put("messageType", "sync");
             map.put("messagePlanetCode", user.getPlanetCode());
-//            map.put("imageUrl", imageUrl);
-//            map.put("imageName", imageName);
-            Utilities.log("IMage size "  + imageList.size() );
             RealmNews.createNews(map, mRealm, user, imageList);
             imageList.clear();
             llImage.removeAllViews();
-            rvNews.getAdapter().notifyDataSetChanged();
+            adapterNews.notifyDataSetChanged();
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
         btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);

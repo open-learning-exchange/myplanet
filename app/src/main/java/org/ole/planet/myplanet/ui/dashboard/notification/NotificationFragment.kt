@@ -75,5 +75,4 @@ class NotificationFragment : BottomSheetDialogFragment() {
         rv_notifications.adapter = AdapterNotification(activity!!, notificationList, callback)
     }
 
-
 }

@@ -118,7 +118,6 @@ public class AdapterNews extends BaseNewsAdapter {
     }
 
 
-
     private void addLabels(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
             PopupMenu menu = new PopupMenu(context, ((ViewHolderNews) holder).btnAddLabel);
@@ -156,18 +155,15 @@ public class AdapterNews extends BaseNewsAdapter {
 
 
     private void loadImage(RecyclerView.ViewHolder holder, RealmNews news) {
-//        String imageUrl = news.getImageUrl();
-//        if (TextUtils.isEmpty(imageUrl)) {
-//            loadRemoteImage(holder, news);
-//        } else {
-//            try {
-//                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
-//                Utilities.log("image url " + news.getImageUrl());
-//                Glide.with(context).load(new File(imageUrl)).into(((ViewHolderNews) holder).newsImage);
-//            } catch (Exception e) {
-                loadRemoteImage(holder, news);
-//            }
-//        }
+        if (news.getImageUrls() != null && news.getImageUrls().size() > 0) {
+            try {
+                JsonObject imgObject = new Gson().fromJson(news.getImageUrls().get(0), JsonObject.class);
+                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                Glide.with(context).load(new File(JsonUtils.getString("imageUrl", imgObject))).into(((ViewHolderNews) holder).newsImage);
+            } catch (Exception e) { }
+        } else {
+            loadRemoteImage(holder, news);
+        }
     }
 
     private void loadRemoteImage(RecyclerView.ViewHolder holder, RealmNews news) {
