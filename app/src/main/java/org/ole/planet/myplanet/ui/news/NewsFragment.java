@@ -57,7 +57,6 @@ public class NewsFragment extends BaseNewsFragment {
     TextView tvMessage;
     AdapterNews adapterNews;
 
-    //    ImageView thumb;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -68,6 +67,7 @@ public class NewsFragment extends BaseNewsFragment {
         btnSubmit = v.findViewById(R.id.btn_submit);
         tvMessage = v.findViewById(R.id.tv_message);
         llImage = v.findViewById(R.id.ll_image);
+        llImage = v.findViewById(R.id.ll_images);
         llAddNews = v.findViewById(R.id.ll_add_news);
         btnAddStory = v.findViewById(R.id.btn_add_story);
 //        thumb = v.findViewById(R.id.thumb);
@@ -107,13 +107,10 @@ public class NewsFragment extends BaseNewsFragment {
             map.put("viewInSection", "community");
             map.put("messageType", "sync");
             map.put("messagePlanetCode", user.getPlanetCode());
-//            map.put("imageUrl", imageUrl);
-//            map.put("imageName", imageName);
-            Utilities.log("IMage size "  + imageList.size() );
-            RealmNews.createNews(map, mRealm, user, imageList);
+            RealmNews n = RealmNews.createNews(map, mRealm, user, imageList);
             imageList.clear();
             llImage.removeAllViews();
-            rvNews.getAdapter().notifyDataSetChanged();
+            adapterNews.addItem(n);
         });
         btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
         btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);

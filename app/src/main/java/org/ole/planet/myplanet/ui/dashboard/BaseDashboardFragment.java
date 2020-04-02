@@ -77,7 +77,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         Calendar now = Calendar.getInstance();
         DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
             now.set(Calendar.YEAR, i);
-            now.set(Calendar.MONTH, i1 + 1);
+            now.set(Calendar.MONTH, i1);
             now.set(Calendar.DAY_OF_MONTH, i2);
             List<RealmMyLibrary> imageList = mRealm.where(RealmMyLibrary.class).equalTo("isPrivate", true).greaterThan("createdDate", now.getTimeInMillis()).equalTo("mediaType", "image").findAll();
             ArrayList<String> urls = new ArrayList<>();

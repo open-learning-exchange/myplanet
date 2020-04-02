@@ -130,6 +130,7 @@ public class Constants {
         LABELS.put("Help Wanted", "help");
         LABELS.put("Offer", "offer");
         LABELS.put("Request for advice", "advice");
+
     }
 
     private static void initClasses() {
@@ -171,7 +172,7 @@ public class Constants {
         Utilities.log(preferences.getBoolean("beta_function", false) + " beta");
         Utilities.log(preferences.getBoolean(s, false) + " beta");
         Utilities.log((preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, false)) + "");
-        return preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, false);
+        return preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, s.equals(KEY_NEWSADDIMAGE));
         //  }
 //        return true;
     }
