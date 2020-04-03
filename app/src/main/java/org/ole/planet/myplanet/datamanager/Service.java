@@ -63,7 +63,7 @@ public class Service {
                                     callback.onUpdateAvailable(p, false);
                                     return;
                                 }
-                                if (currentVersion < p.getMinapkcode() &&  apkVersion <= p.getMinapkcode()) {
+                                if (currentVersion < p.getMinapkcode() &&  apkVersion < p.getMinapkcode()) {
                                     callback.onUpdateAvailable(p, true);
                                 } else {
                                     callback.onError("Planet up to date", false);

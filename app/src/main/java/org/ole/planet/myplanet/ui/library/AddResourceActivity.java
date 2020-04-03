@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 
@@ -101,7 +102,6 @@ public class AddResourceActivity extends AppCompatActivity {
             Utilities.toast(AddResourceActivity.this, "Resource saved successfully");
             finish();
         });
-
     }
 
     private void createResource(RealmMyLibrary resource, String id) {
@@ -115,10 +115,11 @@ public class AddResourceActivity extends AppCompatActivity {
         resource.setOpenWith(spnOpenWith.getSelectedItem().toString());
         resource.setLanguage(spnLang.getSelectedItem().toString());
         resource.setMediaType(spnMedia.getSelectedItem().toString());
-        resource.setMediaType(spnResourceType.getSelectedItem().toString());
+        resource.setResourceType(spnResourceType.getSelectedItem().toString());
         resource.setSubject(subjects);
         resource.setUserId(new RealmList<>());
         resource.setLevel(levels);
+        resource.setCreatedDate(Calendar.getInstance().getTimeInMillis());
         resource.setResourceFor(resourceFor);
         resource.setResourceLocalAddress(resourceUrl);
         resource.setResourceOffline(true);
