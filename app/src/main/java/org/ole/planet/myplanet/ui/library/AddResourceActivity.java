@@ -115,7 +115,7 @@ public class AddResourceActivity extends AppCompatActivity {
         resource.setOpenWith(spnOpenWith.getSelectedItem().toString());
         resource.setLanguage(spnLang.getSelectedItem().toString());
         resource.setMediaType(spnMedia.getSelectedItem().toString());
-        resource.setMediaType(spnResourceType.getSelectedItem().toString());
+        resource.setResourceType(spnResourceType.getSelectedItem().toString());
         resource.setSubject(subjects);
         resource.setUserId(new RealmList<>());
         resource.setLevel(levels);
