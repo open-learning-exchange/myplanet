@@ -79,7 +79,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private GifDrawable gifDrawable;
     private GifImageButton syncIcon;
-//    private CheckBox managerialLogin;
+    //    private CheckBox managerialLogin;
     private boolean isSync = false, forceSync = false;
     private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
@@ -112,13 +112,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
         forceSyncTrigger();
         Button btnOpenCommunity = findViewById(R.id.open_community);
-        if (!Utilities.getUrl().isEmpty()){
+        if (!Utilities.getUrl().isEmpty()) {
             btnOpenCommunity.setVisibility(View.VISIBLE);
-            btnOpenCommunity.setOnClickListener(v->{
+            btnOpenCommunity.setOnClickListener(v -> {
                 new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
             });
             new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
-        }else{
+        } else {
             btnOpenCommunity.setVisibility(View.GONE);
         }
     }
@@ -165,7 +165,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     public void declareElements() {
-        if(!defaultPref.contains("beta_addImageToMessage")){
+        if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
         inputLayoutName = findViewById(R.id.input_layout_name);
@@ -323,7 +323,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor.putString("loginUserName", inputName.getText().toString());
         editor.putString("loginUserPassword", inputPassword.getText().toString());
 //        }
-        boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(),false );
+        boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), false);
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
             onLogin();
@@ -426,7 +426,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
-        if (cancelable) {
+        if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton("Update Later", (dialogInterface, i) -> continueSyncProcess());
         } else {
             mRealm.executeTransactionAsync(realm -> realm.deleteAll());
