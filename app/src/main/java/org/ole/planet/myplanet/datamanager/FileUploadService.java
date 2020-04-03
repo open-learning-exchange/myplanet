@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmSubmitPhotos;
@@ -31,6 +32,14 @@ public class FileUploadService {
 
         File f = new File(personal.getPath());
         String name = FileUtils.getFileNameFromUrl(personal.getPath());
+
+        upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
+    }
+
+    public void uploadAttachment(String id, String rev, RealmMyLibrary personal, SuccessListener listener) {
+
+        File f = new File(personal.getResourceLocalAddress());
+        String name = FileUtils.getFileNameFromUrl(personal.getResourceLocalAddress());
 
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
