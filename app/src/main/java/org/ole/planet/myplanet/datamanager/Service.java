@@ -7,8 +7,10 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
@@ -19,6 +21,8 @@ import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import static org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX;
 
 public class Service {
     private Context context;
@@ -55,15 +59,17 @@ public class Service {
                                 }
                                 String vsn = responses.replaceAll("v", "");
                                 vsn = vsn.replaceAll("\\.", "");
-                                Log.e("Response ", vsn);
                                 int apkVersion = Integer.parseInt(vsn.startsWith("0") ? vsn.replace("0", "") : vsn);
                                 int currentVersion = VersionUtils.getVersionCode(context);
-                                Utilities.log(p.getLatestapk() + " " + currentVersion + " " + p.getMinapkcode());
-                                if (apkVersion > currentVersion ) {
+                                if (Constants.showBetaFeature(KEY_UPGRADE_MAX, context) && p.getLatestapkcode() > currentVersion) {
                                     callback.onUpdateAvailable(p, false);
                                     return;
                                 }
-                                if (currentVersion < p.getMinapkcode() &&  apkVersion < p.getMinapkcode()) {
+                                if (apkVersion > currentVersion) {
+                                    callback.onUpdateAvailable(p, currentVersion >= p.getMinapkcode());
+                                    return;
+                                }
+                                if (currentVersion < p.getMinapkcode() && apkVersion < p.getMinapkcode()) {
                                     callback.onUpdateAvailable(p, true);
                                 } else {
                                     callback.onError("Planet up to date", false);
