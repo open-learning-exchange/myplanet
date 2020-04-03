@@ -13,14 +13,15 @@
         android:title="@string/save_username_and_password" />
 
 
-    <Preference android:key="reset_app"
-        android:title="@string/reset_app"
-        />
+    <Preference
+        android:key="reset_app"
+        android:title="@string/reset_app" />
 
 
-    <Preference android:key="freeup_space"
-        android:title="@string/freeup_space"
-        />
+    <Preference
+        android:key="freeup_space"
+        android:title="@string/freeup_space" />
+
 
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
@@ -35,9 +36,9 @@
             android:key="force_monthly_sync"
             android:title="Force Monthly Sync" />
         <Preference
-            android:selectable="false"
             android:enabled="true"
             android:key="lastSyncDate"
+            android:selectable="false"
             android:title="Last Synced:" />
 
     </PreferenceCategory>
@@ -71,20 +72,37 @@
             android:defaultValue="true"
             android:key="beta_achievement"
             android:title="Beta Function for Achievement" />
-    </PreferenceCategory>
 
+
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:dependency="beta_function"
+        android:title="Upgrade Apk">
+
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:visibility="gone"
+            android:key="beta_auto_upgrade"
+            android:title="Auto Upgrade" />
+
+        <SwitchPreference
+            android:key="beta_upgrade_max"
+            android:title="Always move to maximum version?" />
+
+    </PreferenceCategory>
     <PreferenceCategory
         android:dependency=""
         android:title="Main Controls">
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="beta_function"
-        android:title="All Beta Functions" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_function"
+            android:title="All Beta Functions" />
 
-    <SwitchPreference
-        android:defaultValue="true"
-        android:key="auto_sync_with_server"
-        android:title="Auto Sync Device" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="auto_sync_with_server"
+            android:title="Auto Sync Device" />
     </PreferenceCategory>
 
 </PreferenceScreen>
