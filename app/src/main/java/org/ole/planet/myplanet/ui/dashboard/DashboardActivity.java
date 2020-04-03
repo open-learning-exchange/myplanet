@@ -36,6 +36,8 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.community.CommunityFragment;
+import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
@@ -250,6 +252,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.menu_courses:
                 openCallFragment(new CourseFragment());
                 break;
+            case R.string.menu_community:
+                openCallFragment(new CommunityTabFragment());
+                break;
             case R.string.txt_myLibrary:
                 openMyFragment(new LibraryFragment());
                 break;
@@ -328,6 +333,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 changeUX(R.string.txt_myCourses, menuImageList.get(2)),
                 changeUX(R.string.menu_library, menuImageList.get(3)),
                 changeUX(R.string.menu_courses, menuImageList.get(4)),
+                changeUX(R.string.menu_community, menuImageList.get(6)),
                 changeUX(R.string.enterprises, menuImageList.get(5))
                         .withSelectable(false)
                         .withDisabledIconColor(getResources().getColor(R.color.disable_color))
