@@ -76,7 +76,7 @@
 
     </PreferenceCategory>
     <PreferenceCategory
-        android:dependency="beta_function_upgrade"
+        android:dependency="beta_function"
         android:title="Upgrade Apk">
 
 
