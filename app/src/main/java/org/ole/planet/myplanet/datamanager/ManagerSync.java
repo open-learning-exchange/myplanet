@@ -51,7 +51,7 @@ public class ManagerSync {
 
     public void login(String userName, String password, SyncListener listener) {
         listener.onSyncStarted();
-        Utilities.log(Utilities.getUrl() + "org.couchdb.user:" +  userName);
+        Utilities.log(Utilities.getUrl() + "/org.couchdb.user:" +  userName);
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
 
         apiInterface.getJsonObject("Basic " + Base64.encodeToString((userName + ":" +
