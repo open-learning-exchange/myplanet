@@ -102,7 +102,6 @@ public class AddResourceActivity extends AppCompatActivity {
             Utilities.toast(AddResourceActivity.this, "Resource saved successfully");
             finish();
         });
-
     }
 
     private void createResource(RealmMyLibrary resource, String id) {
