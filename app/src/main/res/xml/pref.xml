@@ -77,22 +77,18 @@
     </PreferenceCategory>
     <PreferenceCategory
         android:dependency="beta_function_upgrade"
-        android:title="Auto Upgrade Beta">
+        android:title="Upgrade Apk">
 
 
         <SwitchPreference
             android:defaultValue="true"
+            android:visibility="gone"
             android:key="beta_auto_upgrade"
             android:title="Auto Upgrade" />
 
         <SwitchPreference
-            android:defaultValue="true"
             android:key="beta_upgrade_max"
-            android:title="Move to maximum version always" />
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="beta_upgrade_min"
-            android:title="Stay only on minimum version" />
+            android:title="Always move to maximum version?" />
 
     </PreferenceCategory>
     <PreferenceCategory
