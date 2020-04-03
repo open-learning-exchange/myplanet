@@ -124,6 +124,9 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         hideTestIfNoQuestion();
         tvTitle.setText(step.getStepTitle());
         description.loadMarkdown(step.getDescription());
+        if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+            btnExam.setVisibility(View.INVISIBLE);
+        }
         setListeners();
     }
 
