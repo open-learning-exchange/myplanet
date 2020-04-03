@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
+import io.realm.RealmList;
+
 public class JsonUtils {
     public static String getString(String fieldName, JsonObject jsonObject) {
         try {
@@ -23,6 +25,14 @@ public class JsonUtils {
             return el instanceof JsonNull ? "" : el.getAsString();
         }catch (Exception e){}
         return "";
+    }
+
+    public static JsonArray getAsJsonArray(RealmList<String> list){
+        JsonArray array = new JsonArray();
+        for (String s : list){
+            array.add(s);
+        }
+        return array;
     }
 
     public static boolean getBoolean(String fieldName, JsonObject jsonObject) {
