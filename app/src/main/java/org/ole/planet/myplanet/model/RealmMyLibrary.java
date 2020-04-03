@@ -149,7 +149,7 @@ public class RealmMyLibrary extends RealmObject {
         object.addProperty("language", personal.getLanguage());
         object.add("subject", JsonUtils.getAsJsonArray(personal.getSubject()));
         object.add("level", JsonUtils.getAsJsonArray(personal.getLevel()));
-        object.addProperty("resourceType", "Activities");
+        object.addProperty("resourceType", personal.getResourceType());
         object.addProperty("openWith", personal.getOpenWith());
         object.add("resourceFor", JsonUtils.getAsJsonArray(personal.getResourceFor()));
         object.addProperty("private", false);
@@ -161,7 +161,7 @@ public class RealmMyLibrary extends RealmObject {
         object.addProperty("androidId", NetworkUtils.getMacAddr());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
-        object.addProperty("mediaType", personal.getMediaType());
+//        object.addProperty("mediaType", personal.getMediaType());
         return object;
     }
 
