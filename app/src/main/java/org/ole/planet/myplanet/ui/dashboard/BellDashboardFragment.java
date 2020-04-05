@@ -64,20 +64,22 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         llBadges.removeAllViews();
 
         List<RealmSubmission> list = RealmCourseProgress.getPassedCourses(mRealm, settings.getString("userId", ""));
-        Utilities.log("Passeddd " + list.size());
         for (RealmSubmission sub : list) {
-            Utilities.log("sub 1" + sub.getParent());
             ImageView star = (ImageView) LayoutInflater.from(getActivity()).inflate(R.layout.image_start, null);
             String examId = sub.getParentId().contains("@") ? sub.getParentId().split("@")[0] : sub.getParentId();
             long questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", examId).count();
-            if (questions == sub.getGrade()) {
-                star.setColorFilter(getResources().getColor(R.color.colorPrimary));
-            } else {
-                star.setColorFilter(getResources().getColor(R.color.md_blue_grey_500));
-            }
+            setColor(questions, sub, star);
             llBadges.addView(star);
         }
 
+    }
+
+    private void setColor(long questions, RealmSubmission sub, ImageView star) {
+        if (questions == sub.getGrade()) {
+            star.setColorFilter(getResources().getColor(R.color.colorPrimary));
+        } else {
+            star.setColorFilter(getResources().getColor(R.color.md_blue_grey_500));
+        }
     }
 
 
