@@ -27,4 +27,5 @@
     <dimen name="text_margin">16dp</dimen>
     <dimen name="layout_height">30dp</dimen>
     <dimen name="_16dp">16dp</dimen>
+    <dimen name="_30dp">30dp</dimen>
 </resources>

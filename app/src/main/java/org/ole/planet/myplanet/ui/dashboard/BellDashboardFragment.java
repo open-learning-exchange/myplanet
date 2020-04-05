@@ -1,47 +1,42 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-import android.app.DatePickerDialog;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.DatePicker;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmCourseProgress;
+import org.ole.planet.myplanet.model.RealmExamQuestion;
+import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.course.MyProgressFragment;
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.AddResourceFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.mylife.LifeFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
-import org.ole.planet.myplanet.utilities.DownloadUtils;
-import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class BellDashboardFragment extends BaseDashboardFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
     TextView tvCommunityName, tvDate;
+    LinearLayout llBadges;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -61,16 +56,36 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
             new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
         });
-
-       // forceDownloadNewsImages();
+        showBadges();
+        // forceDownloadNewsImages();
     }
 
+    private void showBadges() {
+        llBadges.removeAllViews();
+
+        List<RealmSubmission> list = RealmCourseProgress.getPassedCourses(mRealm, settings.getString("userId", ""));
+        Utilities.log("Passeddd " + list.size());
+        for (RealmSubmission sub : list) {
+            Utilities.log("sub 1" + sub.getParent());
+            ImageView star = (ImageView) LayoutInflater.from(getActivity()).inflate(R.layout.image_start, null);
+            String examId = sub.getParentId().contains("@") ? sub.getParentId().split("@")[0] : sub.getParentId();
+            long questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", examId).count();
+            if (questions == sub.getGrade()) {
+                star.setColorFilter(getResources().getColor(R.color.colorPrimary));
+            } else {
+                star.setColorFilter(getResources().getColor(R.color.md_blue_grey_500));
+            }
+            llBadges.addView(star);
+        }
+
+    }
 
 
     private void declareElements(View view) {
         tvDate = view.findViewById(R.id.txt_date);
         tvCommunityName = view.findViewById(R.id.txt_community_name);
         initView(view);
+        llBadges = view.findViewById(R.id.ll_badges);
         view.findViewById(R.id.ll_home_team).setOnClickListener(v -> homeItemClickListener.openCallFragment(new TeamFragment()));
         view.findViewById(R.id.myLibraryImageButton).setOnClickListener(v -> openHelperFragment(new LibraryFragment()));
         view.findViewById(R.id.myCoursesImageButton).setOnClickListener(v -> openHelperFragment(new CourseFragment()));

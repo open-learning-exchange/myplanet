@@ -228,6 +228,7 @@ public class UploadManager extends FileUploadService {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/courses_progress", RealmCourseProgress.serializeProgress(sub)).execute().body();
                     if (object != null) {
                         sub.set_id(JsonUtils.getString("id", object));
+                        sub.set_rev(JsonUtils.getString("rev", object));
                     }
                 } catch (IOException e) {
                 }
@@ -304,7 +305,7 @@ public class UploadManager extends FileUploadService {
         mRealm = new DatabaseService(context).getRealmInstance();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransactionAsync(realm -> {
-            RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
+                    RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
                     List<RealmMyLibrary> data = realm.where(RealmMyLibrary.class).isNull("_rev").findAll();
                     for (RealmMyLibrary sub : data) {
                         try {
