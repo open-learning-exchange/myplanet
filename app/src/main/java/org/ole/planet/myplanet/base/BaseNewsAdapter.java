@@ -59,19 +59,6 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
         });
     }
 
-    public void postReply(String s, RealmNews news) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        HashMap<String, String> map = new HashMap<>();
-        map.put("message", s);
-        map.put("viewableBy", news.getViewableBy());
-        map.put("viewableId", news.getViewableId());
-        map.put("replyTo", news.getId());
-        map.put("messageType", news.getMessageType());
-        map.put("messagePlanetCode", news.getMessagePlanetCode());
-        RealmNews.createNews(map, mRealm, currentUser, null);
-        notifyDataSetChanged();
-    }
 
     public class ViewHolderNews extends RecyclerView.ViewHolder {
         public TextView tvName, tvDate, tvMessage;

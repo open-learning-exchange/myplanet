@@ -360,7 +360,7 @@ public class RealmNews extends RealmObject {
         boolean isCommunity = false;
         for (JsonElement e : array) {
             JsonObject object = e.getAsJsonObject();
-            if (object.get("section").getAsString().equalsIgnoreCase("community")) {
+            if (object.has("section") && object.get("section").getAsString().equalsIgnoreCase("community")) {
                 isCommunity = true;
                 break;
             }

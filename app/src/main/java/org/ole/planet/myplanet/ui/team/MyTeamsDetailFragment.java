@@ -294,4 +294,5 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     public void setData(List<RealmNews> list) {
         showRecyclerView(list);
     }
+
 }

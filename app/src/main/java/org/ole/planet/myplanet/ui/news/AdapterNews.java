@@ -2,18 +2,13 @@ package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
 import android.content.Intent;
-import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -21,13 +16,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.android.flexbox.FlexboxLayout;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipDrawable;
-import com.google.android.material.chip.ChipGroup;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -41,15 +30,14 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
-import fisk.chipcloud.ChipDeletedListener;
 import io.realm.Case;
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.Sort;
 
 public class AdapterNews extends BaseNewsAdapter {
@@ -60,6 +48,11 @@ public class AdapterNews extends BaseNewsAdapter {
     private RealmNews parentNews;
 
     private ChipCloudConfig config;
+    private RealmList<String> imageList;
+
+    public void setImageList(RealmList<String> imageList) {
+        this.imageList = imageList;
+    }
 
     public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
         this.context = context;
@@ -68,10 +61,12 @@ public class AdapterNews extends BaseNewsAdapter {
         this.parentNews = parentNews;
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
     }
-    public void addItem(RealmNews news){
+
+    public void addItem(RealmNews news) {
         list.add(news);
         notifyDataSetChanged();
     }
+
     public void setFromLogin(boolean fromLogin) {
         this.fromLogin = fromLogin;
     }
@@ -163,7 +158,8 @@ public class AdapterNews extends BaseNewsAdapter {
                 JsonObject imgObject = new Gson().fromJson(news.getImageUrls().get(0), JsonObject.class);
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 Glide.with(context).load(new File(JsonUtils.getString("imageUrl", imgObject))).into(((ViewHolderNews) holder).newsImage);
-            } catch (Exception e) { }
+            } catch (Exception e) {
+            }
         } else {
             loadRemoteImage(holder, news);
         }
@@ -201,6 +197,53 @@ public class AdapterNews extends BaseNewsAdapter {
         });
     }
 
+
+    public void showEditAlert(String id, boolean isEdit) {
+        View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
+        EditText et = v.findViewById(R.id.et_input);
+        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, context) ? View.VISIBLE : View.GONE);
+        LinearLayout llImage = v.findViewById(R.id.ll_alert_image);
+        v.findViewById(R.id.add_news_image).setOnClickListener(view -> listener.addImage(llImage));
+        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
+        if (isEdit)
+            et.setText(news.getMessage() + "");
+        new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit).setView(v)
+                .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
+                    String s = et.getText().toString();
+                    if (isEdit) {
+                        editPost(s, news);
+                    } else
+                        postReply(s, news);
+                }).setNegativeButton(R.string.cancel, null).show();
+    }
+
+
+    public void postReply(String s, RealmNews news) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        HashMap<String, String> map = new HashMap<>();
+        map.put("message", s);
+        map.put("viewableBy", news.getViewableBy());
+        map.put("viewableId", news.getViewableId());
+        map.put("replyTo", news.getId());
+        map.put("messageType", news.getMessageType());
+        map.put("messagePlanetCode", news.getMessagePlanetCode());
+        RealmNews.createNews(map, mRealm, currentUser, imageList);
+        notifyDataSetChanged();
+    }
+
+    private void editPost(String s, RealmNews news) {
+        if (s.isEmpty()) {
+            Utilities.toast(context, "Please enter message");
+            return;
+        }
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        news.setMessage(s);
+        mRealm.commitTransaction();
+        notifyDataSetChanged();
+    }
+
     private RealmNews getNews(RecyclerView.ViewHolder holder, int position) {
         RealmNews news;
         if (parentNews != null) {
@@ -228,23 +271,6 @@ public class AdapterNews extends BaseNewsAdapter {
         }
     }
 
-    private void showEditAlert(String id, boolean isEdit) {
-        View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
-        EditText et = v.findViewById(R.id.et_input);
-        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, context) ? View.VISIBLE : View.GONE);
-
-        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
-        if (isEdit)
-            et.setText(news.getMessage() + "");
-        new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit).setView(v)
-                .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
-                    String s = et.getText().toString();
-                    if (isEdit)
-                        editPost(s, news);
-                    else
-                        postReply(s, news);
-                }).setNegativeButton(R.string.cancel, null).show();
-    }
 
     private void deletePost(String id) {
         if (!mRealm.isInTransaction())
@@ -256,17 +282,6 @@ public class AdapterNews extends BaseNewsAdapter {
         notifyDataSetChanged();
     }
 
-    private void editPost(String s, RealmNews news) {
-        if (s.isEmpty()) {
-            Utilities.toast(context, "Please enter message");
-            return;
-        }
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        news.setMessage(s);
-        mRealm.commitTransaction();
-        notifyDataSetChanged();
-    }
 
     @Override
     public int getItemCount() {
@@ -277,6 +292,8 @@ public class AdapterNews extends BaseNewsAdapter {
 
     public interface OnNewsItemClickListener {
         void showReply(RealmNews news, boolean fromLogin);
+
+        void addImage(LinearLayout llImage);
     }
 
 
