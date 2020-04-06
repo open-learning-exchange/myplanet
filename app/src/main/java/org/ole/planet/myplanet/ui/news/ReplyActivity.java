@@ -107,20 +107,24 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
             object.addProperty("fileName", FileUtils.getFileNameFromUrl(path));
             imageList.add(new Gson().toJson(object));
             try {
-                llImage.removeAllViews();
-                llImage.setVisibility(View.VISIBLE);
-                for (String img : imageList) {
-                    JsonObject ob = new Gson().fromJson(img, JsonObject.class);
-                    View inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, null);
-                    ImageView imgView = inflater.findViewById(R.id.thumb);
-                    Glide.with(this).load(new File(JsonUtils.getString("imageUrl", ob))).into(imgView);
-                    llImage.addView(inflater);
-                }
-                if (requestCode == 102)
-                    newsAdapter.setImageList(imageList);
-            } catch (Exception e) { }
+                showSelectedImages();
+            } catch (Exception e) {
+            }
         }
 
+    }
+
+    private void showSelectedImages() {
+        llImage.removeAllViews();
+        llImage.setVisibility(View.VISIBLE);
+        for (String img : imageList) {
+            JsonObject ob = new Gson().fromJson(img, JsonObject.class);
+            View inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, null);
+            ImageView imgView = inflater.findViewById(R.id.thumb);
+            Glide.with(this).load(new File(JsonUtils.getString("imageUrl", ob))).into(imgView);
+            llImage.addView(inflater);
+        }
+        newsAdapter.setImageList(imageList);
     }
 
     @Override
