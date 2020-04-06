@@ -92,9 +92,7 @@ public class NewsFragment extends BaseNewsFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-//        .equalTo("viewableBy", "community", Case.INSENSITIVE)
-        List<RealmNews> list = getNewsList();
-        setData(list);
+        setData(getNewsList());
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString().trim();
             if (message.isEmpty()) {
