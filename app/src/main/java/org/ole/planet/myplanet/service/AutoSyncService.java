@@ -110,6 +110,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
             UploadManager.getInstance().uploadCourseActivities();
             UploadManager.getInstance().uploadSearchActivity();
             UploadManager.getInstance().uploadRating(this);
+            UploadManager.getInstance().uploadResource(this);
             UploadManager.getInstance().uploadNews();
             UploadManager.getInstance().uploadTeams();
             UploadManager.getInstance().uploadTeamTask();
