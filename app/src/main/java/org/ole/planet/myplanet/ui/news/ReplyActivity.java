@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Intent;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -46,6 +48,7 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
     RecyclerView rvReply;
     protected RealmList<String> imageList;
     protected LinearLayout llImage;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,6 +83,7 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
     public void showReply(RealmNews news, boolean fromLogin) {
         startActivity(new Intent(this, ReplyActivity.class).putExtra("id", news.getId()));
     }
+
     @Override
     public void addImage(LinearLayout llImage) {
         this.llImage = llImage;
@@ -92,12 +96,9 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        llImage = getView().findViewById(R.id.ll_images);
         if (resultCode == RESULT_OK) {
-            Uri url = null;
-            String path = "";
-            url = data.getData();
-            path = FileUtils.getRealPathFromURI(this, url);
+            Uri url = data.getData();
+            String path = FileUtils.getRealPathFromURI(this, url);
             if (TextUtils.isEmpty(path)) {
                 path = FileUtils.getImagePath(this, url);
             }
@@ -112,19 +113,16 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
                     JsonObject ob = new Gson().fromJson(img, JsonObject.class);
                     View inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, null);
                     ImageView imgView = inflater.findViewById(R.id.thumb);
-                    Glide.with(this)
-                            .load(new File(JsonUtils.getString("imageUrl", ob)))
-                            .into(imgView);
+                    Glide.with(this).load(new File(JsonUtils.getString("imageUrl", ob))).into(imgView);
                     llImage.addView(inflater);
                 }
                 if (requestCode == 102)
                     newsAdapter.setImageList(imageList);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { }
         }
 
     }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home)
