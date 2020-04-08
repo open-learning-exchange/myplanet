@@ -7,6 +7,7 @@ import android.preference.PreferenceManager;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmCertification;
+import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -148,6 +149,7 @@ public class Constants {
         classList.put("health", RealmMyHealthPojo.class);
         classList.put("certifications", RealmCertification.class);
         classList.put("team_activities", RealmTeamLog.class);
+        classList.put("courses_progress", RealmCourseProgress.class);
     }
 
     public static class ShelfData {
