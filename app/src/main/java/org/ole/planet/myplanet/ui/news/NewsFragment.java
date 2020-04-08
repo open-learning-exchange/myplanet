@@ -120,23 +120,18 @@ public class NewsFragment extends BaseNewsFragment {
 
     private List<RealmNews> getNewsList() {
         List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).findAll();
-        Utilities.log("NEWS SIZE " + allNews.size());
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : allNews) {
-            Utilities.log("News " + news.getMessage());
             if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
                 list.add(news);
-                Utilities.log("Added " + news.getMessage());
                 continue;
             }
-
             if (!TextUtils.isEmpty(news.getViewIn())) {
                 JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
                     if (ob != null && ob.has("_id") && ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {
                         list.add(news);
-                        Utilities.log("Added " + news.getMessage());
                     }
                 }
             }
