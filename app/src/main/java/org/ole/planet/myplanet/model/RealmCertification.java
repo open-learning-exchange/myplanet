@@ -21,10 +21,11 @@ import io.realm.annotations.PrimaryKey;
 
 public class RealmCertification extends RealmObject {
     @PrimaryKey
+    private
     String _id;
-    String _rev;
-    String name;
-    String courseIds;
+    private String _rev;
+    private String name;
+    private String courseIds;
 
     public static void insert(Realm mRealm, JsonObject object) {
         String id = JsonUtils.getString("_id", object);
@@ -40,8 +41,8 @@ public class RealmCertification extends RealmObject {
 
 
     public static boolean isCourseCertified(Realm realm, String courseId) {
-        RealmResults<RealmCertification> list = realm.where(RealmCertification.class).findAll();
         long c = realm.where(RealmCertification.class).contains("courseIds", courseId).count();
+        Utilities.log(c + " size");
         return c > 0;
     }
 

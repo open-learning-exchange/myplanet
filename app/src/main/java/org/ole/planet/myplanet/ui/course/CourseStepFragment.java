@@ -97,11 +97,13 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
                 .findFirst();
         if (courseProgress == null) {
             courseProgress = mRealm.createObject(RealmCourseProgress.class, UUID.randomUUID().toString());
+            courseProgress.setCreatedDate(new Date().getTime());
         }
         courseProgress.setCourseId(step.getCourseId());
         courseProgress.setStepNum(stepNumber);
-        courseProgress.setPassed(stepExams.size() <= 0);
-        courseProgress.setCreatedOn(new Date().getTime());
+        courseProgress.setPassed(false);
+        courseProgress.setCreatedOn(user.getPlanetCode());
+        courseProgress.setUpdatedDate(new Date().getTime());
         courseProgress.setParentCode(user.getParentCode());
         courseProgress.setUserId(user.getId());
         mRealm.commitTransaction();

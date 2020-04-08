@@ -42,7 +42,7 @@ public class RealmSubmission extends RealmObject {
     private long startTime;
     private long lastUpdateTime;
     private RealmList<RealmAnswer> answers;
-    private String grade;
+    private long grade;
     private String status;
     private boolean uploaded;
     /// new
@@ -64,7 +64,7 @@ public class RealmSubmission extends RealmObject {
         sub.set_id(JsonUtils.getString("_id", submission));
         sub.setStatus(JsonUtils.getString("status", submission));
         sub.set_rev(JsonUtils.getString("_rev", submission));
-        sub.setGrade(JsonUtils.getString("grade", submission));
+        sub.setGrade(JsonUtils.getLong("grade", submission));
         sub.setType(JsonUtils.getString("type", submission));
         sub.setUploaded(JsonUtils.getString("status", submission).equals("graded"));
         sub.setStartTime(JsonUtils.getLong("startTime", submission));
@@ -268,11 +268,11 @@ public class RealmSubmission extends RealmObject {
         this.answers = answers;
     }
 
-    public String getGrade() {
+    public long getGrade() {
         return grade;
     }
 
-    public void setGrade(String grade) {
+    public void setGrade(long grade) {
         this.grade = grade;
     }
 
