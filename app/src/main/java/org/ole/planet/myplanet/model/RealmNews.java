@@ -53,7 +53,7 @@ public class RealmNews extends RealmObject {
     private String viewIn;
 
     public static void insert(Realm mRealm, JsonObject doc) {
-        Utilities.log("sync nnews " + new  Gson().toJson(doc));
+        Utilities.log("sync nnews " + new Gson().toJson(doc));
         RealmNews news = mRealm.where(RealmNews.class).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst();
         if (news == null) {
             news = mRealm.createObject(RealmNews.class, JsonUtils.getString("_id", doc));
@@ -303,10 +303,12 @@ public class RealmNews extends RealmObject {
 
     public static String getViewInJson(HashMap<String, String> map) {
         JsonArray viewInArray = new JsonArray();
-        JsonObject object = new JsonObject();
-        object.addProperty("_id", map.get("viewInId"));
-        object.addProperty("section", map.get("viewInSection"));
-        viewInArray.add(object);
+        if (!TextUtils.isEmpty(map.get("viewInId"))) {
+            JsonObject object = new JsonObject();
+            object.addProperty("_id", map.get("viewInId"));
+            object.addProperty("section", map.get("viewInSection"));
+            viewInArray.add(object);
+        }
         return new Gson().toJson(viewInArray);
     }
 
@@ -360,7 +362,7 @@ public class RealmNews extends RealmObject {
         boolean isCommunity = false;
         for (JsonElement e : array) {
             JsonObject object = e.getAsJsonObject();
-            if (object.get("section").getAsString().equalsIgnoreCase("community")) {
+            if (object.has("section") && object.get("section").getAsString().equalsIgnoreCase("community")) {
                 isCommunity = true;
                 break;
             }
@@ -403,10 +405,6 @@ public class RealmNews extends RealmObject {
     public void setImageUrls(RealmList<String> imageUrls) {
         this.imageUrls = imageUrls;
     }
-
-
-
-
 
 
 //    public void setImageName(String imageN ame) {

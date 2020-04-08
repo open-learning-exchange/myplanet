@@ -132,8 +132,7 @@ public class NewsFragment extends BaseNewsFragment {
                 JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
-                    Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase(user != null ? (user.getPlanetCode() + "@" + user.getParentCode()) : "") + " nn " + news.getViewIn());
-                    if (ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {
+                    if (ob.has("_id") && ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {
                         list.add(news);
                         Utilities.log("Added " + news.getMessage());
                     }
