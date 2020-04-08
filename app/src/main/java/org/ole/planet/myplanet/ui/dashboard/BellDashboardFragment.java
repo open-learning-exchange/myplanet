@@ -13,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.model.RealmCertification;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmSubmission;
@@ -67,18 +68,19 @@ public class BellDashboardFragment extends BaseDashboardFragment {
         for (RealmSubmission sub : list) {
             ImageView star = (ImageView) LayoutInflater.from(getActivity()).inflate(R.layout.image_start, null);
             String examId = sub.getParentId().contains("@") ? sub.getParentId().split("@")[0] : sub.getParentId();
+            String courseId = sub.getParentId().contains("@") ? sub.getParentId().split("@")[1] : "";
             long questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", examId).count();
-            setColor(questions, sub, star);
+            setColor(questions, courseId, star);
             llBadges.addView(star);
         }
 
     }
 
-    private void setColor(long questions, RealmSubmission sub, ImageView star) {
-        if (questions == sub.getGrade()) {
+    private void setColor(long questions, String courseId, ImageView star) {
+        if (RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(getResources().getColor(R.color.colorPrimary));
         } else {
-            star.setColorFilter(getResources().getColor(R.color.md_blue_grey_500));
+            star.setColorFilter(getResources().getColor(R.color.md_blue_grey_300));
         }
     }
 
