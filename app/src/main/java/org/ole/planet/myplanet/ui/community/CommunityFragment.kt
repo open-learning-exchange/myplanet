@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -35,9 +36,14 @@ import org.ole.planet.myplanet.utilities.Utilities
  * A simple [Fragment] subclass.
  */
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
+    override fun addImage(llImage: LinearLayout?) {
+    }
+
     override fun showReply(news: RealmNews, fromLogin: Boolean) {
         startActivity(Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id).putExtra("fromLogin", fromLogin))
     }
+
+
 
 
     var user: RealmUserModel? = null

@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Realm;
@@ -48,6 +47,7 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     public UserProfileDbHandler profileDbHandler;
     protected RealmList<String> imageList;
     protected LinearLayout llImage;
+    protected AdapterNews adapterNews;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -100,9 +100,10 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
         return path;
     }
 
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        llImage = getView().findViewById(R.id.ll_images);
+//        llImage = getView().findViewById(R.id.ll_images);
         if (resultCode == RESULT_OK) {
             Uri url = null;
             String path = "";
@@ -127,6 +128,8 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
                             .into(imgView);
                     llImage.addView(inflater);
                 }
+                if (requestCode == 102)
+                    adapterNews.setImageList(imageList);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -144,4 +147,9 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     }
 
 
+    @Override
+    public void addImage(LinearLayout llImage) {
+        this.llImage = llImage;
+        FileUtils.openOleFolder(this, 102);
+    }
 }
