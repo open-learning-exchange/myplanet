@@ -16,6 +16,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputLayout;
@@ -55,7 +56,7 @@ public class NewsFragment extends BaseNewsFragment {
     LinearLayout llAddNews;
     RealmUserModel user;
     TextView tvMessage;
-    AdapterNews adapterNews;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -77,6 +78,7 @@ public class NewsFragment extends BaseNewsFragment {
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());
         btnAddStory.setOnClickListener(view -> {
+
             llAddNews.setVisibility(llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
             btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? "Hide Add Story" : "Add Story");
         });
@@ -87,13 +89,10 @@ public class NewsFragment extends BaseNewsFragment {
         return v;
     }
 
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-//        .equalTo("viewableBy", "community", Case.INSENSITIVE)
-        List<RealmNews> list = getNewsList();
-        setData(list);
+        setData(getNewsList());
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString().trim();
             if (message.isEmpty()) {
@@ -112,30 +111,27 @@ public class NewsFragment extends BaseNewsFragment {
             llImage.removeAllViews();
             adapterNews.addItem(n);
         });
-        btnAddImage.setOnClickListener(v -> FileUtils.openOleFolder(this));
+        btnAddImage.setOnClickListener(v -> {
+            llImage = v.findViewById(R.id.ll_images);
+            FileUtils.openOleFolder(this, 100);
+        });
         btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private List<RealmNews> getNewsList() {
         List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).findAll();
-        Utilities.log("NEWS SIZE " + allNews.size());
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : allNews) {
-            Utilities.log("News " + news.getMessage());
             if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
                 list.add(news);
-                Utilities.log("Added " + news.getMessage());
                 continue;
             }
-
             if (!TextUtils.isEmpty(news.getViewIn())) {
                 JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
-                    Utilities.log(ob.get("_id").getAsString().equalsIgnoreCase(user != null ? (user.getPlanetCode() + "@" + user.getParentCode()) : "") + " nn " + news.getViewIn());
-                    if (ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {
+                    if (ob != null && ob.has("_id") && ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {
                         list.add(news);
-                        Utilities.log("Added " + news.getMessage());
                     }
                 }
             }

@@ -140,7 +140,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
 //        thumb = v.findViewById(R.id.thumb);
-        v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this));
+        v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this, 100));
         v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
         layout.setHint(getString(R.string.enter_message));
         new AlertDialog.Builder(getActivity())

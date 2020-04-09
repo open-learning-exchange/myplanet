@@ -118,6 +118,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "courses");
             TransactionSyncManager.syncDb(mRealm, "exams");
             TransactionSyncManager.syncDb(mRealm, "ratings");
+            TransactionSyncManager.syncDb(mRealm, "courses_progress");
             TransactionSyncManager.syncDb(mRealm, "achievements");
             TransactionSyncManager.syncDb(mRealm, "tags");
             TransactionSyncManager.syncDb(mRealm, "submissions");

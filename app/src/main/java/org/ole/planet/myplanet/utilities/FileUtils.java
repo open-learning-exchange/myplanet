@@ -219,11 +219,11 @@ public class FileUtils {
         fin.close();
         return ret;
     }
-    public static void openOleFolder(Fragment context) {
+    public static void openOleFolder(Fragment context, int request) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         Uri uri = Uri.parse(Utilities.SD_PATH);
         intent.setDataAndType(uri, "*/*");
-        context.startActivityForResult(Intent.createChooser(intent, "Open folder"), 100);
+        context.startActivityForResult(Intent.createChooser(intent, "Open folder"), request);
     }
 
 
