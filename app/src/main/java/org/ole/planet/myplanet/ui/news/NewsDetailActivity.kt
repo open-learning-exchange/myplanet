@@ -65,7 +65,7 @@ class NewsDetailActivity : BaseActivity() {
                 val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
                 val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
                 val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-                msg = msg.replace(markDown, "<br/><img width=\"50%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"><br/>", false)
+                msg = msg.replace(markDown, "<img ALIGN=”right” width=\"40%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\">", false)
             }
             loadImage()
         }
