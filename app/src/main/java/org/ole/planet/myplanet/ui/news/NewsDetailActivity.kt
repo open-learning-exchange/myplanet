@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.news
 
 import android.os.Bundle
 import android.view.View
+import android.webkit.WebSettings
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
@@ -65,11 +66,13 @@ class NewsDetailActivity : BaseActivity() {
                 val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
                 val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
                 val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-                msg = msg.replace(markDown, "<br/><img width=\"50%\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"><br/>", false)
+                msg = msg.replace(markDown, "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>", false)
             }
             loadImage()
         }
-        tv_detail.loadDataWithBaseURL(null, "<html><body>$msg</body></html>", "text/html", "utf-8", null)
+        msg = msg.replace("\n", "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 20px;\" >")
+        tv_detail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
+        tv_detail.loadDataWithBaseURL(null, "<html><body><div style=\" word-wrap: break-word;  word-spacing: 20px;\" >$msg</div></body></html>", "text/html", "utf-8", null)
     }
 
     private fun loadLocalImage(): String {
