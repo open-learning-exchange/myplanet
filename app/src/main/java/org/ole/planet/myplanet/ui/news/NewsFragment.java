@@ -119,7 +119,7 @@ public class NewsFragment extends BaseNewsFragment {
     }
 
     private List<RealmNews> getNewsList() {
-        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("docType", "message", Case.INSENSITIVE).findAll();
+        List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE).findAll();
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : allNews) {
             if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
