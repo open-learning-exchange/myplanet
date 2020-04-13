@@ -65,6 +65,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
                 .equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
+                .isEmpty("replyTo")
                 .sort("time", Sort.DESCENDING)
                 .findAll()
 //        rv_community.layoutManager = LinearLayoutManager(activity!!)

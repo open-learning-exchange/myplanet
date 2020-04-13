@@ -91,7 +91,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
     }
 
     private List<RealmNews> getNews() {
-        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).findAll();
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll();
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : realmNewsList) {
             if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team.getId())) {
