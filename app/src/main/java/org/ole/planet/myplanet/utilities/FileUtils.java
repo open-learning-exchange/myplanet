@@ -121,7 +121,7 @@ public class FileUtils {
         return filenameArray[filenameArray.length - 1];
     }
 
-    public static void installApk(AppCompatActivity activity, String file) {
+    public static void installApk(Context activity, String file) {
         try {
             if (!file.endsWith("apk")) return;
             File toInstall = FileUtils.getSDPathFromUrl(file);

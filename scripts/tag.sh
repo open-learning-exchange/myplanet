@@ -9,7 +9,7 @@ if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ] || [ "$TR
       git remote add release "https://${GH_TOKEN}@github.com/open-learning-exchange/myplanet.git"
       if [ "$TRAVIS_BRANCH" = "dev" ]  ; then
         PACKAGE_VERSION=$(sed -n 's/.*name="app_version">\([^"]*\).*<\/string>/\1/p' < app/src/main/res/values/versions.xml)
-        $PACKAGE_VERSION = "${PACKAGE_VERSION}_dev";
+        $PACKAGE_VERSION = "${PACKAGE_VERSION}";
       else
         PACKAGE_VERSION=$(sed -n 's/.*name="app_version">\([^"]*\).*<\/string>/\1/p' < app/src/main/res/values/versions.xml)
       fi
