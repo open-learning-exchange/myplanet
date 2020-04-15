@@ -24,6 +24,7 @@
 
 
             <LinearLayout
+                android:padding="@dimen/padding_normal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
@@ -47,6 +48,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
                     android:drawableLeft="@drawable/ic_add_library"
                     android:drawablePadding="4dp"
                     android:gravity="center"
@@ -54,27 +56,14 @@
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid" />
 
-                <TextView
-                    android:id="@+id/tv_delete"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginStart="@dimen/padding_normal"
-                    android:background="?attr/selectableItemBackground"
-                    android:drawableStart="@drawable/ic_delete"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
-                    android:text="@string/remove_selected"
-                    android:textColor="@drawable/tv_color"
-                    android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone" />
-
 
                 <Button
                     android:id="@+id/btn_remove"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:textSize="@dimen/text_size_mid"
+                    android:padding="@dimen/padding_small"
                     android:layout_margin="@dimen/padding_small"
                     android:background="@drawable/buttonblue"
                     android:text="@string/leave"
@@ -86,6 +75,7 @@
 
 
             <LinearLayout
+                android:padding="@dimen/padding_small"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -99,6 +89,22 @@
                     android:padding="@dimen/padding_normal"
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid" />
+
+
+                <TextView
+                    android:id="@+id/tv_delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:background="?attr/selectableItemBackground"
+                    android:drawableStart="@drawable/ic_delete"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/remove_selected"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone" />
 
 
                 <Button

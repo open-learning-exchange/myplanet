@@ -13,8 +13,8 @@
 
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/imageView"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="center"
             android:src="@drawable/profile"
             app:civ_border_color="@color/colorPrimaryDark"
@@ -27,7 +27,7 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/_60dp"
+                android:layout_height="@dimen/_50dp"
                 android:gravity="center"
                 android:orientation="horizontal">
 
@@ -36,6 +36,7 @@
                     android:id="@+id/ll_user"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -46,6 +47,7 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
                             android:layout_weight="1">
 
                             <TextView

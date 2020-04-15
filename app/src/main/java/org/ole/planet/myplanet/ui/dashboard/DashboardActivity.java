@@ -213,7 +213,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
