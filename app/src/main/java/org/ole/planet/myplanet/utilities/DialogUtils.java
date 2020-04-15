@@ -95,12 +95,14 @@ public class DialogUtils {
 
     }
 
-    private static void startDownloadUpdate(Context context, String path, ProgressDialog progressDialog) {
+    public static void startDownloadUpdate(Context context, String path, ProgressDialog progressDialog) {
         ArrayList url = new ArrayList();
         url.add(path);
-        progressDialog.setMessage("Downloading file...");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
+        if (progressDialog!=null){
+            progressDialog.setMessage("Downloading file...");
+            progressDialog.setCancelable(false);
+            progressDialog.show();
+        }
         Utilities.openDownloadService(context, url);
     }
 }
