@@ -194,8 +194,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void becomeAMember() {
         if (!Utilities.getUrl().isEmpty()) {
-            startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
-                    .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
+//            startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
+//                    .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
+
+            
         } else {
             Utilities.toast(this, "Please enter server url first.");
             settingDialog();

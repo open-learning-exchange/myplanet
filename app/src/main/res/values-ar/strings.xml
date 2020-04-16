@@ -321,6 +321,8 @@
     <string name="services">What are the Services your enterprise provides?</string>
     <string name="rules">What are the Rules of your enterprise</string>
     <string name="add_res">Add Resource</string>
+    <string name="password">Password</string>
+    <string name="retype_password">Retype Password</string>
 
     <string-array name="info_type">
         <item>Languages</item>
