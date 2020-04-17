@@ -128,8 +128,7 @@ public class Service {
                 retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString()).enqueue(new Callback<JsonObject>() {
                     @Override
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                        if (response.body() != null) {
-                            if (response.body().has("_id")) {
+                            if (response.body() != null && response.body().has("_id")) {
                                 callback.onSuccess("Unable to create user, user already exists");
                             } else {
                                 retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
@@ -147,7 +146,6 @@ public class Service {
                                     }
                                 });
                             }
-                        }
                     }
 
                     @Override
