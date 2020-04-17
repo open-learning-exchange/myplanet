@@ -10,6 +10,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -121,7 +122,7 @@ public class Service {
         });
     }
 
-    public void becomeMember(JsonObject obj, CreateUserCallback callback) {
+    public void becomeMember(Realm realm,JsonObject obj, CreateUserCallback callback) {
         isPlanetAvailable(new PlanetAvailableListener() {
             public void isAvailable() {
                 ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -136,7 +137,8 @@ public class Service {
                                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                                         if (response.body() != null && response.body().has("id")) {
                                             retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
-                                            callback.onSuccess("User created successfully");
+                                            saveUserToDb(realm, response.body().get("id").getAsString(), callback);
+//                                            callback.onSuccess("User created successfully");
                                         }else{
                                             callback.onSuccess("Unable to create user");
                                         }
@@ -159,6 +161,28 @@ public class Service {
 
             public void notAvailable() {
                 callback.onSuccess("Unable to create user, server not available");
+            }
+        });
+    }
+
+    private void saveUserToDb(Realm realm, String id, CreateUserCallback callback) {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        realm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+                try {
+                    Response<JsonObject> res =   retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                    if (res.body()!=null){
+                        RealmUserModel.populateUsersTable(res.body(), realm, settings);
+                        callback.onSuccess("User created successfully");
+                    }else{
+                        callback.onSuccess("Some thing went wrong");
+                    }
+                } catch (IOException e) {
+                    callback.onSuccess("Some thing went wrong");
+                    e.printStackTrace();
+                }
             }
         });
     }
