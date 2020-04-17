@@ -74,6 +74,7 @@
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
+                            android:visibility="gone"
                             android:background="@color/colorPrimaryDark" />
 
                         <TextView
@@ -100,12 +101,14 @@
                             android:gravity="center"
                             android:padding="@dimen/padding_normal"
                             android:textColor="@color/md_black_1000"
+                            android:visibility="gone"
                             android:textSize="16sp"
                             android:textStyle="bold" />
 
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
+                            android:visibility="gone"
                             android:background="@color/colorPrimaryDark" />
 
                         <TextView
