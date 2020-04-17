@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.datamanager;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -137,17 +138,19 @@ public class Service {
                             if (response.body() != null && response.body().has("_id")) {
                                 callback.onSuccess("Unable to create user, user already exists");
                             } else {
-                                retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
+                                retrofitInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users", obj).enqueue(new Callback<JsonObject>() {
                                     @Override
                                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                                         if (response.body() != null)
                                         Utilities.log("error1 " + new Gson().toJson(response.body()));
                                         if (response.body() != null && response.body().has("id")) {
-                                            retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
+                                            retrofitInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf", new JsonObject());
                                             callback.onSuccess("User created successfully");
                                         }else{
                                             callback.onSuccess("Unable to create user");
+                                            Utilities.log("error " + new Gson().toJson(response.body()));
                                             Utilities.log("error " + new Gson().toJson(response.errorBody()));
+                                            Utilities.log("error " + new Gson().toJson(response.message()));
                                         }
 
                                     }
