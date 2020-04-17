@@ -121,7 +121,7 @@ public class Service {
         });
     }
 
-    public void becomeMember(Realm mRealm, JsonObject obj) {
+    public void becomeMember(JsonObject obj, CreateUserCallback callback) {
         isPlanetAvailable(new PlanetAvailableListener() {
             public void isAvailable() {
                 ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -130,20 +130,20 @@ public class Service {
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                         if (response.body() != null) {
                             if (response.body().has("_id")) {
-                                Utilities.toast(MainApplication.context, "Unable to create user, user already exists");
+                                callback.onSuccess("Unable to create user, user already exists");
                             } else {
                                 retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
                                     @Override
                                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                                         if (response.body() != null && response.body().get("ok").getAsBoolean()) {
-                                            retrofitInterface.putDoc(Utilities.getHeader(), "application/json",Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
-                                            Utilities.toast(MainApplication.context, "User created successfully");
+                                            retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
+                                            callback.onSuccess("User created successfully");
                                         }
                                     }
 
                                     @Override
                                     public void onFailure(Call<JsonObject> call, Throwable t) {
-                                        Utilities.toast(MainApplication.context, "Unable to create user");
+                                        callback.onSuccess("Unable to create user");
                                     }
                                 });
                             }
@@ -152,13 +152,13 @@ public class Service {
 
                     @Override
                     public void onFailure(Call<JsonObject> call, Throwable t) {
-                        Utilities.toast(MainApplication.context, "Unable to create user");
+                        callback.onSuccess("Unable to create user");
                     }
                 });
             }
 
             public void notAvailable() {
-                Utilities.toast(MainApplication.context, "Unable to create user, server not available");
+                callback.onSuccess("Unable to create user, server not available");
             }
         });
     }
@@ -181,6 +181,10 @@ public class Service {
         void onCheckingVersion();
 
         void onError(String msg, boolean blockSync);
+    }
+
+    public interface CreateUserCallback {
+        void onSuccess(String message);
     }
 
     public interface PlanetAvailableListener {

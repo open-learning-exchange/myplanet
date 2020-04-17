@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
 import java.util.regex.Pattern
 
@@ -87,7 +88,11 @@ class BecomeMemberActivity : BaseActivity() {
             var roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
-            Service(this).becomeMember(mRealm, obj)
+            pbar.visibility = View.VISIBLE
+            Service(this).becomeMember(obj) {
+                pbar.visibility = View.GONE
+                Utilities.toast(this, it)
+            }
         }
     }
 }
