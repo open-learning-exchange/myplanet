@@ -124,24 +124,37 @@ public class Service {
     public void becomeMember(JsonObject obj, CreateUserCallback callback) {
         isPlanetAvailable(new PlanetAvailableListener() {
             public void isAvailable() {
+                Utilities.log("Plannet available");
                 ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
                 retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString()).enqueue(new Callback<JsonObject>() {
                     @Override
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                        if (response.body() != null)
+                                Utilities.log(new Gson().toJson(response.body()));
+                        else{
+                            Utilities.log(new Gson().toJson(response.errorBody()));
+                        }
                             if (response.body() != null && response.body().has("_id")) {
                                 callback.onSuccess("Unable to create user, user already exists");
                             } else {
                                 retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
                                     @Override
                                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                                        if (response.body() != null && response.body().get("ok").getAsBoolean()) {
-                                            retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
+                                        if (response.body() != null)
+                                        Utilities.log("error1 " + new Gson().toJson(response.body()));
+                                        if (response.body() != null && response.body().has("id")) {
+                                            retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
                                             callback.onSuccess("User created successfully");
+                                        }else{
+                                            callback.onSuccess("Unable to create user");
+                                            Utilities.log("error " + new Gson().toJson(response.errorBody()));
                                         }
+
                                     }
 
                                     @Override
                                     public void onFailure(Call<JsonObject> call, Throwable t) {
+                                        t.printStackTrace();
                                         callback.onSuccess("Unable to create user");
                                     }
                                 });
@@ -150,6 +163,7 @@ public class Service {
 
                     @Override
                     public void onFailure(Call<JsonObject> call, Throwable t) {
+                        t.printStackTrace();
                         callback.onSuccess("Unable to create user");
                     }
                 });
