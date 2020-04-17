@@ -92,6 +92,7 @@ class BecomeMemberActivity : BaseActivity() {
             Service(this).becomeMember(mRealm,obj) {
                 pbar.visibility = View.GONE
                 Utilities.toast(this, it)
+                finish()
             }
         }
     }
