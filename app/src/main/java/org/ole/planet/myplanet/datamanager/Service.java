@@ -125,7 +125,6 @@ public class Service {
         isPlanetAvailable(new PlanetAvailableListener() {
             public void isAvailable() {
                 ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-                String header = Utilities.getHeader();
                 retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString()).enqueue(new Callback<JsonObject>() {
                     @Override
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -137,6 +136,7 @@ public class Service {
                                     @Override
                                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                                         if (response.body() != null && response.body().get("ok").getAsBoolean()) {
+                                            retrofitInterface.putDoc(Utilities.getHeader(), "application/json",Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
                                             Utilities.toast(MainApplication.context, "User created successfully");
                                         }
                                     }
