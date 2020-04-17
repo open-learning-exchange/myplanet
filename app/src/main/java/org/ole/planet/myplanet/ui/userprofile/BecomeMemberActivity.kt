@@ -59,7 +59,7 @@ class BecomeMemberActivity : BaseActivity() {
             var gender: String?  = ""
             if (rb != null)
                 gender = rb.text.toString()
-            if (username!!.isEmpty()) {
+            if (username!!.isEmpty() || username.contains(" ")) {
                 et_username.error = "Invalid username"
             } else if (!password.equals(repassword)) {
                 et_re_password.error = "Password doesnot match username"
