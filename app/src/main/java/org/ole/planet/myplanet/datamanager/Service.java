@@ -134,7 +134,6 @@ public class Service {
                                 retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
                                     @Override
                                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                                        if (response.body() != null)
                                         if (response.body() != null && response.body().has("id")) {
                                             retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
                                             callback.onSuccess("User created successfully");
