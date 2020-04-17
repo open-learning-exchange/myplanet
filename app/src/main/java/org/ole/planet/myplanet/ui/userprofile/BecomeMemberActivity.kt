@@ -89,10 +89,12 @@ class BecomeMemberActivity : BaseActivity() {
             roles.add("learner")
             obj.add("roles", roles)
             pbar.visibility = View.VISIBLE
-            Service(this).becomeMember(mRealm,obj) {
-                pbar.visibility = View.GONE
-                Utilities.toast(this, it)
-                finish()
+            Service(this).becomeMember(mRealm,obj) {res->
+              runOnUiThread {
+                  pbar.visibility = View.GONE
+                  Utilities.toast(this, res)
+                  finish()
+              }
             }
         }
     }

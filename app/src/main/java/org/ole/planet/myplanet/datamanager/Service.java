@@ -167,22 +167,21 @@ public class Service {
 
     private void saveUserToDb(Realm realm, String id, CreateUserCallback callback) {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-        realm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-                try {
-                    Response<JsonObject> res =   retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
-                    if (res.body()!=null){
-                        RealmUserModel.populateUsersTable(res.body(), realm, settings);
-                        callback.onSuccess("User created successfully");
-                    }else{
-                        callback.onSuccess("Some thing went wrong");
-                    }
-                } catch (IOException e) {
+
+        realm.executeTransactionAsync(realm1 -> {
+            ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+            try {
+                Response<JsonObject> res =   retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                Utilities.log("Err" +  new Gson().toJson(res.errorBody()));
+                if (res.body()!=null){
+                    RealmUserModel.populateUsersTable(res.body(), realm1, settings);
+                    callback.onSuccess("User created successfully");
+                }else{
                     callback.onSuccess("Some thing went wrong");
-                    e.printStackTrace();
                 }
+            } catch (IOException e) {
+                callback.onSuccess("Some thing went wrong");
+                e.printStackTrace();
             }
         });
     }

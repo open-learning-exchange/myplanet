@@ -128,10 +128,8 @@ public class RealmUserModel extends RealmObject {
                 user = mRealm.createObject(RealmUserModel.class, JsonUtils.getString("_id", jsonDoc));
             }
             insertIntoUsers(jsonDoc, user, settings);
-            mRealm.commitTransaction();
             return user;
         } catch (Exception err) {
-            err.printStackTrace();
         }
         return null;
     }
