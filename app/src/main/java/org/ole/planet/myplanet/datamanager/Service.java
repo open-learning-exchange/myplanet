@@ -6,9 +6,11 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -17,6 +19,7 @@ import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
 
+import io.realm.Realm;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -119,6 +122,75 @@ public class Service {
         });
     }
 
+    public void becomeMember(Realm realm, JsonObject obj, CreateUserCallback callback) {
+        isPlanetAvailable(new PlanetAvailableListener() {
+            public void isAvailable() {
+                ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+                retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString()).enqueue(new Callback<JsonObject>() {
+                    @Override
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                        if (response.body() != null && response.body().has("_id")) {
+                            callback.onSuccess("Unable to create user, user already exists");
+                        } else {
+                            retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
+                                @Override
+                                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                                    if (response.body() != null && response.body().has("id")) {
+                                        retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
+                                        saveUserToDb(realm, response.body().get("id").getAsString(), callback);
+//                                            callback.onSuccess("User created successfully");
+                                    } else {
+                                        callback.onSuccess("Unable to create user");
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<JsonObject> call, Throwable t) {
+                                    callback.onSuccess("Unable to create user");
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<JsonObject> call, Throwable t) {
+                        callback.onSuccess("Unable to create user");
+                    }
+                });
+            }
+
+            public void notAvailable() {
+                callback.onSuccess("Unable to create user, server not available");
+            }
+        });
+    }
+
+    private void saveUserToDb(Realm realm, String id, CreateUserCallback callback) {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+
+        realm.executeTransactionAsync(realm1 -> {
+            ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+            try {
+                Response<JsonObject> res = retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                if (res.body() != null) {
+                    RealmUserModel model = RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
+                }
+            } catch (IOException e) {
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                callback.onSuccess("User created successfully");
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                callback.onSuccess("Unable to save user please sync");
+            }
+        });
+    }
+
+
 //    private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
 //        int currentVersion = VersionUtils.getVersionCode(context);
 //        if (currentVersion < body.getMinapkcode())
@@ -136,6 +208,10 @@ public class Service {
         void onCheckingVersion();
 
         void onError(String msg, boolean blockSync);
+    }
+
+    public interface CreateUserCallback {
+        void onSuccess(String message);
     }
 
     public interface PlanetAvailableListener {

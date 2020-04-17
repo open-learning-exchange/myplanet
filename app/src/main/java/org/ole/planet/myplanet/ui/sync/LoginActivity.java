@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
@@ -194,8 +195,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void becomeAMember() {
         if (!Utilities.getUrl().isEmpty()) {
-            startActivity(new Intent(this, WebViewActivity.class).putExtra("title", "Become a member")
-                    .putExtra("link", Utilities.getUrl().replaceAll("/db", "") + "/eng/login/newmember"));
+            startActivity(new Intent(this, BecomeMemberActivity.class));
         } else {
             Utilities.toast(this, "Please enter server url first.");
             settingDialog();
