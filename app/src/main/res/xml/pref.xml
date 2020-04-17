@@ -81,7 +81,7 @@
     </PreferenceCategory>
     <PreferenceCategory
         android:dependency="beta_function"
-        android:title="Upgrade Apk">
+        android:title="Upgrade Application">
 
 
         <SwitchPreference
