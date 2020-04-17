@@ -246,9 +246,8 @@
                 android:id="@+id/btn_submit"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/button_update"
-                style="@style/GreyButtons"
-                android:background="@drawable/buttongrey"
+                android:text="@string/become_a_member"
+                android:theme="@style/PrimaryButton"
                 android:layout_marginRight="10dp"/>
 
             <Button
@@ -256,8 +255,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_cancel"
-                android:background="@drawable/buttongrey"
-                style="@style/GreyButtons" />
+                android:theme="@style/RejectButton" />
 
         </LinearLayout>
 

@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.model.MyPlanet;
@@ -17,6 +18,7 @@ import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
 
+import io.realm.Realm;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -118,6 +120,49 @@ public class Service {
             }
         });
     }
+
+    public void becomeMember(Realm mRealm, JsonObject obj) {
+        isPlanetAvailable(new PlanetAvailableListener() {
+            public void isAvailable() {
+                ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+                String header = Utilities.getHeader();
+                retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString()).enqueue(new Callback<JsonObject>() {
+                    @Override
+                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                        if (response.body() != null) {
+                            if (response.body().has("_id")) {
+                                Utilities.toast(MainApplication.context, "Unable to create user, user already exists");
+                            } else {
+                                retrofitInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
+                                    @Override
+                                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                                        if (response.body() != null && response.body().get("ok").getAsBoolean()) {
+                                            Utilities.toast(MainApplication.context, "User created successfully");
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<JsonObject> call, Throwable t) {
+                                        Utilities.toast(MainApplication.context, "Unable to create user");
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<JsonObject> call, Throwable t) {
+                        Utilities.toast(MainApplication.context, "Unable to create user");
+                    }
+                });
+            }
+
+            public void notAvailable() {
+                Utilities.toast(MainApplication.context, "Unable to create user, server not available");
+            }
+        });
+    }
+
 
 //    private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
 //        int currentVersion = VersionUtils.getVersionCode(context);
