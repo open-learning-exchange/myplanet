@@ -43,7 +43,6 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
-
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -119,23 +118,6 @@
                             android:textColor="@color/md_black_1000"
                             android:textSize="16sp"
                             android:textStyle="bold" />
-
-
-                        <View
-                            android:layout_width="@dimen/_1dp"
-                            android:layout_height="wrap_content"
-                            android:background="@color/colorPrimaryDark" />
-
-
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:id="@+id/ll_badges"
-                            android:layout_gravity="center"
-                            android:orientation="horizontal"
-                            android:layout_height="wrap_content"/>
-
-
                     </LinearLayout>
 
 
@@ -202,11 +184,11 @@
 
             </LinearLayout>
 
-<!--            <LinearLayout-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_gravity="right"-->
-<!--                android:gravity="right">-->
+            <LinearLayout
+                android:layout_width="match_parent"
+               android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:gravity="right">
 
 <!--                <Button-->
 <!--                    android:id="@+id/fab_my_activity"-->
@@ -238,16 +220,21 @@
 <!--                    android:theme="@style/PrimaryButton"-->
 <!--                    android:tint="@color/md_white_1000"-->
 <!--                    app:srcCompat="@drawable/ic_my_survey" />-->
-
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:id="@+id/ll_badges"
+                    android:layout_gravity="center"
+                    android:orientation="horizontal"
+                    android:layout_height="wrap_content"/>
                 <Button
                     android:id="@+id/fab_feedback"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:visibility="gone"
                     android:text="@string/menu_feedback"
+                    android:visibility="gone"
                     android:theme="@style/PrimaryButton"
                     app:srcCompat="@drawable/feedback" />
-<!--            </LinearLayout>-->
+            </LinearLayout>
 
         </LinearLayout>
 
