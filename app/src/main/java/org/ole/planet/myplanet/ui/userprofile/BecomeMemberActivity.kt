@@ -40,6 +40,9 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
+        btn_cancel.setOnClickListener {
+            finish()
+        }
         btn_submit.setOnClickListener {
             var username: String? = et_username.text.toString()
             var password : String? = et_password.text.toString()
