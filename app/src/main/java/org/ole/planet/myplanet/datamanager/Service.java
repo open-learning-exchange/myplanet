@@ -122,34 +122,34 @@ public class Service {
         });
     }
 
-    public void becomeMember(Realm realm,JsonObject obj, CreateUserCallback callback) {
+    public void becomeMember(Realm realm, JsonObject obj, CreateUserCallback callback) {
         isPlanetAvailable(new PlanetAvailableListener() {
             public void isAvailable() {
                 ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
                 retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString()).enqueue(new Callback<JsonObject>() {
                     @Override
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                            if (response.body() != null && response.body().has("_id")) {
-                                callback.onSuccess("Unable to create user, user already exists");
-                            } else {
-                                retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
-                                    @Override
-                                    public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                                        if (response.body() != null && response.body().has("id")) {
-                                            retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
-                                            saveUserToDb(realm, response.body().get("id").getAsString(), callback);
+                        if (response.body() != null && response.body().has("_id")) {
+                            callback.onSuccess("Unable to create user, user already exists");
+                        } else {
+                            retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString(), obj).enqueue(new Callback<JsonObject>() {
+                                @Override
+                                public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                                    if (response.body() != null && response.body().has("id")) {
+                                        retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
+                                        saveUserToDb(realm, response.body().get("id").getAsString(), callback);
 //                                            callback.onSuccess("User created successfully");
-                                        }else{
-                                            callback.onSuccess("Unable to create user");
-                                        }
-                                    }
-
-                                    @Override
-                                    public void onFailure(Call<JsonObject> call, Throwable t) {
+                                    } else {
                                         callback.onSuccess("Unable to create user");
                                     }
-                                });
-                            }
+                                }
+
+                                @Override
+                                public void onFailure(Call<JsonObject> call, Throwable t) {
+                                    callback.onSuccess("Unable to create user");
+                                }
+                            });
+                        }
                     }
 
                     @Override
@@ -171,17 +171,21 @@ public class Service {
         realm.executeTransactionAsync(realm1 -> {
             ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
             try {
-                Response<JsonObject> res =   retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
-                Utilities.log("Err" +  new Gson().toJson(res.errorBody()));
-                if (res.body()!=null){
-                    RealmUserModel.populateUsersTable(res.body(), realm1, settings);
-                    callback.onSuccess("User created successfully");
-                }else{
-                    callback.onSuccess("Some thing went wrong");
+                Response<JsonObject> res = retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                if (res.body() != null) {
+                    RealmUserModel model = RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
                 }
             } catch (IOException e) {
-                callback.onSuccess("Some thing went wrong");
-                e.printStackTrace();
+            }
+        }, new Realm.Transaction.OnSuccess() {
+            @Override
+            public void onSuccess() {
+                callback.onSuccess("User created successfully");
+            }
+        }, new Realm.Transaction.OnError() {
+            @Override
+            public void onError(Throwable error) {
+                callback.onSuccess("Unable to save user please sync");
             }
         });
     }

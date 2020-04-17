@@ -93,8 +93,8 @@ class BecomeMemberActivity : BaseActivity() {
               runOnUiThread {
                   pbar.visibility = View.GONE
                   Utilities.toast(this, res)
-                  finish()
               }
+                finish()
             }
         }
     }
