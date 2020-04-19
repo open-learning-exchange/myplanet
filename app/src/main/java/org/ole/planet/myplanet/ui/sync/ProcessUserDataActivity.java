@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.app.ProgressDialog;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -8,8 +9,11 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
+
 import com.google.android.material.textfield.TextInputLayout;
+
 import androidx.appcompat.app.AlertDialog;
+
 import android.text.TextUtils;
 import android.view.View;
 import android.view.WindowManager;
@@ -136,11 +140,11 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         progressDialog.setMessage("Uploading data to server, please wait.....");
         progressDialog.show();
         Utilities.log("Upload : upload started");
+        UploadToShelfService.getInstance().uploadUserData(this);
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
         UploadManager.getInstance().uploadAchievement();
-        UploadToShelfService.getInstance().uploadToshelf(this);
         UploadManager.getInstance().uploadResourceActivities("");
         UploadManager.getInstance().uploadCourseActivities();
         UploadManager.getInstance().uploadSearchActivity();

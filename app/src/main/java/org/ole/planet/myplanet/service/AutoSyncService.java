@@ -101,10 +101,10 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     public void onError(String msg, boolean blockSync) {
         if (!blockSync) {
             SyncManager.getInstance().start(this);
+            UploadToShelfService.getInstance().uploadUserData(this);
             UploadManager.getInstance().uploadExamResult(this);
             UploadManager.getInstance().uploadFeedback(this);
             UploadManager.getInstance().uploadAchievement();
-            UploadToShelfService.getInstance().uploadToshelf(this);
             UploadManager.getInstance().uploadResourceActivities("");
             UploadManager.getInstance().uploadUserActivities(this);
             UploadManager.getInstance().uploadCourseActivities();

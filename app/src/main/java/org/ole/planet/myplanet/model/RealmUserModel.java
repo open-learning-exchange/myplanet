@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -24,6 +25,7 @@ import io.realm.annotations.PrimaryKey;
 public class RealmUserModel extends RealmObject {
     @PrimaryKey
     private String id;
+    private String _id;
     private String _rev;
     private String name;
     private RealmList<String> roles;
@@ -41,6 +43,7 @@ public class RealmUserModel extends RealmObject {
     private String derived_key;
     private String level;
     private String language;
+    private String gender;
     private String salt;
     private String dob;
     private String birthPlace;
@@ -48,15 +51,25 @@ public class RealmUserModel extends RealmObject {
     private String userImage;
     private String key;
     private String iv;
+    private String password;
     private boolean showTopbar;
 
 
     public JsonObject serialize() {
         JsonObject object = new JsonObject();
-        object.addProperty("_id", getId());
-        object.addProperty("_rev", get_rev());
+        if (!get_id().isEmpty()) {
+            object.addProperty("_id", get_id());
+            object.addProperty("_rev", get_rev());
+        }
         object.addProperty("name", getName());
         object.add("roles", getRoles());
+        if (get_id().isEmpty()) {
+            object.addProperty("password", getPassword());
+        } else {
+            object.addProperty("derived_key", getDerived_key());
+            object.addProperty("salt", getSalt());
+            object.addProperty("password_scheme", getPassword_scheme());
+        }
         object.addProperty("isUserAdmin", getUserAdmin());
         object.addProperty("joinDate", getJoinDate());
         object.addProperty("firstName", getFirstName());
@@ -65,12 +78,21 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("email", getEmail());
         object.addProperty("language", getLanguage());
         object.addProperty("level", getLevel());
+        object.addProperty("type", "user");
+        object.addProperty("gender", getGender());
         object.addProperty("phoneNumber", getPhoneNumber());
+        object.addProperty("birthDate", getDob());
         object.addProperty("birthPlace", getBirthPlace());
-        object.addProperty("derived_key", getDerived_key());
-        object.addProperty("salt", getSalt());
-        object.addProperty("password_scheme", getPassword_scheme());
+
         return object;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getKey() {
@@ -105,6 +127,14 @@ public class RealmUserModel extends RealmObject {
         this.language = language;
     }
 
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
     public static RealmUserModel createGuestUser(String username, Realm mRealm, SharedPreferences settings) {
         JsonObject object = new JsonObject();
         object.addProperty("_id", "guest_" + username);
@@ -120,11 +150,14 @@ public class RealmUserModel extends RealmObject {
 
     public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings, boolean noCommit) {
         try {
-            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
+            String _id = JsonUtils.getString("_id", jsonDoc);
+            if (_id.isEmpty())
+                _id = UUID.randomUUID().toString();
+            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", _id).findFirst();
             if (!noCommit && !mRealm.isInTransaction())
                 mRealm.beginTransaction();
             if (user == null) {
-                user = mRealm.createObject(RealmUserModel.class, JsonUtils.getString("_id", jsonDoc));
+                user = mRealm.createObject(RealmUserModel.class, _id);
             }
             insertIntoUsers(jsonDoc, user, settings);
             if (!noCommit)
@@ -143,6 +176,7 @@ public class RealmUserModel extends RealmObject {
     private static void insertIntoUsers(JsonObject jsonDoc, RealmUserModel user, SharedPreferences settings) {
         Utilities.log("Insert into users " + new Gson().toJson(jsonDoc));
         user.set_rev(JsonUtils.getString("_rev", jsonDoc));
+        user.set_id(JsonUtils.getString("_id", jsonDoc));
         user.setName(JsonUtils.getString("name", jsonDoc));
         JsonArray array = JsonUtils.getJsonArray("roles", jsonDoc);
         RealmList<String> roles = new RealmList<>();
@@ -194,6 +228,14 @@ public class RealmUserModel extends RealmObject {
             ar.add(s);
         }
         return ar;
+    }
+
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
     }
 
     public void setRoles(RealmList<String> roles) {
