@@ -100,7 +100,7 @@ public class UploadToShelfService {
                     if (model.getId().startsWith("guest"))
                         continue;
                     JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.get_id()).execute().body();
-                    JsonObject object = getShelfData(realm, model.get_id(), jsonDoc);
+                    JsonObject object = getShelfData(realm, model.getId(), jsonDoc);
                     Utilities.log("JSON " + new Gson().toJson(jsonDoc));
                     JsonObject d = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.getId()).execute().body();
                     object.addProperty("_rev", JsonUtils.getString("_rev", d));
