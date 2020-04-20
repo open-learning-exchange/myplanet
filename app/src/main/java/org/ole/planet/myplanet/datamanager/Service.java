@@ -165,6 +165,7 @@ public class Service {
                 RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings, false);
                 if (model != null) {
                     Utilities.toast(MainApplication.context, "Not connected to planet , created user offline.");
+                    callback.onSuccess("Not connected to planet , created user offline.");
                 }
             }
         });
