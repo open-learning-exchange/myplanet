@@ -183,6 +183,7 @@ public class Service {
             try {
                 Response<JsonObject> res = retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                 if (res.body() != null) {
+
                     RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
                 }
             } catch (IOException e) {
