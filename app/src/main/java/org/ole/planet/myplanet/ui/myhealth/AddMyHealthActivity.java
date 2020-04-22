@@ -61,12 +61,12 @@ public class AddMyHealthActivity extends AppCompatActivity {
         if (!realm.isInTransaction())
             realm.beginTransaction();
         RealmMyHealth.RealmMyHealthProfile health = new RealmMyHealth.RealmMyHealthProfile();
-        health.setFirstName(fname.getEditText().getText().toString().trim());
-        health.setMiddleName(mname.getEditText().getText().toString().trim());
-        health.setLastName(lname.getEditText().getText().toString().trim());
-        health.setEmail(email.getEditText().getText().toString().trim());
-        health.setBirthDate(birthdate.getEditText().getText().toString().trim());
-        health.setBirthplace(birthplace.getEditText().getText().toString().trim());
+        userModelB.setFirstName(fname.getEditText().getText().toString().trim());
+        userModelB.setMiddleName(mname.getEditText().getText().toString().trim());
+        userModelB.setLastName(lname.getEditText().getText().toString().trim());
+        userModelB.setEmail(email.getEditText().getText().toString().trim());
+        userModelB.setDob(birthdate.getEditText().getText().toString().trim());
+        userModelB.setBirthPlace(birthplace.getEditText().getText().toString().trim());
         health.setEmergencyContactName(emergencyNumber.getEditText().getText().toString().trim());
         health.setEmergencyContact(contact.getEditText().getText().toString().trim());
         health.setEmergencyContactType(contactType.getSelectedItem().toString());
@@ -80,7 +80,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
         }
         try {
             healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
         finish();
     }
 
@@ -104,10 +105,10 @@ public class AddMyHealthActivity extends AppCompatActivity {
         if (healthPojo != null) {
             myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
-            fname.getEditText().setText(health.getFirstName());
-            mname.getEditText().setText(health.getMiddleName());
-            lname.getEditText().setText(health.getLastName());
-            email.getEditText().setText(health.getEmail());
+            fname.getEditText().setText(userModelB.getFirstName());
+            mname.getEditText().setText(userModelB.getMiddleName());
+            lname.getEditText().setText(userModelB.getLastName());
+            email.getEditText().setText(userModelB.getEmail());
             phone.getEditText().setText(health.getPhone());
             emergencyNumber.getEditText().setText(health.getEmergencyContactName());
             birthdate.getEditText().setText(health.getBirthDate());
