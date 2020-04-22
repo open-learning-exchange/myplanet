@@ -173,6 +173,11 @@ public class RealmUserModel extends RealmObject {
         return populateUsersTable(jsonDoc, mRealm, settings, false);
     }
 
+
+    public static boolean isUserExists(Realm realm, String name) {
+        return realm.where(RealmUserModel.class).equalTo("name", name).count() > 0;
+    }
+
     private static void insertIntoUsers(JsonObject jsonDoc, RealmUserModel user, SharedPreferences settings) {
         Utilities.log("Insert into users " + new Gson().toJson(jsonDoc));
         user.set_rev(JsonUtils.getString("_rev", jsonDoc));
@@ -192,6 +197,8 @@ public class RealmUserModel extends RealmObject {
         user.setPlanetCode(JsonUtils.getString("planetCode", jsonDoc));
         user.setParentCode(JsonUtils.getString("parentCode", jsonDoc));
         user.setEmail(JsonUtils.getString("email", jsonDoc));
+        if (user.get_id().isEmpty())
+            user.setPassword(JsonUtils.getString("password", jsonDoc));
         user.setPhoneNumber(JsonUtils.getString("phoneNumber", jsonDoc));
         user.setPassword_scheme(JsonUtils.getString("password_scheme", jsonDoc));
         user.setIterations(JsonUtils.getString("iterations", jsonDoc));

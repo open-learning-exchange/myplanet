@@ -162,6 +162,10 @@ public class Service {
 
             public void notAvailable() {
                 SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+                if (RealmUserModel.isUserExists(realm, obj.get("name").getAsString())) {
+                    callback.onSuccess("User already exists");
+                    return;
+                }
                 RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings, false);
                 if (model != null) {
                     Utilities.toast(MainApplication.context, "Not connected to planet , created user offline.");

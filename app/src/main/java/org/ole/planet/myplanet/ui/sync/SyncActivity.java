@@ -231,8 +231,11 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 //                mRealm.beginTransaction();
             for (RealmUserModel user : db_users) {
                 if (user.get_id().isEmpty()){
+                    Utilities.log("Offline user " + user.getName() + " " + username + " " + password + " " + user.getPassword());
                     if (username.equals(user.getName()) && password.equals(user.getPassword())){
                         saveUserInfoPref(settings, password, user);
+                        Utilities.log("Offline user return true" + user.getName());
+
                         return true;
                     }
                 }else{
