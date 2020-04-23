@@ -182,11 +182,13 @@ public class MyHealthFragment extends Fragment {
                 Utilities.toast(getActivity(), "Health Record not available.");
                 return;
             }
+            Utilities.log(new Gson().toJson(mm));
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
-            txtFullname.setText(myHealths.getFirstName() + " " + myHealths.getMiddleName() + " " + myHealths.getLastName());
-            txtEmail.setText(TextUtils.isEmpty(myHealths.getEmail()) ? "N/A" : myHealths.getEmail());
-            txtLanguage.setText(TextUtils.isEmpty(myHealths.getLanguage()) ? "N/A" : myHealths.getLanguage());
-            txtDob.setText(TextUtils.isEmpty(myHealths.getBirthDate()) ? "N/A" : myHealths.getBirthDate());
+            Utilities.log(new Gson().toJson(myHealths));
+            txtFullname.setText(userModel.getFirstName() + " " + userModel.getMiddleName() + " " + userModel.getLastName());
+            txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
+            txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
+            txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
             txtOther.setText(TextUtils.isEmpty(myHealths.getNotes()) ? "N/A" : myHealths.getNotes());
             txtSpecial.setText(TextUtils.isEmpty(myHealths.getSpecialNeeds()) ? "N/A" : myHealths.getSpecialNeeds());
             txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthplace()) ? "N/A" : myHealths.getBirthplace());

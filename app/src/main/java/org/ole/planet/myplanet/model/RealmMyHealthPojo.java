@@ -40,7 +40,6 @@ public class RealmMyHealthPojo extends RealmObject {
     }
 
     public static void insert(Realm mRealm, JsonObject act) {
-        Utilities.log("Insert myhealth " + act);
         RealmMyHealthPojo myHealth = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (myHealth == null)
             myHealth = mRealm.createObject(RealmMyHealthPojo.class, JsonUtils.getString("_id", act));
