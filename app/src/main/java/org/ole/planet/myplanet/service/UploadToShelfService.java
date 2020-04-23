@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -22,11 +23,13 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
+import retrofit2.Response;
 
 public class UploadToShelfService {
 
@@ -48,16 +51,55 @@ public class UploadToShelfService {
         return instance;
     }
 
+    public void uploadUserData(SuccessListener listener) {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm = dbService.getRealmInstance();
+        mRealm.executeTransactionAsync(new Realm.Transaction() {
+            @Override
+            public void execute(Realm realm) {
+                List<RealmUserModel> userModels = realm.where(RealmUserModel.class).isEmpty("_id").findAll();
+                for (RealmUserModel model : userModels) {
+                    try {
+                        Response<JsonObject> res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), model.serialize()).execute();
+                        if (res.body() != null) {
+                            String id = res.body().get("id").getAsString();
+                            String rev = res.body().get("rev").getAsString();
+                            res  =  apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                            if (res.body()!=null){
+                                model.set_id(id);
+                                model.set_rev(rev);
+                                model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
+                                model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
+                                model.setSalt(JsonUtils.getString("salt", res.body()));
+                                model.setIv(JsonUtils.getString("iv", res.body()));
+                                model.setKey(JsonUtils.getString("key", res.body()));
+                                model.setIterations(JsonUtils.getString("iterations", res.body()));
+                            }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }, () -> {
+            uploadToshelf(listener);
+        }, (err) ->{
+            uploadToshelf(listener);
+        });
+
+    }
+
+
     public void uploadToshelf(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).findAll();
+            RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).isNotEmpty("_id").findAll();
             for (RealmUserModel model : users) {
                 try {
                     if (model.getId().startsWith("guest"))
                         continue;
-                    JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.getId()).execute().body();
+                    JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.get_id()).execute().body();
                     JsonObject object = getShelfData(realm, model.getId(), jsonDoc);
                     Utilities.log("JSON " + new Gson().toJson(jsonDoc));
                     JsonObject d = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.getId()).execute().body();
