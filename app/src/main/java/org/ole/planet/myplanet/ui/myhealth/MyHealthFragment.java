@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -88,14 +89,17 @@ public class MyHealthFragment extends Fragment {
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fab = v.findViewById(R.id.add_new_record);
         fab.setOnClickListener(view -> {
-//            RealmMyHealth myHealth = n
             startActivity(new Intent(getActivity(), AddExaminationActivity.class).putExtra("userId", userId));
         });
-//        fab.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         btnUpdateRecord = v.findViewById(R.id.update_health);
         btnUpdateRecord.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
-//        btnUpdateRecord.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         btnNewPatient = v.findViewById(R.id.btnnew_patient);
+        v.findViewById(R.id.fab_add_member).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(getActivity(), BecomeMemberActivity.class));
+            }
+        });
         return v;
     }
 
@@ -134,13 +138,13 @@ public class MyHealthFragment extends Fragment {
         ListView lv = alertHealth.findViewById(R.id.list);
         lv.setAdapter(adapter);
         lv.setOnItemClickListener((adapterView, view, i, l) -> {
-            userId = map.get(((TextView)view).getText().toString());
+            userId = map.get(((TextView) view).getText().toString());
             getHealthRecords(userId);
             dialog.dismiss();
         });
         dialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.select_health_member))
                 .setView(alertHealth)
-                .setCancelable(false).setNegativeButton("Dismiss",null).create();
+                .setCancelable(false).setNegativeButton("Dismiss", null).create();
 
 
         dialog.show();
@@ -178,7 +182,7 @@ public class MyHealthFragment extends Fragment {
             llUserDetail.setVisibility(View.VISIBLE);
             txtMessage.setVisibility(View.GONE);
             RealmMyHealth mm = getHealthProfile(mh);
-            if(mm == null){
+            if (mm == null) {
                 Utilities.toast(getActivity(), "Health Record not available.");
                 return;
             }
@@ -196,7 +200,7 @@ public class MyHealthFragment extends Fragment {
             List<RealmExamination> list = mm.getEvents();
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
-            AdapterHealthExamination adapter = new AdapterHealthExamination(getActivity(), list,mh, userModel );
+            AdapterHealthExamination adapter = new AdapterHealthExamination(getActivity(), list, mh, userModel);
             adapter.setmRealm(mRealm);
             rvRecord.setAdapter(adapter);
             List<RealmExamination> finalList = list;
@@ -211,15 +215,15 @@ public class MyHealthFragment extends Fragment {
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
         Utilities.log("User profile " + userModel.getName());
         String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
-        if(json == null){
-            if(!userModel.getRealm().isInTransaction()){
+        if (json == null) {
+            if (!userModel.getRealm().isInTransaction()) {
                 userModel.getRealm().beginTransaction();
             }
             userModel.setIv("");
             userModel.setKey("");
             userModel.getRealm().commitTransaction();
-            return  null;
-        }else{
+            return null;
+        } else {
             return new Gson().fromJson(json, RealmMyHealth.class);
         }
     }

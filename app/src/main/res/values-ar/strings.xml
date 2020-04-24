@@ -324,6 +324,7 @@
     <string name="password">Password</string>
     <string name="retype_password">Retype Password</string>
     <string name="become_a_member">Become a member</string>
+    <string name="change_member">Change Member</string>
 
     <string-array name="info_type">
         <item>Languages</item>

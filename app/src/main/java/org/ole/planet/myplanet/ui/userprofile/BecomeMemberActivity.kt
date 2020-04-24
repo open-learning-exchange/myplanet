@@ -35,6 +35,8 @@ class BecomeMemberActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_become_member)
+        supportActionBar?.setHomeButtonEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         var mRealm: Realm = DatabaseService(this).realmInstance;
         var user = UserProfileDbHandler(this).userModel;
         txt_dob.setOnClickListener {
