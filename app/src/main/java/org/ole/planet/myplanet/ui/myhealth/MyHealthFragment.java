@@ -94,12 +94,7 @@ public class MyHealthFragment extends Fragment {
         btnUpdateRecord = v.findViewById(R.id.update_health);
         btnUpdateRecord.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
         btnNewPatient = v.findViewById(R.id.btnnew_patient);
-        v.findViewById(R.id.fab_add_member).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(getActivity(), BecomeMemberActivity.class));
-            }
-        });
+        v.findViewById(R.id.fab_add_member).setOnClickListener(view -> startActivity(new Intent(getActivity(), BecomeMemberActivity.class)));
         return v;
     }
 
