@@ -57,7 +57,6 @@ class NotificationFragment : BottomSheetDialogFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         var model = UserProfileDbHandler(activity).userModel
-        Utilities.log( "key " + model.key)
         val surveyList = mRealm!!.where(RealmSubmission::class.java).equalTo("userId", model.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll()
         ic_back.setOnClickListener {
             dismiss()
@@ -68,7 +67,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
         notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
 
-        if(TextUtils.isEmpty(model.key)){
+        if(TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")){
             notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
         }
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)

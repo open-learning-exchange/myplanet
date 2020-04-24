@@ -47,7 +47,7 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmObject;
 
-public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implements NotificationCallback {
+public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implements NotificationCallback, SyncListener {
     public UserProfileDbHandler profileDbHandler;
     String fullName;
     Realm mRealm;
@@ -55,6 +55,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
     DatabaseService dbService;
     RealmUserModel model;
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(250, 100);
+    ProgressDialog di;
 
     void onLoaded(View v) {
         txtFullName = v.findViewById(R.id.txtFullName);
@@ -294,25 +295,29 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
 
     @Override
     public void syncKeyId() {
-        ProgressDialog di = new ProgressDialog(getActivity());
+     di =   new ProgressDialog(getActivity());
         di.setMessage("Syncing health , please wait...");
-        TransactionSyncManager.syncKeyIv(mRealm, settings, new SyncListener() {
-            @Override
-            public void onSyncStarted() {
-                di.show();
-            }
+        if (model.getRoleAsString().contains("health")) {
+            TransactionSyncManager.syncAllHealthData(mRealm, settings, this);
+        }else{
+            TransactionSyncManager.syncKeyIv(mRealm, settings, this);
+        }
+    }
 
-            @Override
-            public void onSyncComplete() {
-                di.dismiss();
-                Utilities.toast(getActivity(), "myHealth synced successfully");
-            }
+    @Override
+    public void onSyncStarted() {
+        di.show();
+    }
 
-            @Override
-            public void onSyncFailed(String msg) {
-                di.dismiss();
-                Utilities.toast(getActivity(), "myHealth synced failed");
-            }
-        });
+    @Override
+    public void onSyncComplete() {
+        di.dismiss();
+        Utilities.toast(getActivity(), "myHealth synced successfully");
+    }
+
+    @Override
+    public void onSyncFailed(String msg) {
+        di.dismiss();
+        Utilities.toast(getActivity(), "myHealth synced failed");
     }
 }
