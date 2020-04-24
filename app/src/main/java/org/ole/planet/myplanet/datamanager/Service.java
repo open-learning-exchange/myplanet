@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import io.realm.Realm;
 import okhttp3.ResponseBody;
@@ -160,7 +161,16 @@ public class Service {
             }
 
             public void notAvailable() {
-                callback.onSuccess("Unable to create user, server not available");
+                SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+                if (RealmUserModel.isUserExists(realm, obj.get("name").getAsString())) {
+                    callback.onSuccess("User already exists");
+                    return;
+                }
+                RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings, false);
+                if (model != null) {
+                    Utilities.toast(MainApplication.context, "Not connected to planet , created user offline.");
+                    callback.onSuccess("Not connected to planet , created user offline.");
+                }
             }
         });
     }
@@ -173,21 +183,12 @@ public class Service {
             try {
                 Response<JsonObject> res = retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                 if (res.body() != null) {
-                    RealmUserModel model = RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
+
+                    RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
                 }
             } catch (IOException e) {
             }
-        }, new Realm.Transaction.OnSuccess() {
-            @Override
-            public void onSuccess() {
-                callback.onSuccess("User created successfully");
-            }
-        }, new Realm.Transaction.OnError() {
-            @Override
-            public void onError(Throwable error) {
-                callback.onSuccess("Unable to save user please sync");
-            }
-        });
+        }, () -> callback.onSuccess("User created successfully"), error -> callback.onSuccess("Unable to save user please sync"));
     }
 
 

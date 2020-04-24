@@ -67,7 +67,7 @@ class BecomeMemberActivity : BaseActivity() {
             }
 
             var obj = JsonObject()
-            obj.addProperty("name", username )
+            obj.addProperty("name", username)
             obj.addProperty("firstName", fname)
             obj.addProperty("lastName", lname)
             obj.addProperty("middleName", mname)
@@ -76,8 +76,8 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate",Date().getTime())
             obj.addProperty("email", email)
-            obj.addProperty("planetCode", user.phoneNumber)
-            obj.addProperty("parentCode", user.parentCode)
+            obj.addProperty("planetCode",if (user == null) "" else  user.planetCode)
+            obj.addProperty("parentCode", if (user == null) "" else  user.parentCode)
             obj.addProperty("language", language)
             obj.addProperty("level", level)
             obj.addProperty("phoneNumber", phoneNumber)
