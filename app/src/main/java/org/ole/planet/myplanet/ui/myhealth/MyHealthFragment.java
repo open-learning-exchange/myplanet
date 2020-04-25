@@ -140,8 +140,6 @@ public class MyHealthFragment extends Fragment {
         dialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.select_health_member))
                 .setView(alertHealth)
                 .setCancelable(false).setNegativeButton("Dismiss", null).create();
-
-
         dialog.show();
 
     }

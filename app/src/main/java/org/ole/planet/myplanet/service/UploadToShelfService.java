@@ -16,10 +16,12 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -64,8 +66,8 @@ public class UploadToShelfService {
                         if (res.body() != null) {
                             String id = res.body().get("id").getAsString();
                             String rev = res.body().get("rev").getAsString();
-                            res  =  apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
-                            if (res.body()!=null){
+                            res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                            if (res.body() != null) {
                                 model.set_id(id);
                                 model.set_rev(rev);
                                 model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
@@ -83,10 +85,31 @@ public class UploadToShelfService {
             }
         }, () -> {
             uploadToshelf(listener);
-        }, (err) ->{
+        }, (err) -> {
             uploadToshelf(listener);
         });
 
+    }
+
+
+    public void uploadHealth() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm = dbService.getRealmInstance();
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
+            for (RealmMyHealthPojo pojo : myHealths) {
+                try {
+                    if (pojo.get_id().isEmpty()) {
+                        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.getUserId()).findFirst();
+                        pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
+                    }
+                    Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        });
     }
 
 
