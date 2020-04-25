@@ -110,8 +110,6 @@ public class UploadToShelfService {
                     listener.onSuccess("Unable to update documents.");
                 }
             }
-
-
         }, () -> listener.onSuccess("Sync with server completed successfully"));
     }
 

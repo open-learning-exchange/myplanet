@@ -40,7 +40,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         realm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
-        healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
 
         key = userModelB.getKey();
