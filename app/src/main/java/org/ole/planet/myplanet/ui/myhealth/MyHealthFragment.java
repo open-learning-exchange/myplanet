@@ -172,14 +172,14 @@ public class MyHealthFragment extends Fragment {
     }
 
     private void showRecords() {
+        llUserDetail.setVisibility(View.VISIBLE);
+        txtMessage.setVisibility(View.GONE);
+        txtFullname.setText(userModel.getFirstName() + " " + userModel.getMiddleName() + " " + userModel.getLastName());
+        txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
+        txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
+        txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
         RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
         if (mh != null) {
-            llUserDetail.setVisibility(View.VISIBLE);
-            txtMessage.setVisibility(View.GONE);
-            txtFullname.setText(userModel.getFirstName() + " " + userModel.getMiddleName() + " " + userModel.getLastName());
-            txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
-            txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
-            txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
             RealmMyHealth mm = getHealthProfile(mh);
             if (mm == null) {
                 Utilities.toast(getActivity(), "Health Record not available.");
@@ -199,9 +199,14 @@ public class MyHealthFragment extends Fragment {
             List<RealmExamination> finalList = list;
             rvRecord.post(() -> rvRecord.scrollToPosition(finalList.size() - 1));
         } else {
-            llUserDetail.setVisibility(View.GONE);
-            txtMessage.setText(R.string.no_records);
-            txtMessage.setVisibility(View.VISIBLE);
+            txtOther.setText("");
+            txtSpecial.setText("");
+            txtBirthPlace.setText("");
+            txtEmergency.setText("");
+            rvRecord.setAdapter(null);
+//            llUserDetail.setVisibility(View.GONE);
+//            txtMessage.setText(R.string.no_records);
+//            txtMessage.setVisibility(View.VISIBLE);
         }
     }
 

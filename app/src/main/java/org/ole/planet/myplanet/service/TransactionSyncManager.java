@@ -48,13 +48,14 @@ public class TransactionSyncManager {
 
     public static void syncAllHealthData(Realm mRealm, SharedPreferences settings, SyncListener listener) {
         listener.onSyncStarted();
-        RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userName = settings.getString("loginUserName", "");
         String password = settings.getString("loginUserPassword", "");
         String header = "Basic " + Base64.encodeToString((userName + ":" + password).getBytes(), Base64.NO_WRAP);
         mRealm.executeTransactionAsync(realm -> {
+            Utilities.log("Sync");
             RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).isNotEmpty("_id").findAll();
             for (RealmUserModel userModel : users) {
+                Utilities.log("Sync " + userModel.getName());
 
                 syncHealthData(userModel, header);
             }
