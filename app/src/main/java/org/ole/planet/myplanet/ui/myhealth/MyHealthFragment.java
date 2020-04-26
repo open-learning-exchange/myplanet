@@ -208,7 +208,7 @@ public class MyHealthFragment extends Fragment {
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
         Utilities.log("User profile " + userModel.getName());
         String json = TextUtils.isEmpty(userModel.getIv()) ? mh.getData() : AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
-        if (json == null) {
+        if (TextUtils.isEmpty(json)) {
             if (!userModel.getRealm().isInTransaction()) {
                 userModel.getRealm().beginTransaction();
             }
