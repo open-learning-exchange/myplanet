@@ -62,21 +62,26 @@ public class UploadToShelfService {
                 List<RealmUserModel> userModels = realm.where(RealmUserModel.class).isEmpty("_id").findAll();
                 for (RealmUserModel model : userModels) {
                     try {
-                        Response<JsonObject> res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), model.serialize()).execute();
-                        if (res.body() != null) {
-                            String id = res.body().get("id").getAsString();
-                            String rev = res.body().get("rev").getAsString();
-                            res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                        Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
+                        if (res.body() == null) {
+                            res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), model.serialize()).execute();
                             if (res.body() != null) {
-                                model.set_id(id);
-                                model.set_rev(rev);
-                                model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
-                                model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
-                                model.setSalt(JsonUtils.getString("salt", res.body()));
-                                model.setIv(JsonUtils.getString("iv", res.body()));
-                                model.setKey(JsonUtils.getString("key", res.body()));
-                                model.setIterations(JsonUtils.getString("iterations", res.body()));
+                                String id = res.body().get("id").getAsString();
+                                String rev = res.body().get("rev").getAsString();
+                                res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                                if (res.body() != null) {
+                                    model.set_id(id);
+                                    model.set_rev(rev);
+                                    model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
+                                    model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
+                                    model.setSalt(JsonUtils.getString("salt", res.body()));
+                                    model.setIv(JsonUtils.getString("iv", res.body()));
+                                    model.setKey(JsonUtils.getString("key", res.body()));
+                                    model.setIterations(JsonUtils.getString("iterations", res.body()));
+                                }
                             }
+                        } else {
+                            Utilities.log("User " + model.getName() + " already exist");
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
