@@ -124,8 +124,7 @@ public class TransactionSyncManager {
                         keys.clear();
                     }
                 }
-            } catch (IOException e) {
-            }
+            } catch (IOException e) { }
         });
     }
 

@@ -81,8 +81,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         try {
             healthPojo.setUserId(userId);
             healthPojo.setData(TextUtils.isEmpty(userModelB.getIv()) ? new Gson().toJson(myHealth) : AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
-        } catch (Exception e) {
-        }
+        } catch (Exception e) { }
         finish();
     }
 
