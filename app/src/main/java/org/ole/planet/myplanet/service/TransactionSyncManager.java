@@ -79,7 +79,6 @@ public class TransactionSyncManager {
     }
 
     public static void syncKeyIv(Realm mRealm, SharedPreferences settings, SyncListener listener) {
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         listener.onSyncStarted();
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userName = settings.getString("loginUserName", "");
@@ -98,9 +97,8 @@ public class TransactionSyncManager {
         realm.executeTransactionAsync(mRealm -> {
             ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
             final retrofit2.Call<JsonObject> allDocs = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false");
-            Response<JsonObject> all = null;
             try {
-                all = allDocs.execute();
+                Response<JsonObject> all = allDocs.execute();
                 JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
                 List<String> keys = new ArrayList<>();
                 for (int i = 0; i < rows.size(); i++) {
