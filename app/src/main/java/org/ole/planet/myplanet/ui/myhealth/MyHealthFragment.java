@@ -178,7 +178,10 @@ public class MyHealthFragment extends Fragment {
         txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
         txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
         txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
-        RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
+        if (mh == null){
+            mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        }
         if (mh != null) {
             RealmMyHealth mm = getHealthProfile(mh);
             if (mm == null) {

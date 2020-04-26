@@ -42,6 +42,9 @@ public class AddMyHealthActivity extends AppCompatActivity {
         realm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
+        if (healthPojo == null) {
+            healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        }
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         key = userModelB.getKey();
         iv = userModelB.getIv();
@@ -81,7 +84,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
         try {
             healthPojo.setUserId(userId);
             healthPojo.setData(TextUtils.isEmpty(userModelB.getIv()) ? new Gson().toJson(myHealth) : AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
-        } catch (Exception e) { }
+        } catch (Exception e) {
+        }
         finish();
     }
 
@@ -103,7 +107,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
 
     public void populate() {
         if (healthPojo != null) {
-            myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
+            myHealth = new Gson().fromJson(TextUtils.isEmpty(iv) ? healthPojo.getData() : AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
             fname.getEditText().setText(userModelB.getFirstName());
             mname.getEditText().setText(userModelB.getMiddleName());

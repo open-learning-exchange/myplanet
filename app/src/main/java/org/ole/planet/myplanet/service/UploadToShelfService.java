@@ -75,8 +75,6 @@ public class UploadToShelfService {
                                     model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
                                     model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
                                     model.setSalt(JsonUtils.getString("salt", res.body()));
-                                    model.setIv(JsonUtils.getString("iv", res.body()));
-                                    model.setKey(JsonUtils.getString("key", res.body()));
                                     model.setIterations(JsonUtils.getString("iterations", res.body()));
                                 }
                             }

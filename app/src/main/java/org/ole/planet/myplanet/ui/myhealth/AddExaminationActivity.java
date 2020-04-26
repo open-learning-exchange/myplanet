@@ -70,6 +70,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
+        if (pojo == null){
+            mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
 //        if (TextUtils.isEmpty(user.getIv())) {
 //            Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
@@ -77,7 +80,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 //            return;
 //        }
         if (pojo != null) {
-            health = new Gson().fromJson(TextUtils.isEmpty(user.getIv()) ? "" : AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
+            health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
         if (health == null || health.getProfile() == null) {
             initHealth();
