@@ -123,8 +123,8 @@ public class MyHealthFragment extends Fragment {
         List<String> memberFullNameList = new ArrayList<>();
         HashMap<String, String> map = new HashMap<>();
         for (RealmUserModel um : userModelList) {
-            memberFullNameList.add(um.getFullName());
-            map.put(um.getFullName(), um.getId());
+            memberFullNameList.add(um.getName());
+            map.put(um.getName(), um.getId());
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, memberFullNameList);
         View alertHealth = LayoutInflater.from(getActivity()).inflate(R.layout.alert_health_list, null);
@@ -133,7 +133,9 @@ public class MyHealthFragment extends Fragment {
         ListView lv = alertHealth.findViewById(R.id.list);
         lv.setAdapter(adapter);
         lv.setOnItemClickListener((adapterView, view, i, l) -> {
-            userId = map.get(((TextView) view).getText().toString());
+            String user = ((TextView) view).getText().toString();
+            userId = map.get(user);
+            Utilities.log(userId);
             getHealthRecords(userId);
             dialog.dismiss();
         });
@@ -204,10 +206,6 @@ public class MyHealthFragment extends Fragment {
     }
 
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
-        Utilities.log("User profile " + userModel.getName());
-        Utilities.log("User profile iv " + userModel.getIv());
-        Utilities.log("User profile " + userModel.getKey());
-
         String json = TextUtils.isEmpty(userModel.getIv()) ? mh.getData() : AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
         if (TextUtils.isEmpty(json)) {
             if (!userModel.getRealm().isInTransaction()) {
