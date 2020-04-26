@@ -88,12 +88,13 @@ public class AndroidDecrypter {
             cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
 
             byte[] original = cipher.doFinal(hexStringToByteArray(encrypted));
+            Utilities.log("return string");
 
             return new String(original);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
+        Utilities.log("return null");
         return null;
     }
 

@@ -174,18 +174,16 @@ public class MyHealthFragment extends Fragment {
         if (mh != null) {
             llUserDetail.setVisibility(View.VISIBLE);
             txtMessage.setVisibility(View.GONE);
+            txtFullname.setText(userModel.getFirstName() + " " + userModel.getMiddleName() + " " + userModel.getLastName());
+            txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
+            txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
+            txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
             RealmMyHealth mm = getHealthProfile(mh);
             if (mm == null) {
                 Utilities.toast(getActivity(), "Health Record not available.");
                 return;
             }
-            Utilities.log(new Gson().toJson(mm));
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
-            Utilities.log(new Gson().toJson(myHealths));
-            txtFullname.setText(userModel.getFirstName() + " " + userModel.getMiddleName() + " " + userModel.getLastName());
-            txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
-            txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
-            txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
             txtOther.setText(TextUtils.isEmpty(myHealths.getNotes()) ? "N/A" : myHealths.getNotes());
             txtSpecial.setText(TextUtils.isEmpty(myHealths.getSpecialNeeds()) ? "N/A" : myHealths.getSpecialNeeds());
             txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthplace()) ? "N/A" : myHealths.getBirthplace());
@@ -207,6 +205,9 @@ public class MyHealthFragment extends Fragment {
 
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
         Utilities.log("User profile " + userModel.getName());
+        Utilities.log("User profile iv " + userModel.getIv());
+        Utilities.log("User profile " + userModel.getKey());
+
         String json = TextUtils.isEmpty(userModel.getIv()) ? mh.getData() : AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
         if (TextUtils.isEmpty(json)) {
             if (!userModel.getRealm().isInTransaction()) {
@@ -217,7 +218,13 @@ public class MyHealthFragment extends Fragment {
             userModel.getRealm().commitTransaction();
             return null;
         } else {
-            return new Gson().fromJson(json, RealmMyHealth.class);
+            Utilities.log("Json " + json);
+            try {
+                return new Gson().fromJson(json, RealmMyHealth.class);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
         }
     }
 

@@ -297,6 +297,7 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
     public void syncKeyId() {
      di =   new ProgressDialog(getActivity());
         di.setMessage("Syncing health , please wait...");
+        Utilities.log(model.getRoleAsString());
         if (model.getRoleAsString().contains("health")) {
             TransactionSyncManager.syncAllHealthData(mRealm, settings, this);
         }else{

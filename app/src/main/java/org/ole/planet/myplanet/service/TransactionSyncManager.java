@@ -51,30 +51,36 @@ public class TransactionSyncManager {
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userName = settings.getString("loginUserName", "");
         String password = settings.getString("loginUserPassword", "");
-        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
         String header = "Basic " + Base64.encodeToString((userName + ":" + password).getBytes(), Base64.NO_WRAP);
         mRealm.executeTransactionAsync(realm -> {
             RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).isNotEmpty("_id").findAll();
             for (RealmUserModel userModel : users) {
-                syncHealthData(userModel, header, table);
+
+                syncHealthData(userModel, header);
             }
 
         }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }
 
-    private static void syncHealthData(RealmUserModel userModel, String header, String table) {
+    private static void syncHealthData(RealmUserModel userModel, String header) {
+        String table = "userdb-" + Utilities.toHex(userModel.getPlanetCode()) + "-" + Utilities.toHex(userModel.getName());
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         Response response;
         try {
             response = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
             DocumentResponse ob = (DocumentResponse) response.body();
+            Utilities.log("Syncing health data " + userModel.getName() + " "+table);
             if (ob != null && ob.getRows().size() > 0) {
                 Rows r = ob.getRows().get(0);
+                Utilities.log("obj " + new Gson().toJson(ob));
                 JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
                 userModel.setKey(JsonUtils.getString("key", jsonDoc));
                 userModel.setIv(JsonUtils.getString("iv", jsonDoc));
+            }else{
+                Utilities.log("Obj is null");
             }
         } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -88,7 +94,7 @@ public class TransactionSyncManager {
         String id = model.getId();
         mRealm.executeTransactionAsync(realm -> {
             RealmUserModel userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
-            syncHealthData(userModel, header, table);
+            syncHealthData(userModel, header);
         }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }
 
