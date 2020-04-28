@@ -56,11 +56,11 @@ public class Utilities {
                 + "/resources/" + id + "/" + file;
     }
 
-    private static String getServerUrl(SharedPreferences settings) {
-        return settings.getString("url_Scheme", "") + "://" +
-                settings.getString("url_Host", "") + ":" +
-                settings.getInt("url_Port", 0) + "/";
-    }
+//    private static String getServerUrl(SharedPreferences settings) {
+//        return settings.getString("url_Scheme", "") + "://" +
+//                settings.getString("url_Host", "") + ":" +
+//                settings.getInt("url_Port", 0) + "/";
+//    }
 
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
