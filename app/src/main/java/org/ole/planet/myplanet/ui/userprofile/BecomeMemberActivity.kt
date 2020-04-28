@@ -19,7 +19,7 @@ import java.util.regex.Pattern
 
 class BecomeMemberActivity : BaseActivity() {
 
-    lateinit var dob: String;
+    var dob: String = "";
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(this, DatePickerDialog.OnDateSetListener { datePicker, i, i1, i2 ->
@@ -54,7 +54,7 @@ class BecomeMemberActivity : BaseActivity() {
             var email : String? = et_email.text.toString()
             var language : String? = spn_lang.selectedItem.toString()
             var phoneNumber : String? = et_phone.text.toString()
-            var birthDate : String? = txt_dob.text.toString()
+            var birthDate : String? = dob
             var level : String? = spn_level.selectedItem.toString()
             var rb: RadioButton? = findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
             var gender: String?  = ""
@@ -72,7 +72,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("lastName", lname)
             obj.addProperty("middleName", mname)
             obj.addProperty("password", password )
-            obj.addProperty("repeatPassword", repassword )
+//            obj.addProperty("repeatPassword", repassword )
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate",Date().getTime())
             obj.addProperty("email", email)
