@@ -72,7 +72,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("lastName", lname)
             obj.addProperty("middleName", mname)
             obj.addProperty("password", password )
-            obj.addProperty("repeatPassword", repassword )
+//            obj.addProperty("repeatPassword", repassword )
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate",Date().getTime())
             obj.addProperty("email", email)
