@@ -1,9 +1,13 @@
 package org.ole.planet.myplanet.utilities;
 
+import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -113,5 +117,34 @@ public class AndroidDecrypter {
             e.printStackTrace();
         }
         return false;
+    }
+
+
+    public static String generateIv(Key keySpec){
+        Cipher cipher = null;
+        try {
+            SecureRandom r = new SecureRandom();
+            byte[] ivBytes = new byte[16];
+            r.nextBytes(ivBytes);
+            cipher.init(Cipher.ENCRYPT_MODE,keySpec, new IvParameterSpec(ivBytes));
+            return  new String(cipher.getIV());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public static SecretKey generateKey(){
+        KeyGenerator keyGenerator;
+        SecretKey secretKey;
+        try {
+            keyGenerator = KeyGenerator.getInstance("AES");
+            keyGenerator.init(32);
+            secretKey = keyGenerator.generateKey();
+            return secretKey;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

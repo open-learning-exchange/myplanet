@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -26,7 +27,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
+import java.security.Key;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import io.realm.Realm;
@@ -76,6 +79,21 @@ public class UploadToShelfService {
                                     model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
                                     model.setSalt(JsonUtils.getString("salt", res.body()));
                                     model.setIterations(JsonUtils.getString("iterations", res.body()));
+                                    String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+
+                                    JsonObject ob = new JsonObject();
+                                    Key key = AndroidDecrypter.generateKey();
+                                    String keyString = new String(key.getEncoded());
+                                    String iv = AndroidDecrypter.generateIv(key);
+                                    ob.addProperty("key", keyString);
+                                    ob.addProperty("iv", iv);
+                                    ob.addProperty("createdOn", new Date().getTime());
+                                    Response response = apiInterface.postDoc(Utilities.getHeader(), "application/jsonn", Utilities.getUrl() + "/" + table, ob).execute();
+                                    if (response.body() != null) {
+                                        model.setKey(keyString);
+                                        model.setIv(iv);
+                                    }
+
                                 }
                             }
                         } else {
@@ -103,7 +121,7 @@ public class UploadToShelfService {
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
                     if (pojo.get_id().isEmpty()) {
-                        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.getUserId()).findFirst();
+                        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("_id", pojo.getUserId()).findFirst();
                         pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
                     }
                     Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
