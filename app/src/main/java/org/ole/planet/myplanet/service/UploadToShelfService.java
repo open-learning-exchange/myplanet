@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
@@ -27,7 +26,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
-import java.security.Key;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -67,7 +65,8 @@ public class UploadToShelfService {
                     try {
                         Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
                         if (res.body() == null) {
-                            res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), model.serialize()).execute();
+                            JsonObject obj = model.serialize();
+                            res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
                             if (res.body() != null) {
                                 String id = res.body().get("id").getAsString();
                                 String rev = res.body().get("rev").getAsString();
@@ -79,7 +78,7 @@ public class UploadToShelfService {
                                     model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
                                     model.setSalt(JsonUtils.getString("salt", res.body()));
                                     model.setIterations(JsonUtils.getString("iterations", res.body()));
-                                    saveKeyIv(apiInterface, model);
+                                    saveKeyIv(apiInterface, model, obj);
                                 }
                             }
                         } else {
@@ -98,10 +97,9 @@ public class UploadToShelfService {
 
     }
 
-    public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model) throws IOException {
+    public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
         String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
-        String header = "Basic " + Base64.encodeToString((model.getName() + ":" + model.getPassword()).getBytes(), Base64.NO_WRAP);
-
+        String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
         JsonObject ob = new JsonObject();
         String keyString = AndroidDecrypter.generateKey();
         String iv = AndroidDecrypter.generateIv();
@@ -110,12 +108,13 @@ public class UploadToShelfService {
         ob.addProperty("createdOn", new Date().getTime());
         Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
         Utilities.log(new Gson().toJson(ob));
+
+        Utilities.log("body " + new Gson().toJson(response.body()));
         if (response.body() != null) {
-            Utilities.log("body " +  new Gson().toJson(response.body()));
             model.setKey(keyString);
             model.setIv(iv);
         } else {
-            Utilities.log("error body " +  new Gson().toJson(response.errorBody()));
+            Utilities.log("error body " + new Gson().toJson(response.errorBody().string()));
         }
     }
 

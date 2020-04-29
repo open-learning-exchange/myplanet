@@ -139,7 +139,7 @@ public class Service {
                                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                                     if (response.body() != null && response.body().has("id")) {
                                         retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
-                                        saveUserToDb(realm, response.body().get("id").getAsString(), callback);
+                                        saveUserToDb(realm, response.body().get("id").getAsString(),obj, callback);
 //                                            callback.onSuccess("User created successfully");
                                     } else {
                                         callback.onSuccess("Unable to create user");
@@ -176,7 +176,7 @@ public class Service {
         });
     }
 
-    private void saveUserToDb(Realm realm, String id, CreateUserCallback callback) {
+    private void saveUserToDb(Realm realm, String id, JsonObject obj, CreateUserCallback callback) {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
 
         realm.executeTransactionAsync(realm1 -> {
@@ -186,7 +186,7 @@ public class Service {
                 if (res.body() != null) {
                     RealmUserModel model = RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
                     if (model != null)
-                        new UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model);
+                        new UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj);
                 }
             } catch (IOException e) {
             }
