@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import java.math.BigInteger;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -120,28 +121,28 @@ public class AndroidDecrypter {
     }
 
 
-    public static String generateIv(Key keySpec){
-        Cipher cipher = null;
+    public static String generateIv() {
         try {
-            SecureRandom r = new SecureRandom();
-            byte[] ivBytes = new byte[16];
-            r.nextBytes(ivBytes);
-            cipher.init(Cipher.ENCRYPT_MODE,keySpec, new IvParameterSpec(ivBytes));
-            return  new String(cipher.getIV());
+            byte[] IV = new byte[16];
+            SecureRandom random;
+            random = new SecureRandom();
+            random.nextBytes(IV);
+            return String.format("%032X", new BigInteger(+1, IV)).toLowerCase();
         } catch (Exception e) {
             e.printStackTrace();
         }
         return "";
     }
 
-    public static SecretKey generateKey(){
+    public static String generateKey() {
         KeyGenerator keyGenerator;
         SecretKey secretKey;
         try {
             keyGenerator = KeyGenerator.getInstance("AES");
-            keyGenerator.init(32);
+            keyGenerator.init(256);
             secretKey = keyGenerator.generateKey();
-            return secretKey;
+            byte[] binary = secretKey.getEncoded();
+            return String.format("%032X", new BigInteger(+1, binary)).toLowerCase();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }

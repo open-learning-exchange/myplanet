@@ -100,22 +100,22 @@ public class UploadToShelfService {
 
     public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model) throws IOException {
         String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        String header = "Basic " + Base64.encodeToString((model.getName() + ":" + model.getPassword()).getBytes(), Base64.NO_WRAP);
 
         JsonObject ob = new JsonObject();
-        Key key = AndroidDecrypter.generateKey();
-        String keyString = new String(key.getEncoded());
-        String iv = AndroidDecrypter.generateIv(key);
+        String keyString = AndroidDecrypter.generateKey();
+        String iv = AndroidDecrypter.generateIv();
         ob.addProperty("key", keyString);
         ob.addProperty("iv", iv);
         ob.addProperty("createdOn", new Date().getTime());
-        Response response = apiInterface.postDoc(Utilities.getHeader(), "application/jsonn", Utilities.getUrl() + "/" + table, ob).execute();
+        Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
         Utilities.log(new Gson().toJson(ob));
         if (response.body() != null) {
-            Utilities.log(new Gson().toJson(response.body()));
+            Utilities.log("body " +  new Gson().toJson(response.body()));
             model.setKey(keyString);
             model.setIv(iv);
         } else {
-            Utilities.log(new Gson().toJson(response.errorBody()));
+            Utilities.log("error body " +  new Gson().toJson(response.errorBody()));
         }
     }
 
