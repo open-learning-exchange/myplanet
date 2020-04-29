@@ -79,21 +79,7 @@ public class UploadToShelfService {
                                     model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
                                     model.setSalt(JsonUtils.getString("salt", res.body()));
                                     model.setIterations(JsonUtils.getString("iterations", res.body()));
-                                    String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
-
-                                    JsonObject ob = new JsonObject();
-                                    Key key = AndroidDecrypter.generateKey();
-                                    String keyString = new String(key.getEncoded());
-                                    String iv = AndroidDecrypter.generateIv(key);
-                                    ob.addProperty("key", keyString);
-                                    ob.addProperty("iv", iv);
-                                    ob.addProperty("createdOn", new Date().getTime());
-                                    Response response = apiInterface.postDoc(Utilities.getHeader(), "application/jsonn", Utilities.getUrl() + "/" + table, ob).execute();
-                                    if (response.body() != null) {
-                                        model.setKey(keyString);
-                                        model.setIv(iv);
-                                    }
-
+                                    saveKeyIv(apiInterface, model);
                                 }
                             }
                         } else {
@@ -110,6 +96,27 @@ public class UploadToShelfService {
             uploadToshelf(listener);
         });
 
+    }
+
+    public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model) throws IOException {
+        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+
+        JsonObject ob = new JsonObject();
+        Key key = AndroidDecrypter.generateKey();
+        String keyString = new String(key.getEncoded());
+        String iv = AndroidDecrypter.generateIv(key);
+        ob.addProperty("key", keyString);
+        ob.addProperty("iv", iv);
+        ob.addProperty("createdOn", new Date().getTime());
+        Response response = apiInterface.postDoc(Utilities.getHeader(), "application/jsonn", Utilities.getUrl() + "/" + table, ob).execute();
+        Utilities.log(new Gson().toJson(ob));
+        if (response.body() != null) {
+            Utilities.log(new Gson().toJson(response.body()));
+            model.setKey(keyString);
+            model.setIv(iv);
+        } else {
+            Utilities.log(new Gson().toJson(response.errorBody()));
+        }
     }
 
 

@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -183,8 +184,9 @@ public class Service {
             try {
                 Response<JsonObject> res = retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                 if (res.body() != null) {
-
-                    RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
+                    RealmUserModel model = RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
+                    if (model != null)
+                        new UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model);
                 }
             } catch (IOException e) {
             }
