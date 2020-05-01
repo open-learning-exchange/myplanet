@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
 
@@ -40,16 +41,18 @@ public class AddMyHealthActivity extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         realm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
-        healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
+        if (healthPojo == null) {
+            healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        }
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-
         key = userModelB.getKey();
         iv = userModelB.getIv();
-        if (TextUtils.isEmpty(key) || TextUtils.isEmpty(iv)) {
-            Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
-            finish();
-            return;
-        }
+//        if (TextUtils.isEmpty(key) || TextUtils.isEmpty(iv)) {
+//            Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
+//            finish();
+//            return;
+//        }
         initViews();
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             createMyHealth();
@@ -76,10 +79,11 @@ public class AddMyHealthActivity extends AppCompatActivity {
             myHealth = new RealmMyHealth();
         myHealth.setProfile(health);
         if (healthPojo == null) {
-            healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
+            healthPojo = realm.createObject(RealmMyHealthPojo.class, UUID.randomUUID());
         }
         try {
-            healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
+            healthPojo.setUserId(userId);
+            healthPojo.setData(TextUtils.isEmpty(userModelB.getIv()) ? new Gson().toJson(myHealth) : AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
         } catch (Exception e) {
         }
         finish();
@@ -103,7 +107,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
 
     public void populate() {
         if (healthPojo != null) {
-            myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
+            myHealth = new Gson().fromJson(TextUtils.isEmpty(iv) ? healthPojo.getData() : AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
             fname.getEditText().setText(userModelB.getFirstName());
             mname.getEditText().setText(userModelB.getMiddleName());

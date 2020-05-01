@@ -11,9 +11,27 @@ import io.realm.annotations.PrimaryKey;
 
 public class RealmMyHealthPojo extends RealmObject {
     @PrimaryKey
+    private String id;
     private String _id;
+    private String userId;
     private String _rev;
     private String data;
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
     public String get_id() {
         return _id;
@@ -45,6 +63,8 @@ public class RealmMyHealthPojo extends RealmObject {
             myHealth = mRealm.createObject(RealmMyHealthPojo.class, JsonUtils.getString("_id", act));
         myHealth.setData(JsonUtils.getString("data", act));
         myHealth.set_rev(JsonUtils.getString("_rev", act));
+        myHealth.set_id(JsonUtils.getString("_id", act));
+        myHealth.setUserId(JsonUtils.getString("userId", act));
     }
 
     public static JsonObject serialize(RealmMyHealthPojo health) {
@@ -52,6 +72,7 @@ public class RealmMyHealthPojo extends RealmObject {
         object.addProperty("_id", health.get_id());
         object.addProperty("data", health.getData());
         object.addProperty("_rev", health.get_rev());
+        object.addProperty("userId", health.getUserId());
         return object;
     }
 }

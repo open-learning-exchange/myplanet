@@ -1,9 +1,14 @@
 package org.ole.planet.myplanet.utilities;
 
+import java.math.BigInteger;
+import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -88,12 +93,13 @@ public class AndroidDecrypter {
             cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
 
             byte[] original = cipher.doFinal(hexStringToByteArray(encrypted));
+            Utilities.log("return string");
 
             return new String(original);
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
+        Utilities.log("return null");
         return null;
     }
 
@@ -112,5 +118,34 @@ public class AndroidDecrypter {
             e.printStackTrace();
         }
         return false;
+    }
+
+
+    public static String generateIv() {
+        try {
+            byte[] IV = new byte[16];
+            SecureRandom random;
+            random = new SecureRandom();
+            random.nextBytes(IV);
+            return String.format("%032X", new BigInteger(+1, IV)).toLowerCase();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public static String generateKey() {
+        KeyGenerator keyGenerator;
+        SecretKey secretKey;
+        try {
+            keyGenerator = KeyGenerator.getInstance("AES");
+            keyGenerator.init(256);
+            secretKey = keyGenerator.generateKey();
+            byte[] binary = secretKey.getEncoded();
+            return String.format("%032X", new BigInteger(+1, binary)).toLowerCase();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

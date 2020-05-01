@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -88,14 +89,12 @@ public class MyHealthFragment extends Fragment {
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fab = v.findViewById(R.id.add_new_record);
         fab.setOnClickListener(view -> {
-//            RealmMyHealth myHealth = n
             startActivity(new Intent(getActivity(), AddExaminationActivity.class).putExtra("userId", userId));
         });
-//        fab.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         btnUpdateRecord = v.findViewById(R.id.update_health);
         btnUpdateRecord.setOnClickListener(view -> startActivity(new Intent(getActivity(), AddMyHealthActivity.class).putExtra("userId", userId)));
-//        btnUpdateRecord.setVisibility(Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, getActivity()) ? View.VISIBLE : View.GONE);
         btnNewPatient = v.findViewById(R.id.btnnew_patient);
+        v.findViewById(R.id.fab_add_member).setOnClickListener(view -> startActivity(new Intent(getActivity(), BecomeMemberActivity.class)));
         return v;
     }
 
@@ -124,8 +123,8 @@ public class MyHealthFragment extends Fragment {
         List<String> memberFullNameList = new ArrayList<>();
         HashMap<String, String> map = new HashMap<>();
         for (RealmUserModel um : userModelList) {
-            memberFullNameList.add(um.getFullName());
-            map.put(um.getFullName(), um.getId());
+            memberFullNameList.add(um.getName());
+            map.put(um.getName(), um.getId());
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, memberFullNameList);
         View alertHealth = LayoutInflater.from(getActivity()).inflate(R.layout.alert_health_list, null);
@@ -134,15 +133,15 @@ public class MyHealthFragment extends Fragment {
         ListView lv = alertHealth.findViewById(R.id.list);
         lv.setAdapter(adapter);
         lv.setOnItemClickListener((adapterView, view, i, l) -> {
-            userId = map.get(((TextView)view).getText().toString());
+            String user = ((TextView) view).getText().toString();
+            userId = map.get(user);
+            Utilities.log(userId);
             getHealthRecords(userId);
             dialog.dismiss();
         });
         dialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.select_health_member))
                 .setView(alertHealth)
-                .setCancelable(false).setNegativeButton("Dismiss",null).create();
-
-
+                .setCancelable(false).setNegativeButton("Dismiss", null).create();
         dialog.show();
 
     }
@@ -173,22 +172,23 @@ public class MyHealthFragment extends Fragment {
     }
 
     private void showRecords() {
-        RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        llUserDetail.setVisibility(View.VISIBLE);
+        txtMessage.setVisibility(View.GONE);
+        txtFullname.setText(userModel.getFirstName() + " " + userModel.getMiddleName() + " " + userModel.getLastName());
+        txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
+        txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
+        txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
+        RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
+        if (mh == null){
+            mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        }
         if (mh != null) {
-            llUserDetail.setVisibility(View.VISIBLE);
-            txtMessage.setVisibility(View.GONE);
             RealmMyHealth mm = getHealthProfile(mh);
-            if(mm == null){
+            if (mm == null) {
                 Utilities.toast(getActivity(), "Health Record not available.");
                 return;
             }
-            Utilities.log(new Gson().toJson(mm));
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
-            Utilities.log(new Gson().toJson(myHealths));
-            txtFullname.setText(userModel.getFirstName() + " " + userModel.getMiddleName() + " " + userModel.getLastName());
-            txtEmail.setText(TextUtils.isEmpty(userModel.getEmail()) ? "N/A" : userModel.getEmail());
-            txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
-            txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
             txtOther.setText(TextUtils.isEmpty(myHealths.getNotes()) ? "N/A" : myHealths.getNotes());
             txtSpecial.setText(TextUtils.isEmpty(myHealths.getSpecialNeeds()) ? "N/A" : myHealths.getSpecialNeeds());
             txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthplace()) ? "N/A" : myHealths.getBirthplace());
@@ -196,31 +196,41 @@ public class MyHealthFragment extends Fragment {
             List<RealmExamination> list = mm.getEvents();
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
             rvRecord.setNestedScrollingEnabled(false);
-            AdapterHealthExamination adapter = new AdapterHealthExamination(getActivity(), list,mh, userModel );
+            AdapterHealthExamination adapter = new AdapterHealthExamination(getActivity(), list, mh, userModel);
             adapter.setmRealm(mRealm);
             rvRecord.setAdapter(adapter);
             List<RealmExamination> finalList = list;
             rvRecord.post(() -> rvRecord.scrollToPosition(finalList.size() - 1));
         } else {
-            llUserDetail.setVisibility(View.GONE);
-            txtMessage.setText(R.string.no_records);
-            txtMessage.setVisibility(View.VISIBLE);
+            txtOther.setText("");
+            txtSpecial.setText("");
+            txtBirthPlace.setText("");
+            txtEmergency.setText("");
+            rvRecord.setAdapter(null);
+//            llUserDetail.setVisibility(View.GONE);
+//            txtMessage.setText(R.string.no_records);
+//            txtMessage.setVisibility(View.VISIBLE);
         }
     }
 
     private RealmMyHealth getHealthProfile(RealmMyHealthPojo mh) {
-        Utilities.log("User profile " + userModel.getName());
-        String json = AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
-        if(json == null){
-            if(!userModel.getRealm().isInTransaction()){
+        String json = TextUtils.isEmpty(userModel.getIv()) ? mh.getData() : AndroidDecrypter.decrypt(mh.getData(), userModel.getKey(), userModel.getIv());
+        if (TextUtils.isEmpty(json)) {
+            if (!userModel.getRealm().isInTransaction()) {
                 userModel.getRealm().beginTransaction();
             }
             userModel.setIv("");
             userModel.setKey("");
             userModel.getRealm().commitTransaction();
-            return  null;
-        }else{
-            return new Gson().fromJson(json, RealmMyHealth.class);
+            return null;
+        } else {
+            Utilities.log("Json " + json);
+            try {
+                return new Gson().fromJson(json, RealmMyHealth.class);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
         }
     }
 

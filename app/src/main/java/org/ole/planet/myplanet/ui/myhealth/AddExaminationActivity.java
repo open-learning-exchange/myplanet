@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import io.realm.Realm;
 
@@ -68,13 +69,16 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         initViews();
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
-        pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-        user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-        if (TextUtils.isEmpty(user.getIv())) {
-            Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
-            finish();
-            return;
+        pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
+        if (pojo == null){
+            mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
         }
+        user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
+//        if (TextUtils.isEmpty(user.getIv())) {
+//            Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
+//            finish();
+//            return;
+//        }
         if (pojo != null) {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
@@ -196,9 +200,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
             if (pojo == null) {
-                pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
+                pojo = mRealm.createObject(RealmMyHealthPojo.class, UUID.randomUUID().toString());
             }
-            pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
+            pojo.setUserId(userId);
+            pojo.setData(TextUtils.isEmpty(user.getIv()) ? new Gson().toJson(health) : AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
             mRealm.commitTransaction();
         } catch (Exception e) {
             Utilities.toast(this, "Unable to add health record.");

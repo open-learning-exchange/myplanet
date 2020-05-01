@@ -47,12 +47,14 @@ import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.security.Key;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -90,6 +92,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         changeLogoColor();
+        Utilities.log("key" + AndroidDecrypter.generateKey());
+        Utilities.log("Iv" + AndroidDecrypter.generateIv());
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
         declareElements();
         declareMoreElements();

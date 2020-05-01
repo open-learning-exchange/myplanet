@@ -236,20 +236,7 @@ public class UploadManager extends FileUploadService {
         });
     }
 
-    public void uploadHealth() {
-        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
-        mRealm = dbService.getRealmInstance();
-        mRealm.executeTransactionAsync(realm -> {
-            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
-            for (RealmMyHealthPojo pojo : myHealths) {
-                try {
-                    Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
-                } catch (Exception e) {
-                }
-            }
 
-        });
-    }
 
     public void uploadFeedback(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
