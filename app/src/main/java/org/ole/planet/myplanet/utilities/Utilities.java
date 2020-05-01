@@ -58,12 +58,6 @@ public class Utilities {
                 + "/resources/" + id + "/" + file;
     }
 
-//    private static String getServerUrl(SharedPreferences settings) {
-//        return settings.getString("url_Scheme", "") + "://" +
-//                settings.getString("url_Host", "") + ":" +
-//                settings.getInt("url_Port", 0) + "/";
-//    }
-
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
         return getUrl() + "/_users/" + userId + "/" + imageName;
@@ -161,7 +155,7 @@ public class Utilities {
         if (url.endsWith("/db")) {
             url.replace("/db", "");
         }
-        return url + "/versions";
+        return url + "/fs/myPlanet.apk.sha256";
     }
 
 

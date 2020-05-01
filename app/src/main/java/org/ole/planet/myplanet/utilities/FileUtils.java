@@ -114,6 +114,7 @@ public class FileUtils {
         return "";
     }
 
+
     public static String getFileExtension(String address) {
         if (TextUtils.isEmpty(address))
             return "";
