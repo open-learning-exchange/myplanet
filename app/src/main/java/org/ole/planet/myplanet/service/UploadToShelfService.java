@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import android.util.Base64;
 
 import com.google.gson.Gson;
@@ -127,7 +128,7 @@ public class UploadToShelfService {
             List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
-                    if (pojo.get_id().isEmpty()) {
+                    if (TextUtils.isEmpty(pojo.get_id())) {
                         RealmUserModel user = realm.where(RealmUserModel.class).equalTo("_id", pojo.getUserId()).findFirst();
                         pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
                     }
