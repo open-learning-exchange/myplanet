@@ -8,14 +8,16 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_become_member.*
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.VersionUtils
 import java.util.*
-import java.util.regex.Pattern
 
 class BecomeMemberActivity : BaseActivity() {
 
@@ -96,6 +98,10 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("gender", gender)
             obj.addProperty("type", "user")
             obj.addProperty("betaEnabled", false)
+            obj.addProperty("macAddress", NetworkUtils.getMacAddr())
+            obj.addProperty("androidId", NetworkUtils.getMacAddr())
+            obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             var roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
