@@ -51,6 +51,10 @@ public interface ApiInterface {
     @GET
     Call<ResponseBody> getApkVersion(@Url String url);
 
+
+    @GET
+    Call<ResponseBody> getChecksum(@Url String url);
+
     @GET
     Call<ResponseBody> isPlanetAvailable(@Url String serverUrl);
 }

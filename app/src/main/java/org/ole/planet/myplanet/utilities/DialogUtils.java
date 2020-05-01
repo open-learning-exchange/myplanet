@@ -5,7 +5,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.provider.Settings;
+
 import androidx.appcompat.app.AlertDialog;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import android.view.View;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -13,7 +16,10 @@ import com.google.android.material.snackbar.Snackbar;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
+import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.model.Download;
 import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 
 import java.util.ArrayList;
 
@@ -96,14 +102,25 @@ public class DialogUtils {
     }
 
     public static void startDownloadUpdate(Context context, String path, ProgressDialog progressDialog) {
-       new Sha256Utils().getCheckSumFromFile(path);
-        ArrayList url = new ArrayList();
-        url.add(path);
-        if (progressDialog!=null){
-            progressDialog.setMessage("Downloading file...");
-            progressDialog.setCancelable(false);
-            progressDialog.show();
-        }
-        Utilities.openDownloadService(context, url);
+        new Service(MainApplication.context).checkCheckSum(new Service.ChecksumCallback() {
+            @Override
+            public void onMatch() {
+                Utilities.toast(MainApplication.context, "Apk already exists");
+                FileUtils.installApk(context, path);
+            }
+
+            @Override
+            public void onFail() {
+                ArrayList url = new ArrayList();
+                url.add(path);
+                if (progressDialog != null) {
+                    progressDialog.setMessage("Downloading file...");
+                    progressDialog.setCancelable(false);
+                    progressDialog.show();
+                }
+                Utilities.openDownloadService(context, url);
+            }
+        }, path);
+
     }
 }

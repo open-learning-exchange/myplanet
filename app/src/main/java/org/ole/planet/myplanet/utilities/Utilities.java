@@ -152,6 +152,14 @@ public class Utilities {
         return url + "/versions";
     }
 
+    public static String getChecksumUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")) {
+            url.replace("/db", "");
+        }
+        return url + "/versions";
+    }
+
 
     public static String getApkVersionUrl(SharedPreferences settings) {
         String url = settings.getString("couchdbURL", "");
