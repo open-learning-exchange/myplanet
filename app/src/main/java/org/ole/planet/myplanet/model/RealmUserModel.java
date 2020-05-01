@@ -349,7 +349,7 @@ public class RealmUserModel extends RealmObject {
         isUserAdmin = userAdmin;
     }
 
-    public int getJoinDate() {
+    public long getJoinDate() {
         return joinDate;
     }
 
