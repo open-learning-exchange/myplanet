@@ -99,6 +99,7 @@ public class UploadToShelfService {
 
     public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
         String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        Utilities.log(table);
         String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
         JsonObject ob = new JsonObject();
         String keyString = AndroidDecrypter.generateKey();
