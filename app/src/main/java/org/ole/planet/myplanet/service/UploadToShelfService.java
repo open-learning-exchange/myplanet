@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -13,18 +14,20 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import io.realm.Realm;
@@ -60,21 +63,26 @@ public class UploadToShelfService {
                 List<RealmUserModel> userModels = realm.where(RealmUserModel.class).isEmpty("_id").findAll();
                 for (RealmUserModel model : userModels) {
                     try {
-                        Response<JsonObject> res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), model.serialize()).execute();
-                        if (res.body() != null) {
-                            String id = res.body().get("id").getAsString();
-                            String rev = res.body().get("rev").getAsString();
-                            res  =  apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
-                            if (res.body()!=null){
-                                model.set_id(id);
-                                model.set_rev(rev);
-                                model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
-                                model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
-                                model.setSalt(JsonUtils.getString("salt", res.body()));
-                                model.setIv(JsonUtils.getString("iv", res.body()));
-                                model.setKey(JsonUtils.getString("key", res.body()));
-                                model.setIterations(JsonUtils.getString("iterations", res.body()));
+                        Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
+                        if (res.body() == null) {
+                            JsonObject obj = model.serialize();
+                            res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
+                            if (res.body() != null) {
+                                String id = res.body().get("id").getAsString();
+                                String rev = res.body().get("rev").getAsString();
+                                res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
+                                if (res.body() != null) {
+                                    model.set_id(id);
+                                    model.set_rev(rev);
+                                    model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
+                                    model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
+                                    model.setSalt(JsonUtils.getString("salt", res.body()));
+                                    model.setIterations(JsonUtils.getString("iterations", res.body()));
+                                    saveKeyIv(apiInterface, model, obj);
+                                }
                             }
+                        } else {
+                            Utilities.log("User " + model.getName() + " already exist");
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -83,10 +91,53 @@ public class UploadToShelfService {
             }
         }, () -> {
             uploadToshelf(listener);
-        }, (err) ->{
+        }, (err) -> {
             uploadToshelf(listener);
         });
 
+    }
+
+    public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
+        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        Utilities.log(table);
+        String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
+        JsonObject ob = new JsonObject();
+        String keyString = AndroidDecrypter.generateKey();
+        String iv = AndroidDecrypter.generateIv();
+        ob.addProperty("key", keyString);
+        ob.addProperty("iv", iv);
+        ob.addProperty("createdOn", new Date().getTime());
+        Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
+        Utilities.log(new Gson().toJson(ob));
+
+        Utilities.log("body " + new Gson().toJson(response.body()));
+        if (response.body() != null) {
+            model.setKey(keyString);
+            model.setIv(iv);
+        } else {
+            Utilities.log("error body " + new Gson().toJson(response.errorBody().string()));
+        }
+    }
+
+
+    public void uploadHealth() {
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        mRealm = dbService.getRealmInstance();
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
+            for (RealmMyHealthPojo pojo : myHealths) {
+                try {
+                    if (pojo.get_id().isEmpty()) {
+                        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("_id", pojo.getUserId()).findFirst();
+                        pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
+                    }
+                    Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        });
     }
 
 
@@ -110,8 +161,6 @@ public class UploadToShelfService {
                     listener.onSuccess("Unable to update documents.");
                 }
             }
-
-
         }, () -> listener.onSuccess("Sync with server completed successfully"));
     }
 

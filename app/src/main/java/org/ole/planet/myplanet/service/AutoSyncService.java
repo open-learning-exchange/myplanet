@@ -87,7 +87,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
 //                .putExtra("versionInfo", info)
 //                .putExtra("cancelable", cancelable)
 //                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        if(Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, this)){
+        if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, this)) {
             DialogUtils.startDownloadUpdate(this, Utilities.getApkUpdateUrl(info.getLocalapkpath()), null);
         }
     }
@@ -101,7 +101,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     public void onError(String msg, boolean blockSync) {
         if (!blockSync) {
             SyncManager.getInstance().start(this);
-            UploadToShelfService.getInstance().uploadUserData(this);
+            UploadToShelfService.getInstance().uploadUserData(success -> UploadToShelfService.getInstance().uploadHealth());
             UploadManager.getInstance().uploadExamResult(this);
             UploadManager.getInstance().uploadFeedback(this);
             UploadManager.getInstance().uploadAchievement();
@@ -114,7 +114,6 @@ public class AutoSyncService extends JobService implements SyncListener, Service
             UploadManager.getInstance().uploadNews();
             UploadManager.getInstance().uploadTeams();
             UploadManager.getInstance().uploadTeamTask();
-            UploadManager.getInstance().uploadHealth();
             UploadManager.getInstance().uploadCrashLog(this);
             UploadManager.getInstance().uploadActivities(this);
         }

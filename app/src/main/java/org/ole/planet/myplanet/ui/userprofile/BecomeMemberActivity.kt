@@ -35,6 +35,8 @@ class BecomeMemberActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_become_member)
+        supportActionBar?.setHomeButtonEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         var mRealm: Realm = DatabaseService(this).realmInstance;
         var user = UserProfileDbHandler(this).userModel;
         txt_dob.setOnClickListener {
@@ -46,38 +48,42 @@ class BecomeMemberActivity : BaseActivity() {
         }
         btn_submit.setOnClickListener {
             var username: String? = et_username.text.toString()
-            var password : String? = et_password.text.toString()
-            var repassword: String?  = et_re_password.text.toString()
-            var fname: String?  = et_fname.text.toString()
-            var lname: String?  = et_lname.text.toString()
-            var mname : String? = et_mname.text.toString()
-            var email : String? = et_email.text.toString()
-            var language : String? = spn_lang.selectedItem.toString()
-            var phoneNumber : String? = et_phone.text.toString()
-            var birthDate : String? = dob
-            var level : String? = spn_level.selectedItem.toString()
+            var password: String? = et_password.text.toString()
+            var repassword: String? = et_re_password.text.toString()
+            var fname: String? = et_fname.text.toString()
+            var lname: String? = et_lname.text.toString()
+            var mname: String? = et_mname.text.toString()
+            var email: String? = et_email.text.toString()
+            var language: String? = spn_lang.selectedItem.toString()
+            var phoneNumber: String? = et_phone.text.toString()
+            var birthDate: String? = dob
+            var level: String? = spn_level.selectedItem.toString()
             var rb: RadioButton? = findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
-            var gender: String?  = ""
+            var gender: String? = ""
             if (rb != null)
                 gender = rb.text.toString()
+
+
             if (username!!.isEmpty() || username.contains(" ")) {
                 et_username.error = "Invalid username"
             } else if (!password.equals(repassword)) {
                 et_re_password.error = "Password doesnot match username"
             }
-
+            if (!Utilities.isValidEmail(email)) {
+                et_email.error = "Invalid email."
+            }
             var obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fname)
             obj.addProperty("lastName", lname)
             obj.addProperty("middleName", mname)
-            obj.addProperty("password", password )
+            obj.addProperty("password", password)
 //            obj.addProperty("repeatPassword", repassword )
             obj.addProperty("isUserAdmin", false)
-            obj.addProperty("joinDate",Date().getTime())
+            obj.addProperty("joinDate", Date().getTime())
             obj.addProperty("email", email)
-            obj.addProperty("planetCode",if (user == null) "" else  user.planetCode)
-            obj.addProperty("parentCode", if (user == null) "" else  user.parentCode)
+            obj.addProperty("planetCode", if (user == null) "" else user.planetCode)
+            obj.addProperty("parentCode", if (user == null) "" else user.parentCode)
             obj.addProperty("language", language)
             obj.addProperty("level", level)
             obj.addProperty("phoneNumber", phoneNumber)
@@ -89,11 +95,11 @@ class BecomeMemberActivity : BaseActivity() {
             roles.add("learner")
             obj.add("roles", roles)
             pbar.visibility = View.VISIBLE
-            Service(this).becomeMember(mRealm,obj) {res->
-              runOnUiThread {
-                  pbar.visibility = View.GONE
-                  Utilities.toast(this, res)
-              }
+            Service(this).becomeMember(mRealm, obj) { res ->
+                runOnUiThread {
+                    pbar.visibility = View.GONE
+                    Utilities.toast(this, res)
+                }
                 finish()
             }
         }

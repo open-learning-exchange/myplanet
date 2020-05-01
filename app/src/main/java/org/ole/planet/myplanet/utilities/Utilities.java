@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Base64;
 import android.util.Log;
+import android.util.Patterns;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.Toast;
@@ -49,16 +50,19 @@ public class Utilities {
 
     }
 
+    public static boolean isValidEmail(String target) {
+        return (!TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target).matches());
+    }
     public static String getUrl(String id, String file, SharedPreferences settings) {
         return getUrl()
                 + "/resources/" + id + "/" + file;
     }
 
-    private static String getServerUrl(SharedPreferences settings) {
-        return settings.getString("url_Scheme", "") + "://" +
-                settings.getString("url_Host", "") + ":" +
-                settings.getInt("url_Port", 0) + "/";
-    }
+//    private static String getServerUrl(SharedPreferences settings) {
+//        return settings.getString("url_Scheme", "") + "://" +
+//                settings.getString("url_Host", "") + ":" +
+//                settings.getInt("url_Port", 0) + "/";
+//    }
 
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {

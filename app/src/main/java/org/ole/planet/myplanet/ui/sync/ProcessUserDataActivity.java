@@ -140,7 +140,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         progressDialog.setMessage("Uploading data to server, please wait.....");
         progressDialog.show();
         Utilities.log("Upload : upload started");
-        UploadToShelfService.getInstance().uploadUserData(this);
+        UploadToShelfService.getInstance().uploadUserData(success -> UploadToShelfService.getInstance().uploadHealth());
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
@@ -154,7 +154,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         UploadManager.getInstance().uploadRating(this);
         UploadManager.getInstance().uploadTeamTask();
         UploadManager.getInstance().uploadCrashLog(this);
-        UploadManager.getInstance().uploadHealth();
+//        UploadManager.getInstance().uploadHealth();
         UploadManager.getInstance().uploadSubmitPhotos(this);
         UploadManager.getInstance().uploadActivities(this);
         Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();

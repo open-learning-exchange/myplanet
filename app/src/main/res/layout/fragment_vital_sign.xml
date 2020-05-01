@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.myhealth.MyHealthFragment">
 
-    <FrameLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -25,12 +25,22 @@
                 android:padding="@dimen/padding_small">
 
 
+                <!--                <Button-->
+                <!--                    android:id="@+id/add_member"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:gravity="center"-->
+                <!--                    android:text="@string/new_patient"-->
+                <!--                    android:theme="@style/BlueButton"-->
+                <!--                    android:visibility="visible" />-->
+
+
                 <Button
                     android:id="@+id/btnnew_patient"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/new_patient"
+                    android:text="@string/change_member"
                     android:theme="@style/BlueButton"
                     android:visibility="visible" />
 
@@ -54,9 +64,9 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_user_detail"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/layout_user_detail"
                 android:orientation="vertical">
 
                 <LinearLayout
@@ -339,16 +349,24 @@
             </LinearLayout>
 
             <TextView
-                android:layout_width="wrap_content"
                 android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:visibility="gone"
                 android:gravity="center"
                 android:padding="@dimen/padding_large"
-                android:layout_height="wrap_content"/>
+                android:visibility="gone" />
 
         </LinearLayout>
 
 
-    </FrameLayout>
-</androidx.core.widget.NestedScrollView>
+    </androidx.core.widget.NestedScrollView>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_member"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|right"
+        android:layout_margin="@dimen/padding_normal"
+        app:srcCompat="@drawable/ic_add_member" />
+
+</FrameLayout>
