@@ -58,12 +58,14 @@ class BecomeMemberActivity : BaseActivity() {
             var phoneNumber: String? = et_phone.text.toString()
             var birthDate: String? = dob
             var level: String? = spn_level.selectedItem.toString()
+
             var rb: RadioButton? = findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
             var gender: String? = ""
             if (rb != null)
                 gender = rb.text.toString()
-
-
+            else {
+                Utilities.toast(this, "Please select gender")
+            }
             if (username!!.isEmpty() || username.contains(" ")) {
                 et_username.error = "Invalid username"
             } else if (!password.equals(repassword)) {
@@ -71,6 +73,9 @@ class BecomeMemberActivity : BaseActivity() {
             }
             if (!Utilities.isValidEmail(email)) {
                 et_email.error = "Invalid email."
+            }
+            if (level == null) {
+                Utilities.toast(this, "Level is required")
             }
             var obj = JsonObject()
             obj.addProperty("name", username)
@@ -80,7 +85,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("password", password)
 //            obj.addProperty("repeatPassword", repassword )
             obj.addProperty("isUserAdmin", false)
-            obj.addProperty("joinDate", Date().getTime())
+            obj.addProperty("joinDate", Calendar.getInstance().timeInMillis)
             obj.addProperty("email", email)
             obj.addProperty("planetCode", if (user == null) "" else user.planetCode)
             obj.addProperty("parentCode", if (user == null) "" else user.parentCode)

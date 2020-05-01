@@ -33,7 +33,7 @@ public class RealmUserModel extends RealmObject {
     private String name;
     private RealmList<String> roles;
     private Boolean isUserAdmin;
-    private int joinDate;
+    private long joinDate;
     private String firstName;
     private String lastName;
     private String middleName;
@@ -197,7 +197,7 @@ public class RealmUserModel extends RealmObject {
         }
         user.setRoles(roles);
         user.setUserAdmin(JsonUtils.getBoolean("isUserAdmin", jsonDoc));
-        user.setJoinDate(JsonUtils.getInt("joinDate", jsonDoc));
+        user.setJoinDate(JsonUtils.getLong("joinDate", jsonDoc));
         user.setFirstName(JsonUtils.getString("firstName", jsonDoc));
         user.setLastName(JsonUtils.getString("lastName", jsonDoc));
         user.setMiddleName(JsonUtils.getString("middleName", jsonDoc));
@@ -213,7 +213,10 @@ public class RealmUserModel extends RealmObject {
         user.setSalt(JsonUtils.getString("salt", jsonDoc));
         user.setDob(JsonUtils.getString("birthDate", jsonDoc));
         user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
-        user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
+        user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
+        user.setGender(JsonUtils.getString("gender", jsonDoc));
+        user.setLanguage(JsonUtils.getString("language", jsonDoc));
+        user.setLevel(JsonUtils.getString("level", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
         if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
@@ -350,7 +353,7 @@ public class RealmUserModel extends RealmObject {
         return joinDate;
     }
 
-    public void setJoinDate(int joinDate) {
+    public void setJoinDate(long joinDate) {
         this.joinDate = joinDate;
     }
 
