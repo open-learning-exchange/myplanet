@@ -14,11 +14,13 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Sha256Utils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -49,11 +51,14 @@ public class Service {
                     try {
                         String checksum = response.body().string();
                         if (TextUtils.isEmpty(checksum)) {
-                            String sha256 = new Sha256Utils().getCheckSumFromFile(path);
-                            if (checksum.contains(sha256)) {
-                                callback.onMatch();
-                                return;
-                            }
+                           File f = FileUtils.getSDPathFromUrl(path);
+                           if (f.exists()){
+                               String sha256 = new Sha256Utils().getCheckSumFromFile(f);
+                               if (checksum.contains(sha256)) {
+                                   callback.onMatch();
+                                   return;
+                               }
+                           }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
