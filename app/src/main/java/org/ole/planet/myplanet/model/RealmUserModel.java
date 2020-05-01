@@ -10,8 +10,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +68,10 @@ public class RealmUserModel extends RealmObject {
         object.add("roles", getRoles());
         if (get_id().isEmpty()) {
             object.addProperty("password", getPassword());
+            object.addProperty("macAddress", NetworkUtils.getMacAddr());
+            object.addProperty("androidId",NetworkUtils.getMacAddr());
+            object.addProperty("uniqueAndroidId",VersionUtils.getAndroidId(MainApplication.context));
+            object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
         } else {
             object.addProperty("derived_key", getDerived_key());
             object.addProperty("salt", getSalt());
