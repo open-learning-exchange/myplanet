@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import java.io.ByteArrayOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 

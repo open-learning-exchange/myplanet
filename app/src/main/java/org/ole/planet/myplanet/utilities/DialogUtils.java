@@ -96,6 +96,7 @@ public class DialogUtils {
     }
 
     public static void startDownloadUpdate(Context context, String path, ProgressDialog progressDialog) {
+       new Sha256Utils().getCheckSumFromFile(path);
         ArrayList url = new ArrayList();
         url.add(path);
         if (progressDialog!=null){

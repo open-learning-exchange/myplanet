@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -127,6 +129,7 @@ public class Utilities {
         return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
                 settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
+
 
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
