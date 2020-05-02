@@ -128,10 +128,16 @@ public class UploadToShelfService {
             List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
-                    if (TextUtils.isEmpty(pojo.get_id())) {
+                    if (TextUtils.isEmpty(pojo.get_id()) && !TextUtils.isEmpty(pojo.getUserId())) {
                         RealmUserModel user = realm.where(RealmUserModel.class).equalTo("_id", pojo.getUserId()).findFirst();
-                        pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
+                        if (user != null && !TextUtils.isEmpty(user.getIv())) {
+                            pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
+                        } else {
+                            continue;
+                        }
+
                     }
+
                     Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
                 } catch (Exception e) {
                     e.printStackTrace();
