@@ -128,7 +128,7 @@ public class UploadToShelfService {
             List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
-                    if (TextUtils.isEmpty(pojo.get_id()) && !TextUtils.isEmpty(pojo.getUserId())) {
+                    if (TextUtils.isEmpty(pojo.get_id())) {
                         RealmUserModel user = realm.where(RealmUserModel.class).equalTo("_id", pojo.getUserId()).findFirst();
                         if (user != null && !TextUtils.isEmpty(user.getIv())) {
                             pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
