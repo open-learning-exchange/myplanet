@@ -21,6 +21,7 @@ import kotlinx.android.synthetic.main.alert_create_team.view.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
@@ -33,6 +34,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     var rvTeamList: RecyclerView? = null
     var etSearch: EditText? = null
     var type: String? = null
+    var user: RealmUserModel? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -48,6 +50,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         rvTeamList = v.findViewById(R.id.rv_team_list)
         etSearch = v.findViewById(R.id.et_search)
         mRealm = DatabaseService(activity).realmInstance
+        user = UserProfileDbHandler(activity!!).userModel
         v.findViewById<View>(R.id.add_team).setOnClickListener { view: View? -> createTeamAlert(null) }
         return v
     }
@@ -70,6 +73,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         }
         AlertDialog.Builder(activity!!).setTitle(String.format("Enter %s Detail", if (type == null) "Team" else "Enterprise")).setView(v).setPositiveButton("Save") { dialogInterface: DialogInterface?, i: Int ->
             val map = HashMap<String, String>()
+            val userId = user?._id
             val name = v.et_name.text.toString().trim()
             map["desc"] = v.et_description.text.toString()
             map["services"] = v.et_services.text.toString()
@@ -85,7 +89,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         team.name = name
                         team.services = v.et_services.text.toString()
                         team.rules = v.et_rules.text.toString()
+                        team.limit = 12
                         team.description = v.et_description.text.toString()
+                        team.createdBy = userId
                         team.realm.commitTransaction()
                     }
                     Utilities.toast(activity, "Team Created")
