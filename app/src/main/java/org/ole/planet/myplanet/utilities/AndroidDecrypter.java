@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
 import java.math.BigInteger;
-import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;

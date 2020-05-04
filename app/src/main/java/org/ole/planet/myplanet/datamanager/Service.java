@@ -14,10 +14,13 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.Sha256Utils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -36,6 +39,39 @@ public class Service {
     public Service(Context context) {
         this.context = context;
         preferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+
+    public void checkCheckSum(ChecksumCallback callback, String path) {
+        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+        retrofitInterface.getChecksum(Utilities.getChecksumUrl(preferences)).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.code() == 200) {
+                    try {
+                        String checksum = response.body().string();
+                        if (TextUtils.isEmpty(checksum)) {
+                           File f = FileUtils.getSDPathFromUrl(path);
+                           if (f.exists()){
+                               String sha256 = new Sha256Utils().getCheckSumFromFile(f);
+                               if (checksum.contains(sha256)) {
+                                   callback.onMatch();
+                                   return;
+                               }
+                           }
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                callback.onFail();
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                callback.onFail();
+            }
+        });
     }
 
     public void checkVersion(CheckVersionCallback callback, SharedPreferences settings) {
@@ -215,6 +251,12 @@ public class Service {
 
     public interface CreateUserCallback {
         void onSuccess(String message);
+    }
+
+    public interface ChecksumCallback {
+        void onMatch();
+
+        void onFail();
     }
 
     public interface PlanetAvailableListener {

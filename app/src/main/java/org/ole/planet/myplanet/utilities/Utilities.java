@@ -22,6 +22,8 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -55,12 +57,6 @@ public class Utilities {
         return getUrl()
                 + "/resources/" + id + "/" + file;
     }
-
-//    private static String getServerUrl(SharedPreferences settings) {
-//        return settings.getString("url_Scheme", "") + "://" +
-//                settings.getString("url_Host", "") + ":" +
-//                settings.getInt("url_Port", 0) + "/";
-//    }
 
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
@@ -132,6 +128,7 @@ public class Utilities {
                 settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
 
+
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         if (settings.contains("couchdbURL")) {
@@ -151,6 +148,14 @@ public class Utilities {
             url.replace("/db", "");
         }
         return url + "/versions";
+    }
+
+    public static String getChecksumUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")) {
+            url.replace("/db", "");
+        }
+        return url + "/fs/myPlanet.apk.sha256";
     }
 
 
