@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -42,7 +43,7 @@ public class RealmMyTeam extends RealmObject {
     private String userId;
     private String description;
     private String requests;
-    private String limit;
+    private int limit;
     private long createdDate;
     private String resourceId;
     private String status;
@@ -83,7 +84,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setName(JsonUtils.getString("name", doc));
         myTeams.setTitle(JsonUtils.getString("title", doc));
         myTeams.setDescription(JsonUtils.getString("description", doc));
-        myTeams.setLimit(JsonUtils.getString("limit", doc));
+        myTeams.setLimit(JsonUtils.getInt("limit", doc));
         myTeams.setStatus(JsonUtils.getString("status", doc));
         myTeams.setTeamPlanetCode(JsonUtils.getString("teamPlanetCode", doc));
         myTeams.setCreatedDate(JsonUtils.getLong("createdDate", doc));
@@ -313,7 +314,7 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("parentCode", team.getParentCode());
         object.addProperty("docType", team.getDocType());
         object.addProperty("isLeader", team.isLeader());
-        object.addProperty("type", team.getTeamType());
+        object.addProperty("type", team.getType());
         object.addProperty("amount", team.getAmount());
         object.addProperty("route", team.getRoute());
         object.addProperty("date", team.getDate());
@@ -327,7 +328,7 @@ public class RealmMyTeam extends RealmObject {
             object.addProperty("amount", team.getAmount());
         }
         object.addProperty("amount", team.getTeamType());
-        return object;
+        return new Gson().toJsonTree(object).getAsJsonObject();
     }
 
 
@@ -432,11 +433,11 @@ public class RealmMyTeam extends RealmObject {
         this.requests = requests;
     }
 
-    public String getLimit() {
+    public int getLimit() {
         return limit;
     }
 
-    public void setLimit(String limit) {
+    public void setLimit(int limit) {
         this.limit = limit;
     }
 
