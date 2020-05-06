@@ -383,12 +383,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
         switchServerUrl = dialog.getCustomView().findViewById(R.id.switch_server_url);
         serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
-
-        setUrlAndPin(switchServerUrl.isChecked());
-        switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> setUrlAndPin(b));
+        switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> setUrlAndPin(switchServerUrl.isChecked()));
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
         customDeviceName.setText(getCustomDeviceName());
+        setUrlAndPin(switchServerUrl.isChecked());
         protocol_semantics();
         dialog.show();
         sync(dialog);
@@ -396,10 +395,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void setUrlAndPin(boolean checked) {
         if (checked) {
-            serverUrl.setText("planet.vi.ole.org");
+            serverUrl.setText("planet.vi.ole.org:2200");
             protocol_checkin.check(R.id.radio_https);
             serverPassword.setText("5971");
-
         } else {
             serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
             serverPassword.setText(settings.getString("serverPin", ""));
