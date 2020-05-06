@@ -4,7 +4,6 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
@@ -15,7 +14,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -24,7 +22,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.URLUtil;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.RadioGroup;
@@ -34,7 +31,6 @@ import android.widget.Toast;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
@@ -46,7 +42,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
-import org.ole.planet.myplanet.ui.viewer.WebViewActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
@@ -54,14 +49,12 @@ import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.security.Key;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import io.realm.Realm;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
 
@@ -84,7 +77,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private GifImageButton syncIcon;
     //    private CheckBox managerialLogin;
     private boolean isSync = false, forceSync = false;
-    private SwitchCompat switchChildMode;
+    private SwitchCompat switchChildMode, switchServerUrl;
     private SharedPreferences defaultPref;
 
     @Override
@@ -388,17 +381,34 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
         serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
-        serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
-        serverPassword.setText(settings.getString("serverPin", ""));
+        switchServerUrl = dialog.getCustomView().findViewById(R.id.switch_server_url);
         serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
-        serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
-        protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
+
+        setUrlAndPin(switchServerUrl.isChecked());
+        switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> setUrlAndPin(b));
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
         customDeviceName.setText(getCustomDeviceName());
         protocol_semantics();
         dialog.show();
         sync(dialog);
+    }
+
+    private void setUrlAndPin(boolean checked) {
+        if (checked) {
+            serverUrl.setText("planet.vi.ole.org");
+            protocol_checkin.check(R.id.radio_https);
+            serverPassword.setText("5971");
+
+        } else {
+            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
+            serverPassword.setText(settings.getString("serverPin", ""));
+            protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
+            serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
+        }
+        serverUrl.setEnabled(!checked);
+        serverPassword.setEnabled(!checked);
+        protocol_checkin.setEnabled(!checked);
     }
 
     private void protocol_semantics() {
