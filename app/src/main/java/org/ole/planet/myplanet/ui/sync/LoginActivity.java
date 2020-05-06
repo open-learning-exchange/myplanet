@@ -395,9 +395,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void setUrlAndPin(boolean checked) {
         if (checked) {
-            serverUrl.setText("planet.vi.ole.org:2200");
+            serverUrl.setText("planet.vi.ole.org");
             protocol_checkin.check(R.id.radio_https);
-            serverPassword.setText("5971");
+            serverPassword.setText("0660");
         } else {
             serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
             serverPassword.setText(settings.getString("serverPin", ""));
