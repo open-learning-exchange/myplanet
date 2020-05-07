@@ -138,7 +138,6 @@ public class UploadToShelfService {
                         RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.getUserId()).findFirst();
                         Utilities.log("user " + user.getId());
                         Utilities.log("user " + user.getIv());
-                        Utilities.log("user " + pojo.getData());
                         if (user != null && !TextUtils.isEmpty(user.getIv()) && pojo.getData().startsWith("{")) {
                             pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
                         }
