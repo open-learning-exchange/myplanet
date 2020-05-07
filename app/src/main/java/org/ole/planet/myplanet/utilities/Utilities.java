@@ -53,6 +53,7 @@ public class Utilities {
     public static boolean isValidEmail(String target) {
         return (!TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target).matches());
     }
+
     public static String getUrl(String id, String file, SharedPreferences settings) {
         return getUrl()
                 + "/resources/" + id + "/" + file;
@@ -123,7 +124,7 @@ public class Utilities {
 
     public static String getHeader() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        Utilities.log("User " + settings.getString("url_user", "") + " "  + settings.getString("url_pwd", ""));
+        Utilities.log("User " + settings.getString("url_user", "") + " " + settings.getString("url_pwd", ""));
         return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
                 settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
@@ -156,6 +157,14 @@ public class Utilities {
             url.replace("/db", "");
         }
         return url + "/fs/myPlanet.apk.sha256";
+    }
+
+    public static String getHealthAccessUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")) {
+            url.replace("/db", "");
+        }
+        return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"));
     }
 
 

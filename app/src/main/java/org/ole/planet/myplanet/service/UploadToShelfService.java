@@ -108,6 +108,11 @@ public class UploadToShelfService {
         ob.addProperty("key", keyString);
         ob.addProperty("iv", iv);
         ob.addProperty("createdOn", new Date().getTime());
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
         Utilities.log(new Gson().toJson(ob));
 
@@ -135,9 +140,7 @@ public class UploadToShelfService {
                         } else {
                             continue;
                         }
-
                     }
-
                     Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
                 } catch (Exception e) {
                     e.printStackTrace();
