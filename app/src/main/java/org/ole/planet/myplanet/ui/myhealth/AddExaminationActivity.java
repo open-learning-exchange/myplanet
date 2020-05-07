@@ -79,7 +79,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 //            finish();
 //            return;
 //        }
-        if (pojo != null) {
+        if (pojo != null && !TextUtils.isEmpty(pojo.getData())) {
+            Utilities.log("health data" +  pojo.getData());
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
         if (health == null || health.getProfile() == null) {

@@ -131,17 +131,25 @@ public class UploadToShelfService {
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
             List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
+            Utilities.log("Health data size " + myHealths.size());
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
                     if (TextUtils.isEmpty(pojo.get_id())) {
-                        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("_id", pojo.getUserId()).findFirst();
-                        if (user != null && !TextUtils.isEmpty(user.getIv())) {
+                        RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.getUserId()).findFirst();
+                        Utilities.log("user " + user.getId());
+                        Utilities.log("user " + user.getIv());
+                        Utilities.log("user " + pojo.getData());
+                        if (user != null && !TextUtils.isEmpty(user.getIv()) && pojo.getData().startsWith("{")) {
                             pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
-                        } else {
-                            continue;
                         }
                     }
-                    Response res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
+                    if (!TextUtils.isEmpty(pojo.getData())){
+                        Response<JsonObject> res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
+                        if (res.body()!=null && res.body().has("id")){
+                            pojo.set_id(res.body().get("id").getAsString());
+                            pojo.set_rev(res.body().get("rev").getAsString());
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -168,10 +176,12 @@ public class UploadToShelfService {
                     apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), object).execute().body();
                 } catch (Exception e) {
                     e.printStackTrace();
-                    listener.onSuccess("Unable to update documents.");
+
                 }
             }
-        }, () -> listener.onSuccess("Sync with server completed successfully"));
+        }, () -> listener.onSuccess("Sync with server completed successfully"), (err) -> {
+            listener.onSuccess("Unable to update documents.");
+        });
     }
 
 
