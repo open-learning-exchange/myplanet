@@ -90,6 +90,7 @@ class BecomeMemberActivity : BaseActivity() {
             if (password!!.isEmpty()  && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
                 password=phoneNumber
+                ///Add dialog that using phone as password , Agree / disagree
             }
 
 
