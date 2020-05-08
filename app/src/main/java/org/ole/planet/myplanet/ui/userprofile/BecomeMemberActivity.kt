@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
+import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.RadioButton
+import androidx.appcompat.app.AlertDialog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -48,18 +50,7 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
-        et_username.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable) {
-                if (RealmUserModel.isUserExists(mRealm, et_username.text.toString())) {
-                    et_username.error ="username taken"
-                    return
-                }
-            }
-            override fun beforeTextChanged(s: CharSequence, start: Int,count: Int, after: Int) {
-            }
-            override fun onTextChanged(s: CharSequence, start: Int,before: Int, count: Int) {
-            }
-        })
+        textChangedListener(mRealm)
 
         btn_cancel.setOnClickListener {
             finish()
@@ -99,7 +90,18 @@ class BecomeMemberActivity : BaseActivity() {
             if (password!!.isEmpty()  && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
                 password=phoneNumber
+                val builder = AlertDialog.Builder(this)
+                with(builder)
+                {
+                    setTitle("Confirm")
+                    setMessage("You chose to use phone Number as password")
+                    setPositiveButton("Yes", DialogInterface.OnClickListener(return@with))
+                    setNegativeButton("Maybe", return@setOnClickListener)
+                    show()
+                }
+
             }
+
 
             var obj = JsonObject()
             obj.addProperty("name", username)
@@ -137,4 +139,33 @@ class BecomeMemberActivity : BaseActivity() {
             }
         }
     }
+
+    private fun textChangedListener(mRealm: Realm) {
+        et_username.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable) {
+                if (RealmUserModel.isUserExists(mRealm, et_username.text.toString())) {
+                    et_username.error = "username taken"
+                    return
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            }
+        })
+
+        et_password.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable) {
+                et_re_password.isEnabled = et_password.text.toString().isNotEmpty()
+            }
+
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            }
+        })
+    }
+
 }
