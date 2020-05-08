@@ -172,22 +172,6 @@
 
                 </com.google.android.material.textfield.TextInputLayout>
 
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_normal">
-
-                    <EditText
-                        android:id="@+id/et_retype_phone"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/phone_number" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-
                 <TextView
                     android:id="@+id/txt_dob"
                     android:layout_width="0dp"
