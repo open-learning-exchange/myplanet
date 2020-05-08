@@ -90,10 +90,8 @@ public class AndroidDecrypter {
 
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
-
             byte[] original = cipher.doFinal(hexStringToByteArray(encrypted));
-            Utilities.log("return string");
-
+            Utilities.log("return string "+ new String(original));
             return new String(original);
         } catch (Exception ex) {
             ex.printStackTrace();

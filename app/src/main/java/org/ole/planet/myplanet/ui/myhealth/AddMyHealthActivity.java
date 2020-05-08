@@ -41,18 +41,10 @@ public class AddMyHealthActivity extends AppCompatActivity {
         getSupportActionBar().setHomeButtonEnabled(true);
         realm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
-        healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
-        if (healthPojo == null) {
-            healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-        }
+        healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         key = userModelB.getKey();
         iv = userModelB.getIv();
-//        if (TextUtils.isEmpty(key) || TextUtils.isEmpty(iv)) {
-//            Utilities.toast(this, "You cannot create health record from myPlanet. Please contact your manager.");
-//            finish();
-//            return;
-//        }
         initViews();
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             createMyHealth();
@@ -79,7 +71,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
             myHealth = new RealmMyHealth();
         myHealth.setProfile(health);
         if (healthPojo == null) {
-            healthPojo = realm.createObject(RealmMyHealthPojo.class, UUID.randomUUID());
+            healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
         try {
             healthPojo.setUserId(userId);
