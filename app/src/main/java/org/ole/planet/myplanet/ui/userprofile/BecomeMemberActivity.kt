@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.KeyEvent
 import android.view.View
 import android.widget.RadioButton
 import com.google.gson.JsonArray
@@ -16,6 +15,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -49,7 +49,12 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         et_username.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable) {}
+            override fun afterTextChanged(s: Editable) {
+                if (RealmUserModel.isUserExists(mRealm, et_username.text.toString())) {
+                    et_username.error ="username taken"
+                    return
+                }
+            }
             override fun beforeTextChanged(s: CharSequence, start: Int,count: Int, after: Int) {
             }
             override fun onTextChanged(s: CharSequence, start: Int,before: Int, count: Int) {
@@ -92,8 +97,8 @@ class BecomeMemberActivity : BaseActivity() {
                 Utilities.toast(this, "Level is required")
             }
             if (password!!.isEmpty()  && phoneNumber!!.isNotEmpty()) {
-                et_phone.setText(phoneNumber)
                 et_re_password.setText(phoneNumber)
+                password=phoneNumber
             }
 
             var obj = JsonObject()
