@@ -90,16 +90,6 @@ class BecomeMemberActivity : BaseActivity() {
             if (password!!.isEmpty()  && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
                 password=phoneNumber
-                val builder = AlertDialog.Builder(this)
-                with(builder)
-                {
-                    setTitle("Confirm")
-                    setMessage("You chose to use phone Number as password")
-                    setPositiveButton("Yes", DialogInterface.OnClickListener(return@with))
-                    setNegativeButton("Maybe", return@setOnClickListener)
-                    show()
-                }
-
             }
 
 
