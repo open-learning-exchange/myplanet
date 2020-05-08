@@ -402,6 +402,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (checked) {
             serverUrl.setText("planet.vi.ole.org");
             protocol_checkin.check(R.id.radio_https);
+            settings.getString("serverProtocol", "https://")
             serverPassword.setText("0660");
         } else if (!settings.getString("serverURL", "").equals("planet.vi.ole.org")) {
             serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
@@ -410,6 +411,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
         } else {
             serverUrl.setText("");
+            settings.getString("serverProtocol", "http://");
             serverPassword.setText("");
             protocol_checkin.check(R.id.radio_http);
             serverUrlProtocol.setText("");
