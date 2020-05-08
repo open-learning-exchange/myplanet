@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadToShelfService;
@@ -42,6 +43,25 @@ public class Service {
     }
 
 
+    public void healthAccess(SuccessListener listener) {
+        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+        retrofitInterface.healthAccess(Utilities.getHealthAccessUrl(preferences)).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if (response.code() == 200) {
+                    listener.onSuccess("Successfully synced");
+                } else {
+                    listener.onSuccess("");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                listener.onSuccess("");
+            }
+        });
+    }
+
     public void checkCheckSum(ChecksumCallback callback, String path) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.getChecksum(Utilities.getChecksumUrl(preferences)).enqueue(new Callback<ResponseBody>() {
@@ -51,14 +71,14 @@ public class Service {
                     try {
                         String checksum = response.body().string();
                         if (TextUtils.isEmpty(checksum)) {
-                           File f = FileUtils.getSDPathFromUrl(path);
-                           if (f.exists()){
-                               String sha256 = new Sha256Utils().getCheckSumFromFile(f);
-                               if (checksum.contains(sha256)) {
-                                   callback.onMatch();
-                                   return;
-                               }
-                           }
+                            File f = FileUtils.getSDPathFromUrl(path);
+                            if (f.exists()) {
+                                String sha256 = new Sha256Utils().getCheckSumFromFile(f);
+                                if (checksum.contains(sha256)) {
+                                    callback.onMatch();
+                                    return;
+                                }
+                            }
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -175,7 +195,7 @@ public class Service {
                                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                                     if (response.body() != null && response.body().has("id")) {
                                         retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
-                                        saveUserToDb(realm, response.body().get("id").getAsString(),obj, callback);
+                                        saveUserToDb(realm, response.body().get("id").getAsString(), obj, callback);
 //                                            callback.onSuccess("User created successfully");
                                     } else {
                                         callback.onSuccess("Unable to create user");

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.text.TextUtils;
+
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -11,19 +13,11 @@ import io.realm.annotations.PrimaryKey;
 
 public class RealmMyHealthPojo extends RealmObject {
     @PrimaryKey
-    private String id;
     private String _id;
     private String userId;
     private String _rev;
     private String data;
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
 
     public String getUserId() {
         return userId;
@@ -69,9 +63,10 @@ public class RealmMyHealthPojo extends RealmObject {
 
     public static JsonObject serialize(RealmMyHealthPojo health) {
         JsonObject object = new JsonObject();
-        object.addProperty("_id", health.get_id());
+        object.addProperty("_id", health.getUserId());
+        if (!TextUtils.isEmpty(health.get_rev()))
+            object.addProperty("_rev", health.get_rev());
         object.addProperty("data", health.getData());
-        object.addProperty("_rev", health.get_rev());
         object.addProperty("userId", health.getUserId());
         return object;
     }
