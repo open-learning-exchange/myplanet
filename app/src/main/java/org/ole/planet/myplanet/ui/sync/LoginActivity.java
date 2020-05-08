@@ -413,7 +413,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverPassword.setText("");
             protocol_checkin.check(R.id.radio_http);
             serverUrlProtocol.setText("");
-
         }
         serverUrl.setEnabled(!checked);
         serverPassword.setEnabled(!checked);
