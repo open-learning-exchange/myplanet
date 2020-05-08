@@ -415,6 +415,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrlProtocol.setText("");
         }
         serverUrl.setEnabled(!checked);
+        serverPassword.clearFocus();
+        serverUrl.clearFocus();
         serverPassword.setEnabled(!checked);
         protocol_checkin.setEnabled(!checked);
     }
