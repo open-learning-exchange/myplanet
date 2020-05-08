@@ -383,11 +383,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
         switchServerUrl = dialog.getCustomView().findViewById(R.id.switch_server_url);
         serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
-        switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> setUrlAndPin(switchServerUrl.isChecked()));
+        switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
+            settings.edit().putBoolean("switchCloudUrl", b).commit();
+            setUrlAndPin(switchServerUrl.isChecked());
+        });
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
         customDeviceName.setText(getCustomDeviceName());
-        setUrlAndPin(switchServerUrl.isChecked());
+//        setUrlAndPin(switchServerUrl.isChecked());
+        switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
+        setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
         protocol_semantics();
         dialog.show();
         sync(dialog);
@@ -398,11 +403,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrl.setText("planet.vi.ole.org");
             protocol_checkin.check(R.id.radio_https);
             serverPassword.setText("0660");
-        } else {
+        } else if (!settings.getString("serverURL", "").equals("planet.vi.ole.org")) {
             serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
             serverPassword.setText(settings.getString("serverPin", ""));
             protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
+        } else {
+            serverUrl.setText("");
+            serverPassword.setText("");
+            protocol_checkin.check(R.id.radio_http);
+            serverUrlProtocol.setText("");
+
         }
         serverUrl.setEnabled(!checked);
         serverPassword.setEnabled(!checked);
