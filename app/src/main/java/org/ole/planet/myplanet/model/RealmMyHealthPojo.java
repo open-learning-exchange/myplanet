@@ -71,10 +71,11 @@ public class RealmMyHealthPojo extends RealmObject {
 
     public static JsonObject serialize(RealmMyHealthPojo health) {
         JsonObject object = new JsonObject();
-        if (!TextUtils.isEmpty(health.get_id())){
-
+        if (!TextUtils.isEmpty(health.get_id())) {
             object.addProperty("_id", health.get_id());
             object.addProperty("_rev", health.get_rev());
+        } else {
+            object.addProperty("_id", health.getUserId());
         }
         object.addProperty("data", health.getData());
         object.addProperty("userId", health.getUserId());
