@@ -53,6 +53,10 @@ public interface ApiInterface {
 
 
     @GET
+    Call<ResponseBody> healthAccess(@Url String url);
+
+
+    @GET
     Call<ResponseBody> getChecksum(@Url String url);
 
     @GET
