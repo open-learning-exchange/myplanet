@@ -2,6 +2,9 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.View
 import android.widget.RadioButton
 import com.google.gson.JsonArray
@@ -45,6 +48,14 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
+        et_username.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable) {}
+            override fun beforeTextChanged(s: CharSequence, start: Int,count: Int, after: Int) {
+            }
+            override fun onTextChanged(s: CharSequence, start: Int,before: Int, count: Int) {
+            }
+        })
+
         btn_cancel.setOnClickListener {
             finish()
         }
@@ -70,15 +81,21 @@ class BecomeMemberActivity : BaseActivity() {
             }
             if (username!!.isEmpty() || username.contains(" ")) {
                 et_username.error = "Invalid username"
-            } else if (!password.equals(repassword)) {
-                et_re_password.error = "Password doesnot match username"
             }
-            if (!Utilities.isValidEmail(email)) {
+            if (!password.equals(repassword)) {
+                et_re_password.error = "Password doesn't match"
+            }
+            if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
                 et_email.error = "Invalid email."
             }
             if (level == null) {
                 Utilities.toast(this, "Level is required")
             }
+            if (password!!.isEmpty()  && phoneNumber!!.isNotEmpty()) {
+                et_phone.setText(phoneNumber)
+                et_re_password.setText(phoneNumber)
+            }
+
             var obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fname)
