@@ -1,9 +1,13 @@
 package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
+import android.content.DialogInterface
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.RadioButton
+import androidx.appcompat.app.AlertDialog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -13,6 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -45,6 +50,8 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
+        textChangedListener(mRealm)
+
         btn_cancel.setOnClickListener {
             finish()
         }
@@ -70,15 +77,23 @@ class BecomeMemberActivity : BaseActivity() {
             }
             if (username!!.isEmpty() || username.contains(" ")) {
                 et_username.error = "Invalid username"
-            } else if (!password.equals(repassword)) {
-                et_re_password.error = "Password doesnot match username"
             }
-            if (!Utilities.isValidEmail(email)) {
+            if (!password.equals(repassword)) {
+                et_re_password.error = "Password doesn't match"
+            }
+            if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
                 et_email.error = "Invalid email."
             }
             if (level == null) {
                 Utilities.toast(this, "Level is required")
             }
+            if (password!!.isEmpty()  && phoneNumber!!.isNotEmpty()) {
+                et_re_password.setText(phoneNumber)
+                password=phoneNumber
+                ///Add dialog that using phone as password , Agree / disagree
+            }
+
+
             var obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fname)
@@ -115,4 +130,33 @@ class BecomeMemberActivity : BaseActivity() {
             }
         }
     }
+
+    private fun textChangedListener(mRealm: Realm) {
+        et_username.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable) {
+                if (RealmUserModel.isUserExists(mRealm, et_username.text.toString())) {
+                    et_username.error = "username taken"
+                    return
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            }
+        })
+
+        et_password.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable) {
+                et_re_password.isEnabled = et_password.text.toString().isNotEmpty()
+            }
+
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+            }
+        })
+    }
+
 }
