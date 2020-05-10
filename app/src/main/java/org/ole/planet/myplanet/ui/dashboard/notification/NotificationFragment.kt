@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
 
+import android.app.AlertDialog
 import android.app.Dialog
+import android.content.DialogInterface
 import android.os.Bundle
 import android.text.TextUtils
 import androidx.fragment.app.Fragment
@@ -69,6 +71,12 @@ class NotificationFragment : BottomSheetDialogFragment() {
 
         if(TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")){
             notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
+            AlertDialog.Builder(context).setMessage("Sync health data").setPositiveButton("Sync", object :DialogInterface.OnClickListener{
+                override fun onClick(p0: DialogInterface?, p1: Int) {
+                   callback.syncKeyId()
+                }
+
+            }).setNegativeButton("Cancel", null).show()
         }
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)
         rv_notifications.adapter = AdapterNotification(activity!!, notificationList, callback)
