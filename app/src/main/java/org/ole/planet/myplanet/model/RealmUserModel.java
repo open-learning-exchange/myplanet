@@ -212,7 +212,6 @@ public class RealmUserModel extends RealmObject {
         user.setSalt(JsonUtils.getString("salt", jsonDoc));
         user.setDob(JsonUtils.getString("birthDate", jsonDoc));
         user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
-        user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
         user.setGender(JsonUtils.getString("gender", jsonDoc));
         user.setLanguage(JsonUtils.getString("language", jsonDoc));
         user.setLevel(JsonUtils.getString("level", jsonDoc));

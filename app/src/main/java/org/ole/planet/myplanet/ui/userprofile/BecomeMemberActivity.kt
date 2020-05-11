@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -18,7 +20,9 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -27,6 +31,7 @@ import java.util.*
 class BecomeMemberActivity : BaseActivity() {
 
     var dob: String = "";
+    lateinit var settings: SharedPreferences
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(this, DatePickerDialog.OnDateSetListener { datePicker, i, i1, i2 ->
@@ -50,6 +55,7 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
+        settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
 
         btn_cancel.setOnClickListener {
@@ -87,9 +93,9 @@ class BecomeMemberActivity : BaseActivity() {
             if (level == null) {
                 Utilities.toast(this, "Level is required")
             }
-            if (password!!.isEmpty()  && phoneNumber!!.isNotEmpty()) {
+            if (password!!.isEmpty() && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
-                password=phoneNumber
+                password = phoneNumber
                 ///Add dialog that using phone as password , Agree / disagree
             }
 
@@ -104,8 +110,8 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate", Calendar.getInstance().timeInMillis)
             obj.addProperty("email", email)
-            obj.addProperty("planetCode",  user.let { it.planetCode })
-            obj.addProperty("parentCode",  user?.parentCode)
+            obj.addProperty("planetCode", settings.getString("planetCode", ""))
+            obj.addProperty("parentCode", settings.getString("parentCode", ""))
             obj.addProperty("language", language)
             obj.addProperty("level", level)
             obj.addProperty("phoneNumber", phoneNumber)
@@ -139,6 +145,7 @@ class BecomeMemberActivity : BaseActivity() {
                     return
                 }
             }
+
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
             }
 
