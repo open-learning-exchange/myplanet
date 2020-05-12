@@ -133,14 +133,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
-        profile.setFirstName(user.getFirstName());
-        profile.setMiddleName(user.getMiddleName());
-        profile.setLastName(user.getLastName());
-        profile.setLanguage(user.getLanguage());
-        profile.setBirthDate(user.getDob());
-        profile.setBirthplace(user.getBirthPlace());
-        profile.setEmail(user.getEmail());
-        profile.setPhone(user.getPhoneNumber());
         health.setProfile(profile);
         Utilities.log("Init health");
     }
