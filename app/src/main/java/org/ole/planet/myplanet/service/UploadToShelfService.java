@@ -71,7 +71,7 @@ public class UploadToShelfService {
                             if (res.body() != null) {
                                 String id = res.body().get("id").getAsString();
                                 String rev = res.body().get("rev").getAsString();
-                                updateHealthData(realm,id, model.getId());
+
 
                                 res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                                 if (res.body() != null) {
@@ -81,7 +81,9 @@ public class UploadToShelfService {
                                     model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
                                     model.setSalt(JsonUtils.getString("salt", res.body()));
                                     model.setIterations(JsonUtils.getString("iterations", res.body()));
-                                    saveKeyIv(apiInterface, model, obj);
+                                    boolean success = saveKeyIv(apiInterface, model, obj);
+                                    if (success)
+                                        updateHealthData(realm, model);
                                 }
                             }
 
@@ -101,14 +103,19 @@ public class UploadToShelfService {
 
     }
 
-    private void updateHealthData(Realm realm, String newId, String oldId) {
-        List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id",oldId ).findAll();
-        for (RealmMyHealthPojo p : list){
-            p.setUserId(newId);
+    private void updateHealthData(Realm realm, RealmUserModel model) {
+        List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id", model.getId()).findAll();
+        for (RealmMyHealthPojo p : list) {
+            p.setUserId(model.get_id());
+            try {
+                p.setData(AndroidDecrypter.encrypt(p.getData(), model.getKey(), model.getId()));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
+    public boolean saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
         String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
         Utilities.log(table);
         String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
@@ -124,15 +131,16 @@ public class UploadToShelfService {
             e.printStackTrace();
         }
         Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
-        Utilities.log(new Gson().toJson(ob));
-
         Utilities.log("body " + new Gson().toJson(response.body()));
         if (response.body() != null) {
             model.setKey(keyString);
             model.setIv(iv);
+            return true;
         } else {
             Utilities.log("error body " + new Gson().toJson(response.errorBody().string()));
+            return false;
         }
+
     }
 
 
@@ -140,14 +148,14 @@ public class UploadToShelfService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).isEmpty("userId").findAll();
+            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
             Utilities.log("Health data size " + myHealths.size());
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
-                    if (!TextUtils.isEmpty(pojo.getData())) {
+                    if (!TextUtils.isEmpty(pojo.getUserId()) && !TextUtils.isEmpty(pojo.getData())) {
                         if (pojo.getData().startsWith("{")) {
                             RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.get_id()).findFirst();
-                            Utilities.log("health iv "+ user.getIv());
+                            Utilities.log("health iv " + user.getIv());
                             if (user != null && !TextUtils.isEmpty(user.getIv())) {
                                 pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
                             } else {

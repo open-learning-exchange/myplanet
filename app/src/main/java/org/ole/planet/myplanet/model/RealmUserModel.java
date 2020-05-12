@@ -89,6 +89,8 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("gender", getGender());
         object.addProperty("phoneNumber", getPhoneNumber());
         object.addProperty("birthDate", getDob());
+        object.addProperty("parentCode", getParentCode());
+        object.addProperty("planetCode", getPlanetCode());
         object.addProperty("birthPlace", getBirthPlace());
         return object;
     }
