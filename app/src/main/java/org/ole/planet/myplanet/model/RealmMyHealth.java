@@ -38,71 +38,7 @@ public class RealmMyHealth {
     }
 
     public static class RealmMyHealthProfile {
-        private String firstName, middleName, lastName, email, phoneNumber, language, birthDate, birthplace, emergencyContactName, emergencyContactType, emergencyContact, specialNeeds, notes;
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getMiddleName() {
-            return middleName;
-        }
-
-        public void setMiddleName(String middleName) {
-            this.middleName = middleName;
-        }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getPhone() {
-            return phoneNumber;
-        }
-
-        public void setPhone(String phone) {
-            this.phoneNumber = phone;
-        }
-
-        public String getLanguage() {
-            return language;
-        }
-
-        public void setLanguage(String language) {
-            this.language = language;
-        }
-
-        public String getBirthDate() {
-            return birthDate;
-        }
-
-        public void setBirthDate(String birthDate) {
-            this.birthDate = birthDate;
-        }
-
-        public String getBirthplace() {
-            return birthplace;
-        }
-
-        public void setBirthplace(String birthplace) {
-            this.birthplace = birthplace;
-        }
+        private String  emergencyContactName, emergencyContactType, emergencyContact, specialNeeds, notes;
 
         public String getEmergencyContactName() {
             return emergencyContactName;

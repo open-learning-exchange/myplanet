@@ -193,7 +193,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             if (pojo == null) {
                 pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
             }
-            pojo.setUserId(userId);
+//            pojo.setUserId(userId);
             pojo.setData(TextUtils.isEmpty(user.getIv()) ? new Gson().toJson(health) : AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
             mRealm.commitTransaction();
         } catch (Exception e) {

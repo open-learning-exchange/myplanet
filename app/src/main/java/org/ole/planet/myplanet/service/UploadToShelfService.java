@@ -71,6 +71,8 @@ public class UploadToShelfService {
                             if (res.body() != null) {
                                 String id = res.body().get("id").getAsString();
                                 String rev = res.body().get("rev").getAsString();
+                                updateHealthData(realm,id, model.getId());
+
                                 res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                                 if (res.body() != null) {
                                     model.set_id(id);
@@ -82,6 +84,7 @@ public class UploadToShelfService {
                                     saveKeyIv(apiInterface, model, obj);
                                 }
                             }
+
                         } else {
                             Utilities.log("User " + model.getName() + " already exist");
                         }
@@ -96,6 +99,13 @@ public class UploadToShelfService {
             uploadToshelf(listener);
         });
 
+    }
+
+    private void updateHealthData(Realm realm, String newId, String oldId) {
+        List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id",oldId ).findAll();
+        for (RealmMyHealthPojo p : list){
+            p.setUserId(newId);
+        }
     }
 
     public void saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
@@ -130,14 +140,12 @@ public class UploadToShelfService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
+            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).isEmpty("userId").findAll();
             Utilities.log("Health data size " + myHealths.size());
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
-                    Utilities.log("Health  + " + pojo.getData());
                     if (!TextUtils.isEmpty(pojo.getData())) {
                         if (pojo.getData().startsWith("{")) {
-
                             RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.get_id()).findFirst();
                             Utilities.log("health iv "+ user.getIv());
                             if (user != null && !TextUtils.isEmpty(user.getIv())) {
@@ -147,7 +155,6 @@ public class UploadToShelfService {
                             }
                         }
                         Response<JsonObject> res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
-                        Utilities.log("Health " + res.body());
                         if (res.body() != null && res.body().has("id")) {
                             pojo.set_rev(res.body().get("rev").getAsString());
                         }
