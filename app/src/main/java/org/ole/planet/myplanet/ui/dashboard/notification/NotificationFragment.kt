@@ -71,9 +71,12 @@ class NotificationFragment : BottomSheetDialogFragment() {
 
         if(TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")){
             notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
-            AlertDialog.Builder(context).setMessage("Sync health data").setPositiveButton("Sync", object :DialogInterface.OnClickListener{
+
+        }
+        if (TextUtils.isEmpty(model.key)){
+            AlertDialog.Builder(context).setMessage("Health record not available, Sync health data?").setPositiveButton("Sync", object :DialogInterface.OnClickListener{
                 override fun onClick(p0: DialogInterface?, p1: Int) {
-                   callback.syncKeyId()
+                    callback.syncKeyId()
                 }
 
             }).setNegativeButton("Cancel", null).show()
