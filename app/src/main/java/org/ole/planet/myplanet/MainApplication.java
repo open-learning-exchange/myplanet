@@ -51,6 +51,7 @@ public class MainApplication extends Application implements Application.Activity
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
     public static boolean showDownload = false;
+    public static boolean showHealthDialog = true;
 
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
