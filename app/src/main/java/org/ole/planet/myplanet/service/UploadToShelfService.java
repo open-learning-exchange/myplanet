@@ -81,14 +81,13 @@ public class UploadToShelfService {
                                     model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
                                     model.setSalt(JsonUtils.getString("salt", res.body()));
                                     model.setIterations(JsonUtils.getString("iterations", res.body()));
-                                    boolean success = saveKeyIv(apiInterface, model, obj);
-                                    if (success)
+                                    if (saveKeyIv(apiInterface, model, obj))
                                         updateHealthData(realm, model);
                                 }
                             }
 
                         } else {
-                            Utilities.log("User " + model.getName() + " already exist");
+                            Utilities.toast(MainApplication.context,"User " + model.getName() + " already exist");
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
