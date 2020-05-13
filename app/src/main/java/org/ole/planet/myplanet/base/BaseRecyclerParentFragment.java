@@ -21,7 +21,7 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
         } else if (isMyCourseLib) {
             return getMyLibItems(c);
         } else {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).equalTo("isPrivate", false).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).findAll());
+            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).equalTo("isPrivate", false).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).isNotEmpty("courseTitle").findAll());
         }
     }
 
