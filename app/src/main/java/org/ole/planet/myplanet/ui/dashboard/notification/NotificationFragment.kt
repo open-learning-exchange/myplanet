@@ -73,14 +73,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
             notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
 
         }
-        if (TextUtils.isEmpty(model.key)){
-            AlertDialog.Builder(context).setMessage("Health record not available, Sync health data?").setPositiveButton("Sync", object :DialogInterface.OnClickListener{
-                override fun onClick(p0: DialogInterface?, p1: Int) {
-                    callback.syncKeyId()
-                }
 
-            }).setNegativeButton("Cancel", null).show()
-        }
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)
         rv_notifications.adapter = AdapterNotification(activity!!, notificationList, callback)
     }
