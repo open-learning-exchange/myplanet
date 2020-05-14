@@ -18,7 +18,6 @@ import io.realm.annotations.PrimaryKey;
 
 public class RealmMyHealth {
     private RealmMyHealthProfile profile;
-    private List<RealmExamination> events;
 
 
     public RealmMyHealthProfile getProfile() {
@@ -27,14 +26,6 @@ public class RealmMyHealth {
 
     public void setProfile(RealmMyHealthProfile profile) {
         this.profile = profile;
-    }
-
-    public List<RealmExamination> getEvents() {
-        return events == null ? new ArrayList<>() : events;
-    }
-
-    public void setEvents(List<RealmExamination> events) {
-        this.events = events;
     }
 
     public static class RealmMyHealthProfile {

@@ -17,6 +17,19 @@ public class RealmMyHealthPojo extends RealmObject {
     private String userId;
     private String _rev;
     private String data;
+    private int temperature;
+    private int pulse;
+    private String bp;
+    private int height ;
+    private int weight ;
+    private String vision ;
+    private String  hearing ;
+    private String conditions ;
+    private boolean selfExamination ;
+    private String planetCode ;
+    private boolean hasInfo ;
+    private String profileId ;
+
 
 
     public String getUserId() {
@@ -58,7 +71,104 @@ public class RealmMyHealthPojo extends RealmObject {
         myHealth.setData(JsonUtils.getString("data", act));
         myHealth.set_rev(JsonUtils.getString("_rev", act));
         myHealth.set_id(JsonUtils.getString("_id", act));
-        myHealth.setUserId(JsonUtils.getString("userId", act));
+        myHealth.set_id(JsonUtils.getString("_id", act));
+    }
+
+
+    public int getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(int temperature) {
+        this.temperature = temperature;
+    }
+
+    public int getPulse() {
+        return pulse;
+    }
+
+    public void setPulse(int pulse) {
+        this.pulse = pulse;
+    }
+
+    public String getBp() {
+        return bp;
+    }
+
+    public void setBp(String bp) {
+        this.bp = bp;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    public int getWeight() {
+        return weight;
+    }
+
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    public String getVision() {
+        return vision;
+    }
+
+    public void setVision(String vision) {
+        this.vision = vision;
+    }
+
+    public String getHearing() {
+        return hearing;
+    }
+
+    public void setHearing(String hearing) {
+        this.hearing = hearing;
+    }
+
+    public String getConditions() {
+        return conditions;
+    }
+
+    public void setConditions(String conditions) {
+        this.conditions = conditions;
+    }
+
+    public boolean isSelfExamination() {
+        return selfExamination;
+    }
+
+    public void setSelfExamination(boolean selfExamination) {
+        this.selfExamination = selfExamination;
+    }
+
+    public String getPlanetCode() {
+        return planetCode;
+    }
+
+    public void setPlanetCode(String planetCode) {
+        this.planetCode = planetCode;
+    }
+
+    public boolean isHasInfo() {
+        return hasInfo;
+    }
+
+    public void setHasInfo(boolean hasInfo) {
+        this.hasInfo = hasInfo;
+    }
+
+    public String getProfileId() {
+        return profileId;
+    }
+
+    public void setProfileId(String profileId) {
+        this.profileId = profileId;
     }
 
     public static JsonObject serialize(RealmMyHealthPojo health) {
