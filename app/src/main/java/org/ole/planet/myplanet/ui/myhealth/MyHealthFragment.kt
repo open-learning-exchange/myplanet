@@ -43,15 +43,16 @@ class MyHealthFragment : Fragment() {
                               savedInstanceState: Bundle?): View? {
         val v = inflater.inflate(R.layout.fragment_vital_sign, container, false)
         mRealm = DatabaseService(activity).realmInstance
-        fab_add_member.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
-        update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
-        v.findViewById<View>(R.id.fab_add_member).setOnClickListener { view: View? -> startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
         return v
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
+        update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
+        fab_add_member.setOnClickListener { view: View? -> startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
         val v = layoutInflater.inflate(R.layout.alert_users_spinner, null)
+
         rv_records!!.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
         profileDbHandler = UserProfileDbHandler(v.context)
         userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
