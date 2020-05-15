@@ -119,6 +119,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         etBloodPressure.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
+                if(!etBloodPressure.getText().toString().trim().isEmpty()) {
+                    if (!etBloodPressure.getText().toString().matches("-?\\d+") || !etBloodPressure.getText().toString().contains("/")) {
+                        String bp = etBloodPressure.getText().toString();
+                        //etBloodPressure.setText(bp.substring(0, etBloodPressure.getText().toString().length()));
+                    }
+                }
             }
 
             @Override
@@ -129,8 +135,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (!etBloodPressure.getText().toString().contains("/")) {
                     etBloodPressure.setError("Blood Pressure should be numeric systolic/diastolic");
-                    etBloodPressure.setText(etBloodPressure.getText().toString().substring(0, etBloodPressure.getText().toString().length() - 1));
-                } else {
+                   } else {
                     String[] sysDia = etBloodPressure.getText().toString().trim().split("/");
                     if (sysDia.length > 2 || sysDia.length < 1) {
                         etBloodPressure.setError("Blood Pressure should be systolic/diastolic");
