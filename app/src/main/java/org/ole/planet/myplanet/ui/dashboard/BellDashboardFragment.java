@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,11 +15,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmCertification;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.service.TransactionSyncManager;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.course.MyProgressFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
@@ -58,6 +63,13 @@ public class BellDashboardFragment extends BaseDashboardFragment {
             new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
         });
         showBadges();
+
+        if (TextUtils.isEmpty(model.getKey()) && MainApplication.showHealthDialog) {
+            new AlertDialog.Builder(getActivity()).setMessage("Health record not available, Sync health data?").setPositiveButton("Sync", (dialogInterface, i) -> {
+                syncKeyId();
+                MainApplication.showHealthDialog = false;
+            }).setNegativeButton("Cancel", null).show();
+        }
         // forceDownloadNewsImages();
     }
 
