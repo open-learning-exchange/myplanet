@@ -43,7 +43,7 @@ class MyHealthFragment : Fragment() {
                               savedInstanceState: Bundle?): View? {
         val v = inflater.inflate(R.layout.fragment_vital_sign, container, false)
         mRealm = DatabaseService(activity).realmInstance
-        add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
+        fab_add_member.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
         update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
         v.findViewById<View>(R.id.fab_add_member).setOnClickListener { view: View? -> startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
         return v
