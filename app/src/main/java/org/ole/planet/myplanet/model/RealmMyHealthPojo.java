@@ -177,7 +177,7 @@ public class RealmMyHealthPojo extends RealmObject {
         if (!TextUtils.isEmpty(health.get_rev()))
             object.addProperty("_rev", health.get_rev());
         object.addProperty("data", health.getData());
-        object.addProperty("userId", health.getUserId());
+//        object.addProperty("userId", health.getUserId());
         return object;
     }
 }

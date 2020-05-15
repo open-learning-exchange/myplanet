@@ -14,7 +14,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import io.realm.Realm
 import kotlinx.android.synthetic.main.fragment_vital_sign.*
@@ -54,7 +53,7 @@ class MyHealthFragment : Fragment() {
         val v = layoutInflater.inflate(R.layout.alert_users_spinner, null)
         rv_records!!.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
         profileDbHandler = UserProfileDbHandler(v.context)
-        userId = profileDbHandler!!.userModel.id
+        userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
         getHealthRecords(userId)
         btnnew_patient.setOnClickListener { selectPatient() }
         btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
@@ -73,7 +72,7 @@ class MyHealthFragment : Fragment() {
         val map = HashMap<String, String>()
         for (um in userModelList) {
             memberFullNameList.add(um.name)
-            map[um.name] = um.id
+            map[um.name] = if (TextUtils.isEmpty("_id")) um.id else um.id
         }
         val adapter = ArrayAdapter(activity, android.R.layout.simple_list_item_1, memberFullNameList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
@@ -130,7 +129,7 @@ class MyHealthFragment : Fragment() {
             val myHealths = mm.profile
             txt_other_need.text = if (TextUtils.isEmpty(myHealths.notes)) "N/A" else myHealths.notes
             txt_special_needs.text = if (TextUtils.isEmpty(myHealths.specialNeeds)) "N/A" else myHealths.specialNeeds
-            txt_birth_place.text = if (TextUtils.isEmpty(myHealths.birthplace)) "N/A" else myHealths.birthplace
+            txt_birth_place.text = if (TextUtils.isEmpty(userModel?.birthPlace)) "N/A" else userModel?.birthPlace
             txt_emergency_contact!!.text = """
                 Name : ${myHealths.emergencyContactName}
                 Type : ${myHealths.emergencyContactName}

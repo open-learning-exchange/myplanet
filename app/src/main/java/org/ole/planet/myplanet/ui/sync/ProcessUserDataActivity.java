@@ -141,7 +141,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         progressDialog.show();
         Utilities.log("Upload : upload started");
         UploadToShelfService.getInstance().uploadUserData(success -> {
-            Utilities.log("Upload health");
             UploadToShelfService.getInstance().uploadHealth();
         });
         UploadManager.getInstance().uploadUserActivities(this);

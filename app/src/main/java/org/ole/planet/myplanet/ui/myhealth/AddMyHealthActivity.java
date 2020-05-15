@@ -74,7 +74,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
         try {
-            healthPojo.setUserId(userId);
+//            healthPojo.setUserId(userId);
             healthPojo.setData(TextUtils.isEmpty(userModelB.getIv()) ? new Gson().toJson(myHealth) : AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
         } catch (Exception e) {
         }
@@ -101,17 +101,11 @@ public class AddMyHealthActivity extends AppCompatActivity {
         if (healthPojo != null) {
             myHealth = new Gson().fromJson(TextUtils.isEmpty(iv) ? healthPojo.getData() : AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
-            fname.getEditText().setText(userModelB.getFirstName());
-            mname.getEditText().setText(userModelB.getMiddleName());
-            lname.getEditText().setText(userModelB.getLastName());
-            email.getEditText().setText(userModelB.getEmail());
-            phone.getEditText().setText(health.getPhone());
             emergencyNumber.getEditText().setText(health.getEmergencyContactName());
-            birthdate.getEditText().setText(health.getBirthDate());
-            birthplace.getEditText().setText(health.getBirthplace());
             specialNeed.getEditText().setText(health.getSpecialNeeds());
             otherNeed.getEditText().setText(health.getNotes());
-        } else if (userModelB != null) {
+        }
+        if (userModelB != null) {
             fname.getEditText().setText(userModelB.getFirstName());
             mname.getEditText().setText(userModelB.getMiddleName());
             lname.getEditText().setText(userModelB.getLastName());
