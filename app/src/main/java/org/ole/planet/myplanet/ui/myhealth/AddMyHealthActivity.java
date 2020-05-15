@@ -69,8 +69,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
         health.setNotes(otherNeed.getEditText().getText().toString().trim());
         if (myHealth == null) {
             myHealth = new RealmMyHealth();
+            myHealth.setUserKey(AndroidDecrypter.generateKey());
         }
-        myHealth.setUserKey(AndroidDecrypter.generateKey());
         myHealth.setProfile(health);
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
