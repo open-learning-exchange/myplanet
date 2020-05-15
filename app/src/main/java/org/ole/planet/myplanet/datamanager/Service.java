@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -224,6 +225,10 @@ public class Service {
                     return;
                 }
                 RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings, false);
+                String keyString = AndroidDecrypter.generateKey();
+                String iv = AndroidDecrypter.generateIv();
+                model.setKey(keyString);
+                model.setIv(iv);
                 if (model != null) {
                     Utilities.toast(MainApplication.context, "Not connected to planet , created user offline.");
                     callback.onSuccess("Not connected to planet , created user offline.");
@@ -249,17 +254,6 @@ public class Service {
         }, () -> callback.onSuccess("User created successfully"), error -> callback.onSuccess("Unable to save user please sync"));
     }
 
-
-//    private void checkForUpdate(MyPlanet body, CheckVersionCallback callback) {
-//        int currentVersion = VersionUtils.getVersionCode(context);
-//        if (currentVersion < body.getMinapkcode())
-//            callback.onUpdateAvailable(body, false);
-//        else if (currentVersion < body.getLatestapkcode()) {
-//            callback.onUpdateAvailable(body, true);
-//        } else {
-//            callback.onError("Planet up to date", false);
-//        }
-//    }
 
     public interface CheckVersionCallback {
         void onUpdateAvailable(MyPlanet info, boolean cancelable);

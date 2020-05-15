@@ -201,6 +201,20 @@ public class RealmMyHealthPojo extends RealmObject {
         if (!TextUtils.isEmpty(health.get_rev()))
             object.addProperty("_rev", health.get_rev());
         object.addProperty("data", health.getData());
+        object.addProperty("temperature", health.getTemperature());
+        object.addProperty("pulse", health.getPulse());
+        object.addProperty("bp", health.getBp());
+        object.addProperty("height", health.getHeight());
+        object.addProperty("weight", health.getWeight());
+        object.addProperty("vision", health.getVision());
+        object.addProperty("hearing", health.getHearing());
+        object.addProperty("date", health.getDate());
+        object.addProperty("date", health.getDate());
+        object.addProperty("selfExamination", health.isSelfExamination());
+        object.addProperty("planetCode", health.getPlanetCode());
+        object.addProperty("hasInfo", health.isHasInfo());
+        object.addProperty("profileId", health.getProfileId());
+        object.add("conditions", new Gson().fromJson(health.getConditions(), JsonObject.class));
 //        object.addProperty("userId", health.getUserId());
         return object;
     }

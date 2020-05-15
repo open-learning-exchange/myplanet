@@ -119,8 +119,13 @@ public class UploadToShelfService {
         Utilities.log(table);
         String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
         JsonObject ob = new JsonObject();
+
         String keyString = AndroidDecrypter.generateKey();
         String iv = AndroidDecrypter.generateIv();
+        if (!TextUtils.isEmpty(model.getIv()))
+            iv = model.getIv();
+        if (!TextUtils.isEmpty(model.getKey()))
+            iv = model.getKey();
         ob.addProperty("key", keyString);
         ob.addProperty("iv", iv);
         ob.addProperty("createdOn", new Date().getTime());
@@ -152,15 +157,15 @@ public class UploadToShelfService {
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
                     if (!TextUtils.isEmpty(pojo.getUserId()) && !TextUtils.isEmpty(pojo.getData())) {
-                        if (pojo.getData().startsWith("{")) {
-                            RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.get_id()).findFirst();
-                            Utilities.log("health iv " + user.getIv());
-                            if (user != null && !TextUtils.isEmpty(user.getIv())) {
-                                pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
-                            } else {
-                                continue;
-                            }
-                        }
+//                        if (pojo.getData().startsWith("{")) {
+//                            RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.get_id()).findFirst();
+//                            Utilities.log("health iv " + user.getIv());
+//                            if (user != null && !TextUtils.isEmpty(user.getIv())) {
+//                                pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
+//                            } else {
+//                                continue;
+//                            }
+//                        }
                         Response<JsonObject> res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
                         if (res.body() != null && res.body().has("id")) {
                             pojo.set_rev(res.body().get("rev").getAsString());
