@@ -162,7 +162,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
-        val json = if (TextUtils.isEmpty(userModel!!.iv)) mh.data else AndroidDecrypter.decrypt(mh.data, userModel!!.key, userModel!!.iv)
+        val json = AndroidDecrypter.decrypt(mh.data, userModel!!.key, userModel!!.iv)
         return if (TextUtils.isEmpty(json)) {
             if (!userModel!!.realm!!.isInTransaction) {
                 userModel!!.realm.beginTransaction()
