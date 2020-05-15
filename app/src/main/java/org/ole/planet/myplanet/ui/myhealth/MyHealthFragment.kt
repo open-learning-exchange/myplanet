@@ -118,10 +118,7 @@ class MyHealthFragment : Fragment() {
         txt_email.text = if (TextUtils.isEmpty(userModel!!.email)) "N/A" else userModel!!.email
         txt_language.text = if (TextUtils.isEmpty(userModel!!.language)) "N/A" else userModel!!.language
         txt_dob.text = if (TextUtils.isEmpty(userModel!!.dob)) "N/A" else userModel!!.dob
-        var mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
-        if (mh == null) {
-            mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
-        }
+        var mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
@@ -157,8 +154,9 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
-
-        var healths = mRealm?.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
+        Utilities.log("User key " + mm.userKey)
+        var healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
+        Utilities.log("Examination size " + healths?.size)
         return healths!!
     }
 

@@ -33,6 +33,7 @@ public class RealmMyHealthPojo extends RealmObject {
     private String profileId;
 
     public static void insert(Realm mRealm, JsonObject act) {
+        Utilities.log("Insert health " + new Gson().toJson(act));
         RealmMyHealthPojo myHealth = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (myHealth == null)
             myHealth = mRealm.createObject(RealmMyHealthPojo.class, JsonUtils.getString("_id", act));
@@ -45,13 +46,14 @@ public class RealmMyHealthPojo extends RealmObject {
         myHealth.setWeight(JsonUtils.getInt("weight", act));
         myHealth.setVision(JsonUtils.getString("vision", act));
         myHealth.setHearing(JsonUtils.getString("hearing", act));
-        myHealth.setConditions(new Gson().toJson(JsonUtils.getJsonObject("conditions", act)));
         myHealth.setBp(JsonUtils.getString("bp", act));
         myHealth.setSelfExamination(JsonUtils.getBoolean("selfExamination", act));
         myHealth.setHasInfo(JsonUtils.getBoolean("hasInfo", act));
         myHealth.setDate(JsonUtils.getLong("date", act));
         myHealth.setProfileId(JsonUtils.getString("profileId", act));
+        Utilities.log("Profile id " + myHealth.getProfileId());
         myHealth.setPlanetCode(JsonUtils.getString("planetCode", act));
+        myHealth.setConditions(new Gson().toJson(JsonUtils.getJsonObject("conditions", act)));
     }
 
     public JsonObject getEncryptedDataAsJson(RealmUserModel model) {

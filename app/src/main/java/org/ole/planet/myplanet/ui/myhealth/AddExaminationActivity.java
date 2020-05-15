@@ -157,12 +157,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setAllergies(etAllergies.getText().toString().trim());
         sign.setCreatedBy(user.get_id());
         pojo.setBp(etBloodPressure.getText().toString().trim());
-        examination.setTemperature(Integer.parseInt(etTemperature.getText().toString().trim()));
-        examination.setPulse(Integer.parseInt(etPulseRate.getText().toString().trim()));
-        examination.setWeight(Integer.parseInt(etWeight.getText().toString().trim()));
+        examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
+        examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
+        examination.setWeight(getInt(etWeight.getText().toString().trim()));
         examination.setConditions(new Gson().toJson(mapConditions));
         examination.setHearing(etHearing.getText().toString().trim());
-        examination.setHeight(Integer.parseInt(etHeight.getText().toString().trim()));
+        examination.setHeight(getInt(etHeight.getText().toString().trim()));
         sign.setImmunizations(etImmunization.getText().toString().trim());
         sign.setTests(etLabtest.getText().toString().trim());
         sign.setXrays(etXray.getText().toString().trim());
@@ -181,6 +181,14 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         Utilities.toast(this, "Added successfully");
         finish();
 
+    }
+
+    private int getInt(String trim) {
+        try {
+            return Integer.parseInt(etTemperature.getText().toString().trim());
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     private void createPojo() {
