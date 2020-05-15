@@ -104,7 +104,7 @@ public class MyHealthFragment extends Fragment {
         View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
         rvRecord.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         profileDbHandler = new UserProfileDbHandler(v.getContext());
-        userId = profileDbHandler.getUserModel().getId();
+        userId = TextUtils.isEmpty(profileDbHandler.getUserModel().get_id()) ? profileDbHandler.getUserModel().getId() : profileDbHandler.getUserModel().get_id();
         getHealthRecords(userId);
 //        selectPatient();
         btnNewPatient.setOnClickListener(view -> selectPatient());
@@ -124,7 +124,7 @@ public class MyHealthFragment extends Fragment {
         HashMap<String, String> map = new HashMap<>();
         for (RealmUserModel um : userModelList) {
             memberFullNameList.add(um.getName());
-            map.put(um.getName(), um.getId());
+            map.put(um.getName(), TextUtils.isEmpty("_id") ? um.getId() : um.getId());
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, memberFullNameList);
         View alertHealth = LayoutInflater.from(getActivity()).inflate(R.layout.alert_health_list, null);
@@ -179,7 +179,7 @@ public class MyHealthFragment extends Fragment {
         txtLanguage.setText(TextUtils.isEmpty(userModel.getLanguage()) ? "N/A" : userModel.getLanguage());
         txtDob.setText(TextUtils.isEmpty(userModel.getDob()) ? "N/A" : userModel.getDob());
         RealmMyHealthPojo mh = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
-        if (mh == null){
+        if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
         }
         if (mh != null) {
@@ -191,7 +191,7 @@ public class MyHealthFragment extends Fragment {
             RealmMyHealth.RealmMyHealthProfile myHealths = mm.getProfile();
             txtOther.setText(TextUtils.isEmpty(myHealths.getNotes()) ? "N/A" : myHealths.getNotes());
             txtSpecial.setText(TextUtils.isEmpty(myHealths.getSpecialNeeds()) ? "N/A" : myHealths.getSpecialNeeds());
-            txtBirthPlace.setText(TextUtils.isEmpty(myHealths.getBirthplace()) ? "N/A" : myHealths.getBirthplace());
+            txtBirthPlace.setText(TextUtils.isEmpty(userModel.getBirthPlace()) ? "N/A" : userModel.getBirthPlace());
             txtEmergency.setText("Name : " + myHealths.getEmergencyContactName() + "\nType : " + myHealths.getEmergencyContactName() + "\nContact : " + myHealths.getEmergencyContact());
             List<RealmExamination> list = mm.getEvents();
             rvRecord.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
