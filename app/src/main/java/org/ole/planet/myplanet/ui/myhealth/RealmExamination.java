@@ -3,73 +3,8 @@ package org.ole.planet.myplanet.ui.myhealth;
 
 import java.io.Serializable;
 public class RealmExamination implements Serializable {
-    private String temperature, pulse, bp, height, weight, vision, hearing, notes, diagnosis,diagnosisNote, treatments, medications, immunizations, allergies, xrays, tests, referrals;
-    private long date;
+    private String notes, diagnosis, treatments, medications, immunizations, allergies, xrays, tests, referrals;
     private String createdBy;
-
-    public String getTemperature() {
-        return temperature;
-    }
-
-    public void setTemperature(String temperature) {
-        this.temperature = temperature;
-    }
-
-    public String getPulse() {
-        return pulse;
-    }
-
-    public String getAddedBy() {
-        return createdBy;
-    }
-
-    public void setAddedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public void setPulse(String pulse) {
-        this.pulse = pulse;
-    }
-
-    public String getBp() {
-        return bp;
-    }
-
-    public void setBp(String bp) {
-        this.bp = bp;
-    }
-
-    public String getHeight() {
-        return height;
-    }
-
-    public void setHeight(String height) {
-        this.height = height;
-    }
-
-    public String getWeight() {
-        return weight;
-    }
-
-    public void setWeight(String weight) {
-        this.weight = weight;
-    }
-
-    public String getVision() {
-        return vision;
-    }
-
-    public void setVision(String vision) {
-        this.vision = vision;
-    }
-
-    public String getHearing() {
-        return hearing;
-    }
-
-    public void setHearing(String hearing) {
-        this.hearing = hearing;
-    }
 
     public String getNotes() {
         return notes;
@@ -86,6 +21,7 @@ public class RealmExamination implements Serializable {
     public void setDiagnosis(String diagnosis) {
         this.diagnosis = diagnosis;
     }
+
 
     public String getTreatments() {
         return treatments;
@@ -143,19 +79,12 @@ public class RealmExamination implements Serializable {
         this.referrals = referrals;
     }
 
-    public long getDate() {
-        return date;
+
+    public String getCreatedBy() {
+        return createdBy;
     }
 
-    public String getDiagnosisNote() {
-        return diagnosisNote;
-    }
-
-    public void setDiagnosisNote(String diagnosisNote) {
-        this.diagnosisNote = diagnosisNote;
-    }
-
-    public void setDate(long date) {
-        this.date = date;
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model;
 
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -20,17 +21,50 @@ public class RealmMyHealthPojo extends RealmObject {
     private int temperature;
     private int pulse;
     private String bp;
-    private int height ;
-    private int weight ;
-    private String vision ;
-    private String  hearing ;
-    private String conditions ;
-    private boolean selfExamination ;
-    private String planetCode ;
-    private boolean hasInfo ;
-    private String profileId ;
+    private int height;
+    private int weight;
+    private String vision;
+    private long date;
+    private String hearing;
+    private String conditions;
+    private boolean selfExamination;
+    private String planetCode;
+    private boolean hasInfo;
+    private String profileId;
 
+    public static void insert(Realm mRealm, JsonObject act) {
+        RealmMyHealthPojo myHealth = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        if (myHealth == null)
+            myHealth = mRealm.createObject(RealmMyHealthPojo.class, JsonUtils.getString("_id", act));
+        myHealth.setData(JsonUtils.getString("data", act));
+        myHealth.set_rev(JsonUtils.getString("_rev", act));
+        myHealth.set_id(JsonUtils.getString("_id", act));
+        myHealth.setTemperature(JsonUtils.getInt("temperature", act));
+        myHealth.setPulse(JsonUtils.getInt("pulse", act));
+        myHealth.setHeight(JsonUtils.getInt("height", act));
+        myHealth.setWeight(JsonUtils.getInt("weight", act));
+        myHealth.setVision(JsonUtils.getString("vision", act));
+        myHealth.setHearing(JsonUtils.getString("hearing", act));
+        myHealth.setConditions(new Gson().toJson(JsonUtils.getJsonObject("conditions", act)));
+        myHealth.setBp(JsonUtils.getString("bp", act));
+        myHealth.setSelfExamination(JsonUtils.getBoolean("selfExamination", act));
+        myHealth.setHasInfo(JsonUtils.getBoolean("hasInfo", act));
+        myHealth.setDate(JsonUtils.getLong("date", act));
+        myHealth.setProfileId(JsonUtils.getString("profileId", act));
+        myHealth.setPlanetCode(JsonUtils.getString("planetCode", act));
+    }
 
+    public JsonObject getEncryptedDataAsJson(RealmUserModel model) {
+        return new Gson().fromJson(this.data, JsonObject.class);
+    }
+
+    public long getDate() {
+        return date;
+    }
+
+    public void setDate(long date) {
+        this.date = date;
+    }
 
     public String getUserId() {
         return userId;
@@ -62,16 +96,6 @@ public class RealmMyHealthPojo extends RealmObject {
 
     public void setData(String data) {
         this.data = data;
-    }
-
-    public static void insert(Realm mRealm, JsonObject act) {
-        RealmMyHealthPojo myHealth = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
-        if (myHealth == null)
-            myHealth = mRealm.createObject(RealmMyHealthPojo.class, JsonUtils.getString("_id", act));
-        myHealth.setData(JsonUtils.getString("data", act));
-        myHealth.set_rev(JsonUtils.getString("_rev", act));
-        myHealth.set_id(JsonUtils.getString("_id", act));
-        myHealth.set_id(JsonUtils.getString("_id", act));
     }
 
 

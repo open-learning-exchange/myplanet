@@ -67,17 +67,19 @@ public class AddMyHealthActivity extends AppCompatActivity {
         health.setEmergencyContactType(contactType.getSelectedItem().toString());
         health.setSpecialNeeds(specialNeed.getEditText().getText().toString().trim());
         health.setNotes(otherNeed.getEditText().getText().toString().trim());
-        if (myHealth == null)
+        if (myHealth == null) {
             myHealth = new RealmMyHealth();
+        }
+        myHealth.setUserKey(AndroidDecrypter.generateKey());
         myHealth.setProfile(health);
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
         try {
-//            healthPojo.setUserId(userId);
             healthPojo.setData(TextUtils.isEmpty(userModelB.getIv()) ? new Gson().toJson(myHealth) : AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
         } catch (Exception e) {
         }
+        realm.commitTransaction();
         finish();
     }
 

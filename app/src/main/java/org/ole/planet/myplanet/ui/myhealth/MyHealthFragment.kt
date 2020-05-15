@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * A simple [Fragment] subclass.
@@ -135,7 +136,7 @@ class MyHealthFragment : Fragment() {
                 Type : ${myHealths.emergencyContactName}
                 Contact : ${myHealths.emergencyContact}
                 """.trimIndent()
-            val list = mm.events
+            val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(activity, list, mh, userModel)
             adap.setmRealm(mRealm)
@@ -144,7 +145,7 @@ class MyHealthFragment : Fragment() {
                 isNestedScrollingEnabled = false
                 adapter = adap
             }
-            rv_records.post { rv_records!!.scrollToPosition(list.size - 1) }
+            rv_records.post { rv_records!!.scrollToPosition(list!!.size - 1) }
         } else {
             txt_other_need!!.text = ""
             txt_special_needs!!.text = ""
@@ -152,6 +153,12 @@ class MyHealthFragment : Fragment() {
             txt_emergency_contact!!.text = ""
             rv_records!!.adapter = null
         }
+    }
+
+    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
+
+        var healths = mRealm?.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
+        return healths!!
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {

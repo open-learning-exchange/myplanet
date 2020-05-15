@@ -18,7 +18,8 @@ import io.realm.annotations.PrimaryKey;
 
 public class RealmMyHealth {
     private RealmMyHealthProfile profile;
-
+    private String userKey;
+    private long lastExamination;
 
     public RealmMyHealthProfile getProfile() {
         return profile;
@@ -26,6 +27,22 @@ public class RealmMyHealth {
 
     public void setProfile(RealmMyHealthProfile profile) {
         this.profile = profile;
+    }
+
+    public String getUserKey() {
+        return userKey;
+    }
+
+    public void setUserKey(String userKey) {
+        this.userKey = userKey;
+    }
+
+    public long getLastExamination() {
+        return lastExamination;
+    }
+
+    public void setLastExamination(long lastExamination) {
+        this.lastExamination = lastExamination;
     }
 
     public static class RealmMyHealthProfile {
@@ -38,6 +55,7 @@ public class RealmMyHealth {
         public void setEmergencyContactName(String emergencyContactName) {
             this.emergencyContactName = emergencyContactName;
         }
+
 
         public String getEmergencyContactType() {
             return emergencyContactType;
