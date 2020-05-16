@@ -39,7 +39,6 @@
 
                     <EditText
                         android:id="@+id/et_temperature"
-                        android:inputType="number"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
@@ -56,7 +55,6 @@
 
                     <EditText
                         android:id="@+id/et_pulse_rate"
-                        android:inputType="number"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
@@ -96,7 +94,6 @@
 
                     <EditText
                         android:id="@+id/et_height"
-                        android:inputType="number"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
@@ -114,7 +111,6 @@
                     <EditText
                         android:id="@+id/et_weight"
                         android:layout_width="match_parent"
-                        android:inputType="number"
                         android:layout_height="wrap_content"
                         android:inputType="number"
                         android:hint="@string/weight" />
