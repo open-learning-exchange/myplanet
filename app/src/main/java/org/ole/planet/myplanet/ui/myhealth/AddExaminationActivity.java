@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
@@ -24,7 +26,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 import io.realm.Realm;
 
@@ -38,6 +39,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     RealmMyHealth health = null;
     FlexboxLayout flexboxLayout;
     String diag = "";
+    Boolean allowSubmission = true;
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
@@ -78,6 +80,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             initHealth();
         }
         initExamination();
+        validateFields();
         findViewById(R.id.btn_save).setOnClickListener(view -> {
             saveData();
         });
@@ -109,6 +112,40 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
         showCheckbox(examination);
 
+    }
+
+    private void validateFields() {
+        allowSubmission = false;
+        etBloodPressure.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (!etBloodPressure.getText().toString().contains("/")) {
+                    etBloodPressure.setError("Blood Pressure should be numeric systolic/diastolic");
+                   } else {
+                    String[] sysDia = etBloodPressure.getText().toString().trim().split("/");
+                    if (sysDia.length > 2 || sysDia.length < 1) {
+                        etBloodPressure.setError("Blood Pressure should be systolic/diastolic");
+                        allowSubmission = false;
+                    } else {
+                        for (int x = 0; x < sysDia.length; x++) {
+                            if (!sysDia[x].matches("-?\\d+") || sysDia[x].isEmpty()) {
+                                etBloodPressure.setError("Systolic and diastolic must be numbers");
+                                allowSubmission = false;
+                            }
+                        }
+                        allowSubmission = true;
+                    }
+                }
+            }
+        });
     }
 
     private void showCheckbox(RealmExamination examination) {
