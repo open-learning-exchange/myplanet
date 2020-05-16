@@ -76,7 +76,6 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
             } else {
                 ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\nSelf Examination");
                 holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
-
             }
             ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse() +"");
             ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
@@ -101,7 +100,18 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 "Weight : " + realmExamination.getWeight() + "\n" +
                 "Vision : " + realmExamination.getVision() + "\n" +
                 "Hearing : " + realmExamination.getHearing() + "\n");
+        showEncryptedData(tvCondition, encrypted);
+        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
+                .setView(v)
+                .setPositiveButton("OK", null).create();
+        long time = new Date().getTime() - 5000 * 60;
+        if (realmExamination.getDate() >= time) {
+            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Edit", (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("id", list.get(position).get_id()).putExtra("userId", mh.get_id())));
+        }
+        dialog.show();
+    }
 
+    private void showEncryptedData(TextView tvCondition, JsonObject encrypted) {
         tvCondition.setText("Observations & Notes : " + Utilities.checkNA(JsonUtils.getString("notes", encrypted)) + "\n"
                 + "Diagnosis : " + Utilities.checkNA(JsonUtils.getString("diagnosis", encrypted))
                 + "\n" +
@@ -112,14 +122,6 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 "\n" + "X-rays : " + Utilities.checkNA(JsonUtils.getString("xrays", encrypted)) + "\n" +
                 "Lab Tests : " + Utilities.checkNA(JsonUtils.getString("tests", encrypted)) + "\n" +
                 "Referrals : " + Utilities.checkNA(JsonUtils.getString("referrals", encrypted)) + "\n");
-        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
-                .setView(v)
-                .setPositiveButton("OK", null).create();
-        long time = new Date().getTime() - 5000 * 60;
-        if (realmExamination.getDate() >= time) {
-            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Edit", (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("id", list.get(position).get_id()).putExtra("userId", mh.get_id())));
-        }
-        dialog.show();
     }
 
     @Override

@@ -115,9 +115,9 @@ class MyHealthFragment : Fragment() {
         layout_user_detail.visibility = View.VISIBLE
         tv_message.visibility = View.GONE
         txt_full_name.text = """${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"""
-        txt_email.text = if (TextUtils.isEmpty(userModel!!.email)) "N/A" else userModel!!.email
-        txt_language.text = if (TextUtils.isEmpty(userModel!!.language)) "N/A" else userModel!!.language
-        txt_dob.text = if (TextUtils.isEmpty(userModel!!.dob)) "N/A" else userModel!!.dob
+        txt_email.text = Utilities.checkNA(userModel!!.email)
+        txt_language.text = Utilities.checkNA(userModel!!.language)
+        txt_dob.text = Utilities.checkNA(userModel!!.dob)
         var mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh != null) {
             val mm = getHealthProfile(mh)
@@ -158,10 +158,10 @@ class MyHealthFragment : Fragment() {
         Utilities.log("User key " + mm.userKey)
         var healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.findAll()
         Utilities.log("Examination size " + healths?.size)
-        healths.forEach{
+        healths.forEach {
             Utilities.log(it.profileId)
         }
-         healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
+        healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
 
         Utilities.log("Examination size " + healths?.size)
         return healths!!
