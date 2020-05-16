@@ -41,7 +41,9 @@ public class JsonUtils {
             JsonElement el = jsonObject.get(fieldName);
             return !(el instanceof JsonNull) && el.getAsBoolean();
         }
-        }catch (Exception e){}
+        }catch (Exception e){
+
+        }
         return false;
     }
 
@@ -51,7 +53,9 @@ public class JsonUtils {
                 JsonElement el = jsonObject.get(fieldName);
                 return el instanceof JsonNull ? 0 : el.getAsInt();
             }
-        }catch (Exception e){}
+        }catch (Exception e){
+
+        }
         return 0;
     }
 

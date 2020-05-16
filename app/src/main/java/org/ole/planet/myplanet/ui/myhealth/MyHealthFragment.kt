@@ -126,13 +126,13 @@ class MyHealthFragment : Fragment() {
                 return
             }
             val myHealths = mm.profile
-            txt_other_need.text = if (TextUtils.isEmpty(myHealths.notes)) "N/A" else myHealths.notes
-            txt_special_needs.text = if (TextUtils.isEmpty(myHealths.specialNeeds)) "N/A" else myHealths.specialNeeds
-            txt_birth_place.text = if (TextUtils.isEmpty(userModel?.birthPlace)) "N/A" else userModel?.birthPlace
+            txt_other_need.text = Utilities.checkNA(myHealths.notes)
+            txt_special_needs.text = Utilities.checkNA(myHealths.specialNeeds)
+            txt_birth_place.text = Utilities.checkNA(userModel?.birthPlace)
             txt_emergency_contact!!.text = """
-                Name : ${myHealths.emergencyContactName}
-                Type : ${myHealths.emergencyContactName}
-                Contact : ${myHealths.emergencyContact}
+                Name : ${Utilities.checkNA(myHealths.emergencyContactName)}
+                Type : ${Utilities.checkNA(myHealths.emergencyContactName)}
+                Contact : ${Utilities.checkNA(myHealths.emergencyContact)}
                 """.trimIndent()
             val list = getExaminations(mm)
 
@@ -154,8 +154,15 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
+
         Utilities.log("User key " + mm.userKey)
-        var healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
+        var healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.findAll()
+        Utilities.log("Examination size " + healths?.size)
+        healths.forEach{
+            Utilities.log(it.profileId)
+        }
+         healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
+
         Utilities.log("Examination size " + healths?.size)
         return healths!!
     }

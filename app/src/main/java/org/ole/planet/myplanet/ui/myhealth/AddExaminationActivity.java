@@ -182,17 +182,13 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void saveData() {
-        if (!allowSubmission) {
-            Utilities.toast(this, "Invalid input");
-            return;
-        }
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         createPojo();
         if (examination == null) {
             examination = mRealm.createObject(RealmMyHealthPojo.class, UUID.randomUUID().toString());
         }
-        examination.setProfileId(pojo.getProfileId());
+        examination.setProfileId(health.getUserKey());
         examination.setSelfExamination(userId.equals(pojo.get_id()));
         examination.setDate(new Date().getTime());
         examination.setPlanetCode(user.getPlanetCode());

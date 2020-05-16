@@ -5,6 +5,7 @@ import android.text.TextUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -39,7 +40,6 @@ public class RealmMyHealthPojo extends RealmObject {
             myHealth = mRealm.createObject(RealmMyHealthPojo.class, JsonUtils.getString("_id", act));
         myHealth.setData(JsonUtils.getString("data", act));
         myHealth.set_rev(JsonUtils.getString("_rev", act));
-        myHealth.set_id(JsonUtils.getString("_id", act));
         myHealth.setTemperature(JsonUtils.getInt("temperature", act));
         myHealth.setPulse(JsonUtils.getInt("pulse", act));
         myHealth.setHeight(JsonUtils.getInt("height", act));
@@ -51,13 +51,15 @@ public class RealmMyHealthPojo extends RealmObject {
         myHealth.setHasInfo(JsonUtils.getBoolean("hasInfo", act));
         myHealth.setDate(JsonUtils.getLong("date", act));
         myHealth.setProfileId(JsonUtils.getString("profileId", act));
-        Utilities.log("Profile id " + myHealth.getProfileId());
+        Utilities.log("Insert health Profile id " + myHealth.getProfileId());
         myHealth.setPlanetCode(JsonUtils.getString("planetCode", act));
         myHealth.setConditions(new Gson().toJson(JsonUtils.getJsonObject("conditions", act)));
     }
 
     public JsonObject getEncryptedDataAsJson(RealmUserModel model) {
-        return new Gson().fromJson(this.data, JsonObject.class);
+        if (!TextUtils.isEmpty(this.data))
+            return new Gson().fromJson(AndroidDecrypter.decrypt(this.data, model.getKey(), model.getIv()), JsonObject.class);
+        return new JsonObject();
     }
 
     public long getDate() {

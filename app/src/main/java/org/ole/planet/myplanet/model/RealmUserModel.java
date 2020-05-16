@@ -178,7 +178,7 @@ public class RealmUserModel extends RealmObject {
     }
 
     public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
-        return populateUsersTable(jsonDoc, mRealm, settings, false);
+        return populateUsersTable(jsonDoc, mRealm, settings, true);
     }
 
 

@@ -59,7 +59,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMyHealthExamination) {
 
-            ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature());
+            ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature() +"");
             ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
             JsonObject encrypted = list.get(position).getEncryptedDataAsJson(this.userModel);
             String createdBy = JsonUtils.getString("createdBy", encrypted);
@@ -78,12 +78,12 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
 
             }
-            ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse());
+            ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse() +"");
             ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
-            ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing());
-            ((ViewHolderMyHealthExamination) holder).height.setText(list.get(position).getHeight());
-            ((ViewHolderMyHealthExamination) holder).weight.setText(list.get(position).getWeight());
-            ((ViewHolderMyHealthExamination) holder).vision.setText(list.get(position).getVision());
+            ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing() +"");
+            ((ViewHolderMyHealthExamination) holder).height.setText(list.get(position).getHeight() +"");
+            ((ViewHolderMyHealthExamination) holder).weight.setText(list.get(position).getWeight() +"");
+            ((ViewHolderMyHealthExamination) holder).vision.setText(list.get(position).getVision() +"") ;
             holder.itemView.setOnClickListener(view -> showAlert(position, encrypted));
         }
     }
