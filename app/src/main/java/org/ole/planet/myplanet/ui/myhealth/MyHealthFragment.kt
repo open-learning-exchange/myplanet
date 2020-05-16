@@ -85,13 +85,10 @@ class MyHealthFragment : Fragment() {
         lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
             val user = (view as TextView).text.toString()
             userId = map[user]
-            Utilities.log(userId)
             getHealthRecords(userId)
             dialog!!.dismiss()
         }
-        dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member))
-                .setView(alertHealth)
-                .setCancelable(false).setNegativeButton("Dismiss", null).create()
+        dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
         dialog?.show()
     }
 

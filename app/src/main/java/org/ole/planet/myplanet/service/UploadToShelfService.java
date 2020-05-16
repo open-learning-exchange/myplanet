@@ -137,7 +137,6 @@ public class UploadToShelfService {
         } else {
             return false;
         }
-
     }
 
 
