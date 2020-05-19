@@ -3,7 +3,8 @@ package org.ole.planet.myplanet.ui.myhealth;
 
 import java.io.Serializable;
 public class RealmExamination implements Serializable {
-    private String notes, diagnosis, treatments, medications, immunizations, allergies, xrays, tests, referrals;
+    private String notes, diagnosis, treatments, medications, immunizations, allergies, xrays, tests, referrals, gender;
+    private int age;
     private String createdBy;
 
     public String getNotes() {
@@ -79,6 +80,21 @@ public class RealmExamination implements Serializable {
         this.referrals = referrals;
     }
 
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
 
     public String getCreatedBy() {
         return createdBy;

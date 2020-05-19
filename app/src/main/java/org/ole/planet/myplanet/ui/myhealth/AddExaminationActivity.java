@@ -105,7 +105,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             etVision.setText(examination.getVision());
             etHearing.setText(examination.getHearing());
             JsonObject encrypted = examination.getEncryptedDataAsJson(this.user);
-
             etObservation.setText(JsonUtils.getString("notes", encrypted));
             etDiag.setText(JsonUtils.getString("diagnosis", encrypted));
             etTretments.setText(JsonUtils.getString("treatments", encrypted));
@@ -115,9 +114,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             etXray.setText(JsonUtils.getString("xrays", encrypted));
             etLabtest.setText(JsonUtils.getString("tests", encrypted));
             etReferrals.setText(JsonUtils.getString("referrals", encrypted));
-            showCheckbox(examination);
         }
-
+        showCheckbox(examination);
     }
 
     private void validateFields() {
@@ -159,11 +157,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
         flexboxLayout.removeAllViews();
         for (String s : arr) {
+            Utilities.log("Diag " +  s);
             CheckBox c = new CheckBox(this);
             if (examination != null) {
                 JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
-                c.setChecked(JsonUtils.getBoolean("s", conditions));
-
+                c.setChecked(JsonUtils.getBoolean(s, conditions));
             }
             c.setPadding(DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8));
             c.setText(s);
@@ -210,6 +208,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setReferrals(etReferrals.getText().toString().trim());
         sign.setNotes(etObservation.getText().toString().trim());
         sign.setMedications(etMedications.getText().toString().trim());
+        sign.setGender(user.getGender());
         examination.setDate(new Date().getTime());
         try {
             examination.setData(AndroidDecrypter.encrypt(new Gson().toJson(sign), user.getKey(), user.getIv()));

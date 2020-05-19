@@ -48,9 +48,7 @@ class MyHealthFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
-        update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
-        fab_add_member.setOnClickListener { view: View? -> startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
+
         val v = layoutInflater.inflate(R.layout.alert_users_spinner, null)
 
         rv_records!!.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
@@ -59,6 +57,9 @@ class MyHealthFragment : Fragment() {
         getHealthRecords(userId)
         btnnew_patient.setOnClickListener { selectPatient() }
         btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
+        add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
+        update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
+        fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
     }
 
     private fun getHealthRecords(memberId: String?) {

@@ -87,7 +87,7 @@ public class UploadToShelfService {
                             }
 
                         } else {
-                            Utilities.toast(MainApplication.context,"User " + model.getName() + " already exist");
+                            Utilities.toast(MainApplication.context, "User " + model.getName() + " already exist");
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -148,20 +148,9 @@ public class UploadToShelfService {
             Utilities.log("Health data size " + myHealths.size());
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
-                    if (!TextUtils.isEmpty(pojo.getUserId()) && !TextUtils.isEmpty(pojo.getData())) {
-//                        if (pojo.getData().startsWith("{")) {
-//                            RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pojo.get_id()).findFirst();
-//                            Utilities.log("health iv " + user.getIv());
-//                            if (user != null && !TextUtils.isEmpty(user.getIv())) {
-//                                pojo.setData(AndroidDecrypter.encrypt(pojo.getData(), user.getKey(), user.getIv()));
-//                            } else {
-//                                continue;
-//                            }
-//                        }
-                        Response<JsonObject> res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
-                        if (res.body() != null && res.body().has("id")) {
-                            pojo.set_rev(res.body().get("rev").getAsString());
-                        }
+                    Response<JsonObject> res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
+                    if (res.body() != null && res.body().has("id")) {
+                        pojo.set_rev(res.body().get("rev").getAsString());
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
