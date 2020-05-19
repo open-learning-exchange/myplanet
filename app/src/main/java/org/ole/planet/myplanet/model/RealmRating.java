@@ -5,7 +5,9 @@ import android.content.SharedPreferences;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
@@ -39,6 +41,7 @@ public class RealmRating extends RealmObject {
     private String comment;
 
     private String parentCode;
+    private String planetCode;
 
     private String type;
 
@@ -76,6 +79,26 @@ public class RealmRating extends RealmObject {
 
     public String getCreatedOn() {
         return createdOn;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public boolean isUpdated() {
+        return isUpdated;
+    }
+
+    public String getPlanetCode() {
+        return planetCode;
+    }
+
+    public void setPlanetCode(String planetCode) {
+        this.planetCode = planetCode;
     }
 
     public void setCreatedOn(String createdOn) {
@@ -189,6 +212,10 @@ public class RealmRating extends RealmObject {
         ob.addProperty("rate", realm_rating.getRate());
         ob.addProperty("createdOn", realm_rating.getCreatedOn());
         ob.addProperty("parentCode", realm_rating.getParentCode());
+        ob.addProperty("planetCode", realm_rating.getPlanetCode());
+        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
+        ob.addProperty("deviceName", NetworkUtils.getDeviceName());
+        ob.addProperty("androidId", NetworkUtils.getMacAddr());
         return ob;
     }
 
@@ -210,6 +237,7 @@ public class RealmRating extends RealmObject {
         rating.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", act)));
         rating.setUserId(JsonUtils.getString("_id", JsonUtils.getJsonObject("user", act)));
         rating.setParentCode(JsonUtils.getString("parentCode", act));
+        rating.setParentCode(JsonUtils.getString("planetCode", act));
         rating.setCreatedOn(JsonUtils.getString("createdOn", act));
     }
 }
