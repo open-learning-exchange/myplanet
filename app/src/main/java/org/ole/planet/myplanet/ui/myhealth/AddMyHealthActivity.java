@@ -103,7 +103,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
     }
 
     public void populate() {
-        if (healthPojo != null) {
+        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.getData())) {
             myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
             emergencyNumber.getEditText().setText(health.getEmergencyContactName());

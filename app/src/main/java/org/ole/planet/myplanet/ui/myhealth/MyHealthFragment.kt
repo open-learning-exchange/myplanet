@@ -163,6 +163,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
+        Utilities.log(mh.data)
         val json = AndroidDecrypter.decrypt(mh.data, userModel!!.key, userModel!!.iv)
         return if (TextUtils.isEmpty(json)) {
             null

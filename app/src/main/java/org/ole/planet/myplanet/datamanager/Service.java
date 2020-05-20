@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
