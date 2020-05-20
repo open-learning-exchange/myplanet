@@ -157,7 +157,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
         flexboxLayout.removeAllViews();
         for (String s : arr) {
-            Utilities.log("Diag " +  s);
             CheckBox c = new CheckBox(this);
             if (examination != null) {
                 JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
@@ -177,6 +176,13 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
         health.setProfile(profile);
+        health.setUserKey(AndroidDecrypter.generateKey());
+        try {
+            pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        mRealm.commitTransaction();
     }
 
     private void saveData() {

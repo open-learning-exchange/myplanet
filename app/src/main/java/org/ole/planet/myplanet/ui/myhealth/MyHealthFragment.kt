@@ -121,6 +121,7 @@ class MyHealthFragment : Fragment() {
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
+                rv_records.adapter = null
                 Utilities.toast(activity, "Health Record not available.")
                 return
             }
@@ -153,7 +154,6 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
-
         var healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.findAll()
         healths.forEach {
             Utilities.log(it.profileId)

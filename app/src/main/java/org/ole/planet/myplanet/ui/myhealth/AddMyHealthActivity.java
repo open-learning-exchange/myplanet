@@ -70,6 +70,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
         health.setNotes(otherNeed.getEditText().getText().toString().trim());
         if (myHealth == null) {
             myHealth = new RealmMyHealth();
+        }
+        if (TextUtils.isEmpty(myHealth.getUserKey())) {
             myHealth.setUserKey(AndroidDecrypter.generateKey());
         }
         myHealth.setProfile(health);
@@ -102,7 +104,6 @@ public class AddMyHealthActivity extends AppCompatActivity {
 
     public void populate() {
         if (healthPojo != null) {
-            Utilities.log("key iv " +  userModelB.getKey()+ " " + userModelB.getIv()) ;
             myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
             emergencyNumber.getEditText().setText(health.getEmergencyContactName());
