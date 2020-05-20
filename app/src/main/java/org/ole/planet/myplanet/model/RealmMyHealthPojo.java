@@ -32,6 +32,9 @@ public class RealmMyHealthPojo extends RealmObject {
     private String planetCode;
     private boolean hasInfo;
     private String profileId;
+    private String creatorId;
+    private String gender;
+    private int age;
 
     public static void insert(Realm mRealm, JsonObject act) {
         Utilities.log("Insert health " + new Gson().toJson(act));
@@ -51,7 +54,9 @@ public class RealmMyHealthPojo extends RealmObject {
         myHealth.setHasInfo(JsonUtils.getBoolean("hasInfo", act));
         myHealth.setDate(JsonUtils.getLong("date", act));
         myHealth.setProfileId(JsonUtils.getString("profileId", act));
-        Utilities.log("Insert health Profile id " + myHealth.getProfileId());
+        myHealth.setCreatorId(JsonUtils.getString("creatorId", act));
+        myHealth.setAge(JsonUtils.getInt("age", act));
+        myHealth.setGender(JsonUtils.getString("gender", act));
         myHealth.setPlanetCode(JsonUtils.getString("planetCode", act));
         myHealth.setConditions(new Gson().toJson(JsonUtils.getJsonObject("conditions", act)));
     }
@@ -60,6 +65,30 @@ public class RealmMyHealthPojo extends RealmObject {
         if (!TextUtils.isEmpty(this.data))
             return new Gson().fromJson(AndroidDecrypter.decrypt(this.data, model.getKey(), model.getIv()), JsonObject.class);
         return new JsonObject();
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getCreatorId() {
+        return creatorId;
+    }
+
+    public void setCreatorId(String creatorId) {
+        this.creatorId = creatorId;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
     }
 
     public long getDate() {

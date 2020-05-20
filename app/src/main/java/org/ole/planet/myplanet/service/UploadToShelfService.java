@@ -125,18 +125,20 @@ public class UploadToShelfService {
         ob.addProperty("key", keyString);
         ob.addProperty("iv", iv);
         ob.addProperty("createdOn", new Date().getTime());
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
+        boolean success = false;
+        while (!success) {
+            Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
+            if (response.body() != null) {
+                model.setKey(keyString);
+                model.setIv(iv);
+                Utilities.log("New user key " + keyString);
+                Utilities.log("New user iv " + iv);
+                success = true;
+            } else {
+                success = false;
+            }
         }
-        Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
-        if (response.body() != null) {
-            model.setKey(keyString);
-            model.setIv(iv);
-            return true;
-        } else {
-            return false;
-        }
+        return true;
     }
 
 

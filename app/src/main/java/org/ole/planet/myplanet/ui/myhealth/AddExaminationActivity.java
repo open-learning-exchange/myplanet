@@ -187,6 +187,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             examination = mRealm.createObject(RealmMyHealthPojo.class, UUID.randomUUID().toString());
         }
         examination.setProfileId(health.getUserKey());
+        examination.setCreatorId(health.getUserKey());
+        examination.setGender(user.getGender());
+//        examination.setAge(user.getDob());
         examination.setSelfExamination(userId.equals(pojo.get_id()));
         examination.setDate(new Date().getTime());
         examination.setPlanetCode(user.getPlanetCode());
@@ -208,7 +211,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setReferrals(etReferrals.getText().toString().trim());
         sign.setNotes(etObservation.getText().toString().trim());
         sign.setMedications(etMedications.getText().toString().trim());
-        sign.setGender(user.getGender());
         examination.setDate(new Date().getTime());
         try {
             examination.setData(AndroidDecrypter.encrypt(new Gson().toJson(sign), user.getKey(), user.getIv()));
