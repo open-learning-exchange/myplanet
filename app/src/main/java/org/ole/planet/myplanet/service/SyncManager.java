@@ -136,6 +136,7 @@ public class SyncManager {
             RealmResourceActivity.onSynced(mRealm, settings);
             mRealm.close();
         } catch (Exception err) {
+            err.printStackTrace();
             handleException(err.getMessage());
         } finally {
             destroy();
