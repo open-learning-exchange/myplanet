@@ -57,8 +57,6 @@ class MyHealthFragment : Fragment() {
         getHealthRecords(userId)
         btnnew_patient.setOnClickListener { selectPatient() }
         btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
-        add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
-        update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
         fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
     }
 
@@ -66,6 +64,9 @@ class MyHealthFragment : Fragment() {
         userId = memberId
         userModel = mRealm!!.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         lblHealthName!!.text = userModel!!.fullName
+        Utilities.log("User id " + userId + " " + userModel?.key + " " + userModel?.iv)
+        add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
+        update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
         showRecords()
     }
 
@@ -120,6 +121,7 @@ class MyHealthFragment : Fragment() {
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
+                rv_records.adapter = null
                 Utilities.toast(activity, "Health Record not available.")
                 return
             }
@@ -152,28 +154,18 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
-
-        Utilities.log("User key " + mm.userKey)
         var healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.findAll()
-        Utilities.log("Examination size " + healths?.size)
         healths.forEach {
             Utilities.log(it.profileId)
         }
         healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
-
-        Utilities.log("Examination size " + healths?.size)
         return healths!!
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
+        Utilities.log(mh.data)
         val json = AndroidDecrypter.decrypt(mh.data, userModel!!.key, userModel!!.iv)
         return if (TextUtils.isEmpty(json)) {
-            if (!userModel!!.realm!!.isInTransaction) {
-                userModel!!.realm.beginTransaction()
-            }
-            userModel?.iv = ""
-            userModel?.key = ""
-            userModel?.realm?.commitTransaction()
             null
         } else {
             try {

@@ -45,11 +45,12 @@ public class AddMyHealthActivity extends AppCompatActivity {
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         key = userModelB.getKey();
         iv = userModelB.getIv();
-        initViews();
+        Utilities.log("USER ID " + userId + " " + key + " " + iv);
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             createMyHealth();
             Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
         });
+        initViews();
     }
 
     private void createMyHealth() {
@@ -69,6 +70,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
         health.setNotes(otherNeed.getEditText().getText().toString().trim());
         if (myHealth == null) {
             myHealth = new RealmMyHealth();
+        }
+        if (TextUtils.isEmpty(myHealth.getUserKey())) {
             myHealth.setUserKey(AndroidDecrypter.generateKey());
         }
         myHealth.setProfile(health);
@@ -100,7 +103,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
     }
 
     public void populate() {
-        if (healthPojo != null) {
+        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.getData())) {
             myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
             emergencyNumber.getEditText().setText(health.getEmergencyContactName());

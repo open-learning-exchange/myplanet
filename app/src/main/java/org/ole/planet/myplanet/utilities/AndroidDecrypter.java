@@ -124,7 +124,7 @@ public class AndroidDecrypter {
             SecureRandom random;
             random = new SecureRandom();
             random.nextBytes(IV);
-            return String.format("%032X", new BigInteger(+1, IV)).toLowerCase();
+            return bytesToHex(IV);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -139,7 +139,7 @@ public class AndroidDecrypter {
             keyGenerator.init(256);
             secretKey = keyGenerator.generateKey();
             byte[] binary = secretKey.getEncoded();
-            return String.format("%032X", new BigInteger(+1, binary)).toLowerCase();
+            return bytesToHex(binary);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
         }

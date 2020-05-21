@@ -20,6 +20,7 @@
             android:id="@+id/txt_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:lines="2"
             android:padding="@dimen/padding_normal"
             android:textColor="@color/md_black_1000" />
         <View

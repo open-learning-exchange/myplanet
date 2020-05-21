@@ -81,7 +81,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         if (pojo != null && !TextUtils.isEmpty(pojo.getData())) {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
-        if (health == null || health.getProfile() == null) {
+        if (health == null) {
             initHealth();
         }
         initExamination();
@@ -157,7 +157,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
         flexboxLayout.removeAllViews();
         for (String s : arr) {
-            Utilities.log("Diag " +  s);
             CheckBox c = new CheckBox(this);
             if (examination != null) {
                 JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
@@ -176,7 +175,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
+        health.setUserKey(AndroidDecrypter.generateKey());
         health.setProfile(profile);
+        mRealm.commitTransaction();
     }
 
     private void saveData() {
@@ -187,13 +188,16 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             examination = mRealm.createObject(RealmMyHealthPojo.class, UUID.randomUUID().toString());
         }
         examination.setProfileId(health.getUserKey());
+        examination.setCreatorId(health.getUserKey());
+        examination.setGender(user.getGender());
+//        examination.setAge(user.getDob());
         examination.setSelfExamination(userId.equals(pojo.get_id()));
         examination.setDate(new Date().getTime());
         examination.setPlanetCode(user.getPlanetCode());
         RealmExamination sign = new RealmExamination();
         sign.setAllergies(etAllergies.getText().toString().trim());
         sign.setCreatedBy(user.get_id());
-        pojo.setBp(etBloodPressure.getText().toString().trim());
+        examination.setBp(etBloodPressure.getText().toString().trim());
         examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
         examination.setWeight(getInt(etWeight.getText().toString().trim()));
@@ -208,9 +212,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setReferrals(etReferrals.getText().toString().trim());
         sign.setNotes(etObservation.getText().toString().trim());
         sign.setMedications(etMedications.getText().toString().trim());
-        sign.setGender(user.getGender());
         examination.setDate(new Date().getTime());
         try {
+            Utilities.log(new Gson().toJson(sign));
             examination.setData(AndroidDecrypter.encrypt(new Gson().toJson(sign), user.getKey(), user.getIv()));
         } catch (Exception e) {
             e.printStackTrace();
@@ -231,12 +235,14 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     private void createPojo() {
         try {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
             if (pojo == null) {
                 pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
             }
+            if (TextUtils.isEmpty(pojo.getData())) {
+                    pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
+            }
         } catch (Exception e) {
+            e.printStackTrace();
             Utilities.toast(this, "Unable to add health record.");
         }
     }
