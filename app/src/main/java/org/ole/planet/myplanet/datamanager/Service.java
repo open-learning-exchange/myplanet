@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Sha256Utils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -25,6 +27,8 @@ import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -256,12 +260,19 @@ public class Service {
     }
 
 
-    private void syncPlanetServers(Realm realm){
+    private void syncPlanetServers(Realm realm) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
-        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs").enqueue(new Callback<JsonObject>() {
+        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+                try {
 
+                    if (response.body() != null) {
+                        JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
+                        insertDocs(arr, mRealm, table);
+                    }
+                } catch (IOException e) {
+                }
             }
 
             @Override
