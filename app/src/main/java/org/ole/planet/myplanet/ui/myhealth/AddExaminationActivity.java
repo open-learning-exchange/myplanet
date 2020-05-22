@@ -77,6 +77,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
+        if (pojo == null){
+            pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
+        }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         if (pojo != null && !TextUtils.isEmpty(pojo.getData())) {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
