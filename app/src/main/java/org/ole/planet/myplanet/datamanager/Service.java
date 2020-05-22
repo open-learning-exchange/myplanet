@@ -256,6 +256,21 @@ public class Service {
     }
 
 
+    private void syncPlanetServers(Realm realm){
+        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs").enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
+
+            }
+
+            @Override
+            public void onFailure(Call<JsonObject> call, Throwable t) {
+
+            }
+        });
+    }
+
     public interface CheckVersionCallback {
         void onUpdateAvailable(MyPlanet info, boolean cancelable);
 
