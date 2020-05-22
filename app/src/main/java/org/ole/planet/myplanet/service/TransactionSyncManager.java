@@ -72,9 +72,7 @@ public class TransactionSyncManager {
             Utilities.log("Syncing health data " + userModel.getName() + " " + table);
             if (ob != null && ob.getRows().size() > 0) {
                 Rows r = ob.getRows().get(0);
-                Utilities.log("obj " + new Gson().toJson(ob));
                 JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
-                Utilities.log("User " + userModel.getName() + JsonUtils.getString("key", jsonDoc) + " " + JsonUtils.getString("iv", jsonDoc));
                 userModel.setKey(JsonUtils.getString("key", jsonDoc));
                 userModel.setIv(JsonUtils.getString("iv", jsonDoc));
             } else {

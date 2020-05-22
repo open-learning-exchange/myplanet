@@ -45,7 +45,6 @@ public class AddMyHealthActivity extends AppCompatActivity {
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         key = userModelB.getKey();
         iv = userModelB.getIv();
-        Utilities.log("USER ID " + userId + " " + key + " " + iv);
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             createMyHealth();
             Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
@@ -78,8 +77,9 @@ public class AddMyHealthActivity extends AppCompatActivity {
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
+        healthPojo.setUserId(userModelB.get_id());
         try {
-            healthPojo.setData(TextUtils.isEmpty(userModelB.getIv()) ? new Gson().toJson(myHealth) : AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
+            healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
         } catch (Exception e) {
         }
         realm.commitTransaction();

@@ -58,40 +58,35 @@ public class UploadToShelfService {
     public void uploadUserData(SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
-        mRealm.executeTransactionAsync(new Realm.Transaction() {
-            @Override
-            public void execute(Realm realm) {
-                List<RealmUserModel> userModels = realm.where(RealmUserModel.class).isEmpty("_id").findAll();
-                for (RealmUserModel model : userModels) {
-                    try {
-                        Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
-                        if (res.body() == null) {
-                            JsonObject obj = model.serialize();
-                            res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
+        mRealm.executeTransactionAsync(realm -> {
+            List<RealmUserModel> userModels = realm.where(RealmUserModel.class).isEmpty("_id").findAll();
+            for (RealmUserModel model : userModels) {
+                try {
+                    Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
+                    if (res.body() == null) {
+                        JsonObject obj = model.serialize();
+                        res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
+                        if (res.body() != null) {
+                            String id = res.body().get("id").getAsString();
+                            String rev = res.body().get("rev").getAsString();
+                            res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                             if (res.body() != null) {
-                                String id = res.body().get("id").getAsString();
-                                String rev = res.body().get("rev").getAsString();
-
-
-                                res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
-                                if (res.body() != null) {
-                                    model.set_id(id);
-                                    model.set_rev(rev);
-                                    model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
-                                    model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
-                                    model.setSalt(JsonUtils.getString("salt", res.body()));
-                                    model.setIterations(JsonUtils.getString("iterations", res.body()));
-                                    if (saveKeyIv(apiInterface, model, obj))
-                                        updateHealthData(realm, model);
-                                }
+                                model.set_id(id);
+                                model.set_rev(rev);
+                                model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
+                                model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
+                                model.setSalt(JsonUtils.getString("salt", res.body()));
+                                model.setIterations(JsonUtils.getString("iterations", res.body()));
+                                if (saveKeyIv(apiInterface, model, obj))
+                                    updateHealthData(realm, model);
                             }
-
-                        } else {
-                            Utilities.toast(MainApplication.context, "User " + model.getName() + " already exist");
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+
+                    } else {
+                        Utilities.toast(MainApplication.context, "User " + model.getName() + " already exist");
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }, () -> {
@@ -106,11 +101,11 @@ public class UploadToShelfService {
         List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id", model.getId()).findAll();
         for (RealmMyHealthPojo p : list) {
             p.setUserId(model.get_id());
-            try {
-                p.setData(AndroidDecrypter.encrypt(p.getData(), model.getKey(), model.getId()));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            try {
+//                p.setData(AndroidDecrypter.encrypt(p.getData(), model.getKey(), model.getId()));
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
         }
     }
 
@@ -121,7 +116,7 @@ public class UploadToShelfService {
         String keyString = AndroidDecrypter.generateKey();
         String iv = AndroidDecrypter.generateIv();
         if (!TextUtils.isEmpty(model.getIv())) iv = model.getIv();
-        if (!TextUtils.isEmpty(model.getKey())) iv = model.getKey();
+        if (!TextUtils.isEmpty(model.getKey())) keyString = model.getKey();
         ob.addProperty("key", keyString);
         ob.addProperty("iv", iv);
         ob.addProperty("createdOn", new Date().getTime());
@@ -146,7 +141,7 @@ public class UploadToShelfService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).findAll();
+            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).notEqualTo("userId", "").findAll();
             Utilities.log("Health data size " + myHealths.size());
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
@@ -158,7 +153,6 @@ public class UploadToShelfService {
                     e.printStackTrace();
                 }
             }
-
         });
     }
 
