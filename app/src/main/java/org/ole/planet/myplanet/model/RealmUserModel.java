@@ -156,20 +156,18 @@ public class RealmUserModel extends RealmObject {
         return RealmUserModel.populateUsersTable(object, mRealm, settings);
     }
 
-    public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings, boolean noCommit) {
+    public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             String _id = JsonUtils.getString("_id", jsonDoc);
             if (_id.isEmpty())
                 _id = UUID.randomUUID().toString();
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", _id).findFirst();
-            if (!noCommit && !mRealm.isInTransaction())
-                mRealm.beginTransaction();
+
             if (user == null) {
                 user = mRealm.createObject(RealmUserModel.class, _id);
             }
             insertIntoUsers(jsonDoc, user, settings);
-            if (!noCommit)
-                mRealm.commitTransaction();
+
             return user;
         } catch (Exception err) {
             err.printStackTrace();
@@ -177,9 +175,6 @@ public class RealmUserModel extends RealmObject {
         return null;
     }
 
-    public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
-        return populateUsersTable(jsonDoc, mRealm, settings, true);
-    }
 
 
     public static boolean isUserExists(Realm realm, String name) {

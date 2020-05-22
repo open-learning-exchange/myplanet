@@ -118,6 +118,9 @@ class MyHealthFragment : Fragment() {
         txt_language.text = Utilities.checkNA(userModel!!.language)
         txt_dob.text = Utilities.checkNA(userModel!!.dob)
         var mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+        if (mh == null){
+            mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+        }
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
