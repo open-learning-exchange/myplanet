@@ -7,11 +7,13 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.model.RealmCommunity;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UploadToShelfService;
@@ -106,7 +108,6 @@ public class Service {
             callback.onError("Config not awailable.", true);
             return;
         }
-        Utilities.log("Check version");
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
             @Override
             public void onResponse(Call<MyPlanet> call, retrofit2.Response<MyPlanet> response) {
@@ -260,23 +261,38 @@ public class Service {
     }
 
 
-    private void syncPlanetServers(Realm realm) {
+    public void syncPlanetServers(Realm realm, SuccessListener callback) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                try {
+                if (response.body() != null) {
+                    JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
+                    realm.executeTransactionAsync(realm1 -> {
+                        realm1.delete(RealmCommunity.class);
+                        for (JsonElement j : arr) {
+                            JsonObject jsonDoc = j.getAsJsonObject();
+                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
+                            String id = JsonUtils.getString("_id", jsonDoc);
+                            RealmCommunity community = realm1.createObject(RealmCommunity.class, id);
+                            if (JsonUtils.getString("name", jsonDoc).equals("vi")) {
+                                community.setWeight(0);
+                            }
+                            community.setLocalDomain(JsonUtils.getString("localDomain", jsonDoc));
+                            community.setName(JsonUtils.getString("name", jsonDoc));
+                            community.setParentDomain(JsonUtils.getString("parentDomain", jsonDoc));
+                            community.setRegistrationRequest(JsonUtils.getString("registrationRequest", jsonDoc));
+                        }
 
-                    if (response.body() != null) {
-                        JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
-                        insertDocs(arr, mRealm, table);
-                    }
-                } catch (IOException e) {
+                    });
+
+                    callback.onSuccess("Server sync successfully");
                 }
             }
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
+                callback.onSuccess("Unable to connect to planet earth");
 
             }
         });
