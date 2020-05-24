@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
@@ -119,6 +120,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             btnOpenCommunity.setVisibility(View.GONE);
         }
+        findViewById(R.id.btn_feedback).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                new FeedbackFragment().show(getSupportFragmentManager(), "");
+            }
+        });
     }
 
     private boolean forceSyncTrigger() {

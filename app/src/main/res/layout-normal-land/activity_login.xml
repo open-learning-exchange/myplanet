@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/bg_white"
-        android:layout_margin="@dimen/_20dp"
+        android:layout_margin="@dimen/fab_margin"
         android:baselineAligned="false"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
@@ -257,6 +257,7 @@
                             android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:text="@string/btn_guest_login"
+                            android:layout_gravity="center"
                             android:textSize="14sp"
                             android:theme="@style/PrimaryFlatButton" />
 
@@ -268,6 +269,18 @@
                             android:layout_gravity="center"
                             android:text="Become a member"
                             android:theme="@style/PrimaryFlatButton" />
+
+
+                        <Button
+                            android:id="@+id/btn_feedback"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:layout_margin="@dimen/padding_normal"
+                            android:text="Feedback"
+                            android:theme="@style/PrimaryFlatButton" />
+
                     </LinearLayout>
                 </LinearLayout>
             </ScrollView>
