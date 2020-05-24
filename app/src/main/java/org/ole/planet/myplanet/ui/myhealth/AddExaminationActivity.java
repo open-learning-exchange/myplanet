@@ -77,7 +77,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-        if (pojo == null){
+        if (pojo == null) {
             pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
         }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
@@ -90,6 +90,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         initExamination();
         validateFields();
         findViewById(R.id.btn_save).setOnClickListener(view -> {
+            String validation = isValidInput();
+            if (!TextUtils.isEmpty(validation)) {
+                Utilities.toast(this, validation);
+                return;
+            }
             saveData();
         });
     }
@@ -99,12 +104,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     private void initExamination() {
         if (getIntent().hasExtra("id")) {
             examination = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", getIntent().getStringExtra("id")).findFirst();
-            etTemperature.setText(examination.getTemperature());
-            etPulseRate.setText(examination.getPulse());
-            etBloodPressure.setText(examination.getBp());
-            etTemperature.setText(examination.getTemperature());
-            etHeight.setText(examination.getHeight());
-            etWeight.setText(examination.getWeight());
+            etTemperature.setText(examination.getTemperature() + "");
+            etPulseRate.setText(examination.getPulse() + "");
+            etBloodPressure.setText(examination.getBp() + "");
+            etHeight.setText(examination.getHeight() + "");
+            etWeight.setText(examination.getWeight() + "");
             etVision.setText(examination.getVision());
             etHearing.setText(examination.getHearing());
             JsonObject encrypted = examination.getEncryptedDataAsJson(this.user);
@@ -184,6 +188,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void saveData() {
+
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         createPojo();
@@ -206,9 +211,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
         examination.setWeight(getInt(etWeight.getText().toString().trim()));
+        examination.setHeight(getInt(etHeight.getText().toString().trim()));
         examination.setConditions(new Gson().toJson(mapConditions));
         examination.setHearing(etHearing.getText().toString().trim());
-        examination.setHeight(getInt(etHeight.getText().toString().trim()));
         sign.setImmunizations(etImmunization.getText().toString().trim());
         sign.setTests(etLabtest.getText().toString().trim());
         sign.setXrays(etXray.getText().toString().trim());
@@ -230,9 +235,20 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     }
 
+    private String isValidInput() {
+        examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
+        examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
+        examination.setWeight(getInt(etWeight.getText().toString().trim()));
+        examination.setHeight(getInt(etHeight.getText().toString().trim()));
+        return "";
+    }
+
+//    private float getFloat(String trim) {
+//    }
+
     private int getInt(String trim) {
         try {
-            return Integer.parseInt(etTemperature.getText().toString().trim());
+            return Integer.parseInt(trim);
         } catch (Exception e) {
             return 0;
         }

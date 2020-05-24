@@ -58,6 +58,18 @@ public class JsonUtils {
         }
         return 0;
     }
+    public static Number getNumber(String fieldName, JsonObject jsonObject) {
+        try {
+            if (jsonObject.has(fieldName)) {
+                JsonElement el = jsonObject.get(fieldName);
+
+                return el instanceof JsonNull ? 0 : el.getAsNumber();
+            }
+        }catch (Exception e){
+
+        }
+        return 0;
+    }
 
     public static JsonArray getJsonArray(String fieldName, JsonObject jsonObject) {
         try {
