@@ -40,7 +40,7 @@ class BecomeMemberActivity : BaseActivity() {
         }, now[Calendar.YEAR],
                 now[Calendar.MONTH],
                 now[Calendar.DAY_OF_MONTH])
-        dpd.datePicker.minDate = now.timeInMillis
+        dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
     }
 
