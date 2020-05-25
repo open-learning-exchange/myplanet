@@ -42,6 +42,7 @@ public class RealmMyHealthPojo extends RealmObject {
         if (myHealth == null)
             myHealth = mRealm.createObject(RealmMyHealthPojo.class, JsonUtils.getString("_id", act));
         myHealth.setData(JsonUtils.getString("data", act));
+        myHealth.setUserId(JsonUtils.getString("_id", act));
         myHealth.set_rev(JsonUtils.getString("_rev", act));
         myHealth.setTemperature(JsonUtils.getInt("temperature", act));
         myHealth.setPulse(JsonUtils.getInt("pulse", act));
@@ -230,7 +231,8 @@ public class RealmMyHealthPojo extends RealmObject {
 
     public static JsonObject serialize(RealmMyHealthPojo health) {
         JsonObject object = new JsonObject();
-        object.addProperty("_id", health.get_id());
+        if (!TextUtils.isEmpty(health.getUserId()))
+            object.addProperty("_id", health.getUserId());
         if (!TextUtils.isEmpty(health.get_rev()))
             object.addProperty("_rev", health.get_rev());
         object.addProperty("data", health.getData());

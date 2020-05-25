@@ -230,11 +230,14 @@ public class Service {
                     callback.onSuccess("User already exists");
                     return;
                 }
-                RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings, false);
+                if (!realm.isInTransaction())
+                    realm.beginTransaction();
+                RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings);
                 String keyString = AndroidDecrypter.generateKey();
                 String iv = AndroidDecrypter.generateIv();
                 model.setKey(keyString);
                 model.setIv(iv);
+                realm.commitTransaction();
                 if (model != null) {
                     Utilities.toast(MainApplication.context, "Not connected to planet , created user offline.");
                     callback.onSuccess("Not connected to planet , created user offline.");
@@ -251,7 +254,7 @@ public class Service {
             try {
                 Response<JsonObject> res = retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                 if (res.body() != null) {
-                    RealmUserModel model = RealmUserModel.populateUsersTable(res.body(), realm1, settings, true);
+                    RealmUserModel model = RealmUserModel.populateUsersTable(res.body(), realm1, settings);
                     if (model != null)
                         new UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj);
                 }

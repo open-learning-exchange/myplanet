@@ -38,6 +38,7 @@ class MyHealthFragment : Fragment() {
     var userId: String? = null
     var mRealm: Realm? = null
     var userModel: RealmUserModel? = null
+
     var dialog: AlertDialog? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -55,8 +56,16 @@ class MyHealthFragment : Fragment() {
         profileDbHandler = UserProfileDbHandler(v.context)
         userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
         getHealthRecords(userId)
-        btnnew_patient.setOnClickListener { selectPatient() }
-        btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
+
+        if (profileDbHandler?.userModel?.roleAsString!!.contains("health", true)) {
+            btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
+            btnnew_patient.setOnClickListener { selectPatient() }
+            fab_add_member.show()
+        } else {
+            btnnew_patient.visibility = View.GONE
+            fab_add_member.hide()
+        }
+
         fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
     }
 
@@ -118,6 +127,9 @@ class MyHealthFragment : Fragment() {
         txt_language.text = Utilities.checkNA(userModel!!.language)
         txt_dob.text = Utilities.checkNA(userModel!!.dob)
         var mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+        if (mh == null) {
+            mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+        }
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
