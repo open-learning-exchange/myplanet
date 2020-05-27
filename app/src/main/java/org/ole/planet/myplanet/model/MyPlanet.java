@@ -179,8 +179,8 @@ public class MyPlanet implements Serializable {
     private static void addStats(UsageStats s, JsonArray arr, Context context, SharedPreferences pref) {
         if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
             JsonObject object = new JsonObject();
-            object.addProperty("lastTimeUsed", s.getLastTimeUsed());
-            object.addProperty("firstTimeUsed", s.getFirstTimeStamp());
+            object.addProperty("lastTimeUsed", s.getLastTimeUsed() > 0 ? s.getLastTimeUsed() : 0);
+            object.addProperty("firstTimeUsed", s.getFirstTimeStamp() > 0 ? s.getLastTimeStamp() :0);
             object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
             long totalUsed = s.getLastTimeUsed() - s.getFirstTimeStamp();
             object.addProperty("totalUsed", totalUsed > 0 ? totalUsed : 0);
