@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DimenUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -40,6 +41,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     EditText etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
             etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
     RealmUserModel user;
+    RealmUserModel currentUser;
     RealmMyHealthPojo pojo;
     RealmMyHealth health = null;
     FlexboxLayout flexboxLayout;
@@ -74,11 +76,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         initViews();
+        currentUser = new UserProfileDbHandler(this).getUserModel();
         mapConditions = new HashMap<String, Boolean>();
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-        if (pojo == null){
+        if (pojo == null) {
             pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
         }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
@@ -197,7 +200,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setCreatorId(health.getUserKey());
         examination.setGender(user.getGender());
         examination.setAge(TimeUtils.getAge(user.getDob()));
-        examination.setSelfExamination(userId.equals(pojo.get_id()));
+        examination.setSelfExamination(currentUser.get_id().equals(pojo.get_id()));
         examination.setDate(new Date().getTime());
         examination.setPlanetCode(user.getPlanetCode());
         RealmExamination sign = new RealmExamination();
