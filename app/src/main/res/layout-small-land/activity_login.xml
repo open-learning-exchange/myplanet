@@ -264,6 +264,15 @@
                         android:layout_margin="@dimen/padding_normal"
                         android:text="Become a member"
                         android:theme="@style/PrimaryFlatButton" />
+
+                    <Button
+                        android:id="@+id/btn_feedback"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_margin="@dimen/padding_normal"
+                        android:text="Feedback"
+                        android:theme="@style/PrimaryFlatButton" />
                 </LinearLayout>
             </ScrollView>
         </LinearLayout>

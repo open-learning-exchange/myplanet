@@ -19,11 +19,11 @@ public class RealmMyHealthPojo extends RealmObject {
     private String userId;
     private String _rev;
     private String data;
-    private int temperature;
+    private float temperature;
     private int pulse;
     private String bp;
-    private int height;
-    private int weight;
+    private float height;
+    private float weight;
     private String vision;
     private long date;
     private String hearing;
@@ -44,10 +44,10 @@ public class RealmMyHealthPojo extends RealmObject {
         myHealth.setData(JsonUtils.getString("data", act));
         myHealth.setUserId(JsonUtils.getString("_id", act));
         myHealth.set_rev(JsonUtils.getString("_rev", act));
-        myHealth.setTemperature(JsonUtils.getInt("temperature", act));
+        myHealth.setTemperature(JsonUtils.getFloat("temperature", act));
         myHealth.setPulse(JsonUtils.getInt("pulse", act));
-        myHealth.setHeight(JsonUtils.getInt("height", act));
-        myHealth.setWeight(JsonUtils.getInt("weight", act));
+        myHealth.setHeight(JsonUtils.getFloat("height", act));
+        myHealth.setWeight(JsonUtils.getFloat("weight", act));
         myHealth.setVision(JsonUtils.getString("vision", act));
         myHealth.setHearing(JsonUtils.getString("hearing", act));
         myHealth.setBp(JsonUtils.getString("bp", act));
@@ -133,10 +133,6 @@ public class RealmMyHealthPojo extends RealmObject {
     }
 
 
-    public int getTemperature() {
-        return temperature;
-    }
-
     public void setTemperature(int temperature) {
         this.temperature = temperature;
     }
@@ -157,17 +153,6 @@ public class RealmMyHealthPojo extends RealmObject {
         this.bp = bp;
     }
 
-    public int getHeight() {
-        return height;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
-
-    public int getWeight() {
-        return weight;
-    }
 
     public void setWeight(int weight) {
         this.weight = weight;
@@ -227,6 +212,31 @@ public class RealmMyHealthPojo extends RealmObject {
 
     public void setProfileId(String profileId) {
         this.profileId = profileId;
+    }
+
+
+    public float getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(float temperature) {
+        this.temperature = temperature;
+    }
+
+    public float getHeight() {
+        return height;
+    }
+
+    public void setHeight(float height) {
+        this.height = height;
+    }
+
+    public float getWeight() {
+        return weight;
+    }
+
+    public void setWeight(float weight) {
+        this.weight = weight;
     }
 
     public static JsonObject serialize(RealmMyHealthPojo health) {
