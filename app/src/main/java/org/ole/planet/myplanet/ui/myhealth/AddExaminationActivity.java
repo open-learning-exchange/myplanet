@@ -224,8 +224,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setPlanetCode(user.getPlanetCode());
         RealmExamination sign = new RealmExamination();
         sign.setAllergies(etAllergies.getText().toString().trim());
-        sign.setCreatedBy(user.get_id());
-
+        sign.setCreatedBy(currentUser.get_id());
         examination.setBp(etBloodPressure.getText().toString().trim());
         examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
