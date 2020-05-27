@@ -122,7 +122,7 @@ public class MyPlanet implements Serializable {
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
         if (planet != null)
             postJSON.addProperty("planetVersion", planet.getPlanetVersion());
-        postJSON.addProperty("_id",VersionUtils.getAndroidId(MainApplication.context) +  "@" + NetworkUtils.getMacAddr());
+        postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getMacAddr());
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
@@ -133,7 +133,7 @@ public class MyPlanet implements Serializable {
     }
 
 
-    public static JsonObject getNormalMyPlanetActivities(Context context, SharedPreferences pref, RealmUserModel model){
+    public static JsonObject getNormalMyPlanetActivities(Context context, SharedPreferences pref, RealmUserModel model) {
         JsonObject postJSON = new JsonObject();
         SharedPreferences preferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
@@ -146,8 +146,8 @@ public class MyPlanet implements Serializable {
         postJSON.addProperty("macAddress", NetworkUtils.getMacAddr());
         postJSON.addProperty("version", VersionUtils.getVersionCode(context));
         postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
-        postJSON.addProperty("androidId",NetworkUtils.getMacAddr());
-        postJSON.addProperty("uniqueAndroidId",VersionUtils.getAndroidId(MainApplication.context));
+        postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
+        postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context));
         postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
         postJSON.addProperty("time", new Date().getTime());
@@ -180,8 +180,10 @@ public class MyPlanet implements Serializable {
         if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
             JsonObject object = new JsonObject();
             object.addProperty("lastTimeUsed", s.getLastTimeUsed());
+            object.addProperty("firstTimeUsed", s.getFirstTimeStamp());
             object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
-            object.addProperty("totalUsed", s.getLastTimeUsed() - s.getFirstTimeStamp());
+            long totalUsed = s.getLastTimeUsed() - s.getFirstTimeStamp();
+            object.addProperty("totalUsed", totalUsed > 0 ? totalUsed : 0);
             object.addProperty("version", VersionUtils.getVersionCode(context));
             object.addProperty("versionName", VersionUtils.getVersionName(context));
             object.addProperty("androidId", NetworkUtils.getMacAddr());
