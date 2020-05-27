@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DimenUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -195,7 +196,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setProfileId(health.getUserKey());
         examination.setCreatorId(health.getUserKey());
         examination.setGender(user.getGender());
-//        examination.setAge(user.getDob());
+        examination.setAge(TimeUtils.getAge(user.getDob()));
         examination.setSelfExamination(userId.equals(pojo.get_id()));
         examination.setDate(new Date().getTime());
         examination.setPlanetCode(user.getPlanetCode());

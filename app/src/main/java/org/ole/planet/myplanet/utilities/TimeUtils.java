@@ -34,6 +34,30 @@ public class TimeUtils {
         return dateformat.format(data);
     }
 
+
+    public static int getAge(String date) {
+        SimpleDateFormat dateformat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat dateformat2 = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar dob = Calendar.getInstance();
+        Calendar today = Calendar.getInstance();
+        try {
+            if (date.contains("T")) {
+                Date dt = dateformat1.parse(date.replaceAll("T", " ").replaceAll(".000Z", ""));
+                dob.setTime(dt);
+
+            } else {
+                Date dt2 = dateformat2.parse(date);
+                dob.setTime(dt2);
+            }
+        } catch (Exception e) {
+        }
+        int age = today.get(Calendar.YEAR) - dob.get(Calendar.YEAR);
+        if (today.get(Calendar.DAY_OF_YEAR) < dob.get(Calendar.DAY_OF_YEAR)) {
+            age--;
+        }
+        return age;
+    }
+
     public static String getFormatedDate(String stringDate, String pattern) {
         try {
             SimpleDateFormat sf = new SimpleDateFormat(pattern, Locale.getDefault());
@@ -45,7 +69,6 @@ public class TimeUtils {
             return "N/A";
         }
     }
-
 
 
     public static String currentDate() {

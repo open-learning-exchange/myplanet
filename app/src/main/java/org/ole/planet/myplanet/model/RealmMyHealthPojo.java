@@ -244,11 +244,13 @@ public class RealmMyHealthPojo extends RealmObject {
         object.addProperty("vision", health.getVision());
         object.addProperty("hearing", health.getHearing());
         object.addProperty("date", health.getDate());
-        object.addProperty("date", health.getDate());
         object.addProperty("selfExamination", health.isSelfExamination());
         object.addProperty("planetCode", health.getPlanetCode());
         object.addProperty("hasInfo", health.isHasInfo());
         object.addProperty("profileId", health.getProfileId());
+        object.addProperty("creatorId", health.getProfileId());
+        object.addProperty("gender", health.getGender());
+        object.addProperty("age", health.getAge());
         object.add("conditions", new Gson().fromJson(health.getConditions(), JsonObject.class));
 //        object.addProperty("userId", health.getUserId());
         return object;
