@@ -11,11 +11,12 @@ public class JsonUtils {
     public static String getString(String fieldName, JsonObject jsonObject) {
         try {
 
-        if (jsonObject.has(fieldName)) {
-            JsonElement el = jsonObject.get(fieldName);
-            return el instanceof JsonNull ? "" : el.getAsString();
+            if (jsonObject.has(fieldName)) {
+                JsonElement el = jsonObject.get(fieldName);
+                return el instanceof JsonNull ? "" : el.getAsString();
+            }
+        } catch (Exception e) {
         }
-        }catch (Exception e){}
         return "";
     }
 
@@ -23,25 +24,26 @@ public class JsonUtils {
         try {
             JsonElement el = array.get(index);
             return el instanceof JsonNull ? "" : el.getAsString();
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
         return "";
     }
 
-    public static JsonArray getAsJsonArray(RealmList<String> list){
+    public static JsonArray getAsJsonArray(RealmList<String> list) {
         JsonArray array = new JsonArray();
-        for (String s : list){
+        for (String s : list) {
             array.add(s);
         }
         return array;
     }
 
     public static boolean getBoolean(String fieldName, JsonObject jsonObject) {
-        try{
-        if (jsonObject.has(fieldName)) {
-            JsonElement el = jsonObject.get(fieldName);
-            return !(el instanceof JsonNull) && el.getAsBoolean();
-        }
-        }catch (Exception e){
+        try {
+            if (jsonObject.has(fieldName)) {
+                JsonElement el = jsonObject.get(fieldName);
+                return !(el instanceof JsonNull) && el.getAsBoolean();
+            }
+        } catch (Exception e) {
 
         }
         return false;
@@ -53,36 +55,52 @@ public class JsonUtils {
                 JsonElement el = jsonObject.get(fieldName);
                 return el instanceof JsonNull ? 0 : el.getAsInt();
             }
-        }catch (Exception e){
+        } catch (Exception e) {
 
         }
         return 0;
+    }
+
+    public static float getFloat(String fieldName, JsonObject jsonObject) {
+        try {
+            if (jsonObject.has(fieldName)) {
+                JsonElement el = jsonObject.get(fieldName);
+
+                return el instanceof JsonNull ? 0 : el.getAsFloat();
+            }
+        } catch (Exception e) {
+
+        }
+        return getInt(fieldName, jsonObject);
     }
 
     public static JsonArray getJsonArray(String fieldName, JsonObject jsonObject) {
         try {
             JsonElement arry = getJsonElement(fieldName, jsonObject, JsonArray.class);
             return arry instanceof JsonNull || !(arry instanceof JsonArray) ? new JsonArray() : arry.getAsJsonArray();
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
         return new JsonArray();
     }
 
     public static JsonObject getJsonObject(String fieldName, JsonObject jsonObject) {
-        try{
-        JsonElement el = getJsonElement(fieldName, jsonObject, JsonArray.class);
-        return el instanceof JsonObject ? el.getAsJsonObject() : new JsonObject();
-        }catch (Exception e){}
+        try {
+            JsonElement el = getJsonElement(fieldName, jsonObject, JsonArray.class);
+            return el instanceof JsonObject ? el.getAsJsonObject() : new JsonObject();
+        } catch (Exception e) {
+        }
         return new JsonObject();
     }
 
     public static JsonElement getJsonElement(String fieldName, JsonObject jsonObject, Class type) {
-        try{
-        JsonElement jsonElement = type == JsonObject.class ? new JsonObject() : new JsonArray();
-        if (jsonObject.has(fieldName)) {
-            return jsonObject.get(fieldName);
+        try {
+            JsonElement jsonElement = type == JsonObject.class ? new JsonObject() : new JsonArray();
+            if (jsonObject.has(fieldName)) {
+                return jsonObject.get(fieldName);
+            }
+            return jsonElement;
+        } catch (Exception e) {
         }
-        return jsonElement;
-        }catch (Exception e){}
         return new JsonObject();
 
     }
@@ -93,7 +111,7 @@ public class JsonUtils {
                 JsonElement el = jsonObject.get(fieldName);
                 return el instanceof JsonNull ? 0L : el.getAsLong();
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return 0L;

@@ -77,7 +77,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-        if (pojo == null){
+        if (pojo == null) {
             pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
         }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
@@ -90,6 +90,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         initExamination();
         validateFields();
         findViewById(R.id.btn_save).setOnClickListener(view -> {
+            if (!isValidInput() && !allowSubmission) {
+                Utilities.toast(this, "Invalid input");
+                return;
+            }
             saveData();
         });
     }
@@ -99,12 +103,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     private void initExamination() {
         if (getIntent().hasExtra("id")) {
             examination = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", getIntent().getStringExtra("id")).findFirst();
-            etTemperature.setText(examination.getTemperature());
-            etPulseRate.setText(examination.getPulse());
-            etBloodPressure.setText(examination.getBp());
-            etTemperature.setText(examination.getTemperature());
-            etHeight.setText(examination.getHeight());
-            etWeight.setText(examination.getWeight());
+            etTemperature.setText(examination.getTemperature() + "");
+            etPulseRate.setText(examination.getPulse() + "");
+            etBloodPressure.setText(examination.getBp() + "");
+            etHeight.setText(examination.getHeight() + "");
+            etWeight.setText(examination.getWeight() + "");
             etVision.setText(examination.getVision());
             etHearing.setText(examination.getHearing());
             JsonObject encrypted = examination.getEncryptedDataAsJson(this.user);
@@ -122,7 +125,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void validateFields() {
-        allowSubmission = false;
+        allowSubmission = true;
         etBloodPressure.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
@@ -136,20 +139,35 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (!etBloodPressure.getText().toString().contains("/")) {
                     etBloodPressure.setError("Blood Pressure should be numeric systolic/diastolic");
+                    allowSubmission = false;
                 } else {
                     String[] sysDia = etBloodPressure.getText().toString().trim().split("/");
                     if (sysDia.length > 2 || sysDia.length < 1) {
                         etBloodPressure.setError("Blood Pressure should be systolic/diastolic");
                         allowSubmission = false;
                     } else {
-                        for (int x = 0; x < sysDia.length; x++) {
-                            if (!sysDia[x].matches("-?\\d+") || sysDia[x].isEmpty()) {
-                                etBloodPressure.setError("Systolic and diastolic must be numbers");
+                        try {
+                            int sys = Integer.parseInt(sysDia[0]);
+                            int dis = Integer.parseInt(sysDia[1]);
+                            if ((sys < 60 || dis < 40) || (sys > 300 || dis > 200)) {
+                                etBloodPressure.setError("Bp must be between 60/40 and 300/200");
                                 allowSubmission = false;
                             }
+                        } catch (Exception e) {
+                            etBloodPressure.setError("Systolic and diastolic must be numbers");
+                            allowSubmission = false;
                         }
-                        allowSubmission = true;
+
                     }
+
+//                    else{
+//                        for (int x = 0; x < sysDia.length; x++) {
+//                            if (!sysDia[x].matches("-?\\d+") || sysDia[x].isEmpty()) {
+//                                etBloodPressure.setError("Systolic and diastolic must be numbers");
+//                                allowSubmission = false;
+//                            }
+//                        }
+//                    }
                 }
             }
         });
@@ -184,6 +202,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void saveData() {
+
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         createPojo();
@@ -202,13 +221,14 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         RealmExamination sign = new RealmExamination();
         sign.setAllergies(etAllergies.getText().toString().trim());
         sign.setCreatedBy(user.get_id());
+
         examination.setBp(etBloodPressure.getText().toString().trim());
         examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
         examination.setWeight(getInt(etWeight.getText().toString().trim()));
+        examination.setHeight(getInt(etHeight.getText().toString().trim()));
         examination.setConditions(new Gson().toJson(mapConditions));
         examination.setHearing(etHearing.getText().toString().trim());
-        examination.setHeight(getInt(etHeight.getText().toString().trim()));
         sign.setImmunizations(etImmunization.getText().toString().trim());
         sign.setTests(etLabtest.getText().toString().trim());
         sign.setXrays(etXray.getText().toString().trim());
@@ -230,11 +250,42 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     }
 
+    private boolean isValidInput() {
+        boolean isValidTemp = 30 <= getFloat(etTemperature.getText().toString().trim()) && getFloat(etTemperature.getText().toString().trim()) <= 40 || getFloat(etTemperature.getText().toString().trim()) == 0;
+        boolean isValidPulse = 40 <= getInt(etPulseRate.getText().toString().trim()) && getInt(etPulseRate.getText().toString().trim()) <= 120 || getFloat(etPulseRate.getText().toString().trim()) == 0;
+        boolean isValidHeight = 1 <= getInt(etHeight.getText().toString().trim()) && getInt(etHeight.getText().toString().trim()) <= 250 || getFloat(etHeight.getText().toString().trim()) == 0;
+        boolean isValidWeight = 1 <= getInt(etWeight.getText().toString().trim()) && getInt(etWeight.getText().toString().trim()) <= 150 || getFloat(etWeight.getText().toString().trim()) == 0;
+        if (!isValidTemp) {
+            etTemperature.setError("Invalid input , must be between 30 and 40");
+        }
+        if (!isValidPulse) {
+            etPulseRate.setError("Invalid input , must be between 40 and 120");
+        }
+        if (!isValidHeight) {
+            etHeight.setError("Invalid input , must be between 1 and 250");
+        }
+        if (!isValidWeight) {
+            etWeight.setError("Invalid input , must be between 1 and 150");
+        }
+        return isValidTemp && isValidHeight && isValidPulse && isValidWeight;
+    }
+
+//    private float getFloat(String trim) {
+//    }
+
     private int getInt(String trim) {
         try {
-            return Integer.parseInt(etTemperature.getText().toString().trim());
+            return Integer.parseInt(trim);
         } catch (Exception e) {
             return 0;
+        }
+    }
+
+    private float getFloat(String trim) {
+        try {
+            return Float.parseFloat(trim);
+        } catch (Exception e) {
+            return getInt(trim);
         }
     }
 
