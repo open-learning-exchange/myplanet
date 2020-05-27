@@ -73,7 +73,6 @@ class MyHealthFragment : Fragment() {
         userId = memberId
         userModel = mRealm!!.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         lblHealthName!!.text = userModel!!.fullName
-        Utilities.log("User id " + userId + " " + userModel?.key + " " + userModel?.iv)
         add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
         update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
         showRecords()

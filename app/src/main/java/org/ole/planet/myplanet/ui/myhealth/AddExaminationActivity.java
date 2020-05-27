@@ -20,9 +20,11 @@ import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DimenUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     EditText etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
             etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
     RealmUserModel user;
+    RealmUserModel currentUser;
     RealmMyHealthPojo pojo;
     RealmMyHealth health = null;
     FlexboxLayout flexboxLayout;
@@ -73,6 +76,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         initViews();
+        currentUser = new UserProfileDbHandler(this).getUserModel();
         mapConditions = new HashMap<String, Boolean>();
         mRealm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
@@ -214,14 +218,13 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setProfileId(health.getUserKey());
         examination.setCreatorId(health.getUserKey());
         examination.setGender(user.getGender());
-//        examination.setAge(user.getDob());
-        examination.setSelfExamination(userId.equals(pojo.get_id()));
+        examination.setAge(TimeUtils.getAge(user.getDob()));
+        examination.setSelfExamination(currentUser.get_id().equals(pojo.get_id()));
         examination.setDate(new Date().getTime());
         examination.setPlanetCode(user.getPlanetCode());
         RealmExamination sign = new RealmExamination();
         sign.setAllergies(etAllergies.getText().toString().trim());
-        sign.setCreatedBy(user.get_id());
-
+        sign.setCreatedBy(currentUser.get_id());
         examination.setBp(etBloodPressure.getText().toString().trim());
         examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
