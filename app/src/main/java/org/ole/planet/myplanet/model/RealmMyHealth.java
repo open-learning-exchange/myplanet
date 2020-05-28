@@ -46,7 +46,7 @@ public class RealmMyHealth {
     }
 
     public static class RealmMyHealthProfile {
-        private String  emergencyContactName, emergencyContactType, emergencyContact, specialNeeds, notes;
+        private String  emergencyContactName ="", emergencyContactType ="", emergencyContact="", specialNeeds="", notes="";
 
         public String getEmergencyContactName() {
             return emergencyContactName;
