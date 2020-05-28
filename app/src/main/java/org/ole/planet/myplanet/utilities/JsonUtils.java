@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.text.TextUtils;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -47,6 +49,31 @@ public class JsonUtils {
 
         }
         return false;
+    }
+
+    public static void addString(JsonObject object, String fieldName, String value) {
+        if (!TextUtils.isEmpty(value))
+            object.addProperty(fieldName, value);
+    }
+
+    public static void addLong(JsonObject object, String fieldName, long value) {
+        if (value > 0)
+            object.addProperty(fieldName, value);
+    }
+
+    public static void addInteger(JsonObject object, String fieldName, int value) {
+        if (value != 0)
+            object.addProperty(fieldName, value);
+    }
+
+    public static void addFloat(JsonObject object, String fieldName, float value) {
+        if (value != 0)
+            object.addProperty(fieldName, value);
+    }
+
+    public static void addJson(JsonObject object, String fieldName, JsonObject value) {
+        if (value != null && value.keySet().size() > 0)
+            object.add(fieldName, value);
     }
 
     public static int getInt(String fieldName, JsonObject jsonObject) {

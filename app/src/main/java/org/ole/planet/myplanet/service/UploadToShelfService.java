@@ -141,13 +141,13 @@ public class UploadToShelfService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).notEqualTo("userId", "").findAll();
-            Utilities.log("Health data size " + myHealths.size());
+            List<RealmMyHealthPojo> myHealths = realm.where(RealmMyHealthPojo.class).equalTo("isUpdated", true).notEqualTo("userId", "").findAll();
             for (RealmMyHealthPojo pojo : myHealths) {
                 try {
                     Response<JsonObject> res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
                     if (res.body() != null && res.body().has("id")) {
                         pojo.set_rev(res.body().get("rev").getAsString());
+                        pojo.setIsUpdated(false);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

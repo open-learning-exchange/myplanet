@@ -88,6 +88,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         if (pojo != null && !TextUtils.isEmpty(pojo.getData())) {
             health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
+
         if (health == null) {
             initHealth();
         }
@@ -200,6 +201,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
+        health.setLastExamination(new Date().getTime());
         health.setUserKey(AndroidDecrypter.generateKey());
         health.setProfile(profile);
         mRealm.commitTransaction();
@@ -215,6 +217,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             examination = mRealm.createObject(RealmMyHealthPojo.class, userId);
             examination.setUserId(userId);
         }
+
         examination.setProfileId(health.getUserKey());
         examination.setCreatorId(health.getUserKey());
         examination.setGender(user.getGender());
@@ -241,6 +244,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setNotes(etObservation.getText().toString().trim());
         sign.setMedications(etMedications.getText().toString().trim());
         examination.setDate(new Date().getTime());
+        examination.setIsUpdated(true);
+        pojo.setIsUpdated(true);
         try {
             Utilities.log(new Gson().toJson(sign));
             examination.setData(AndroidDecrypter.encrypt(new Gson().toJson(sign), user.getKey(), user.getIv()));
@@ -250,7 +255,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         mRealm.commitTransaction();
         Utilities.toast(this, "Added successfully");
         finish();
-
     }
 
     private boolean isValidInput() {
@@ -298,9 +302,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
                 pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
                 pojo.setUserId(user.get_id());
             }
-            if (TextUtils.isEmpty(pojo.getData())) {
-                pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
-            }
+//            if (TextUtils.isEmpty(pojo.getData())) {
+            health.setLastExamination(new Date().getTime());
+            pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
+//            }
         } catch (Exception e) {
             e.printStackTrace();
             Utilities.toast(this, "Unable to add health record.");

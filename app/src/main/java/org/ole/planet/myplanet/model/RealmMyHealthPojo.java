@@ -17,6 +17,7 @@ public class RealmMyHealthPojo extends RealmObject {
     @PrimaryKey
     private String _id;
     private String userId;
+    private boolean isUpdated;
     private String _rev;
     private String data;
     private float temperature;
@@ -45,6 +46,7 @@ public class RealmMyHealthPojo extends RealmObject {
         myHealth.setUserId(JsonUtils.getString("_id", act));
         myHealth.set_rev(JsonUtils.getString("_rev", act));
         myHealth.setTemperature(JsonUtils.getFloat("temperature", act));
+        myHealth.setIsUpdated(false);
         myHealth.setPulse(JsonUtils.getInt("pulse", act));
         myHealth.setHeight(JsonUtils.getFloat("height", act));
         myHealth.setWeight(JsonUtils.getFloat("weight", act));
@@ -74,6 +76,14 @@ public class RealmMyHealthPojo extends RealmObject {
 
     public void setGender(String gender) {
         this.gender = gender;
+    }
+
+    public boolean getIsUpdated() {
+        return isUpdated;
+    }
+
+    public void setIsUpdated(boolean isUpdated) {
+        this.isUpdated = isUpdated;
     }
 
     public String getCreatorId() {
@@ -246,23 +256,23 @@ public class RealmMyHealthPojo extends RealmObject {
         if (!TextUtils.isEmpty(health.get_rev()))
             object.addProperty("_rev", health.get_rev());
         object.addProperty("data", health.getData());
-        object.addProperty("temperature", health.getTemperature());
-        object.addProperty("pulse", health.getPulse());
-        object.addProperty("bp", health.getBp());
-        object.addProperty("height", health.getHeight());
-        object.addProperty("weight", health.getWeight());
-        object.addProperty("vision", health.getVision());
-        object.addProperty("hearing", health.getHearing());
-        object.addProperty("date", health.getDate());
+
+        JsonUtils.addFloat(object,"temperature", health.getTemperature());
+        JsonUtils.addInteger(object,"pulse", health.getPulse());
+        JsonUtils.addString(object,"bp", health.getBp());
+        JsonUtils.addFloat(object,"height", health.getHeight());
+        JsonUtils.addFloat(object,"weight", health.getWeight());
+        JsonUtils.addString(object,"vision", health.getVision());
+        JsonUtils.addString(object,"hearing", health.getHearing());
+        JsonUtils.addLong(object,"date", health.getDate());
         object.addProperty("selfExamination", health.isSelfExamination());
-        object.addProperty("planetCode", health.getPlanetCode());
+        JsonUtils.addString(object,"planetCode", health.getPlanetCode());
         object.addProperty("hasInfo", health.isHasInfo());
-        object.addProperty("profileId", health.getProfileId());
-        object.addProperty("creatorId", health.getCreatorId());
-        object.addProperty("gender", health.getGender());
-        object.addProperty("age", health.getAge());
-        object.add("conditions", new Gson().fromJson(health.getConditions(), JsonObject.class));
-//        object.addProperty("userId", health.getUserId());
+        JsonUtils.addString(object,"profileId", health.getProfileId());
+        JsonUtils.addString(object,"creatorId", health.getProfileId());
+        JsonUtils.addString(object,"gender", health.getGender());
+        JsonUtils.addInteger(object,"age", health.getAge());
+        JsonUtils.addJson(object,"conditions" , new Gson().fromJson(health.getConditions(), JsonObject.class));
         return object;
     }
 }
