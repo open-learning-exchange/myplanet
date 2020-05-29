@@ -11,9 +11,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:theme="@style/PrimaryButton"
+        android:textSize="14sp"
+        android:padding="8dp"
         android:layout_gravity="right"
         android:visibility="gone"
-        android:padding="@dimen/padding_normal"
         android:text="Add Member" />
 
     <EditText
