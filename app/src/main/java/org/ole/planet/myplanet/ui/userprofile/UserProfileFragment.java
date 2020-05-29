@@ -33,7 +33,7 @@ public class UserProfileFragment extends Fragment {
     DatabaseService realmService;
     Realm mRealm;
     RecyclerView rvStat;
-
+    RealmUserModel model;
     public UserProfileFragment() {
     }
 
@@ -64,11 +64,12 @@ public class UserProfileFragment extends Fragment {
     }
 
     private void populateUserData(View v) {
-        RealmUserModel model = handler.getUserModel();
+         model = handler.getUserModel();
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
         String dob = TextUtils.isEmpty(model.getDob())? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         ((TextView) v.findViewById(R.id.txt_dob)).setText(dob);
+        //how image
         Utilities.loadImage(model.getUserImage(), (ImageView) v.findViewById(R.id.image));
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
         map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
@@ -78,6 +79,8 @@ public class UserProfileFragment extends Fragment {
         map.put("Number of Resource open : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
         setUpRecyclerView(map, v);
     }
+
+
 
     public void setUpRecyclerView(final HashMap<String, String> map, View v) {
         final LinkedList<String> keys = new LinkedList<>(map.keySet());
@@ -108,5 +111,7 @@ public class UserProfileFragment extends Fragment {
             }
         });
     }
+
+
 
 }

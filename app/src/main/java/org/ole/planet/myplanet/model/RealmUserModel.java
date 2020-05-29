@@ -57,7 +57,6 @@ public class RealmUserModel extends RealmObject {
     private String password;
     private boolean showTopbar;
 
-
     public JsonObject serialize() {
         JsonObject object = new JsonObject();
         if (!get_id().isEmpty()) {
