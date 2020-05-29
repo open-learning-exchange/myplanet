@@ -6,17 +6,27 @@
     android:gravity="center"
     android:orientation="vertical">
 
+    <Button
+        android:id="@+id/btn_add_member"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:theme="@style/PrimaryButton"
+        android:layout_gravity="right"
+        android:visibility="gone"
+        android:padding="@dimen/padding_normal"
+        android:text="Add Member" />
+
     <EditText
         android:id="@+id/et_search"
         android:layout_width="match_parent"
-        android:hint="@string/search"
         android:layout_height="match_parent"
-        android:maxLines="1"
-        android:inputType="text" />
+        android:hint="@string/search"
+        android:inputType="text"
+        android:maxLines="1" />
 
     <ListView
         android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:choiceMode="singleChoice"/>
+        android:choiceMode="singleChoice" />
 </LinearLayout>

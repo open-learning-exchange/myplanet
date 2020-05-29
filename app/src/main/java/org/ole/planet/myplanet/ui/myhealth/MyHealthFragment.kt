@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import io.realm.Realm
+import kotlinx.android.synthetic.main.alert_health_list.view.*
 import kotlinx.android.synthetic.main.fragment_vital_sign.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -83,14 +84,16 @@ class MyHealthFragment : Fragment() {
         val memberFullNameList: MutableList<String> = ArrayList()
         val map = HashMap<String, String>()
         for (um in userModelList) {
-            memberFullNameList.add(um.name)
-            map[um.name] = if (TextUtils.isEmpty("_id")) um.id else um.id
+            memberFullNameList.add(um.name + " (" + um.fullName + ")")
+            map[um.name + " (" + um.fullName + ")"] = if (TextUtils.isEmpty("_id")) um.id else um.id
         }
         val adapter = ArrayAdapter(activity, android.R.layout.simple_list_item_1, memberFullNameList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
-        val etSearch = alertHealth.findViewById<EditText>(R.id.et_search)
-        setTextWatcher(etSearch, adapter)
-        val lv = alertHealth.findViewById<ListView>(R.id.list)
+        val btnAddMember = alertHealth.btn_add_member
+        val etSearch = alertHealth.et_search
+        setTextWatcher(etSearch, btnAddMember, adapter)
+        btnAddMember.setOnClickListener { startActivity(Intent(requireContext(), BecomeMemberActivity::class.java)) }
+        val lv = alertHealth.list
         lv.adapter = adapter
         lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
             val user = (view as TextView).text.toString()
@@ -102,14 +105,17 @@ class MyHealthFragment : Fragment() {
         dialog?.show()
     }
 
-    private fun setTextWatcher(etSearch: EditText, adapter: ArrayAdapter<String>) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, adapter: ArrayAdapter<String>) {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                adapter.filter.filter(charSequence)
+                adapter.filter.filter(charSequence) {
+                    btnAddMember.visibility = if (it == 0) View.VISIBLE else View.GONE
+                }
             }
 
-            override fun afterTextChanged(editable: Editable) {}
+            override fun afterTextChanged(editable: Editable) {
+            }
         })
     }
 
