@@ -265,8 +265,12 @@ public class Service {
                         new UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj);
                 }
             } catch (IOException e) {
+                e.printStackTrace();
             }
-        }, () -> callback.onSuccess("User created successfully"), error -> callback.onSuccess("Unable to save user please sync"));
+        }, () -> callback.onSuccess("User created successfully"), error -> {
+            error.printStackTrace();
+            callback.onSuccess("Unable to save user please sync");
+        });
     }
 
 

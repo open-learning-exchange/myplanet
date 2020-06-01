@@ -133,7 +133,7 @@ public class UploadToShelfService {
                 jsonObject.add("members", members);
                 response = apiInterface.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject).execute();
                 if (response.body() != null) {
-                    Utilities.log(new Gson().toJson(response.body()));
+                    Utilities.log("Update security  " +  new Gson().toJson(response.body()));
                 }
             }
         } catch (IOException e) {
@@ -158,14 +158,12 @@ public class UploadToShelfService {
             if (response.body() != null) {
                 model.setKey(keyString);
                 model.setIv(iv);
-                Utilities.log("New user key " + keyString);
-                Utilities.log("New user iv " + iv);
                 success = true;
             } else {
                 success = false;
             }
         }
-        changeUserSecurity(model, ob);
+        changeUserSecurity(model, obj);
         return true;
     }
 
