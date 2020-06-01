@@ -80,6 +80,8 @@ public class TransactionSyncManager {
         }
     }
 
+
+
     public static void syncKeyIv(Realm mRealm, SharedPreferences settings, SyncListener listener) {
         listener.onSyncStarted();
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();

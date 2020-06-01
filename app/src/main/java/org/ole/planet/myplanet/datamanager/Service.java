@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.datamanager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -12,10 +13,12 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
+import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.model.Rows;
 import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
@@ -168,6 +171,8 @@ public class Service {
         });
     }
 
+
+
     public void isPlanetAvailable(PlanetAvailableListener callback) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.isPlanetAvailable(Utilities.getUpdateUrl(preferences)).enqueue(new Callback<ResponseBody>() {
@@ -246,6 +251,7 @@ public class Service {
         });
     }
 
+
     private void saveUserToDb(Realm realm, String id, JsonObject obj, CreateUserCallback callback) {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
 
@@ -259,8 +265,12 @@ public class Service {
                         new UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj);
                 }
             } catch (IOException e) {
+                e.printStackTrace();
             }
-        }, () -> callback.onSuccess("User created successfully"), error -> callback.onSuccess("Unable to save user please sync"));
+        }, () -> callback.onSuccess("User created successfully"), error -> {
+            error.printStackTrace();
+            callback.onSuccess("Unable to save user please sync");
+        });
     }
 
 

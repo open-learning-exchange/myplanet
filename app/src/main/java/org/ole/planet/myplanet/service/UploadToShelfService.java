@@ -15,12 +15,14 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.model.Rows;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -109,6 +111,36 @@ public class UploadToShelfService {
         }
     }
 
+
+    private static void changeUserSecurity(RealmUserModel model, JsonObject obj) {
+        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
+        ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
+        Response<JsonObject> response;
+        try {
+            response = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/_security").execute();
+            if (response.body() != null) {
+                JsonObject jsonObject = response.body();
+                JsonObject members = jsonObject.getAsJsonObject("members");
+                JsonArray rolesArray;
+                if (members.has("roles")) {
+                    rolesArray = members.getAsJsonArray("roles");
+                } else {
+                    rolesArray = new JsonArray();
+                }
+                rolesArray.add("health");
+                members.add("roles", rolesArray);
+                jsonObject.add("members", members);
+                response = apiInterface.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject).execute();
+                if (response.body() != null) {
+                    Utilities.log("Update security  " +  new Gson().toJson(response.body()));
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public boolean saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
         String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
         String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
@@ -126,13 +158,12 @@ public class UploadToShelfService {
             if (response.body() != null) {
                 model.setKey(keyString);
                 model.setIv(iv);
-                Utilities.log("New user key " + keyString);
-                Utilities.log("New user iv " + iv);
                 success = true;
             } else {
                 success = false;
             }
         }
+        changeUserSecurity(model, obj);
         return true;
     }
 
