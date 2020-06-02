@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmSearchActivity;
 import org.ole.planet.myplanet.model.RealmTag;
@@ -35,6 +36,8 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+
+import io.realm.Sort;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -50,6 +53,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     Button btnRemove, orderByDate, orderByTitle;
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
+    Spinner spn;
 
     public CourseFragment() {
     }
@@ -98,6 +102,23 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         changeButtonStatus();
         if (!isMyCourseLib) tvFragmentInfo.setText("Our Courses");
         additionalSetup();
+
+        spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                if (i == 0) {
+                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.ASCENDING));
+                } else if (i == 1) {
+                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.DESCENDING));
+                } else {
+                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle"));
+                }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> adapterView) {
+            }
+        });
     }
 
     public void additionalSetup() {
@@ -110,6 +131,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     }
 
     private void initializeView() {
+        spn = getView().findViewById(R.id.spn_sort);
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> addToMyList());
         etSearch = getView().findViewById(R.id.et_search);

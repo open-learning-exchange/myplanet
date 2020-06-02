@@ -134,9 +134,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 if (i == 0) {
-                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", Sort.ASCENDING));
+                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "createdDate", Sort.ASCENDING));
                 } else if (i == 1) {
-                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "uploadDate", Sort.DESCENDING));
+                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "createdDate", Sort.DESCENDING));
                 } else {
                     adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title"));
                 }
