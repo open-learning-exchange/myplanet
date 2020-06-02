@@ -242,6 +242,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setTreatments(etTretments.getText().toString().trim());
         sign.setReferrals(etReferrals.getText().toString().trim());
         sign.setNotes(etObservation.getText().toString().trim());
+        sign.setDiagnosis(etDiag.getText().toString().trim());
         sign.setMedications(etMedications.getText().toString().trim());
         examination.setDate(new Date().getTime());
         examination.setIsUpdated(true);
