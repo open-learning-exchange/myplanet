@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import io.realm.Realm
+import io.realm.Sort
 import kotlinx.android.synthetic.main.alert_health_list.view.*
 import kotlinx.android.synthetic.main.fragment_vital_sign.*
 import org.ole.planet.myplanet.R
@@ -80,7 +81,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun selectPatient() {
-        val userModelList = mRealm!!.where(RealmUserModel::class.java).findAll()
+        val userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
         val memberFullNameList: MutableList<String> = ArrayList()
         val map = HashMap<String, String>()
         for (um in userModelList) {
