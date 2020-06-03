@@ -80,7 +80,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         checkUser();
         setContentView(R.layout.activity_dashboard);
