@@ -55,12 +55,8 @@ public class RealmUserModel extends RealmObject {
     private String key;
     private String iv;
     private String password;
-    private String imageUrl;
     private boolean showTopbar;
 
-    public String getImageUrl() {
-        return imageUrl;
-    }
     public JsonObject serialize() {
         JsonObject object = new JsonObject();
         if (!get_id().isEmpty()) {
