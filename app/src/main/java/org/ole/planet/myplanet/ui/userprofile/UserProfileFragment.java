@@ -24,6 +24,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -132,7 +134,11 @@ public class UserProfileFragment extends Fragment {
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
         String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         ((TextView) v.findViewById(R.id.txt_dob)).setText(dob);
-        Utilities.loadImage(model.getUserImage(), (ImageView) v.findViewById(R.id.image));
+        if(!TextUtils.isEmpty(model.getUserImage())){
+            Picasso.get().load(new File(model.getUserImage())).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+        }else{
+            imageView.setImageResource(R.drawable.profile);
+        }
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
         map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
