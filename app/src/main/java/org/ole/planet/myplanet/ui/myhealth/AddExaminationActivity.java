@@ -229,10 +229,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setAllergies(etAllergies.getText().toString().trim());
         sign.setCreatedBy(currentUser.get_id());
         examination.setBp(etBloodPressure.getText().toString().trim());
-        examination.setTemperature(getInt(etTemperature.getText().toString().trim()));
+        examination.setTemperature(getFloat(etTemperature.getText().toString().trim()));
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
-        examination.setWeight(getInt(etWeight.getText().toString().trim()));
-        examination.setHeight(getInt(etHeight.getText().toString().trim()));
+        examination.setWeight(getFloat(etWeight.getText().toString().trim()));
+        examination.setHeight(getFloat(etHeight.getText().toString().trim()));
         examination.setConditions(new Gson().toJson(mapConditions));
         examination.setHearing(etHearing.getText().toString().trim());
         sign.setImmunizations(etImmunization.getText().toString().trim());
