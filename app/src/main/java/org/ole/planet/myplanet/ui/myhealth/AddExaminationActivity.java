@@ -246,6 +246,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         sign.setMedications(etMedications.getText().toString().trim());
         examination.setDate(new Date().getTime());
         examination.setIsUpdated(true);
+        examination.setHasInfo(getHasInfo());
         pojo.setIsUpdated(true);
         try {
             Utilities.log(new Gson().toJson(sign));
@@ -256,6 +257,18 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         mRealm.commitTransaction();
         Utilities.toast(this, "Added successfully");
         finish();
+    }
+
+    private boolean getHasInfo() {
+        return !TextUtils.isEmpty(etAllergies.getText().toString())
+                || !TextUtils.isEmpty(etDiag.getText().toString())
+                || !TextUtils.isEmpty(etImmunization.getText().toString())
+                || !TextUtils.isEmpty(etMedications.getText().toString())
+                || !TextUtils.isEmpty(etObservation.getText().toString())
+                || !TextUtils.isEmpty(etReferrals.getText().toString())
+                || !TextUtils.isEmpty(etLabtest.getText().toString())
+                || !TextUtils.isEmpty(etTretments.getText().toString())
+                || !TextUtils.isEmpty(etXray.getText().toString());
     }
 
     private boolean isValidInput() {
