@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
@@ -82,11 +83,10 @@ public class UserProfileFragment extends Fragment {
         rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvStat.setNestedScrollingEnabled(false);
         addPicture = (Button) v.findViewById(R.id.bt_profile_pic);
-        //imageView = (ImageView) v.findViewById(R.id.imageView4);
+        imageView = (ImageView) v.findViewById(R.id.image);
 
         addPicture.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v)
-            {
+            public void onClick(View v) {
                 searchForPhoto();
             }
         });
@@ -105,13 +105,18 @@ public class UserProfileFragment extends Fragment {
         if (requestCode == IMAGE_TO_USE && resultCode == RESULT_OK) {
             Uri url = data.getData();
             imageUrl = url.toString();
-            // imageView.setImageURI(url);
-            if(!mRealm.isInTransaction())
-            {
+
+            if (!mRealm.isInTransaction()) {
                 mRealm.beginTransaction();
-                model.setUserImage(imageUrl);
             }
-            Utilities.log("Image Url = "+imageUrl);
+            String path = FileUtils.getRealPathFromURI(requireActivity(), url);
+            if (TextUtils.isEmpty(path)) {
+                path = FileUtils.getImagePath(requireActivity(), url);
+            }
+            model.setUserImage(path);
+            mRealm.commitTransaction();
+            imageView.setImageURI(url);
+            Utilities.log("Image Url = " + imageUrl);
         }
              /*   getRealm().executeTransactionAsync(new Realm.Transaction() {
             @Override
@@ -120,11 +125,12 @@ public class UserProfileFragment extends Fragment {
             }
         });*/
     }
+
     private void populateUserData(View v) {
         model = handler.getUserModel();
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText(Utilities.checkNA(model.getEmail()));
-        String dob = TextUtils.isEmpty(model.getDob())? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         ((TextView) v.findViewById(R.id.txt_dob)).setText(dob);
         Utilities.loadImage(model.getUserImage(), (ImageView) v.findViewById(R.id.image));
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
