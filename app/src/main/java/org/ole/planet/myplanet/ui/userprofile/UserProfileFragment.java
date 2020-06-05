@@ -138,14 +138,11 @@ public class UserProfileFragment extends Fragment {
         if (!TextUtils.isEmpty(model.getUserImage()))
             Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(imageView, new Callback() {
                 @Override
-                public void onSuccess() {
-                }
+                public void onSuccess() { }
 
                 @Override
                 public void onError(Exception e) {
-                    e.printStackTrace();
-                    File f = new File(model.getUserImage());
-                    Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+                    Picasso.get().load(new File(model.getUserImage())).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
                 }
             });
         else {
