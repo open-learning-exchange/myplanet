@@ -160,7 +160,7 @@ public class RealmUserModel extends RealmObject {
             String _id = JsonUtils.getString("_id", jsonDoc);
             if (_id.isEmpty())
                 _id = UUID.randomUUID().toString();
-            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", _id).findFirst();
+            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("_id", _id).findFirst();
 
             if (user == null) {
                 user = mRealm.createObject(RealmUserModel.class, _id);
