@@ -106,6 +106,7 @@ public class Utilities {
     }
 
     public static void loadImage(String userImage, ImageView imageView) {
+        Utilities.log("User image " + userImage);
         if (!TextUtils.isEmpty(userImage)) {
             Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
         } else {
