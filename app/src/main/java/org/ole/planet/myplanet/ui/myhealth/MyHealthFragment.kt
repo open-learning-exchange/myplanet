@@ -85,8 +85,8 @@ class MyHealthFragment : Fragment() {
         val memberFullNameList: MutableList<String> = ArrayList()
         val map = HashMap<String, String>()
         for (um in userModelList) {
-            memberFullNameList.add(um.name + " (" + um.fullName + ")")
-            map[um.name + " (" + um.fullName + ")"] = if (TextUtils.isEmpty("_id")) um.id else um.id
+            memberFullNameList.add(um.fullName + " (" + um.name + ")")
+            map[um.fullName + " (" + um.name + ")"] = if (TextUtils.isEmpty("_id")) um.id else um.id
         }
         val adapter = ArrayAdapter(activity, android.R.layout.simple_list_item_1, memberFullNameList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
