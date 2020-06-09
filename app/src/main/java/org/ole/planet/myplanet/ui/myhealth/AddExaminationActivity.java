@@ -275,8 +275,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     private boolean isValidInput() {
         boolean isValidTemp = 30 <= getFloat(etTemperature.getText().toString().trim()) && getFloat(etTemperature.getText().toString().trim()) <= 40 || getFloat(etTemperature.getText().toString().trim()) == 0;
         boolean isValidPulse = 40 <= getInt(etPulseRate.getText().toString().trim()) && getInt(etPulseRate.getText().toString().trim()) <= 120 || getFloat(etPulseRate.getText().toString().trim()) == 0;
-        boolean isValidHeight = 1 <= getInt(etHeight.getText().toString().trim()) && getInt(etHeight.getText().toString().trim()) <= 250 || getFloat(etHeight.getText().toString().trim()) == 0;
-        boolean isValidWeight = 1 <= getInt(etWeight.getText().toString().trim()) && getInt(etWeight.getText().toString().trim()) <= 150 || getFloat(etWeight.getText().toString().trim()) == 0;
+        boolean isValidHeight = 1 <= getFloat(etHeight.getText().toString().trim()) && getFloat(etHeight.getText().toString().trim()) <= 250 || getFloat(etHeight.getText().toString().trim()) == 0;
+        boolean isValidWeight = 1 <= getFloat(etWeight.getText().toString().trim()) && getFloat(etWeight.getText().toString().trim()) <= 150 || getFloat(etWeight.getText().toString().trim()) == 0;
         if (!isValidTemp) {
             etTemperature.setError("Invalid input , must be between 30 and 40");
         }
