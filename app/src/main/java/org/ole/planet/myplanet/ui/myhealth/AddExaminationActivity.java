@@ -221,6 +221,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setProfileId(health.getUserKey());
         examination.setCreatorId(health.getUserKey());
         examination.setGender(user.getGender());
+
         examination.setAge(TimeUtils.getAge(user.getDob()));
         examination.setSelfExamination(currentUser.get_id().equals(pojo.get_id()));
         examination.setDate(new Date().getTime());
