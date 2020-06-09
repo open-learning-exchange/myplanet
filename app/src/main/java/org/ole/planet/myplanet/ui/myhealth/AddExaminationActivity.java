@@ -95,7 +95,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         initExamination();
         validateFields();
         findViewById(R.id.btn_save).setOnClickListener(view -> {
-            if (!isValidInput() && !allowSubmission) {
+            if (!isValidInput() || !allowSubmission) {
                 Utilities.toast(this, "Invalid input");
                 return;
             }
