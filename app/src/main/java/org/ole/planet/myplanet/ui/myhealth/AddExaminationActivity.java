@@ -305,7 +305,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     private float getFloat(String trim) {
         try {
-            return Float.parseFloat(trim);
+            return Float.parseFloat(String.format("%.1f", Float.parseFloat(trim)));
         } catch (Exception e) {
             return getInt(trim);
         }
