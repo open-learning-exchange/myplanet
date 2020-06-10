@@ -257,22 +257,22 @@ public class RealmMyHealthPojo extends RealmObject {
             object.addProperty("_rev", health.get_rev());
         object.addProperty("data", health.getData());
 
-        JsonUtils.addFloat(object,"temperature", health.getTemperature());
-        JsonUtils.addInteger(object,"pulse", health.getPulse());
-        JsonUtils.addString(object,"bp", health.getBp());
-        JsonUtils.addFloat(object,"height", health.getHeight());
-        JsonUtils.addFloat(object,"weight", health.getWeight());
-        JsonUtils.addString(object,"vision", health.getVision());
-        JsonUtils.addString(object,"hearing", health.getHearing());
-        JsonUtils.addLong(object,"date", health.getDate());
+        JsonUtils.addFloat(object, "temperature", health.getTemperature());
+        JsonUtils.addInteger(object, "pulse", health.getPulse());
+        JsonUtils.addString(object, "bp", health.getBp());
+        JsonUtils.addFloat(object, "height", health.getHeight());
+        JsonUtils.addFloat(object, "weight", health.getWeight());
+        JsonUtils.addString(object, "vision", health.getVision());
+        JsonUtils.addString(object, "hearing", health.getHearing());
+        JsonUtils.addLong(object, "date", health.getDate());
         object.addProperty("selfExamination", health.isSelfExamination());
-        JsonUtils.addString(object,"planetCode", health.getPlanetCode());
+        JsonUtils.addString(object, "planetCode", health.getPlanetCode());
         object.addProperty("hasInfo", health.isHasInfo());
-        JsonUtils.addString(object,"profileId", health.getProfileId());
-        JsonUtils.addString(object,"creatorId", health.getProfileId());
-        JsonUtils.addString(object,"gender", health.getGender());
-        JsonUtils.addInteger(object,"age", health.getAge());
-        JsonUtils.addJson(object,"conditions" , new Gson().fromJson(health.getConditions(), JsonObject.class));
+        JsonUtils.addString(object, "profileId", health.getProfileId());
+        JsonUtils.addString(object, "creatorId", health.getProfileId());
+        JsonUtils.addString(object, "gender", health.getGender());
+        object.addProperty("age", health.getAge());
+        JsonUtils.addJson(object, "conditions", new Gson().fromJson(health.getConditions(), JsonObject.class));
         return object;
     }
 }

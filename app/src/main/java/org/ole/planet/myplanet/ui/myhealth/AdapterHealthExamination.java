@@ -59,7 +59,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMyHealthExamination) {
 
-            ((ViewHolderMyHealthExamination) holder).temp.setText(list.get(position).getTemperature() == 0 ? "" : list.get(position).getTemperature() +"");
+            ((ViewHolderMyHealthExamination) holder).temp.setText(checkEmpty(list.get(position).getTemperature()));
             ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
             JsonObject encrypted = list.get(position).getEncryptedDataAsJson(this.userModel);
             String createdBy = JsonUtils.getString("createdBy", encrypted);
@@ -77,15 +77,25 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\nSelf Examination");
                 holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
             }
-            ((ViewHolderMyHealthExamination) holder).pulse.setText(list.get(position).getPulse() == 0 ? "" : list.get(position).getPulse() + "");
+            ((ViewHolderMyHealthExamination) holder).pulse.setText(checkEmptyInt(list.get(position).getPulse()));
             ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
             ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing() + "");
-            ((ViewHolderMyHealthExamination) holder).height.setText(list.get(position).getHeight() == 0 ? "" : list.get(position).getHeight() + "");
-            ((ViewHolderMyHealthExamination) holder).weight.setText(list.get(position).getWeight() == 0 ? "" : list.get(position).getWeight() + "");
+            ((ViewHolderMyHealthExamination) holder).height.setText(checkEmpty(list.get(position).getHeight()));
+            ((ViewHolderMyHealthExamination) holder).weight.setText(checkEmpty(list.get(position).getWeight()));
             ((ViewHolderMyHealthExamination) holder).vision.setText(list.get(position).getVision() + "");
             holder.itemView.setOnClickListener(view -> showAlert(position, encrypted));
         }
     }
+
+    private String checkEmpty(float value) {
+        return value == 0 ? "" : value + "";
+    }
+
+
+    private String checkEmptyInt(int value) {
+        return value == 0 ? "" : value + "";
+    }
+
 
     private void showAlert(int position, JsonObject encrypted) {
         RealmMyHealthPojo realmExamination = list.get(position);
@@ -93,11 +103,11 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         View v = LayoutInflater.from(context).inflate(R.layout.alert_examination, null);
         TextView tvVitals = v.findViewById(R.id.tv_vitals);
         TextView tvCondition = v.findViewById(R.id.tv_condition);
-        tvVitals.setText("Temperature : " + realmExamination.getTemperature() + "\n" +
-                "Pulse : " + realmExamination.getPulse() + "\n" +
+        tvVitals.setText("Temperature : " + checkEmpty(realmExamination.getTemperature()) + "\n" +
+                "Pulse : " + checkEmptyInt(realmExamination.getPulse()) + "\n" +
                 "Blood Pressure : " + realmExamination.getBp() + "\n" +
-                "Height : " + realmExamination.getHeight() + "\n" +
-                "Weight : " + realmExamination.getWeight() + "\n" +
+                "Height : " + checkEmpty(realmExamination.getHeight()) + "\n" +
+                "Weight : " + checkEmpty(realmExamination.getWeight()) + "\n" +
                 "Vision : " + realmExamination.getVision() + "\n" +
                 "Hearing : " + realmExamination.getHearing() + "\n");
         showEncryptedData(tvCondition, encrypted);
