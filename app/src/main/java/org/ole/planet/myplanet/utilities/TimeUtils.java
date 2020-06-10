@@ -50,6 +50,7 @@ public class TimeUtils {
                 dob.setTime(dt2);
             }
         } catch (Exception e) {
+            e.printStackTrace();
         }
         int age = today.get(Calendar.YEAR) - dob.get(Calendar.YEAR);
         if (today.get(Calendar.DAY_OF_YEAR) < dob.get(Calendar.DAY_OF_YEAR)) {
