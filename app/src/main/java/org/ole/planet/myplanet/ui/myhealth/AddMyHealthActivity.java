@@ -42,7 +42,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         realm = new DatabaseService(this).getRealmInstance();
         userId = getIntent().getStringExtra("userId");
         healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("_id", userId).findFirst();
-        if (healthPojo == null){
+        if (healthPojo == null) {
             healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
         }
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
@@ -80,6 +80,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
+        healthPojo.setIsUpdated(true);
         healthPojo.setUserId(userModelB.get_id());
         try {
             healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));

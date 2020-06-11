@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.myhealth
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.CountDownTimer
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -15,7 +16,10 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
+import io.realm.Case
 import io.realm.Realm
+import io.realm.Sort
+import kotlinx.android.synthetic.main.alert_health_list.view.*
 import kotlinx.android.synthetic.main.fragment_vital_sign.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -73,25 +77,22 @@ class MyHealthFragment : Fragment() {
         userId = memberId
         userModel = mRealm!!.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         lblHealthName!!.text = userModel!!.fullName
-        Utilities.log("User id " + userId + " " + userModel?.key + " " + userModel?.iv)
         add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
         update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
         showRecords()
     }
 
     private fun selectPatient() {
-        val userModelList = mRealm!!.where(RealmUserModel::class.java).findAll()
-        val memberFullNameList: MutableList<String> = ArrayList()
+        val userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+
         val map = HashMap<String, String>()
-        for (um in userModelList) {
-            memberFullNameList.add(um.name)
-            map[um.name] = if (TextUtils.isEmpty("_id")) um.id else um.id
-        }
-        val adapter = ArrayAdapter(activity, android.R.layout.simple_list_item_1, memberFullNameList)
+        val adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
-        val etSearch = alertHealth.findViewById<EditText>(R.id.et_search)
-        setTextWatcher(etSearch, adapter)
-        val lv = alertHealth.findViewById<ListView>(R.id.list)
+        val btnAddMember = alertHealth.btn_add_member
+        val etSearch = alertHealth.et_search
+        btnAddMember.setOnClickListener { startActivity(Intent(requireContext(), BecomeMemberActivity::class.java)) }
+        val lv = alertHealth.list
+        setTextWatcher(etSearch, btnAddMember, lv)
         lv.adapter = adapter
         lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
             val user = (view as TextView).text.toString()
@@ -103,14 +104,35 @@ class MyHealthFragment : Fragment() {
         dialog?.show()
     }
 
-    private fun setTextWatcher(etSearch: EditText, adapter: ArrayAdapter<String>) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
+        var timer: CountDownTimer? = null
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                adapter.filter.filter(charSequence)
+
+
+
             }
 
-            override fun afterTextChanged(editable: Editable) {}
+            override fun afterTextChanged(editable: Editable) {
+                timer?.cancel()
+                timer = object : CountDownTimer(1000, 1500) {
+                    override fun onTick(millisUntilFinished: Long) {}
+                    override fun onFinish() {
+                        val userModelList = mRealm!!.where(RealmUserModel::class.java)
+                                .contains("firstName", editable.toString(), Case.INSENSITIVE)
+                                .or()
+                                .contains("lastName", editable.toString(), Case.INSENSITIVE)
+                                .or()
+                                .contains("name", editable.toString(), Case.INSENSITIVE)
+                                .sort("joinDate", Sort.DESCENDING).findAll()
+
+                        val adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+                        lv.adapter = adapter
+                        btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                    }
+                }.start()
+            }
         })
     }
 

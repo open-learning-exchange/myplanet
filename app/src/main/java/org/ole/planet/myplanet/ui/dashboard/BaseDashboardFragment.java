@@ -12,6 +12,8 @@ import android.widget.TextView;
 
 import com.google.android.flexbox.FlexDirection;
 import com.google.android.flexbox.FlexboxLayout;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.NotificationCallback;
@@ -37,6 +39,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.io.File;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -65,7 +68,22 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
         model = profileDbHandler.getUserModel();
         fullName = profileDbHandler.getUserModel().getFullName();
         ImageView imageView = v.findViewById(R.id.imageView);
-        Utilities.loadImage(model.getUserImage(), imageView);
+        if (!TextUtils.isEmpty(model.getUserImage()))
+            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(imageView, new Callback() {
+
+                @Override
+                public void onSuccess() {
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    e.printStackTrace();
+                    File f = new File(model.getUserImage());
+                    if (f != null)
+                        Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+                }
+            });
+
         txtVisits.setText(profileDbHandler.getOfflineVisits() + " visits");
         txtRole.setText(" - " + model.getRoleAsString());
         txtFullName.setText(fullName);
@@ -295,12 +313,12 @@ public class BaseDashboardFragment extends BaseDashboardFragmentPlugin implement
 
     @Override
     public void syncKeyId() {
-     di =   new ProgressDialog(getActivity());
+        di = new ProgressDialog(getActivity());
         di.setMessage("Syncing health , please wait...");
         Utilities.log(model.getRoleAsString());
         if (model.getRoleAsString().contains("health")) {
             TransactionSyncManager.syncAllHealthData(mRealm, settings, this);
-        }else{
+        } else {
             TransactionSyncManager.syncKeyIv(mRealm, settings, this);
         }
     }

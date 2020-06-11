@@ -84,6 +84,8 @@ public class UploadManager extends FileUploadService {
     }
 
 
+
+
     public void uploadNewsActivities() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();

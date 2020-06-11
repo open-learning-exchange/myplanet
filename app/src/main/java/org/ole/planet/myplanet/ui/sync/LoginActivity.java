@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
@@ -65,6 +66,8 @@ import io.realm.Realm;
 import io.realm.Sort;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
+import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
@@ -81,11 +84,25 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private GifDrawable gifDrawable;
     //    private CheckBox managerialLogin;
+    private ImageButton imgBtnSetting;
     private boolean isSync = false, forceSync = false;
     private SwitchCompat switchServerUrl;
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
+    private GifImageButton syncIcon;
+
+    private void showShowCaseView() {
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500);
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "1");
+        sequence.setConfig(config);
+        sequence.addSequenceItem(syncIcon,
+                "Press the Sync Button to Sync your Planet account data with your myPlanet application data", "GOT IT");
+        sequence.addSequenceItem(imgBtnSetting,
+                "Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.", "GOT IT");
+        sequence.start();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,6 +115,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         declareMoreElements();
         showWifiDialog();
         registerReceiver();
+
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         processedUrl = Utilities.getUrl();
         if (forceSync) {
@@ -124,6 +142,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else {
             btnOpenCommunity.setVisibility(View.GONE);
         }
+        findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
+
+        if (settings.getBoolean("firstRun", true))
+            showShowCaseView();
     }
 
     private boolean forceSyncTrigger() {
@@ -171,7 +193,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         inputLayoutName = findViewById(R.id.input_layout_name);
         inputLayoutPassword = findViewById(R.id.input_layout_password);
-        ImageButton imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        imgBtnSetting = findViewById(R.id.imgBtnSetting);
         Button btnGuestLogin = findViewById(R.id.btn_guest_login);
         TextView customDeviceName = findViewById(R.id.customDeviceName);
         customDeviceName.setText(getCustomDeviceName());
@@ -188,6 +210,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settings.edit().putBoolean("isChild", b).commit();
             recreate();
         });
+
     }
 
     private void becomeAMember() {
