@@ -21,7 +21,8 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
         }
         var tv = v?.findViewById<TextView>(android.R.id.text1)
         var um = getItem(position)
-        tv?.text = """${um.name} (${um.fullName})"""
+        tv?.text = """${um.fullName} (${um.name})"""
+
         return v!!;
     }
 
