@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
+import android.widget.AdapterView.OnItemSelectedListener
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -83,9 +84,8 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun selectPatient() {
-        val userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        val map = HashMap<String, String>()
-        val adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+        var userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+        var adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
         val btnAddMember = alertHealth.btn_add_member
         val etSearch = alertHealth.et_search
@@ -94,13 +94,41 @@ class MyHealthFragment : Fragment() {
         val lv = alertHealth.list
         setTextWatcher(etSearch, btnAddMember, lv)
         lv.adapter = adapter
-        lv.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, view: View, i: Int, l: Long ->
-            val user = (view as TextView).text.toString()
-            userId = map[user]
+        lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
+            var selected = lv.adapter.getItem(i) as RealmUserModel
+            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
             getHealthRecords(userId)
             dialog!!.dismiss()
         }
+        spnSort.onItemSelectedListener = object : OnItemSelectedListener {
+            override fun onNothingSelected(p0: AdapterView<*>?) {
 
+            }
+
+            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
+                var sort: Sort
+                var sortBy: String
+                when {
+                    p2 == 0 -> {
+                        sortBy = "joinDate"
+                        sort = Sort.DESCENDING
+                    }
+
+                    p2 == 1 -> {
+                        sortBy = "joinDate"
+                        sort = Sort.ASCENDING
+                    }
+                    else -> {
+                        sortBy = "name"
+                        sort = Sort.ASCENDING
+                    }
+                }
+                 userModelList = mRealm!!.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
+                 adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+                lv.adapter = adapter
+            }
+
+        }
         dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
         dialog?.show()
     }
@@ -110,7 +138,6 @@ class MyHealthFragment : Fragment() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-
 
 
             }
