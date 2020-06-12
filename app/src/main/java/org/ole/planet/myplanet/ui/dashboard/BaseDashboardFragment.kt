@@ -16,7 +16,7 @@ import com.squareup.picasso.Callback
 import com.squareup.picasso.Picasso
 import io.realm.Case
 import io.realm.RealmObject
-import kotlinx.android.synthetic.main.card_profile_bell.*
+import kotlinx.android.synthetic.main.card_profile_bell.view.*
 import kotlinx.android.synthetic.main.home_card_courses.view.*
 import kotlinx.android.synthetic.main.home_card_library.*
 import kotlinx.android.synthetic.main.home_card_library.view.*
@@ -59,9 +59,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView)
             }
         })
-        txtVisits.text = """${profileDbHandler.offlineVisits} visits"""
-        txtRole.text = """ - ${model.roleAsString}"""
-        txtFullName.text = fullName
+        v.txtVisits.text = """${profileDbHandler.offlineVisits} visits"""
+        v.txtRole.text = """ - ${model.roleAsString}"""
+        v.txtFullName.text = fullName
     }
 
     override fun forceDownloadNewsImages() {
@@ -107,9 +107,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             setTextColor(v.findViewById(R.id.title), itemCnt, RealmMyLibrary::class.java)
             v.setBackgroundColor(resources.getColor(if (itemCnt % 2 == 0) R.color.md_white_1000 else R.color.md_grey_300))
             ((v.title) as TextView).text = items.title
-            v.detail.setOnClickListener { vi: View? -> if (homeItemClickListener != null) homeItemClickListener.openLibraryDetailFragment(items) }
+            v.detail.setOnClickListener { if (homeItemClickListener != null) homeItemClickListener.openLibraryDetailFragment(items) }
             myLibraryItemClickAction(v.findViewById(R.id.title), items)
-            flexboxLayout.addView(v, params)
+            view.flexboxLayout.addView(v, params)
             itemCnt++
         }
     }

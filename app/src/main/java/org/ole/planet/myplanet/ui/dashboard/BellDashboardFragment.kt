@@ -12,11 +12,13 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.card_profile_bell.*
+import kotlinx.android.synthetic.main.card_profile_bell.view.*
 import kotlinx.android.synthetic.main.fragment_home_bell.*
-import kotlinx.android.synthetic.main.home_card_courses.*
-import kotlinx.android.synthetic.main.home_card_library.*
-import kotlinx.android.synthetic.main.home_card_mylife.*
-import kotlinx.android.synthetic.main.home_card_teams.*
+import kotlinx.android.synthetic.main.fragment_home_bell.view.*
+import kotlinx.android.synthetic.main.home_card_courses.view.*
+import kotlinx.android.synthetic.main.home_card_library.view.*
+import kotlinx.android.synthetic.main.home_card_mylife.view.*
+import kotlinx.android.synthetic.main.home_card_teams.view.*
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment
@@ -81,15 +83,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun declareElements(view: View) {
         initView(view)
-        ll_home_team.setOnClickListener { homeItemClickListener.openCallFragment(TeamFragment()) }
-        myLibraryImageButton.setOnClickListener { openHelperFragment(LibraryFragment()) }
-        myCoursesImageButton.setOnClickListener { openHelperFragment(CourseFragment()) }
-        fab_my_progress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
-        fab_my_activity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        fab_survey.setOnClickListener { openHelperFragment(SurveyFragment()) }
-        fab_feedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
-        myLifeImageButton.setOnClickListener { homeItemClickListener.openCallFragment(LifeFragment()) }
-        fab_notification.setOnClickListener { showNotificationFragment() }
+        view.ll_home_team.setOnClickListener { homeItemClickListener.openCallFragment(TeamFragment()) }
+        view.myLibraryImageButton.setOnClickListener { openHelperFragment(LibraryFragment()) }
+        view.myCoursesImageButton.setOnClickListener { openHelperFragment(CourseFragment()) }
+        view.fab_my_progress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
+        view.fab_my_activity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
+        view.fab_survey.setOnClickListener { openHelperFragment(SurveyFragment()) }
+        view.fab_feedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
+        view.myLifeImageButton.setOnClickListener { homeItemClickListener.openCallFragment(LifeFragment()) }
+        view.fab_notification.setOnClickListener { showNotificationFragment() }
     }
 
     private fun openHelperFragment(f: Fragment) {
