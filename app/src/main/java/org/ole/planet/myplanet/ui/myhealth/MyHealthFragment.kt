@@ -95,8 +95,8 @@ class MyHealthFragment : Fragment() {
         setTextWatcher(etSearch, btnAddMember, lv)
         lv.adapter = adapter
         lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
-            val user = (view as TextView).text.toString()
-            userId = map[user]
+            var selected = lv.adapter.getItem(i) as RealmUserModel
+            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
             getHealthRecords(userId)
             dialog!!.dismiss()
         }
@@ -109,7 +109,6 @@ class MyHealthFragment : Fragment() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-
 
 
             }
