@@ -400,7 +400,14 @@
     <string-array name="sort_by_date">
         <item>Order By Date - Asc</item>
         <item>Order By Date - Desc</item>
-        <item>Order Title</item>
+        <item>Order By Title</item>
+    </string-array>
+
+    <string-array name="sort_member">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Name - Asc</item>
+        <item>Order By Name - Desc</item>
     </string-array>
 
 
