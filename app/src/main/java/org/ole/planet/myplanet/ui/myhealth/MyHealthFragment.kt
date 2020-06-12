@@ -13,6 +13,7 @@ import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -32,8 +33,6 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.*
-import kotlin.collections.ArrayList
 
 /**
  * A simple [Fragment] subclass.
@@ -43,7 +42,8 @@ class MyHealthFragment : Fragment() {
     var userId: String? = null
     var mRealm: Realm? = null
     var userModel: RealmUserModel? = null
-
+    lateinit var userModelList: List<RealmUserModel>
+    lateinit var adapter: UserListArrayAdapter
     var dialog: AlertDialog? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
@@ -84,8 +84,8 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun selectPatient() {
-        var userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        var adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+        userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+        adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
         val btnAddMember = alertHealth.btn_add_member
         val etSearch = alertHealth.et_search
@@ -95,19 +95,24 @@ class MyHealthFragment : Fragment() {
         setTextWatcher(etSearch, btnAddMember, lv)
         lv.adapter = adapter
         lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
-            var selected = lv.adapter.getItem(i) as RealmUserModel
+            val selected = lv.adapter.getItem(i) as RealmUserModel
             userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
             getHealthRecords(userId)
             dialog!!.dismiss()
         }
+        sortList(spnSort,lv);
+        dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
+        dialog?.show()
+    }
+
+    private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
         spnSort.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {
-
             }
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                var sort: Sort
-                var sortBy: String
+                val sort: Sort
+                val sortBy: String
                 when {
                     p2 == 0 -> {
                         sortBy = "joinDate"
@@ -123,14 +128,11 @@ class MyHealthFragment : Fragment() {
                         sort = Sort.ASCENDING
                     }
                 }
-                 userModelList = mRealm!!.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                 adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+                userModelList = mRealm!!.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
+                adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
                 lv.adapter = adapter
             }
-
         }
-        dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
-        dialog?.show()
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
