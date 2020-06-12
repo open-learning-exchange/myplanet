@@ -406,8 +406,8 @@
     <string-array name="sort_member">
         <item>Order By Date - Asc</item>
         <item>Order By Date - Desc</item>
-        <item>Order By Name</item>
-        <item>Order By Name</item>
+        <item>Order By Name - Asc</item>
+        <item>Order By Name - Dsc</item>
     </string-array>
 
 
