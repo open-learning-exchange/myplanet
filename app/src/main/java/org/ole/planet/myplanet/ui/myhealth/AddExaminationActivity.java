@@ -157,6 +157,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
                             if ((sys < 60 || dis < 40) || (sys > 300 || dis > 200)) {
                                 etBloodPressure.setError("Bp must be between 60/40 and 300/200");
                                 allowSubmission = false;
+                            } else {
+                                allowSubmission = true;
                             }
                         } catch (Exception e) {
                             etBloodPressure.setError("Systolic and diastolic must be numbers");
