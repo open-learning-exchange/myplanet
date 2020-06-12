@@ -84,22 +84,23 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         val userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-
         val map = HashMap<String, String>()
         val adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
         val btnAddMember = alertHealth.btn_add_member
         val etSearch = alertHealth.et_search
+        val spnSort = alertHealth.spn_sort
         btnAddMember.setOnClickListener { startActivity(Intent(requireContext(), BecomeMemberActivity::class.java)) }
         val lv = alertHealth.list
         setTextWatcher(etSearch, btnAddMember, lv)
         lv.adapter = adapter
-        lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
+        lv.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, view: View, i: Int, l: Long ->
             val user = (view as TextView).text.toString()
             userId = map[user]
             getHealthRecords(userId)
             dialog!!.dismiss()
         }
+
         dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
         dialog?.show()
     }
