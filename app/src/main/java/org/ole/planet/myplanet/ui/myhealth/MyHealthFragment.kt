@@ -100,7 +100,7 @@ class MyHealthFragment : Fragment() {
             getHealthRecords(userId)
             dialog!!.dismiss()
         }
-        sortList(spnSort,lv);
+        sortList(spnSort, lv);
         dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
         dialog?.show()
     }
@@ -118,14 +118,17 @@ class MyHealthFragment : Fragment() {
                         sortBy = "joinDate"
                         sort = Sort.DESCENDING
                     }
-
                     p2 == 1 -> {
                         sortBy = "joinDate"
                         sort = Sort.ASCENDING
                     }
-                    else -> {
+                    p2 == 2 -> {
                         sortBy = "name"
                         sort = Sort.ASCENDING
+                    }
+                    else -> {
+                        sortBy = "name"
+                        sort = Sort.DESCENDING
                     }
                 }
                 userModelList = mRealm!!.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
