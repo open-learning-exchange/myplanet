@@ -72,7 +72,7 @@ public class RealmMyTeam extends RealmObject {
 
     public static void insertMyTeams(String userId, JsonObject doc, Realm mRealm) {
         String teamId = JsonUtils.getString("_id", doc);
-        RealmMyTeam myTeams = mRealm.where(RealmMyTeam.class).equalTo("id", teamId).findFirst();
+        RealmMyTeam myTeams = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
         if (myTeams == null) {
             myTeams = mRealm.createObject(RealmMyTeam.class, teamId);
         }
