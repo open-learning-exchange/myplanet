@@ -400,7 +400,14 @@
     <string-array name="sort_by_date">
         <item>Order By Date - Asc</item>
         <item>Order By Date - Desc</item>
-        <item>Order Title</item>
+        <item>Order By Title</item>
+    </string-array>
+
+    <string-array name="sort_member">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Name - Asc</item>
+        <item>Order By Name - Desc</item>
     </string-array>
 
 
@@ -559,6 +566,7 @@
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
+    <string name="add_member">Add member</string>
 
 </resources>
 

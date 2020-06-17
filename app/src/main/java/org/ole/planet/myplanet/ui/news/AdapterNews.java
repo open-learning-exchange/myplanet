@@ -90,29 +90,31 @@ public class AdapterNews extends BaseNewsAdapter {
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderNews) {
             RealmNews news = getNews(holder, position);
-            RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
-            if (userModel != null && currentUser != null) {
-                ((ViewHolderNews) holder).tvName.setText(userModel.toString());
-                Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
-                showHideButtons(userModel, holder);
-            } else {
-                ((ViewHolderNews) holder).tvName.setText(news.getUserName());
-                ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
-            }
+            if (news.isValid()) {
+                RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
+                if (userModel != null && currentUser != null) {
+                    ((ViewHolderNews) holder).tvName.setText(userModel.toString());
+                    Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
+                    showHideButtons(userModel, holder);
+                } else {
+                    ((ViewHolderNews) holder).tvName.setText(news.getUserName());
+                    ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
+                }
 
-            showShareButton(holder, news);
-            ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
-            ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
-            ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news.getId())).setNegativeButton(R.string.cancel, null).show());
-            ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-            ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-            ((ViewHolderNews) holder).btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-            ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-            loadImage(holder, news);
-            showReplyButton(holder, news, position);
-            holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
-            addLabels(holder, news);
-            showChips(holder, news);
+                showShareButton(holder, news);
+                ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
+                ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
+                ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news)).setNegativeButton(R.string.cancel, null).show());
+                ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
+                ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                ((ViewHolderNews) holder).btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                loadImage(holder, news);
+                showReplyButton(holder, news, position);
+                holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
+                addLabels(holder, news);
+                showChips(holder, news);
+            }
         }
     }
 
@@ -273,14 +275,17 @@ public class AdapterNews extends BaseNewsAdapter {
     }
 
 
-    private void deletePost(String id) {
+    private void deletePost(RealmNews news) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
-        if (news != null)
+//        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
+        list.remove(news);
+        if (news != null) {
             news.deleteFromRealm();
+        }
         mRealm.commitTransaction();
         notifyDataSetChanged();
+
     }
 
 
