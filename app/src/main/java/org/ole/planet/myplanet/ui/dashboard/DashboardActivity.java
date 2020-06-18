@@ -7,13 +7,18 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.fragment.app.Fragment;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
+import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -24,11 +29,17 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationItemView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.internal.NavigationMenuItemView;
+import com.google.android.material.tabs.TabItem;
 import com.google.android.material.tabs.TabLayout;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -62,6 +73,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 
 
@@ -72,8 +84,26 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     RealmUserModel user;
     private Drawer result = null;
     private Toolbar mTopToolbar,bellToolbar;
+    TabLayout.Tab menul;
+    TabLayout.Tab menuh;
+    TabLayout.Tab menuc;
+    TabLayout.Tab menue;
+    TabLayout.Tab menuco;
+    TabLayout tl;
 //    private GestureDetector mDetector;
-  
+    private void showShowCaseView() {
+        //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500);
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_TUTORIAL");
+        sequence.setConfig(config);
+        sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
+        sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
+        sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
+        sequence.addSequenceItem(menue.getCustomView(), "Navigate to the enterprises tab to search through a list of enterprises within your community", "GOT IT");
+        sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
+        sequence.start();
+    }
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -85,6 +115,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         checkUser();
         setContentView(R.layout.activity_dashboard);
         KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout), DashboardActivity.this);
+
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
@@ -95,6 +126,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
         bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
+        tl = findViewById(R.id.tab_layout);
         TextView appName = findViewById(R.id.app_title_name);
         try{
             appName.setText(profileDbHandler.getUserModel().getFullName()+"'s Planet");
@@ -156,7 +188,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 return true;
             }
         });
+        menuh = tl.getTabAt(0);
+        menul = tl.getTabAt(1);
+        menuc = tl.getTabAt(2);
+        menue = tl.getTabAt(3);
+        menuco = tl.getTabAt(4);
 
+        showShowCaseView();
 //        mDetector = new GestureDetector(this, new MyGestureListener());
     }
 
