@@ -105,7 +105,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "H_DASHBOARD_HELP");
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP");
         sequence.setConfig(config);
         sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises and Surveys", "GOT IT");
         sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
@@ -121,7 +121,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "V_DASHBOARD_HELP");
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP");
         sequence.setConfig(config);
         sequence.addSequenceItem(begin, "Please make sure your device is horizontal", "GOT IT");
         sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys", "GOT IT");
