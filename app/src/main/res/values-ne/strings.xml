@@ -334,4 +334,5 @@
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="become_a_member">Become a member</string>
+    <string name="add_member">Add member</string>
 </resources>

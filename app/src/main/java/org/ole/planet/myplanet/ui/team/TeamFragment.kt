@@ -63,7 +63,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         } else {
             v.et_services.visibility = View.GONE
             v.et_rules.visibility = View.GONE
-            v.et_description.hint = "Description"
+            v.et_description.hint = "What is your team's plan?"
         }
         if (team != null) {
             v.et_services.setText(team.services)
