@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,7 +41,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                               savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.fragment_home_bell, container, false)
         declareElements(view)
-        Log.d("BellDashBoardGrag", "Calling onLoaded")
         onLoaded(view)
         return view
     }
