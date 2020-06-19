@@ -13,8 +13,10 @@ import android.os.Build;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.view.menu.MenuView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
@@ -34,6 +36,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationItemView;
@@ -48,6 +51,7 @@ import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+import com.mikepenz.materialize.holder.DimenHolder;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -75,6 +79,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.lang.annotation.Target;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
@@ -90,19 +95,43 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     TabLayout.Tab menue;
     TabLayout.Tab menuco;
     TabLayout tl;
+    View begin;
+    DrawerLayout dl;
+    ImageView img;
+
+
 //    private GestureDetector mDetector;
-    private void showShowCaseView() {
+    private void showShowCaseViewHorizontal() {
         //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_TUTORIAL");
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "H_DASHBOARD_HELP");
         sequence.setConfig(config);
+        sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises and Surveys", "GOT IT");
         sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
         sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
         sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
         sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
         sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
         sequence.start();
+    }
+
+    private void showShowCaseViewVertical() {
+        //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
+
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500);
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "V_DASHBOARD_HELP");
+        sequence.setConfig(config);
+        sequence.addSequenceItem(begin, "Please make sure your device is horizontal", "GOT IT");
+        sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys", "GOT IT");
+        sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
+        sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
+        sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
+
+        sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
+        sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
+       sequence.start();
     }
     @Override
     protected void attachBaseContext(Context base) {
@@ -115,7 +144,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         checkUser();
         setContentView(R.layout.activity_dashboard);
         KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout), DashboardActivity.this);
-
+        img = findViewById(R.id.img_logo);
+        begin = findViewById(R.id.menu_library);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
@@ -144,9 +174,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         createDrawer();
         if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             result.openDrawer();
+
         }//Opens drawer by default
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
+        dl = result.getDrawerLayout();
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
@@ -194,7 +226,16 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menue = tl.getTabAt(3);
         menuco = tl.getTabAt(4);
 
-        showShowCaseView();
+
+
+        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            showShowCaseViewHorizontal();
+        } else {
+            result.closeDrawer();
+            showShowCaseViewVertical();
+        }
+
+
 //        mDetector = new GestureDetector(this, new MyGestureListener());
     }
 
@@ -383,9 +424,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.business));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
         return new IDrawerItem[]{
-                changeUX(R.string.menu_myplanet, menuImageList.get(0)),
-                changeUX(R.string.txt_myLibrary, menuImageList.get(1)),
-                changeUX(R.string.txt_myCourses, menuImageList.get(2)),
+                changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0),
+                changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1),
+                changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2),
                 changeUX(R.string.menu_library, menuImageList.get(3)),
                 changeUX(R.string.menu_courses, menuImageList.get(4)),
                 changeUX(R.string.menu_community, menuImageList.get(6)),
