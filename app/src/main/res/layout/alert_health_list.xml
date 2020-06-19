@@ -6,17 +6,31 @@
     android:gravity="center"
     android:orientation="vertical">
 
-    <Button
-        android:id="@+id/btn_add_member"
-        android:layout_width="wrap_content"
-        android:minWidth="150dp"
-        android:layout_height="wrap_content"
-        android:theme="@style/PrimaryButton"
-        android:textSize="14sp"
-        android:padding="8dp"
-        android:layout_gravity="right"
-        android:visibility="gone"
-        android:text="Add Member" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatSpinner
+            android:id="@+id/spn_sort"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/sort_member"
+            android:layout_gravity="center"
+            android:minWidth="150dp"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btn_add_member"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:minWidth="150dp"
+            android:padding="8dp"
+            android:text="Add Member"
+            android:textSize="14sp"
+            android:theme="@style/PrimaryButton"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <EditText
         android:id="@+id/et_search"
