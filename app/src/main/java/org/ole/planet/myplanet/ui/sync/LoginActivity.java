@@ -272,7 +272,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     public void declareMoreElements() {
-        GifImageButton syncIcon = findViewById(R.id.syncIcon);
+        syncIcon = findViewById(R.id.syncIcon);
         syncIcon.setImageResource(R.drawable.file_upload_animation_login);
         syncIcon.getScaleType();
         gifDrawable = (GifDrawable) syncIcon.getDrawable();
