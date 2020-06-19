@@ -56,6 +56,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
+import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
@@ -275,6 +276,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.txt_myLibrary:
                 openMyFragment(new LibraryFragment());
                 break;
+            case R.string.team:
+                openMyFragment(new TeamFragment());
+                break;
             case R.string.txt_myCourses:
                 openMyFragment(new CourseFragment());
                 break;
@@ -342,6 +346,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.ourcourses));
         menuImageList.add(getResources().getDrawable(R.drawable.ourlibrary));
         menuImageList.add(getResources().getDrawable(R.drawable.mycourses));
+        menuImageList.add(getResources().getDrawable(R.drawable.team));
         menuImageList.add(getResources().getDrawable(R.drawable.business));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
         return new IDrawerItem[]{
@@ -350,12 +355,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 changeUX(R.string.txt_myCourses, menuImageList.get(2)),
                 changeUX(R.string.menu_library, menuImageList.get(3)),
                 changeUX(R.string.menu_courses, menuImageList.get(4)),
-                changeUX(R.string.menu_community, menuImageList.get(6)),
-                changeUX(R.string.enterprises, menuImageList.get(5))
+                changeUX(R.string.team, menuImageList.get(5)),
+                changeUX(R.string.menu_community, menuImageList.get(7)),
+                changeUX(R.string.enterprises, menuImageList.get(6))
                         .withSelectable(false)
                         .withDisabledIconColor(getResources().getColor(R.color.disable_color))
                         .withDisabledTextColor(getResources().getColor(R.color.disable_color)),
-                changeUX(R.string.menu_surveys, menuImageList.get(6))
+                changeUX(R.string.menu_surveys, menuImageList.get(7))
         };
     }
 
@@ -401,7 +407,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             openCallFragment(new CourseFragment());
         } else if (item.getItemId() == R.id.menu_mycourses) {
             openMyFragment(new CourseFragment());
-        } else if (item.getItemId() == R.id.menu_mylibrary) {
+        }
+        else if (item.getItemId() == R.id.menu_mycourses) {
+            openMyFragment(new CourseFragment());
+        }
+        else if (item.getItemId() == R.id.menu_mylibrary) {
             openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_enterprises) {
             openEnterpriseFragment();
