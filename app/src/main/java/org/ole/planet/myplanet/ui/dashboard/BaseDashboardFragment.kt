@@ -50,6 +50,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         profileDbHandler = UserProfileDbHandler(activity)
         model = profileDbHandler.userModel
         fullName = profileDbHandler.userModel.fullName
+        if (fullName.isNullOrBlank()) {
+            fullName = profileDbHandler.userModel.name
+        }
         val imageView = v.findViewById<ImageView>(R.id.imageView)
         if (!TextUtils.isEmpty(model.userImage)) Picasso.get().load(model.userImage).placeholder(R.drawable.profile).into(imageView, object : Callback {
             override fun onSuccess() {}

@@ -160,7 +160,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         tl = findViewById(R.id.tab_layout);
         TextView appName = findViewById(R.id.app_title_name);
         try{
-            appName.setText(profileDbHandler.getUserModel().getFullName()+"'s Planet");
+            String name = profileDbHandler.getUserModel().getFullName();
+            if (name.trim().length() == 0) {
+                name = profileDbHandler.getUserModel().getName();
+            }
+            appName.setText(name + "'s Planet");
         }catch (Exception err){
         }
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
