@@ -62,16 +62,19 @@ class MyHealthFragment : Fragment() {
         userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
         getHealthRecords(userId)
 
+        Utilities.log("ROLE " +  profileDbHandler?.userModel?.roleAsString!!)
         if (profileDbHandler?.userModel?.roleAsString!!.contains("health", true)) {
             btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
             btnnew_patient.setOnClickListener { selectPatient() }
             fab_add_member.show(true)
+            fab_add_member.visibility = View.VISIBLE
         } else {
             btnnew_patient.visibility = View.GONE
+            fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
             fab_add_member.hide(true)
+            fab_add_member.visibility = View.GONE
         }
 
-        fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
     }
 
     private fun getHealthRecords(memberId: String?) {
