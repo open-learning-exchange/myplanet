@@ -370,6 +370,7 @@
         android:layout_margin="@dimen/padding_large"
         app:menu_icon="@drawable/ic_add"
         app:menu_open="arc_left"
+        android:id="@+id/fab_group"
         app:menu_scr="@drawable/ic_add">
 
 
@@ -383,6 +384,7 @@
             android:layout_margin="@dimen/padding_large"
             app:fab_label="@string/update_health_record"
             android:src="@drawable/ic_myhealth" />
+
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_add_member"
             android:layout_width="wrap_content"
