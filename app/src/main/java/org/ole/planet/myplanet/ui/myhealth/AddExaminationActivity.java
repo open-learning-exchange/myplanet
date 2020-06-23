@@ -346,6 +346,16 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     @Override
+    public void onBackPressed() {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setMessage("Are you sure you want to exit? Your data will be lost.");
+        alertDialogBuilder.setPositiveButton("Yes, I want to exit. ", (dialogInterface, i) -> {
+            super.onBackPressed();
+        }).setNegativeButton("Cancel", null);
+        alertDialogBuilder.show();
+    }
+
+    @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         String text = compoundButton.getText().toString().trim();
         mapConditions.put(text, b);
