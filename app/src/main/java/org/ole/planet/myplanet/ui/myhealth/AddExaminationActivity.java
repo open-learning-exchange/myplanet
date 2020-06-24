@@ -5,10 +5,13 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.flexbox.FlexboxLayout;
@@ -33,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import androidx.fragment.app.Fragment;
 import io.realm.Realm;
 
 public class AddExaminationActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
@@ -259,7 +263,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
         mRealm.commitTransaction();
         Utilities.toast(this, "Added successfully");
-        finish();
+       finish();
     }
 
     private boolean getHasInfo() {
@@ -329,12 +333,22 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
     }
 
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home)
+        if (item.getItemId() == android.R.id.home){
             finish();
+        }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void finish() {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setMessage("Are you sure you want to exit? Your data will be lost.");
+        alertDialogBuilder.setPositiveButton("Yes, I want to exit. ", (dialogInterface, i) -> {
+            super.finish();
+        }).setNegativeButton("Cancel", null);
+        alertDialogBuilder.show();
     }
 
     @Override
