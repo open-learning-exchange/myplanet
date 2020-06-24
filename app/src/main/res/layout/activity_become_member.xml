@@ -244,13 +244,18 @@
                     android:text="@string/level"
                     android:textColor="@color/md_black_1000" />
 
-                <Spinner
-                    android:id="@+id/spn_level"
+                <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:entries="@array/level"
-                    android:padding="@dimen/padding_small" />
-
+                    android:padding="5dp"
+                    android:background="@color/colorPrimary">
+                    <Spinner
+                        android:id="@+id/spn_level"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:entries="@array/level"
+                        android:padding="@dimen/padding_small" />
+                </RelativeLayout>
             </LinearLayout>
 
 
