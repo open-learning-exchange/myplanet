@@ -247,8 +247,8 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="5dp"
-                    android:background="@color/colorPrimary">
+                    android:padding="@dimen/padding_normal"
+                    android:background="@drawable/border">
                     <Spinner
                         android:id="@+id/spn_level"
                         android:layout_width="match_parent"
