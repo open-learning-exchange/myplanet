@@ -332,6 +332,7 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("sourcePlanet", team.getSourcePlanet());
         object.addProperty("services", team.getServices());
         object.addProperty("createdBy", team.getCreatedBy());
+        object.addProperty("resourceId", team.getResourceId());
         object.addProperty("rules", team.getRules());
         if (TextUtils.equals(team.getTeamType(), "debit") || TextUtils.equals(team.getTeamType(), "credit")) {
             object.addProperty("type", team.getTeamType());

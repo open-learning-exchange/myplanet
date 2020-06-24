@@ -82,7 +82,7 @@ public class TeamResourceFragment extends BaseTeamFragment {
                 team.setTeamId(teamId);
                 team.setTitle(libraries.get(se).getTitle());
                 team.setSourcePlanet(user.getParentCode());
-                team.setResourceId(libraries.get(se).getResourceId());
+                team.setResourceId(libraries.get(se).get_id());
                 team.setDocType("resourceLink");
                 team.setTeamType("local");
                 team.setTeamPlanetCode(user.getPlanetCode());
