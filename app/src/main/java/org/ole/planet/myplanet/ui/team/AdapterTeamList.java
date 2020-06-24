@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -102,8 +104,10 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
         if (isMyTeam) {
             ((ViewHolderTeam) holder).action.setText("Leave");
             ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                list.get(position).leave(user, mRealm);
-                notifyDataSetChanged();
+                new AlertDialog.Builder(context).setMessage("Are you sure you want to leave this team ?").setPositiveButton("Yes", (dialogInterface, i) -> {
+                    list.get(position).leave(user, mRealm);
+                    notifyDataSetChanged();
+                }).setNegativeButton("No", null).show();
             });
         } else if (list.get(position).requested(user.getId(), mRealm)) {
             ((ViewHolderTeam) holder).action.setText("Requested");
