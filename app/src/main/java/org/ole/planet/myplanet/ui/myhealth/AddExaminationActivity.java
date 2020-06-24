@@ -263,7 +263,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
         mRealm.commitTransaction();
         Utilities.toast(this, "Added successfully");
-        finish();
+       finish();
     }
 
     private boolean getHasInfo() {
@@ -335,22 +335,18 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setMessage("Are you sure you want to exit? Your data will be lost.");
-        alertDialogBuilder.setPositiveButton("Yes, I want to exit. ", (dialogInterface, i) -> {
-            if (item.getItemId() == android.R.id.home)
-                finish();
-        }).setNegativeButton("Cancel", null);
-        alertDialogBuilder.show();
+        if (item.getItemId() == android.R.id.home){
+            finish();
+        }
         return super.onOptionsItemSelected(item);
     }
 
     @Override
-    public void onBackPressed() {
+    public void finish() {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         alertDialogBuilder.setMessage("Are you sure you want to exit? Your data will be lost.");
         alertDialogBuilder.setPositiveButton("Yes, I want to exit. ", (dialogInterface, i) -> {
-            super.onBackPressed();
+            super.finish();
         }).setNegativeButton("Cancel", null);
         alertDialogBuilder.show();
     }
