@@ -138,6 +138,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
+
                     android:padding="@dimen/padding_normal">
 
                     <TextView
@@ -151,9 +152,10 @@
                     <Spinner
                         android:id="@+id/spn_lang"
                         android:layout_width="match_parent"
+                        android:background="@drawable/border"
                         android:layout_height="wrap_content"
                         android:entries="@array/language"
-                        android:padding="4dp" />
+                        android:padding="@dimen/padding_normal" />
 
                 </LinearLayout>
             </LinearLayout>
@@ -182,7 +184,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
                     android:layout_weight="1"
-                    android:background="?attr/selectableItemBackground"
+                    android:background="@drawable/border"
                     android:drawableRight="@drawable/ic_date"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
