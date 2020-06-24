@@ -43,6 +43,7 @@ public class RealmMyTeam extends RealmObject {
     private String userId;
     private String description;
     private String requests;
+    private String sourcePlanet;
     private int limit;
     private long createdDate;
     private String resourceId;
@@ -82,6 +83,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.set_id(JsonUtils.getString("_id", doc));
         myTeams.set_rev(JsonUtils.getString("_rev", doc));
         myTeams.setName(JsonUtils.getString("name", doc));
+        myTeams.setSourcePlanet(JsonUtils.getString("sourcePlanet", doc));
         myTeams.setTitle(JsonUtils.getString("title", doc));
         myTeams.setDescription(JsonUtils.getString("description", doc));
         myTeams.setLimit(JsonUtils.getInt("limit", doc));
@@ -246,6 +248,14 @@ public class RealmMyTeam extends RealmObject {
         mRealm.commitTransaction();
     }
 
+    public String getSourcePlanet() {
+        return sourcePlanet;
+    }
+
+    public void setSourcePlanet(String sourcePlanet) {
+        this.sourcePlanet = sourcePlanet;
+    }
+
     public static void leaveTeam(String teamId, RealmUserModel userModel, Realm mRealm) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
@@ -319,15 +329,14 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("route", team.getRoute());
         object.addProperty("date", team.getDate());
         object.addProperty("public", team.isPublic());
+        object.addProperty("sourcePlanet", team.getSourcePlanet());
         object.addProperty("services", team.getServices());
         object.addProperty("createdBy", team.getCreatedBy());
+        object.addProperty("resourceId", team.getResourceId());
         object.addProperty("rules", team.getRules());
-        if (TextUtils.equals(team.getTeamType(), "debit")) {
-            object.addProperty("amount", team.getAmount());
-        } else if (TextUtils.equals(team.getTeamType(), "credit")) {
-            object.addProperty("amount", team.getAmount());
+        if (TextUtils.equals(team.getTeamType(), "debit") || TextUtils.equals(team.getTeamType(), "credit")) {
+            object.addProperty("type", team.getTeamType());
         }
-        object.addProperty("amount", team.getTeamType());
         return new Gson().toJsonTree(object).getAsJsonObject();
     }
 
