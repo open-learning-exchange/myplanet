@@ -104,7 +104,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
         if (isMyTeam) {
             ((ViewHolderTeam) holder).action.setText("Leave");
             ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                new AlertDialog.Builder(context).setMessage("Are you sure want to leave this team ??").setPositiveButton("Yes", (dialogInterface, i) -> {
+                new AlertDialog.Builder(context).setMessage("Are you sure you want to leave this team ??").setPositiveButton("Yes", (dialogInterface, i) -> {
                     list.get(position).leave(user, mRealm);
                     notifyDataSetChanged();
                 }).setNegativeButton("No", null).show();
