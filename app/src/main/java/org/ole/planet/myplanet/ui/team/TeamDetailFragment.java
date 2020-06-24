@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team;
 
 import android.os.Bundle;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager.widget.ViewPager;
 
@@ -65,10 +66,13 @@ public class TeamDetailFragment extends Fragment {
             llButtons.setVisibility(View.GONE);
         }else{
             leave.setOnClickListener(vi -> {
-                team.leave(user, mRealm);
-                Utilities.toast(getActivity(), "Left team");
-                viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
-                llButtons.setVisibility(View.GONE);
+                new AlertDialog.Builder(requireContext()).setMessage("Are you sure want to leave this team ??").setPositiveButton("Yes", (dialogInterface, i) -> {
+                    team.leave(user, mRealm);
+                    Utilities.toast(getActivity(), "Left team");
+                    viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
+                    llButtons.setVisibility(View.GONE);
+                }).setNegativeButton("No", null).show();
+
             });
 
             v.findViewById(R.id.btn_add_doc).setOnClickListener(view -> {
