@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.ui.team.teamResource;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,7 +53,7 @@ public class TeamResourceFragment extends BaseTeamFragment {
         rvResource = getView().findViewById(R.id.rv_resource);
         tvNodata = getView().findViewById(R.id.tv_nodata);
         showLibraryList();
-        if(MainApplication.showDownload)
+        if (MainApplication.showDownload)
             showResourceListDialog();
         getView().findViewById(R.id.fab_add_resource).setOnClickListener(view -> showResourceListDialog());
     }
@@ -78,11 +80,12 @@ public class TeamResourceFragment extends BaseTeamFragment {
             for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
                 team.setTeamId(teamId);
+                team.setTitle(libraries.get(se).getTitle());
+                team.setSourcePlanet(user.getParentCode());
                 team.setResourceId(libraries.get(se).getResourceId());
                 team.setDocType("resourceLink");
                 team.setTeamType("local");
                 team.setTeamPlanetCode(user.getPlanetCode());
-
             }
             mRealm.commitTransaction();
             showLibraryList();
