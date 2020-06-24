@@ -340,7 +340,7 @@
     <string name="hearing">Hearing</string>
     <string name="vitals">Vitals</string>
     <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation">Observation and Notes</string>
+    <string name="observation">Observations and Notes</string>
     <string name="diagnosis">Diagnosis</string>
     <string name="treatments">Treatments</string>
     <string name="medications">Medications</string>
@@ -356,7 +356,7 @@
     <string name="select_health_member">Select Member</string>
     <string name="notifications">Notifications</string>
     <string name="incorrect_ans">Incorrect answer, please try again</string>
-    <string name="diagnosis_note">Diagnosis Note</string>
+    <string name="diagnosis_note">Diagnosis Notes</string>
     <string name="menu_community">Community</string>
     <string name="library">Library</string>
     <string name="device_name">Device Name</string>
