@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Meerahayga</string>
-    <string name="app_project_name">My Planet</string>
+    <string name="app_project_name">myPlanet</string>
     <string name="action_settings">Habeynta</string>
     <string name="hint_name">Magaca isticmaalaha</string>
     <string name="hint_password">Furaha sirta ah</string>
@@ -12,18 +12,21 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">Planet Server Address</string>
+    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.2.1)</string>
     <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
+    <string name="radio_protocol">Protocol:</string>
+    <string name="radio_http">HTTP</string>
+    <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">My Planet</string>
     <string name="menu_home">Home</string>
-    <string name="menu_library">Our Library</string>
-    <string name="menu_courses">Our Courses</string>
+    <string name="menu_library">Library</string>
+    <string name="menu_courses">Courses</string>
     <string name="menu_meetups">Meetups</string>
     <string name="menu_surveys">Surveys</string>
     <string name="menu_logout">Logout</string>
     <string name="menu_feedback">Feedback</string>
-    <string name="system_name">My Planet</string>
+    <string name="system_name">myPlanet</string>
     <string name="txt_myLibrary">myLibrary</string>
     <string name="txt_myCourses">myCourses</string>
     <string name="txt_myMeetups">myMeetups</string>
@@ -36,9 +39,11 @@
     <string name="download_all">Download All</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="add_to_mycourse">Add to my courses</string>
+    <string name="join_selected">Join Selected</string>
+    <string name="join">Join</string>
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
-    <string name="submission">Submissions</string>
+    <string name="submission">mySubmissions</string>
     <string name="calendar">Calendar</string>
     <string name="email">Email</string>
     <string name="documents">Documents</string>
@@ -121,13 +126,57 @@
     <string name="levels">Heerarka</string>
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
-    <string name="achievements">Achievements</string>
-    <string name="messeges">Messeges</string>
+    <string name="achievements">myAchievements</string>
+    <string name="messeges">myMessages</string>
     <string name="contacts">Contacts</string>
-    <string name="news">News</string>
-    <string name="dictionaries">Dictionaries</string>
+    <string name="news">Our News</string>
+    <string name="references">References</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
+    <string name="btn_guest_login">Login As Guest</string>
+    <string name="enter_username">Enter Username</string>
+    <string name="login">Login</string>
+    <string name="child_mode">Easy Mode</string>
+    <string name="joined_members">Joined Members</string>
+    <string name="requested_member">Requested Member</string>
+    <string name="courses">Courses</string>
+    <string name="enter_message_here">Enter message here</string>
+    <string name="what_would">What would you like to share?</string>
+    <string name="our_news">Our News</string>
+    <string name="delete_record">Are you sure you want to delete the following ?</string>
+    <string name="edit_post">Edit Post</string>
+    <string name="search_user">Search user</string>
+    <string name="get_started">GET STARTED</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="managerial_login">Manager Login</string>
+    <string name="save_username_and_password">Save Username and Password</string>
+    <string name="year">Year</string>
+    <string name="publisher">Publisher</string>
+    <string name="link_to_license">Link to license</string>
+    <string name="resource_for">Resource For</string>
+    <string name="open_which_file">Open Which File</string>
+    <string name="file_upload">File Upload</string>
+    <string name="choose_file">Choose File</string>
+    <string name="file_downloadable">File downloadable</string>
+    <string name="priority">Priority</string>
+    <string name="status">Status</string>
+    <string name="title_not_compulsary">Title</string>
+    <string name="discussion">Discussion</string>
+    <string name="add_message">Add Message</string>
+    <string name="enter_message">Enter your message here..</string>
+    <string name="added_by">Added By</string>
+    <string name="record_audio">Record Audio</string>
+    <string name="record_video">Record Video</string>
+    <string name="select_gallery">Select From Gallery</string>
+    <string name="add_resource">Add Resource :</string>
+    <string name="reply">Reply</string>
+    <string name="show_reply">Show Replies</string>
+    <string name="show_main_conversation">Show main conversation</string>
+    <string name="https_protocol">https://</string>
+    <string name="http_protocol">http://</string>
+    <string name="showing_reply_of">Showing reply of :</string>
+    <string name="open_date">Open Date</string>
+    <string name="my_survey">mySurvey</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -160,4 +209,346 @@
         <item>Internships</item>
         <item>Abaal Marino</item>
     </string-array>
+    <string-array name="open_With">
+        <item>HTML</item>
+        <item>PDF.js</item>
+        <item>BeLL-Reader</item>
+        <item>Mp3</item>
+        <item>Flow Video Player</item>
+        <item>BeLL Video Book Player</item>
+        <item>Native Video</item>
+    </string-array>
+    <string-array name="media">
+        <item>Text</item>
+        <item>Graphic/Pictures</item>
+        <item>Audio/Music/Book</item>
+        <item>Video</item>
+    </string-array>
+    <string-array name="resource_type">
+        <item>Textbook</item>
+        <item>Lesson Plan</item>
+        <item>Activities</item>
+        <item>Exercises</item>
+        <item>Discussion Questions</item>
+    </string-array>
+    <string-array name="array_levels">
+        <item>Early Education</item>
+        <item>Lower Primary</item>
+        <item>Upper Primary</item>
+        <item>Lower Secondary</item>
+        <item>Upper Secondary</item>
+        <item>Undergraduate</item>
+        <item>Graduate</item>
+        <item>Professional</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>Agriculture</item>
+        <item>Arts</item>
+        <item>Business and Finance</item>
+        <item>Environment</item>
+        <item>Food and Nutrition</item>
+        <item>Geography</item>
+        <item>Health and Medicine</item>
+        <item>History</item>
+        <item>Human Development</item>
+        <item>Languages</item>
+        <item>Law</item>
+        <item>Learning</item>
+    </string-array>
+    <string-array name="array_resource_for">
+        <item>Default</item>
+        <item>Leader</item>
+        <item>Learner</item>
+    </string-array>
+    <string name="dictionaries">Dictionaries</string>
+    <string name="bible">Bibles</string>
+    <string name="feature_not">Feature not available</string>
+    <string name="myhealth">myHealth</string>
+    <string name="type_name_to_search">Type name to search</string>
+    <string name="action">Action</string>
+    <string name="created_on">Created On</string>
+    <string name="name_normal">Name</string>
+    <string name="mypersonals">myPersonals</string>
+    <string name="capture_image">Capture Image</string>
+    <string name="team_name">Enter Team Name</string>
+    <string name="resources">Resources</string>
+    <string name="button_reject">Reject</string>
+    <string name="button_accept">Accept</string>
+    <string name="plan">Plan</string>
+    <string name="body_temperature">Body Temperature (°C)</string>
+    <string name="rectally">Rectally</string>
+    <string name="axillary">Axillary</string>
+    <string name="by_ear">By ear</string>
+    <string name="by_skin">By skin</string>
+    <string name="temperature_taken">Temperature taken :</string>
+    <string name="pulse_rate">Pulse Rate (bpm)</string>
+    <string name="respiration_rate">Respiration Rate</string>
+    <string name="systolic">Systolic</string>
+    <string name="diastolic">Diastolic</string>
+    <string name="blood_pressure">Blood Pressure</string>
+    <string name="orally">Orally</string>
+    <string name="save">Save</string>
+    <string name="vital_signs">Vital Signs Record</string>
+    <string name="task">Task (required)</string>
+    <string name="deadline">Deadline (required)</string>
+    <string name="click_here_to_pick_date">Click here to pick date</string>
+    <string name="enterprises">Enterprises</string>
+    <string name="select_member">Select Team Member</string>
+    <string name="assign_task_to">Task Assigned to</string>
+    <string name="leader_selected">Leader selected</string>
+    <string name="user_removed_from_team">User removed from team</string>
+    <string name="remove">Remove</string>
+    <string name="make_leader">Make Leader</string>
+    <string name="mission"><![CDATA[Mission & Services]]></string>
+    <string name="team">Team</string>
+    <string name="applicants">Applicants</string>
+    <string name="finances">Finances</string>
+    <string name="messages">messages</string>
+    <string name="nodata">No data available</string>
+    <string name="note">Note *</string>
+    <string name="amount">Amount</string>
+    <string name="debit">Debit</string>
+    <string name="credit">Credit</string>
+    <string name="balance">Balance</string>
+    <string name="total">Total</string>
+    <string name="location">Location</string>
+    <string name="start_date">Start Date</string>
+    <string name="click_here_to_pick_time">Click here to pick time</string>
+    <string name="start_time">Start Time</string>
+    <string name="end_date">End Date</string>
+    <string name="end_time">End Time</string>
+    <string name="daily">Daily</string>
+    <string name="weekly">Weekly</string>
+    <string name="recurring_frequency">Recurring Frequency</string>
+    <string name="filter_by_date">Date Filter</string>
+    <string name="emergency_contact">Emergency Contact</string>
+    <string name="contact">Contact</string>
+    <string name="special_needs">Special Needs</string>
+    <string name="other_need">Other Needs</string>
+    <string name="update_health_record">Update Health Record</string>
+    <string name="vital_sign">Vital Signs</string>
+    <string name="examination">Examination</string>
+    <string name="add_examination">Add Examination</string>
+    <string name="new_patient">Next Member</string>
+    <string name="height">Height (cm)</string>
+    <string name="width">Width</string>
+    <string name="vision">Vision</string>
+    <string name="hearing">Hearing</string>
+    <string name="vitals">Vitals</string>
+    <string name="condition_and_treatment">Condition and Treatment</string>
+    <string name="observation">Observations and Notes</string>
+    <string name="diagnosis">Diagnosis</string>
+    <string name="treatments">Treatments</string>
+    <string name="medications">Medications</string>
+    <string name="immunization">Immunization Dates</string>
+    <string name="allergies">Allergies</string>
+    <string name="xray">X-rays</string>
+    <string name="labtest">Lab Tests</string>
+    <string name="referrals">Referrals</string>
+    <string name="full_name">Full Name</string>
+    <string name="weight">Weight (kg)</string>
+    <string name="no_records">No records found</string>
+    <string name="chats">Chats</string>
+    <string name="select_health_member">Select Member</string>
+    <string name="notifications">Notifications</string>
+    <string name="incorrect_ans">Incorrect answer, please try again</string>
+    <string name="diagnosis_note">Diagnosis Notes</string>
+    <string name="menu_community">Community</string>
+    <string name="library">Library</string>
+    <string name="device_name">Device Name</string>
+    <string name="enter_title">Enter title</string>
+    <string name="add_link">Add Link</string>
+    <string name="chat">Chat</string>
+    <string name="members">Members</string>
+    <string name="tasks">Tasks</string>
+    <string name="join_requests">Join Requests</string>
+    <string name="add_image">Add Image</string>
+    <string name="addImageToMessage">Beta Add image to message</string>
+    <string name="clear_data">Clear Data</string>
+    <string name="reset_app">Reset App</string>
+    <string name="freeup_space">Free-up disk space</string>
+    <string name="action_disclaimer">Disclaimer</string>
+    <string name="action_about">About</string>
+    <string name="engilsh_dictionary">English Dictionary</string>
+    <string-array name="team_type">
+        <item>Local Team</item>
+        <item>Connect With Nation</item>
+    </string-array>
+    <string-array name="contact_type">
+        <item>Phone</item>
+        <item>Email</item>
+    </string-array>
+    <string-array name="add_link_options">
+        <item>Teams</item>
+        <item>Enterprises</item>
+    </string-array>
+    <string-array name="transaction_type">
+        <item>Credit</item>
+        <item>Debit</item>
+    </string-array>
+    <string-array name="sort_by_date">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Title</item>
+    </string-array>
+    <string-array name="sort_member">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Name - Asc</item>
+        <item>Order By Name - Desc</item>
+    </string-array>
+    <string-array name="grade_level">
+        <item>All</item>
+        <item>Pre-Kindergarten</item>
+        <item>Kindergarten</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>College</item>
+        <item>Post-Graduate</item>
+    </string-array>
+    <string-array name="subject_level">
+        <item>All</item>
+        <item>Beginner</item>
+        <item>Intermediate</item>
+        <item>Advanced</item>
+        <item>Expert</item>
+    </string-array>
+    <string-array name="diagnosis_list">
+        <item>Cancer</item>
+        <item>Cardiovascular disorders</item>
+        <item>Cirrhosis of the liver</item>
+        <item>COVID-19</item>
+        <item>Diabetes</item>
+        <item>Diarrhoea diseases</item>
+        <item>Ebola</item>
+        <item>Epilepsy</item>
+        <item>FGM</item>
+        <item>Influenza</item>
+        <item>Ischaemic heat disease</item>
+        <item>Malaria</item>
+        <item>Malnutrition</item>
+        <item>Meningitis</item>
+        <item>Neonatal sepsis and infections</item>
+        <item>HIV/AIDS</item>
+        <item>Pneumonia</item>
+        <item>Stroke</item>
+        <item>Tuberculosis</item>
+    </string-array>
+    <string name="title_activity_news_detail">NewsDetailActivity</string>
+    <string name="large_text">        \"Material is the metaphor.\n\n\"
+
+        \"A material metaphor is the unifying theory of a rationalized space and a system of motion.\"
+        \"The material is grounded in tactile reality, inspired by the study of paper and ink, yet \"
+        \"technologically advanced and open to imagination and magic.\n\"
+        \"Surfaces and edges of the material provide visual cues that are grounded in reality. The \"
+        \"use of familiar tactile attributes helps users quickly understand affordances. Yet the \"
+        \"flexibility of the material creates new affordances that supercede those in the physical \"
+        \"world, without breaking the rules of physics.\n\"
+        \"The fundamentals of light, surface, and movement are key to conveying how objects move, \"
+        \"interact, and exist in space and in relation to each other. Realistic lighting shows \"
+        \"seams, divides space, and indicates moving parts.\n\n\"
+
+        \"Bold, graphic, intentional.\n\n\"
+
+        \"The foundational elements of print based design typography, grids, space, scale, color, \"
+        \"and use of imagery guide visual treatments. These elements do far more than please the \"
+        \"eye. They create hierarchy, meaning, and focus. Deliberate color choices, edge to edge \"
+        \"imagery, large scale typography, and intentional white space create a bold and graphic \"
+        \"interface that immerse the user in the experience.\n\"
+        \"An emphasis on user actions makes core functionality immediately apparent and provides \"
+        \"waypoints for the user.\n\n\"
+
+        \"Motion provides meaning.\n\n\"
+
+        \"Motion respects and reinforces the user as the prime mover. Primary user actions are \"
+        \"inflection points that initiate motion, transforming the whole design.\n\"
+        \"All action takes place in a single environment. Objects are presented to the user without \"
+        \"breaking the continuity of experience even as they transform and reorganize.\n\"
+        \"Motion is meaningful and appropriate, serving to focus attention and maintain continuity. \"
+        \"Feedback is subtle yet clear. Transitions are efﬁcient yet coherent.\n\n\"
+
+        \"3D world.\n\n\"
+
+        \"The material environment is a 3D space, which means all objects have x, y, and z \"
+        \"dimensions. The z-axis is perpendicularly aligned to the plane of the display, with the \"
+        \"positive z-axis extending towards the viewer. Every sheet of material occupies a single \"
+        \"position along the z-axis and has a standard 1dp thickness.\n\"
+        \"On the web, the z-axis is used for layering and not for perspective. The 3D world is \"
+        \"emulated by manipulating the y-axis.\n\n\"
+
+        \"Light and shadow.\n\n\"
+
+        \"Within the material environment, virtual lights illuminate the scene. Key lights create \"
+        \"directional shadows, while ambient light creates soft shadows from all angles.\n\"
+        \"Shadows in the material environment are cast by these two light sources. In Android \"
+        \"development, shadows occur when light sources are blocked by sheets of material at \"
+        \"various positions along the z-axis. On the web, shadows are depicted by manipulating the \"
+        \"y-axis only. The following example shows the card with a height of 6dp.\n\n\"
+
+        \"Resting elevation.\n\n\"
+
+        \"All material objects, regardless of size, have a resting elevation, or default elevation \"
+        \"that does not change. If an object changes elevation, it should return to its resting \"
+        \"elevation as soon as possible.\n\n\"
+
+        \"Component elevations.\n\n\"
+
+        \"The resting elevation for a component type is consistent across apps (e.g., FAB elevation \"
+        \"does not vary from 6dp in one app to 16dp in another app).\n\"
+        \"Components may have different resting elevations across platforms, depending on the depth \"
+        \"of the environment (e.g., TV has a greater depth than mobile or desktop).\n\n\"
+
+        \"Responsive elevation and dynamic elevation offsets.\n\n\"
+
+        \"Some component types have responsive elevation, meaning they change elevation in response \"
+        \"to user input (e.g., normal, focused, and pressed) or system events. These elevation \"
+        \"changes are consistently implemented using dynamic elevation offsets.\n\"
+        \"Dynamic elevation offsets are the goal elevation that a component moves towards, relative \"
+        \"to the component’s resting state. They ensure that elevation changes are consistent \"
+        \"across actions and component types. For example, all components that lift on press have \"
+        \"the same elevation change relative to their resting elevation.\n\"
+        \"Once the input event is completed or cancelled, the component will return to its resting \"
+        \"elevation.\n\n\"
+
+        \"Avoiding elevation interference.\n\n\"
+
+        \"Components with responsive elevations may encounter other components as they move between \"
+        \"their resting elevations and dynamic elevation offsets. Because material cannot pass \"
+        \"through other material, components avoid interfering with one another any number of ways, \"
+        \"whether on a per component basis or using the entire app layout.\n\"
+        \"On a component level, components can move or be removed before they cause interference. \"
+        \"For example, a floating action button (FAB) can disappear or move off screen before a \"
+        \"user picks up a card, or it can move if a snackbar appears.\n\"
+        \"On the layout level, design your app layout to minimize opportunities for interference. \"
+        \"For example, position the FAB to one side of stream of a cards so the FAB won’t interfere \"
+        \"when a user tries to pick up one of cards.\n\n\"
+    </string>
+    <string name="add_story">Add Story</string>
+    <string name="txt_myprogress">myProgress</string>
+    <string name="more_action">Filter</string>
+    <string name="my_progress">My Progress</string>
+    <string name="my_activity">My Activity</string>
+    <string name="add_label">Add Label</string>
+    <string name="share_with_community">Share with community</string>
+    <string name="services">What are the Services your enterprise provides?</string>
+    <string name="rules">What are the Rules of your enterprise</string>
+    <string name="add_res">Add Resource</string>
+    <string name="password">Password</string>
+    <string name="retype_password">Confirm Password</string>
+    <string name="become_a_member">Become a member</string>
+    <string name="change_member">Change Member</string>
+    <string name="use_phone_number_as_password">Use phone number as password</string>
+    <string name="feedback">Feedback</string>
+    <string name="add_member">Add member</string>
+    <string name="confirm_exit">Are you sure you want to leave this team?</string>
 </resources>
