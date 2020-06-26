@@ -1,58 +1,79 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/colorPrimary"
     tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardFragment">
 
 
-        <LinearLayout
+    <LinearLayout
+        android:id="@+id/ll_prompt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/md_amber_100"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_normal">
+
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-         >
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:text="@string/update_profile_alert"
+            android:textColor="@color/md_black_1000" />
+
+        <ImageView
+            android:id="@+id/ic_close"
+            android:layout_width="@dimen/_30dp"
+            android:layout_height="@dimen/_30dp"
+            android:src="@drawable/close_x"
+            android:tint="@color/md_black_1000" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
 
-            <include
-                layout="@layout/card_profile_bell"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-              />
+        <include
+            layout="@layout/card_profile_bell"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
-            <include
-                layout="@layout/home_card_library"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+        <include
+            layout="@layout/home_card_library"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-            <include
-                layout="@layout/home_card_courses"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+        <include
+            layout="@layout/home_card_courses"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-            <include
-                layout="@layout/home_card_teams"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+        <include
+            layout="@layout/home_card_teams"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-            <include
-                layout="@layout/home_card_meetups"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:visibility="gone"
-                android:layout_weight="1" />
+        <include
+            layout="@layout/home_card_meetups"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="gone" />
 
-            <include
-                layout="@layout/home_card_mylife"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
+        <include
+            layout="@layout/home_card_mylife"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
 
-        </LinearLayout>
+    </LinearLayout>
 
 
     <com.github.clans.fab.FloatingActionMenu
@@ -61,61 +82,60 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
         app:menu_icon="@drawable/ic_dashboard"
-        app:menu_scr="@drawable/ic_dashboard"
-        app:menu_open="arc_left">
+        app:menu_open="arc_left"
+        app:menu_scr="@drawable/ic_dashboard">
 
 
         <com.github.clans.fab.FloatingActionButton
-            android:layout_width="wrap_content"
             android:id="@+id/fab_my_activity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@drawable/ic_progress"
             android:tint="@color/md_white_1000"
-            app:fab_label="@string/my_activity"
-            android:layout_height="wrap_content" />
+            app:fab_label="@string/my_activity" />
 
         <com.github.clans.fab.FloatingActionButton
-            android:layout_width="wrap_content"
             android:id="@+id/fab_my_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@drawable/ic_progress"
             android:tint="@color/md_white_1000"
-            app:fab_label="@string/my_progress"
-            android:layout_height="wrap_content" />
+            app:fab_label="@string/my_progress" />
 
         <com.github.clans.fab.FloatingActionButton
-            android:layout_width="wrap_content"
             android:id="@+id/fab_notification"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@drawable/notifications"
-            app:fab_label="@string/notifications"
             android:tint="@color/md_white_1000"
-            android:layout_height="wrap_content" />
+            app:fab_label="@string/notifications" />
 
         <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_survey"
             android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@drawable/ic_survey"
             android:tint="@color/md_white_1000"
-            android:id="@+id/fab_survey"
-            app:fab_label="@string/menu_surveys"
-            android:layout_height="wrap_content" />
+            app:fab_label="@string/menu_surveys" />
 
-<!--        <com.github.clans.fab.FloatingActionButton-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:src="@drawable/ic_feedback"-->
-<!--            app:fab_label="@string/menu_feedback"-->
-<!--            -->
-<!--            android:id="@+id/fab_feedback"-->
-<!--            android:layout_height="wrap_content" />-->
+        <!--        <com.github.clans.fab.FloatingActionButton-->
+        <!--            android:layout_width="wrap_content"-->
+        <!--            android:src="@drawable/ic_feedback"-->
+        <!--            app:fab_label="@string/menu_feedback"-->
+        <!--            -->
+        <!--            android:id="@+id/fab_feedback"-->
+        <!--            android:layout_height="wrap_content" />-->
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/add_resource"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
-            app:fab_label="@string/add_res"
             android:layout_margin="@dimen/padding_large"
-            android:src="@drawable/ic_add" />
+            android:src="@drawable/ic_add"
+            app:fab_label="@string/add_res" />
 
     </com.github.clans.fab.FloatingActionMenu>
-
 
 
 </FrameLayout>

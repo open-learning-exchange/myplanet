@@ -17,6 +17,7 @@ import com.squareup.picasso.Picasso
 import io.realm.Case
 import io.realm.RealmObject
 import kotlinx.android.synthetic.main.card_profile_bell.view.*
+import kotlinx.android.synthetic.main.fragment_home_bell.view.*
 import kotlinx.android.synthetic.main.home_card_courses.view.*
 import kotlinx.android.synthetic.main.home_card_library.*
 import kotlinx.android.synthetic.main.home_card_library.view.*
@@ -50,8 +51,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         profileDbHandler = UserProfileDbHandler(activity)
         model = profileDbHandler.userModel
         fullName = profileDbHandler.userModel.fullName
-        if (fullName.isNullOrBlank()) {
+        if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel.name
+            v.ll_prompt.visibility = View.GONE
+        }else{
+            v.ll_prompt.visibility = View.VISIBLE
+        }
+        v.ic_close.setOnClickListener {
+            v.ll_prompt.visibility = View.GONE
         }
         val imageView = v.findViewById<ImageView>(R.id.imageView)
         if (!TextUtils.isEmpty(model.userImage)) Picasso.get().load(model.userImage).placeholder(R.drawable.profile).into(imageView, object : Callback {

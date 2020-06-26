@@ -1,23 +1,20 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
 
-import android.app.AlertDialog
 import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
 import android.text.TextUtils
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
 import kotlinx.android.synthetic.main.fragment_notification.*
-
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -25,7 +22,6 @@ import org.ole.planet.myplanet.model.Notifications
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Utilities
 
 /**
  * A simple [Fragment] subclass.
@@ -63,15 +59,15 @@ class NotificationFragment : BottomSheetDialogFragment() {
         ic_back.setOnClickListener {
             dismiss()
         }
-        var notificationList : MutableList<Notifications> = ArrayList()
+        var notificationList: MutableList<Notifications> = ArrayList()
         notificationList.add(Notifications(R.drawable.mylibrary, "${resourceList.size} resource not downloaded."))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} pending survey."))
         notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
         notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
 
-        if(TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")){
-            notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
 
+        if (TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")) {
+            notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
         }
 
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)
