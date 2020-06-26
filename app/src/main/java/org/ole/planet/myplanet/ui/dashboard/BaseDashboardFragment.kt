@@ -53,9 +53,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         fullName = profileDbHandler.userModel.fullName
         if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel.name
-            v.ll_prompt.visibility = View.GONE
-        }else{
             v.ll_prompt.visibility = View.VISIBLE
+        }else{
+            v.ll_prompt.visibility = View.GONE
         }
         v.ic_close.setOnClickListener {
             v.ll_prompt.visibility = View.GONE
