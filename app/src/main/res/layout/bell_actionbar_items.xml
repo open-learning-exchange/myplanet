@@ -6,6 +6,7 @@
     app:tabTextColor="@color/md_white_1000"
     android:id="@+id/tab_layout"
     app:tabMode="scrollable"
+    app:tabMinWidth="100dp"
     app:tabSelectedTextColor="@color/md_black_1000"
     android:orientation="vertical">
 

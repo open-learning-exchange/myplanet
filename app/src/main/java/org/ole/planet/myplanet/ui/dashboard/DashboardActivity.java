@@ -261,6 +261,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             icon.setImageDrawable(tabLayout.getTabAt(i).getIcon());
             tabLayout.getTabAt(i).setCustomView(v);
         }
+        tabLayout.setTabIndicatorFullWidth(false);
 
     }
 
