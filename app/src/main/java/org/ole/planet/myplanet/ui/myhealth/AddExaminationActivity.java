@@ -6,11 +6,13 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -36,6 +38,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import androidx.appcompat.widget.AppCompatEditText;
 import androidx.fragment.app.Fragment;
 import io.realm.Realm;
 
@@ -200,6 +203,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             c.setOnCheckedChangeListener(this);
             flexboxLayout.addView(c);
         }
+
+        AppCompatEditText otherDiag = new AppCompatEditText(this);
+        otherDiag.setHint("Other Diagnoses");
+        otherDiag.setLayoutParams(new FlexboxLayout.LayoutParams(FlexboxLayout.LayoutParams.MATCH_PARENT, FlexboxLayout.LayoutParams.WRAP_CONTENT));
+        flexboxLayout.addView(otherDiag);
     }
 
     private void initHealth() {
