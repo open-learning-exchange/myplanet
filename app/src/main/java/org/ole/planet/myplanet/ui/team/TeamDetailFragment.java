@@ -2,18 +2,16 @@ package org.ole.planet.myplanet.ui.team;
 
 
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
-import androidx.viewpager.widget.ViewPager;
-
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.tabs.TabLayout;
 
@@ -42,6 +40,7 @@ public class TeamDetailFragment extends Fragment {
     RealmMyTeam team;
     String teamId;
     LinearLayout llButtons;
+
     public TeamDetailFragment() {
     }
 
@@ -62,9 +61,9 @@ public class TeamDetailFragment extends Fragment {
         team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
-        if (!isMyTeam){
+        if (!isMyTeam) {
             llButtons.setVisibility(View.GONE);
-        }else{
+        } else {
             leave.setOnClickListener(vi -> {
                 new AlertDialog.Builder(requireContext()).setMessage("Are you sure you want to leave this team ??").setPositiveButton("Yes", (dialogInterface, i) -> {
                     team.leave(user, mRealm);
@@ -79,12 +78,10 @@ public class TeamDetailFragment extends Fragment {
                 MainApplication.showDownload = true;
                 viewPager.setCurrentItem(6);
                 MainApplication.showDownload = false;
-
             });
         }
         return v;
     }
-
 
 
     @Override

@@ -2,19 +2,18 @@ package org.ole.planet.myplanet.ui.team.teamResource;
 
 
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
@@ -47,6 +46,7 @@ public class TeamResourceFragment extends BaseTeamFragment {
 
     }
 
+
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -56,6 +56,7 @@ public class TeamResourceFragment extends BaseTeamFragment {
         if (MainApplication.showDownload)
             showResourceListDialog();
         getView().findViewById(R.id.fab_add_resource).setOnClickListener(view -> showResourceListDialog());
+        getParentFragment().getView().findViewById(R.id.btn_add_doc).setOnClickListener(view -> showResourceListDialog());
     }
 
     private void showLibraryList() {
