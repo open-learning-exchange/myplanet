@@ -212,10 +212,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             }
         });
 
-        for (int i = 0 ; i < tl.getTabCount() ; i++){
-            ViewGroup.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            tl.getTabAt(i).getCustomView().setLayoutParams(params);
-        }
         menuh = tl.getTabAt(0);
         menul = tl.getTabAt(1);
         menuc = tl.getTabAt(2);
