@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal">
@@ -14,7 +14,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/title" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
 
     <TextView
@@ -30,7 +30,7 @@
         android:text="@string/date"
         android:textSize="@dimen/text_size_mid" />
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal">
@@ -40,12 +40,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/description" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/btn_add_resources"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/add_resources"
-        android:theme="@style/PrimaryFlatButton" />
+        android:background="@drawable/buttongrey"
+        android:padding="@dimen/padding_normal"
+        style="@style/GreyButtons" />
 </LinearLayout>

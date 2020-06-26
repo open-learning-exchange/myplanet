@@ -1,19 +1,28 @@
 package org.ole.planet.myplanet.model;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
+import io.realm.Sort;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmCourseProgress extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id;
-    private long createdOn;
+    private String createdOn;
+    private long createdDate;
+    private long updatedDate;
 
     private String _rev;
 
@@ -35,7 +44,13 @@ public class RealmCourseProgress extends RealmObject {
         object.addProperty("passed", progress.getPassed());
         object.addProperty("stepNum", progress.getStepNum());
         object.addProperty("createdOn", progress.getCreatedOn());
+        object.addProperty("createdDate", progress.getCreatedDate());
+        object.addProperty("updatedDate", progress.getUpdatedDate());
         return object;
+    }
+
+    public String getCreatedOn() {
+        return createdOn;
     }
 
     public static HashMap<String, JsonObject> getCourseProgress(Realm mRealm, String userId) {
@@ -47,11 +62,26 @@ public class RealmCourseProgress extends RealmObject {
             List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, course.getCourseId());
             object.addProperty("max", steps.size());
 
-            object.addProperty("current", getCurrentProgress(steps, mRealm,userId, course.getCourseId()));
+            object.addProperty("current", getCurrentProgress(steps, mRealm, userId, course.getCourseId()));
             if (RealmMyCourse.isMyCourse(userId, course.getCourseId(), mRealm))
                 map.put(course.getCourseId(), object);
         }
         return map;
+    }
+
+    public static List<RealmSubmission> getPassedCourses(Realm mRealm, String userId) {
+
+        RealmResults<RealmCourseProgress> progresses = mRealm.where(RealmCourseProgress.class).equalTo("userId", userId).equalTo("passed", true).findAll();
+        List<RealmSubmission> list = new ArrayList<>();
+        for (RealmCourseProgress progress : progresses) {
+//            if (RealmCertification.isCourseCertified(mRealm, progress.getCourseId())) {
+            Utilities.log("Course id  certified " + progress.getCourseId());
+            RealmSubmission sub = mRealm.where(RealmSubmission.class).contains("parentId", progress.getCourseId()).equalTo("userId", userId).sort("lastUpdateTime", Sort.DESCENDING).findFirst();
+            if (sub != null)
+                list.add(sub);
+//            }
+        }
+        return list;
     }
 
     public static int getCurrentProgress(List<RealmCourseStep> steps, Realm mRealm, String userId, String courseId) {
@@ -65,14 +95,6 @@ public class RealmCourseProgress extends RealmObject {
         return i;
     }
 
-
-    public long getCreatedOn() {
-        return createdOn;
-    }
-
-    public void setCreatedOn(long createdOn) {
-        this.createdOn = createdOn;
-    }
 
     public String get_rev() {
         return _rev;
@@ -129,18 +151,56 @@ public class RealmCourseProgress extends RealmObject {
     public void setParentCode(String parentCode) {
         this.parentCode = parentCode;
     }
-//
-//    public static void insertCourseProgress(Realm mRealm, JsonObject act) {
-//        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
-//        if (courseProgress == null)
-//            courseProgress = mRealm.createObject(RealmCourseProgress.class, JsonUtils.getString("_id", act));
-//        courseProgress.set_rev(JsonUtils.getString("_rev", act));
-//        courseProgress.set_id(JsonUtils.getString("_id", act));
-//        courseProgress.setPassed(JsonUtils.getString("passed", act));
-//        courseProgress.setStepNum(JsonUtils.getString("stepNum", act));
-//        courseProgress.setUserId(JsonUtils.getString("userId", act));
-//        courseProgress.setParentCode(JsonUtils.getString("parentCode", act));
-//        courseProgress.setCreatedOn(JsonUtils.getString("createdOn", act));
-//    }
 
+    public static void insert(Realm mRealm, JsonObject act) {
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        Utilities.log("insert course progresss " + new Gson().toJson(act));
+        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        if (courseProgress == null)
+            courseProgress = mRealm.createObject(RealmCourseProgress.class, JsonUtils.getString("_id", act));
+        courseProgress.set_rev(JsonUtils.getString("_rev", act));
+        courseProgress.set_id(JsonUtils.getString("_id", act));
+        courseProgress.setPassed(JsonUtils.getBoolean("passed", act));
+        courseProgress.setStepNum(JsonUtils.getInt("stepNum", act));
+        courseProgress.setUserId(JsonUtils.getString("userId", act));
+        courseProgress.setParentCode(JsonUtils.getString("parentCode", act));
+        courseProgress.setCourseId(JsonUtils.getString("courseId", act));
+        courseProgress.setCreatedOn(JsonUtils.getString("createdOn", act));
+        courseProgress.setCreatedDate(JsonUtils.getLong("createdDate", act));
+        courseProgress.setUpdatedDate(JsonUtils.getLong("updatedDate", act));
+        mRealm.beginTransaction();
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setCreatedOn(String createdOn) {
+        this.createdOn = createdOn;
+    }
+
+    public long getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(long createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public long getUpdatedDate() {
+        return updatedDate;
+    }
+
+    public void setUpdatedDate(long updatedDate) {
+        this.updatedDate = updatedDate;
+    }
+
+    public boolean isPassed() {
+        return passed;
+    }
 }

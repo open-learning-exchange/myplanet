@@ -13,7 +13,7 @@
         android:orientation="vertical">
 
 
-        <android.support.v7.widget.CardView
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:cardCornerRadius="8dp"
@@ -48,8 +48,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/invite_member"
+                        android:padding="@dimen/padding_normal"
                         android:textColor="@color/md_white_1000"
-                        android:theme="@style/PrimaryFlatButton" />
+                        android:background="@drawable/buttonblue"
+                        style="@style/BlueButton"
+                        android:layout_marginRight="10dp"/>
 
 
                     <Button
@@ -57,7 +60,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/leave"
-                        android:theme="@style/AccentButton" />
+                        android:padding="@dimen/padding_normal"
+                        android:background="@drawable/buttongrey"
+                        style="@style/GreyButtons" />
 
                 </LinearLayout>
 
@@ -68,7 +73,7 @@
             </LinearLayout>
 
 
-        </android.support.v7.widget.CardView>
+        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 

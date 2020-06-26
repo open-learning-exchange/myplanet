@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rv_item_parent_layout"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/_80dp"
+    android:orientation="horizontal"
+    android:padding="@dimen/padding_normal">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/itemImageView"
+            android:layout_width="100dp"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            app:srcCompat="@drawable/ic_messages" />
+
+        <TextView
+            android:id="@+id/titleTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_60dp"
+            android:layout_marginLeft="15dp"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_toRightOf="@id/itemImageView"
+            android:hint="@string/messeges"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/visibility_image_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_marginRight="8dp"
+            android:layout_marginBottom="@dimen/_20dp"
+            android:layout_toLeftOf="@id/edit_image_button"
+            android:background="@drawable/roundcorner"
+            android:padding="@dimen/padding_normal"
+            app:srcCompat="@drawable/ic_visibility" />
+
+        <ImageButton
+            android:id="@+id/edit_image_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_20dp"
+            android:layout_marginBottom="@dimen/_20dp"
+            android:layout_toLeftOf="@id/drag_image_button"
+            android:background="@drawable/roundcorner"
+            android:padding="@dimen/padding_normal"
+            app:srcCompat="@drawable/ic_edit" />
+
+        <ImageButton
+            android:id="@+id/drag_image_button"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:background="@null"
+            android:enabled="false"
+            android:padding="@dimen/padding_normal"
+            android:src="@drawable/ic_round_drag" />
+
+    </RelativeLayout>
+</LinearLayout>

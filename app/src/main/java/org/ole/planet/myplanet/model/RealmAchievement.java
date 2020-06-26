@@ -121,7 +121,7 @@ public class RealmAchievement extends RealmObject {
     }
 
 
-    public static void insertAchievement(Realm mRealm, JsonObject act) {
+    public static void insert(Realm mRealm, JsonObject act) {
         RealmAchievement achievement = mRealm.where(RealmAchievement.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (achievement == null)
             achievement = mRealm.createObject(RealmAchievement.class, JsonUtils.getString("_id", act));

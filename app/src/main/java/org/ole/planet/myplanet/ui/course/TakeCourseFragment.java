@@ -2,20 +2,20 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.viewpager.widget.ViewPager;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmCourseActivity;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmCourseStep;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -25,16 +25,12 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.CustomViewPager;
-import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
 import io.realm.Realm;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChangeListener, View.OnClickListener {
 
     CustomViewPager mViewPager;
@@ -53,6 +49,11 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public TakeCourseFragment() {
     }
 
+    public static TakeCourseFragment newInstance(Bundle b) {
+        TakeCourseFragment takeCourseFragment = new TakeCourseFragment();
+        takeCourseFragment.setArguments(b);
+        return takeCourseFragment;
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -142,10 +143,11 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         tvStepTitle.setText(currentCourse.getCourseTitle());
         if (!currentCourse.getUserId().contains(userModel.getId())) {
             btnAddRemove.setVisibility(View.VISIBLE);
-            btnAddRemove.setText(getString(R.string.add_to_mycourses));
+            btnAddRemove.setText(getString(R.string.join));
         } else {
             btnAddRemove.setVisibility(View.GONE);
         }
+        RealmCourseActivity.createActivity(mRealm, userModel, currentCourse);
         tvSteps.setText("Step 0/" + steps.size());
         if (steps != null)
             courseProgress.setMax(steps.size());
@@ -213,6 +215,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
                     previous.setTextColor(getResources().getColor(R.color.md_white_1000));
+
                 }
                 onClickNext();
                 break;
@@ -238,7 +241,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             currentCourse.setUserId(userModel.getId());
             RealmRemovedLog.onAdd(mRealm, "courses", userModel.getId(), courseId);
         }
-        Utilities.toast(getActivity(), "Course " + (currentCourse.getUserId().contains(userModel.getId()) ? getString(R.string.added_to) : getString(R.string.removed_from)) + getString(R.string.my_courses));
+        Utilities.toast(getActivity(), "Course " + (currentCourse.getUserId().contains(userModel.getId()) ? getString(R.string.added_to) : getString(R.string.removed_from)) + " " + getString(R.string.my_courses));
         setCourseData();
     }
 
@@ -249,4 +252,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public boolean isValidClickLeft() {
         return mViewPager.getAdapter() != null && mViewPager.getCurrentItem() > 0;
     }
+
+
 }

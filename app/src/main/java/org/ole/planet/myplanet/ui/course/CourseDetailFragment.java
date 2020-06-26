@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,20 +10,23 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.model.RealmCourseStep;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
-import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.List;
 
@@ -34,9 +35,6 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView subjectLevel, gradeLevel, method, language, noOfExams;
     LinearLayout llRating;
@@ -47,6 +45,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     RealmUserModel user;
     String id;
     Button btnResources, btnOpen;
+    RecyclerView rv_step_list;
 
     public CourseDetailFragment() {
     }
@@ -86,12 +85,13 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         subjectLevel = v.findViewById(R.id.subject_level);
         gradeLevel = v.findViewById(R.id.grade_level);
         language = v.findViewById(R.id.language);
+        rv_step_list = v.findViewById(R.id.steps_list);
         method = v.findViewById(R.id.method);
         noOfExams = v.findViewById(R.id.no_of_exams);
         btnResources = v.findViewById(R.id.btn_resources);
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
-        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
 
@@ -115,6 +115,14 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
                 .findAll();
         setOpenResourceButton(downloadedResources, btnOpen);
         onRatingChanged();
+        setStepsList();
+    }
+
+    private void setStepsList() {
+        List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
+        rv_step_list.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rv_step_list.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
+
     }
 
 

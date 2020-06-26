@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.helpwanted.HelpWantedFragment">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:id="@+id/ll_data"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid" />
+
+            <TextView
+                android:id="@+id/tv_email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid" />
+
+            <TextView
+                android:id="@+id/tv_phone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid" />
+
+
+            <TextView
+                android:id="@+id/tv_ambulance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:text="For Ambulance"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid" />
+
+            <TextView
+                android:id="@+id/tv_police"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:text="For Police"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid" />
+
+            <TextView
+                android:id="@+id/tv_emerg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:text="For Emergency"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid" />
+
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_nodata"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</androidx.core.widget.NestedScrollView>

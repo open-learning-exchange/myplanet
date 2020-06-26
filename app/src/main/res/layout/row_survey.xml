@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -66,17 +66,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Send Survey"
-                android:theme="@style/PrimaryButton" />
+                android:theme="@style/AccentButton"
+                android:layout_marginRight="10dp"/>
 
             <Button
                 android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Take Survey"
-                android:theme="@style/PrimaryButton" />
+                android:theme="@style/AccentButton" />
 
         </LinearLayout>
 
     </LinearLayout>
 
-</android.support.v7.widget.CardView>
+</androidx.cardview.widget.CardView>

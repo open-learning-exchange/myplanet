@@ -5,8 +5,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -18,6 +16,8 @@ import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -54,12 +54,14 @@ public class WebViewActivity extends AppCompatActivity {
         pBar.setProgress(0);
         setListeners();
         wv.getSettings().setJavaScriptEnabled(true);
+        wv.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
         wv.loadUrl(link);
         findViewById(R.id.finish).setOnClickListener(v -> finish());
         setWebClient();
     }
 
     private void setWebClient() {
+//        wv.setWebChromeClient(new WebChromeClient());
 
         wv.setWebViewClient(new WebViewClient() {
             @Override

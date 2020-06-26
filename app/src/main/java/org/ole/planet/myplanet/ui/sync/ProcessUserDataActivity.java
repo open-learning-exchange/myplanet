@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.app.ProgressDialog;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -8,8 +9,11 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
-import android.support.design.widget.TextInputLayout;
-import android.support.v7.app.AlertDialog;
+
+import com.google.android.material.textfield.TextInputLayout;
+
+import androidx.appcompat.app.AlertDialog;
+
 import android.text.TextUtils;
 import android.view.View;
 import android.view.WindowManager;
@@ -38,6 +42,15 @@ import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PRO
 public abstract class ProcessUserDataActivity extends PermissionActivity implements SuccessListener {
     SharedPreferences settings;
     ProgressDialog progressDialog;
+    public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
+                Download download = intent.getParcelableExtra("download");
+                checkDownloadResult(download, progressDialog);
+            }
+        }
+    };
 
     public boolean validateEditText(EditText textField, TextInputLayout textLayout, String err_message) {
         if (textField.getText().toString().trim().isEmpty()) {
@@ -68,7 +81,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         startActivity(dashboard);
         finish();
     }
-
 
     private void requestFocus(View view) {
         if (view.requestFocus()) {
@@ -116,7 +128,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         return couchdbURL;
     }
 
-
     public boolean isUrlValid(String url) {
         if (!URLUtil.isValidUrl(url) || url.equals("http://") || url.equals("https://")) {
             DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
@@ -125,30 +136,29 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         return true;
     }
 
-    public BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(MESSAGE_PROGRESS) && progressDialog != null) {
-                Download download = intent.getParcelableExtra("download");
-                checkDownloadResult(download, progressDialog);
-            }
-        }
-    };
-
     public void startUpload() {
         progressDialog.setMessage("Uploading data to server, please wait.....");
         progressDialog.show();
+        Utilities.log("Upload : upload started");
+        UploadToShelfService.getInstance().uploadUserData(success -> {
+            UploadToShelfService.getInstance().uploadHealth();
+        });
         UploadManager.getInstance().uploadUserActivities(this);
         UploadManager.getInstance().uploadExamResult(this);
         UploadManager.getInstance().uploadFeedback(this);
         UploadManager.getInstance().uploadAchievement();
-        UploadToShelfService.getInstance().uploadToshelf(this);
         UploadManager.getInstance().uploadResourceActivities("");
-        UploadManager.getInstance().uploadResourceActivities("sync");
+        UploadManager.getInstance().uploadCourseActivities();
+        UploadManager.getInstance().uploadSearchActivity();
+        UploadManager.getInstance().uploadNews();
+        UploadManager.getInstance().uploadTeams();
+        UploadManager.getInstance().uploadResource(this);
         UploadManager.getInstance().uploadRating(this);
+        UploadManager.getInstance().uploadTeamTask();
         UploadManager.getInstance().uploadCrashLog(this);
+//        UploadManager.getInstance().uploadHealth();
+        UploadManager.getInstance().uploadSubmitPhotos(this);
         UploadManager.getInstance().uploadActivities(this);
-
         Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
     }
 

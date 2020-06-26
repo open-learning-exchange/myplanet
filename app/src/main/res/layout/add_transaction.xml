@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+
+    <Spinner
+        android:id="@+id/spn_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/transaction_type"
+        android:padding="@dimen/padding_normal" />
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tl_note"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_normal">
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/note" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tl_amount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_normal">
+
+        <EditText
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:hint="@string/amount" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="@dimen/padding_normal"
+        android:paddingTop="@dimen/padding_normal"
+        android:paddingRight="@dimen/padding_normal"
+        android:text="@string/date" />
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:padding="@dimen/padding_normal"
+        android:id="@+id/tv_select_date"
+        android:textSize="18sp"
+        android:textColor="@color/colorPrimaryDark"
+        android:hint="Select Date"
+        android:layout_height="wrap_content" />
+</LinearLayout>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="match_parent"
@@ -94,6 +94,15 @@
                     android:textSize="18sp" />
 
                 <TextView
+                    android:id="@+id/tv_news"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/our_news"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
+
+                <TextView
                     android:id="@+id/tv_achievement"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -115,7 +124,7 @@
                         android:layout_weight="1"
                         android:background="?attr/selectableItemBackground"
                         android:padding="@dimen/padding_normal"
-                        android:text="@string/menu_surveys"
+                        android:text="@string/my_survey"
                         android:textColor="@color/md_black_1000"
                         android:textSize="18sp" />
 
@@ -143,4 +152,4 @@
         </ScrollView>
     </LinearLayout>
 
-</android.support.v7.widget.CardView>
+</androidx.cardview.widget.CardView>

@@ -32,8 +32,16 @@ public class RealmTag extends RealmObject {
 
     private String _id;
 
+    private String linkId;
+    private String tagId;
+
     private RealmList<String> attachedTo;
 
+    private String docType;
+
+    private String db;
+
+    private boolean isAttached;
 
     public static HashMap<String, RealmTag> getListAsMap(List<RealmTag> list) {
         HashMap<String, RealmTag> map = new HashMap<>();
@@ -44,6 +52,29 @@ public class RealmTag extends RealmObject {
         return map;
     }
 
+    public boolean isAttached() {
+        return isAttached;
+    }
+
+    public void setAttached(boolean attached) {
+        isAttached = attached;
+    }
+
+    public String getLinkId() {
+        return linkId;
+    }
+
+    public void setLinkId(String linkId) {
+        this.linkId = linkId;
+    }
+
+    public String getTagId() {
+        return tagId;
+    }
+
+    public void setTagId(String tagId) {
+        this.tagId = tagId;
+    }
 
     public String getId() {
         return id;
@@ -53,23 +84,21 @@ public class RealmTag extends RealmObject {
         this.id = id;
     }
 
-//    public List<RealmTag> getChild() {
-//        return child;
-//    }
-//
-//    public void setChild(List<RealmTag> child) {
-//
-//        this.child = child;
-//    }
-//
-//    public void setChild(RealmTag tag) {
-//        if (child == null) {
-//            child = new ArrayList<>();
-//        }
-//        if (!this.child.contains(tag))
-//            this.child.add(tag);
-//
-//    }
+    public String getDocType() {
+        return docType;
+    }
+
+    public void setDocType(String docType) {
+        this.docType = docType;
+    }
+
+    public String getDb() {
+        return db;
+    }
+
+    public void setDb(String db) {
+        this.db = db;
+    }
 
     public String get_rev() {
         return _rev;
@@ -96,21 +125,34 @@ public class RealmTag extends RealmObject {
     }
 
 
-    public static void insertTags(Realm mRealm, JsonObject act) {
+    public static void insert(Realm mRealm, JsonObject act) {
         RealmTag tag = mRealm.where(RealmTag.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (tag == null)
             tag = mRealm.createObject(RealmTag.class, JsonUtils.getString("_id", act));
         tag.set_rev(JsonUtils.getString("_rev", act));
         tag.set_id(JsonUtils.getString("_id", act));
         tag.setName(JsonUtils.getString("name", act));
-        tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act));
+        tag.setDb(JsonUtils.getString("db", act));
+        tag.setDocType(JsonUtils.getString("docType", act));
+        tag.setTagId(JsonUtils.getString("tagId", act));
+        tag.setLinkId(JsonUtils.getString("linkId", act));
+        JsonElement el = act.get("attachedTo");
+        if (el != null && el.isJsonArray()) {
+            tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act));
+        } else {
+            tag.attachedTo.add(JsonUtils.getString("attachedTo", act));
+        }
+        tag.setAttached(tag.getAttachedTo().size() > 0);
     }
+
 
     private void setAttachedTo(JsonArray attachedTo) {
         this.attachedTo = new RealmList<>();
         for (int i = 0; i < attachedTo.size(); i++) {
             this.attachedTo.add(JsonUtils.getString(attachedTo, i));
         }
+        this.setAttached(this.attachedTo.size() > 0);
+
     }
 
     @Override
@@ -120,6 +162,14 @@ public class RealmTag extends RealmObject {
 
     public RealmList<String> getAttachedTo() {
         return attachedTo;
+    }
+
+    public static JsonArray getTagsArray(List<RealmTag> list){
+        JsonArray array = new JsonArray();
+        for (RealmTag t : list){
+            array.add(t.get_id());
+        }
+        return array;
     }
 
     public void setAttachedTo(RealmList<String> attachedTo) {

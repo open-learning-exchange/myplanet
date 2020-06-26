@@ -8,7 +8,7 @@
     android:paddingStart="@dimen/padding_normal"
     android:paddingEnd="@dimen/padding_very_large">
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="0dp"
         android:id="@+id/tl_tags"
         android:visibility="gone"
@@ -30,27 +30,32 @@
             android:padding="@dimen/padding_normal"
             app:flexWrap="wrap" />
 
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
         android:layout_weight="1">
 
         <EditText
             android:id="@+id/et_search"
+            android:maxLines="1"
+            android:inputType="text"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_gravity="center"
+            android:gravity="bottom"
             android:hint="@string/search"
+            android:background="@null"
             android:padding="@dimen/padding_normal" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <ImageView
         android:id="@+id/img_search"
         android:layout_width="30dp"
-        android:layout_height="30dp"
+        android:layout_height="@dimen/layout_height"
         android:layout_gravity="center"
         android:background="?attr/selectableItemBackground"
         android:src="@drawable/ic_search" />

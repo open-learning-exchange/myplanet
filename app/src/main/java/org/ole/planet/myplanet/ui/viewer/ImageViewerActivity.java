@@ -2,10 +2,11 @@ package org.ole.planet.myplanet.ui.viewer;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 
@@ -18,6 +19,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
     private TextView mImageFileNameTitle;
     private ImageView mImageViewer;
+    private boolean isFullPath = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +36,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
     private void renderImageFile() {
         // File name to be viewed
-
+        isFullPath = getIntent().getBooleanExtra("isFullPath", false);
         Intent imageOpenIntent = getIntent();
         String fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
 
@@ -45,7 +47,7 @@ public class ImageViewerActivity extends AppCompatActivity {
 
         try {
             Glide.with(getApplicationContext())
-                    .load(new File(Utilities.SD_PATH, fileName))
+                    .load(isFullPath ? new File(fileName) : new File(Utilities.SD_PATH, fileName))
                     .into(mImageViewer);
         } catch (Exception e) {
             e.printStackTrace();

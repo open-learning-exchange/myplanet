@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
+
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -123,7 +125,7 @@ public class RealmOfflineActivity extends RealmObject {
         this.parentCode = parentCode;
     }
 
-    public static JsonObject serializeLoginActivities(RealmOfflineActivity realm_offlineActivities) {
+    public static JsonObject serializeLoginActivities(RealmOfflineActivity realm_offlineActivities, Context context) {
         JsonObject ob = new JsonObject();
         ob.addProperty("user", realm_offlineActivities.getUserName());
         ob.addProperty("type", realm_offlineActivities.getType());
@@ -132,6 +134,8 @@ public class RealmOfflineActivity extends RealmObject {
         ob.addProperty("createdOn", realm_offlineActivities.getCreatedOn());
         ob.addProperty("parentCode", realm_offlineActivities.getParentCode());
         ob.addProperty("androidId", NetworkUtils.getMacAddr());
+        ob.addProperty("deviceName", NetworkUtils.getDeviceName());
+        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         if (realm_offlineActivities.get_id() != null) {
             ob.addProperty("_id", realm_offlineActivities.getLogoutTime());
         }
@@ -146,8 +150,10 @@ public class RealmOfflineActivity extends RealmObject {
         return s;
     }
 
-    public static void insertOfflineActivities(Realm mRealm, JsonObject act) {
-        RealmOfflineActivity activities = mRealm.createObject(RealmOfflineActivity.class, JsonUtils.getString("_id", act));
+    public static void insert(Realm mRealm, JsonObject act) {
+        RealmOfflineActivity activities = mRealm.where(RealmOfflineActivity.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
+        if (activities == null)
+            activities = mRealm.createObject(RealmOfflineActivity.class, JsonUtils.getString("_id", act));
         activities.set_rev(JsonUtils.getString("_rev", act));
         activities.set_id(JsonUtils.getString("_id", act));
         activities.setLoginTime(JsonUtils.getLong("loginTime", act));

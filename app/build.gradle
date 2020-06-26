@@ -1,15 +1,18 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 apply plugin: 'realm-android'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
-        targetSdkVersion 27
-        versionCode 460
-        versionName "0.4.60"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        targetSdkVersion 28
+        versionCode 824
+        versionName "0.8.24"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
         applicationVariants.all { variant ->
@@ -17,6 +20,9 @@ android {
                 outputFileName = new File("myPlanet-build.apk")
             }
         }
+    }
+    configurations.all {
+        resolutionStrategy.force 'com.google.android.material:material:1.0.0'
     }
     buildTypes {
         release {
@@ -58,25 +64,25 @@ repositories {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
-    implementation "com.android.support:support-v4:${versions.supportLib}"
-    implementation 'com.android.support:multidex:1.0.3'
-    implementation 'com.github.kittinunf.fuel:fuel-android:1.12.1'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.multidex:multidex:2.0.0'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'org.codehaus.jackson:jackson-mapper-asl:1.5.0'
     implementation('com.mikepenz:materialdrawer:6.0.7@aar') {
         transitive = true
     }
-    implementation "com.android.support:appcompat-v7:${versions.supportLib}"
-    implementation "com.android.support:recyclerview-v7:${versions.supportLib}"
-    implementation "com.android.support:support-annotations:${versions.supportLib}"
-    implementation "com.android.support:design:${versions.supportLib}"
-    implementation "com.android.support:exifinterface:${versions.supportLib}"
+    implementation 'androidx.appcompat:appcompat:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.0.0'
+    implementation 'androidx.annotation:annotation:1.0.0'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'androidx.exifinterface:exifinterface:1.0.0'
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
     implementation 'com.mikepenz:fontawesome-typeface:5.0.6.0@aar'
     implementation 'com.mikepenz:octicons-typeface:3.0.0.1@aar'
     implementation 'de.hdodenhof:circleimageview:2.2.0'
+
     implementation 'com.mikepenz:itemanimators:1.0.2@aar'
     implementation('com.github.jeancsanchez:JcPlayer:2.6.13') {
         exclude group: 'com.android.support.constraint'
@@ -88,14 +94,12 @@ dependencies {
     implementation 'com.google.android:flexbox:1.0.0'
     implementation 'com.squareup.picasso:picasso:2.71828'
     implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
-    implementation "com.android.support:cardview-v7:${versions.supportLib}"
+    implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
     implementation 'de.rtner:PBKDF2:1.1.2'
-    implementation 'com.android.support:support-v4:27.1.1'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     implementation 'com.github.bumptech.glide:glide:4.7.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.7.1'
     implementation 'com.github.tiagohm.MarkdownView:library:0.19.0'
@@ -103,8 +107,20 @@ dependencies {
     implementation 'com.opencsv:opencsv:3.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'de.hdodenhof:circleimageview:3.0.0'
-    //    implementation 'com.github.fiskurgit:ChipCloud:3.0.5'
+    implementation 'org.osmdroid:osmdroid-android:6.1.0'
+    implementation 'com.github.clans:fab:1.6.4'
+    implementation 'com.borax12.materialdaterangepicker:library:2.0'
+    implementation 'com.nex3z:toggle-button-group:1.1.9'
+    implementation 'com.sa90.materialarcmenu:library:2.0.0'
     implementation project(':ChipCloud-3.0.5')
+    implementation 'org.jetbrains:annotations:15.0'
+    implementation 'com.github.kizitonwose:CalendarView:0.3.1'
+    implementation "io.noties.markwon:editor:4.2.0"
+    implementation "androidx.core:core-ktx:+"
+    implementation 'com.github.deano2390:MaterialShowcaseView:1.3.4'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 }
 realm {
     syncEnabled = true

@@ -2,13 +2,14 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
@@ -19,9 +20,11 @@ import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
+import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
+import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Constants;
 
 import java.util.Date;
@@ -29,13 +32,14 @@ import java.util.List;
 import java.util.UUID;
 
 import br.tiagohm.markdownview.MarkdownView;
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CourseStepFragment extends BaseContainerFragment {
+public class CourseStepFragment extends BaseContainerFragment implements CameraUtils.ImageCaptureCallback {
 
     TextView tvTitle;
     MarkdownView description;
@@ -93,11 +97,13 @@ public class CourseStepFragment extends BaseContainerFragment {
                 .findFirst();
         if (courseProgress == null) {
             courseProgress = mRealm.createObject(RealmCourseProgress.class, UUID.randomUUID().toString());
+            courseProgress.setCreatedDate(new Date().getTime());
         }
         courseProgress.setCourseId(step.getCourseId());
         courseProgress.setStepNum(stepNumber);
-        courseProgress.setPassed(stepExams.size() <= 0);
-        courseProgress.setCreatedOn(new Date().getTime());
+        courseProgress.setPassed(false);
+        courseProgress.setCreatedOn(user.getPlanetCode());
+        courseProgress.setUpdatedDate(new Date().getTime());
         courseProgress.setParentCode(user.getParentCode());
         courseProgress.setUserId(user.getId());
         mRealm.commitTransaction();
@@ -120,15 +126,22 @@ public class CourseStepFragment extends BaseContainerFragment {
         hideTestIfNoQuestion();
         tvTitle.setText(step.getStepTitle());
         description.loadMarkdown(step.getDescription());
+        if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+            btnExam.setVisibility(View.INVISIBLE);
+        }
         setListeners();
     }
 
+
     private void hideTestIfNoQuestion() {
+        btnExam.setVisibility(View.INVISIBLE);
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
+            long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.getCourseId()).notEqualTo("status", "pending", Case.INSENSITIVE).count();
+
             if (questions != null && questions.size() > 0) {
-                btnExam.setText("Take Test [" + stepExams.size() + "]");
+                btnExam.setText((submissionsCount > 0 ? "Retake Test" : "Take Test") + " [" + stepExams.size() + "]");
                 btnExam.setVisibility(View.VISIBLE);
             }
         }
@@ -161,6 +174,7 @@ public class CourseStepFragment extends BaseContainerFragment {
                 b.putInt("stepNum", stepNumber);
                 takeExam.setArguments(b);
                 homeItemClickListener.openCallFragment(takeExam);
+                CameraUtils.CapturePhoto(this);
             }
         });
         final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class)
@@ -177,5 +191,10 @@ public class CourseStepFragment extends BaseContainerFragment {
     public void onDownloadComplete() {
         super.onDownloadComplete();
         setListeners();
+    }
+
+    @Override
+    public void onImageCapture(String fileUri) {
+
     }
 }

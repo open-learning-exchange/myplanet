@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.community.CommunityFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:padding="@dimen/padding_large"
+            android:id="@+id/ll_links"
+            android:visibility="gone"
+            android:background="@color/md_grey_300"
+            android:layout_height="wrap_content">
+
+            <Button
+                android:layout_width="wrap_content"
+                android:text="@string/library"
+                android:id="@+id/btn_library"
+                android:theme="@style/PrimaryFlatButton"
+                android:layout_height="wrap_content"/>
+
+            <com.google.android.flexbox.FlexboxLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_gravity="center_vertical"
+                android:id="@+id/flexbox_link"
+                android:orientation="horizontal"
+                app:flexWrap="wrap"
+                android:layout_height="wrap_content"/>
+
+         <LinearLayout
+             android:layout_width="wrap_content"
+             android:id="@+id/ll_edit_delete"
+             android:layout_height="wrap_content">
+
+             <ImageView
+                 android:layout_width="@dimen/_24dp"
+                 android:src="@drawable/ic_delete"
+                 android:layout_gravity="center_vertical"
+                 android:id="@+id/ic_delete"
+                 android:tint="@color/md_black_1000"
+                 android:layout_height="@dimen/_24dp"/>
+
+             <ImageView
+                 android:layout_width="@dimen/_24dp"
+                 android:src="@drawable/ic_add"
+                 android:layout_gravity="center_vertical"
+                 android:id="@+id/ic_add"
+                 android:tint="@color/md_black_1000"
+                 android:layout_height="@dimen/_24dp"/>
+
+         </LinearLayout>
+
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:id="@+id/rv_community"
+            android:layout_weight="1"/>
+
+
+
+    </LinearLayout>
+
+
+</FrameLayout>

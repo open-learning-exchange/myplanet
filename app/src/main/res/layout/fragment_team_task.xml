@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    tools:context=".ui.team.teamTask.TeamTaskFragment">
+
+
+        <!--<ToggleButton-->
+            <!--android:layout_width="wrap_content"-->
+            <!--android:id="@+id/task_toggle"-->
+            <!--android:textOff="My Task"-->
+            <!--android:textOn="All Task"-->
+            <!---->
+            <!--android:layout_height="wrap_content" />-->
+
+
+    <com.nex3z.togglebuttongroup.SingleSelectToggleGroup
+        android:id="@+id/task_toggle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tbgCheckedButton="@+id/btn_all">
+
+        <com.nex3z.togglebuttongroup.button.LabelToggle
+            android:id="@+id/btn_all"
+            android:padding="@dimen/padding_normal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="All Task"/>
+
+        <com.nex3z.togglebuttongroup.button.LabelToggle
+            android:id="@+id/btn_my"
+            android:layout_width="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:layout_height="wrap_content"
+            android:text="My task"/>
+
+        <com.nex3z.togglebuttongroup.button.LabelToggle
+            android:id="@+id/btn_completed"
+            android:layout_width="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:layout_height="wrap_content"
+            android:text="Completed"/>
+
+
+    </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_task"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/tv_nodata"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right|bottom"
+            android:layout_margin="@dimen/padding_normal"
+            android:src="@drawable/ic_add" />
+
+    </FrameLayout>
+
+</LinearLayout>

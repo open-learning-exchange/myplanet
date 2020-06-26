@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_sync"
+        android:icon="@drawable/sync_icon"
+        android:title="@string/sync_now"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_feedback"
+        android:icon="@drawable/ic_feedback"
+        android:title="@string/menu_feedback"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_about"
+        android:icon="@drawable/ic_my_survey"
+        android:title="@string/action_about"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_disclaimer"
+        android:icon="@drawable/ic_my_survey"
+        android:title="@string/action_disclaimer"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/settings"
+        android:title="@string/action_settings"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_logout"
+        android:icon="@drawable/logout"
+        android:title="@string/logout"
+        app:showAsAction="never" />
+</menu>

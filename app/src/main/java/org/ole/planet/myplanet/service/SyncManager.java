@@ -5,9 +5,11 @@ import android.content.SharedPreferences;
 import android.net.wifi.SupplicantState;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.util.Log;
+import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
@@ -17,6 +19,7 @@ import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -38,8 +41,9 @@ import io.realm.Realm;
 import retrofit2.Response;
 
 public class SyncManager {
-    static final String PREFS_NAME = "OLE_PLANET";
+    public static final String PREFS_NAME = "OLE_PLANET";
     private static SyncManager ourInstance;
+    Thread td;
     private SharedPreferences settings;
     private Realm mRealm;
     private Context context;
@@ -48,19 +52,15 @@ public class SyncManager {
     private Rows shelfDoc;
     private SyncListener listener;
     private DatabaseService dbService;
-    private UserProfileDbHandler userProfileDbHandler;
 
     private SyncManager(Context context) {
         this.context = context;
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         dbService = new DatabaseService(context);
-        userProfileDbHandler = new UserProfileDbHandler(context);
     }
 
     public static SyncManager getInstance() {
-        //   if (ourInstance == null) {
         ourInstance = new SyncManager(MainApplication.context);
-        // }
         return ourInstance;
     }
 
@@ -91,8 +91,6 @@ public class SyncManager {
         }
     }
 
-    Thread td;
-
     private void authenticateAndSync() {
         td = new Thread(() -> {
             if (TransactionSyncManager.authenticate()) {
@@ -116,17 +114,29 @@ public class SyncManager {
             NotificationUtil.create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...");
             mRealm = dbService.getRealmInstance();
             TransactionSyncManager.syncDb(mRealm, "tablet_users");
+            myLibraryTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "courses");
             TransactionSyncManager.syncDb(mRealm, "exams");
-            resourceTransactionSync();
             TransactionSyncManager.syncDb(mRealm, "ratings");
+            TransactionSyncManager.syncDb(mRealm, "courses_progress");
             TransactionSyncManager.syncDb(mRealm, "achievements");
             TransactionSyncManager.syncDb(mRealm, "tags");
             TransactionSyncManager.syncDb(mRealm, "submissions");
-            myLibraryTransactionSync();
+            TransactionSyncManager.syncDb(mRealm, "news");
+            TransactionSyncManager.syncDb(mRealm, "feedback");
+            TransactionSyncManager.syncDb(mRealm, "teams");
+            TransactionSyncManager.syncDb(mRealm, "tasks");
             TransactionSyncManager.syncDb(mRealm, "login_activities");
+            TransactionSyncManager.syncDb(mRealm, "meetups");
+            TransactionSyncManager.syncDb(mRealm, "health");
+            TransactionSyncManager.syncDb(mRealm, "certifications");
+            TransactionSyncManager.syncDb(mRealm, "team_activities");
+            ManagerSync.getInstance().syncAdmin();
+            resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
+            mRealm.close();
         } catch (Exception err) {
+            err.printStackTrace();
             handleException(err.getMessage());
         } finally {
             destroy();
@@ -142,39 +152,40 @@ public class SyncManager {
     }
 
 
-    public void resourceTransactionSync() {
+    public void resourceTransactionSync(SyncListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
             try {
-                syncResource(apiInterface);
+                syncResource(apiInterface, listener);
             } catch (IOException e) {
             }
         });
     }
 
-    private void syncResource(ApiInterface dbClient) throws IOException {
-        int skip = 0;
-        int limit = 1000;
+    private void syncResource(ApiInterface dbClient, SyncListener listener) throws IOException {
         List<String> newIds = new ArrayList<>();
-        while (true) {
-            JsonObject object = new JsonObject();
-            object.add("selector", new JsonObject());
-            object.addProperty("limit", limit);
-            object.addProperty("skip", skip);
-            Utilities.log("Url " + Utilities.getUrl() + "/resources/_find");
-            final retrofit2.Call<JsonObject> allDocs = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_find", object);
-            Response<JsonObject> a = allDocs.execute();
-            List<String> ids = RealmMyLibrary.save(JsonUtils.getJsonArray("docs", a.body()), mRealm);
-            newIds.addAll(ids);
-            if (a.body().size() < limit) {
-                break;
-            } else {
-                skip = skip + limit;
+        final retrofit2.Call<JsonObject> allDocs = dbClient.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/resources/_all_docs?include_doc=false");
+        Response<JsonObject> all = allDocs.execute();
+        JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
+        List<String> keys = new ArrayList<>();
+        for (int i = 0; i < rows.size(); i++) {
+            JsonObject object = rows.get(i).getAsJsonObject();
+            if (!TextUtils.isEmpty(JsonUtils.getString("id", object)))
+                keys.add(JsonUtils.getString("key", object));
+            if (i == rows.size() - 1 || keys.size() == 1000) {
+                JsonObject obj = new JsonObject();
+                obj.add("keys", new Gson().fromJson(new Gson().toJson(keys), JsonArray.class));
+                final Response<JsonObject> response = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj).execute();
+                if (response.body() != null) {
+                    List<String> ids = RealmMyLibrary.save(JsonUtils.getJsonArray("rows", response.body()), mRealm);
+                    newIds.addAll(ids);
+                }
+                keys.clear();
             }
         }
+
         RealmMyLibrary.removeDeletedResource(newIds, mRealm);
     }
-
 
     private void myLibraryTransactionSync() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -188,7 +199,6 @@ public class SyncManager {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
         });
     }
 
@@ -197,6 +207,7 @@ public class SyncManager {
         try {
             this.mRealm = mRealm;
             JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.getId()).execute().body();
+            Utilities.log(new Gson().toJson(jsonDoc));
             for (int i = 0; i < Constants.shelfDataList.size(); i++) {
                 Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
                 JsonArray array = JsonUtils.getJsonArray(shelfData.key, jsonDoc);
@@ -210,7 +221,7 @@ public class SyncManager {
     private void memberShelfData(JsonArray array, Constants.ShelfData shelfData) {
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type);
-            check(array, shelfData.aClass);
+            check(array);
         }
     }
 
@@ -221,33 +232,12 @@ public class SyncManager {
     }
 
 
-    private void check(JsonArray array_categoryIds, Class aClass) {
+    private void check(JsonArray array_categoryIds) {
         for (int x = 0; x < array_categoryIds.size(); x++) {
             if (array_categoryIds.get(x) instanceof JsonNull) {
                 continue;
             }
-            checkEmptyAndSave(aClass, x, array_categoryIds);
-        }
-    }
-
-    private void checkEmptyAndSave(Class aClass, int x, JsonArray array_categoryIds) {
-        List db_Categrory = null;
-
-        if (aClass == RealmMyLibrary.class || aClass == RealmMyCourse.class) {
-            db_Categrory =
-                    RealmMyLibrary.getShelfItem(stringArray[0], mRealm.where(aClass)
-                            .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-                            .findAll(), aClass);
-        } else {
-            db_Categrory = mRealm.where(aClass)
-                    .contains("userId", stringArray[0])
-                    .equalTo(stringArray[1], array_categoryIds.get(x).getAsString())
-                    .findAll();
-        }
-        if (db_Categrory.isEmpty()) {
             validateDocument(array_categoryIds, x);
-        } else {
-            Log.e("DATA", " Data already saved for -- " + stringArray[0] + " " + array_categoryIds.get(x).getAsString());
         }
     }
 
@@ -265,18 +255,19 @@ public class SyncManager {
 
     private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
                                int x, JsonObject resourceDoc) {
+
         switch (stringArray[2]) {
             case "resources":
                 RealmMyLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":
-                RealmMeetup.insertMyMeetups(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                RealmMeetup.insertMyMeetups(stringArray[0], resourceDoc, mRealm);
                 break;
             case "courses":
                 RealmMyCourse.insertMyCourses(stringArray[0], resourceDoc, mRealm);
                 break;
             case "teams":
-                RealmMyTeam.insertMyTeams(stringArray[0], array_categoryIds.get(x).getAsString(), resourceDoc, mRealm);
+                RealmMyTeam.insertMyTeams(stringArray[0], resourceDoc, mRealm);
                 break;
         }
     }

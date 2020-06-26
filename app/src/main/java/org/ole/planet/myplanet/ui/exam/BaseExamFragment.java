@@ -1,26 +1,38 @@
 package org.ole.planet.myplanet.ui.exam;
 
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AlertDialog;
-import android.text.TextUtils;
-import android.widget.CompoundButton;
 
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AlertDialog;
+
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmAnswer;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CameraUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.editor.MarkwonEditor;
+import io.noties.markwon.editor.MarkwonEditorTextWatcher;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmResults;
@@ -40,6 +52,10 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     RealmSubmission sub;
     HashMap<String, String> listAns;
     boolean isMySurvey;
+    String mac_addr = NetworkUtils.getMacAddr();
+    String date = new Date().toString();
+    String photo_path = "";
+    String Submit_id = "";
 
 
     @Override
@@ -61,9 +77,11 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             id = getArguments().getString("id");
             if (isMySurvey) {
                 sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
-                id = sub.getParentId();
+                if (sub.getParentId().contains("@"))
+                    id = sub.getParentId().split("@")[0];
+                else
+                    id = sub.getParentId();
             }
-            Utilities.log("Id " + id);
         }
     }
 
@@ -81,12 +99,15 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         }
     }
 
+    boolean isLastAnsvalid;
     public void checkAnsAndContinue(boolean cont) {
         if (cont) {
+            isLastAnsvalid = true;
             currentIndex = currentIndex + 1;
             continueExam();
         } else {
-            Utilities.toast(getActivity(), "Invalid answer");
+            isLastAnsvalid = false;
+            Utilities.toast(getActivity(), getString(R.string.incorrect_ans));
         }
     }
 
@@ -103,7 +124,6 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
                     .setPositiveButton("Finish", (dialogInterface, i) -> {
                         getActivity().onBackPressed();
                         try {
-                            CameraUtils.CapturePhoto(BaseExamFragment.this);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -124,7 +144,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void showUserInfoDialog() {
-        if (!isMySurvey) {
+        if (!isMySurvey && !exam.isFromNation()) {
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction())
@@ -169,11 +189,60 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
 
     abstract void startExam(RealmExamQuestion question);
 
+
+    public void insert_into_submitPhotos(String submit_id) {
+        mRealm.beginTransaction();
+        RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class, UUID.randomUUID().toString());
+        submit.setSubmission_id(submit_id);
+        submit.setExam_id(exam.getId());
+        submit.setCourse_id(exam.getCourseId());
+        submit.setMember_id(user.getId());
+        submit.setDate(date);
+        submit.setMac_address(mac_addr);
+        submit.setPhoto_location(photo_path);
+        submit.setUploaded(false);
+        Utilities.log(submit.getPhoto_location());
+        Utilities.log("insert_into_submitPhotos");
+        mRealm.commitTransaction();
+
+
+    }
+
     @Override
     public void onImageCapture(String fileUri) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        sub.setLocalUserImageUri(fileUri);
-        mRealm.close();
+
+        photo_path = fileUri;
+        insert_into_submitPhotos(Submit_id);
+        Utilities.log(photo_path);
     }
+
+
+    public void setMarkdownViewAndShowInput(EditText etAnswer, String type, String oldAnswer) {
+        etAnswer.setVisibility(View.VISIBLE);
+        final Markwon markwon = Markwon.create(getActivity());
+        final MarkwonEditor editor = MarkwonEditor.create(markwon);
+        if (type.equalsIgnoreCase("textarea")) {
+            etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor));
+        } else {
+            etAnswer.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable editable) {
+
+                }
+            });
+        }
+
+        etAnswer.setText(oldAnswer);
+    }
+
 }

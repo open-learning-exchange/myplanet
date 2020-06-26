@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.userprofile;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -24,6 +24,8 @@ import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
+import org.ole.planet.myplanet.utilities.TimeUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +59,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
             etGoals.setText(achievement.getGoals());
             checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
-        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : user.getDob());
+        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         resourceArray = new JsonArray();
         etName.setText(user.getFirstName());
         etMiddleName.setText(user.getMiddleName());
@@ -95,17 +97,17 @@ public class BaseAchievementFragment extends BaseContainerFragment {
 
 
     public void setUserInfo() {
-        user.setFirstName(etName.getText().toString());
-        user.setMiddleName(etMiddleName.getText().toString());
-        user.setLastName(etLastName.getText().toString());
-        user.setDob(tvDob.getText().toString());
-        user.setBirthPlace(etBirthPlace.getText().toString());
+        //user.setFirstName(etName.getText().toString());
+        //user.setMiddleName(etMiddleName.getText().toString());
+        //user.setLastName(etLastName.getText().toString());
+        //user.setDob(tvDob.getText().toString());
+        //user.setBirthPlace(etBirthPlace.getText().toString());
     }
 
     public void setAchievementInfo() {
-        achievement.setAchievementsHeader(etAchievement.getText().toString());
-        achievement.setGoals(etGoals.getText().toString());
-        achievement.setPurpose(etPurpose.getText().toString());
+        achievement.setAchievementsHeader(etAchievement.getText().toString().trim());
+        achievement.setGoals(etGoals.getText().toString().trim());
+        achievement.setPurpose(etPurpose.getText().toString().trim());
         achievement.setAchievements(achievementArray);
         achievement.setreferences(referenceArray);
         achievement.setSendToNation(checkBox.isChecked() + "");

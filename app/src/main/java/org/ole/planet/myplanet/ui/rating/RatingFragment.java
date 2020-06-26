@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.ui.rating;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.DialogFragment;
-import android.support.v7.widget.AppCompatRatingBar;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatRatingBar;
+import androidx.fragment.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -122,6 +122,9 @@ public class RatingFragment extends DialogFragment {
         ratingObject.setRate((int) rating);
         ratingObject.setTime(new Date().getTime());
         ratingObject.setUserId(model.getId());
+        ratingObject.setCreatedOn(model.getParentCode());
+        ratingObject.setParentCode(model.getParentCode());
+        ratingObject.setPlanetCode(model.getPlanetCode());
         ratingObject.setUser(new Gson().toJson(model.serialize()));
         ratingObject.setType(type);
         ratingObject.setItem(id);

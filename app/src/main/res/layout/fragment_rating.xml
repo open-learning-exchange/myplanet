@@ -15,16 +15,17 @@
         android:text="@string/your_rating"
         android:textSize="@dimen/text_size_large" />
 
-    <android.support.v7.widget.AppCompatRatingBar
+    <androidx.appcompat.widget.AppCompatRatingBar
         android:id="@+id/rating_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:theme="@style/RatingBar"
         android:layout_margin="@dimen/padding_normal"
         android:max="5"
         android:stepSize="1" />
 
 
-    <android.support.design.widget.TextInputLayout
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -33,7 +34,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/your_comment" />
-    </android.support.design.widget.TextInputLayout>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -45,14 +46,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/button_submit"
-            android:theme="@style/PrimaryButton" />
+            android:background="@drawable/buttongrey"
+            style="@style/GreyButtons"
+            android:layout_marginRight="10dp"/>
 
         <Button
             android:id="@+id/btn_cancel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/button_cancel"
-            android:theme="@style/AccentButton" />
+            android:background="@drawable/buttongrey"
+            style="@style/GreyButtons" />
 
     </LinearLayout>
 

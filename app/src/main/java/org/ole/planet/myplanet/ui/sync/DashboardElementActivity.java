@@ -12,31 +12,35 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.Nullable;
-import android.support.design.widget.BottomNavigationView;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.view.menu.ActionMenuItemView;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.ActionMenuItemView;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.community.CommunityFragment;
+import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
 import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
+import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -50,6 +54,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     public BottomNavigationView navigationView;
 
     public UserProfileDbHandler profileDbHandler;
+    boolean doubleBackToExitPressedOnce;
     private SharedPreferences settings;
 
     @Override
@@ -57,7 +62,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
         settings = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-
     }
 
     public void onClickTabItems(int position) {
@@ -71,25 +75,23 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             case 2:
                 openCallFragment(new CourseFragment(), "course");
                 break;
-            case 3:
-                openCallFragment(new SurveyFragment(), "survey");
-                break;
             case 4:
-                new FeedbackFragment().show(getSupportFragmentManager(), "feedback");
+                openEnterpriseFragment();
+                break;
+            case 3:
+                openCallFragment(new TeamFragment(), "survey");
                 break;
             case 5:
-                logout();
+                openCallFragment(new CommunityTabFragment(), "community");
                 break;
         }
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
         return true;
     }
-
 
     public void openCallFragment(Fragment newfragment, String tag) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
@@ -98,7 +100,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         fragmentTransaction.addToBackStack("");
         fragmentTransaction.commit();
     }
-
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
@@ -116,15 +117,21 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             wifiStatusSwitch();
         } else if (id == R.id.menu_logout) {
             logout();
+        } else if (id == R.id.action_feedback) {
+            openCallFragment(new FeedbackFragment(), getString(R.string.menu_feedback));
         } else if (id == R.id.action_setting) {
             startActivity(new Intent(this, SettingActivity.class));
         } else if (id == R.id.action_sync) {
-            settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-            startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
-            doubleBackToExitPressedOnce = true;
-            finish();
+            syncNow();
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    protected void syncNow() {
+        settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
+        startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        doubleBackToExitPressedOnce = true;
+        finish();
     }
 
     @SuppressLint("RestrictedApi")
@@ -145,8 +152,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             (new Handler()).postDelayed(this::connectToWifi, 5000);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
-
-
         }
     }
 
@@ -181,9 +186,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         doubleBackToExitPressedOnce = true;
         this.finish();
     }
-
-
-    boolean doubleBackToExitPressedOnce;
 
     @Override
     public void finish() {
@@ -225,4 +227,11 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     }
 
+    public void openEnterpriseFragment() {
+        Fragment fragment = new TeamFragment();
+        Bundle b = new Bundle();
+        b.putString("type", "enterprise");
+        fragment.setArguments(b);
+        openCallFragment(fragment, "Enterprise");
+    }
 }

@@ -9,6 +9,8 @@ import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Base64;
 import android.util.Log;
+import android.util.Patterns;
+import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -19,10 +21,15 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 import fisk.chipcloud.ChipCloudConfig;
 
@@ -43,34 +50,18 @@ public class Utilities {
 
     }
 
+    public static boolean isValidEmail(String target) {
+        return (!TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target).matches());
+    }
+
     public static String getUrl(String id, String file, SharedPreferences settings) {
         return getUrl()
                 + "/resources/" + id + "/" + file;
     }
 
-    private static String getServerUrl(SharedPreferences settings) {
-        return settings.getString("url_Scheme", "") + "://" +
-                settings.getString("url_Host", "") + ":" +
-                settings.getInt("url_Port", 0) + "/";
-    }
-
 
     public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
         return getUrl() + "/_users/" + userId + "/" + imageName;
-    }
-
-    public static String currentDate() {
-        Calendar c = Calendar.getInstance();
-        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
-        String datetime = dateformat.format(c.getTime());
-        return datetime;
-    }
-
-    public static String formatDate(long date) {
-        Calendar c = Calendar.getInstance();
-        SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
-        String datetime = dateformat.format(date);
-        return datetime;
     }
 
 
@@ -115,8 +106,11 @@ public class Utilities {
     }
 
     public static void loadImage(String userImage, ImageView imageView) {
+        Utilities.log("User image " + userImage);
         if (!TextUtils.isEmpty(userImage)) {
             Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+        } else {
+            imageView.setImageResource(R.drawable.ole_logo);
         }
     }
 
@@ -131,9 +125,11 @@ public class Utilities {
 
     public static String getHeader() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        Utilities.log("User " + settings.getString("url_user", "") + " " + settings.getString("url_pwd", ""));
         return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
                 settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
+
 
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
@@ -156,6 +152,31 @@ public class Utilities {
         return url + "/versions";
     }
 
+    public static String getChecksumUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")) {
+            url.replace("/db", "");
+        }
+        return url + "/fs/myPlanet.apk.sha256";
+    }
+
+    public static String getHealthAccessUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")) {
+            url.replace("/db", "");
+        }
+        return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"));
+    }
+
+
+    public static String getApkVersionUrl(SharedPreferences settings) {
+        String url = settings.getString("couchdbURL", "");
+        if (url.endsWith("/db")) {
+            url.replace("/db", "");
+        }
+        return url + "/apkversion";
+    }
+
     public static String getApkUpdateUrl(String path) {
         SharedPreferences preferences = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String url = preferences.getString("couchdbURL", "");
@@ -165,4 +186,14 @@ public class Utilities {
         return url + path;
     }
 
+    public static String toHex(String arg) {
+        return String.format("%x", new BigInteger(1, arg.getBytes()));
+    }
+
+    public static String getMimeType(String url) {
+        String type = null;
+        String extension = FileUtils.getFileExtension(url);
+        type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+        return type;
+    }
 }

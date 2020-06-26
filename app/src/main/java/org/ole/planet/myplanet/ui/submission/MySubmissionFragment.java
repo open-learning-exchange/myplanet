@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.ui.submission;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.DividerItemDecoration;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -16,7 +18,6 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.RadioButton;
-import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -44,6 +45,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     HashMap<String, RealmStepExam> exams;
     List<RealmSubmission> submissions;
     RealmUserModel user;
+
     public static Fragment newInstance(String type) {
         MySubmissionFragment fragment = new MySubmissionFragment();
         Bundle b = new Bundle();
@@ -83,7 +85,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         rvSurvey.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvSurvey.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         submissions = mRealm.where(RealmSubmission.class).findAll();
-        createHashMap(submissions);
+        exams = RealmSubmission.getExamMap(mRealm, submissions);
         setData("");
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -116,21 +118,6 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         }
     }
 
-    private void createHashMap(List<RealmSubmission> submissions) {
-        for (RealmSubmission sub : submissions) {
-            String id = sub.getParentId();
-            if (checkParentId(sub.getParentId())) {
-                id = sub.getParentId().split("@")[0];
-            }
-            RealmStepExam survey = mRealm.where(RealmStepExam.class).equalTo("id", id).findFirst();
-            if (survey != null)
-                exams.put(sub.getParentId(), survey);
-        }
-    }
-
-    private boolean checkParentId(String parentId) {
-        return parentId != null && parentId.contains("@");
-    }
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
@@ -146,7 +133,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     private void setData(String s) {
         RealmQuery q = null;
         if (type.equals("survey")) {
-            q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("status", "pending").equalTo("type", "survey");
+            q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("type", "survey");
         } else if (type.equals("survey_submission")) {
             q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).notEqualTo("status", "pending").equalTo("type", "survey");
         } else {
@@ -159,6 +146,7 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         }
         submissions = q.findAll();
         AdapterMySubmission adapter = new AdapterMySubmission(getActivity(), submissions, exams);
+        adapter.setmRealm(mRealm);
         adapter.setType(type);
         rvSurvey.setAdapter(adapter);
     }

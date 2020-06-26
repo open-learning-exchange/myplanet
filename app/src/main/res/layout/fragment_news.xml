@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/news_fragment_parent_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/padding_normal"
+    tools:context=".ui.news.NewsFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <Button
+            android:layout_width="wrap_content"
+            android:id="@+id/btn_add_story"
+            android:text="@string/add_story"
+            android:layout_height="wrap_content"/>
+   <LinearLayout
+       android:layout_width="match_parent"
+       android:id="@+id/ll_add_news"
+       android:orientation="vertical"
+       android:visibility="gone"
+       android:layout_height="wrap_content">
+
+       <LinearLayout
+           android:layout_width="match_parent"
+           android:layout_height="wrap_content"
+           android:orientation="vertical">
+
+           <com.google.android.material.textfield.TextInputLayout
+               android:id="@+id/tl_message"
+               android:layout_width="match_parent"
+               android:layout_height="wrap_content"
+               android:hint="@string/what_would">
+
+               <EditText
+                   android:id="@+id/et_message"
+                   android:layout_width="match_parent"
+                   android:layout_height="wrap_content"
+                   android:minHeight="@dimen/profile_card_bell" />
+
+           </com.google.android.material.textfield.TextInputLayout>
+
+           <LinearLayout
+               android:layout_width="match_parent"
+               android:orientation="horizontal"
+               android:layout_gravity="center"
+               android:gravity="left"
+               android:layout_height="wrap_content">
+
+               <Button
+                   android:id="@+id/btn_submit"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:layout_gravity="center"
+                   android:minWidth="@dimen/user_image_size"
+                   android:text="@string/button_submit"
+                   android:theme="@style/PrimaryButton" />
+
+
+               <Button
+                   android:id="@+id/add_news_image"
+                   android:layout_width="wrap_content"
+                   android:layout_height="wrap_content"
+                   android:layout_gravity="center"
+                   android:text="@string/add_image"
+                   android:theme="@style/PrimaryButton" />
+
+               <HorizontalScrollView
+                   android:layout_width="match_parent"
+                   android:layout_height="wrap_content"
+                   >
+                   <LinearLayout
+                       android:layout_width="match_parent"
+                       android:id="@+id/ll_images"
+                       android:layout_gravity="center"
+                       android:layout_height="wrap_content"/>
+               </HorizontalScrollView>
+
+<!--               <ImageView-->
+<!--                   android:layout_width="@dimen/_80dp"-->
+<!--                   android:id="@+id/thumb"-->
+<!--                   android:visibility="gone"-->
+<!--                   android:layout_height="@dimen/_80dp"/>-->
+           </LinearLayout>
+       </LinearLayout>
+
+
+
+   </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_main"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:text="@string/show_main_conversation"
+            android:theme="@style/PrimaryFlatButton"
+            android:visibility="gone" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_news"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="@dimen/padding_normal" />
+
+            <TextView
+                android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal" />
+        </FrameLayout>
+    </LinearLayout>
+
+</FrameLayout>

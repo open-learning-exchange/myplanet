@@ -1,34 +1,24 @@
 package org.ole.planet.myplanet.ui.library;
 
 
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.BottomSheetDialogFragment;
-import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.CheckedTextView;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseDialogFragment;
 import org.ole.planet.myplanet.callback.OnFilterListener;
-import org.ole.planet.myplanet.utilities.CheckboxListView;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**

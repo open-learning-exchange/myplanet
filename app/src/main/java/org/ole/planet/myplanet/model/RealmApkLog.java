@@ -1,6 +1,10 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
+
 import com.google.gson.JsonObject;
+
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import io.realm.RealmObject;
 import io.realm.annotations.Ignore;
@@ -20,7 +24,9 @@ public class RealmApkLog extends RealmObject {
     private String error;
     private String page;
     private String parentCode;
+    private String version;
     private String createdOn;
+    private String time;
     public String getId() {
         return id;
     }
@@ -41,6 +47,14 @@ public class RealmApkLog extends RealmObject {
         this.createdOn = createdOn;
     }
 
+
+    public String getTime() {
+        return time;
+    }
+
+    public void setTime(String time) {
+        this.time = time;
+    }
 
     public void setId(String id) {
         this.id = id;
@@ -66,13 +80,27 @@ public class RealmApkLog extends RealmObject {
         return error;
     }
 
+    public String getVersion() {
+        return version;
+    }
 
-    public static JsonObject serialize(RealmApkLog log) {
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public static JsonObject serialize(RealmApkLog log, Context context) {
         JsonObject object = new JsonObject();
         object.addProperty("type", log.getType());
         object.addProperty("error", log.getError());
         object.addProperty("page", log.getPage());
+        object.addProperty("time", log.getTime());
+        object.addProperty("version", log.getVersion());
         object.addProperty("createdOn", log.getCreatedOn());
+        object.addProperty("androidId", log.getCreatedOn());
+        object.addProperty("createdOn", log.getCreatedOn());
+        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("deviceName", NetworkUtils.getDeviceName());
+        object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object.addProperty("parentCode", log.getParentCode());
         return object;
     }

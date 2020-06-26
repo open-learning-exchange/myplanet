@@ -63,14 +63,15 @@ public class UserProfileDbHandler {
     }
 
     public void onDestory() {
-        if (mRealm != null && !mRealm.isClosed())
+        if (mRealm != null && !mRealm.isClosed()){
             mRealm.close();
+        }
     }
 
     private RealmOfflineActivity createUser() {
         RealmOfflineActivity offlineActivities = mRealm.createObject(RealmOfflineActivity.class, UUID.randomUUID().toString());
         RealmUserModel model = getUserModel();
-        offlineActivities.setUserId(settings.getString("userId", ""));
+        offlineActivities.setUserId(model.getId());
         offlineActivities.setUserName(model.getName());
         offlineActivities.setParentCode(model.getParentCode());
         offlineActivities.setCreatedOn(model.getPlanetCode());
@@ -83,8 +84,10 @@ public class UserProfileDbHandler {
 
 
     public int getOfflineVisits() {
-        RealmUserModel m = getUserModel();
+        return getOfflineVisits(getUserModel());
+    }
 
+    public int getOfflineVisits(RealmUserModel m) {
         RealmResults<RealmOfflineActivity> db_users = mRealm.where(RealmOfflineActivity.class)
                 .equalTo("userName", m.getName())
                 .equalTo("type", KEY_LOGIN)
@@ -97,8 +100,13 @@ public class UserProfileDbHandler {
     }
 
     public void setResourceOpenCount(RealmMyLibrary item) {
+        RealmUserModel model = getUserModel();
+        if (model.getId().startsWith("guest")) {
+            return;
+        }
+        if (!mRealm.isInTransaction())
         mRealm.beginTransaction();
-        RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser());
+        RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser(model));
         offlineActivities.setType(KEY_RESOURCE_OPEN);
         offlineActivities.setTitle(item.getTitle());
         offlineActivities.setResourceId(item.getResource_id());
@@ -107,9 +115,8 @@ public class UserProfileDbHandler {
     }
 
 
-    private RealmResourceActivity createResourceUser() {
+    private RealmResourceActivity createResourceUser(RealmUserModel model) {
         RealmResourceActivity offlineActivities = mRealm.createObject(RealmResourceActivity.class, UUID.randomUUID().toString());
-        RealmUserModel model = getUserModel();
         offlineActivities.setUser(model.getName());
         offlineActivities.setParentCode(model.getParentCode());
         offlineActivities.setCreatedOn(model.getPlanetCode());

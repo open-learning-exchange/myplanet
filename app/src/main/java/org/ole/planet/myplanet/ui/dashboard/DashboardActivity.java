@@ -1,31 +1,49 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.support.annotation.NonNull;
-import android.support.design.widget.AppBarLayout;
-import android.support.design.widget.BottomNavigationView;
-import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.view.menu.MenuView;
+import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
+import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
+
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.TableLayout;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.google.android.material.bottomnavigation.BottomNavigationItemView;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.internal.NavigationMenuItemView;
+import com.google.android.material.tabs.TabItem;
+import com.google.android.material.tabs.TabLayout;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
 import com.mikepenz.materialdrawer.Drawer;
@@ -33,36 +51,89 @@ import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+import com.mikepenz.materialize.holder.DimenHolder;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.TransactionSyncManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
+import org.ole.planet.myplanet.ui.community.CommunityFragment;
+import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
-import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
+import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
+import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
+import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.lang.annotation.Target;
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
 
     AccountHeader headerResult;
-    private Drawer result = null;
-    private Toolbar mTopToolbar, bellToolbar;
     RealmUserModel user;
+    private Drawer result = null;
+    private Toolbar mTopToolbar,bellToolbar;
+    TabLayout.Tab menul;
+    TabLayout.Tab menuh;
+    TabLayout.Tab menuc;
+    TabLayout.Tab menue;
+    TabLayout.Tab menuco;
+    TabLayout tl;
+    View begin;
+    DrawerLayout dl;
+    ImageView img;
 
+
+//    private GestureDetector mDetector;
+    private void showShowCaseViewHorizontal() {
+        //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500);
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP");
+        sequence.setConfig(config);
+        sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises and Surveys", "GOT IT");
+        sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
+        sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
+        sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
+        sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
+        sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
+        sequence.start();
+    }
+
+    private void showShowCaseViewVertical() {
+        //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
+
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500);
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP");
+        sequence.setConfig(config);
+        sequence.addSequenceItem(begin, "Please make sure your device is horizontal", "GOT IT");
+        sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys", "GOT IT");
+        sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
+        sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
+        sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
+
+        sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
+        sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
+       sequence.start();
+    }
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -71,20 +142,33 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        checkUser();
         setContentView(R.layout.activity_dashboard);
+        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout), DashboardActivity.this);
+        img = findViewById(R.id.img_logo);
+        begin = findViewById(R.id.menu_library);
         mTopToolbar = findViewById(R.id.my_toolbar);
         bellToolbar = findViewById(R.id.bell_toolbar);
         setSupportActionBar(mTopToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
-        user = new UserProfileDbHandler(this).getUserModel();
         mTopToolbar.setTitleTextColor(Color.WHITE);
         mTopToolbar.setSubtitleTextColor(Color.WHITE);
         navigationView = findViewById(R.id.top_bar_navigation);
         BottomNavigationViewHelper.disableShiftMode(navigationView);
-
+        bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
+        tl = findViewById(R.id.tab_layout);
+        TextView appName = findViewById(R.id.app_title_name);
+        try{
+            String name = profileDbHandler.getUserModel().getFullName();
+            if (name.trim().length() == 0) {
+                name = profileDbHandler.getUserModel().getName();
+            }
+            appName.setText(name + "'s Planet");
+        }catch (Exception err){
+        }
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if (user.getRolesList().isEmpty()) {
+        if ( user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
@@ -93,20 +177,88 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
+        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            result.openDrawer();
+
+        }//Opens drawer by default
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
+        dl = result.getDrawerLayout();
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (Build.VERSION.SDK_INT >= 19) {
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
         topbarSetting();
+        openCallFragment(new BellDashboardFragment());
+        bellToolbar.setVisibility(View.VISIBLE);
+        //navigationView.setVisibility(View.GONE);
 
-        openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                new BellDashboardFragment() : new DashboardFragment());
+        findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
+        findViewById(R.id.img_logo).setOnClickListener(view -> result.openDrawer());
+
+        bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.action_sync:
+                        syncNow();
+                        break;
+                    case R.id.action_feedback:
+                        openCallFragment(new FeedbackListFragment());
+                        break;
+                    case R.id.action_settings:
+                        startActivity(new Intent(DashboardActivity.this, SettingActivity.class));
+                        break;
+                    case R.id.action_disclaimer:
+                        startActivity(new Intent(DashboardActivity.this, DisclaimerActivity.class));
+                        break;
+                    case R.id.action_about:
+                        startActivity(new Intent(DashboardActivity.this, AboutActivity.class));
+                        break;
+                    case R.id.action_logout:
+                        logout();
+                        break;
+                    default:
+                        break;
+
+                }
+                return true;
+            }
+        });
+        menuh = tl.getTabAt(0);
+        menul = tl.getTabAt(1);
+        menuc = tl.getTabAt(2);
+        menue = tl.getTabAt(3);
+        menuco = tl.getTabAt(4);
+
+
+
+        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            showShowCaseViewHorizontal();
+        } else {
+            result.closeDrawer();
+            showShowCaseViewVertical();
+        }
+
+
+//        mDetector = new GestureDetector(this, new MyGestureListener());
+    }
+
+
+    private void checkUser() {
+        user = new UserProfileDbHandler(this).getUserModel();
+        if (user == null) {
+            Utilities.toast(this, "Session expired.");
+            logout();
+            return;
+        }
+        if (user.getId().startsWith("guest")) {
+            getTheme().applyStyle(R.style.GuestStyle, true);
+        }
     }
 
     private void topbarSetting() {
-        changeUITheme();
+        UITheme();
         TabLayout tabLayout = findViewById(R.id.tab_layout);
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
@@ -120,6 +272,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
             @Override
             public void onTabReselected(TabLayout.Tab tab) {
+                onClickTabItems(tab.getPosition());
             }
         });
         for (int i = 0; i < tabLayout.getTabCount(); i++) {
@@ -134,17 +287,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     }
 
-    private void changeUITheme() {
-        if ((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false))) {
-            bellToolbar.setVisibility(View.VISIBLE);
-            mTopToolbar.setVisibility(View.GONE);
-            navigationView.setVisibility(View.GONE);
-
-        } else {
-            bellToolbar.setVisibility(View.GONE);
-            mTopToolbar.setVisibility(View.VISIBLE);
-            navigationView.setVisibility(View.VISIBLE);
-        }
+    private void UITheme() {
+        bellToolbar.setVisibility(View.VISIBLE);
+        mTopToolbar.setVisibility(View.GONE);
+        navigationView.setVisibility(View.GONE);
     }
 
 
@@ -168,7 +314,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(130);
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
         result = new DrawerBuilder()
                 .withActivity(this)
                 .withFullscreen(true)
@@ -191,10 +337,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void menuAction(int selectedMenuId) {
+        Utilities.log("Selected");
         switch (selectedMenuId) {
             case R.string.menu_myplanet:
-                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                        new BellDashboardFragment() : new DashboardFragment());
+                openCallFragment(new BellDashboardFragment());
                 break;
             case R.string.menu_library:
                 openCallFragment(new LibraryFragment());
@@ -207,24 +353,33 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.menu_courses:
                 openCallFragment(new CourseFragment());
                 break;
+            case R.string.menu_community:
+                openCallFragment(new CommunityTabFragment());
+                break;
             case R.string.txt_myLibrary:
                 openMyFragment(new LibraryFragment());
+                break;
+            case R.string.team:
+                openMyFragment(new TeamFragment());
                 break;
             case R.string.txt_myCourses:
                 openMyFragment(new CourseFragment());
                 break;
+            case R.string.enterprises:
+                openEnterpriseFragment();
+                break;
             case R.string.menu_feedback:
-                new FeedbackFragment().show(getSupportFragmentManager(), "");
+                openMyFragment(new FeedbackListFragment());
                 break;
             case R.string.menu_logout:
                 logout();
                 break;
             default:
-                openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                        new BellDashboardFragment() : new DashboardFragment());
+                openCallFragment(new BellDashboardFragment());
                 break;
         }
     }
+
 
     private void openMyFragment(Fragment f) {
         Bundle b = new Bundle();
@@ -237,7 +392,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         profileDbHandler.onDestory();
     }
 
@@ -251,6 +405,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         Fragment f = new LibraryDetailFragment();
         Bundle b = new Bundle();
         b.putString("libraryId", library.getResource_id());
+        b.putString("openFrom", "Dashboard");
         f.setArguments(b);
         openCallFragment(f);
     }
@@ -261,8 +416,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         Bundle b = new Bundle();
         b.putString("surveyId", current.getId());
         f.setArguments(b);
-        f.show(getSupportFragmentManager(), "");
 
+        f.show(getSupportFragmentManager(), "");
     }
 
 
@@ -274,19 +429,22 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.ourcourses));
         menuImageList.add(getResources().getDrawable(R.drawable.ourlibrary));
         menuImageList.add(getResources().getDrawable(R.drawable.mycourses));
-        menuImageList.add(getResources().getDrawable(R.drawable.meetups));
+        menuImageList.add(getResources().getDrawable(R.drawable.team));
+        menuImageList.add(getResources().getDrawable(R.drawable.business));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
         return new IDrawerItem[]{
-                changeUX(R.string.menu_myplanet, menuImageList.get(0)),
-                changeUX(R.string.txt_myLibrary, menuImageList.get(1)),
-                changeUX(R.string.txt_myCourses, menuImageList.get(2)),
+                changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0),
+                changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1),
+                changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2),
                 changeUX(R.string.menu_library, menuImageList.get(3)),
                 changeUX(R.string.menu_courses, menuImageList.get(4)),
-                changeUX(R.string.menu_meetups, menuImageList.get(5))
+                changeUX(R.string.team, menuImageList.get(5)),
+                changeUX(R.string.menu_community, menuImageList.get(7)),
+                changeUX(R.string.enterprises, menuImageList.get(6))
                         .withSelectable(false)
                         .withDisabledIconColor(getResources().getColor(R.color.disable_color))
                         .withDisabledTextColor(getResources().getColor(R.color.disable_color)),
-                changeUX(R.string.menu_surveys, menuImageList.get(6)),
+                changeUX(R.string.menu_surveys, menuImageList.get(7))
         };
     }
 
@@ -332,14 +490,39 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             openCallFragment(new CourseFragment());
         } else if (item.getItemId() == R.id.menu_mycourses) {
             openMyFragment(new CourseFragment());
-        } else if (item.getItemId() == R.id.menu_mylibrary) {
+        }
+        else if (item.getItemId() == R.id.menu_mycourses) {
+            openMyFragment(new CourseFragment());
+        }
+        else if (item.getItemId() == R.id.menu_mylibrary) {
             openMyFragment(new LibraryFragment());
+        } else if (item.getItemId() == R.id.menu_enterprises) {
+            openEnterpriseFragment();
         } else if (item.getItemId() == R.id.menu_home) {
-            openCallFragment((PreferenceManager.getDefaultSharedPreferences(this).getBoolean("bell_theme", false)) ?
-                    new BellDashboardFragment() : new DashboardFragment());
+            openCallFragment(new BellDashboardFragment());
         }
         return true;
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent ev) {
+////        mDetector.onTouchEvent(ev);
+//        return super.dispatchTouchEvent(ev);
+//    }
+
+//
+//    public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+//        @Override
+//        public boolean onDoubleTap(MotionEvent e) {
+//            openCallFragment(new ReferenceFragment());
+//            Utilities.toast(getApplicationContext(), "References Opened");
+//            return true;
+//        }
+//    }
 }

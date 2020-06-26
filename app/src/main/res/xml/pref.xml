@@ -1,47 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <SwitchPreference android:title="@string/show_top_nav"
-        android:key="show_topbar"
-        android:defaultValue="true"
-        />
 
-    <ListPreference android:title="@string/language"
+    <ListPreference
         android:entries="@array/language"
-        android:key="app_language"
         android:entryValues="@array/language_keys"
-        />
-    <SwitchPreference android:title="BeLL Dashboard Theme"
-        android:key="bell_theme"
-        android:defaultValue="false"
-        />
-    <SwitchPreference android:title="Beta Functionality"
-        android:key="beta_function"
-        android:defaultValue="false"
-        />
-    <PreferenceCategory android:dependency="beta_function"
-        android:title="Beta Functionality"
-        >
-    <SwitchPreference android:title="Beta Function for Course"
-        android:key="beta_course"
-        android:defaultValue="true"
-        />
-    <SwitchPreference android:title="Beta Function for WiFi Switch"
-        android:key="beta_wifi_switch"
-        android:defaultValue="false"
-        />
+        android:key="app_language"
+        android:title="@string/language" />
 
-    <SwitchPreference android:title="Beta Function for Achievement"
-        android:key="beta_achievement"
+    <SwitchPreference
         android:defaultValue="false"
-        />
-    <SwitchPreference android:title="Beta Function for Survey"
-        android:key="beta_survey"
-        android:defaultValue="false"
-        />
+        android:key="saveUsernameAndPassword"
+        android:title="@string/save_username_and_password" />
 
-    <SwitchPreference android:title="Beta Function for Rating"
-        android:key="beta_rating"
-        android:defaultValue="false"
-        />
+
+    <Preference
+        android:key="reset_app"
+        android:title="@string/reset_app" />
+
+
+    <Preference
+        android:key="freeup_space"
+        android:title="@string/freeup_space" />
+
+
+    <PreferenceCategory
+        android:dependency="auto_sync_with_server"
+        android:title="Auto Sync">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="force_weekly_sync"
+            android:title="Force Weekly Sync" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="force_monthly_sync"
+            android:title="Force Monthly Sync" />
+        <Preference
+            android:enabled="true"
+            android:key="lastSyncDate"
+            android:selectable="false"
+            android:title="Last Synced:" />
+
     </PreferenceCategory>
+
+
+    <PreferenceCategory
+        android:dependency="beta_function"
+        android:title="Beta Functionality">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_course"
+            android:title="Beta Function for Course" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_auto_update"
+            android:title="Beta Function for auto update" />
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_addImageToMessage"
+            android:title="@string/addImageToMessage" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_wifi_switch"
+            android:title="Beta Function for WiFi Switch" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_myHealth"
+            android:title="Beta Function for myHealth" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_healthWorker"
+            android:title="Beta Function for Health Care Provider" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_achievement"
+            android:title="Beta Function for Achievement" />
+
+
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:dependency="beta_function"
+        android:title="Upgrade Application">
+
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:visibility="gone"
+            android:key="beta_auto_upgrade"
+            android:title="Auto Upgrade" />
+
+        <SwitchPreference
+            android:key="beta_upgrade_max"
+            android:title="Always move to maximum version?" />
+
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:dependency=""
+        android:title="Main Controls">
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="beta_function"
+            android:title="All Beta Functions" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="auto_sync_with_server"
+            android:title="Auto Sync Device" />
+    </PreferenceCategory>
+
 </PreferenceScreen>

@@ -2,60 +2,83 @@ package org.ole.planet.myplanet.ui.team;
 
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.textfield.TextInputLayout;
+
+import androidx.fragment.app.Fragment;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseNewsFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.model.RealmMeetup;
+import org.ole.planet.myplanet.model.RealmMyCourse;
+import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
+import org.ole.planet.myplanet.model.RealmNews;
+import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
+import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
+import org.ole.planet.myplanet.ui.news.AdapterNews;
+import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
-import io.realm.Realm;
 import io.realm.RealmResults;
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class MyTeamsDetailFragment extends Fragment implements View.OnClickListener {
+public class MyTeamsDetailFragment extends BaseNewsFragment {
 
-    TextView tvTitle, tvDescription, tvJoined, tvRequested;
-    UserProfileDbHandler profileDbHandler;
+    TextView tvTitle, tvDescription;
     RealmUserModel user;
     String teamId;
-    Realm mRealm;
     RealmMyTeam team;
     Button btnLeave;
     Button btnInvite;
-    ListView lvJoined, lvRequested;
+    ListView listContent;
+    TabLayout tabLayout;
     DatabaseService dbService;
+    RecyclerView rvDiscussion;
+    LinearLayout llRv;
+    boolean isMyTeam;
+    RealmResults<RealmMyLibrary> libraries;
+
 
     public MyTeamsDetailFragment() {
     }
-
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             teamId = getArguments().getString("id");
+            isMyTeam = getArguments().getBoolean("isMyTeam", false);
         }
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -64,91 +87,195 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
         initializeViews(v);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
-        profileDbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(profileDbHandler.getUserModel());
-        team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).findFirst();
+        team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
         return v;
     }
 
     private void initializeViews(View v) {
         btnLeave = v.findViewById(R.id.btn_leave);
-        btnLeave.setOnClickListener(this);
-        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
+        llRv = v.findViewById(R.id.ll_rv);
+        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnInvite = v.findViewById(R.id.btn_invite);
-        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
+        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
+        rvDiscussion = v.findViewById(R.id.rv_discussion);
         tvDescription = v.findViewById(R.id.description);
-        tvJoined = v.findViewById(R.id.tv_joined);
-        tvRequested = v.findViewById(R.id.tv_requested);
-        lvJoined = v.findViewById(R.id.list_joined);
-        lvRequested = v.findViewById(R.id.list_requested);
+        tabLayout = v.findViewById(R.id.tab_layout);
+        listContent = v.findViewById(R.id.list_content);
         tvTitle = v.findViewById(R.id.title);
+        v.findViewById(R.id.add_message).setOnClickListener(view -> {
+            showAddMessage();
+        });
 
+    }
+
+    private void showAddMessage() {
+        View v = getLayoutInflater().inflate(R.layout.alert_input, null);
+        TextInputLayout layout = v.findViewById(R.id.tl_input);
+        layout.setHint(getString(R.string.enter_message));
+        new AlertDialog.Builder(getActivity())
+                .setView(v)
+                .setTitle("Add Message")
+                .setPositiveButton("Save", (dialogInterface, i) -> {
+                    String msg = layout.getEditText().getText().toString().trim();
+                    if (msg.isEmpty()) {
+                        Utilities.toast(getActivity(), "Message is required");
+                        return;
+                    }
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("viewableBy", "teams");
+                    map.put("viewableId", teamId);
+                    map.put("message", msg);
+                    map.put("messageType", team.getTeamType());
+                    map.put("messagePlanetCode", team.getTeamPlanetCode());
+                    RealmNews.createNews(map, mRealm, user, imageList);
+                    rvDiscussion.getAdapter().notifyDataSetChanged();
+                }).setNegativeButton("Cancel", null).show();
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        setUpTeamsData();
+        tvTitle.setText(team.getName());
+        tvDescription.setText(team.getDescription());
         setTeamList();
     }
 
     private void setTeamList() {
-        String[] ids = RealmMeetup.getJoinedUserIds(mRealm);
-        RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", ids).findAll();
-        lvJoined.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, users));
-        tvJoined.setText(String.format("Joined Members : %s", users.size() == 0 ? "(0)\nNo members has joined this meet up" : users.size()));
-        tvTitle.setText(team.getName());
-        tvDescription.setText(team.getDescription());
-        lvJoined.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, users));
+        List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm, "");
+        createTeamLog();
         List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
-        tvRequested.setText(String.format("Requested Members : %s", reqUsers.size() == 0 ? "(0)\nThere are no requests to join this team.\n" +
-                "\n" : reqUsers.size()));
-        lvRequested.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, reqUsers));
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).isEmpty("replyTo").equalTo("viewableBy", "teams").equalTo("viewableId", team.getId()).findAll();
+        rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
+        showRecyclerView(realmNewsList);
+        listContent.setVisibility(View.GONE);
+        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
+        libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
 
-    }
+        tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
+        tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
+        tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
+        tabLayout.getTabAt(4).setText(String.format("Resources : (%s)", libraries.size()));
 
-
-    private void setUpTeamsData() {
-
-    }
-
-    @Override
-    public void onClick(View view) {
-        if (view.getId() == R.id.btn_leave) {
-            leaveJoinTeam();
-
+        if (!isMyTeam) {
+            try {
+                ((ViewGroup) tabLayout.getChildAt(0)).getChildAt(0).setVisibility(View.GONE);
+                ((ViewGroup) tabLayout.getChildAt(4)).getChildAt(0).setVisibility(View.GONE);
+                tabLayout.getTabAt(1).select();
+            } catch (Exception e) {
+            }
         }
+        setTabListener(users, courses, reqUsers);
+
     }
 
-    private void leaveJoinTeam() {
-        mRealm.executeTransaction(realm -> {
-            if (team.getUserId().isEmpty()) {
-                requestToJoin();
-                btnLeave.setText("Request Pending");
-            } else {
-                team.setUserId("");
-                btnLeave.setText("Request to Join");
+    private void createTeamLog() {
+        if (!mRealm.isInTransaction()) {
+            mRealm.beginTransaction();
+        }
+        RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
+        log.setTeamId(teamId);
+        log.setUser(user.getName());
+        log.setCreatedOn(user.getPlanetCode());
+        log.setType("teamVisit");
+        log.setTeamType(team.getTeamType());
+        log.setParentCode(user.getParentCode());
+        log.setTime(new Date().getTime());
+        mRealm.commitTransaction();
+    }
+
+    private void showRecyclerView(List<RealmNews> realmNewsList) {
+        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
+        adapterNews.setmRealm(mRealm);
+        adapterNews.setListener(this);
+        rvDiscussion.setAdapter(adapterNews);
+        llRv.setVisibility(View.VISIBLE);
+    }
+
+    private void setTabListener(List<RealmUserModel> users, RealmResults<RealmMyCourse> courses, List<RealmUserModel> reqUsers) {
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                if (tab.getPosition() == 0) {
+                    listContent.setVisibility(View.GONE);
+                    llRv.setVisibility(View.VISIBLE);
+                } else if (tab.getPosition() == 1)
+                    setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
+                else if (tab.getPosition() == 2)
+                    setListContent(tab, String.format("Requested Members : (%s)", reqUsers.size()), reqUsers);
+                else if (tab.getPosition() == 3) setCourseList(tab, courses);
+                else if (tab.getPosition() == 4) setLibraryList(tab);
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
             }
         });
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        profileDbHandler.onDestory();
+    private void setLibraryList(TabLayout.Tab tab) {
+        hideRv(tab, String.format("Resources : (%s)", libraries.size()));
+        listContent.setAdapter(new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.simple_list_item_1, libraries));
+        listContent.setOnItemClickListener((adapterView, view, i, l) -> {
+            if (homeItemClickListener != null) {
+                LibraryDetailFragment f = new LibraryDetailFragment();
+                Bundle b = new Bundle();
+                b.putString("libraryId", libraries.get(i).getId());
+                b.putString("openFrom", team.getTeamType() + "-" + team.getTitle() );
+                f.setArguments(b);
+                homeItemClickListener.openCallFragment(f);
+            }
+
+        });
     }
 
-    private void requestToJoin() {
-        try {
-            JSONArray array = new JSONArray(team.getRequests());
-            if (!team.getRequests().contains(user.getId())) {
-                array.put(user.getId());
+    private void setCourseList(TabLayout.Tab tab, RealmResults<RealmMyCourse> courses) {
+        hideRv(tab, String.format("Courses : (%s)", courses.size()));
+        listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
+        listContent.setOnItemClickListener((adapterView, view, i, l) -> {
+            if (homeItemClickListener != null) {
+                openFragment(courses.get(i).getCourseId(), new TakeCourseFragment());
             }
-            team.setRequests(array.toString());
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
+        });
     }
+
+    private void hideRv(TabLayout.Tab tab, String s) {
+        listContent.setVisibility(View.VISIBLE);
+        llRv.setVisibility(View.GONE);
+        tab.setText(s);
+    }
+
+    private void setListContent(TabLayout.Tab tab, String s, List<RealmUserModel> data) {
+        listContent.setVisibility(View.VISIBLE);
+        llRv.setVisibility(View.GONE);
+        tab.setText(s);
+        listContent.setAdapter(new ArrayAdapter<RealmUserModel>(getActivity(), android.R.layout.simple_list_item_1, data) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                if (convertView == null)
+                    convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
+                TextView tv = convertView.findViewById(android.R.id.text1);
+                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName(), teamId) + " visits )");
+                return convertView;
+            }
+        });
+        listContent.setOnItemClickListener((adapterView, view, i, l) -> {
+            openFragment(data.get(i).getId(), new UserDetailFragment());
+        });
+    }
+
+    private void openFragment(String id, Fragment f) {
+        Bundle b = new Bundle();
+        b.putString("id", id);
+        f.setArguments(b);
+        homeItemClickListener.openCallFragment(f);
+    }
+
 
     public List<RealmUserModel> getRequestedTeamList(String req) {
         try {
@@ -159,9 +286,13 @@ public class MyTeamsDetailFragment extends Fragment implements View.OnClickListe
             }
             return mRealm.where(RealmUserModel.class).in("id", ids).findAll();
         } catch (Exception e) {
-            e.printStackTrace();
         }
         return new ArrayList<>();
+    }
+
+    @Override
+    public void setData(List<RealmNews> list) {
+        showRecyclerView(list);
     }
 
 }

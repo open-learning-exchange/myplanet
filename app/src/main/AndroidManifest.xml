@@ -18,33 +18,69 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
 
     <application xmlns:tools="http://schemas.android.com/tools"
         android:name=".MainApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_project_name"
+        android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
         android:theme="@style/MyMaterialTheme"
+        android:usesCleartextTraffic="true"
         tools:replace="android:label">
-        <service android:name=".service.GPSService" />
-
-        <activity android:name=".ui.viewer.AudioPlayerActivity"></activity>
+        <activity android:name=".ui.userprofile.BecomeMemberActivity"
+            android:theme="@style/AppTheme"
+           />
         <activity
-            android:name=".ui.sync.LoginActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize">
+            android:name=".ui.course.CourseProgressActivity"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.news.NewsDetailActivity"
+            android:label="@string/title_activity_news_detail"
+            android:theme="@style/MyMaterialTheme.NoActionBar" />
+        <activity
+            android:name=".ui.dashboard.AboutActivity"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.dashboard.DisclaimerActivity"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.myhealth.AddMyHealthActivity"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.myhealth.AddExaminationActivity"
+            android:theme="@style/AppTheme" />
+        <activity android:name=".ui.map.OfflineMapActivity" />
+        <activity
+            android:name=".ui.news.ReplyActivity"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.library.AddResourceActivity"
+            android:theme="@style/AppTheme" />
+        <activity android:name=".ui.SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service android:name=".service.GPSService" />
+
+        <activity android:name=".ui.viewer.AudioPlayerActivity" />
+        <activity
+            android:name=".ui.feedback.FeedbackDetailActivity"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.sync.LoginActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
         <activity
             android:name=".ui.dashboard.DashboardActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
@@ -60,11 +96,14 @@
         <activity android:name=".ui.viewer.MarkdownViewerActivity" />
         <activity android:name=".ui.viewer.CSVViewerActivity" />
         <activity
+            android:name=".ui.dictionary.DictionaryActivity"
+            android:theme="@style/AppTheme" />
+        <activity
             android:name=".ui.SettingActivity"
             android:theme="@style/AppTheme" />
 
         <provider
-            android:name="android.support.v4.content.FileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">
@@ -87,9 +126,15 @@
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
             </intent-filter>
         </service>
+        <service
+            android:name=".service.TaskNotificationService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
+            </intent-filter>
+        </service>
 
         <activity android:name=".ui.viewer.WebViewActivity" />
-
     </application>
 
 </manifest>

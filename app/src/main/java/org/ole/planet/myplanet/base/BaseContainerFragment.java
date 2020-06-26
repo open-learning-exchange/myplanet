@@ -2,12 +2,13 @@ package org.ole.planet.myplanet.base;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.AppCompatRatingBar;
+
+import androidx.annotation.NonNull;
+
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -17,6 +18,10 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.AppCompatRatingBar;
 
 import com.google.gson.JsonObject;
 
@@ -60,7 +65,20 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
     }
 
-    public void initRatingView( String type, String id, String title, OnRatingChangeListener listener) {
+    public void getUrlsAndStartDownload(List<RealmMyLibrary> lib, SharedPreferences settings, ArrayList<String> urls) {
+        for (RealmMyLibrary library : lib) {
+            String url = Utilities.getUrl(library, settings);
+            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url))
+                urls.add(url);
+        }
+        if (!urls.isEmpty())
+            startDownload(urls);
+        else
+            Utilities.toast(getActivity(),"No images to download.");
+
+    }
+
+    public void initRatingView(String type, String id, String title, OnRatingChangeListener listener) {
         timesRated = getView().findViewById(R.id.times_rated);
         rating = getView().findViewById(R.id.tv_rating);
         ratingBar = getView().findViewById(R.id.rating_bar);
@@ -81,7 +99,18 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
 
     public void openIntent(RealmMyLibrary items, Class typeClass) {
         Intent fileOpenIntent = new Intent(getActivity(), typeClass);
-        fileOpenIntent.putExtra("TOUCHED_FILE", items.getId() + "/" + items.getResourceLocalAddress());
+        if (items.getResourceLocalAddress().contains("ole/audio") || items.getResourceLocalAddress().contains("ole/video")) {
+            fileOpenIntent.putExtra("TOUCHED_FILE", items.getResourceLocalAddress());
+        } else {
+            fileOpenIntent.putExtra("TOUCHED_FILE", items.getId() + "/" + items.getResourceLocalAddress());
+        }
+        startActivity(fileOpenIntent);
+    }
+
+    public void openPdf(RealmMyLibrary item) {
+        Intent fileOpenIntent = new Intent(getActivity(), PDFReaderActivity.class);
+        fileOpenIntent.putExtra("TOUCHED_FILE", item.getId() + "/" + item.getResourceLocalAddress());
+        fileOpenIntent.putExtra("resourceId", item.getId());
         startActivity(fileOpenIntent);
     }
 
@@ -102,23 +131,15 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     public void checkFileExtension(RealmMyLibrary items) {
         String filenameArray[] = items.getResourceLocalAddress().split("\\.");
         String extension = filenameArray[filenameArray.length - 1];
-        switch (extension) {
-            case "pdf":
-                openIntent(items, PDFReaderActivity.class);
-                break;
-            case "bmp":
-            case "gif":
-            case "jpg":
-            case "png":
-            case "webp":
-                openIntent(items, ImageViewerActivity.class);
-                break;
-            case "mp4":
-                playVideo("offline", items);
-                break;
-            default:
-                checkMoreFileExtensions(extension, items);
-                break;
+        String mimetype = Utilities.getMimeType(items.getResourceLocalAddress());
+        if (mimetype.contains("image")) {
+            openIntent(items, ImageViewerActivity.class);
+        } else if (mimetype.contains("pdf")) {
+            openPdf(items);
+        } else if (mimetype.contains("audio")) {
+            openIntent(items, AudioPlayerActivity.class);
+        } else {
+            checkMoreFileExtensions(extension, items);
         }
     }
 
@@ -133,9 +154,6 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
             case "csv":
                 openIntent(items, CSVViewerActivity.class);
                 break;
-            case "mp3":
-                openIntent(items, AudioPlayerActivity.class);
-                break;
             default:
                 Toast.makeText(getActivity(), "This file type is currently unsupported", Toast.LENGTH_LONG).show();
                 break;
@@ -144,7 +162,15 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
     }
 
     public void openFileType(final RealmMyLibrary items, String videotype) {
-        if (FileUtils.getFileExtension(items.getResourceLocalAddress()).equals("mp4")) {
+
+        String mimetype = Utilities.getMimeType(items.getResourceLocalAddress());
+        Utilities.log("Mime type " + mimetype);
+        Utilities.log("Mime type " + items.getResourceLocalAddress());
+        if (mimetype == null) {
+            Utilities.toast(getActivity(), "Unable to open resource");
+            return;
+        }
+        if (mimetype.startsWith("video")) {
             playVideo(videotype, items);
         } else {
             checkFileExtension(items);
@@ -161,7 +187,11 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
             Log.e("AUTH", "" + auth);
             bundle.putString("Auth", "" + auth);
         } else if (videoType.equals("offline")) {
-            bundle.putString("videoURL", "" + Uri.fromFile(new File("" + FileUtils.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+            if (items.getResourceRemoteAddress() == null && items.getResourceLocalAddress() != null) {
+                bundle.putString("videoURL", items.getResourceLocalAddress());
+            } else {
+                bundle.putString("videoURL", "" + Uri.fromFile(new File("" + FileUtils.getSDPathFromUrl(items.getResourceRemoteAddress()))));
+            }
             bundle.putString("Auth", "");
         }
         intent.putExtras(bundle);
@@ -222,5 +252,4 @@ public abstract class BaseContainerFragment extends BaseResourceFragment {
         }
 
     }
-
 }

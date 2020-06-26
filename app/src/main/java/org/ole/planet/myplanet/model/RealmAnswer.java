@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model;
 
 import android.text.TextUtils;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -59,9 +60,8 @@ public class RealmAnswer extends RealmObject {
         if (valueChoices == null) {
             return array;
         }
-        for (String choice : valueChoices
-                ) {
-            array.add(choice);
+        for (String choice : valueChoices) {
+            array.add(new Gson().fromJson(choice, JsonObject.class));
         }
         return array;
     }
@@ -70,9 +70,14 @@ public class RealmAnswer extends RealmObject {
         return valueChoices;
     }
 
-    public void setValueChoices(HashMap<String, String> map) {
+    public void setValueChoices(HashMap<String, String> map, boolean isLastAnsvalid) {
+        if (!isLastAnsvalid)
+            this.valueChoices.clear();
         for (String key : map.keySet()) {
-            this.valueChoices.add(map.get(key));
+            JsonObject ob = new JsonObject();
+            ob.addProperty("id", map.get(key));
+            ob.addProperty("text", key);
+            this.valueChoices.add(new Gson().toJson(ob));
         }
     }
 
@@ -83,7 +88,6 @@ public class RealmAnswer extends RealmObject {
     public String getValue() {
         return value;
     }
-
 
     public void setValue(String value) {
         this.value = value;

@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.base;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,7 +16,6 @@ import android.widget.TextView;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.model.RealmAnswer;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -22,42 +23,41 @@ import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.library.AdapterLibrary;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import io.realm.Case;
-import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 
-public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment implements OnRatingChangeListener {
-    public Set<String> subjects, languages, mediums, levels;
+public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragment implements OnRatingChangeListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public static SharedPreferences settings;
+    public Set<String> subjects, languages, mediums, levels;
     public List<LI> selectedItems;
-    public Realm mRealm;
+    public String gradeLevel = "", subjectLevel = "";
     public DatabaseService realmService;
     public UserProfileDbHandler profileDbHandler;
-    public RealmUserModel model;
+
     public RecyclerView recyclerView;
-    TextView tvMessage;
-    List<LI> list;
-    public boolean isMyCourseLib;
+    public TextView tvMessage, tvFragmentInfo;
     public TextView tvDelete;
+    List<LI> list;
 
     public BaseRecyclerFragment() {
+    }
+
+    public static void showNoData(View v, int count) {
+        if (v == null)
+            return;
+        v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+        ((TextView) v).setText("No data available, please check and try again.");
     }
 
     public abstract int getLayout();
@@ -81,10 +81,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         if (isMyCourseLib) {
             tvDelete = v.findViewById(R.id.tv_delete);
-            tvDelete.setVisibility(View.VISIBLE);
-            tvDelete.setOnClickListener(view -> deleteSelected(false));
+            initDeleteButton();
             if (v.findViewById(R.id.tv_add) != null)
                 v.findViewById(R.id.tv_add).setVisibility(View.GONE);
+
         }
         tvMessage = v.findViewById(R.id.tv_message);
         selectedItems = new ArrayList<>();
@@ -92,11 +92,17 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         realmService = new DatabaseService(getActivity());
         mRealm = realmService.getRealmInstance();
         profileDbHandler = new UserProfileDbHandler(getActivity());
-        model = mRealm.copyToRealmOrUpdate(profileDbHandler.getUserModel());
+        model = profileDbHandler.getUserModel();
         recyclerView.setAdapter(getAdapter());
-        if (isMyCourseLib)
-            showDownloadDialog(getLibraryList(mRealm));
+        if (isMyCourseLib) showDownloadDialog(getLibraryList(mRealm));
         return v;
+    }
+
+    protected void initDeleteButton() {
+        if (tvDelete != null) {
+            tvDelete.setVisibility(View.VISIBLE);
+            tvDelete.setOnClickListener(view -> deleteSelected(false));
+        }
     }
 
     @Override
@@ -120,6 +126,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
                 Utilities.toast(getActivity(), "Added to my courses");
                 recyclerView.setAdapter(getAdapter());
             }
+            showNoData(tvMessage, getAdapter().getItemCount());
         }
     }
 
@@ -135,7 +142,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-
     private void deleteCourseProgress(boolean deleteProgress, RealmObject object) {
         if (deleteProgress && object instanceof RealmMyCourse) {
             mRealm.where(RealmCourseProgress.class).equalTo("courseId", ((RealmMyCourse) object).getCourseId()).findAll().deleteAllFromRealm();
@@ -149,59 +155,56 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         }
     }
 
-    private void removeFromShelf(RealmObject object) {
-        if (object instanceof RealmMyLibrary) {
-            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
-            Utilities.toast(getActivity(), "Removed from myLibrary");
-        } else {
-            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
-            Utilities.toast(getActivity(), "Removed from myCourse");
-        }
-    }
-
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         mRealm.close();
     }
 
-    public List<LI> search(String s, Class c) {
-        if (s.isEmpty()) {
-            return getList(c);
+    private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
+        for (RealmTag tg : tags) {
+            long count = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("tagId", tg.getId()).equalTo("linkId", course.getCourseId()).count();
+            if (count > 0 && !courses.contains(course))
+                courses.add(course);
         }
-        //List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
-        List<LI> li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
-        if (c == RealmMyLibrary.class) {
-            return (List<LI>) RealmMyLibrary.getMyLibraryByUserId(model.getId(), (List<RealmMyLibrary>) li);
-        } else if (c == RealmMyCourse.class && isMyCourseLib) {
-            return (List<LI>) RealmMyCourse.getMyCourseByUserId(model.getId(), (List<RealmMyCourse>) li);
+    }
+
+    private List<LI> getData(String s, Class c) {
+        List<LI> li = new ArrayList<>();
+        if (!s.contains(" ")) {
+            li = mRealm.where(c).contains(c == RealmMyLibrary.class ? "title" : "courseTitle", s, Case.INSENSITIVE).findAll();
         } else {
-            return (List<LI>) RealmMyCourse.getOurCourse(model.getId(), (List<RealmMyCourse>) li);
+            String[] query = s.split(" ");
+            List<LI> data = mRealm.where(c).findAll();
+            for (LI l : data) {
+                searchAndAddToList(l, c, query, li);
+            }
         }
+        return li;
     }
 
-    public List<RealmMyLibrary> filterByTag(List<RealmTag> tags, String s) {
-        return applyFilter(fbt(tags, s));
+    private void searchAndAddToList(LI l, Class c, String[] query, List<LI> li) {
+        String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
+        boolean isExists = false;
+        for (String q : query) {
+//                li.add(l);
+            isExists = title.toLowerCase().contains(q.toLowerCase());
+            Utilities.log(title.toLowerCase() + " " + q.toLowerCase() + " is exists " + isExists);
+
+            if (!isExists) break;
+        }
+        if (isExists)
+            li.add(l);
     }
 
-    public List<RealmMyLibrary> fbt(List<RealmTag> tags, String s) {
+    public List<RealmMyLibrary> filterLibraryByTag(String s, List<RealmTag> tags) {
         if (tags.size() == 0 && s.isEmpty()) {
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
-        List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).contains("title", s, Case.INSENSITIVE).findAll();
-        if (isMyCourseLib)
-            list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
-        else
-            list = RealmMyLibrary.getOurLibrary(model.getId(), list);
-        if (tags.size() == 0) {
-            return list;
-        }
-
+        List<RealmMyLibrary> list = (List<RealmMyLibrary>) getData(s, RealmMyLibrary.class);
+        if (isMyCourseLib) list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
+        else list = RealmMyLibrary.getOurLibrary(model.getId(), list);
+        if (tags.size() == 0) return list;
         RealmList<RealmMyLibrary> libraries = new RealmList<>();
         for (RealmMyLibrary library : list) {
             filter(tags, library, libraries);
@@ -209,24 +212,49 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         return libraries;
     }
 
-    private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
-        boolean contains = true;
-        for (RealmTag s : tags) {
-            if (!library.getTag().toString().toLowerCase().contains(s.get_id())) {
-                contains = false;
-                break;
-            }
+
+    public List<RealmMyCourse> filterCourseByTag(String s, List<RealmTag> tags) {
+        if (tags.size() == 0 && s.isEmpty()) {
+            return applyCourseFilter((List<RealmMyCourse>) getList(RealmMyCourse.class));
         }
-        if (contains)
-            libraries.add(library);
+        List<RealmMyCourse> list = (List<RealmMyCourse>) getData(s, RealmMyCourse.class);
+        if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.getId(), list);
+        else list = RealmMyCourse.getOurCourse(model.getId(), list);
+        if (tags.size() == 0) return list;
+        RealmList<RealmMyCourse> courses = new RealmList<>();
+        for (RealmMyCourse course : list) {
+            checkAndAddToList(course, courses, tags);
+        }
+        return applyCourseFilter(list);
     }
 
+    private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
+        for (RealmTag tg : tags) {
+            long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.getId()).count();
+            if (count > 0 && !libraries.contains(library))
+                libraries.add(library);
+        }
+    }
 
     public List<RealmMyLibrary> applyFilter(List<RealmMyLibrary> libraries) {
         List<RealmMyLibrary> newList = new ArrayList<>();
         for (RealmMyLibrary l : libraries) {
-            if(isValidFilter(l))
+            if (isValidFilter(l)) newList.add(l);
+        }
+        return newList;
+    }
+
+    public List<RealmMyCourse> applyCourseFilter(List<RealmMyCourse> courses) {
+        Utilities.log("apply course filter");
+        if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel))
+            return courses;
+        List<RealmMyCourse> newList = new ArrayList<>();
+        for (RealmMyCourse l : courses) {
+            Utilities.log("grade " + gradeLevel);
+            Utilities.log("subject " + subjectLevel);
+            if (TextUtils.equals(l.getGradeLevel(), gradeLevel) || TextUtils.equals(l.getSubjectLevel(), subjectLevel)) {
                 newList.add(l);
+            }
         }
         return newList;
     }
@@ -236,31 +264,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseResourceFragment impl
         boolean lev = levels.isEmpty() || l.getLevel().containsAll(levels);
         boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
         boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
-        return  (sub && lev && lan && med);
-    }
-
-    public List<LI> getList(Class c) {
-        if (c == RealmStepExam.class) {
-            return mRealm.where(c).equalTo("type", "surveys").findAll();
-        } else if (isMyCourseLib) {
-            return getMyLibItems(c);
-        } else {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).findAll());
-        }
-    }
-
-    private List<LI> getMyLibItems(Class c) {
-        if (c == RealmMyLibrary.class)
-            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
-        else
-            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
-    }
-
-    public void showNoData(View v, int count) {
-        if (v == null)
-            return;
-        v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-        ((TextView) v).setText("No data available, please check and try again.");
+        return (sub && lev && lan && med);
     }
 
 }

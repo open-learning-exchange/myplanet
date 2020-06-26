@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.myhealth.MyHealthFragment">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:background="@color/colorPrimary"
+                android:gravity="right"
+                android:padding="@dimen/padding_small">
+
+
+                <!--                <Button-->
+                <!--                    android:id="@+id/add_member"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:gravity="center"-->
+                <!--                    android:text="@string/new_patient"-->
+                <!--                    android:theme="@style/BlueButton"-->
+                <!--                    android:visibility="visible" />-->
+
+
+                <Button
+                    android:id="@+id/btnnew_patient"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/change_member"
+                    android:theme="@style/BlueButton"
+                    android:visibility="visible" />
+
+                <Button
+                    android:id="@+id/add_new_record"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:gravity="center"
+                    android:text="@string/add_examination"
+                    android:theme="@style/PrimaryButton" />
+
+<!--                <Button-->
+<!--                    android:id="@+id/update_health"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_gravity="right"-->
+<!--                    android:visibility="gone"-->
+<!--                    android:gravity="center"-->
+<!--                    android:text="@string/update_health_record"-->
+<!--                    android:theme="@style/PrimaryButton" />-->
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_user_detail"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:id="@+id/imageView3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        app:srcCompat="@drawable/health" />
+
+                    <TextView
+                        android:id="@+id/lblHealthName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="--"
+                        android:textAlignment="center"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Body2"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/imageView2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        app:srcCompat="@drawable/health" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal">
+
+                    <ImageView
+                        android:id="@+id/user_image"
+                        android:layout_width="@dimen/user_image_size"
+                        android:layout_height="@dimen/user_image_size"
+                        android:padding="@dimen/padding_normal"
+                        android:src="@drawable/profile" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="@string/full_name"
+                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/txt_full_name"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="N/A" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="@string/email"
+                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/txt_email"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="N/A" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="@string/language"
+                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/txt_language"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="N/A" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="@string/birth_date"
+                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/txt_dob"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="N/A" />
+                            </LinearLayout>
+
+
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@drawable/bg_grey" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="@string/birth_place"
+                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/txt_birth_place"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="N/A" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="@string/emergency_contact"
+                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/txt_emergency_contact"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:padding="@dimen/padding_small"
+                                    android:text="N/A" />
+                            </LinearLayout>
+
+
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@drawable/bg_grey" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="@dimen/padding_small"
+                                android:text="@string/special_needs"
+                                android:textColor="@color/colorPrimaryDark"
+                                android:textStyle="bold" />
+
+
+                            <TextView
+                                android:id="@+id/txt_special_needs"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@drawable/bg_grey" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="@dimen/padding_small"
+                                android:text="@string/other_need"
+                                android:textColor="@color/colorPrimaryDark"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/txt_other_need"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:padding="@dimen/padding_small"
+                                android:text="N/A" />
+                        </LinearLayout>
+
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <include layout="@layout/row_examination" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_records"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1" />
+
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="@dimen/padding_large"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+
+    </androidx.core.widget.NestedScrollView>
+
+    <com.github.clans.fab.FloatingActionMenu
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        app:menu_icon="@drawable/ic_add"
+        app:menu_open="arc_left"
+        android:id="@+id/fab_group"
+        app:menu_scr="@drawable/ic_add">
+
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/update_health"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/update_health_record"
+            android:layout_gravity="bottom|end"
+            android:tint="@color/md_white_1000"
+            android:layout_margin="@dimen/padding_large"
+            app:fab_label="@string/update_health_record"
+            android:src="@drawable/ic_myhealth" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_add_member"
+            android:layout_width="wrap_content"
+            android:tint="@color/md_white_1000"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/padding_large"
+            app:fab_label="@string/add_member"
+            android:src="@drawable/ic_add_member" />
+
+    </com.github.clans.fab.FloatingActionMenu>
+
+</FrameLayout>

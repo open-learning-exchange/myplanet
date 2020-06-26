@@ -1,8 +1,9 @@
 package org.ole.planet.myplanet.ui.library;
 
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+
+import androidx.annotation.Nullable;
+
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -28,8 +29,6 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.Arrays;
-
 import io.realm.Realm;
 
 
@@ -41,6 +40,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     Realm mRealm;
     RealmMyLibrary library;
     RealmUserModel userModel;
+    String openFrom = "";
 
     public LibraryDetailFragment() {
     }
@@ -51,6 +51,8 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             libraryId = getArguments().getString("libraryId");
+            if (getArguments().containsKey("openFrom"))
+                openFrom = getArguments().getString("openFrom");
         }
     }
 
@@ -91,16 +93,16 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-        LinearLayout llRating = v.findViewById(R.id.ll_rating);
-        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        TextView average = v.findViewById(R.id.average);
-        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-        TextView tv_rating = v.findViewById(R.id.tv_rating);
-        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        LinearLayout llRating = v.findViewById(R.id.ll_rating);
+//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        TextView average = v.findViewById(R.id.average);
+//        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
+//        TextView tv_rating = v.findViewById(R.id.tv_rating);
+//        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private void setLibraryData() {
-        title.setText(library.getTitle());
+        title.setText(String.format("%s%s", openFrom.isEmpty() ? "" : openFrom + "-", library.getTitle()));
         author.setText(library.getAuthor());
         pubishedBy.setText(library.getPublisher());
         media.setText(library.getMediaType());
@@ -133,6 +135,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             }
             openResource(library);
         });
+        Utilities.log("user id " + profileDbHandler.getUserModel().getId() + " " + library.getUserId().contains(profileDbHandler.getUserModel().getId()));
         boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
         remove.setText(isAdd ? "Add To My Library" : "Remove from myLibrary");
         remove.setOnClickListener(view -> {

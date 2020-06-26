@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.ui.survey;
 
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseDialogFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
+import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
@@ -60,16 +61,17 @@ public class SendSurveyFragment extends BaseDialogFragment {
 
     private void createSurveySubmission(String userId) {
         Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        List<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", id).findAll();
+        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", id).findFirst();
         mRealm.beginTransaction();
         RealmSubmission sub = mRealm.where(RealmSubmission.class)
                 .equalTo("userId", userId)
-                .equalTo("parentId", id)
+                .equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId() ) ) ? id + "@"+exam.getCourseId() : id  )
                 .sort("lastUpdateTime", Sort.DESCENDING)
                 .equalTo("status", "pending")
                 .findFirst();
-        sub = RealmSubmission.createSubmission(sub, questions, mRealm);
-        sub.setParentId(id);
+        sub = RealmSubmission.createSubmission(sub, mRealm);
+        sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@"+exam.getCourseId() : id );
+     //   sub.setParentId(id + "@" + exam.getCourseId());
         sub.setUserId(userId);
         sub.setType("survey");
         sub.setStatus("pending");

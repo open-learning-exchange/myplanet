@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
-import android.support.v7.widget.AppCompatImageView;
+import androidx.appcompat.widget.AppCompatImageView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,16 +33,16 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 //        return selectedItemsList;
 //    }
 
-    public void setSelectMultiple(boolean selectMultiple) {
-        isSelectMultiple = selectMultiple;
-
-    }
-
     public TagExpandableAdapter(Context context, List<RealmTag> tagList, HashMap<String, List<RealmTag>> childMap, ArrayList<RealmTag> selectedItemsList) {
         this.context = context;
         this.tagList = tagList;
         this.childMap = childMap;
         this.selectedItemsList = selectedItemsList;
+    }
+
+    public void setSelectMultiple(boolean selectMultiple) {
+        isSelectMultiple = selectMultiple;
+
     }
 
     @Override

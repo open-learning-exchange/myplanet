@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -16,8 +16,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:padding="@dimen/padding_large"
-            android:gravity="center" />
+            android:gravity="center"
+            android:padding="@dimen/padding_large" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -51,15 +51,25 @@
                 app:alignItems="flex_start"
                 app:flexWrap="wrap"
                 app:showDivider="middle" />
+            <TextView
+                android:id="@+id/tv_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/colorPrimary" />
+
 
         </LinearLayout>
 
+
+
         <ImageView
-            android:layout_width="wrap_content"
             android:id="@+id/iv_downloaded"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_margin="@dimen/padding_small"
-            android:layout_height="wrap_content" />
+            android:layout_margin="@dimen/padding_small" />
+
 
         <LinearLayout
             android:id="@+id/ll_rating"
@@ -80,7 +90,7 @@
                 android:text="0 total"
                 android:textColor="@color/md_black_1000" />
 
-            <android.support.v7.widget.AppCompatRatingBar
+            <androidx.appcompat.widget.AppCompatRatingBar
                 android:id="@+id/rating_bar"
                 style="@style/Base.Widget.AppCompat.RatingBar.Small"
                 android:layout_width="wrap_content"
@@ -97,7 +107,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-
+            android:gravity="center"
             android:orientation="vertical"
             android:padding="4dp">
 
@@ -105,11 +115,11 @@
                 android:id="@+id/rating"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
                 android:padding="4dp"
                 android:text="0.0"
                 android:textColor="@color/md_black_1000"
-                android:layout_gravity="center"
-                android:gravity="center"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
@@ -118,10 +128,12 @@
                 android:id="@+id/average"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:text="Average" />
+
 
         </LinearLayout>
 
     </LinearLayout>
 
-</android.support.v7.widget.CardView>
+</androidx.cardview.widget.CardView>

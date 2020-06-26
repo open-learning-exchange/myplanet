@@ -3,10 +3,6 @@ package org.ole.planet.myplanet.ui.course;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v7.widget.AppCompatRatingBar;
-import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,6 +12,12 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatRatingBar;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -23,13 +25,19 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import fisk.chipcloud.ChipCloud;
+import fisk.chipcloud.ChipCloudConfig;
+import io.noties.markwon.Markwon;
+import io.realm.Realm;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
@@ -41,15 +49,33 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private HashMap<String, JsonObject> map;
     private HashMap<String, JsonObject> progressMap;
     private OnRatingChangeListener ratingChangeListener;
+    private Realm mRealm;
+    private ChipCloudConfig config;
+    private Markwon markwon;
 
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
         this.context = context;
         this.courseList = courseList;
+        markwon = Markwon.create(context);
         this.selectedItems = new ArrayList<>();
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
+        config = Utilities.getCloudConfig()
+                .selectMode(ChipCloud.SelectMode.single);
+    }
+
+    public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
+        average.setText(String.format("%.2f", object.get("averageRating").getAsFloat()));
+        ratingCount.setText(object.get("total").getAsInt() + " total");
+        if (object.has("ratingByUser"))
+            ratingBar.setRating(object.get("ratingByUser").getAsInt());
+        else ratingBar.setRating(0);
+    }
+
+    public void setmRealm(Realm mRealm) {
+        this.mRealm = mRealm;
     }
 
     public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
@@ -60,15 +86,14 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return courseList;
     }
 
-    public void setProgressMap(HashMap<String, JsonObject> progressMap) {
-        this.progressMap = progressMap;
-    }
-
     public void setCourseList(List<RealmMyCourse> courseList) {
         this.courseList = courseList;
         notifyDataSetChanged();
     }
 
+    public void setProgressMap(HashMap<String, JsonObject> progressMap) {
+        this.progressMap = progressMap;
+    }
 
     public void setListener(OnCourseItemSelected listener) {
         this.listener = listener;
@@ -84,35 +109,56 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof ViewHoldercourse) {
-            ((ViewHoldercourse) holder).title.setText((position + 1) + ". " + courseList.get(position).getCourseTitle());
+            ((ViewHoldercourse) holder).title.setText(courseList.get(position).getCourseTitle());
             ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
+            markwon.setMarkdown(((ViewHoldercourse) holder).desc, courseList.get(position).getDescription());
+
             ((ViewHoldercourse) holder).grad_level.setText("Grade Level  : " + courseList.get(position).getGradeLevel());
             ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " + courseList.get(position).getSubjectLevel());
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
-            // if (courseList.get(position) != null) {
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
-            //  }
+            displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);
+            try{
+                ((ViewHoldercourse) holder).tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
+            }catch (Exception e){
 
-            if (Constants.showBetaFeature(Constants.KEY_RATING, context)) {
-                // ((ViewHoldercourse) holder).llRating.setOnClickListener(view -> homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener));
-                ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
-                    if (event.getAction() == MotionEvent.ACTION_UP)
-                        homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
-                    return true;
-                });
-            } else {
-                ((ViewHoldercourse) holder).llRating.setOnClickListener(null);
             }
+            ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
+                if (event.getAction() == MotionEvent.ACTION_UP)
+                    homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
+                return true;
+            });
 
-            ((ViewHoldercourse) holder).checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
-                if (listener != null) {
-                    Utilities.handleCheck(b, position, (ArrayList) selectedItems, courseList);
-                    listener.onSelectedListChange(selectedItems);
-                }
+            ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
+                Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
+                if (listener != null) listener.onSelectedListChange(selectedItems);
+                notifyDataSetChanged();
             });
             showProgressAndRating(position, holder);
-
         }
+    }
+
+    private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
+        flexboxDrawable.removeAllViews();
+        final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
+        List<RealmTag> tags = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("linkId", courseList.get(position).getId()).findAll();
+        showTags(tags, chipCloud);
+    }
+
+    private void showTags(List<RealmTag> tags, ChipCloud chipCloud) {
+        for (RealmTag tag : tags) {
+            RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
+            showChip(chipCloud, parent);
+        }
+    }
+
+    private void showChip(ChipCloud chipCloud, RealmTag parent) {
+        chipCloud.addChip(((parent != null) ? parent.getName() : ""));
+        chipCloud.setListener((i, b, b1) -> {
+            if (b1 && listener != null) {
+                listener.onTagClicked(parent);
+            }
+        });
     }
 
     private void showProgressAndRating(int position, RecyclerView.ViewHolder holder) {
@@ -138,15 +184,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-
-    public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
-        average.setText(String.format("%.2f", object.get("averageRating").getAsFloat()));
-        ratingCount.setText(object.get("total").getAsInt() + " total");
-        if (object.has("ratingByUser"))
-            ratingBar.setRating(object.get("ratingByUser").getAsInt());
-        else ratingBar.setRating(0);
-    }
-
     private void openCourse(RealmMyCourse realm_myCourses, int i) {
         if (homeItemClickListener != null) {
             Fragment f = new TakeCourseFragment();
@@ -165,11 +202,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
     class ViewHoldercourse extends RecyclerView.ViewHolder {
-        TextView title, desc, grad_level, subject_level, ratingCount, average;
+        TextView title, desc, grad_level, subject_level,tvDate, ratingCount, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         SeekBar progressBar;
         LinearLayout llRating;
+        FlexboxLayout flexboxLayout;
 
         public ViewHoldercourse(View itemView) {
             super(itemView);
@@ -178,6 +216,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             grad_level = itemView.findViewById(R.id.grad_level);
             average = itemView.findViewById(R.id.rating);
             ratingCount = itemView.findViewById(R.id.times_rated);
+            flexboxLayout = itemView.findViewById(R.id.flexbox_drawable);
+            tvDate = itemView.findViewById(R.id.tv_date);
             ratingBar = itemView.findViewById(R.id.rating_bar);
             subject_level = itemView.findViewById(R.id.subject_level);
             checkBox = itemView.findViewById(R.id.checkbox);

@@ -14,7 +14,7 @@
 
     <LinearLayout
         android:layout_width="0dp"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -26,13 +26,12 @@
             android:padding="@dimen/padding_normal"
             android:text="Joined Members : "
             android:textColor="@color/md_black_1000"
-            android:textSize="@dimen/text_size_large" />
+            android:textSize="@dimen/text_size_mid" />
 
         <ListView
             android:id="@+id/list_joined"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             />
 
         <TextView
@@ -43,13 +42,27 @@
             android:textStyle="bold"
             android:text="Requested Members : "
             android:textColor="@color/md_black_1000"
-            android:textSize="@dimen/text_size_large" />
+            android:textSize="@dimen/text_size_mid" />
 
         <ListView
             android:id="@+id/list_requested"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            />
+        <TextView
+            android:id="@+id/tv_courses"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:textStyle="bold"
+            android:text="Courses : "
+            android:textColor="@color/md_black_1000"
+            android:textSize="@dimen/text_size_mid" />
+
+        <ListView
+            android:id="@+id/list_courses"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             />
     </LinearLayout>
 

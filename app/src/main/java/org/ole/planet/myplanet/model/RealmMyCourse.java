@@ -94,7 +94,7 @@ public class RealmMyCourse extends RealmObject {
         return RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse.class).equalTo("courseId", courseId).findAll()).size() > 0;
     }
 
-    public static void insertMyCourses(JsonObject doc, Realm mRealm) {
+    public static void insert(Realm mRealm, JsonObject doc) {
         insertMyCourses("", doc, mRealm);
     }
 
@@ -241,4 +241,8 @@ public class RealmMyCourse extends RealmObject {
         this.numberOfSteps = numberOfSteps;
     }
 
+    @Override
+    public String toString() {
+        return courseTitle;
+    }
 }

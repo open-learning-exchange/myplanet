@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.textfield.TextInputLayout android:id="@+id/input_layout_password"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:hint="@string/hint_password"
+    app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+    app:hintAnimationEnabled="true"
+    android:padding="@dimen/padding_normal"
+    app:hintEnabled="true"
+    app:passwordToggleEnabled="true"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <EditText
+        android:id="@+id/et_child_password"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textPassword"
+        android:textColor="@android:color/background_dark"
+        android:textColorHint="@android:color/darker_gray"
+        android:textSize="16sp" />
+</com.google.android.material.textfield.TextInputLayout>

@@ -14,8 +14,11 @@ import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,7 @@ import io.realm.annotations.PrimaryKey;
 public class RealmMyLibrary extends RealmObject {
     @PrimaryKey
     private String id;
+    private String _id;
     private RealmList<String> userId;
     private String resourceRemoteAddress;
     private String resourceLocalAddress;
@@ -42,6 +46,7 @@ public class RealmMyLibrary extends RealmObject {
     private String linkToLicense;
     private String addedBy;
     private String uploadDate;
+    private long createdDate;
     private String openWith;
     private String articleDate;
     private String kind;
@@ -53,8 +58,10 @@ public class RealmMyLibrary extends RealmObject {
     private String averageRating;
     private String filename;
     private String mediaType;
+    private String resourceType;
     private String description;
     private String sendOnAccept;
+    private String translationAudioPath;
     private int sum;
     private int timesRated;
     private RealmList<String> resourceFor;
@@ -65,6 +72,7 @@ public class RealmMyLibrary extends RealmObject {
     private String courseId;
     private String stepId;
     private String downloaded;
+    private boolean isPrivate;
 
     public static List<RealmMyLibrary> getMyLibraryByUserId(Realm mRealm, SharedPreferences settings) {
         RealmResults<RealmMyLibrary> libs = mRealm.where(RealmMyLibrary.class).findAll();
@@ -93,16 +101,17 @@ public class RealmMyLibrary extends RealmObject {
         return libraries;
     }
 
-
-    public static List<RealmObject> getShelfItem(String userId, RealmResults<RealmObject> libs, Class c) {
-        List<RealmObject> libraries = new ArrayList<>();
-        for (RealmObject item : libs) {
-            if (c == RealmMyCourse.class ? ((RealmMyCourse) item).getUserId().contains(userId) : ((RealmMyLibrary) item).getUserId().contains(userId)) {
-                libraries.add(item);
-            }
-        }
-        return libraries;
-    }
+//
+//    private static boolean containsId(RealmObject item, Class c,String userId) {
+//        if (c == RealmMyCourse.class){
+//           return ((RealmMyCourse) item).getUserId().contains(userId);
+//        }else if(c == RealmMyLibrary.class ){
+//            return ((RealmMyLibrary) item).getUserId().contains(userId);
+//        }else if(c == RealmMyTeam.class){
+//            return ((RealmMyTeam)item).getUserId().contains(userId);
+//        }
+//        return false;
+//    }
 
     public static String[] getIds(Realm mRealm) {
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
@@ -125,6 +134,37 @@ public class RealmMyLibrary extends RealmObject {
             }
         }
     }
+
+    public static JsonObject serialize(RealmMyLibrary personal,RealmUserModel user) {
+        JsonObject object = new JsonObject();
+        object.addProperty("title", personal.getTitle());
+        object.addProperty("uploadDate", new Date().getTime());
+        object.addProperty("createdDate", personal.getCreatedDate());
+        object.addProperty("filename", FileUtils.getFileNameFromUrl(personal.getResourceLocalAddress()));
+        object.addProperty("author", user.getName());
+        object.addProperty("addedBy", user.getId());
+        object.addProperty("medium", personal.getMedium());
+        object.addProperty("description", personal.getDescription());
+        object.addProperty("year", personal.getYear());
+        object.addProperty("language", personal.getLanguage());
+        object.add("subject", JsonUtils.getAsJsonArray(personal.getSubject()));
+        object.add("level", JsonUtils.getAsJsonArray(personal.getLevel()));
+        object.addProperty("resourceType", personal.getResourceType());
+        object.addProperty("openWith", personal.getOpenWith());
+        object.add("resourceFor", JsonUtils.getAsJsonArray(personal.getResourceFor()));
+        object.addProperty("private", false);
+        object.addProperty("isDownloadable", "");
+        object.addProperty("sourcePlanet", user.getPlanetCode());
+        object.addProperty("resideOn", user.getPlanetCode());
+        object.addProperty("updatedDate", Calendar.getInstance().getTimeInMillis());
+        object.addProperty("createdDate", personal.getCreatedDate());
+        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("deviceName", NetworkUtils.getDeviceName());
+        object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
+//        object.addProperty("mediaType", personal.getMediaType());
+        return object;
+    }
+
 
 
     public String getDownloaded() {
@@ -153,6 +193,14 @@ public class RealmMyLibrary extends RealmObject {
         return medium;
     }
 
+    public boolean isPrivate() {
+        return isPrivate;
+    }
+
+    public void setPrivate(boolean aPrivate) {
+        isPrivate = aPrivate;
+    }
+
     public void setMedium(String medium) {
         this.medium = medium;
     }
@@ -164,6 +212,13 @@ public class RealmMyLibrary extends RealmObject {
         mRealm.commitTransaction();
     }
 
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
+    }
 
     public static void insertMyLibrary(String userId, String stepId, String courseId, JsonObject doc, Realm mRealm) {
 
@@ -175,6 +230,7 @@ public class RealmMyLibrary extends RealmObject {
         }
 //        if (!TextUtils.isEmpty(userId) ) {
         resource.setUserId(userId);
+        resource.set_id(resourceId);
 //        }
         if (!TextUtils.isEmpty(stepId)) {
             resource.setStepId(stepId);
@@ -211,22 +267,40 @@ public class RealmMyLibrary extends RealmObject {
         resource.setOpenWith(JsonUtils.getString("openWith", doc));
         resource.setArticleDate(JsonUtils.getString("articleDate", doc));
         resource.setKind(JsonUtils.getString("kind", doc));
+        resource.setCreatedDate(JsonUtils.getLong("createdDate", doc));
         resource.setLanguage(JsonUtils.getString("language", doc));
         resource.setAuthor(JsonUtils.getString("author", doc));
         resource.setMediaType(JsonUtils.getString("mediaType", doc));
+        resource.setResourceType(JsonUtils.getString("resourceType", doc));
         resource.setTimesRated(JsonUtils.getInt("timesRated", doc));
         resource.setMedium(JsonUtils.getString("medium", doc));
         resource.setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), resource);
         resource.setSubject(JsonUtils.getJsonArray("subject", doc), resource);
         resource.setLevel(JsonUtils.getJsonArray("level", doc), resource);
         resource.setTag(JsonUtils.getJsonArray("tags", doc), resource);
+        resource.setPrivate(JsonUtils.getBoolean("private", doc));
         resource.setLanguages(JsonUtils.getJsonArray("languages", doc), resource);
     }
 
+    public String getResourceType() {
+        return resourceType;
+    }
+
+    public void setResourceType(String resourceType) {
+        this.resourceType = resourceType;
+    }
+
+    public long getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(long createdDate) {
+        this.createdDate = createdDate;
+    }
 
     public JsonObject serializeResource() {
         JsonObject object = new JsonObject();
-        object.addProperty("_id", id);
+        object.addProperty("_id", _id);
         object.addProperty("_rev", _rev);
         object.addProperty("_rev", _rev);
         object.addProperty("need_optimization", need_optimization);
@@ -357,6 +431,14 @@ public class RealmMyLibrary extends RealmObject {
         }
     }
 
+    public String getTranslationAudioPath() {
+        return translationAudioPath;
+    }
+
+    public void setTranslationAudioPath(String translationAudioPath) {
+        this.translationAudioPath = translationAudioPath;
+    }
+
     public void setTag(JsonArray array, RealmMyLibrary resource) {
         for (JsonElement s :
                 array) {
@@ -403,6 +485,9 @@ public class RealmMyLibrary extends RealmObject {
     }
 
     public String getSubjectsAsString() {
+        if ((subject).isEmpty()) {
+            return "";
+        }
         String str = "";
         for (String s : subject) {
             str += s + ", ";
@@ -645,9 +730,12 @@ public class RealmMyLibrary extends RealmObject {
         List<String> list = new ArrayList<>();
         for (int i = 0; i < allDocs.size(); i++) {
             JsonObject doc = allDocs.get(i).getAsJsonObject();
+            doc = JsonUtils.getJsonObject("doc", doc);
             String id = JsonUtils.getString("_id", doc);
-            list.add(id);
-            RealmMyLibrary.insertResources(doc, mRealm);
+            if (!id.startsWith("_design")) {
+                list.add(id);
+                RealmMyLibrary.insertResources(doc, mRealm);
+            }
         }
         return list;
     }
@@ -696,7 +784,7 @@ public class RealmMyLibrary extends RealmObject {
     public static Set<String> getArrayList(List<RealmMyLibrary> libraries, String type) {
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
-            String s = type.equals("mediums")? li.getMediaType() : li.getLanguage();
+            String s = type.equals("mediums") ? li.getMediaType() : li.getLanguage();
             if (!TextUtils.isEmpty(s))
                 list.add(s);
         }
@@ -710,5 +798,6 @@ public class RealmMyLibrary extends RealmObject {
         }
         return list;
     }
+
 
 }

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -9,12 +10,15 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import org.apache.commons.lang3.StringUtils;
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-import org.picketbox.util.StringUtil;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -24,11 +28,12 @@ import io.realm.annotations.PrimaryKey;
 public class RealmUserModel extends RealmObject {
     @PrimaryKey
     private String id;
+    private String _id;
     private String _rev;
     private String name;
     private RealmList<String> roles;
     private Boolean isUserAdmin;
-    private int joinDate;
+    private long joinDate;
     private String firstName;
     private String lastName;
     private String middleName;
@@ -39,45 +44,146 @@ public class RealmUserModel extends RealmObject {
     private String password_scheme;
     private String iterations;
     private String derived_key;
+    private String level;
+    private String language;
+    private String gender;
     private String salt;
     private String dob;
     private String birthPlace;
     private String communityName;
     private String userImage;
+    private String key;
+    private String iv;
+    private String password;
     private boolean showTopbar;
-
 
     public JsonObject serialize() {
         JsonObject object = new JsonObject();
-        object.addProperty("_id", getId());
-        object.addProperty("_rev", get_rev());
+        if (!get_id().isEmpty()) {
+            object.addProperty("_id", get_id());
+            object.addProperty("_rev", get_rev());
+        }
         object.addProperty("name", getName());
         object.add("roles", getRoles());
+        if (get_id().isEmpty()) {
+            object.addProperty("password", getPassword());
+            object.addProperty("macAddress", NetworkUtils.getMacAddr());
+            object.addProperty("androidId",NetworkUtils.getMacAddr());
+            object.addProperty("uniqueAndroidId",VersionUtils.getAndroidId(MainApplication.context));
+            object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
+        } else {
+            object.addProperty("derived_key", getDerived_key());
+            object.addProperty("salt", getSalt());
+            object.addProperty("password_scheme", getPassword_scheme());
+        }
         object.addProperty("isUserAdmin", getUserAdmin());
         object.addProperty("joinDate", getJoinDate());
         object.addProperty("firstName", getFirstName());
         object.addProperty("lastName", getLastName());
         object.addProperty("middleName", getMiddleName());
         object.addProperty("email", getEmail());
+        object.addProperty("language", getLanguage());
+        object.addProperty("level", getLevel());
+        object.addProperty("type", "user");
+        object.addProperty("gender", getGender());
         object.addProperty("phoneNumber", getPhoneNumber());
+        object.addProperty("birthDate", getDob());
+        object.addProperty("parentCode", getParentCode());
+        object.addProperty("planetCode", getPlanetCode());
+        object.addProperty("birthPlace", getBirthPlace());
         return object;
     }
 
-    public static void populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getIv() {
+        return iv;
+    }
+
+    public void setIv(String iv) {
+        this.iv = iv;
+    }
+
+    public String getLevel() {
+        return level;
+    }
+
+    public void setLevel(String level) {
+        this.level = level;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public static RealmUserModel createGuestUser(String username, Realm mRealm, SharedPreferences settings) {
+        JsonObject object = new JsonObject();
+        object.addProperty("_id", "guest_" + username);
+        object.addProperty("name", username);
+        object.addProperty("firstName", username);
+        JsonArray rolesArray = new JsonArray();
+        rolesArray.add("guest");
+        object.add("roles", rolesArray);
+        if (!mRealm.isInTransaction())
+            mRealm.beginTransaction();
+        return RealmUserModel.populateUsersTable(object, mRealm, settings);
+    }
+
+    public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
-            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", JsonUtils.getString("_id", jsonDoc)).findFirst();
+            String _id = JsonUtils.getString("_id", jsonDoc);
+            if (_id.isEmpty())
+                _id = UUID.randomUUID().toString();
+            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("_id", _id).findFirst();
+
             if (user == null) {
-                user = mRealm.createObject(RealmUserModel.class, JsonUtils.getString("_id", jsonDoc));
+                user = mRealm.createObject(RealmUserModel.class, _id);
             }
             insertIntoUsers(jsonDoc, user, settings);
+
+            return user;
         } catch (Exception err) {
             err.printStackTrace();
         }
+        return null;
+    }
+
+
+
+    public static boolean isUserExists(Realm realm, String name) {
+        return realm.where(RealmUserModel.class).equalTo("name", name).count() > 0;
     }
 
     private static void insertIntoUsers(JsonObject jsonDoc, RealmUserModel user, SharedPreferences settings) {
         Utilities.log("Insert into users " + new Gson().toJson(jsonDoc));
         user.set_rev(JsonUtils.getString("_rev", jsonDoc));
+        user.set_id(JsonUtils.getString("_id", jsonDoc));
         user.setName(JsonUtils.getString("name", jsonDoc));
         JsonArray array = JsonUtils.getJsonArray("roles", jsonDoc);
         RealmList<String> roles = new RealmList<>();
@@ -86,13 +192,15 @@ public class RealmUserModel extends RealmObject {
         }
         user.setRoles(roles);
         user.setUserAdmin(JsonUtils.getBoolean("isUserAdmin", jsonDoc));
-        user.setJoinDate(JsonUtils.getInt("joinDate", jsonDoc));
+        user.setJoinDate(JsonUtils.getLong("joinDate", jsonDoc));
         user.setFirstName(JsonUtils.getString("firstName", jsonDoc));
         user.setLastName(JsonUtils.getString("lastName", jsonDoc));
         user.setMiddleName(JsonUtils.getString("middleName", jsonDoc));
         user.setPlanetCode(JsonUtils.getString("planetCode", jsonDoc));
         user.setParentCode(JsonUtils.getString("parentCode", jsonDoc));
         user.setEmail(JsonUtils.getString("email", jsonDoc));
+        if (user.get_id().isEmpty())
+            user.setPassword(JsonUtils.getString("password", jsonDoc));
         user.setPhoneNumber(JsonUtils.getString("phoneNumber", jsonDoc));
         user.setPassword_scheme(JsonUtils.getString("password_scheme", jsonDoc));
         user.setIterations(JsonUtils.getString("iterations", jsonDoc));
@@ -100,9 +208,16 @@ public class RealmUserModel extends RealmObject {
         user.setSalt(JsonUtils.getString("salt", jsonDoc));
         user.setDob(JsonUtils.getString("birthDate", jsonDoc));
         user.setBirthPlace(JsonUtils.getString("birthPlace", jsonDoc));
-        user.setCommunityName(JsonUtils.getString("communityName", jsonDoc));
+        user.setGender(JsonUtils.getString("gender", jsonDoc));
+        user.setLanguage(JsonUtils.getString("language", jsonDoc));
+        user.setLevel(JsonUtils.getString("level", jsonDoc));
         user.setShowTopbar(true);
         user.addImageUrl(jsonDoc, settings);
+        if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
+            settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).commit();
+        }
+        if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc)))
+            settings.edit().putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).commit();
     }
 
     public String getBirthPlace() {
@@ -124,6 +239,14 @@ public class RealmUserModel extends RealmObject {
             ar.add(s);
         }
         return ar;
+    }
+
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String _id) {
+        this._id = _id;
     }
 
     public void setRoles(RealmList<String> roles) {
@@ -220,11 +343,11 @@ public class RealmUserModel extends RealmObject {
         isUserAdmin = userAdmin;
     }
 
-    public int getJoinDate() {
+    public long getJoinDate() {
         return joinDate;
     }
 
-    public void setJoinDate(int joinDate) {
+    public void setJoinDate(long joinDate) {
         this.joinDate = joinDate;
     }
 
@@ -321,9 +444,21 @@ public class RealmUserModel extends RealmObject {
         this.showTopbar = showTopbar;
     }
 
+    public boolean isManager() {
+        JsonArray roles = getRoles();
+        boolean isManager = roles.toString().toLowerCase().contains("manager") || isUserAdmin;
+        return (isManager);
+    }
+
+    public boolean isLeader() {
+        JsonArray roles = getRoles();
+        return roles.toString().toLowerCase().contains("leader");
+    }
+
+
     @Override
     public String toString() {
-        return " - " + name;
+        return " - " + firstName + " " + lastName;
     }
 
 }

@@ -4,7 +4,7 @@ package org.ole.planet.myplanet.ui.exam;
 import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -106,11 +106,11 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     }
 
     private void submitForm() {
-        String fname = etFname.getText().toString();
-        String lname = etLname.getText().toString();
-        String mName = etMname.getText().toString();
-        String phone = etPhone.getText().toString();
-        String email = etEmail.getText().toString();
+        String fname = etFname.getText().toString().trim();
+        String lname = etLname.getText().toString().trim();
+        String mName = etMname.getText().toString().trim();
+        String phone = etPhone.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
         String gender = "";
         RadioButton rbSelected = getView().findViewById(rbGender.getCheckedRadioButtonId());
         if (rbSelected != null) {

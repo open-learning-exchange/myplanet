@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -43,15 +43,31 @@
                 <TextView
                     android:id="@+id/description"
                     android:layout_width="match_parent"
+                    android:maxLines="4"
+                    android:ellipsize="end"
                     android:layout_height="wrap_content"
                     android:padding="4dp" />
+
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/flexbox_drawable"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:alignContent="space_around"
+                    app:alignItems="flex_start"
+                    app:flexWrap="wrap"
+                    app:showDivider="middle" />
 
                 <!--<android.support.v4.widget.ContentLoadingProgressBar-->
                 <!--android:id="@+id/progress"-->
                 <!--style="@style/Base.Widget.AppCompat.ProgressBar.Horizontal"-->
                 <!--android:layout_width="match_parent"-->
                 <!--android:layout_height="wrap_content" />-->
-
+                <TextView
+                    android:id="@+id/tv_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/colorPrimary" />
 
             </LinearLayout>
 
@@ -74,7 +90,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
 
+
+
+
             </LinearLayout>
+
 
             <LinearLayout
                 android:id="@+id/ll_rating"
@@ -96,7 +116,7 @@
                     android:text="0 total"
                     android:textColor="@color/md_black_1000" />
 
-                <android.support.v7.widget.AppCompatRatingBar
+                <androidx.appcompat.widget.AppCompatRatingBar
                     android:id="@+id/rating_bar"
                     style="@style/Base.Widget.AppCompat.RatingBar.Small"
                     android:layout_width="wrap_content"
@@ -113,7 +133,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-
+                android:gravity="center"
                 android:orientation="vertical"
                 android:padding="4dp">
 
@@ -134,14 +154,18 @@
                     android:id="@+id/average"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
                     android:text="Average" />
+
+
 
             </LinearLayout>
 
 
         </LinearLayout>
 
-        <android.support.v7.widget.AppCompatSeekBar
+        <androidx.appcompat.widget.AppCompatSeekBar
             android:id="@+id/course_progress"
             android:layout_width="match_parent"
             android:layout_height="50dp"
@@ -150,4 +174,4 @@
             />
     </LinearLayout>
 
-</android.support.v7.widget.CardView>
+</androidx.cardview.widget.CardView>

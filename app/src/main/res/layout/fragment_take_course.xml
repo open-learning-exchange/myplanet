@@ -16,8 +16,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:paddingLeft="@dimen/padding_large"
-            android:paddingTop="@dimen/padding_large"
+            android:paddingLeft="32dp"
+            android:paddingRight="32dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
             android:text="@string/step"
             android:textAllCaps="true"
             android:textColor="@color/md_white_1000"
@@ -25,11 +27,11 @@
             android:textStyle="bold" />
 
 
-        <android.support.v7.widget.CardView
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:cardCornerRadius="8dp"
-            app:cardElevation="16dp"
+            app:cardElevation="2dp"
             app:cardUseCompatPadding="true">
 
             <LinearLayout
@@ -57,15 +59,13 @@
 
                     <TextView
                         android:id="@+id/tv_step_title"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_marginLeft="@dimen/padding_normal"
                         android:layout_weight="1"
-                        android:gravity="center"
-                        android:padding="8dp"
                         android:textColor="@color/md_white_1000"
-                        android:textSize="@dimen/text_size_small"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
 
 
@@ -73,8 +73,9 @@
                         android:id="@+id/btn_remove"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/btn_remove_lib"
-                        android:theme="@style/AccentButton" />
+                        android:minHeight="@dimen/_40dp"
+                        android:background="@drawable/buttonyellow"
+                        android:text="@string/btn_remove_lib" />
 
                     <TextView
                         android:id="@+id/previous_step"
@@ -120,12 +121,13 @@
 
                 <LinearLayout
                     android:id="@+id/ll_progress"
+                    android:visibility="gone"
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
                     android:background="@color/colorPrimary"
                     android:padding="8dp">
 
-                    <android.support.v7.widget.AppCompatSeekBar
+                    <androidx.appcompat.widget.AppCompatSeekBar
                         android:id="@+id/course_progress"
                         style="@style/Seekbar"
                         android:layout_width="0dp"
@@ -155,7 +157,7 @@
             </LinearLayout>
 
 
-        </android.support.v7.widget.CardView>
+        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 
