@@ -125,7 +125,8 @@
         android:padding="@dimen/padding_normal">
 
         <TextView
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/update_profile_alert"
