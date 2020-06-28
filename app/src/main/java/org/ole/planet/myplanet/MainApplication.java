@@ -22,6 +22,7 @@ import com.firebase.jobdispatcher.RetryStrategy;
 import com.firebase.jobdispatcher.Trigger;
 import com.jakewharton.threetenabp.AndroidThreeTen;
 
+import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -52,7 +53,7 @@ public class MainApplication extends Application implements Application.Activity
     public static boolean isCollectionSwitchOn = false;
     public static boolean showDownload = false;
     public static boolean showHealthDialog = true;
-
+    public static TeamPageListener listener;
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
         try {
