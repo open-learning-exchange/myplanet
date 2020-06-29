@@ -1,11 +1,6 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
 import android.content.Context;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.text.TextUtils;
@@ -14,19 +9,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 import io.realm.Realm;
 
@@ -103,14 +102,18 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         View v = LayoutInflater.from(context).inflate(R.layout.alert_examination, null);
         TextView tvVitals = v.findViewById(R.id.tv_vitals);
         TextView tvCondition = v.findViewById(R.id.tv_condition);
+        TextView tvOtherNotes = v.findViewById(R.id.tv_other_notes);
         tvVitals.setText("Temperature : " + checkEmpty(realmExamination.getTemperature()) + "\n" +
                 "Pulse : " + checkEmptyInt(realmExamination.getPulse()) + "\n" +
                 "Blood Pressure : " + realmExamination.getBp() + "\n" +
                 "Height : " + checkEmpty(realmExamination.getHeight()) + "\n" +
                 "Weight : " + checkEmpty(realmExamination.getWeight()) + "\n" +
                 "Vision : " + realmExamination.getVision() + "\n" +
-                "Hearing : " + realmExamination.getHearing() + "\n");
-        showEncryptedData(tvCondition, encrypted);
+                "Hearing : " + realmExamination.getHearing() + "\n"
+        );
+
+      showConditions(tvCondition, realmExamination);
+        showEncryptedData(tvOtherNotes, encrypted);
         AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
                 .setView(v)
                 .setPositiveButton("OK", null).create();
@@ -121,11 +124,22 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         dialog.show();
     }
 
-    private void showEncryptedData(TextView tvCondition, JsonObject encrypted) {
-        tvCondition.setText("Observations & Notes : " + Utilities.checkNA(JsonUtils.getString("notes", encrypted)) + "\n"
-                + "Diagnosis : " + Utilities.checkNA(JsonUtils.getString("diagnosis", encrypted))
-                + "\n" +
-                "Treatments : " + Utilities.checkNA(JsonUtils.getString("treatments", encrypted))
+    private void showConditions(TextView tvCondition, RealmMyHealthPojo realmExamination) {
+        JsonObject conditionsMap = new Gson().fromJson(realmExamination.getConditions(), JsonObject.class);
+        Set<String> keys = conditionsMap.keySet();
+        StringBuilder conditions = new StringBuilder();
+        for (String key : keys) {
+            if (conditionsMap.get(key).getAsBoolean()) {
+                conditions.append(key +", ");
+            }
+        }
+        tvCondition.setText(conditions);
+    }
+
+    private void showEncryptedData(TextView tvOtherNotes, JsonObject encrypted) {
+        tvOtherNotes.setText("Observations & Notes : " + Utilities.checkNA(JsonUtils.getString("notes", encrypted)) + "\n"
+                + "Diagnosis : " + Utilities.checkNA(JsonUtils.getString("diagnosis", encrypted)) + "\n"
+                + "Treatments : " + Utilities.checkNA(JsonUtils.getString("treatments", encrypted))
                 + "\n" + "Medications : " + Utilities.checkNA(JsonUtils.getString("medications", encrypted))
                 + "\n" + "Immunizations : " + Utilities.checkNA(JsonUtils.getString("immunizations", encrypted))
                 + "\n" + "Allergies : " + Utilities.checkNA(JsonUtils.getString("allergies", encrypted)) +
