@@ -289,12 +289,12 @@
     <string name="respiration_rate">Respiration Rate</string>
     <string name="systolic">Systolic</string>
     <string name="diastolic">Diastolic</string>
-    <string name="blood_pressure">Blood Pressure</string>
+    <string name="blood_pressure">Blood Pressure (Systolic/Diastolic)</string>
     <string name="orally">Orally</string>
     <string name="save">Save</string>
     <string name="vital_signs">Vital Signs Record</string>
-    <string name="task">Task</string>
-    <string name="deadline">Deadline</string>
+    <string name="task">Task (required)</string>
+    <string name="deadline">Deadline (required)</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
     <string name="enterprises">Enterprises</string>
     <string name="select_member">Select Team Member</string>
@@ -567,6 +567,8 @@
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
     <string name="add_member">Add member</string>
+    <string name="confirm_exit">Are you sure you want to leave this team?</string>
+    <string name="other_notes">Other Notes</string>
 
 </resources>
 

@@ -335,4 +335,6 @@
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="become_a_member">Become a member</string>
     <string name="add_member">Add member</string>
+    <string name="confirm_exit">Are you sure you want to leave this team?</string>
+    <string name="other_notes">Other Notes</string>
 </resources>

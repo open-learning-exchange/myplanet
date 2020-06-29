@@ -263,7 +263,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
         mRealm.commitTransaction();
         Utilities.toast(this, "Added successfully");
-       finish();
+        super.finish();
     }
 
     private boolean getHasInfo() {
