@@ -15,14 +15,12 @@ import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.Rows;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -61,7 +59,8 @@ public class UploadToShelfService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmUserModel> userModels = realm.where(RealmUserModel.class).isEmpty("_id").findAll();
+            List<RealmUserModel> userModels = realm.where(RealmUserModel.class).isEmpty("_id").or().equalTo("updated", true).findAll();
+            Utilities.log("USER LIST SIZE + " + userModels.size());
             for (RealmUserModel model : userModels) {
                 try {
                     Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
@@ -83,7 +82,19 @@ public class UploadToShelfService {
                                     updateHealthData(realm, model);
                             }
                         }
+                    } else if (model.isUpdated()) {
+                        Utilities.log("UPDATED MODEL " + model.serialize());
+                        JsonObject obj = model.serialize();
+                        res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
 
+                        if (res.body() != null) {
+                            Utilities.log(new Gson().toJson(res.body()));
+                            String rev = res.body().get("rev").getAsString();
+                            model.set_rev(rev);
+                            model.setUpdated(false);
+                        }else{
+                            Utilities.log(res.errorBody().string());
+                        }
                     } else {
                         Utilities.toast(MainApplication.context, "User " + model.getName() + " already exist");
                     }
@@ -133,7 +144,7 @@ public class UploadToShelfService {
                 jsonObject.add("members", members);
                 response = apiInterface.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject).execute();
                 if (response.body() != null) {
-                    Utilities.log("Update security  " +  new Gson().toJson(response.body()));
+                    Utilities.log("Update security  " + new Gson().toJson(response.body()));
                 }
             }
         } catch (IOException e) {

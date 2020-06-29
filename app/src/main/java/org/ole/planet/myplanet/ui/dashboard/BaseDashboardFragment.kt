@@ -17,8 +17,8 @@ import com.squareup.picasso.Picasso
 import io.realm.Case
 import io.realm.RealmObject
 import kotlinx.android.synthetic.main.card_profile_bell.view.*
+import kotlinx.android.synthetic.main.fragment_home_bell.view.*
 import kotlinx.android.synthetic.main.home_card_courses.view.*
-import kotlinx.android.synthetic.main.home_card_library.*
 import kotlinx.android.synthetic.main.home_card_library.view.*
 import kotlinx.android.synthetic.main.home_card_meetups.view.*
 import kotlinx.android.synthetic.main.home_card_teams.view.*
@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
+import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
@@ -50,8 +51,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         profileDbHandler = UserProfileDbHandler(activity)
         model = profileDbHandler.userModel
         fullName = profileDbHandler.userModel.fullName
-        if (fullName.isNullOrBlank()) {
+        if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel.name
+            v.ll_prompt.visibility = View.VISIBLE
+            v.ll_prompt.setOnClickListener {
+                UserInformationFragment.getInstance("").show(childFragmentManager, "")
+            }
+        }else{
+            v.ll_prompt.visibility = View.GONE
+        }
+        v.ic_close.setOnClickListener {
+            v.ll_prompt.visibility = View.GONE
         }
         val imageView = v.findViewById<ImageView>(R.id.imageView)
         if (!TextUtils.isEmpty(model.userImage)) Picasso.get().load(model.userImage).placeholder(R.drawable.profile).into(imageView, object : Callback {
