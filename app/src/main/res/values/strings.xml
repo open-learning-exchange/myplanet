@@ -289,7 +289,7 @@
     <string name="respiration_rate">Respiration Rate</string>
     <string name="systolic">Systolic</string>
     <string name="diastolic">Diastolic</string>
-    <string name="blood_pressure">Blood Pressure</string>
+    <string name="blood_pressure">Blood Pressure (Systolic/Diastolic)</string>
     <string name="orally">Orally</string>
     <string name="save">Save</string>
     <string name="vital_signs">Vital Signs Record</string>
@@ -569,6 +569,7 @@
     <string name="add_member">Add member</string>
     <string name="confirm_exit">Are you sure you want to leave this team?</string>
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
+    <string name="other_notes">Other Notes</string>
 
 </resources>
 
