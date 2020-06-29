@@ -70,10 +70,10 @@ class MyHealthFragment : Fragment() {
             fab_add_member.visibility = View.VISIBLE
         } else {
             btnnew_patient.visibility = View.GONE
-            fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
             fab_add_member.hide(true)
             fab_add_member.visibility = View.GONE
         }
+        fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
 
     }
 
