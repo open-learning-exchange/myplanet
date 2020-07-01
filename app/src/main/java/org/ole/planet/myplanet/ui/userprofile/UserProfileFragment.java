@@ -152,8 +152,8 @@ public class UserProfileFragment extends Fragment {
         map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
-        map.put("Maximum opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
-        map.put("Number of Resource open : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
+        map.put("Most Opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
+        map.put("Number of Resources Opened : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
         setUpRecyclerView(map, v);
     }
 
