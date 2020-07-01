@@ -4,7 +4,7 @@ package org.ole.planet.myplanet.ui.exam;
 import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,12 +16,17 @@ import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.fragment.app.Fragment;
+
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseDialogFragment;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmSubmission;
+import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
@@ -42,6 +47,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     Button btnSubmit, btnCancel;
     Realm mRealm;
     RealmSubmission submissions;
+    RealmUserModel userModel;
 
     public UserInformationFragment() {
     }
@@ -63,7 +69,9 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_information, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        submissions = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
+        userModel = new UserProfileDbHandler(requireContext()).getUserModel();
+        if (!TextUtils.isEmpty(id))
+            submissions = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
         initViews(v);
         return v;
     }
@@ -85,6 +93,12 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         spnLvl = v.findViewById(R.id.spn_level);
         btnCancel = v.findViewById(R.id.btn_cancel);
         btnSubmit = v.findViewById(R.id.btn_submit);
+        etEmail.setText(userModel.getEmail() + "");
+        etFname.setText(userModel.getFirstName() + "");
+        etLname.setText(userModel.getLanguage() + "");
+        etPhone.setText(userModel.getPhoneNumber() + "");
+        tvBirthDate.setText(userModel.getDob() + "");
+        dob = userModel.getDob();
         btnCancel.setOnClickListener(this);
         btnSubmit.setOnClickListener(this);
         tvBirthDate.setOnClickListener(this);
@@ -118,22 +132,56 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         }
         String level = spnLvl.getSelectedItem().toString();
         String lang = spnLang.getSelectedItem().toString();
-        final JsonObject user = new JsonObject();
-        user.addProperty("name", fname + " " + lname);
-        user.addProperty("firstName", fname);
-        user.addProperty("middleName", mName);
-        user.addProperty("lastName", lname);
-        user.addProperty("email", email);
-        user.addProperty("language", lang);
-        user.addProperty("phoneNumber", phone);
-        user.addProperty("birthDate", dob);
-        user.addProperty("gender", gender);
-        user.addProperty("level", level);
-        saveUser(user);
+        if (TextUtils.isEmpty(id)) {
+            String userId = userModel.getId();
+            String finalGender = gender;
+            mRealm.executeTransactionAsync(realm -> {
+                RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
+                if (model != null) {
+                    if (!TextUtils.isEmpty(fname))
+                        model.setFirstName(fname);
+                    if (!TextUtils.isEmpty(lname))
+                        model.setLastName(lname);
+                    if (!TextUtils.isEmpty(email))
+                        model.setEmail(email);
+                    if (!TextUtils.isEmpty(lang))
+                        model.setLanguage(lang);
+                    if (!TextUtils.isEmpty(phone))
+                        model.setPhoneNumber(phone);
+                    if (!TextUtils.isEmpty(dob))
+                        model.setBirthPlace(dob);
+                    if (!TextUtils.isEmpty(level))
+                        model.setLevel(level);
+                    if (!TextUtils.isEmpty(finalGender))
+                        model.setGender(finalGender);
+                    model.setUpdated(true);
+                }
+            }, () -> {
+                Utilities.toast(MainApplication.context, "User profile updated");
+                dismiss();
+            }, error -> {
+                Utilities.toast(MainApplication.context, "Unable to update user");
+                dismiss();
+            });
+        } else {
+            final JsonObject user = new JsonObject();
+            user.addProperty("name", fname + " " + lname);
+            user.addProperty("firstName", fname);
+            user.addProperty("middleName", mName);
+            user.addProperty("lastName", lname);
+            user.addProperty("email", email);
+            user.addProperty("language", lang);
+            user.addProperty("phoneNumber", phone);
+            user.addProperty("birthDate", dob);
+            user.addProperty("gender", gender);
+            user.addProperty("level", level);
+            saveSubmission(user);
+        }
+
 
     }
 
-    private void saveUser(JsonObject user) {
+    private void saveSubmission(JsonObject user) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         submissions.setUser(user.toString());

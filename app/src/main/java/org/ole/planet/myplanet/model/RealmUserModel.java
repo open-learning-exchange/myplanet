@@ -55,6 +55,7 @@ public class RealmUserModel extends RealmObject {
     private String key;
     private String iv;
     private String password;
+    private boolean updated;
     private boolean showTopbar;
 
     public JsonObject serialize() {
@@ -88,6 +89,11 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("gender", getGender());
         object.addProperty("phoneNumber", getPhoneNumber());
         object.addProperty("birthDate", getDob());
+        try {
+            object.addProperty("iterations", Integer.parseInt(getIterations()));
+        }catch (Exception e){
+            object.addProperty("iterations", 10);
+        }
         object.addProperty("parentCode", getParentCode());
         object.addProperty("planetCode", getPlanetCode());
         object.addProperty("birthPlace", getBirthPlace());
@@ -112,6 +118,14 @@ public class RealmUserModel extends RealmObject {
 
     public String getIv() {
         return iv;
+    }
+
+    public boolean isUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(boolean updated) {
+        this.updated = updated;
     }
 
     public void setIv(String iv) {
