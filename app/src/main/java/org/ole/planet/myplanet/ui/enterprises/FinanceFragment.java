@@ -190,6 +190,7 @@ public class FinanceFragment extends BaseTeamFragment {
         team.setTeamPlanetCode(user.getPlanetCode());
         team.setTeamType("sync");
         team.setDocType("transaction");
+        team.setUpdated(true);
 
     }
 

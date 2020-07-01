@@ -1,40 +1,31 @@
 package org.ole.planet.myplanet.model;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
-import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.RealmQuery;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 import static org.apache.commons.lang3.StringUtils.trim;
 
 public class RealmMyTeam extends RealmObject {
     @PrimaryKey
-    private String id;
     private String _id;
     private String _rev;
     private RealmList<String> courses;
@@ -50,6 +41,7 @@ public class RealmMyTeam extends RealmObject {
     private String status;
     private String teamType;
     private String teamPlanetCode;
+    private String userPlanetCode;
     private String parentCode;
     private String docType;
     private String title;
@@ -62,6 +54,7 @@ public class RealmMyTeam extends RealmObject {
     private int amount;
     private long date;
     private boolean isPublic;
+    private boolean updated;
 
     public String getRoute() {
         return route;
@@ -80,7 +73,6 @@ public class RealmMyTeam extends RealmObject {
         Utilities.log(teamId);
         myTeams.setUser_id(JsonUtils.getString("userId", doc));
         myTeams.setTeamId(JsonUtils.getString("teamId", doc));
-        myTeams.set_id(JsonUtils.getString("_id", doc));
         myTeams.set_rev(JsonUtils.getString("_rev", doc));
         myTeams.setName(JsonUtils.getString("name", doc));
         myTeams.setSourcePlanet(JsonUtils.getString("sourcePlanet", doc));
@@ -98,6 +90,7 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setRules(JsonUtils.getString("rules", doc));
         myTeams.setParentCode(JsonUtils.getString("parentCode", doc));
         myTeams.setCreatedBy(JsonUtils.getString("createdBy", doc));
+        myTeams.setUserPlanetCode(JsonUtils.getString("userPlanetCode", doc));
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
         myTeams.setAmount(JsonUtils.getInt("amount", doc));
         myTeams.setDate(JsonUtils.getLong("date", doc));
@@ -111,6 +104,23 @@ public class RealmMyTeam extends RealmObject {
             if (!myTeams.courses.contains(id))
                 myTeams.courses.add(id);
         }
+    }
+
+    public boolean isUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(boolean updated) {
+        this.updated = updated;
+    }
+
+
+    public String getUserPlanetCode() {
+        return userPlanetCode;
+    }
+
+    public void setUserPlanetCode(String userPlanetCode) {
+        this.userPlanetCode = userPlanetCode;
     }
 
     public String getCreatedBy() {
@@ -238,12 +248,13 @@ public class RealmMyTeam extends RealmObject {
     public static void requestToJoin(String teamId, RealmUserModel userModel, Realm mRealm) {
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
+        RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, AndroidDecrypter.generateIv());
         team.setDocType("request");
         team.setCreatedDate(new Date().getTime());
         team.setTeamType("sync");
         team.setUser_id(userModel.getId());
         team.setTeamId(teamId);
+        team.setUpdated(true);
         team.setTeamPlanetCode(userModel.getPlanetCode());
         mRealm.commitTransaction();
     }
@@ -309,10 +320,9 @@ public class RealmMyTeam extends RealmObject {
 
     public static JsonObject serialize(RealmMyTeam team) {
         JsonObject object = new JsonObject();
-        if (!TextUtils.isEmpty(team.get_id())) {
-            object.addProperty("_id", team.get_id());
-        }
-        object.addProperty("teamId", team.getTeamId());
+        JsonUtils.addString(object, "_id", team.get_id());
+        JsonUtils.addString(object, "_rev", team.get_rev());
+        JsonUtils.addString(object, "teamId", team.getTeamId());
         object.addProperty("name", team.getName());
         object.addProperty("userId", team.getUser_id());
         object.addProperty("description", team.getDescription());
@@ -321,6 +331,7 @@ public class RealmMyTeam extends RealmObject {
         object.addProperty("status", team.getStatus());
         object.addProperty("teamType", team.getTeamType());
         object.addProperty("teamPlanetCode", team.getTeamPlanetCode());
+        object.addProperty("userPlanetCode", team.getUserPlanetCode());
         object.addProperty("parentCode", team.getParentCode());
         object.addProperty("docType", team.getDocType());
         object.addProperty("isLeader", team.isLeader());
@@ -401,13 +412,6 @@ public class RealmMyTeam extends RealmObject {
         this.courses = courses;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
 
     public String getTeamId() {
         return teamId;

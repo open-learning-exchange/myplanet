@@ -90,6 +90,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             mRealm.executeTransaction {
                 var team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
                 team.docType = "link"
+                team.isUpdated = true
                 team.title = title
                 team.route = """/${type.toLowerCase()}/view/${selectedTeam!!._id}"""
                 dismiss()

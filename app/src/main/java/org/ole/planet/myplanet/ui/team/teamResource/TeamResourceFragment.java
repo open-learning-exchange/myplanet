@@ -90,6 +90,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
                 team.setSourcePlanet(user.getParentCode());
                 team.setResourceId(libraries.get(se).get_id());
                 team.setDocType("resourceLink");
+                team.setUpdated(true);
                 team.setTeamType("local");
                 team.setTeamPlanetCode(user.getPlanetCode());
             }
