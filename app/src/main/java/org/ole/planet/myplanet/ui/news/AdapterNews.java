@@ -140,7 +140,7 @@ public class AdapterNews extends BaseNewsAdapter {
                         Utilities.toast(context, "Label added.");
                         showChips(holder, news);
                     } else {
-                        final String[] text = new String[1];
+
                         View v = LayoutInflater.from(context).inflate(R.layout.alert_add_label, null);
 
                         AlertDialog.Builder alert = new AlertDialog.Builder(context);
@@ -148,11 +148,11 @@ public class AdapterNews extends BaseNewsAdapter {
                         final EditText title = (EditText) v.findViewById(R.id.et_label);
                         alert.setTitle("Enter Label");
                         alert.setPositiveButton("Save", (dialogInterface, i) -> {
-                            text[0] = title.getText().toString();
-                            Constants.LABELS.put(text[0], text[0]);
-                            if (!mRealm.isInTransaction() && text[0] != null) {
+                            String text = title.getText().toString();
+                            Constants.LABELS.put(text, text);
+                            if (!mRealm.isInTransaction() && text != null) {
                                 mRealm.beginTransaction();
-                                news.addLabel(Constants.LABELS.get(text[0]));
+                                news.addLabel(Constants.LABELS.get(text));
                                 mRealm.commitTransaction();
                                 Utilities.toast(context, "Label added.");
 
