@@ -171,7 +171,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             if ((ob as RealmMyTeam).teamType == "sync") {
                 name.setTypeface(null, Typeface.BOLD)
             }
-            handleClick(ob.id, ob.name, TeamDetailFragment(), name)
+            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
             showNotificationIcons(ob, v, userId)
             name.text = ob.name
             flexboxLayout.addView(v, params)
@@ -187,14 +187,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val imgTask = v.findViewById<ImageView>(R.id.img_task)
         val imgChat = v.findViewById<ImageView>(R.id.img_chat)
         val notification: RealmTeamNotification? = mRealm.where(RealmTeamNotification::class.java)
-                .equalTo("parentId", (ob as RealmMyTeam).id)
+                .equalTo("parentId", (ob as RealmMyTeam)._id)
                 .equalTo("type", "chat")
                 .findFirst()
-        val chatCount: Long = mRealm.where(RealmNews::class.java).equalTo("viewableBy", "teams").equalTo("viewableId", ob.id).count()
+        val chatCount: Long = mRealm.where(RealmNews::class.java).equalTo("viewableBy", "teams").equalTo("viewableId", ob._id).count()
         if (notification != null) {
             imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
         }
-        val tasks: List<RealmTeamTask> = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", ob.id).equalTo("completed", false).equalTo("assignee", userId)
+        val tasks: List<RealmTeamTask> = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", ob._id).equalTo("completed", false).equalTo("assignee", userId)
                 .between("deadline", current, tomorrow.timeInMillis).findAll()
         imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }

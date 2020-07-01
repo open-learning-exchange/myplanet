@@ -60,6 +60,7 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.View
         if (team != null) {
             if (isAccept) {
                 team.setDocType("membership");
+                team.setUpdated(true);
             } else {
                 team.deleteFromRealm();
             }
