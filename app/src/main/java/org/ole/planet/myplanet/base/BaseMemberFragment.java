@@ -24,7 +24,6 @@ public abstract class BaseMemberFragment extends BaseTeamFragment {
 
 
 
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
