@@ -3,7 +3,7 @@
     <item android:drawable="@drawable/file_upload_animation_login" android:duration="300"/>
     <item android:drawable="@drawable/file_upload_animation_login_2" android:duration="300"/>
     <item android:drawable="@drawable/file_upload_animation_login_3" android:duration="300"/>
-    <item android:drawable="@drawable/file_upload_animation_login_4" android:duration="300"/>\
+    <item android:drawable="@drawable/file_upload_animation_login_4" android:duration="300"/>
     <item android:drawable="@drawable/file_upload_animation_login_5" android:duration="300"/>
     <item android:drawable="@drawable/file_upload_animation_login_6" android:duration="300"/>
 </animation-list>
