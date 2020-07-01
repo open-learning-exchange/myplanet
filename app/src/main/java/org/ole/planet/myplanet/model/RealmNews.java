@@ -133,10 +133,7 @@ public class RealmNews extends RealmObject {
     public void addLabel(String label) {
         if (!this.labels.contains(label)) {
             Utilities.log("Added");
-            Log.i("this is it", label);
-            Log.i("LABEL", "LABEL");
             this.labels.add(label);
-            Log.i("Labels", labels + "");
         }
     }
 
