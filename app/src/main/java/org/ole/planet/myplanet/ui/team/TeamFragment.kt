@@ -3,14 +3,13 @@ package org.ole.planet.myplanet.ui.team
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
+import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.Spinner
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.SwitchCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
 
@@ -40,6 +40,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         if (arguments != null) {
             type = arguments!!.getString("type")
             Utilities.log("Team fragment")
+            if (TextUtils.isEmpty(type)) {
+                type = "team"
+            }
         }
         Utilities.log("Team fragment")
     }
@@ -92,6 +95,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         team.limit = 12
                         team.description = v.et_description.text.toString()
                         team.createdBy = userId
+                        team.isUpdated = true
                         team.realm.commitTransaction()
                     }
                     Utilities.toast(activity, "Team Created")
@@ -104,7 +108,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
         val user = UserProfileDbHandler(activity).userModel
         if (!mRealm!!.isInTransaction) mRealm!!.beginTransaction()
-        val team = mRealm!!.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+        var teamId = AndroidDecrypter.generateIv();
+        val team = mRealm!!.createObject(RealmMyTeam::class.java, teamId)
         team.status = "active"
         team.createdDate = Date().time
         if (type != null) {
@@ -115,12 +120,26 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         }
         team.name = name
         team.description = map["desc"]
+        team.createdBy = user._id
         team.teamId = ""
         team.isPublic = isPublic
-        team.type = if (this.type == null) "team" else "enterprise"
+        team.type = this.type
         team.user_id = user.id
         team.parentCode = user.parentCode
         team.teamPlanetCode = user.planetCode
+        team.isUpdated = true
+
+        //create member ship
+        val teamMemberObj = mRealm!!.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+        teamMemberObj.userId = user._id
+        teamMemberObj.teamId = teamId
+        teamMemberObj.teamPlanetCode = user.planetCode
+        teamMemberObj.userPlanetCode = user.planetCode
+        teamMemberObj.docType = "membership"
+        teamMemberObj.isLeader = true
+        teamMemberObj.teamType = type
+        teamMemberObj.isUpdated = true
+
         mRealm!!.commitTransaction()
     }
 
@@ -153,7 +172,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun getList(query: RealmQuery<RealmMyTeam>): List<RealmMyTeam> {
         var query = query
-        query = if (type == null) {
+        query = if (type == null || type == "team") {
             query.notEqualTo("type", "enterprise")
         } else {
             query.equalTo("type", "enterprise")

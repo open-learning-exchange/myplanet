@@ -2,22 +2,22 @@ package org.ole.planet.myplanet.ui.team;
 
 
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.viewpager.widget.ViewPager;
-
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.viewpager.widget.ViewPager;
+
 import com.google.android.material.tabs.TabLayout;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
@@ -33,7 +33,7 @@ import io.realm.Realm;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TeamDetailFragment extends Fragment {
+public class TeamDetailFragment extends Fragment  {
 
     TabLayout tabLayout;
     ViewPager viewPager;
@@ -41,6 +41,7 @@ public class TeamDetailFragment extends Fragment {
     RealmMyTeam team;
     String teamId;
     LinearLayout llButtons;
+
     public TeamDetailFragment() {
     }
 
@@ -58,29 +59,32 @@ public class TeamDetailFragment extends Fragment {
         Button leave = v.findViewById(R.id.btn_leave);
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
+        team = mRealm.where(RealmMyTeam.class).equalTo("_id", getArguments().getString("id")).findFirst();
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
-        if (!isMyTeam){
+        if (!isMyTeam) {
             llButtons.setVisibility(View.GONE);
-        }else{
-            leave.setOnClickListener(vi -> {
+        } else {
+            leave.setOnClickListener(vi -> new AlertDialog.Builder(requireContext()).setMessage("Are you sure you want to leave this team ??").setPositiveButton("Yes", (dialogInterface, i) -> {
                 team.leave(user, mRealm);
                 Utilities.toast(getActivity(), "Left team");
                 viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
                 llButtons.setVisibility(View.GONE);
-            });
+            }).setNegativeButton("No", null).show());
 
             v.findViewById(R.id.btn_add_doc).setOnClickListener(view -> {
                 MainApplication.showDownload = true;
                 viewPager.setCurrentItem(6);
                 MainApplication.showDownload = false;
 
+                if (MainApplication.listener != null){
+                    MainApplication.listener.onAddDocument();
+                }
+
             });
         }
         return v;
     }
-
 
 
     @Override

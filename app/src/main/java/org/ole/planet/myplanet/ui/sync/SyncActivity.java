@@ -294,6 +294,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         if (settings.getBoolean("isChild", false)) {
             runOnUiThread(() -> setUpChildMode());
         }
+
         NotificationUtil.cancellAll(this);
     }
 

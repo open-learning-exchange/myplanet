@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -63,7 +65,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ((ViewHolderTeam) holder).created.setText(TimeUtils.getFormatedDate(list.get(position).getCreatedDate()));
             ((ViewHolderTeam) holder).type.setText(list.get(position).getTeamType());
             ((ViewHolderTeam) holder).type.setVisibility(type == null ? View.VISIBLE : View.GONE);
-            ((ViewHolderTeam) holder).editTeam.setVisibility(RealmMyTeam.getTeamLeader(list.get(position).getId(), mRealm).equals(user.getId()) ? View.VISIBLE : View.GONE);
+            ((ViewHolderTeam) holder).editTeam.setVisibility(RealmMyTeam.getTeamLeader(list.get(position).get_id(), mRealm).equals(user.getId()) ? View.VISIBLE : View.GONE);
             ((ViewHolderTeam) holder).name.setText(list.get(position).getName());
             boolean isMyTeam = list.get(position).isMyTeam(user.getId(), mRealm);
             showActionButton(isMyTeam, holder, position);
@@ -71,7 +73,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 if (context instanceof OnHomeItemClickListener) {
                     TeamDetailFragment f = new TeamDetailFragment();
                     Bundle b = new Bundle();
-                    b.putString("id", list.get(position).getId());
+                    b.putString("id", list.get(position).get_id());
                     b.putBoolean("isMyTeam", isMyTeam);
                     f.setArguments(b);
                     ((OnHomeItemClickListener) context).openCallFragment(f);
@@ -93,7 +95,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
         Bundle bundle = new Bundle();
         if (team.getType().isEmpty()) bundle.putString("state", "teams");
         else bundle.putString("state", team.getType() + "s");
-        bundle.putString("item", team.getId());
+        bundle.putString("item", team.get_id());
         bundle.putString("parentCode", "dev");
         return bundle;
     }
@@ -102,8 +104,10 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
         if (isMyTeam) {
             ((ViewHolderTeam) holder).action.setText("Leave");
             ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                list.get(position).leave(user, mRealm);
-                notifyDataSetChanged();
+                new AlertDialog.Builder(context).setMessage(R.string.confirm_exit).setPositiveButton("Yes", (dialogInterface, i) -> {
+                    list.get(position).leave(user, mRealm);
+                    notifyDataSetChanged();
+                }).setNegativeButton("No", null).show();
             });
         } else if (list.get(position).requested(user.getId(), mRealm)) {
             ((ViewHolderTeam) holder).action.setText("Requested");
@@ -111,7 +115,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
         } else {
             ((ViewHolderTeam) holder).action.setText("Request to Join");
             ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                RealmMyTeam.requestToJoin(list.get(position).getId(), user, mRealm);
+                RealmMyTeam.requestToJoin(list.get(position).get_id(), user, mRealm);
                 notifyDataSetChanged();
             });
         }

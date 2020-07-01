@@ -9,6 +9,7 @@ import androidx.fragment.app.FragmentStatePagerAdapter;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment;
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment;
@@ -31,7 +32,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
     public TeamPagerAdapter(FragmentManager fm, RealmMyTeam team, boolean isMyTeam) {
         super(fm);
-        this.teamId = team.getId();
+        this.teamId = team.get_id();
         isEnterprise = team.getType().equals("enterprise");
         list = new ArrayList<>();
         isInMyTeam = isMyTeam;
@@ -98,11 +99,14 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
                 break;
             case 6:
                 f = new TeamResourceFragment();
+                MainApplication.listener = (TeamPageListener) f;
                 break;
             case 7:
                 f = new MembersFragment();
                 break;
         }
+
+
         return f;
     }
 
