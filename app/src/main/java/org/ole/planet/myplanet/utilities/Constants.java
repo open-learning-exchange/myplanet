@@ -132,6 +132,7 @@ public class Constants {
         LABELS.put("Help Wanted", "help");
         LABELS.put("Offer", "offer");
         LABELS.put("Request for advice", "advice");
+        LABELS.put("Other", "other");
 
     }
 

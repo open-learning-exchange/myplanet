@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -132,7 +133,10 @@ public class RealmNews extends RealmObject {
     public void addLabel(String label) {
         if (!this.labels.contains(label)) {
             Utilities.log("Added");
+            Log.i("this is it", label);
+            Log.i("LABEL", "LABEL");
             this.labels.add(label);
+            Log.i("Labels", labels + "");
         }
     }
 

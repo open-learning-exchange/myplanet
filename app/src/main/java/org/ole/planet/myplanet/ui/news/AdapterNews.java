@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.text.Editable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.View;
@@ -32,6 +35,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
@@ -125,12 +129,50 @@ public class AdapterNews extends BaseNewsAdapter {
             MenuInflater inflater = menu.getMenuInflater();
             inflater.inflate(R.menu.menu_add_label, menu.getMenu());
             menu.setOnMenuItemClickListener(menuItem -> {
-                if (!mRealm.isInTransaction())
-                    mRealm.beginTransaction();
-                news.addLabel(Constants.LABELS.get(menuItem.getTitle() + ""));
-                Utilities.toast(context, "Label added.");
-                mRealm.commitTransaction();
-                showChips(holder, news);
+                String menutitle = menuItem.getTitle().toString().toLowerCase();
+                Log.i("Menu Title", menutitle);
+                    if (!menutitle.equals("other")) {
+                        if (!mRealm.isInTransaction()) {
+                            mRealm.beginTransaction();
+                        }
+                        news.addLabel(Constants.LABELS.get(menuItem.getTitle() + ""));
+                        mRealm.commitTransaction();
+                        Utilities.toast(context, "Label added.");
+                        showChips(holder, news);
+                    } else {
+                        final String[] text = new String[1];
+                        View v = LayoutInflater.from(context).inflate(R.layout.alert_add_label, null);
+
+                        AlertDialog.Builder alert = new AlertDialog.Builder(context);
+                        alert.setView(v);
+                        final EditText title = (EditText) v.findViewById(R.id.et_label);
+                        alert.setTitle("Enter Label");
+                        alert.setPositiveButton("Save", (dialogInterface, i) -> {
+                            text[0] = title.getText().toString();
+                            Constants.LABELS.put(text[0], text[0]);
+                            if (!mRealm.isInTransaction() && text[0] != null) {
+                                mRealm.beginTransaction();
+                                news.addLabel(Constants.LABELS.get(text[0]));
+                                mRealm.commitTransaction();
+                                Utilities.toast(context, "Label added.");
+
+                                showChips(holder, news);
+                            }
+
+                        });
+
+
+                        alert.setNegativeButton("Cancel", null);
+                        AlertDialog d = alert.create();
+                        d.show();
+                        Log.i("here", "now here");
+
+
+
+                    }
+
+
+
                 return false;
             });
             menu.show();
