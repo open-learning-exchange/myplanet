@@ -46,7 +46,6 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_team_resource, container, false);
-
     }
 
 
