@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -12,7 +10,6 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
-import org.ole.planet.myplanet.callback.UploadAttachmentListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -23,8 +20,6 @@ import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmCourseActivity;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
-import org.ole.planet.myplanet.model.RealmMyHealth;
-import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmMyTeam;
@@ -50,9 +45,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLConnection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -82,8 +75,6 @@ public class UploadManager extends FileUploadService {
         }
         return instance;
     }
-
-
 
 
     public void uploadNewsActivities() {
@@ -239,7 +230,6 @@ public class UploadManager extends FileUploadService {
     }
 
 
-
     public void uploadFeedback(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
@@ -375,15 +365,16 @@ public class UploadManager extends FileUploadService {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
         mRealm.executeTransactionAsync(realm -> {
-            List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).isNull("_id").or().isEmpty("_id").findAll();
+            List<RealmMyTeam> teams = realm.where(RealmMyTeam.class).equalTo("updated", true).findAll();
             Utilities.log("Teams size " + teams.size());
             for (RealmMyTeam team : teams) {
                 try {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/teams", RealmMyTeam.serialize(team)).execute().body();
                     Utilities.log("Team upload " + new Gson().toJson(object));
                     if (object != null) {
-                        team.set_id(JsonUtils.getString("id", object));
+//                        team.set_id(JsonUtils.getString("id", object));
                         team.set_rev(JsonUtils.getString("rev", object));
+                        team.setUpdated(false);
                     }
                 } catch (IOException e) {
                 }

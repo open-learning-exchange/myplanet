@@ -24,6 +24,7 @@ import com.google.gson.JsonObject;
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
@@ -201,7 +202,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     public void onClickMore(RealmTeamTask realmTeamTask) {
         View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
         Spinner spnUser = v.findViewById(R.id.spn_user);
-        List<RealmUserModel> userList = mRealm.where(RealmUserModel.class).findAll();
+        List<RealmUserModel> userList = RealmMyTeam.getJoinedMemeber(teamId, mRealm);
         ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, userList);
         spnUser.setAdapter(adapter);
         new AlertDialog.Builder(getActivity()).setTitle(R.string.select_member)

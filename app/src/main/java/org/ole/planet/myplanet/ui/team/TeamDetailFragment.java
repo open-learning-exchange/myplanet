@@ -59,7 +59,7 @@ public class TeamDetailFragment extends Fragment  {
         Button leave = v.findViewById(R.id.btn_leave);
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        team = mRealm.where(RealmMyTeam.class).equalTo("id", getArguments().getString("id")).findFirst();
+        team = mRealm.where(RealmMyTeam.class).equalTo("_id", getArguments().getString("id")).findFirst();
         viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, isMyTeam));
         tabLayout.setupWithViewPager(viewPager);
         if (!isMyTeam) {

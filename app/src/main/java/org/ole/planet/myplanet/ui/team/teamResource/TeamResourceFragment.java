@@ -46,7 +46,6 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_team_resource, container, false);
-
     }
 
 
@@ -90,6 +89,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
                 team.setSourcePlanet(user.getParentCode());
                 team.setResourceId(libraries.get(se).get_id());
                 team.setDocType("resourceLink");
+                team.setUpdated(true);
                 team.setTeamType("local");
                 team.setTeamPlanetCode(user.getPlanetCode());
             }
