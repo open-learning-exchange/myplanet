@@ -77,7 +77,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         View view = LayoutInflater.from(context).inflate(R.layout.layout_user_list, null);
         EditText etSearch = view.findViewById(R.id.et_search);
         ListView lv = view.findViewById(R.id.list_user);
-        users = RealmMyTeam.getUsers(realmMyTeam.getId(), mRealm, "");
+        users = RealmMyTeam.getUsers(realmMyTeam.get_id(), mRealm, "");
         setListAdapter(lv, users);
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -86,7 +86,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                users = RealmMyTeam.filterUsers(realmMyTeam.getId(), charSequence.toString(), mRealm);
+                users = RealmMyTeam.filterUsers(realmMyTeam.get_id(), charSequence.toString(), mRealm);
                 setListAdapter(lv, users);
             }
 
