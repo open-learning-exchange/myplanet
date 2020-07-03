@@ -5,6 +5,7 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -46,6 +47,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     FlexboxLayout flexboxLayout;
     HashMap<String, Boolean> mapConditions;
     Boolean allowSubmission = true;
+    int otherDiagId;
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
@@ -196,10 +198,19 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             flexboxLayout.addView(c);
         }
 
-        AppCompatEditText otherDiag = new AppCompatEditText(this);
+        EditText otherDiag = new AppCompatEditText(this);
+        otherDiagId = View.generateViewId();
+        otherDiag.setId(otherDiagId);
         otherDiag.setHint("Other Diagnoses");
         otherDiag.setLayoutParams(new FlexboxLayout.LayoutParams(FlexboxLayout.LayoutParams.MATCH_PARENT, FlexboxLayout.LayoutParams.WRAP_CONTENT));
         flexboxLayout.addView(otherDiag);
+    }
+
+    private void getOtherConditions() {
+        EditText otherDiag = (EditText) flexboxLayout.findViewById(otherDiagId);
+        if (!otherDiag.getText().toString().equals("")) {
+            mapConditions.put(otherDiag.getText().toString(), true);
+        }
     }
 
     private void initHealth() {
@@ -240,6 +251,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
         examination.setWeight(getFloat(etWeight.getText().toString().trim()));
         examination.setHeight(getFloat(etHeight.getText().toString().trim()));
+        getOtherConditions();
         examination.setConditions(new Gson().toJson(mapConditions));
         examination.setHearing(etHearing.getText().toString().trim());
         sign.setImmunizations(etImmunization.getText().toString().trim());
@@ -263,7 +275,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
         mRealm.commitTransaction();
         Utilities.toast(this, "Added successfully");
-       finish();
+        super.finish();
     }
 
     private boolean getHasInfo() {
