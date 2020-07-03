@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -203,7 +204,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         View v = getLayoutInflater().inflate(R.layout.alert_users_spinner, null);
         Spinner spnUser = v.findViewById(R.id.spn_user);
         List<RealmUserModel> userList = RealmMyTeam.getJoinedMemeber(teamId, mRealm);
-        ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, userList);
+        ArrayAdapter<RealmUserModel> adapter = new UserListArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, userList);
         spnUser.setAdapter(adapter);
         new AlertDialog.Builder(getActivity()).setTitle(R.string.select_member)
                 .setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
