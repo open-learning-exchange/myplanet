@@ -113,9 +113,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team.status = "active"
         team.createdDate = Date().time
         if (type != null) {
+            team.type = "enterprise"
             team.services = map["services"]
             team.rules = map["rules"]
         } else {
+            team.type = "team"
             team.teamType = type
         }
         team.name = name
@@ -123,7 +125,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team.createdBy = user._id
         team.teamId = ""
         team.isPublic = isPublic
-        team.type = this.type
         team.user_id = user.id
         team.parentCode = user.parentCode
         team.teamPlanetCode = user.planetCode
