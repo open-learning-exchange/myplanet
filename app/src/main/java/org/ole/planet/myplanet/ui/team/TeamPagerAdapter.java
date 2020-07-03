@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -33,7 +34,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     public TeamPagerAdapter(FragmentManager fm, RealmMyTeam team, boolean isMyTeam) {
         super(fm);
         this.teamId = team.get_id();
-        isEnterprise = team.getType().equals("enterprise");
+        isEnterprise = TextUtils.equals(team.getType(),"enterprise");
         list = new ArrayList<>();
         isInMyTeam = isMyTeam;
         list.add(MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));

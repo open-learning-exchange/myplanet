@@ -112,10 +112,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         val team = mRealm!!.createObject(RealmMyTeam::class.java, teamId)
         team.status = "active"
         team.createdDate = Date().time
-        if (type != null) {
+        if (TextUtils.equals(type, "enterprise")) {
+            team.type = "enterprise"
             team.services = map["services"]
             team.rules = map["rules"]
         } else {
+            team.type = "team"
             team.teamType = type
         }
         team.name = name
@@ -123,7 +125,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team.createdBy = user._id
         team.teamId = ""
         team.isPublic = isPublic
-        team.type = this.type
         team.user_id = user.id
         team.parentCode = user.parentCode
         team.teamPlanetCode = user.planetCode
@@ -172,7 +173,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun getList(query: RealmQuery<RealmMyTeam>): List<RealmMyTeam> {
         var query = query
-        query = if (type == null || type == "team") {
+        query = if (TextUtils.isEmpty(type) || type == "team") {
             query.notEqualTo("type", "enterprise")
         } else {
             query.equalTo("type", "enterprise")
