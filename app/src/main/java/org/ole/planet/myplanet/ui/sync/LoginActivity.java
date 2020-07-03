@@ -89,8 +89,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
-    private ImageView syncIcon;
-    private AnimationDrawable syncIconDrawable;
+
 
     private void showShowCaseView() {
         ShowcaseConfig config = new ShowcaseConfig();
@@ -273,9 +272,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     public void declareMoreElements() {
         syncIcon = findViewById(R.id.syncIcon);
-        syncIcon.setBackgroundResource(R.drawable.login_file_upload_animation);
+        syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
         syncIcon.getScaleType();
-        syncIconDrawable = (AnimationDrawable) syncIcon.getBackground();
+        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
         syncIcon.setOnClickListener(v -> {
             syncIconDrawable.start();
             isSync = false;
