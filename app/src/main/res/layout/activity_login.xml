@@ -130,14 +130,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="0.1">
 
-                <pl.droidsonroids.gif.GifImageButton
+                <ImageView
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_alignParentLeft="true"
                     android:layout_marginLeft="10dp"
                     android:layout_marginTop="6dp"
-                    android:background="@null"
+                    android:background="@drawable/file_upload_animation_login"
                     android:scaleType="fitCenter" />
 
                 <TextView

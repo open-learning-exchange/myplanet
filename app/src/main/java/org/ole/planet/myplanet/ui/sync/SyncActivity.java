@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.sync;
 
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -58,7 +60,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     Realm mRealm;
     SharedPreferences.Editor editor;
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
-
+    ImageView syncIcon;
+    AnimationDrawable syncIconDrawable;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -281,6 +284,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     @Override
     public void onSyncFailed(final String s) {
+        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+        syncIconDrawable.stop();
+        syncIcon.invalidateDrawable(syncIconDrawable);
+
         runOnUiThread(() -> {
             DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
             DialogUtils.showWifiSettingDialog(SyncActivity.this);
@@ -289,6 +296,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     @Override
     public void onSyncComplete() {
+        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+        syncIconDrawable.stop();
+        syncIcon.invalidateDrawable(syncIconDrawable);
         DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
         if (settings.getBoolean("isChild", false)) {

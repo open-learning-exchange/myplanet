@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 
@@ -26,6 +27,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -35,7 +37,6 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
@@ -48,7 +49,6 @@ import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
-import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
@@ -62,7 +62,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-import io.realm.Realm;
 import io.realm.Sort;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.GifImageButton;
@@ -82,7 +81,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
     private View positiveAction;
-    private GifDrawable gifDrawable;
+    //    private GifDrawable gifDrawable;
     //    private CheckBox managerialLogin;
     private ImageButton imgBtnSetting;
     private boolean isSync = false, forceSync = false;
@@ -90,7 +89,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
-    private GifImageButton syncIcon;
+
 
     private void showShowCaseView() {
         ShowcaseConfig config = new ShowcaseConfig();
@@ -273,13 +272,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     public void declareMoreElements() {
         syncIcon = findViewById(R.id.syncIcon);
-        syncIcon.setImageResource(R.drawable.sync_icon);
+        syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
         syncIcon.getScaleType();
-        gifDrawable = (GifDrawable) syncIcon.getDrawable();
-        gifDrawable.setSpeed(3.0f);
-        gifDrawable.stop();
+        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
         syncIcon.setOnClickListener(v -> {
-            gifDrawable.reset();
+            syncIconDrawable.start();
             isSync = false;
             forceSync = true;
             service.checkVersion(this, settings);
@@ -362,12 +359,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
+                    syncIconDrawable.stop();
+                    syncIcon.setBackgroundResource(R.drawable.file_upload_animation_login);
                 }
 
                 @Override
                 public void onSyncFailed(String msg) {
                     Utilities.toast(LoginActivity.this, msg);
                     progressDialog.dismiss();
+                    syncIconDrawable.stop();
+                    syncIcon.setBackgroundResource(R.drawable.file_upload_animation_login);
                 }
 
             });
