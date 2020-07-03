@@ -9,7 +9,6 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,13 +29,10 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
 
-import androidx.fragment.app.Fragment;
+import androidx.appcompat.widget.AppCompatEditText;
 import io.realm.Realm;
 
 public class AddExaminationActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
@@ -51,6 +47,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     FlexboxLayout flexboxLayout;
     HashMap<String, Boolean> mapConditions;
     Boolean allowSubmission = true;
+    int otherDiagId;
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
@@ -200,6 +197,20 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             c.setOnCheckedChangeListener(this);
             flexboxLayout.addView(c);
         }
+
+        EditText otherDiag = new AppCompatEditText(this);
+        otherDiagId = View.generateViewId();
+        otherDiag.setId(otherDiagId);
+        otherDiag.setHint("Other Diagnoses");
+        otherDiag.setLayoutParams(new FlexboxLayout.LayoutParams(FlexboxLayout.LayoutParams.MATCH_PARENT, FlexboxLayout.LayoutParams.WRAP_CONTENT));
+        flexboxLayout.addView(otherDiag);
+    }
+
+    private void getOtherConditions() {
+        EditText otherDiag = (EditText) flexboxLayout.findViewById(otherDiagId);
+        if (!otherDiag.getText().toString().equals("")) {
+            mapConditions.put(otherDiag.getText().toString(), true);
+        }
     }
 
     private void initHealth() {
@@ -240,6 +251,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
         examination.setWeight(getFloat(etWeight.getText().toString().trim()));
         examination.setHeight(getFloat(etHeight.getText().toString().trim()));
+        getOtherConditions();
         examination.setConditions(new Gson().toJson(mapConditions));
         examination.setHearing(etHearing.getText().toString().trim());
         sign.setImmunizations(etImmunization.getText().toString().trim());
