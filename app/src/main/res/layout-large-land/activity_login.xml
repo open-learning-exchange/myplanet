@@ -132,7 +132,7 @@
                 android:layout_height="6dp"
                 android:layout_weight="0.6">
 
-                <pl.droidsonroids.gif.GifImageButton
+                <ImageView
                     android:id="@+id/syncIcon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
