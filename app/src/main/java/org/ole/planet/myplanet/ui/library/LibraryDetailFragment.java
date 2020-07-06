@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.library;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatImageButton;
 
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -33,7 +34,7 @@ import io.realm.Realm;
 
 public class LibraryDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView author, pubishedBy, title, media, subjects, license, language, resource, type;
-    Button download, remove;
+    AppCompatImageButton download, remove;
     String libraryId;
     DatabaseService dbService;
     Realm mRealm;
@@ -57,7 +58,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
     @Override
     public void onDownloadComplete() {
-        download.setText("Open Resource");
+        download.setImageResource(R.drawable.ic_play);
     }
 
     @Override
@@ -117,9 +118,10 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         }
 
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
-        download.setText(library.getResourceOffline() == null || library.isResourceOffline() ? "Open Resource " : "Download Resource");
+        download.setImageResource(library.getResourceOffline() == null || library.isResourceOffline() ?R.drawable.ic_eye : R.drawable.ic_download);
+//        download.setText(library.getResourceOffline() == null || library.isResourceOffline() ? "Open Resource " : "Download Resource");
         if (FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")) {
-            download.setText("Open Video");
+            download.setImageResource(R.drawable.ic_play);
         }
         setClickListeners();
     }
@@ -136,7 +138,8 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         });
         Utilities.log("user id " + profileDbHandler.getUserModel().getId() + " " + library.getUserId().contains(profileDbHandler.getUserModel().getId()));
         boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
-        remove.setText(isAdd ? "Add To My Library" : "Remove from myLibrary");
+//        remove.setText(isAdd ? "Add To My Library" : "Remove from myLibrary");
+        remove.setImageResource(isAdd? R.drawable.ic_add_library : R.drawable.close_x);
         remove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction())
                 mRealm.beginTransaction();
