@@ -23,7 +23,7 @@ import java.util.List;
 
 import io.realm.Realm;
 
-public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmUserModel> list;
     private Realm mRealm;
@@ -31,7 +31,7 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     private RealmUserModel currentUser;
     private String teamLeaderId;
 
-    public AdapterJoinedMemeber(Context context, List<RealmUserModel> list, Realm mRealm, String teamId) {
+    public AdapterJoinedMember(Context context, List<RealmUserModel> list, Realm mRealm, String teamId) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
@@ -54,32 +54,46 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderUser) {
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
-            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " visits )");
+            ((ViewHolderUser) holder).tvDescription
+                    .setText(list.get(position).getRoleAsString()
+                            + " ("
+                            + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId)
+                            + " visits )");
 
+            // If the currently logged in user is the team leader
             if (this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId())) {
                 ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
+                // Options that will be shown when the overflow menu is clicked.
+                String[] overflowMenuOptions;
+
+
+                // If the current user/card is the logged in user/team leader
+                if (this.teamLeaderId.equals(list.get(position).getId())) {
+                    ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
+                    ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
+                    overflowMenuOptions = new String[] {context.getString(R.string.remove)};
+                } else {
+                    ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
+                    overflowMenuOptions = new String[] {
+                            context.getString(R.string.remove),
+                            context.getString(R.string.make_leader)};
+                }
+
+                ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
+
+                    new AlertDialog.Builder(context)
+                            .setItems(overflowMenuOptions, (dialogInterface, i) -> {
+                                if (i == 0) {
+                                    reject(list.get(position), position);
+                                } else {
+                                    makeLeader(list.get(position), position);
+                                }
+                            }).setNegativeButton("Dismiss", null).show();
+                });
             } else {
                 ((ViewHolderUser) holder).icMore.setVisibility(View.GONE);
             }
 
-            if (this.teamLeaderId != null && this.teamLeaderId.equals(list.get(position).getId())) {
-                ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
-                ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
-            } else {
-                ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
-            }
-
-            ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
-                String[] s = {context.getString(R.string.remove), context.getString(R.string.make_leader)};
-                new AlertDialog.Builder(context)
-                        .setItems(s, (dialogInterface, i) -> {
-                            if (i == 0) {
-                                reject(list.get(position), position);
-                            } else {
-                                makeLeader(list.get(position), position);
-                            }
-                        }).setNegativeButton("Dismiss", null).show();
-            });
         }
     }
 
