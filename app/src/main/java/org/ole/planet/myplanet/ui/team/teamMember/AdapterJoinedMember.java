@@ -60,14 +60,18 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
                             + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId)
                             + " visits )");
 
-            // If the currently logged in user is the team leader
-            if (this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId())) {
+
+            boolean isLoggedInUserTeamLeader = this.teamLeaderId != null
+                    && this.teamLeaderId.equals(this.currentUser.getId());
+
+            // If the currently logged in user is the team leader, show
+            // overflow menu and all the actions available to the leader
+            if (isLoggedInUserTeamLeader) {
                 ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
-                // Options that will be shown when the overflow menu is clicked.
                 String[] overflowMenuOptions;
 
 
-                // If the current user/card is the logged in user/team leader
+                // If the current user card is the logged in user/team leader
                 if (this.teamLeaderId.equals(list.get(position).getId())) {
                     ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
                     ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
