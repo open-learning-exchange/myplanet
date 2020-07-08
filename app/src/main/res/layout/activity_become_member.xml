@@ -267,19 +267,23 @@
                 android:layout_gravity="right">
 
                 <Button
-                    android:id="@+id/btn_submit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
-                    android:text="@string/become_a_member"
-                    android:theme="@style/PrimaryButton" />
-
-                <Button
                     android:id="@+id/btn_cancel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/button_cancel"
-                    android:theme="@style/RejectButton" />
+                    android:textStyle="bold"
+                    android:textSize="@dimen/text_size_mid"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
+                <Button
+                    android:id="@+id/btn_submit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/become_a_member"
+                    android:textSize="@dimen/text_size_mid"
+                    android:theme="@style/FocusButton"/>
+
+
 
             </LinearLayout>
 
