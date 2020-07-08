@@ -81,10 +81,9 @@
 
                 <TextView
                     android:id="@+id/tv_selected"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_weight="1"
                     android:gravity="center"
                     android:padding="@dimen/padding_normal"
                     android:textColor="@color/md_white_1000"
@@ -92,7 +91,8 @@
 
                 <Spinner
                     android:id="@+id/spn_sort"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:entries="@array/sort_by_date"
@@ -114,12 +114,14 @@
                     android:visibility="gone" />
 
 
-                <Button
+                <ImageButton
                     android:id="@+id/filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    app:srcCompat="@drawable/ic_filter"
+                    android:layout_width="@dimen/_50dp"
+                    android:layout_height="@dimen/_50dp"
                     android:layout_margin="@dimen/padding_normal"
-                    android:background="@drawable/buttonblue"
+                    android:background="@drawable/buttonyellow"
+                    style="@style/YellowButtons"
                     android:text="@string/more_action"
                     android:textColor="@color/md_white_1000" />
 
