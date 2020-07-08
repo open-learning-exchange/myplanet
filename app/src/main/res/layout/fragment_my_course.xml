@@ -100,7 +100,8 @@
 
                 <TextView
                     android:id="@+id/tv_delete"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
@@ -123,6 +124,10 @@
                     android:background="@drawable/buttonyellow"
                     style="@style/YellowButtons"
                     android:text="@string/more_action"
+                    android:background="@drawable/buttonyellow"
+                    app:srcCompat="@drawable/ic_filter"
+                    android:padding="@dimen/padding_normal"
+                    style="@style/YellowButtons"
                     android:textColor="@color/md_white_1000" />
 
             </LinearLayout>

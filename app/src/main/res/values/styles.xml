@@ -76,7 +76,14 @@
         <item name="android:textSize">@dimen/text_size_mid</item>
     </style>
 
+<!--    Button Themes   -->
     <style name="RejectButton" parent="Theme.AppCompat">
+        <item name="colorButtonNormal">@color/colorAccent</item>
+        <item name="colorControlHighlight">@color/colorAccent</item>
+    </style>
+
+    <!--  Button that uses accent color, primarily as the most important button on the screen  -->
+    <style name="FocusButton" parent="Theme.AppCompat">
         <item name="colorButtonNormal">@color/colorAccent</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
