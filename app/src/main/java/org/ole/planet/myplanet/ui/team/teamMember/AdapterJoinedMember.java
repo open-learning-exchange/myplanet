@@ -53,6 +53,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderUser) {
+            String[] overflowMenuOptions;
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
             ((ViewHolderUser) holder).tvDescription
                     .setText(list.get(position).getRoleAsString()
@@ -64,27 +65,23 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
             boolean isLoggedInUserTeamLeader = this.teamLeaderId != null
                     && this.teamLeaderId.equals(this.currentUser.getId());
 
+            // If the current user card is the logged in user/team leader
+            if (this.teamLeaderId.equals(list.get(position).getId())) {
+                ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
+                ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
+                overflowMenuOptions = new String[] {context.getString(R.string.remove)};
+            } else {
+                ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
+                overflowMenuOptions = new String[] {
+                        context.getString(R.string.remove),
+                        context.getString(R.string.make_leader)};
+            }
+
             // If the currently logged in user is the team leader, show
             // overflow menu and all the actions available to the leader
             if (isLoggedInUserTeamLeader) {
                 ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
-                String[] overflowMenuOptions;
-
-
-                // If the current user card is the logged in user/team leader
-                if (this.teamLeaderId.equals(list.get(position).getId())) {
-                    ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
-                    ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
-                    overflowMenuOptions = new String[] {context.getString(R.string.remove)};
-                } else {
-                    ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
-                    overflowMenuOptions = new String[] {
-                            context.getString(R.string.remove),
-                            context.getString(R.string.make_leader)};
-                }
-
                 ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
-
                     new AlertDialog.Builder(context)
                             .setItems(overflowMenuOptions, (dialogInterface, i) -> {
                                 if (i == 0) {
@@ -97,7 +94,6 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
             } else {
                 ((ViewHolderUser) holder).icMore.setVisibility(View.GONE);
             }
-
         }
     }
 
