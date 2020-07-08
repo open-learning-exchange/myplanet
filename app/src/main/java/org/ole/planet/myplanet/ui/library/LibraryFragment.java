@@ -106,7 +106,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         initArrays();
 
-        tvAddToLib.setOnClickListener(view -> addToMyList());
+        tvAddToLib.setOnClickListener(view -> addToMyList()
+        );
         imgSearch.setOnClickListener(view -> {
             adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
             showNoData(tvMessage, adapterLibrary.getItemCount());
