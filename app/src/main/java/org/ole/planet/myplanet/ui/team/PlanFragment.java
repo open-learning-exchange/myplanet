@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.text.Html;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,7 +44,7 @@ public class PlanFragment extends BaseTeamFragment {
             Utilities.log(team.getType());
             Utilities.log(team.getServices());
             Utilities.log(team.getRules());
-            if (team.getType().equalsIgnoreCase("enterprise")) {
+            if (TextUtils.equals(team.getType(),"enterprise")) {
                 description.setText(Html.fromHtml("<b>What is your enterprise's Mission?</b><br/>" + team.getDescription() +
                         "<br/><b>What are the Services your enterprise provides?</b><br/>" + team.getServices() + "<br/>" +
                         "<br/><b>What are the Rules of your enterprise?</b><br/>" + team.getRules() + "<br/>"

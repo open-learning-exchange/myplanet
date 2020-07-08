@@ -8,12 +8,15 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.RadioButton
+import android.widget.Spinner
 import androidx.appcompat.app.AlertDialog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import kotlinx.android.synthetic.main.activity_become_member.*
+import kotlinx.android.synthetic.main.fragment_course_detail.*
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
@@ -52,6 +55,10 @@ class BecomeMemberActivity : BaseActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         var mRealm: Realm = DatabaseService(this).realmInstance;
         var user = UserProfileDbHandler(this).userModel;
+        val languages = resources.getStringArray(R.array.language)
+        val languageSpinner = findViewById(R.id.spn_lang) as Spinner
+        val adapter = ArrayAdapter<String>(this, R.layout.become_a_member_spinner_layout, languages)
+        languageSpinner.adapter = adapter
         txt_dob.setOnClickListener {
             showDatePickerDialog()
         }
