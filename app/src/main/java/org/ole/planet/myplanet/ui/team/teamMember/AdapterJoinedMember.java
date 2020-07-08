@@ -76,24 +76,30 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
                         context.getString(R.string.remove),
                         context.getString(R.string.make_leader)};
             }
+            checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
 
-            // If the currently logged in user is the team leader, show
-            // overflow menu and all the actions available to the leader
-            if (isLoggedInUserTeamLeader) {
-                ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
-                ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
-                    new AlertDialog.Builder(context)
-                            .setItems(overflowMenuOptions, (dialogInterface, i) -> {
-                                if (i == 0) {
-                                    reject(list.get(position), position);
-                                } else {
-                                    makeLeader(list.get(position), position);
-                                }
-                            }).setNegativeButton("Dismiss", null).show();
-                });
-            } else {
-                ((ViewHolderUser) holder).icMore.setVisibility(View.GONE);
-            }
+        }
+    }
+
+    private void checkUserAndShowOverflowMenu(@NonNull ViewHolderUser holder, int position, String[] overflowMenuOptions, boolean isLoggedInUserTeamLeader) {
+        /**
+         * Checks if the user that is currently logged-in is the leader
+         * of the team we are looking at and shows/hides the overflow menu accordingly.
+         */
+        if (isLoggedInUserTeamLeader) {
+            holder.icMore.setVisibility(View.VISIBLE);
+            holder.icMore.setOnClickListener(view -> {
+                new AlertDialog.Builder(context)
+                        .setItems(overflowMenuOptions, (dialogInterface, i) -> {
+                            if (i == 0) {
+                                reject(list.get(position), position);
+                            } else {
+                                makeLeader(list.get(position), position);
+                            }
+                        }).setNegativeButton("Dismiss", null).show();
+            });
+        } else {
+            holder.icMore.setVisibility(View.GONE);
         }
     }
 
