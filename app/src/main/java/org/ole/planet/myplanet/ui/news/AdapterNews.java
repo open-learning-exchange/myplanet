@@ -188,7 +188,7 @@ public class AdapterNews extends BaseNewsAdapter {
             ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
         ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews.getId(), false));
         List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE).findAll();
-        ((ViewHolderNews) holder).btnShowReply.setText(String.format("Show replies (%d)", replies.size()));
+        ((ViewHolderNews) holder).btnShowReply.setText(String.format(context.getString(R.string.show_replies) + " (%d)", replies.size()));
         ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
         if (position == 0 && parentNews != null)
             ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);

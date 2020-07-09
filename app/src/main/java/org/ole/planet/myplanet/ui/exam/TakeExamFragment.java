@@ -84,7 +84,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         super.onActivityCreated(savedInstanceState);
         initExam();
         questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
-        tvQuestionCount.setText("Question : 1/" + questions.size());
+        tvQuestionCount.setText(getString(R.string.Q1) + questions.size());
         RealmQuery q = mRealm.where(RealmSubmission.class)
                 .equalTo("userId", user.getId())
                 .equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id)
@@ -102,7 +102,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else {
             container.setVisibility(View.GONE);
             btnSubmit.setVisibility(View.GONE);
-            tvQuestionCount.setText("No questions available");
+            tvQuestionCount.setText(R.string.no_questions);
             Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
         }
     }
@@ -136,7 +136,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     @Override
     public void startExam(RealmExamQuestion question) {
-        tvQuestionCount.setText("Question : " + (currentIndex + 1) + "/" + questions.size());
+        tvQuestionCount.setText(getString(R.string.Q) + (currentIndex + 1) + "/" + questions.size());
         setButtonText();
         listChoices.removeAllViews();
         llCheckbox.removeAllViews();
@@ -172,9 +172,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     public void setButtonText() {
         if (currentIndex == questions.size() - 1) {
-            btnSubmit.setText("Finish");
+            btnSubmit.setText(R.string.finish);
         } else {
-            btnSubmit.setText("Submit");
+            btnSubmit.setText(R.string.submit);
         }
     }
 

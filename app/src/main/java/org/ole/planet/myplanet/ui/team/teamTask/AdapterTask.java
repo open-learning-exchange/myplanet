@@ -81,7 +81,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
             }
         } else {
-            ((ViewHolderTask) holder).assignee.setText("No assignee");
+            ((ViewHolderTask) holder).assignee.setText(R.string.no_assignee);
 
         }
     }

@@ -117,7 +117,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         if (teams.size() > 0) {
             tvNodata.setVisibility(View.GONE);
         } else {
-            tvNodata.setText("No team / enterprise available");
+            tvNodata.setText(R.string.no_team_available);
             tvNodata.setVisibility(View.VISIBLE);
         }
     }
@@ -179,7 +179,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     private void dateCheck(MaterialDialog dialog) {
         // Check if the user never synced
         syncDate = (TextView) dialog.findViewById(R.id.lastDateSynced);
-        syncDate.setText("Last Sync Date: " + convertDate());
+        syncDate.setText(getString(R.string.last_sync_date) + convertDate());
         syncDropdownAdd();
     }
 
