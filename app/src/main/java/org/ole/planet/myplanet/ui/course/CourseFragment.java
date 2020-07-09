@@ -81,7 +81,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         searchTags = new ArrayList<>();
         initializeView();
         if (isMyCourseLib) {
-            tvDelete.setText(R.string.archive_mycourse);
+            tvDelete.setText(R.string.archive);
             btnRemove.setVisibility(View.VISIBLE);
         }
 
