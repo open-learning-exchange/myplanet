@@ -89,10 +89,16 @@ class BecomeMemberActivity : BaseActivity() {
             else {
                 Utilities.toast(this, "Please select gender")
             }
-            if (username!!.isEmpty() || username.contains(" ")) {
+            if (username!!.isEmpty()) {
+                et_username.error = "Please enter a username"
+            }
+            else if (username.contains(" ")){
                 et_username.error = "Invalid username"
             }
-            if (!password.equals(repassword)) {
+            if (password!!.isEmpty()) {
+                et_password.error = "Please enter a password"
+            }
+            else if (password != repassword) {
                 et_re_password.error = "Password doesn't match"
             }
             if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
@@ -107,14 +113,24 @@ class BecomeMemberActivity : BaseActivity() {
                 ///Add dialog that using phone as password , Agree / disagree
             }
 
+            checkMandatoryFieldsAndAddMember(username, password, repassword, fname, lname, mname, email, language, level, phoneNumber, birthDate, gender, mRealm)
 
+        }
+    }
+
+    private fun checkMandatoryFieldsAndAddMember(username: String, password: String, repassword: String?, fname: String?, lname: String?, mname: String?, email: String?, language: String?, level: String?, phoneNumber: String?, birthDate: String?, gender: String?, mRealm: Realm) {
+        /**
+         * Creates and adds a new member if the username and password
+         * are not empty and password matches repassword.
+         */
+        if (username.isNotEmpty() && password.isNotEmpty() && repassword == password) {
             var obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fname)
             obj.addProperty("lastName", lname)
             obj.addProperty("middleName", mname)
             obj.addProperty("password", password)
-//            obj.addProperty("repeatPassword", repassword )
+    //            obj.addProperty("repeatPassword", repassword )
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate", Calendar.getInstance().timeInMillis)
             obj.addProperty("email", email)
