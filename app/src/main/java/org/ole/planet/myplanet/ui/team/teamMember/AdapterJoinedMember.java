@@ -23,7 +23,7 @@ import java.util.List;
 
 import io.realm.Realm;
 
-public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmUserModel> list;
     private Realm mRealm;
@@ -31,7 +31,7 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     private RealmUserModel currentUser;
     private String teamLeaderId;
 
-    public AdapterJoinedMemeber(Context context, List<RealmUserModel> list, Realm mRealm, String teamId) {
+    public AdapterJoinedMember(Context context, List<RealmUserModel> list, Realm mRealm, String teamId) {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
@@ -53,26 +53,44 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderUser) {
+            String[] overflowMenuOptions;
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
-            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " visits )");
+            ((ViewHolderUser) holder).tvDescription
+                    .setText(list.get(position).getRoleAsString()
+                            + " ("
+                            + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId)
+                            + " visits )");
 
-            if (this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId())) {
-                ((ViewHolderUser) holder).icMore.setVisibility(View.VISIBLE);
-            } else {
-                ((ViewHolderUser) holder).icMore.setVisibility(View.GONE);
-            }
 
-            if (this.teamLeaderId != null && this.teamLeaderId.equals(list.get(position).getId())) {
+            boolean isLoggedInUserTeamLeader = this.teamLeaderId != null
+                    && this.teamLeaderId.equals(this.currentUser.getId());
+
+            // If the current user card is the logged in user/team leader
+            if (this.teamLeaderId.equals(list.get(position).getId())) {
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
                 ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
+                overflowMenuOptions = new String[] {context.getString(R.string.remove)};
             } else {
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
+                overflowMenuOptions = new String[] {
+                        context.getString(R.string.remove),
+                        context.getString(R.string.make_leader)};
             }
+            checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
 
-            ((ViewHolderUser) holder).icMore.setOnClickListener(view -> {
-                String[] s = {context.getString(R.string.remove), context.getString(R.string.make_leader)};
+        }
+    }
+
+    private void checkUserAndShowOverflowMenu(@NonNull ViewHolderUser holder, int position, String[] overflowMenuOptions, boolean isLoggedInUserTeamLeader) {
+        /**
+         * Checks if the user that is currently logged-in is the leader
+         * of the team we are looking at and shows/hides the overflow menu accordingly.
+         */
+        if (isLoggedInUserTeamLeader) {
+            holder.icMore.setVisibility(View.VISIBLE);
+            holder.icMore.setOnClickListener(view -> {
                 new AlertDialog.Builder(context)
-                        .setItems(s, (dialogInterface, i) -> {
+                        .setItems(overflowMenuOptions, (dialogInterface, i) -> {
                             if (i == 0) {
                                 reject(list.get(position), position);
                             } else {
@@ -80,6 +98,8 @@ public class AdapterJoinedMemeber extends RecyclerView.Adapter<RecyclerView.View
                             }
                         }).setNegativeButton("Dismiss", null).show();
             });
+        } else {
+            holder.icMore.setVisibility(View.GONE);
         }
     }
 
