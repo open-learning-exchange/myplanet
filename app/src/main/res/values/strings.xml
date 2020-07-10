@@ -572,6 +572,7 @@
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
     <string name="other_notes">Other Notes</string>
     <string name="archive">Archive</string>
+    <string name="other_diagnosis">Other Diagnosis</string>
 
 </resources>
 
