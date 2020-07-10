@@ -112,7 +112,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         val team = mRealm!!.createObject(RealmMyTeam::class.java, teamId)
         team.status = "active"
         team.createdDate = Date().time
-        if (TextUtils.equals(type, "enterprise")) {
+        if (TextUtils.equals(this.type, "enterprise")) {
             team.type = "enterprise"
             team.services = map["services"]
             team.rules = map["rules"]
