@@ -5,7 +5,6 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
@@ -24,35 +23,45 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DimenUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import androidx.appcompat.widget.AppCompatEditText;
+import fisk.chipcloud.ChipCloud;
+import fisk.chipcloud.ChipCloudConfig;
 import io.realm.Realm;
 
 public class AddExaminationActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
     Realm mRealm;
     String userId;
-    EditText etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
+    EditText etOtherDiagnosis, etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
             etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
     RealmUserModel user;
     RealmUserModel currentUser;
     RealmMyHealthPojo pojo;
     RealmMyHealth health = null;
-    FlexboxLayout flexboxLayout;
+    Set<String> customDiag;
+    FlexboxLayout flexboxLayout, flexboxOther;
     HashMap<String, Boolean> mapConditions;
     Boolean allowSubmission = true;
     int otherDiagId;
+    private ChipCloudConfig config;
+
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
         etPulseRate = findViewById(R.id.et_pulse_rate);
         flexboxLayout = findViewById(R.id.container_checkbox);
+        flexboxOther = findViewById(R.id.container_other_diagnosis);
         etBloodPressure = findViewById(R.id.et_bloodpressure);
         etHeight = findViewById(R.id.et_height);
         etWeight = findViewById(R.id.et_weight);
@@ -60,6 +69,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         etHearing = findViewById(R.id.et_hearing);
         etObservation = findViewById(R.id.et_observation);
         etDiag = findViewById(R.id.et_diag);
+        etOtherDiagnosis = findViewById(R.id.et_other_diag);
         etTretments = findViewById(R.id.et_treatments);
         etMedications = findViewById(R.id.et_medications);
         etImmunization = findViewById(R.id.et_immunization);
@@ -67,7 +77,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         etXray = findViewById(R.id.et_xray);
         etLabtest = findViewById(R.id.et_labtest);
         etReferrals = findViewById(R.id.et_referrals);
-
+        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
+        findViewById(R.id.btn_add_diag).setOnClickListener(view -> {
+            customDiag.add(etOtherDiagnosis.getText().toString());
+            etOtherDiagnosis.setText("");
+            showOtherDiagnosis();
+        });
     }
 
     @Override
@@ -76,6 +91,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         setContentView(R.layout.activity_add_examination);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        customDiag = new HashSet<>();
         initViews();
         currentUser = new UserProfileDbHandler(this).getUserModel();
         mapConditions = new HashMap<String, Boolean>();
@@ -128,6 +144,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             etReferrals.setText(JsonUtils.getString(getString(R.string.referral), encrypted));
         }
         showCheckbox(examination);
+        showOtherDiagnosis();
     }
 
     private void validateFields() {
@@ -182,6 +199,34 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
 
+    private void showOtherDiagnosis() {
+        flexboxOther.removeAllViews();
+        final ChipCloud chipCloud = new ChipCloud(this, flexboxOther, config);
+
+        for (String s : customDiag) {
+            chipCloud.addChip(s);
+            chipCloud.setDeleteListener((i, s1) -> {
+                customDiag.remove(Constants.LABELS.get(s1));
+            });
+        }
+        preloadCustomDiagnosis(chipCloud);
+    }
+
+    private void preloadCustomDiagnosis(ChipCloud chipCloud) {
+        String[] arr = getResources().getStringArray(R.array.diagnosis_list);
+        List<String> mainList = Arrays.asList(arr);
+        if (customDiag.isEmpty() && examination != null) {
+            JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
+            for (String s : conditions.keySet()) {
+                if (!mainList.contains(s) && JsonUtils.getBoolean(s, conditions)) {
+                    chipCloud.addChip(s);
+                    chipCloud.setDeleteListener((i, s1) -> customDiag.remove(Constants.LABELS.get(s1)));
+                    customDiag.add(s);
+                }
+            }
+        }
+    }
+
     private void showCheckbox(RealmMyHealthPojo examination) {
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
         flexboxLayout.removeAllViews();
@@ -198,18 +243,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             flexboxLayout.addView(c);
         }
 
-        EditText otherDiag = new AppCompatEditText(this);
-        otherDiagId = View.generateViewId();
-        otherDiag.setId(otherDiagId);
-        otherDiag.setHint("Other Diagnoses");
-        otherDiag.setLayoutParams(new FlexboxLayout.LayoutParams(FlexboxLayout.LayoutParams.MATCH_PARENT, FlexboxLayout.LayoutParams.WRAP_CONTENT));
-        flexboxLayout.addView(otherDiag);
+//        flexboxLayout.addView(otherDiag);
     }
 
     private void getOtherConditions() {
-        EditText otherDiag = (EditText) flexboxLayout.findViewById(otherDiagId);
-        if (!otherDiag.getText().toString().equals("")) {
-            mapConditions.put(otherDiag.getText().toString(), true);
+        for (String s : customDiag) {
+            mapConditions.put(s, true);
         }
     }
 
@@ -347,7 +386,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home){
+        if (item.getItemId() == android.R.id.home) {
             finish();
         }
         return super.onOptionsItemSelected(item);

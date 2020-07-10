@@ -153,10 +153,12 @@ public class RealmSubmission extends RealmObject {
         if (exam == null) {
             return true;
         }
+
+        Utilities.log("Is step completed " + exam.getId() + " " + userId);
         return realm.where(RealmSubmission.class)
                 .equalTo("userId", userId)
-                .equalTo("parentId", exam.getId())
-                .equalTo("status", "graded")
+                .contains("parentId", exam.getId())
+                .notEqualTo("status", "pending")
                 .findFirst() != null;
     }
 

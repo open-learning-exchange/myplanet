@@ -459,6 +459,7 @@
         <item>Pneumonia</item>
         <item>Stroke</item>
         <item>Tuberculosis</item>
+        <item>Trauma</item>
     </string-array>
     <string name="title_activity_news_detail">NewsDetailActivity</string>
     <string name="large_text">
@@ -597,6 +598,7 @@
     <string name="xrays">xrays</string>
     <string name="tests">tests</string>
     <string name="referral">referrals</string>
+    <string name="other_diagnosis">Other Diagnosis</string>
 
 </resources>
 

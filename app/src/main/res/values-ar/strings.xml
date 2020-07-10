@@ -357,6 +357,7 @@
     <string name="xrays">xrays</string>
     <string name="tests">tests</string>
     <string name="referral">referrals</string>
+    <string name="other_diagnosis">Other Diagnosis</string>
 
     <string-array name="info_type">
         <item>Languages</item>
