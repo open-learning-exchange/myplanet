@@ -209,18 +209,18 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
                 customDiag.remove(Constants.LABELS.get(s1));
             });
         }
+        preloadCustomDiagnosis(chipCloud);
+    }
+
+    private void preloadCustomDiagnosis(ChipCloud chipCloud) {
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
         List<String> mainList = Arrays.asList(arr);
-        if (customDiag.isEmpty()){
-            Utilities.log("Custom diag empty");
+        if (customDiag.isEmpty() && examination!= null){
             JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
             for (String s : conditions.keySet()){
-                Utilities.log("Custom diag empty " + s);
                 if (!mainList.contains(s) && JsonUtils.getBoolean(s, conditions)){
                     chipCloud.addChip(s);
-                    chipCloud.setDeleteListener((i, s1) -> {
-                        customDiag.remove(Constants.LABELS.get(s1));
-                    });
+                    chipCloud.setDeleteListener((i, s1) -> customDiag.remove(Constants.LABELS.get(s1)));
                     customDiag.add(s);
                 }
             }
