@@ -80,7 +80,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
         findViewById(R.id.btn_add_diag).setOnClickListener(view -> {
             customDiag.add(etOtherDiagnosis.getText().toString());
-            etObservation.setText("");
+            etOtherDiagnosis.setText("");
             showOtherDiagnosis();
         });
     }
@@ -215,10 +215,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     private void preloadCustomDiagnosis(ChipCloud chipCloud) {
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
         List<String> mainList = Arrays.asList(arr);
-        if (customDiag.isEmpty() && examination!= null){
+        if (customDiag.isEmpty() && examination != null) {
             JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
-            for (String s : conditions.keySet()){
-                if (!mainList.contains(s) && JsonUtils.getBoolean(s, conditions)){
+            for (String s : conditions.keySet()) {
+                if (!mainList.contains(s) && JsonUtils.getBoolean(s, conditions)) {
                     chipCloud.addChip(s);
                     chipCloud.setDeleteListener((i, s1) -> customDiag.remove(Constants.LABELS.get(s1)));
                     customDiag.add(s);
