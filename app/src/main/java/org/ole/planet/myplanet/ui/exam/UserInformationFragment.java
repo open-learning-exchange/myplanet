@@ -95,7 +95,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         btnSubmit = v.findViewById(R.id.btn_submit);
         etEmail.setText(userModel.getEmail() + "");
         etFname.setText(userModel.getFirstName() + "");
-        etLname.setText(userModel.getLanguage() + "");
+        etLname.setText(userModel.getLastName() + "");
         etPhone.setText(userModel.getPhoneNumber() + "");
         tvBirthDate.setText(userModel.getDob() + "");
         dob = userModel.getDob();
