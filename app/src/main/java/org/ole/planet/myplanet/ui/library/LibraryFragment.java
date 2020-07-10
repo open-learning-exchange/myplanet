@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.library;
 
 
+import android.graphics.Color;
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -106,7 +107,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         initArrays();
 
-        tvAddToLib.setOnClickListener(view -> addToMyList());
+        tvAddToLib.setOnClickListener(view -> {
+            addToMyList();
+            tvAddToLib.setTextColor(Color.BLACK);
+        });
         imgSearch.setOnClickListener(view -> {
             adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
             showNoData(tvMessage, adapterLibrary.getItemCount());
