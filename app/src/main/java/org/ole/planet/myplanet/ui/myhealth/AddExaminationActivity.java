@@ -80,6 +80,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
         findViewById(R.id.btn_add_diag).setOnClickListener(view -> {
             customDiag.add(etOtherDiagnosis.getText().toString());
+            etObservation.setText("");
             showOtherDiagnosis();
         });
     }
