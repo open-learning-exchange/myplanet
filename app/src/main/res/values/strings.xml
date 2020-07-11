@@ -340,15 +340,15 @@
     <string name="hearing">Hearing</string>
     <string name="vitals">Vitals</string>
     <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation">Observations and Notes</string>
-    <string name="diagnosis">Diagnosis</string>
-    <string name="treatments">Treatments</string>
-    <string name="medications">Medications</string>
-    <string name="immunization">Immunization Dates</string>
-    <string name="allergies">Allergies</string>
-    <string name="xray">X-rays</string>
-    <string name="labtest">Lab Tests</string>
-    <string name="referrals">Referrals</string>
+    <string name="observation" translatable="false">Observations and Notes</string>
+    <string name="diagnosis" translatable="false">Diagnosis</string>
+    <string name="treatments" translatable="false">Treatments</string>
+    <string name="medications" translatable="false">Medications</string>
+    <string name="immunization" translatable="false">Immunization Dates</string>
+    <string name="allergies" translatable="false">Allergies</string>
+    <string name="xray" translatable="false">X-rays</string>
+    <string name="labtest" translatable="false">Lab Tests</string>
+    <string name="referrals" translatable="false">Referrals</string>
     <string name="full_name">Full Name</string>
     <string name="weight">Weight (kg)</string>
     <string name="no_records">No records found</string>
