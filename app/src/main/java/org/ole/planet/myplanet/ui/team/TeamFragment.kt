@@ -96,7 +96,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 map["services"] = v.et_services.text.toString()
                 map["rules"] = v.et_rules.text.toString()
                 when {
-                    name.isEmpty() -> Utilities.toast(activity, "Name is required")
+                    name.isEmpty() -> {
+                        Utilities.toast(activity, "Name is required")
+                        v.et_name.error ="Please enter a name"
+                    }
                     else -> {
                         if (team == null) {
                             createTeam(name, if (v.spn_team_type.selectedItemPosition == 0) "local" else "sync", map, v.switch_public.isChecked)
