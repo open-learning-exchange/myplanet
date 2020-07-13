@@ -60,7 +60,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun createTeamAlert(team: RealmMyTeam?) {
         val v = LayoutInflater.from(activity).inflate(R.layout.alert_create_team, null)
-        if (type != null) {
+        if (TextUtils.equals(type,"enterprise")) {
             v.spn_team_type.visibility = View.GONE
             v.et_description.hint = "What is your enterprise's Mission?"
         } else {
@@ -74,7 +74,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             v.et_description.setText(team.description)
             v.et_name.setText(team.name)
         }
-        AlertDialog.Builder(activity!!).setTitle(String.format("Enter %s Detail", if (type == null) "Team" else "Enterprise")).setView(v).setPositiveButton("Save") { dialogInterface: DialogInterface?, i: Int ->
+        AlertDialog.Builder(activity!!).setTitle(String.format("Enter %s detail", if (type == null) "Team" else type)).setView(v).setPositiveButton("Save") { dialogInterface: DialogInterface?, i: Int ->
             val map = HashMap<String, String>()
             val userId = user?._id
             val name = v.et_name.text.toString().trim()
@@ -112,7 +112,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         val team = mRealm!!.createObject(RealmMyTeam::class.java, teamId)
         team.status = "active"
         team.createdDate = Date().time
-        if (TextUtils.equals(type, "enterprise")) {
+        if (TextUtils.equals(this.type, "enterprise")) {
             team.type = "enterprise"
             team.services = map["services"]
             team.rules = map["rules"]
