@@ -45,14 +45,14 @@ public class PlanFragment extends BaseTeamFragment {
             Utilities.log(team.getServices());
             Utilities.log(team.getRules());
             if (TextUtils.equals(team.getType(),"enterprise")) {
-                description.setText(Html.fromHtml("<b>What is your enterprise's Mission?</b><br/>" + team.getDescription() +
-                        "<br/><b>What are the Services your enterprise provides?</b><br/>" + team.getServices() + "<br/>" +
-                        "<br/><b>What are the Rules of your enterprise?</b><br/>" + team.getRules() + "<br/>"
-                ));
+                String missionText =  ((team.getDescription().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entMission)+"</b><br/>" + team.getDescription()+"<br/><br/>"));
+                String servicesText = ((team.getServices().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entServices)+"</b><br/>" + team.getServices()+"<br/><br/>"));
+                String rulesText = ((team.getRules().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entRules)+"</b><br/>" + team.getRules()));
+                description.setText(Html.fromHtml(missionText +servicesText+ rulesText));
             } else {
                 description.setText(team.getDescription());
             }
-            date.setText(TimeUtils.formatDate(team.getCreatedDate()));
+            date.setText(getString(R.string.created_on) + " "+ TimeUtils.formatDate(team.getCreatedDate()));
         }
     }
 }
