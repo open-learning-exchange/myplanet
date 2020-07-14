@@ -332,6 +332,7 @@
     <string name="other_notes">Other Notes</string>
     <string name="archive">Archive</string>
     <string name="other_diagnosis">Other Diagnosis</string>
+    <string name="negative_balance">The current balance is negative!</string>
 
     <string-array name="info_type">
         <item>Languages</item>
