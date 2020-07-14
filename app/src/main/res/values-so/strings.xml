@@ -325,8 +325,6 @@
     <string name="my_activity">My Activity</string>
     <string name="add_label">Add Label</string>
     <string name="share_with_community">Share with community</string>
-    <string name="services">What are the Services your enterprise provides?</string>
-    <string name="rules">What are the Rules of your enterprise</string>
     <string name="add_res">Add Resource</string>
     <string name="password">Password</string>
     <string name="retype_password">Retype Password</string>
