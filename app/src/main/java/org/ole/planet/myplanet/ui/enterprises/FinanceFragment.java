@@ -83,7 +83,7 @@ public class FinanceFragment extends BaseTeamFragment {
         });
         llDate.setOnClickListener(view -> {
             imgDate.setRotation(imgDate.getRotation() + 180);
-            list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date",isAsc? Sort.DESCENDING : Sort.ASCENDING).findAll();
+            list = mRealm.where(RealmMyTeam.class).notEqualTo("status", "archived").equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date",isAsc? Sort.DESCENDING : Sort.ASCENDING).findAll();
             adapterFinance = new AdapterFinance(getActivity(), list);
             rvFinance.setAdapter(adapterFinance);
             isAsc = !isAsc;
@@ -123,7 +123,7 @@ public class FinanceFragment extends BaseTeamFragment {
             fab.setVisibility(View.GONE);
         }
         fab.setOnClickListener(view -> addTransaction());
-        list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
+        list = mRealm.where(RealmMyTeam.class).notEqualTo("status", "archived").equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
         rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
         rvFinance.setAdapter(adapterFinance);
@@ -145,6 +145,9 @@ public class FinanceFragment extends BaseTeamFragment {
         ((TextView) getView().findViewById(R.id.tv_debit)).setText(debit + "");
         ((TextView) getView().findViewById(R.id.tv_credit)).setText(credit + "");
         ((TextView) getView().findViewById(R.id.tv_balance)).setText(total + "");
+        if(total>=0)
+            ((TextView) getView().findViewById(R.id.balance_caution)).setVisibility(View.GONE);
+
     }
 
     private void addTransaction() {
