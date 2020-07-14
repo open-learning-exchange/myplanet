@@ -205,10 +205,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
         for (String s : customDiag) {
             chipCloud.addChip(s);
-            chipCloud.setDeleteListener((i, s1) -> {
-                customDiag.remove(Constants.LABELS.get(s1));
-            });
+
         }
+        chipCloud.setDeleteListener((i, s1) -> {
+            customDiag.remove(s1);
+        });
         preloadCustomDiagnosis(chipCloud);
     }
 
