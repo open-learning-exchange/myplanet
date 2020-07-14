@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 public class PlanFragment extends BaseTeamFragment {
 
     TextView description, date;
-
+    String missionText,servicesText,rulesText = "";
     public PlanFragment() {
     }
 
@@ -45,10 +45,12 @@ public class PlanFragment extends BaseTeamFragment {
             Utilities.log(team.getServices());
             Utilities.log(team.getRules());
             if (TextUtils.equals(team.getType(),"enterprise")) {
-                String missionText =  ((team.getDescription().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entMission)+"</b><br/>" + team.getDescription()+"<br/><br/>"));
-                String servicesText = ((team.getServices().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entServices)+"</b><br/>" + team.getServices()+"<br/><br/>"));
-                String rulesText = ((team.getRules().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entRules)+"</b><br/>" + team.getRules()));
+                missionText =  ((team.getDescription().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entMission)+"</b><br/>" + team.getDescription()+"<br/><br/>"));
+                servicesText = ((team.getServices().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entServices)+"</b><br/>" + team.getServices()+"<br/><br/>"));
+                rulesText = ((team.getRules().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entRules)+"</b><br/>" + team.getRules()));
                 description.setText(Html.fromHtml(missionText +servicesText+ rulesText));
+                if(description.getText().toString().isEmpty())
+                    description.setText(Html.fromHtml(getString(R.string.entEmptyDescription)+"<br/><br/>"));
             } else {
                 description.setText(team.getDescription());
             }
