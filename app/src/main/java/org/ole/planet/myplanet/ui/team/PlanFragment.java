@@ -50,7 +50,7 @@ public class PlanFragment extends BaseTeamFragment {
                 rulesText = ((team.getRules().trim().isEmpty()) ? "" : ("<b>"+getString(R.string.entRules)+"</b><br/>" + team.getRules()));
                 description.setText(Html.fromHtml(missionText +servicesText+ rulesText));
                 if(description.getText().toString().isEmpty())
-                    description.setText(Html.fromHtml(getString(R.string.entEmptyDescription)+"<br/><br/>"));
+                    description.setText(Html.fromHtml("<br/>"+getString(R.string.entEmptyDescription)+"<br/>"));
             } else {
                 description.setText(team.getDescription());
             }
