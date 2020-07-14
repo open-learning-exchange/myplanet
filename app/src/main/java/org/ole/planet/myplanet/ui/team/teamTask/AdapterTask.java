@@ -70,7 +70,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (listener != null)
                     listener.onDelete(list.get(position));
             });
-            holder.itemView.setOnClickListener(view -> DialogUtils.showAlert(context, list.get(position).getTitle(), list.get(position).getDescription()));
+            holder.itemView.setOnClickListener(view -> DialogUtils.showCloseAlert(context, list.get(position).getTitle(), list.get(position).getDescription()));
         }
     }
 
