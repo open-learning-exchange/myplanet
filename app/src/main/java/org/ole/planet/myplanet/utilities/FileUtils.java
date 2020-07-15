@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utilities;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -9,15 +8,13 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
-
-import androidx.core.content.FileProvider;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+
+import androidx.core.content.FileProvider;
+import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.BuildConfig;
 
@@ -254,5 +251,58 @@ public class FileUtils {
         else if (ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("aac"))
             return "audio";
         return "";
+    }
+
+    /**
+     * Find space left in the internal memory.
+     */
+    public static long getAvailableInternalMemorySize() {
+        File path = Environment.getDataDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long availableBlocks = stat.getAvailableBlocksLong();
+        return availableBlocks * blockSize;
+    }
+
+    /**
+     * Get space left in the internal memory in a Formatted String.
+     */
+    public static String getAvailableInternalMemorySizeFormatted() {
+        return formatSize(getAvailableInternalMemorySize());
+    }
+
+    /**
+     * Get space left in the external memory in a Formatted String.
+     */
+    public static String getAvailableExternalMemorySizeFormatted() {
+        return formatSize(getAvailableExternalMemorySize());
+    }
+
+    public static String formatSize(long size) {
+        String suffix = null;
+
+        if (size >= 1024) {
+            suffix = "KB";
+            size /= 1024;
+        }
+        if (size >= 1024) {
+            suffix = "MB";
+            size /= 1024;
+        }
+        if (size >= 1024) {
+            suffix = "GB";
+            size /= 1024;
+        }
+
+        StringBuilder resultBuffer = new StringBuilder(Long.toString(size));
+
+        int commaOffset = resultBuffer.length() - 3;
+        while (commaOffset > 0) {
+            resultBuffer.insert(commaOffset, ',');
+            commaOffset -= 3;
+        }
+
+        if (suffix != null) resultBuffer.append(suffix);
+        return resultBuffer.toString();
     }
 }
