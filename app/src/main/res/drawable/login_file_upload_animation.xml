@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <animation-list xmlns:android="http://schemas.android.com/apk/res/android" android:oneshot="false">
-    <item android:drawable="@drawable/file_upload_animation_login" android:duration="300"/>
-    <item android:drawable="@drawable/file_upload_animation_login_2" android:duration="300"/>
-    <item android:drawable="@drawable/file_upload_animation_login_3" android:duration="300"/>
-    <item android:drawable="@drawable/file_upload_animation_login_4" android:duration="300"/>
-    <item android:drawable="@drawable/file_upload_animation_login_5" android:duration="300"/>
-    <item android:drawable="@drawable/file_upload_animation_login_6" android:duration="300"/>
+    <item android:drawable="@drawable/file_upload_animation_login" android:duration="100"/>
+    <item android:drawable="@drawable/file_upload_animation_login_2" android:duration="100"/>
+    <item android:drawable="@drawable/file_upload_animation_login_3" android:duration="100"/>
+    <item android:drawable="@drawable/file_upload_animation_login_4" android:duration="100"/>
+    <item android:drawable="@drawable/file_upload_animation_login_5" android:duration="100"/>
+    <item android:drawable="@drawable/file_upload_animation_login_6" android:duration="100"/>
 </animation-list>
