@@ -28,8 +28,8 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
             holder.icon.setImageResource(list[position].icon)
             holder.itemView.setOnClickListener {
                 when (position) {
-                    0 -> callback.showUserResourceDialog()
-                    1 -> callback.showResourceDownloadDialog()
+                    0 -> callback.showResourceDownloadDialog()
+                    1 -> callback.showUserResourceDialog()
                     2 -> callback.showPendingSurveyDialog()
                     3 ->callback.forceDownloadNewsImages()
                     4 ->callback.downloadDictionary()
