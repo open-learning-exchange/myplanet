@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.base;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -116,11 +115,15 @@ public abstract class BaseResourceFragment extends Fragment {
                     createListView(db_myLibrary, alertDialog);
                     alertDialog.show();
                     (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                }else{
+                    Utilities.toast(requireContext(), "No resources to download");
                 }
             }
 
             @Override
             public void notAvailable() {
+                Utilities.toast(requireContext(), "Planet not available");
+
                 Utilities.log("Planet not available");
             }
         });
@@ -137,14 +140,14 @@ public abstract class BaseResourceFragment extends Fragment {
             @NonNull
             @Override
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-                if (convertView ==null)
+                if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
-                    if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
-                        ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
-                    else{
-                        ((TextView) convertView).setText("N/A");
-                    }
-                    return convertView;
+                if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
+                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                else {
+                    ((TextView) convertView).setText("N/A");
+                }
+                return convertView;
             }
         };
         new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton("Dismiss", null).show();
@@ -212,11 +215,15 @@ public abstract class BaseResourceFragment extends Fragment {
     }
 
     public List<RealmMyLibrary> getLibraryList(Realm mRealm) {
+        return getLibraryList(mRealm, settings.getString("userId", "--"));
+    }
+
+    public List<RealmMyLibrary> getLibraryList(Realm mRealm, String userId) {
         RealmResults<RealmMyLibrary> l = mRealm.where(RealmMyLibrary.class).equalTo("isPrivate", false).findAll();
         List<RealmMyLibrary> libList = new ArrayList<>();
         List<RealmMyLibrary> libraries = getLibraries(l);
         for (RealmMyLibrary item : libraries) {
-            if (item.getUserId().contains(settings.getString("userId", "--"))) {
+            if (item.getUserId().contains(userId)) {
                 libList.add(item);
             }
         }
