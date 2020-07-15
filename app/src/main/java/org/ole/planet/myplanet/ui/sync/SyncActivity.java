@@ -287,7 +287,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
         syncIconDrawable.stop();
         syncIconDrawable.selectDrawable(0);
-        // syncIcon.invalidateDrawable(syncIconDrawable);
+        syncIcon.invalidateDrawable(syncIconDrawable);
 
         runOnUiThread(() -> {
             DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
@@ -300,7 +300,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
         syncIconDrawable.stop();
         syncIconDrawable.selectDrawable(0);
-        //syncIcon.invalidateDrawable(syncIconDrawable);
+        syncIcon.invalidateDrawable(syncIconDrawable);
         DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
         if (settings.getBoolean("isChild", false)) {
