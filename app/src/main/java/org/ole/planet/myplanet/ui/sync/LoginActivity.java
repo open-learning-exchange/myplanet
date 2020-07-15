@@ -360,7 +360,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
                     syncIconDrawable.stop();
-                    syncIcon.setBackgroundResource(R.drawable.file_upload_animation_login);
+                    syncIconDrawable.selectDrawable(0);
                 }
 
                 @Override
@@ -368,7 +368,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     Utilities.toast(LoginActivity.this, msg);
                     progressDialog.dismiss();
                     syncIconDrawable.stop();
-                    syncIcon.setBackgroundResource(R.drawable.file_upload_animation_login);
+                    syncIconDrawable.selectDrawable(0);
                 }
 
             });
