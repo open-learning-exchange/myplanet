@@ -98,6 +98,12 @@ public class SettingActivity extends AppCompatActivity {
                 return true;
             });
 
+            // Show Available space under the "Freeup Space" preference.
+            Preference spacePreference = findPreference("freeup_space");
+            spacePreference.setSummary("Available Space:\n" +
+                    "Internal: " + FileUtils.getAvailableInternalMemorySizeFormatted() + "\n" +
+                    "External: " + FileUtils.getAvailableExternalMemorySizeFormatted());
+
 //            Preference preference = findPreference("add_manager");
 //            preference.setOnPreferenceClickListener(preference1 -> {
 //                managerLogin();
