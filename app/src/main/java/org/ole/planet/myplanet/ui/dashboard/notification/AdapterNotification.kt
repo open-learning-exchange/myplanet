@@ -29,10 +29,11 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
             holder.itemView.setOnClickListener {
                 when (position) {
                     0 -> callback.showResourceDownloadDialog()
-                    1 -> callback.showPendingSurveyDialog()
-                    2 ->callback.forceDownloadNewsImages()
-                    3 ->callback.downloadDictionary()
-                    4 ->callback.syncKeyId()
+                    1 -> callback.showUserResourceDialog()
+                    2 -> callback.showPendingSurveyDialog()
+                    3 ->callback.forceDownloadNewsImages()
+                    4 ->callback.downloadDictionary()
+                    5 ->callback.syncKeyId()
                 }
             }
         }
