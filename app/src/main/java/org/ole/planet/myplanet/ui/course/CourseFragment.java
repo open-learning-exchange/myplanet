@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.course;
 
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -133,7 +134,10 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     private void initializeView() {
         spn = getView().findViewById(R.id.spn_sort);
         tvAddToLib = getView().findViewById(R.id.tv_add);
-        tvAddToLib.setOnClickListener(view -> addToMyList());
+        tvAddToLib.setOnClickListener(view -> {
+            addToMyList();
+            tvAddToLib.setTextColor(Color.BLACK);
+        });
         etSearch = getView().findViewById(R.id.et_search);
         tvSelected = getView().findViewById(R.id.tv_selected);
         btnRemove = getView().findViewById(R.id.btn_remove);
