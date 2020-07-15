@@ -37,7 +37,7 @@
         <EditText
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:hint="@string/services"
+            android:hint="@string/entServices"
             android:id="@+id/et_services"
             android:padding="@dimen/padding_normal" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -50,7 +50,7 @@
         <EditText
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:hint="@string/rules"
+            android:hint="@string/entRules"
             android:id="@+id/et_rules"
             android:padding="@dimen/padding_normal" />
     </com.google.android.material.textfield.TextInputLayout>
