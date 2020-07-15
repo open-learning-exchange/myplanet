@@ -13,7 +13,6 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:id="@+id/et_name"
-            android:hint="@string/team_name"
             android:padding="@dimen/padding_normal" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -68,6 +67,7 @@
 
     <androidx.appcompat.widget.SwitchCompat
         android:layout_width="wrap_content"
+        android:padding="@dimen/padding_normal"
         android:text="Public"
         android:id="@+id/switch_public"
         android:layout_height="wrap_content"/>
