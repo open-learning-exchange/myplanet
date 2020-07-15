@@ -62,7 +62,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         val v = LayoutInflater.from(activity).inflate(R.layout.alert_create_team, null)
         if (TextUtils.equals(type,"enterprise")) {
             v.spn_team_type.visibility = View.GONE
-            v.et_description.hint = "What is your enterprise's Mission?"
+            v.et_description.hint = getString(R.string.entMission);
             v.et_name.hint = "Enter enterprise's name"
         } else {
             v.et_services.visibility = View.GONE

@@ -69,14 +69,15 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
             if (this.teamLeaderId.equals(list.get(position).getId())) {
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
                 ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
-                overflowMenuOptions = new String[] {context.getString(R.string.remove)};
+                //Show no option for leader now
+                ///overflowMenuOptions = new String[] {context.getString(R.string.remove)};
             } else {
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
                 overflowMenuOptions = new String[] {
                         context.getString(R.string.remove),
                         context.getString(R.string.make_leader)};
+                checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
             }
-            checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
 
         }
     }

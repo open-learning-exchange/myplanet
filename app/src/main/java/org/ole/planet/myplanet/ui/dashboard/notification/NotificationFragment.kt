@@ -61,6 +61,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
         var notificationList: MutableList<Notifications> = ArrayList()
         notificationList.add(Notifications(R.drawable.mylibrary, "${resourceList.size} resource not downloaded."))
+        notificationList.add(Notifications(R.drawable.mylibrary, "Bulk resource download."))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} pending survey."))
         notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
         notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
