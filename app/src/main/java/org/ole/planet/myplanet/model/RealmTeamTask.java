@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import android.text.TextUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -20,8 +22,10 @@ public class RealmTeamTask extends RealmObject {
     @PrimaryKey
     private String id;
     private String _id, _rev, title, description, link, sync, teamId;
+    private boolean updated;
     private String assignee;
     private long deadline;
+    private String status;
     private boolean completed;
     private boolean notified;
 
@@ -33,6 +37,7 @@ public class RealmTeamTask extends RealmObject {
         task.set_id(JsonUtils.getString("_id", obj));
         task.set_rev(JsonUtils.getString("_rev", obj));
         task.setTitle(JsonUtils.getString("title", obj));
+        task.setStatus(JsonUtils.getString("status", obj));
         task.setDeadline(JsonUtils.getLong("deadline", obj));
         task.setDescription(JsonUtils.getString("description", obj));
         task.setLink(new Gson().toJson(JsonUtils.getJsonObject("link", obj)));
@@ -42,6 +47,14 @@ public class RealmTeamTask extends RealmObject {
         if (user.has("_id"))
             task.setAssignee(JsonUtils.getString("_id", user));
         task.setCompleted(JsonUtils.getBoolean("completed", obj));
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public boolean isNotified() {
@@ -55,6 +68,10 @@ public class RealmTeamTask extends RealmObject {
 
     public static JsonObject serialize(Realm realm, RealmTeamTask task) {
         JsonObject object = new JsonObject();
+        if (!TextUtils.isEmpty(task.get_id())){
+            object.addProperty("_id", task.get_id());
+            object.addProperty("_rev", task.get_rev());
+        }
         object.addProperty("title", task.getTitle());
         object.addProperty("deadline", task.getDeadline());
         object.addProperty("description", task.getDescription());
@@ -67,6 +84,15 @@ public class RealmTeamTask extends RealmObject {
         object.add("sync", new Gson().fromJson(task.getSync(), JsonObject.class));
         object.add("link", new Gson().fromJson(task.getLink(), JsonObject.class));
         return object;
+    }
+
+
+    public boolean isUpdated() {
+        return updated;
+    }
+
+    public void setUpdated(boolean updated) {
+        this.updated = updated;
     }
 
     public long getDeadline() {

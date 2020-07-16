@@ -342,7 +342,7 @@ public class UploadManager extends FileUploadService {
         mRealm.executeTransactionAsync(realm -> {
             List<RealmTeamTask> list = realm.where(RealmTeamTask.class).findAll();
             for (RealmTeamTask task : list) {
-                if (TextUtils.isEmpty(task.get_id())) {
+                if (TextUtils.isEmpty(task.get_id()) || task.isUpdated()) {
                     JsonObject object = null;
                     try {
                         object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(realm, task)).execute().body();
@@ -353,6 +353,7 @@ public class UploadManager extends FileUploadService {
                             task.set_id(_id);
                         }
                     } catch (IOException e) {
+                        e.printStackTrace();
                     }
 
                 }
