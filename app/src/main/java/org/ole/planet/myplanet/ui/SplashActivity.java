@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.RadioButton;
+import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
@@ -17,6 +18,8 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 public class SplashActivity extends AppCompatActivity {
     RadioButton rbChild, rbNormal;
     Button getStarted;
+    TextView tvAvailableSpace;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,6 +27,11 @@ public class SplashActivity extends AppCompatActivity {
         rbChild = findViewById(R.id.child_login);
         rbNormal = findViewById(R.id.normal_login);
         getStarted = findViewById(R.id.get_started);
+
+        // Find and show space available on the device
+        tvAvailableSpace = findViewById(R.id.tv_available_space);
+        tvAvailableSpace.setText(FileUtils.getAvailableExternalMemorySizeFormatted());
+
         FileUtils.copyAssets(this);
         SharedPreferences settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_,getApplicationContext()) ) {
