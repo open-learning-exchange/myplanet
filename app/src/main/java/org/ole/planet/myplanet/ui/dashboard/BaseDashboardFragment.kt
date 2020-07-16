@@ -2,20 +2,21 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.DatePickerDialog
 import android.app.ProgressDialog
+import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.DatePicker
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import com.squareup.picasso.Callback
 import com.squareup.picasso.Picasso
 import io.realm.Case
 import io.realm.RealmObject
+import io.realm.Sort
+import kotlinx.android.synthetic.main.alert_health_list.view.*
 import kotlinx.android.synthetic.main.card_profile_bell.view.*
 import kotlinx.android.synthetic.main.fragment_home_bell.view.*
 import kotlinx.android.synthetic.main.home_card_courses.view.*
@@ -33,7 +34,9 @@ import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
+import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -57,7 +60,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             v.ll_prompt.setOnClickListener {
                 UserInformationFragment.getInstance("").show(childFragmentManager, "")
             }
-        }else{
+        } else {
             v.ll_prompt.visibility = View.GONE
         }
         v.ic_close.setOnClickListener {
@@ -106,7 +109,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun myLibraryDiv(view:View) {
+    private fun myLibraryDiv(view: View) {
         view.flexboxLayout.flexDirection = FlexDirection.ROW
         val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, BaseResourceFragment.settings)
         if (dbMylibrary.size == 0) {
@@ -282,6 +285,30 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun showResourceDownloadDialog() {
         showDownloadDialog(getLibraryList(mRealm))
+    }
+
+
+    override fun showUserResourceDialog() {
+        var userModelList: List<RealmUserModel>
+        var dialog :AlertDialog? = null;
+        userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+        var adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+        val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
+        val btnAddMember = alertHealth.btn_add_member
+        alertHealth.et_search.visibility = View.GONE
+        alertHealth.spn_sort.visibility = View.GONE
+        btnAddMember.setOnClickListener { startActivity(Intent(requireContext(), BecomeMemberActivity::class.java)) }
+        val lv = alertHealth.list
+        lv.adapter = adapter
+        lv.onItemClickListener = AdapterView.OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
+            val selected = lv.adapter.getItem(i) as RealmUserModel
+            Utilities.log("On item selected");
+            showDownloadDialog(getLibraryList(mRealm, selected._id))
+            dialog?.dismiss()
+        }
+//        sortList(spnSort, lv);
+       dialog =  AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
+        dialog?.show()
     }
 
     override fun syncKeyId() {

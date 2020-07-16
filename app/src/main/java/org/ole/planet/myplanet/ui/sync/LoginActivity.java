@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -89,6 +90,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
+    private TextView tvAvailableSpace;
 
 
     private void showShowCaseView() {
@@ -107,6 +109,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
+
+        // Find and show space available on the device
+        tvAvailableSpace = findViewById(R.id.tv_available_space);
+        tvAvailableSpace.setText("Available Space:\n" + "Internal: " +
+                FileUtils.getAvailableInternalMemorySizeFormatted() + "\n" +
+                "External: " + FileUtils.getAvailableExternalMemorySizeFormatted());
+
         changeLogoColor();
         service = new Service(this);
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -360,7 +369,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
                     syncIconDrawable.stop();
-                    syncIcon.setBackgroundResource(R.drawable.file_upload_animation_login);
+                    syncIconDrawable.selectDrawable(0);
                 }
 
                 @Override
@@ -368,7 +377,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     Utilities.toast(LoginActivity.this, msg);
                     progressDialog.dismiss();
                     syncIconDrawable.stop();
-                    syncIcon.setBackgroundResource(R.drawable.file_upload_animation_login);
+                    syncIconDrawable.selectDrawable(0);
                 }
 
             });
