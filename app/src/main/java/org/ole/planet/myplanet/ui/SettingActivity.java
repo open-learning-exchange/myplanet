@@ -118,7 +118,7 @@ public class SettingActivity extends AppCompatActivity {
             Preference preference = findPreference("reset_app");
             preference.setOnPreferenceClickListener(preference1 -> {
                 new AlertDialog.Builder(getActivity()).setTitle("Are you sure??").setPositiveButton("YES", (dialogInterface, i) -> {
-                    settings.edit().clear();
+                    settings.edit().clear().commit();
                     mRealm.executeTransactionAsync(realm -> realm.deleteAll(), () -> {
                         Utilities.toast(getActivity(), "Data cleared");
                         startActivity(new Intent(getActivity(), LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK));
