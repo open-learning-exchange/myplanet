@@ -180,6 +180,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             mRealm.beginTransaction();
         realmTeamTask.setCompleted(b);
         realmTeamTask.setUpdated(true);
+        realmTeamTask.setCompletedTime(new Date().getTime());
         mRealm.commitTransaction();
         try {
             rvTask.getAdapter().notifyDataSetChanged();

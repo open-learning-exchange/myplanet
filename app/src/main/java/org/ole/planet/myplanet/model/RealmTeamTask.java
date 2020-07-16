@@ -25,6 +25,7 @@ public class RealmTeamTask extends RealmObject {
     private boolean updated;
     private String assignee;
     private long deadline;
+    private long completedTime;
     private String status;
     private boolean completed;
     private boolean notified;
@@ -39,6 +40,7 @@ public class RealmTeamTask extends RealmObject {
         task.setTitle(JsonUtils.getString("title", obj));
         task.setStatus(JsonUtils.getString("status", obj));
         task.setDeadline(JsonUtils.getLong("deadline", obj));
+        task.setCompletedTime(JsonUtils.getLong("completedTime", obj));
         task.setDescription(JsonUtils.getString("description", obj));
         task.setLink(new Gson().toJson(JsonUtils.getJsonObject("link", obj)));
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
@@ -47,6 +49,14 @@ public class RealmTeamTask extends RealmObject {
         if (user.has("_id"))
             task.setAssignee(JsonUtils.getString("_id", user));
         task.setCompleted(JsonUtils.getBoolean("completed", obj));
+    }
+
+    public long getCompletedTime() {
+        return completedTime;
+    }
+
+    public void setCompletedTime(long completedTime) {
+        this.completedTime = completedTime;
     }
 
     public String getStatus() {
@@ -76,6 +86,7 @@ public class RealmTeamTask extends RealmObject {
         object.addProperty("deadline", task.getDeadline());
         object.addProperty("description", task.getDescription());
         object.addProperty("completed", task.isCompleted());
+        object.addProperty("completedTime", task.getCompletedTime());
         RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", task.getAssignee()).findFirst();
         if (user != null)
             object.add("assignee", user.serialize());
