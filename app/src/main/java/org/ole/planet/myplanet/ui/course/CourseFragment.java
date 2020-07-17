@@ -93,7 +93,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         //btnRemove.setOnClickListener(V -> deleteSelected(true));
-        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage("Are you sure you want to delete this course")
+        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage("Are you sure you want to delete these courses?")
                 .setPositiveButton("Yes", (dialogInterface, i) -> {
                     deleteSelected(true);
                 })
