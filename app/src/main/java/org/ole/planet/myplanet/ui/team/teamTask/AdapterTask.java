@@ -52,10 +52,10 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderTask) {
-            ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
+            ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle() );
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
             Utilities.log(list.get(position).getDeadline() + "");
-            ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(list.get(position).getDeadline()));
+            ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(list.get(position).getDeadline())  + (list.get(position).isCompleted() ? "\nCompleted : " + TimeUtils.formatDate(list.get(position).getCompletedTime()) : ""));
             showAssignee(holder, list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) listener.onCheckChange(list.get(position), b);
@@ -81,7 +81,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
             }
         } else {
-            ((ViewHolderTask) holder).assignee.setText("No assignee");
+            ((ViewHolderTask) holder).assignee.setText(R.string.no_assignee);
 
         }
     }

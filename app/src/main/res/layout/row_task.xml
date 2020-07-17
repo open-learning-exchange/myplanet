@@ -42,14 +42,14 @@
     </LinearLayout>
 
     <ImageView
-        android:layout_width="wrap_content"
+        android:layout_width="@dimen/_30dp"
         app:srcCompat="@drawable/ic_edit"
         android:layout_margin="@dimen/padding_small"
         android:id="@+id/edit_task"
         android:layout_height="wrap_content" />
 
     <ImageView
-        android:layout_width="wrap_content"
+        android:layout_width="@dimen/_30dp"
         app:srcCompat="@drawable/ic_delete"
         android:layout_margin="@dimen/padding_small"
         android:id="@+id/delete_task"

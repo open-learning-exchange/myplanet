@@ -4,13 +4,6 @@ package org.ole.planet.myplanet.ui.team.teamTask;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +11,12 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -49,6 +48,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     TextView datePicker, nodata;
     SingleSelectToggleGroup taskButton;
     List<RealmTeamTask> list;
+    AdapterTask adapterTask;
+
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         deadline = Calendar.getInstance();
         deadline.set(Calendar.YEAR, year);
@@ -128,6 +129,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         t.setDescription(desc);
         t.setDeadline(deadline.getTimeInMillis());
         t.setTeamId(teamId);
+        t.setUpdated(true);
         JsonObject ob = new JsonObject();
         ob.addProperty("teams", teamId);
         t.setLink(new Gson().toJson(ob));
@@ -154,11 +156,11 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         showNoData(nodata, list.size());
         taskButton.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.btn_my) {
-                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", false).equalTo("assignee", user.getId()).sort("deadline", Sort.DESCENDING).findAll();
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", user.getId()).sort("deadline", Sort.DESCENDING).findAll();
             } else if (checkedId == R.id.btn_completed) {
-                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).equalTo("completed", true).sort("deadline", Sort.DESCENDING).findAll();
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).notEqualTo("status", "archived").equalTo("completed", true).sort("deadline", Sort.DESCENDING).findAll();
             } else {
-                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).sort("completed", Sort.ASCENDING).findAll();
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).notEqualTo("status", "archived").sort("completed", Sort.ASCENDING).findAll();
             }
             setAdapter();
         });
@@ -166,7 +168,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     }
 
     private void setAdapter() {
-        AdapterTask adapterTask = new AdapterTask(getActivity(), mRealm, list);
+        adapterTask = new AdapterTask(getActivity(), mRealm, list);
         adapterTask.setListener(this);
         rvTask.setAdapter(adapterTask);
     }
@@ -177,6 +179,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         if (!mRealm.isInTransaction())
             mRealm.beginTransaction();
         realmTeamTask.setCompleted(b);
+        realmTeamTask.setUpdated(true);
+        realmTeamTask.setCompletedTime(new Date().getTime());
         mRealm.commitTransaction();
         try {
             rvTask.getAdapter().notifyDataSetChanged();
@@ -196,6 +200,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         task.deleteFromRealm();
         Utilities.toast(getActivity(), "Task deleted successfully");
         mRealm.commitTransaction();
+        adapterTask.notifyDataSetChanged();
         showNoData(nodata, rvTask.getAdapter().getItemCount());
     }
 

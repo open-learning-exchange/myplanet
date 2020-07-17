@@ -152,7 +152,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         audioRecorderService = new AudioRecorderService().setAudioRecordListener(new AudioRecorderService.AudioRecordListener() {
             @Override
             public void onRecordStarted() {
-                tvTime.setText("Recording audio......");
+                tvTime.setText(R.string.recording_audio);
                 floatingActionButton.setImageResource(R.drawable.ic_stop);
             }
 

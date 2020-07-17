@@ -133,15 +133,15 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             etVision.setText(examination.getVision());
             etHearing.setText(examination.getHearing());
             JsonObject encrypted = examination.getEncryptedDataAsJson(this.user);
-            etObservation.setText(JsonUtils.getString("notes", encrypted));
-            etDiag.setText(JsonUtils.getString("diagnosis", encrypted));
-            etTretments.setText(JsonUtils.getString("treatments", encrypted));
-            etMedications.setText(JsonUtils.getString("medications", encrypted));
-            etImmunization.setText(JsonUtils.getString("immunizations", encrypted));
-            etAllergies.setText(JsonUtils.getString("allergies", encrypted));
-            etXray.setText(JsonUtils.getString("xrays", encrypted));
-            etLabtest.setText(JsonUtils.getString("tests", encrypted));
-            etReferrals.setText(JsonUtils.getString("referrals", encrypted));
+            etObservation.setText(JsonUtils.getString(getString(R.string.note_), encrypted));
+            etDiag.setText(JsonUtils.getString(getString(R.string.diagno), encrypted));
+            etTretments.setText(JsonUtils.getString(getString(R.string.treat), encrypted));
+            etMedications.setText(JsonUtils.getString(getString(R.string.medicay), encrypted));
+            etImmunization.setText(JsonUtils.getString(getString(R.string.immunizations), encrypted));
+            etAllergies.setText(JsonUtils.getString(getString(R.string.allergy), encrypted));
+            etXray.setText(JsonUtils.getString(getString(R.string.xrays), encrypted));
+            etLabtest.setText(JsonUtils.getString(getString(R.string.tests), encrypted));
+            etReferrals.setText(JsonUtils.getString(getString(R.string.referral), encrypted));
         }
         showCheckbox(examination);
         showOtherDiagnosis();

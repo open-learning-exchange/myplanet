@@ -150,7 +150,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private boolean forceSyncTrigger() {
-        lblLastSyncDate.setText("<< Last sync with server: " + Utilities.getRelativeTime(settings.getLong("LastSync", 0)) + " >>");
+        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>");
         if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
             return checkForceSync(7);
         } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
@@ -292,8 +292,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
         setUplanguageButton();
         if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-            inputName.setText(settings.getString("loginUserName", ""));
-            inputPassword.setText(settings.getString("loginUserPassword", ""));
+            inputName.setText(settings.getString(getString(R.string.login_user), ""));
+            inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
         }
         if (NetworkUtils.isNetworkConnected()) {
             service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
