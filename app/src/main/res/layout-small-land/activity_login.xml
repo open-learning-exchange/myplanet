@@ -122,8 +122,8 @@
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:srcCompat="@drawable/baseline_sd_storage_24"
-                        android:padding="@dimen/padding_small"/>
+                        app:srcCompat="@drawable/baseline_storage_24"
+                        android:paddingHorizontal="@dimen/padding_small"/>
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
