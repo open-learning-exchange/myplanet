@@ -38,7 +38,7 @@ android:
   - addon-google_apis-google-19
   - sys-img-armeabi-v7a-addon-google_apis-google-$ANDROID_API_LEVEL
   - sys-img-armeabi-v7a-addon-google_apis-google-$EMULATOR_API_LEVEL
-  - build-tools-28
+  - build-tools-27.0.3
   - android-26
   - android-25
   - android-24
@@ -63,8 +63,8 @@ install:
 - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
 - echo y | android update sdk -u -a -t tools
 - echo y | android update sdk -u -a -t platform-tools
-- echo y | android update sdk -u -a -t build-tools-28
-- echo y | android update sdk -u -a -t android-28
+- echo y | android update sdk -u -a -t build-tools-27.0.1
+- echo y | android update sdk -u -a -t android-27
 - echo y | android update sdk -u -a -t extra-google-m2repository
 - echo y | android update sdk -u -a -t extra-android-m2repository
 before_script:
