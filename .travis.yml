@@ -9,11 +9,12 @@ cache:
   directories:
   - "$HOME/.gradle/caches/"
   - "$HOME/.gradle/wrapper/"
+  - "$HOME/.android/build-cache"
 env:
   global:
-  - ANDROID_API=24
+  - ANDROID_API=28
   - EMULATOR_API=21
-  - ANDROID_BUILD_TOOLS=24.0.2
+  - ANDROID_BUILD_TOOLS=28.0.3
   - ADB_INSTALL_TIMEOUT=5
   - secure: cjOA92q6WgrvatDABJI26ytkbKh1wrML2xIfFou2cgGSotW3R1I5taTJqbhNKXhr0ctiomd3N3hYFhUJilv27b8ft2XjsA1hJhrDH1uHiubQ+/xVn7l2DLs9NdgJacmJBqIvMoJsJVHugHLxdzZ0d/0YG3bTAqsy8Zda4cTv6fTSE1Y4g0MDM3Gh/g/LkAX5M/UNmhXwL4fKInWfvXYplkZ4yG5FMXnd5zdXWoYKhTT1LSXWYeII9/YPGBj40qCPiyJsLY0eOhXs/+Vt8S4PeQPu46uQHkZJM2oOGYSa7Kv9aUYDLKD3ybsJsXH/dx0HsgLbxPhDOrRVKf0jtDyOldDWRcJI10z8VuQNpsd1V6NgNcsvESYimAONAwqMyjNNy8z6Ujbr96NOVw0P5Fu/MiZqO0HBD/3zdB4272evyH2TSexzEKrlBqniNc6SVjUCpUpkOe1PckS1HYy73b8FWZ7RmfahQowIK771rr8kA7GeMkfHT8+pMwjoR0NDDBH4Y5IJQtrTDFQGI3i1hzLNvcxbBxI0It0vp6Kz7Ju8Osfif4drIOvl7fA9uMtbfypThSkKd1Qz2NaFKVmd2b4un+8WfYRD/53WoDI8976W6W4SLNJxUqrEGYErCDaW1dir97DRvxvVwyExhKGsus36XR6uiaPT5xYMiQwG1GEgCqA=
   - secure: XpNMdJOkIBQ28Y95bIxJkBhdoWq3RcS01R+qAlSYa7DGfhDbzSk6sa13VBhVqsDFBWewrKmf/r/e99VAkha9Fv2sj8alUUiDPY3MswM6INoOCM75hD+HSb8WYp/iTCdc++DgPS9YwAc4f8/6NHtz9aHZQs+qyAUB/o5VH9X3z520iwA4KGs7WBBkCF3jPHG/IBejhA/lmxKIhbP6svz4K3k2/lFO69JRgTukYGnL0elgUCU/PnyyJxCBFcy9ey0HHDHdvyNFrKphxOS2GpsCEPGaTlAN9mGIeakKFSPNLEEEP2La7z+CLdVHaP94mlmheVHusqiNjvGT/YBgPnBcAIfkxW5caFD9EHv+AljhJ27KCjCSoX+ShU5JX55SmyKnHSTl5cjWh+S4XBfwW/xctegP/yJqop6+nsbFpFnGuk5Tq/8yox/zMyq1qdEIIZ6I7ZfGrUUWheZ0sdsv0aRpWgp8PSIInHjpXOaTAEvJV1wUNwS1obfaUctqMXzIktkumU91jQdW0awNJNQKOH9bxkTc8sjbpx/tvC2MCqjzTdtKAZtjirf+J07M0AG0ocCkPBwXaRNeGkBoWcUJOTYeNQAS05D2VchT9N8DO07iiR/hD5iEVaYE7qamwubJswu8Ky0wlQKsbI+BKF79oMJ99LtA/+l/QQdBxdbU69znrAU=
@@ -38,7 +39,7 @@ android:
   - addon-google_apis-google-19
   - sys-img-armeabi-v7a-addon-google_apis-google-$ANDROID_API_LEVEL
   - sys-img-armeabi-v7a-addon-google_apis-google-$EMULATOR_API_LEVEL
-  - build-tools-27.0.3
+  - build-tools-28.0.3
   - android-26
   - android-25
   - android-24
@@ -63,8 +64,8 @@ install:
 - echo yes | sdkmanager "extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2"
 - echo y | android update sdk -u -a -t tools
 - echo y | android update sdk -u -a -t platform-tools
-- echo y | android update sdk -u -a -t build-tools-27.0.1
-- echo y | android update sdk -u -a -t android-27
+- echo y | android update sdk -u -a -t build-tools-28.0.3
+- echo y | android update sdk -u -a -t android-28
 - echo y | android update sdk -u -a -t extra-google-m2repository
 - echo y | android update sdk -u -a -t extra-android-m2repository
 before_script:
