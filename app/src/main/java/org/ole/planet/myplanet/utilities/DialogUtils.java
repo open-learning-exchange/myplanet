@@ -81,6 +81,14 @@ public class DialogUtils {
                 .show();
     }
 
+    public static void showCloseAlert(Context context, String title, String message) {
+        new AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
     public static AlertDialog getAlertDialog(Context context, String title, View v) {
         return new AlertDialog.Builder(context)
                 .setTitle(title)
