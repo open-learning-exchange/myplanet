@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.course;
 
 
+import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
@@ -91,7 +92,13 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
-        btnRemove.setOnClickListener(V -> deleteSelected(true));
+        //btnRemove.setOnClickListener(V -> deleteSelected(true));
+        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage("Are you sure you want to delete this course")
+                .setPositiveButton("Yes", (dialogInterface, i) -> {
+                    deleteSelected(true);
+                })
+                .setNegativeButton("No", null).show()
+        );
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
