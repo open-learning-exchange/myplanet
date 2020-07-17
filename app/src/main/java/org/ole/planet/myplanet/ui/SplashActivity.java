@@ -2,11 +2,12 @@ package org.ole.planet.myplanet.ui;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
@@ -30,7 +31,7 @@ public class SplashActivity extends AppCompatActivity {
 
         // Find and show space available on the device
         tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText(FileUtils.getAvailableExternalMemorySizeFormatted());
+        tvAvailableSpace.setText(FileUtils.getTotalAvailableMemory());
 
         FileUtils.copyAssets(this);
         SharedPreferences settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);

@@ -7,14 +7,6 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
-
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -27,14 +19,19 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
@@ -64,8 +61,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Sort;
-import pl.droidsonroids.gif.GifDrawable;
-import pl.droidsonroids.gif.GifImageButton;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
 import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
@@ -112,9 +107,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         // Find and show space available on the device
         tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText("Available Space:\n" + "Internal: " +
-                FileUtils.getAvailableInternalMemorySizeFormatted() + "\n" +
-                "External: " + FileUtils.getAvailableExternalMemorySizeFormatted());
+        tvAvailableSpace.setText(FileUtils.getTotalAvailableMemory());
 
         changeLogoColor();
         service = new Service(this);
