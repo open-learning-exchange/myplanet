@@ -6,6 +6,7 @@ apply plugin: 'realm-android'
 
 android {
     compileSdkVersion 28
+    buildToolsVersion '28'
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19

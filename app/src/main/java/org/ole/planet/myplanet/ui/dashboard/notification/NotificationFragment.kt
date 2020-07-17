@@ -66,9 +66,10 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
         notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
 
-
         if (TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")) {
-            notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
+            if (!model.id.startsWith("guest")) {
+                notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
+            }
         }
 
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)
