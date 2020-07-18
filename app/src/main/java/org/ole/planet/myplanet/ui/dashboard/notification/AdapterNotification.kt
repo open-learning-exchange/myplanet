@@ -33,7 +33,8 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
                     2 -> callback.showPendingSurveyDialog()
                     3 ->callback.forceDownloadNewsImages()
                     4 ->callback.downloadDictionary()
-                    5 ->callback.syncKeyId()
+                    5 ->callback.showTaskListDialog()
+                    6 ->callback.syncKeyId()
                 }
             }
         }

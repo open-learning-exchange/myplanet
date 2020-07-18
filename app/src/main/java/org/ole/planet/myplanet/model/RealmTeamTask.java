@@ -195,5 +195,8 @@ public class RealmTeamTask extends RealmObject {
         this.completed = completed;
     }
 
-
+    @Override
+    public String toString() {
+        return title;
+    }
 }
