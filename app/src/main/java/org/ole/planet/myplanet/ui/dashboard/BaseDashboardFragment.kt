@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.DatePickerDialog
 import android.app.ProgressDialog
+import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
@@ -39,6 +40,7 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
@@ -334,5 +336,19 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun onSyncFailed(msg: String) {
         di?.dismiss()
         Utilities.toast(activity, "myHealth synced failed")
+    }
+
+    override fun showTaskListDialog() {
+        val tasks: List<RealmTeamTask> = mRealm!!.where(RealmTeamTask::class.java).equalTo("assignee", model.id).equalTo("completed", false).greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
+        if (tasks.size == 0){
+            Utilities.toast(requireContext(), "No due tasks")
+            return
+        }
+        var adapter = ArrayAdapter<RealmTeamTask>(requireContext(), android.R.layout.simple_expandable_list_item_1, tasks)
+        AlertDialog.Builder(requireContext()).setTitle("Due tasks").setAdapter(adapter, object:DialogInterface.OnClickListener {
+            override fun onClick(p0: DialogInterface?, p1: Int) {
+                var task = adapter.getItem(p1);
+            }
+        }).setNegativeButton("Dismiss", null).show();
     }
 }

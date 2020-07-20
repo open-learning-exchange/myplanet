@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.callback;
 public interface NotificationCallback {
     void showPendingSurveyDialog();
 
+    void showTaskListDialog();
+
     void showUserResourceDialog();
 
     void showResourceDownloadDialog();
