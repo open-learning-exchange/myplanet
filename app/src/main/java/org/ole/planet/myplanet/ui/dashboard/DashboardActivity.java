@@ -95,6 +95,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     TabLayout.Tab menuc;
     TabLayout.Tab menue;
     TabLayout.Tab menuco;
+    TabLayout.Tab menut;
     TabLayout tl;
     View begin;
     DrawerLayout dl;
@@ -108,14 +109,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP");
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP_v2");
         sequence.setConfig(config);
         sequence.addSequenceItem(begin, "Please make sure your device is horizontal", "GOT IT");
         sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys", "GOT IT");
         sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
         sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
         sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
-
+        sequence.addSequenceItem(menut.getCustomView(), "Navigate to the Teams Tab to join, request, and check up on your teams", "GOT IT");
         sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
         sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
        sequence.start();
@@ -215,8 +216,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuh = tl.getTabAt(0);
         menul = tl.getTabAt(1);
         menuc = tl.getTabAt(2);
-        menue = tl.getTabAt(3);
-        menuco = tl.getTabAt(4);
+        menut = tl.getTabAt(3);
+        menue = tl.getTabAt(4);
+        menuco = tl.getTabAt(5);
 
         showShowCaseViewVertical();
     }
