@@ -73,7 +73,11 @@ public class BaseDashboardFragmentPlugin extends BaseContainerFragment  {
                 } else if (title.equals(getString(R.string.help_wanted))) {
                     homeItemClickListener.openCallFragment(new HelpWantedFragment());
                 } else if (title.equals(getString(R.string.myhealth)) && Constants.showBetaFeature(Constants.KEY_MYHEALTH, getActivity())) {
-                    homeItemClickListener.openCallFragment(new MyHealthFragment());
+                    if (!model.getId().startsWith("guest")) {
+                        homeItemClickListener.openCallFragment(new MyHealthFragment());
+                    }else{
+                        Utilities.toast(getActivity(), "Feature not available for guest user");
+                    }
                 } else {
                     Utilities.toast(getActivity(), "Feature Not Available");
                 }

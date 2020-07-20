@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -24,7 +23,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
-import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
@@ -100,9 +98,7 @@ public class SettingActivity extends AppCompatActivity {
 
             // Show Available space under the "Freeup Space" preference.
             Preference spacePreference = findPreference("freeup_space");
-            spacePreference.setSummary("Available Space:\n" +
-                    "Internal: " + FileUtils.getAvailableInternalMemorySizeFormatted() + "\n" +
-                    "External: " + FileUtils.getAvailableExternalMemorySizeFormatted());
+            spacePreference.setSummary(FileUtils.getTotalAvailableMemory());
 
 //            Preference preference = findPreference("add_manager");
 //            preference.setOnPreferenceClickListener(preference1 -> {

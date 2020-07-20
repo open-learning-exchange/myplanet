@@ -340,15 +340,15 @@
     <string name="hearing">Hearing</string>
     <string name="vitals">Vitals</string>
     <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation">Observations and Notes</string>
-    <string name="diagnosis">Diagnosis</string>
-    <string name="treatments">Treatments</string>
-    <string name="medications">Medications</string>
-    <string name="immunization">Immunization Dates</string>
-    <string name="allergies">Allergies</string>
-    <string name="xray">X-rays</string>
-    <string name="labtest">Lab Tests</string>
-    <string name="referrals">Referrals</string>
+    <string name="observation" translatable="false">Observations and Notes</string>
+    <string name="diagnosis" translatable="false">Diagnosis</string>
+    <string name="treatments" translatable="false">Treatments</string>
+    <string name="medications" translatable="false">Medications</string>
+    <string name="immunization" translatable="false">Immunization Dates</string>
+    <string name="allergies" translatable="false">Allergies</string>
+    <string name="xray" translatable="false">X-rays</string>
+    <string name="labtest" translatable="false">Lab Tests</string>
+    <string name="referrals" translatable="false">Referrals</string>
     <string name="full_name">Full Name</string>
     <string name="weight">Weight (kg)</string>
     <string name="no_records">No records found</string>
@@ -570,6 +570,32 @@
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
     <string name="other_notes">Other Notes</string>
     <string name="archive">Archive</string>
+    <string name="Q1">Question : 1/</string>
+    <string name="no_questions">No questions available</string>
+    <string name="Q">"Question : "</string>
+    <string name="finish">Finish</string>
+    <string name="submit">Submit</string>
+    <string name="our_courses">Our Courses</string>
+    <string name="file">"File : "</string>
+    <string name="recording_audio">Recording audio......</string>
+    <string name="show_replies">"Show replies "</string>
+    <string name="selected">"Selected : "</string>
+    <string name="last_sync"><![CDATA["<< Last sync with server: "]]></string>
+    <string name="last_syncs">LastSync</string>
+    <string name="login_user">loginUserName</string>
+    <string name="login_password">loginUserPassword</string>
+    <string name="no_team_available">No team / enterprise available</string>
+    <string name="last_sync_date">"Last Sync Date: "</string>
+    <string name="no_assignee">No assignee</string>
+    <string name="note_">notes</string>
+    <string name="diagno">diagnosis</string>
+    <string name="treat">treatments</string>
+    <string name="medicay">medications</string>
+    <string name="immunizations">immunizations</string>
+    <string name="allergy">allergies</string>
+    <string name="xrays">xrays</string>
+    <string name="tests">tests</string>
+    <string name="referral">referrals</string>
     <string name="other_diagnosis">Other Diagnosis</string>
     <string name="close">Close</string>
     <string name="negative_balance">The current balance is negative!</string>

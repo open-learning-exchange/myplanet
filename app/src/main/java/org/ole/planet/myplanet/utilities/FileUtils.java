@@ -30,22 +30,6 @@ import java.io.OutputStream;
 public class FileUtils {
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
 
-    public static boolean externalMemoryAvailable() {
-        return android.os.Environment.getExternalStorageState().equals(
-                android.os.Environment.MEDIA_MOUNTED);
-    }
-
-    public static long getAvailableExternalMemorySize() {
-        if (externalMemoryAvailable()) {
-            File path = Environment.getExternalStorageDirectory();
-            StatFs stat = new StatFs(path.getPath());
-            long blockSize = stat.getBlockSizeLong();
-            long availableBlocks = stat.getAvailableBlocksLong();
-            return availableBlocks * blockSize;
-        } else {
-            return 0;
-        }
-    }
 
     public static byte[] fullyReadFileToBytes(File f) throws IOException {
         int size = (int) f.length();
@@ -253,6 +237,20 @@ public class FileUtils {
         return "";
     }
 
+    // Disk space utilities
+
+    /**
+     *
+     * @return Total internal memory capacity.
+     */
+    public static long getTotalInternalMemorySize() {
+        File path = Environment.getDataDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long totalBlocks = stat.getBlockCountLong();
+        return totalBlocks * blockSize;
+    }
+
     /**
      * Find space left in the internal memory.
      */
@@ -264,20 +262,49 @@ public class FileUtils {
         return availableBlocks * blockSize;
     }
 
-    /**
-     * Get space left in the internal memory in a Formatted String.
-     */
-    public static String getAvailableInternalMemorySizeFormatted() {
-        return formatSize(getAvailableInternalMemorySize());
+    public static boolean externalMemoryAvailable() {
+        return android.os.Environment.getExternalStorageState().equals(
+                android.os.Environment.MEDIA_MOUNTED);
     }
 
     /**
-     * Get space left in the external memory in a Formatted String.
+     * Find space left in the external memory.
      */
-    public static String getAvailableExternalMemorySizeFormatted() {
-        return formatSize(getAvailableExternalMemorySize());
+    public static long getAvailableExternalMemorySize() {
+        // Not the best way to check, shows internal memory
+        // when there is not external memory mounted
+        if (externalMemoryAvailable()) {
+            File path = Environment.getExternalStorageDirectory();
+            StatFs stat = new StatFs(path.getPath());
+            long blockSize = stat.getBlockSizeLong();
+            long availableBlocks = stat.getAvailableBlocksLong();
+            return availableBlocks * blockSize;
+        } else {
+            return 0;
+        }
     }
 
+    /**
+     *
+     * @return Total capacity of the external memory
+     */
+    public static long getTotalExternalMemorySize() {
+        if (externalMemoryAvailable()) {
+            File path = Environment.getExternalStorageDirectory();
+            StatFs stat = new StatFs(path.getPath());
+            long blockSize = stat.getBlockSizeLong();
+            long totalBlocks = stat.getBlockCountLong();
+            return totalBlocks * blockSize;
+        } else {
+            return 0;
+        }
+    }
+
+    /**
+     * Coverts Bytes to KB/MB/GB and changes magnitude accordingly.
+     * @param size
+     * @return A string with size followed by an appropriate suffix
+     */
     public static String formatSize(long size) {
         String suffix = null;
 
@@ -304,5 +331,43 @@ public class FileUtils {
 
         if (suffix != null) resultBuffer.append(suffix);
         return resultBuffer.toString();
+    }
+
+    /**
+     * Finds total available memory including both internal and external
+     * memory.
+     *
+     * @return Formatted string of the format "Available Space / Total Space"
+     */
+    public static String getTotalAvailableMemory(){
+        long internalTotalMemory = getTotalInternalMemorySize();
+        long internalAvailableMemory = getAvailableInternalMemorySize();
+        long externalTotalMemory = getTotalExternalMemorySize();
+        long externalAvailableMemory = getAvailableExternalMemorySize();
+
+        // Temporary Check till we find a better way to do it
+        if (internalAvailableMemory == externalAvailableMemory){
+            return getAvailableMemoryFormattedString(internalAvailableMemory, internalTotalMemory);
+        }
+
+        long totalCapacity = internalTotalMemory + externalTotalMemory;
+        long totalAvailable = internalAvailableMemory + externalAvailableMemory;
+
+        return getAvailableMemoryFormattedString(totalAvailable, totalCapacity);
+    }
+
+    /**
+     * A helper method that returns a formatted string
+     * of the format "Available Space / Total Space".
+     *
+     * @param available Available space
+     * @param total Total space/capacity
+     * @return Available space and total space
+     */
+    private static String getAvailableMemoryFormattedString(long available, long total) {
+        return "Available Space: "
+                + formatSize(available)
+                + "/"
+                + formatSize(total);
     }
 }
