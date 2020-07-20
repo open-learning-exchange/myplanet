@@ -102,13 +102,18 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     private void showActionButton(boolean isMyTeam, RecyclerView.ViewHolder holder, int position) {
         if (isMyTeam) {
-            ((ViewHolderTeam) holder).action.setText("Leave");
-            ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
-                new AlertDialog.Builder(context).setMessage(R.string.confirm_exit).setPositiveButton("Yes", (dialogInterface, i) -> {
-                    list.get(position).leave(user, mRealm);
-                    notifyDataSetChanged();
-                }).setNegativeButton("No", null).show();
-            });
+            if (RealmMyTeam.isTeamLeader(list.get(position).getTeamId(), user.getId(), mRealm)){
+                ((ViewHolderTeam) holder).action.setText("Leave");
+                ((ViewHolderTeam) holder).action.setOnClickListener(view -> {
+                    new AlertDialog.Builder(context).setMessage(R.string.confirm_exit).setPositiveButton("Yes", (dialogInterface, i) -> {
+                        list.get(position).leave(user, mRealm);
+                        notifyDataSetChanged();
+                    }).setNegativeButton("No", null).show();
+                });
+            }else{
+                ((ViewHolderTeam) holder).action.setVisibility(View.GONE);
+                return;
+            }
         } else if (list.get(position).requested(user.getId(), mRealm)) {
             ((ViewHolderTeam) holder).action.setText("Requested");
             ((ViewHolderTeam) holder).action.setEnabled(false);
@@ -119,6 +124,7 @@ public class AdapterTeamList extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 notifyDataSetChanged();
             });
         }
+        ((ViewHolderTeam) holder).action.setVisibility(View.VISIBLE);
     }
 
 
