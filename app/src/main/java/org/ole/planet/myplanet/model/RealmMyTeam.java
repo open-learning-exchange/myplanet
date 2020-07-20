@@ -199,6 +199,17 @@ public class RealmMyTeam extends RealmObject {
         return ids;
     }
 
+
+    public static String[] getResourceIdsByUser(String userId, Realm realm) {
+        List<RealmMyTeam> list = realm.where(RealmMyTeam.class).equalTo("userId", userId).equalTo("docType", "membership").findAll();
+        List<String> ids = new ArrayList<>();
+        for (RealmMyTeam team : list) {
+            if (!TextUtils.isEmpty(team.getResourceId()))
+                ids.add(team.getResourceId());
+        }
+        return ids.toArray(new String[0]);
+    }
+
     public static String getTeamCreator(String teamId, Realm realm) {
         RealmMyTeam teams = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).findFirst();
         return teams.getUserId();
@@ -284,9 +295,9 @@ public class RealmMyTeam extends RealmObject {
         return getUsers(teamId, realm, "membership");
     }
 
-    public static boolean isTeamLeader(String teamId,String userId, Realm realm) {
+    public static boolean isTeamLeader(String teamId, String userId, Realm realm) {
         RealmMyTeam team = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "membership").equalTo("userId", userId).equalTo("isLeader", true).findFirst();
-            return team != null;
+        return team != null;
 
     }
 

@@ -151,6 +151,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         } else if (c == RealmMyLife::class.java) {
             myLifeListInit(flexboxLayout)
             return
+        } else if(c == RealmMyLibrary::class.java){
+            mRealm.where(RealmMyLibrary::class.java).contains("userId", userId, Case.INSENSITIVE).or().`in`("id", RealmMyTeam.getResourceIdsByUser(userId, mRealm)).findAll()
         } else {
             mRealm.where(c as Class<RealmObject>).contains("userId", userId, Case.INSENSITIVE).findAll()
         }) as List<RealmObject>
