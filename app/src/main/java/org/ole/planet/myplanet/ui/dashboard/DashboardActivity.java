@@ -109,7 +109,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DABOARD_HELP");
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP_v2");
         sequence.setConfig(config);
         sequence.addSequenceItem(begin, "Please make sure your device is horizontal", "GOT IT");
         sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys", "GOT IT");
