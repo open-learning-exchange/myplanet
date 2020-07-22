@@ -65,7 +65,7 @@ public class TeamDetailFragment extends Fragment  {
         if (!isMyTeam) {
             llButtons.setVisibility(View.GONE);
         } else {
-            leave.setOnClickListener(vi -> new AlertDialog.Builder(requireContext()).setMessage("Are you sure you want to leave this team ??").setPositiveButton("Yes", (dialogInterface, i) -> {
+            leave.setOnClickListener(vi -> new AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit).setPositiveButton("Yes", (dialogInterface, i) -> {
                 team.leave(user, mRealm);
                 Utilities.toast(getActivity(), "Left team");
                 viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
