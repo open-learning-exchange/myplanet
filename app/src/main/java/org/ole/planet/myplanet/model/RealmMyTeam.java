@@ -284,6 +284,13 @@ public class RealmMyTeam extends RealmObject {
         return getUsers(teamId, realm, "membership");
     }
 
+    public static boolean isTeamLeader(String teamId,String userId, Realm realm) {
+        RealmMyTeam team = realm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "membership").equalTo("userId", userId).equalTo("isLeader", true).findFirst();
+            return team != null;
+
+    }
+
+
     public static List<RealmUserModel> getUsers(String teamId, Realm mRealm, String docType) {
         RealmQuery query = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId);
         if (!TextUtils.isEmpty(docType)) {

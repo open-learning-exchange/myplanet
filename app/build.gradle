@@ -6,12 +6,13 @@ apply plugin: 'realm-android'
 
 android {
     compileSdkVersion 28
+    buildToolsVersion '28'
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 28
-        versionCode 860
-        versionName "0.8.60"
+        versionCode 865
+        versionName "0.8.65"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true

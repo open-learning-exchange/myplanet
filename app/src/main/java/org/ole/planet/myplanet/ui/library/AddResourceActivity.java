@@ -81,7 +81,7 @@ public class AddResourceActivity extends AppCompatActivity {
         tvAddedBy = findViewById(R.id.tv_added_by);
         tvLevels = findViewById(R.id.tv_levels);
         tvResourceFor = findViewById(R.id.tv_resource_for);
-        fileUrl.setText("File : " + resourceUrl);
+        fileUrl.setText(getString(R.string.file) + resourceUrl);
         tvAddedBy.setText(userModel.getName());
         tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
         tvSubjects.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));

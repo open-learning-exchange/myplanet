@@ -21,7 +21,10 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Notifications
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import java.util.*
+import kotlin.collections.ArrayList
 
 /**
  * A simple [Fragment] subclass.
@@ -55,20 +58,23 @@ class NotificationFragment : BottomSheetDialogFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         var model = UserProfileDbHandler(activity).userModel
-        val surveyList = mRealm!!.where(RealmSubmission::class.java).equalTo("userId", model.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll()
+        val surveyList = mRealm!!.where(RealmSubmission::class.java).equalTo("userId", model.id).equalTo("status", "pending").equalTo("type", "survey").findAll()
         ic_back.setOnClickListener {
             dismiss()
         }
+        val tasks: List<RealmTeamTask> = mRealm!!.where(RealmTeamTask::class.java).equalTo("assignee", model.id).equalTo("completed", false).greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
         var notificationList: MutableList<Notifications> = ArrayList()
         notificationList.add(Notifications(R.drawable.mylibrary, "${resourceList.size} resource not downloaded."))
         notificationList.add(Notifications(R.drawable.mylibrary, "Bulk resource download."))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} pending survey."))
         notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
         notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
-
+        notificationList.add(Notifications(R.drawable.task_pending,  "${tasks.size} tasks due."))
 
         if (TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")) {
-            notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
+            if (!model.id.startsWith("guest")) {
+                notificationList.add(Notifications(R.drawable.ic_myhealth, "Health record not available. Click to sync."))
+            }
         }
 
         rv_notifications.layoutManager = LinearLayoutManager(activity!!)

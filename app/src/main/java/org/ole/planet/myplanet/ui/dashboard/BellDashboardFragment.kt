@@ -52,7 +52,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         add_resource.setOnClickListener { v: View? -> AddResourceFragment().show(childFragmentManager, "Add Resource") }
         showBadges()
-        if (TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
+        if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
             AlertDialog.Builder(activity!!).setMessage("Health record not available, Sync health data?").setPositiveButton("Sync") { dialogInterface: DialogInterface?, i: Int ->
                 syncKeyId()
                 MainApplication.showHealthDialog = false
