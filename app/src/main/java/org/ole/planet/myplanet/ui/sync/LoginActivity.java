@@ -107,7 +107,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         // Find and show space available on the device
         tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText(FileUtils.getTotalAvailableMemory());
+        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
 
         changeLogoColor();
         service = new Service(this);
