@@ -200,14 +200,21 @@ public class RealmMyTeam extends RealmObject {
     }
 
 
-    public static String[] getResourceIdsByUser(String userId, Realm realm) {
+    public static List<String> getResourceIdsByUser(String userId, Realm realm) {
         List<RealmMyTeam> list = realm.where(RealmMyTeam.class).equalTo("userId", userId).equalTo("docType", "membership").findAll();
-        List<String> ids = new ArrayList<>();
+        List<String> teamIds = new ArrayList<>();
         for (RealmMyTeam team : list) {
+            if (!TextUtils.isEmpty(team.getTeamId()))
+                teamIds.add(team.getTeamId());
+        }
+        List<RealmMyTeam> l2 = realm.where(RealmMyTeam.class).in("teamId", teamIds.toArray(new String[0])).equalTo("docType", "resourceLink").findAll();
+        List<String> ids = new ArrayList<>();
+        for (RealmMyTeam team : l2) {
             if (!TextUtils.isEmpty(team.getResourceId()))
                 ids.add(team.getResourceId());
         }
-        return ids.toArray(new String[0]);
+
+        return ids;
     }
 
     public static String getTeamCreator(String teamId, Realm realm) {
