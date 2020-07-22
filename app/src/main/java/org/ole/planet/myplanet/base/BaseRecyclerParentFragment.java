@@ -40,17 +40,17 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
     }
 
     private List<LI> getMyLibItems(Class c) {
-//        if (c == RealmMyLibrary.class)
-            return  mRealm.where(c).contains("userId", model.getId()).findAll();
-//        else
-//            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
+        if (c == RealmMyLibrary.class)
+            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
+        else
+            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
     }
 
     private List<LI> getMyLibItems(Class c, String orderBy) {
-//        if (c == RealmMyLibrary.class)
-            return  mRealm.where(c).contains("userId", model.getId()).sort(orderBy).findAll();
-//         else
-//            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+        if (c == RealmMyLibrary.class)
+            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+        else
+            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
     }
 
     public JsonArray getJsonArrayFromList(Set<String> list) {
