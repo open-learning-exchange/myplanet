@@ -17,7 +17,6 @@ import com.google.android.material.tabs.TabLayout;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
@@ -33,7 +32,7 @@ import io.realm.Realm;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TeamDetailFragment extends Fragment  {
+public class TeamDetailFragment extends Fragment {
 
     TabLayout tabLayout;
     ViewPager viewPager;
@@ -77,11 +76,14 @@ public class TeamDetailFragment extends Fragment  {
                 viewPager.setCurrentItem(6);
                 MainApplication.showDownload = false;
 
-                if (MainApplication.listener != null){
+                if (MainApplication.listener != null) {
                     MainApplication.listener.onAddDocument();
                 }
 
             });
+        }
+        if (RealmMyTeam.isTeamLeader(teamId, user.getId(), mRealm)) {
+            leave.setVisibility(View.GONE);
         }
         return v;
     }

@@ -115,6 +115,22 @@
                     android:layout_height="wrap_content"/>
 
 
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:srcCompat="@drawable/baseline_storage_24"
+                        android:paddingHorizontal="@dimen/padding_small"/>
+                    <TextView
+                        android:id="@+id/tv_available_space"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/md_white_1000"
+                        tools:text="Available Space:" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
@@ -298,11 +314,6 @@
                             android:theme="@style/PrimaryFlatButton" />
 
                     </LinearLayout>
-                    <TextView
-                        android:id="@+id/tv_available_space"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        tools:text="Available Space:" />
                 </LinearLayout>
             <!--</ScrollView>-->
         </LinearLayout>
