@@ -75,7 +75,6 @@ public class TeamDetailFragment extends Fragment {
                 MainApplication.showDownload = true;
                 viewPager.setCurrentItem(6);
                 MainApplication.showDownload = false;
-
                 if (MainApplication.listener != null) {
                     MainApplication.listener.onAddDocument();
                 }
