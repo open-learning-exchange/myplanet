@@ -74,14 +74,29 @@ public class RealmMyLibrary extends RealmObject {
     private String downloaded;
     private boolean isPrivate;
 
+
     public static List<RealmMyLibrary> getMyLibraryByUserId(Realm mRealm, SharedPreferences settings) {
         RealmResults<RealmMyLibrary> libs = mRealm.where(RealmMyLibrary.class).findAll();
-        return getMyLibraryByUserId(settings.getString("userId", "--"), libs);
+        return getMyLibraryByUserId(settings.getString("userId", "--"), libs, mRealm);
+    }
+
+
+    public static List<RealmMyLibrary> getMyLibraryByUserId(String userId, List<RealmMyLibrary> libs, Realm mRealm) {
+        List<RealmMyLibrary> libraries = new ArrayList<>();
+        List<String> ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm);
+
+        for (RealmMyLibrary item : libs) {
+            if (item.getUserId().contains(userId) || ids.contains(item.getResourceId())) {
+                libraries.add(item);
+            }
+        }
+        return libraries;
     }
 
 
     public static List<RealmMyLibrary> getMyLibraryByUserId(String userId, List<RealmMyLibrary> libs) {
         List<RealmMyLibrary> libraries = new ArrayList<>();
+
         for (RealmMyLibrary item : libs) {
             if (item.getUserId().contains(userId)) {
                 libraries.add(item);
@@ -89,7 +104,6 @@ public class RealmMyLibrary extends RealmObject {
         }
         return libraries;
     }
-
 
     public static List<RealmMyLibrary> getOurLibrary(String userId, List<RealmMyLibrary> libs) {
         List<RealmMyLibrary> libraries = new ArrayList<>();
@@ -135,7 +149,7 @@ public class RealmMyLibrary extends RealmObject {
         }
     }
 
-    public static JsonObject serialize(RealmMyLibrary personal,RealmUserModel user) {
+    public static JsonObject serialize(RealmMyLibrary personal, RealmUserModel user) {
         JsonObject object = new JsonObject();
         object.addProperty("title", personal.getTitle());
         object.addProperty("uploadDate", new Date().getTime());
@@ -164,7 +178,6 @@ public class RealmMyLibrary extends RealmObject {
 //        object.addProperty("mediaType", personal.getMediaType());
         return object;
     }
-
 
 
     public String getDownloaded() {
@@ -741,7 +754,7 @@ public class RealmMyLibrary extends RealmObject {
     }
 
     public static JsonArray getMyLibIds(Realm realm, String userId) {
-        List<RealmMyLibrary> myLibraries = getMyLibraryByUserId(userId, realm.where(RealmMyLibrary.class).findAll());
+        List<RealmMyLibrary> myLibraries = realm.where(RealmMyLibrary.class).contains("userId", userId).findAll();
         JsonArray ids = new JsonArray();
         for (RealmMyLibrary lib : myLibraries
         ) {
