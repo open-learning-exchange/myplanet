@@ -91,7 +91,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             now[Calendar.DAY_OF_MONTH] = i2
             val imageList: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true).greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image").findAll()
             val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, BaseResourceFragment.settings, urls)
+            getUrlsAndStartDownload(imageList, BaseResourceFragment.settings, urls as ArrayList<String?>)
         }, now[Calendar.YEAR],
                 now[Calendar.MONTH],
                 now[Calendar.DAY_OF_MONTH])
@@ -237,7 +237,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener { v: View? -> openResource(items) }
+        textView.setOnClickListener { v: View? -> items?.let { openResource(it) } }
     }
 
     override fun onDestroy() {
