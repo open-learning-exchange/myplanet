@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
@@ -159,7 +158,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         var itemCnt = 0
         for (items in dbMycourses) {
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c)
-            setTextColor(myCoursesTextViewArray[itemCnt], itemCnt, c)
+            myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt, c) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
             itemCnt++
         }
