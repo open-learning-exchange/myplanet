@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Spinner;
 
@@ -65,6 +66,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         userModelB.setEmail(email.getEditText().getText().toString().trim());
         userModelB.setDob(birthdate.getEditText().getText().toString().trim());
         userModelB.setBirthPlace(birthplace.getEditText().getText().toString().trim());
+        userModelB.setPhoneNumber(phone.getEditText().getText().toString().trim());
         health.setEmergencyContactName(emergencyNumber.getEditText().getText().toString().trim());
         health.setEmergencyContact(contact.getEditText().getText().toString().trim());
         health.setEmergencyContactType(contactType.getSelectedItem().toString());
