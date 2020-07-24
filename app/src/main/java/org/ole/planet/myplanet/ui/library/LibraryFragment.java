@@ -171,11 +171,17 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     private AlertDialog createAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
-        String msg = "Success! You have added one or more resources to your myLibrary!\n\n";
+        String msg = "Success! You have added these resources to your myLibrary:\n\n";
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
                 msg += " - " + selectedItems.get(i).getTitle() + "\n";
             }
+        }
+        else {
+            for (int i = 0; i < 5; i++) {
+                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+            }
+            msg += "And " + (selectedItems.size() - 5) + " more resource(s)...\n";
         }
         msg +=  "\n\nReturn to the Home tab to access myLibrary.\n" +
                 "\nNote: You may still need to download the newly added resources.";
