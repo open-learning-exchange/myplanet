@@ -75,6 +75,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     HashMap<String, JsonObject> map;
 
     AlertDialog confirmation;
+    ArrayList<String> selectedItemsOld = new ArrayList<String>();
 
     public LibraryFragment() {
     }
@@ -115,9 +116,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             if (selectedItems.size() > 0) {
                 confirmation = createAlertDialog();
                 confirmation.show();
+                addToMyList();
+                clearSelectedItems();
+                tvAddToLib.setTextColor(Color.BLACK);
             }
-            addToMyList();
-            tvAddToLib.setTextColor(Color.BLACK);
         });
         imgSearch.setOnClickListener(view -> {
             adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
@@ -193,6 +195,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         return builder.create();
     }
 
+    private void clearSelectedItems() {
+        for (int i = selectedItems.size() - 1; i >= 0; i--) {
+            selectedItems.remove(i);
+        }
+    }
 
     private void clearTagsButton() {
         clearTags.setOnClickListener(vi -> {
