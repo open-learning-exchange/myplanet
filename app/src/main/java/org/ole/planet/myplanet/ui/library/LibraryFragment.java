@@ -110,10 +110,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         initArrays();
-        confirmation = createAlertDialog();
 
         tvAddToLib.setOnClickListener(view -> {
             if (selectedItems.size() > 0) {
+                confirmation = createAlertDialog();
                 confirmation.show();
             }
             addToMyList();
@@ -171,9 +171,15 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     private AlertDialog createAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
-        builder.setMessage("Success! You have added one or more resources to your myLibrary!\n" +
-                "\n\nReturn to the Home tab to access myLibrary.\n" +
-                "\nNote: You may still need to download the newly added resources.");
+        String msg = "Success! You have added one or more resources to your myLibrary!\n\n";
+        if (selectedItems.size() <= 5) {
+            for (int i = 0; i < selectedItems.size(); i++) {
+                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+            }
+        }
+        msg +=  "\n\nReturn to the Home tab to access myLibrary.\n" +
+                "\nNote: You may still need to download the newly added resources.";
+        builder.setMessage(msg);
         builder.setCancelable(true);
         builder.setPositiveButton(
                 "Ok",
