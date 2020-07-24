@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.FileUtils.getTotalAvailableMemoryRatio
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -70,6 +71,19 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
         notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
         notificationList.add(Notifications(R.drawable.task_pending,  "${tasks.size} tasks due."))
+
+        var storageRatio = getTotalAvailableMemoryRatio()
+        var storageNotiText : String
+        if (storageRatio <= 10) {
+            storageNotiText = "Storage critically low: " + storageRatio + "% available. Please free up space."
+        }
+        else if (storageRatio <= 40) {
+            storageNotiText = "Storage running low: " + storageRatio + "% available."
+        }
+        else {
+            storageNotiText = "Storage available: " + storageRatio + "%."
+        }
+        notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
         if (TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")) {
             if (!model.id.startsWith("guest")) {
