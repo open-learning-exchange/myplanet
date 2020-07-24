@@ -84,7 +84,6 @@ class NotificationFragment : BottomSheetDialogFragment() {
             storageNotiText = "Storage available: " + storageRatio + "%."
         }
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
-        // notificationList.add(Notifications(R.drawable.task_pending))
 
         if (TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")) {
             if (!model.id.startsWith("guest")) {
