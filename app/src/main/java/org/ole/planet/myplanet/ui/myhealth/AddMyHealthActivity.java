@@ -4,7 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
+
 import android.view.MenuItem;
 import android.widget.Spinner;
 
@@ -19,8 +19,6 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.List;
-import java.util.UUID;
 
 import io.realm.Realm;
 
