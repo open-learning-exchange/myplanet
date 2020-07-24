@@ -517,6 +517,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         progressDialog.dismiss();
         if (!block)
             continueSyncProcess();
+        syncIconDrawable.stop();
     }
 
     public void continueSyncProcess() {
