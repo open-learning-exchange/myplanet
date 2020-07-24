@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
+import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -184,7 +185,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived").contains("name", charSequence.toString(), Case.INSENSITIVE)
-                val adapterTeamList = AdapterTeamList(activity, getList(query), mRealm, childFragmentManager)
+                val adapterTeamList = AdapterTeamList(activity as Context, getList(query), mRealm!!, childFragmentManager)
                 adapterTeamList.setTeamListener(this@TeamFragment)
                 rvTeamList!!.adapter = adapterTeamList
             }
@@ -205,9 +206,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun setTeamList() {
         val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived")
-        val adapterTeamList = AdapterTeamList(activity, getList(query), mRealm, childFragmentManager)
-        adapterTeamList.setType(type)
-        adapterTeamList.setTeamListener(this@TeamFragment)
+        val adapterTeamList = activity?.let { AdapterTeamList(it, getList(query), mRealm!!, childFragmentManager) }
+        adapterTeamList?.setType(type)
+        adapterTeamList?.setTeamListener(this@TeamFragment)
         view!!.findViewById<View>(R.id.type).visibility = if (type == null) View.VISIBLE else View.GONE
         rvTeamList!!.adapter = adapterTeamList
     }
