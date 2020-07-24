@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.library;
 
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 
@@ -72,6 +74,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     Spinner spn;
     HashMap<String, JsonObject> map;
 
+    AlertDialog confirmation;
+
     public LibraryFragment() {
     }
 
@@ -106,8 +110,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         initArrays();
+        confirmation = createAlertDialog();
 
         tvAddToLib.setOnClickListener(view -> {
+            if (selectedItems.size() > 0) {
+                confirmation.show();
+            }
             addToMyList();
             tvAddToLib.setTextColor(Color.BLACK);
         });
@@ -158,6 +166,19 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         languages = new HashSet<>();
         levels = new HashSet<>();
         mediums = new HashSet<>();
+    }
+
+
+    private AlertDialog createAlertDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
+        builder.setMessage("Success! You have added one or more resources to your myLibrary!\n" +
+                "\n\nReturn to the Home tab to access myLibrary.\n" +
+                "\nNote: You may still need to download the newly added resources.");
+        builder.setCancelable(true);
+        builder.setPositiveButton(
+                "Ok",
+                (dialog, id) -> dialog.cancel());
+        return builder.create();
     }
 
 
