@@ -10,12 +10,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.applandeo.materialcalendarview.CalendarView;
+import com.applandeo.materialcalendarview.EventDay;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 public class CalendarFragment extends Fragment {
 
     OnHomeItemClickListener listener;
+
+
 
     @Override
     public void onAttach(Context context) {
