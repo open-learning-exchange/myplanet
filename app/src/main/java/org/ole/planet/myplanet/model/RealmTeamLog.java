@@ -5,17 +5,14 @@ import android.text.TextUtils;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.HashMap;
-import java.util.List;
+import java.util.Calendar;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
-import io.realm.Sort;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmTeamLog extends RealmObject {
@@ -66,6 +63,12 @@ public class RealmTeamLog extends RealmObject {
 
     public static long getVisitCount(Realm realm, String userName, String teamId) {
         return realm.where(RealmTeamLog.class).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count();
+    }
+
+    public static long getVisitByTeam(Realm realm, String teamId) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_YEAR, -30);
+        return realm.where(RealmTeamLog.class).equalTo("type", "teamVisit").equalTo("teamId", teamId).greaterThan("time", calendar.getTimeInMillis()).count();
     }
 
     public void setUploaded(boolean uploaded) {
