@@ -202,7 +202,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             for (int i = 0; i < 5; i++) {
                 msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
             }
-            msg += "And " + (selectedItems.size() - 5) + " more resource(s)...\n";
+            msg += "And " + (selectedItems.size() - 5) + " more course(s)...\n";
         }
         msg += "\n\n Return to the Home tab to access myCourses.\n";
         builder.setMessage(msg);
