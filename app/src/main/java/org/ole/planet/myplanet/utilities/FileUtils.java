@@ -333,38 +333,39 @@ public class FileUtils {
         return resultBuffer.toString();
     }
 
-    /**
-     * Finds total available memory including both internal and external
-     * memory.
-     *
-     * @return Formatted string of the format "Available Space / Total Space"
-     */
-    public static String getTotalAvailableMemory(){
-        long internalTotalMemory = getTotalInternalMemorySize();
+    public static long getTotalAvailableMemory() {
         long internalAvailableMemory = getAvailableInternalMemorySize();
-        long externalTotalMemory = getTotalExternalMemorySize();
         long externalAvailableMemory = getAvailableExternalMemorySize();
-
         // Temporary Check till we find a better way to do it
-        if (internalAvailableMemory == externalAvailableMemory){
-            return getAvailableMemoryFormattedString(internalAvailableMemory, internalTotalMemory);
+        if (internalAvailableMemory == externalAvailableMemory) {
+            return internalAvailableMemory;
         }
+        return internalAvailableMemory + externalAvailableMemory;
+    }
 
-        long totalCapacity = internalTotalMemory + externalTotalMemory;
-        long totalAvailable = internalAvailableMemory + externalAvailableMemory;
+    public static long getTotalMemoryCapacity() {
+        long internalTotalMemory = getTotalInternalMemorySize();
+        long externalTotalMemory = getTotalExternalMemorySize();
+        // Temporary Check till we find a better way to do it
+        if (internalTotalMemory == externalTotalMemory) {
+            return internalTotalMemory;
+        }
+        return internalTotalMemory + externalTotalMemory;
+    }
 
-        return getAvailableMemoryFormattedString(totalAvailable, totalCapacity);
+    public static long getTotalAvailableMemoryRatio() {
+        return Math.round(((double) getTotalAvailableMemory() / (double) getTotalMemoryCapacity()) * 100);
     }
 
     /**
-     * A helper method that returns a formatted string
+     * A method that returns a formatted string
      * of the format "Available Space / Total Space".
-     *
-     * @param available Available space
-     * @param total Total space/capacity
+     * param None
      * @return Available space and total space
      */
-    private static String getAvailableMemoryFormattedString(long available, long total) {
+    public static String getAvailableOverTotalMemoryFormattedString() {
+        long available = getTotalAvailableMemory();
+        long total = getTotalMemoryCapacity();
         return "Available Space: "
                 + formatSize(available)
                 + "/"
