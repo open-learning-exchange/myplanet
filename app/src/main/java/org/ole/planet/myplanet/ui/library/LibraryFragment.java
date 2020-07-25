@@ -75,7 +75,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     HashMap<String, JsonObject> map;
 
     AlertDialog confirmation;
-    ArrayList<String> selectedItemsOld = new ArrayList<String>();
 
     public LibraryFragment() {
     }
