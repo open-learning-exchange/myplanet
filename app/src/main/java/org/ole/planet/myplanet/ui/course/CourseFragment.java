@@ -132,6 +132,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         });
     }
 
+    private void clearSelectedItems() {
+        for (int i = selectedItems.size() - 1; i >= 0; i--) {
+            selectedItems.remove(i);
+        }
+    }
+
     public void additionalSetup() {
         View bottomSheet = getView().findViewById(R.id.card_filter);
         getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
@@ -148,9 +154,10 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             if (selectedItems.size() > 0) {
                 confirmation = createAlertDialog();
                 confirmation.show();
+                addToMyList();
+                clearSelectedItems();
+                tvAddToLib.setTextColor(Color.BLACK);
             }
-            addToMyList();
-            tvAddToLib.setTextColor(Color.BLACK);
         });
         etSearch = getView().findViewById(R.id.et_search);
         tvSelected = getView().findViewById(R.id.tv_selected);
