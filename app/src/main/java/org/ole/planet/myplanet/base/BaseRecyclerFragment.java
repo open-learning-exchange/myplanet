@@ -267,4 +267,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         return (sub && lev && lan && med);
     }
 
+    protected void clearSelectedItems() {
+        for (int i = selectedItems.size() - 1; i >= 0; i--) {
+            selectedItems.remove(i);
+        }
+    }
+
 }

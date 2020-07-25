@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.course;
 
 
-
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -132,12 +131,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         });
     }
 
-    private void clearSelectedItems() {
-        for (int i = selectedItems.size() - 1; i >= 0; i--) {
-            selectedItems.remove(i);
-        }
-    }
-
     public void additionalSetup() {
         View bottomSheet = getView().findViewById(R.id.card_filter);
         getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
@@ -204,7 +197,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             for (int i = 0; i < selectedItems.size(); i++) {
                 msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
             }
-        } else {
+        }
+        else {
             for (int i = 0; i < 5; i++) {
                 msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
             }

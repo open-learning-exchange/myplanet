@@ -195,11 +195,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         return builder.create();
     }
 
-    private void clearSelectedItems() {
-        for (int i = selectedItems.size() - 1; i >= 0; i--) {
-            selectedItems.remove(i);
-        }
-    }
 
     private void clearTagsButton() {
         clearTags.setOnClickListener(vi -> {
