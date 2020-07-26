@@ -266,11 +266,4 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
         return (sub && lev && lan && med);
     }
-
-    protected void clearSelectedItems() {
-        for (int i = selectedItems.size() - 1; i >= 0; i--) {
-            selectedItems.remove(i);
-        }
-    }
-
 }

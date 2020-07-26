@@ -148,7 +148,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 confirmation = createAlertDialog();
                 confirmation.show();
                 addToMyList();
-                clearSelectedItems();
+                selectedItems.clear();
                 tvAddToLib.setTextColor(Color.BLACK);
             }
         });
