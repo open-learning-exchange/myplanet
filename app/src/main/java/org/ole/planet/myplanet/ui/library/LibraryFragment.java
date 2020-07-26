@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.library;
 
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 
@@ -72,6 +74,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     Spinner spn;
     HashMap<String, JsonObject> map;
 
+    AlertDialog confirmation;
+    ArrayList<String> selectedItemsOld = new ArrayList<String>();
+
     public LibraryFragment() {
     }
 
@@ -108,8 +113,13 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         initArrays();
 
         tvAddToLib.setOnClickListener(view -> {
-            addToMyList();
-            tvAddToLib.setTextColor(Color.BLACK);
+            if (selectedItems.size() > 0) {
+                confirmation = createAlertDialog();
+                confirmation.show();
+                addToMyList();
+                clearSelectedItems();
+                tvAddToLib.setTextColor(Color.BLACK);
+            }
         });
         imgSearch.setOnClickListener(view -> {
             adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
@@ -160,6 +170,36 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         mediums = new HashSet<>();
     }
 
+
+    private AlertDialog createAlertDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
+        String msg = "Success! You have added these resources to your myLibrary:\n\n";
+        if (selectedItems.size() <= 5) {
+            for (int i = 0; i < selectedItems.size(); i++) {
+                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+            }
+        }
+        else {
+            for (int i = 0; i < 5; i++) {
+                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+            }
+            msg += "And " + (selectedItems.size() - 5) + " more resource(s)...\n";
+        }
+        msg +=  "\n\nReturn to the Home tab to access myLibrary.\n" +
+                "\nNote: You may still need to download the newly added resources.";
+        builder.setMessage(msg);
+        builder.setCancelable(true);
+        builder.setPositiveButton(
+                "Ok",
+                (dialog, id) -> dialog.cancel());
+        return builder.create();
+    }
+
+    private void clearSelectedItems() {
+        for (int i = selectedItems.size() - 1; i >= 0; i--) {
+            selectedItems.remove(i);
+        }
+    }
 
     private void clearTagsButton() {
         clearTags.setOnClickListener(vi -> {

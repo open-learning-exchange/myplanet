@@ -31,6 +31,18 @@
         android:textColor="@color/md_black_1000"
         android:alpha="0.8"/>
 
+
+    <TextView
+        android:id="@+id/no_of_visits"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:padding="@dimen/padding_small"
+        android:textColor="@color/md_black_1000"
+        android:alpha="0.8"/>
+
+
+
     <Button
         android:id="@+id/join_leave"
         android:layout_width="0dp"
