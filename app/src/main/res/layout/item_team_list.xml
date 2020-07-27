@@ -18,18 +18,18 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="2"
+        android:alpha="0.8"
         android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000"
-        android:alpha="0.8"/>
+        android:textColor="@color/md_black_1000" />
 
     <TextView
         android:id="@+id/type"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="2"
+        android:alpha="0.8"
         android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000"
-        android:alpha="0.8"/>
+        android:textColor="@color/md_black_1000" />
 
 
     <TextView
@@ -37,34 +37,39 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="2"
+        android:alpha="0.8"
         android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000"
-        android:alpha="0.8"/>
+        android:textColor="@color/md_black_1000" />
 
 
-
-    <Button
-        android:id="@+id/join_leave"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textSize="10sp"
-        android:text="Request To join" />
+        android:layout_weight="2">
 
-    <Button
-        android:id="@+id/edit_team"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textSize="10sp"
-        android:visibility="gone"
-        android:text="Edit" />
+        <Button
+            android:id="@+id/join_leave"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Request To join"
+            android:textSize="10sp" />
 
-    <Button
-        android:id="@+id/btn_feedback"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:textSize="10sp"
-        android:text="Feedback" />
+        <Button
+            android:id="@+id/edit_team"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Edit"
+            android:textSize="10sp"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btn_feedback"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Feedback"
+            android:textSize="10sp" />
+    </LinearLayout>
 </LinearLayout>
