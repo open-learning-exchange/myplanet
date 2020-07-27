@@ -47,29 +47,29 @@
                         android:layout_height="wrap_content"
                         android:paddingLeft="8dp"
                         android:textColor="@color/md_white_1000"
-                         />
+                        />
                 </LinearLayout>
 
-             <LinearLayout
-                 android:id="@+id/ll_action_buttons"
-                 android:layout_gravity="right"
-                 android:layout_width="wrap_content"
-                 android:layout_height="wrap_content">
-                 <Button
-                     style="@style/YellowButtons"
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:id="@+id/btn_add_doc"
-                     android:layout_gravity="center"
-                     android:text="Add Documents" />
-                 <Button
-                     style="@style/YellowButtons"
-                     android:layout_width="wrap_content"
-                     android:layout_height="wrap_content"
-                     android:id="@+id/btn_leave"
-                     android:layout_gravity="center"
-                     android:text="Leave" />
-             </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/ll_action_buttons"
+                    android:layout_gravity="right"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                    <Button
+                        style="@style/YellowButtons"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/btn_add_doc"
+                        android:layout_gravity="center"
+                        android:text="Add Documents" />
+                    <Button
+                        style="@style/YellowButtons"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/btn_leave"
+                        android:layout_gravity="center"
+                        android:text="Leave" />
+                </LinearLayout>
             </LinearLayout>
 
 
@@ -79,17 +79,19 @@
             android:layout_width="match_parent"
             android:orientation="vertical"
             android:layout_height="match_parent">
-            <com.google.android.material.tabs.TabLayout
-                android:id="@+id/tab_layout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:tabMode="scrollable" />
 
             <androidx.viewpager.widget.ViewPager
                 android:id="@+id/view_pager"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
+                <com.google.android.material.tabs.TabLayout
+                    android:id="@+id/tab_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:tabMaxWidth="0dp"
+                    app:tabGravity="fill"
+                    app:tabMode="fixed" />
             </androidx.viewpager.widget.ViewPager>
 
         </LinearLayout>
