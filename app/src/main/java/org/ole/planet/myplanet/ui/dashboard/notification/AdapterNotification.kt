@@ -31,10 +31,10 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
                     0 -> callback.showResourceDownloadDialog()
                     1 -> callback.showUserResourceDialog()
                     2 -> callback.showPendingSurveyDialog()
-                    3 ->callback.forceDownloadNewsImages()
-                    4 ->callback.downloadDictionary()
-                    5 ->callback.showTaskListDialog()
-                    6 ->callback.syncKeyId()
+                    3 -> callback.forceDownloadNewsImages()
+                    4 -> callback.downloadDictionary()
+                    5 -> callback.showTaskListDialog()
+                    7 -> callback.syncKeyId()
                 }
             }
         }

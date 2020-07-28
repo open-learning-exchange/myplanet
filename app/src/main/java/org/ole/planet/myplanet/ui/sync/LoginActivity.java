@@ -107,7 +107,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         // Find and show space available on the device
         tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText(FileUtils.getTotalAvailableMemory());
+        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
 
         changeLogoColor();
         service = new Service(this);
@@ -480,6 +480,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             progressDialog.dismiss();
         DialogUtils.showSnack(btnSignIn, s);
         settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
+
+        // Update last sync text
+        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(new Date().getTime()) + " >>");
     }
 
     @Override

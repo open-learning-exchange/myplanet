@@ -370,4 +370,5 @@
     <string name="entServices">What are the Services your enterprise provides?</string>
     <string name="entRules">What are the Rules of your enterprise?</string>
     <string name="entEmptyDescription"><![CDATA[The enterprise has no mission & services.]]></string>
+    <string name="total_visits">Total visits from last 30 days</string>
 </resources>
