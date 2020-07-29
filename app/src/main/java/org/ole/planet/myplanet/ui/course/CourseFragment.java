@@ -149,7 +149,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 confirmation.show();
                 addToMyList();
                 selectedItems.clear();
-                tvAddToLib.setTextColor(Color.BLACK);
+                tvAddToLib.setEnabled( false );  // selectedItems will always have a size of 0
             }
         });
         etSearch = getView().findViewById(R.id.et_search);
