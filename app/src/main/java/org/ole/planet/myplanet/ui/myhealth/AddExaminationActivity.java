@@ -103,7 +103,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         if (pojo != null && !TextUtils.isEmpty(pojo.getData())) {
-            health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
+    health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
         }
 
         if (health == null) {
