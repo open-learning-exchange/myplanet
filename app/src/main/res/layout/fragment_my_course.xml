@@ -42,20 +42,6 @@
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tv_add"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:drawableLeft="@drawable/ic_add_library"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
-                    android:text="@string/join_selected"
-                    android:textColor="@drawable/tv_color"
-                    android:textSize="@dimen/text_size_mid" />
-
 
                 <Button
                     android:id="@+id/btn_remove"
@@ -81,7 +67,7 @@
 
                 <TextView
                     android:id="@+id/tv_selected"
-                    android:layout_width="wrap_content"
+                    android:layout_width="838dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
@@ -91,12 +77,12 @@
 
                 <Spinner
                     android:id="@+id/spn_sort"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
+                    android:layout_width="190dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:layout_weight="1"
                     android:entries="@array/sort_by_date"
-                    android:padding="@dimen/padding_normal" />
+                    android:padding="8dp" />
 
                 <TextView
                     android:id="@+id/tv_delete"
@@ -115,17 +101,31 @@
                     android:visibility="gone" />
 
 
+                <TextView
+                    android:id="@+id/tv_add"
+                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:drawableLeft="@drawable/ic_add_library"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/join_selected"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid" />
+
                 <ImageButton
                     android:id="@+id/filter"
-                    app:srcCompat="@drawable/ic_filter"
+                    style="@style/YellowButtons"
                     android:layout_width="@dimen/_50dp"
                     android:layout_height="@dimen/_50dp"
                     android:layout_margin="@dimen/padding_normal"
                     android:background="@drawable/buttonyellow"
-                    android:text="@string/more_action"
                     android:padding="@dimen/padding_normal"
-                    style="@style/YellowButtons"
-                    android:textColor="@color/md_white_1000" />
+                    android:text="@string/more_action"
+                    android:textColor="@color/md_white_1000"
+                    app:srcCompat="@drawable/ic_filter" />
 
             </LinearLayout>
 
@@ -149,6 +149,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal" />
+
         </FrameLayout>
 
     </LinearLayout>
