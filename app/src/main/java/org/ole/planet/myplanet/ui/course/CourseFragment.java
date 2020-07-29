@@ -144,7 +144,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> {
             addToMyList();
-            tvAddToLib.setTextColor(Color.BLACK);
+            tvAddToLib.setEnabled( false );  // selectItems should always have a size of 0
         });
         etSearch = getView().findViewById(R.id.et_search);
         tvSelected = getView().findViewById(R.id.tv_selected);
