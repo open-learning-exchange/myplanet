@@ -113,7 +113,7 @@ public class SettingActivity extends AppCompatActivity {
             Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
             Preference preference = findPreference("reset_app");
             preference.setOnPreferenceClickListener(preference1 -> {
-                new AlertDialog.Builder(getActivity()).setTitle("Are you sure??").setPositiveButton("YES", (dialogInterface, i) -> {
+                new AlertDialog.Builder(getActivity()).setTitle("Are you sure?").setPositiveButton("YES", (dialogInterface, i) -> {
                     settings.edit().clear().commit();
                     mRealm.executeTransactionAsync(realm -> realm.deleteAll(), () -> {
                         Utilities.toast(getActivity(), "Data cleared");

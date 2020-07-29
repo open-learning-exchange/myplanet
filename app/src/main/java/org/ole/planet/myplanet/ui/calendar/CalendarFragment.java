@@ -10,12 +10,30 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.applandeo.materialcalendarview.CalendarView;
+import com.applandeo.materialcalendarview.EventDay;
+import com.applandeo.materialcalendarview.exceptions.OutOfDateRangeException;
+import com.applandeo.materialcalendarview.listeners.OnDayClickListener;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 
 public class CalendarFragment extends Fragment {
 
     OnHomeItemClickListener listener;
+
+    public void addEvents() {
+        List<EventDay> events = new ArrayList<>();
+        Calendar calendar = Calendar.getInstance();
+        events.add(new EventDay(calendar, R.drawable.bg_label_checked));
+        CalendarView calendarView = (CalendarView) getView().findViewById(R.id.calendarView);
+        calendarView.setEvents(events);
+    }
+
 
     @Override
     public void onAttach(Context context) {
@@ -24,13 +42,28 @@ public class CalendarFragment extends Fragment {
             listener = (OnHomeItemClickListener) context;
     }
 
+
     public CalendarFragment() {
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_calendar, container, false);
+        CalendarView v = (CalendarView) inflater.inflate(R.layout.fragment_calendar, container, false);
+
+
+        v.setOnDayClickListener(eventDay -> {
+            Calendar clickedDayCalendar = eventDay.getCalendar();
+        });
+
+        Calendar calendar = Calendar.getInstance();
+
+
+        try {
+            v.setDate(calendar.getTime());
+        } catch (OutOfDateRangeException e) {
+            e.printStackTrace();
+        }
 
         return v;
     }
