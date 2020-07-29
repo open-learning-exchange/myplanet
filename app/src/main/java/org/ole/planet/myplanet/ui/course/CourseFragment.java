@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.course;
 
 
-
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -57,6 +56,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
     Spinner spn;
+
+    AlertDialog confirmation;
 
     public CourseFragment() {
     }
@@ -143,8 +144,13 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         spn = getView().findViewById(R.id.spn_sort);
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> {
-            addToMyList();
-            tvAddToLib.setTextColor(Color.BLACK);
+            if (selectedItems.size() > 0) {
+                confirmation = createAlertDialog();
+                confirmation.show();
+                addToMyList();
+                selectedItems.clear();
+                tvAddToLib.setTextColor(Color.BLACK);
+            }
         });
         etSearch = getView().findViewById(R.id.et_search);
         tvSelected = getView().findViewById(R.id.tv_selected);
@@ -182,6 +188,29 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             adapterCourses.setCourseList(filterCourseByTag("", searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());
         });
+    }
+
+    private AlertDialog createAlertDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
+        String msg = "Success! You have added the following courses:\n\n";
+        if (selectedItems.size() <= 5) {
+            for (int i = 0; i < selectedItems.size(); i++) {
+                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+            }
+        }
+        else {
+            for (int i = 0; i < 5; i++) {
+                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+            }
+            msg += "And " + (selectedItems.size() - 5) + " more course(s)...\n";
+        }
+        msg += "\n\n Return to the Home tab to access myCourses.\n";
+        builder.setMessage(msg);
+        builder.setCancelable(true);
+        builder.setPositiveButton(
+                "Ok",
+                (dialog, id) -> dialog.cancel());
+        return builder.create();
     }
 
 

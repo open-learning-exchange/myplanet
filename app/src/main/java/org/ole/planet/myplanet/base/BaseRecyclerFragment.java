@@ -266,5 +266,4 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
         return (sub && lev && lan && med);
     }
-
 }
