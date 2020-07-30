@@ -116,8 +116,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 confirmation = createAlertDialog();
                 confirmation.show();
                 addToMyList();
-                selectedItems.clear();
-                tvAddToLib.setTextColor(Color.BLACK);
+                clearSelectedItems();
+                tvAddToLib.setEnabled( false );  // After clearing selectedItems size is always 0
             }
         });
         imgSearch.setOnClickListener(view -> {
