@@ -59,17 +59,16 @@
 
                 <Button
                     android:id="@+id/btn_remove"
+                    android:theme="@style/AccentButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginRight="10dp"
                     android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:background="@drawable/buttonblue"
-                    android:padding="@dimen/padding_small"
+                    android:textSize="@dimen/text_size_small"
                     android:text="@string/leave"
                     android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone" />
-
+                    android:visibility="gone"
+                    />
 
             </LinearLayout>
 
