@@ -309,6 +309,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         btnlang.setText(languages[index]);
         btnlang.setOnClickListener(view -> {
             new AlertDialog.Builder(this)
+                    .setTitle("Select Language")
                     .setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null)
                     .setPositiveButton("OK", (dialog, whichButton) -> {
                         dialog.dismiss();

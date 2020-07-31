@@ -60,7 +60,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     homeItemClickListener.openCallFragment(MyPersonalsFragment())
                 } else if (title == getString(R.string.help_wanted)) {
                     homeItemClickListener.openCallFragment(HelpWantedFragment())
-                } else if (title == getString(R.string.myhealth) && Constants.showBetaFeature(Constants.KEY_MYHEALTH, activity)) {
+                } else if (title == getString(R.string.myhealth)) {
                     if (!model.id.startsWith("guest")) {
                         homeItemClickListener.openCallFragment(MyHealthFragment())
                     } else {

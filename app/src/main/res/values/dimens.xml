@@ -29,4 +29,5 @@
     <dimen name="_16dp">16dp</dimen>
     <dimen name="_30dp">30dp</dimen>
     <dimen name="_50dp">50dp</dimen>
+    <dimen name="_1000dp">1000dp</dimen>
 </resources>
