@@ -519,8 +519,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settingDialog();
         }
         progressDialog.dismiss();
-        if (!block)
-            continueSyncProcess();
+        if (!block) continueSyncProcess();
+        else {
+            syncIconDrawable.stop();
+            syncIconDrawable.selectDrawable(0);
+        }
     }
 
     public void continueSyncProcess() {
