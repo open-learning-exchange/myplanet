@@ -16,6 +16,11 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 
+/**
+ * The first screen that you see with options to use
+ * a normal mode or easy mode to log in.
+ */
+
 public class SplashActivity extends AppCompatActivity {
     RadioButton rbChild, rbNormal;
     Button getStarted;
@@ -35,16 +40,24 @@ public class SplashActivity extends AppCompatActivity {
 
         FileUtils.copyAssets(this);
         SharedPreferences settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
+
+        // If we are already logged in, start Dashboard Activity
         if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_,getApplicationContext()) ) {
             Intent dashboard = new Intent(getApplicationContext(), DashboardActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(dashboard);
             finish();
             return;
         }
+
+        // The "isChild" setting represents weather easy mode was selected
+        // "isChild" == Easy Mode
+        // If easy mode is selected start Login Activity
         if (settings.contains("isChild")){
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
+
+        // When get started is clicked start Login activity and easy login selection in settings
         getStarted.setOnClickListener(view -> {
             settings.edit().putBoolean("isChild", rbChild.isChecked()).commit();
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
