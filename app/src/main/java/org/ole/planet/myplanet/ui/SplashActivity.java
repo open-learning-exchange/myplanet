@@ -49,15 +49,16 @@ public class SplashActivity extends AppCompatActivity {
             return;
         }
 
-        // The "isChild" setting represents weather easy mode was selected
-        // "isChild" == Easy Mode
-        // If easy mode is selected start Login Activity
+        /*
+         The "isChild" setting represents weather easy mode was selected, "isChild" == Easy Mode
+         If easy mode is selected start Login Activity
+        */
         if (settings.contains("isChild")){
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
 
-        // When get started is clicked start Login activity and easy login selection in settings
+        // When get started is clicked start Login activity and save easy login selection in settings
         getStarted.setOnClickListener(view -> {
             settings.edit().putBoolean("isChild", rbChild.isChecked()).commit();
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
