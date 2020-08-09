@@ -66,6 +66,10 @@ import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
+/**
+ * This is the screen after SplashActivity if we are not logged in.
+ * Login, sync and tutorial on the Login screen are handled here.
+ */
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     public static Calendar cal_today, cal_last_Sync;
@@ -88,6 +92,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private TextView tvAvailableSpace;
 
 
+    /**
+     * Shows tutorial when called.
+     */
     private void showShowCaseView() {
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
@@ -104,15 +111,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
+        initializeViews();
 
-        // Find and show space available on the device
-        tvAvailableSpace = findViewById(R.id.tv_available_space);
+        // Show space available on the device
         tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
 
         changeLogoColor();
         service = new Service(this);
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
-        declareElements();
+        setUpListeners();
         declareMoreElements();
         showWifiDialog();
         registerReceiver();
@@ -131,7 +138,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         checkUsagesPermission();
         new GPSService(this);
         setUpChildMode();
-        lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
         forceSyncTrigger();
         Button btnOpenCommunity = findViewById(R.id.open_community);
         if (!Utilities.getUrl().isEmpty()) {
@@ -147,6 +153,21 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         if (settings.getBoolean("firstRun", true))
             showShowCaseView();
+    }
+
+    /**
+     * Initialize all the views on the Login Screen
+     */
+    private void initializeViews(){
+        syncIcon = findViewById(R.id.syncIcon);
+        inputName = findViewById(R.id.input_name);//editText
+        inputPassword = findViewById(R.id.input_password);
+        tvAvailableSpace = findViewById(R.id.tv_available_space);
+        inputLayoutName = findViewById(R.id.input_layout_name);
+        inputLayoutPassword = findViewById(R.id.input_layout_password);
+        imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        btnSignIn = findViewById(R.id.btn_signin); //buttons
+        lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
     }
 
     private boolean forceSyncTrigger() {
@@ -188,23 +209,29 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
-    public void declareElements() {
+    public void setUpListeners() {
+        // Preference related to the settings switch Beta Add Image to Message
+        // Related: SettingActivity.java,pref.xml
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
-        imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        // Guest Login
         Button btnGuestLogin = findViewById(R.id.btn_guest_login);
+        btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
+
+        // Custom device name
         TextView customDeviceName = findViewById(R.id.customDeviceName);
         customDeviceName.setText(getCustomDeviceName());
-        btnSignIn = findViewById(R.id.btn_signin); //buttons
+
+        // Sign in button
         btnSignIn.setOnClickListener(view -> submitForm());
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
-        findViewById(R.id.become_member).setOnClickListener(v -> becomeAMember());
-        imgBtnSetting.setOnClickListener(view -> settingDialog());
-        btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
+
+        findViewById(R.id.become_member).setOnClickListener(v -> becomeAMember()); // Become a member Button
+        imgBtnSetting.setOnClickListener(view -> settingDialog()); // Settings image/button on top right
+
+        // Easy mode switch
         SwitchCompat switchChildMode = findViewById(R.id.switch_child_mode);
         switchChildMode.setChecked(settings.getBoolean("isChild", false));
         switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
@@ -212,8 +239,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             recreate();
         });
 
+        // Name and Password text change listeners
+        inputName.addTextChangedListener(new MyTextWatcher(inputName));
+        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
     }
 
+    /**
+     * Starts BecomeMemberActivity if the server url is not empty
+     */
     private void becomeAMember() {
         if (!Utilities.getUrl().isEmpty()) {
             startActivity(new Intent(this, BecomeMemberActivity.class));
@@ -273,24 +306,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     public void declareMoreElements() {
-        syncIcon = findViewById(R.id.syncIcon);
-        syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
-        syncIcon.getScaleType();
-        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
-        syncIcon.setOnClickListener(v -> {
-            syncIconDrawable.start();
-            isSync = false;
-            forceSync = true;
-            service.checkVersion(this, settings);
-        });
+        syncIconSetup();
         declareHideKeyboardElements();
         TextView txtVersion = findViewById(R.id.lblVersion);
         txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
-        inputName = findViewById(R.id.input_name);//editText
-        inputPassword = findViewById(R.id.input_password);
-        inputName.addTextChangedListener(new MyTextWatcher(inputName));
-        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-        setUplanguageButton();
+
+        setUpLanguageButton();
         if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             inputName.setText(settings.getString(getString(R.string.login_user), ""));
             inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
@@ -300,14 +321,33 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
     }
 
-    private void setUplanguageButton() {
-        Button btnlang = findViewById(R.id.btn_lang);
+    /**
+     * Sets up sync icon for animation when clicked.
+     */
+    private void syncIconSetup() {
+        syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
+        syncIcon.getScaleType();
+        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+        syncIcon.setOnClickListener(v -> {
+            syncIconDrawable.start();
+            isSync = false;
+            forceSync = true;
+            service.checkVersion(this, settings);
+        });
+    }
+
+    /**
+     * Finds the language button and creates an alert dialog
+     * with all the languages on click.
+     */
+    private void setUpLanguageButton() {
+        Button btnLang = findViewById(R.id.btn_lang);
         String[] languageKey = getResources().getStringArray(R.array.language_keys);
         String[] languages = getResources().getStringArray(R.array.language);
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
-        btnlang.setText(languages[index]);
-        btnlang.setOnClickListener(view -> {
+        btnLang.setText(languages[index]);
+        btnLang.setOnClickListener(view -> {
             new AlertDialog.Builder(this)
                     .setTitle("Select Language")
                     .setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null)
@@ -380,6 +420,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
+    /**
+     * Sends user to DashboardActivity when called, updates
+     * login status to true in preferences
+     */
     private void onLogin() {
         UserProfileDbHandler handler = new UserProfileDbHandler(this);
         handler.onLogin();
@@ -512,9 +556,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
 
+    /**
+     *
+     * @param msg tells us what the error is
+     * @param block boolean which indicates if we could continue with the sync
+     */
     @Override
     public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
+        // The config error comes from Service.java on checkVersion
         if (msg.startsWith("Config")) {
             settingDialog();
         }

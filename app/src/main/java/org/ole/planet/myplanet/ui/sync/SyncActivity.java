@@ -62,6 +62,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
     ImageView syncIcon;
     AnimationDrawable syncIconDrawable;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -122,7 +123,13 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
-
+    /**
+     * Starts the sync if the server is reachable and is a Planet server.
+     * Although it returns a boolean it isn't used anywhere.
+     * @param processedUrl
+     * @return
+     * @throws Exception
+     */
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
         progressDialog.show();
@@ -155,17 +162,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 progressDialog.dismiss();
             }
         });
-//        Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
-//            @Override
-//            public void success(Request request, Response response, String s) {
-//
-//            }
-//
-//            @Override
-//            public void failure(Request request, Response response, FuelError fuelError) {
-//
-//            }
-//        });
+
         return connectionResult;
     }
 
@@ -260,6 +257,13 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     }
 
+    /**
+     * Gets protocol, url and pin from the views and returns a
+     * String URL to be used further.
+     *
+     * @param dialog
+     * @return a string url
+     */
     public String saveConfigAndContinue(MaterialDialog dialog) {
         dialog.dismiss();
         saveSyncInfoToPreference();
