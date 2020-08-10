@@ -92,35 +92,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private TextView tvAvailableSpace;
 
 
-    /**
-     * Shows tutorial when called.
-     */
-    private void showShowCaseView() {
-        ShowcaseConfig config = new ShowcaseConfig();
-        config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "1");
-        sequence.setConfig(config);
-        sequence.addSequenceItem(syncIcon,
-                "Press the Sync Button to Sync your Planet account data with your myPlanet application data", "GOT IT");
-        sequence.addSequenceItem(imgBtnSetting,
-                "Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.", "GOT IT");
-        sequence.start();
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         initializeViews();
 
-        // Show space available on the device
-        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
-
         changeLogoColor();
         service = new Service(this);
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
         setUpListeners();
-        declareMoreElements();
+        setUpViews();
         showWifiDialog();
         registerReceiver();
 
@@ -304,12 +286,19 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
     }
 
-
-    public void declareMoreElements() {
-        syncIconSetup();
+    /**
+     * Setup views on the screen with the required information
+     */
+    public void setUpViews() {
+        setUpSyncIcon(); // Sync Icon
         declareHideKeyboardElements();
+
+        // Show myPlanet version
         TextView txtVersion = findViewById(R.id.lblVersion);
         txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
+
+        // Show space available on the device
+        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
 
         setUpLanguageButton();
         if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
@@ -324,7 +313,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     /**
      * Sets up sync icon for animation when clicked.
      */
-    private void syncIconSetup() {
+    private void setUpSyncIcon() {
         syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
         syncIcon.getScaleType();
         syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
@@ -362,6 +351,20 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
     }
 
+    /**
+     * Shows tutorial when called.
+     */
+    private void showShowCaseView() {
+        ShowcaseConfig config = new ShowcaseConfig();
+        config.setDelay(500);
+        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "1");
+        sequence.setConfig(config);
+        sequence.addSequenceItem(syncIcon,
+                "Press the Sync Button to Sync your Planet account data with your myPlanet application data", "GOT IT");
+        sequence.addSequenceItem(imgBtnSetting,
+                "Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.", "GOT IT");
+        sequence.start();
+    }
 
     /**
      * Form  Validation
