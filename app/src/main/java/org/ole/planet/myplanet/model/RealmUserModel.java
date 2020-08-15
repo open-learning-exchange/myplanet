@@ -63,20 +63,19 @@ public class RealmUserModel extends RealmObject {
         if (!get_id().isEmpty()) {
             object.addProperty("_id", get_id());
             object.addProperty("_rev", get_rev());
+            object.addProperty("derived_key", getDerived_key());
+            object.addProperty("salt", getSalt());
+            object.addProperty("password_scheme", getPassword_scheme());
         }
-        object.addProperty("name", getName());
-        object.add("roles", getRoles());
-        if (get_id().isEmpty()) {
+        else {
             object.addProperty("password", getPassword());
             object.addProperty("macAddress", NetworkUtils.getMacAddr());
             object.addProperty("androidId",NetworkUtils.getMacAddr());
             object.addProperty("uniqueAndroidId",VersionUtils.getAndroidId(MainApplication.context));
             object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
-        } else {
-            object.addProperty("derived_key", getDerived_key());
-            object.addProperty("salt", getSalt());
-            object.addProperty("password_scheme", getPassword_scheme());
         }
+        object.addProperty("name", getName());
+        object.add("roles", getRoles());
         object.addProperty("isUserAdmin", getUserAdmin());
         object.addProperty("joinDate", getJoinDate());
         object.addProperty("firstName", getFirstName());
