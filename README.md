@@ -24,7 +24,7 @@ Open the takeout repository on Android Studio. Click on `Build` to sync and buil
 
 > We also encourage you add the solutions to any syncing or compiling issues to this README document in the Troubleshooting section as a guidance to the future virtual interns.
 
-#### Setting up the Android device for Testing
+#### Setting up the Android device for Development and Testing
 
 As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to run and test the application will be on the 10-inch tablet emulator (unless you have an actual 10-inch tablet):
 
@@ -40,6 +40,18 @@ As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to r
 7. Verify the configuration and click finish.
 
 Your device should configure and the application will run on the virtual device.
+
+#### Logging in to myPlanet
+
+Now the app needs to sync with the server to be able to log in. Click on the settings icon on the top right and fill in the following.
+
+1. **Planet Server Address**: If you are on an emulator and running planet on your machine your planet server address will be **10.0.2.2:3100**, otherwise if your instance of planet is running on a raspberry pi your server address would be <raspberry-pi ip address>:3100.
+ 
+2. **Server Pin**: Login to Planet with the admin account(the one that was created in the first steps), go to manager settings on the top right and find table pin/server pin there.
+
+![Screenshot_1597629265](https://user-images.githubusercontent.com/6264813/90350501-5c898580-e00b-11ea-8cfe-07ace2907b62.png)
+
+Finally you need to create a **new account for development and testing** either on the myPlanet app or on Planet after connecting to the server since at this moment admin login is not supported.
 
 ##### Tools
 
