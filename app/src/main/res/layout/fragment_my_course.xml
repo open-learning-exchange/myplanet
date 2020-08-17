@@ -67,7 +67,7 @@
 
                 <TextView
                     android:id="@+id/tv_selected"
-                    android:layout_width="838dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
@@ -75,12 +75,23 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid" />
 
+                <TextView
+                    android:id="@+id/tv_fragment_info2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_large"
+                    android:textStyle="bold" />
+
                 <Spinner
                     android:id="@+id/spn_sort"
-                    android:layout_width="190dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_weight="1"
                     android:entries="@array/sort_by_date"
                     android:padding="8dp" />
 

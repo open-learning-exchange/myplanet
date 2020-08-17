@@ -32,38 +32,37 @@
                 android:paddingLeft="@dimen/_20dp">
 
 
-
                 <Button
                     android:id="@+id/btn_collections"
-                    android:theme="@style/AccentButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="10dp"
                     android:text="@string/collections"
-                    android:textSize="@dimen/text_size_small"/>
+                    android:textSize="@dimen/text_size_small"
+                    android:theme="@style/AccentButton" />
 
                 <Button
                     android:id="@+id/show_filter"
-                    android:theme="@style/BlueButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="10dp"
+                    android:text="@string/show_filter"
                     android:textSize="@dimen/text_size_small"
-                    android:text="@string/show_filter" />
+                    android:theme="@style/BlueButton" />
 
 
                 <Button
                     android:id="@+id/btn_clear_tags"
-                    android:theme="@style/AccentButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="24dp"
-                    android:textSize="@dimen/text_size_small"
                     android:text="@string/clear_tags"
-                    android:textColor="@color/md_white_1000" />
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_small"
+                    android:theme="@style/AccentButton" />
             </LinearLayout>
 
-                <LinearLayout
+            <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"
