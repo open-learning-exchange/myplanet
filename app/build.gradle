@@ -55,6 +55,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
     }
     buildToolsVersion '28.0.3'
+    testOptions {
+        unitTests.includeAndroidResources = true
+    }
 }
 
 repositories {
@@ -123,6 +126,8 @@ dependencies {
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.applandeo:material-calendar-view:1.4.0'
+
+    // Test
 }
 realm {
     syncEnabled = true
