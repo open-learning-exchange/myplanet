@@ -65,7 +65,7 @@ public class UploadToShelfService {
                 try {
                     Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
                     if (res.body() == null) {
-                        JsonObject obj = model.serialize();
+                        JsonObject obj = model.serialize(MainApplication.context);
                         res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
                         if (res.body() != null) {
                             String id = res.body().get("id").getAsString();
@@ -83,8 +83,8 @@ public class UploadToShelfService {
                             }
                         }
                     } else if (model.isUpdated()) {
-                        Utilities.log("UPDATED MODEL " + model.serialize());
-                        JsonObject obj = model.serialize();
+                        Utilities.log("UPDATED MODEL " + model.serialize(MainApplication.context));
+                        JsonObject obj = model.serialize(MainApplication.context);
                         res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
 
                         if (res.body() != null) {

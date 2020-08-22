@@ -5,17 +5,11 @@ import android.text.TextUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.security.PrivateKey;
-import java.sql.Time;
-import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmTeamTask extends RealmObject {
@@ -89,7 +83,7 @@ public class RealmTeamTask extends RealmObject {
         object.addProperty("completedTime", task.getCompletedTime());
         RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", task.getAssignee()).findFirst();
         if (user != null)
-            object.add("assignee", user.serialize());
+            object.add("assignee", user.serialize(MainApplication.context));
         else
             object.addProperty("assignee", "");
         object.add("sync", new Gson().fromJson(task.getSync(), JsonObject.class));

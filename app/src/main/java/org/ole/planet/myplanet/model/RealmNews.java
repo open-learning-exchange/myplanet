@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.model;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
@@ -10,21 +8,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
-import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmNews extends RealmObject {
@@ -294,7 +287,7 @@ public class RealmNews extends RealmObject {
         }
         news.setUserId(user.getId());
         news.setReplyTo(map.containsKey("replyTo") ? map.get("replyTo") : "");
-        news.setUser(new Gson().toJson(user.serialize()));
+        news.setUser(new Gson().toJson(user.serialize(MainApplication.context)));
         news.setImageUrls(imageUrls);
 //        news.setImageName(map.get("imageName"));
         mRealm.commitTransaction();

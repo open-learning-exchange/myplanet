@@ -13,6 +13,7 @@ import android.widget.EditText;
 
 import com.google.gson.Gson;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -125,7 +126,7 @@ public class RatingFragment extends DialogFragment {
         ratingObject.setCreatedOn(model.getParentCode());
         ratingObject.setParentCode(model.getParentCode());
         ratingObject.setPlanetCode(model.getPlanetCode());
-        ratingObject.setUser(new Gson().toJson(model.serialize()));
+        ratingObject.setUser(new Gson().toJson(model.serialize(MainApplication.context)));
         ratingObject.setType(type);
         ratingObject.setItem(id);
         ratingObject.setTitle(title);

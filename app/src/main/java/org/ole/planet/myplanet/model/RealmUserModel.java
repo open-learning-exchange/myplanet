@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
@@ -58,7 +59,7 @@ public class RealmUserModel extends RealmObject {
     private boolean updated;
     private boolean showTopbar;
 
-    public JsonObject serialize() {
+    public JsonObject serialize(Context context) {
         JsonObject object = new JsonObject();
         if (!get_id().isEmpty()) {
             object.addProperty("_id", get_id());

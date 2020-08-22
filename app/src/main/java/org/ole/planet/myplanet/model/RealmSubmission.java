@@ -3,13 +3,11 @@ package org.ole.planet.myplanet.model;
 import android.content.Context;
 import android.text.TextUtils;
 
-import androidx.annotation.NonNull;
-
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -27,8 +25,6 @@ import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.Sort;
-import okhttp3.Request;
-import retrofit2.Response;
 
 public class RealmSubmission extends RealmObject {
     @io.realm.annotations.PrimaryKey
@@ -129,7 +125,7 @@ public class RealmSubmission extends RealmObject {
         if (exam != null && parent==null)
             object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
         if (TextUtils.isEmpty(sub.getUser())) {
-            object.add("user", user.serialize());
+            object.add("user", user.serialize(MainApplication.context));
         } else {
             JsonParser parser = new JsonParser();
             object.add("user", parser.parse(sub.getUser()));
