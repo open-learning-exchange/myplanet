@@ -45,9 +45,13 @@ Your device should configure and the application will run on the virtual device.
 
 Now the app needs to sync with the server to be able to log in. Click on the settings icon on the top right and fill in the following.
 
-1. **Planet Server Address**: If you are on an emulator and running planet on your machine your planet server address will be **10.0.2.2:3100**, otherwise if your instance of planet is running on a raspberry pi your server address would be <raspberry-pi ip address>:3100.
+1. **Planet Server Address**: If you are on an emulator and running planet on your machine your planet server address will most probably be **10.0.2.2:3100**. If your instance of planet is running on a raspberry pi your server address would be raspberry-pi-ip-address:3100. The planet instance might not always run on port 3100, so double check the ip address and port your instance of planet is running on.
  
 2. **Server Pin**: Login to Planet with the admin account(the one that was created in the first steps), go to manager settings on the top right and find table pin/server pin there.
+
+<img width="1920" alt="Screen Shot 2020-08-23 at 4 47 21 PM" src="https://user-images.githubusercontent.com/6264813/90988484-14b1b380-e561-11ea-8f9e-979fdc8e5be4.png">
+
+Enter the details and press sync.
 
 ![Screenshot_1597629265](https://user-images.githubusercontent.com/6264813/90350501-5c898580-e00b-11ea-8cfe-07ace2907b62.png)
 
