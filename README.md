@@ -14,22 +14,22 @@ myPlanet is the Android port of the Planet web application. It will work with Pl
 
 ### Getting started for Users
  
-On your Android device, go to [Releases](https://github.com/ole-vi/takeout/releases/tag/latest) and download the latest version of the APK of the Application. Click on the downloaded APK and choose `install`.
+On your Android device, go to [Releases](https://github.com/open-learning-exchange/myplanet/releases) and download the latest version of the APK of the Application. Click on the downloaded APK and choose `install`.
 
 ### Getting started for Interns
 
-Virtual Interns who will be working on the project should start out by setting up the repository on their own device in Android Studio. The steps are very similar to the process followed for cloning the [open-learning-exchange](https://github.com/open-learning-exchange/open-learning-exchange.github.io) repository. The only difference is that you **do not need to fork** the takeout repository as you are now a part of the team. 
+Virtual Interns who will be working on the project should start out by setting up the repository on their own device in Android Studio. The steps are very similar to the process followed for cloning the [open-learning-exchange](https://github.com/open-learning-exchange/open-learning-exchange.github.io) repository. The only difference is that you **do not need to fork** the myPlanet repository as you are now a part of the team. 
 
-Open the takeout repository on Android Studio. Click on `Build` to sync and build the project. If you face any issues in syncing or compiling the project, use the [mobile gitter channel](https://gitter.im/open-learning-exchange/mobile) or the Mobile Hacking Hangout to discuss and solve your difficulties with the team.
+Open the myPlanet repository on Android Studio. Click on `Build` to sync and build the project. If you face any issues in syncing or compiling the project, use the [mobile gitter channel](https://gitter.im/open-learning-exchange/mobile) or the Mobile Hacking Hangout to discuss and solve your difficulties with the team.
 
 > We also encourage you add the solutions to any syncing or compiling issues to this README document in the Troubleshooting section as a guidance to the future virtual interns.
 
 #### Setting up the Android device for Development and Testing
 
-As the Takeout App will mostly be used on 10-inch OLE Tablets, the best way to run and test the application will be on the 10-inch tablet emulator (unless you have an actual 10-inch tablet):
+As the myPlanet App will mostly be used on 10-inch OLE Tablets, the best way to run and test the application will be on the 10-inch tablet emulator (unless you have an actual 10-inch tablet):
 
 1. If you have completed the First Steps, then you have already enabled virtualization on your device.
-2. After opening the takeout project in Android Studio, sync it by going to `file/sync project with gradle files`.
+2. After opening the myPlanet project in Android Studio, sync it by going to `file/sync project with gradle files`.
 
 <img width="507" alt="Screen Shot 2019-04-11 at 11 04 15 PM" src="https://user-images.githubusercontent.com/29234807/56009589-4c8ec280-5cae-11e9-9907-908e61c5a8c6.png">
 
@@ -69,7 +69,7 @@ The process for creating issues and pull requests is very similar to First Steps
 
 ##### Including the correct format for the code
 
-To maintain uniform formatting of the code, use the following keys combinations in .java, .xml, or any other project files you have changed in Android Studio before committing and pushing the code to the takeout repository:
+To maintain uniform formatting of the code, use the following keys combinations in .java, .xml, or any other project files you have changed in Android Studio before committing and pushing the code to the myPlanet repository:
 
 For Windows, use `ctrl + alt + L` to format few lines and `shift + ctrl + alt + L` to format an entire file.
 
