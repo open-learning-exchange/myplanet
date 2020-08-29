@@ -67,6 +67,18 @@ Along with the 10-inch tablet, you can also use an actual device to run and test
 
 The process for creating issues and pull requests is very similar to First Steps. Remember to branch off of the master branch before working on and creating a new pull request.
 
+#### How to start contributing
+
+If you catch a bug, have a feature request or just see something that could be improved, **create a new issue** and let others know about it so that it can be reviewed. If its apporved you can assign yourself to the issue and start working on it. You don't have to work on every issue you create so feel free to open issues on things you do not understand yet.
+
+Before you start working on any issue make sure that the issue is valid and approved by the members of the team and always assign yourself to the issue so that nobody else works on the same issue.
+
+Since you are just staring out it is important to get some understanding of the codebase and it's structure. A good way to understand the codebase while contributing is to start with simple issues like changing color of a button or fixing the spacing of some element. If you feel more confident you can work on more challenging issues.
+
+Another excellent way to contribute is by adding comments. While going through the codebase if you don't understand a piece of code or feel like a comment could help make the purpose of the code clearer add a comment so that interns that join after you have an easier time understanding the codebase.
+
+Finally don't hesitate to ask for help. You are encouraged to find a solution yourself but if you unable to find one or need a second opinion feel free to reach out. 
+
 ##### Including the correct format for the code
 
 To maintain uniform formatting of the code, use the following keys combinations in .java, .xml, or any other project files you have changed in Android Studio before committing and pushing the code to the myPlanet repository:
