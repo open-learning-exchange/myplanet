@@ -1,13 +1,19 @@
 package org.ole.planet.myplanet.model;
 
-import android.app.Instrumentation;
+
 import android.content.Context;
+
+import androidx.test.filters.LargeTest;
+import androidx.test.internal.runner.junit4.AndroidJUnit4ClassRunner;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.google.gson.JsonObject;
 
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.VersionUtils;
@@ -15,29 +21,34 @@ import org.ole.planet.myplanet.utilities.VersionUtils;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class RealmUserModelTest{
+@LargeTest
+@RunWith(AndroidJUnit4ClassRunner.class)
+public class RealUserModelTest {
+
     private RealmUserModel mTestUser;
     private JsonObject mJsonObject;
     private Realm realm;
+    private Context mContext;
 
     @Before
     public void setUp() throws Exception {
-        Realm.init(MainApplication.context);
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        Realm.init(mContext);
         RealmConfiguration testConfig =
                 new RealmConfiguration.Builder().
                         inMemory().
                         name("test-realm").build();
         realm = Realm.getInstance(testConfig);
 
-        mTestUser = realm.createObject(RealmUserModel.class);
+        realm.beginTransaction();
+        mTestUser = realm.createObject(RealmUserModel.class, "1");
         mTestUser.set_id("");
-        mTestUser.setId("1");
+//        mTestUser.setId("1");
         mTestUser.set_rev("rev");
         mTestUser.setName("name");
-//        mTestUser.setRoles();
+//        mTestUser.setRoles(new RealmList<>());
         mTestUser.setUserAdmin(true);
         mTestUser.setJoinDate(1111111);
         mTestUser.setFirstName("firstName");
@@ -66,7 +77,7 @@ public class RealmUserModelTest{
 
         mJsonObject = new JsonObject();
         mJsonObject.addProperty("name", mTestUser.getName());
-//        mJsonObject.add("roles", mTestUser.getRoles());
+        mJsonObject.add("roles", mTestUser.getRoles());
         mJsonObject.addProperty("isUserAdmin", mTestUser.getUserAdmin());
         mJsonObject.addProperty("joinDate", mTestUser.getJoinDate());
         mJsonObject.addProperty("firstName", mTestUser.getFirstName());
@@ -87,6 +98,7 @@ public class RealmUserModelTest{
         mJsonObject.addProperty("parentCode", mTestUser.getParentCode());
         mJsonObject.addProperty("planetCode", mTestUser.getPlanetCode());
         mJsonObject.addProperty("birthPlace", mTestUser.getBirthPlace());
+        realm.commitTransaction();
     }
 
     @After
@@ -94,10 +106,11 @@ public class RealmUserModelTest{
         mTestUser = null;
         mJsonObject = null;
         realm.close();
+        mContext = null;
     }
 
     @Test
-    public void serializeUserWithout_id() {
+    public void serializeUser() {
         // Properties added when _id is Empty
         mJsonObject.addProperty("password", mTestUser.getPassword());
         mJsonObject.addProperty("macAddress", NetworkUtils.getMacAddr());
@@ -106,23 +119,20 @@ public class RealmUserModelTest{
         mJsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
 
         // Check the result of our serialization
-        // TODO: Need to add context to serialize, could add a default parameter
-        assertThat(mTestUser.serialize(MainApplication.context), is(mJsonObject));
+        assertThat(mTestUser.serialize(mContext), CoreMatchers.is(mJsonObject));
     }
 
-    @Test
-    public void serializeUserWith_id() {
-        // Create _id
-        mTestUser.set_id("1");
-
-        // Properties added when _id is NOT Empty
-        mJsonObject.addProperty("_id", mTestUser.get_id());
-        mJsonObject.addProperty("_rev", mTestUser.get_rev());
-        mJsonObject.addProperty("derived_key", mTestUser.getDerived_key());
-        mJsonObject.addProperty("salt", mTestUser.getSalt());
-        mJsonObject.addProperty("password_scheme", mTestUser.getPassword_scheme());
-
-        // Check the result of our serialization
-        assertThat(mTestUser.serialize(MainApplication.context), is(mJsonObject));
-    }
+//    @Test
+//    public void serializeUserWith_idTest() {
+//
+//        // Properties added when _id is NOT Empty
+//        mJsonObject.addProperty("_id", mTestUser.get_id());
+//        mJsonObject.addProperty("_rev", mTestUser.get_rev());
+//        mJsonObject.addProperty("derived_key", mTestUser.getDerived_key());
+//        mJsonObject.addProperty("salt", mTestUser.getSalt());
+//        mJsonObject.addProperty("password_scheme", mTestUser.getPassword_scheme());
+//
+//        // Check the result of our serialization
+//        assertThat(mTestUser.serialize(mContext), CoreMatchers.is(mJsonObject));
+//    }
 }
