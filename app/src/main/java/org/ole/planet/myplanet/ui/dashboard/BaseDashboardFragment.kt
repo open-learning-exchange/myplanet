@@ -237,7 +237,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener { v: View? -> items?.let { openResource(it) } }
+        textView.setOnClickListener { v: View? -> items?.let {
+            openResource(it)
+        } }
     }
 
     override fun onDestroy() {

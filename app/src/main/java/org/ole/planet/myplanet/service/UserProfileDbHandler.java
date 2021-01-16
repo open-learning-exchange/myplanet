@@ -20,6 +20,7 @@ import io.realm.RealmResults;
 public class UserProfileDbHandler {
     public static final String KEY_LOGIN = "login";
     public static final String KEY_RESOURCE_OPEN = "visit";
+    public static final String KEY_RESOURCE_DOWNLOAD = "download";
     private SharedPreferences settings;
     private Realm mRealm;
     private DatabaseService realmService;
@@ -63,7 +64,7 @@ public class UserProfileDbHandler {
     }
 
     public void onDestory() {
-        if (mRealm != null && !mRealm.isClosed()){
+        if (mRealm != null && !mRealm.isClosed()) {
             mRealm.close();
         }
     }
@@ -100,18 +101,23 @@ public class UserProfileDbHandler {
     }
 
     public void setResourceOpenCount(RealmMyLibrary item) {
+        setResourceOpenCount(item, KEY_RESOURCE_OPEN);
+    }
+
+    public void setResourceOpenCount(RealmMyLibrary item, String type) {
         RealmUserModel model = getUserModel();
         if (model.getId().startsWith("guest")) {
             return;
         }
         if (!mRealm.isInTransaction())
-        mRealm.beginTransaction();
+            mRealm.beginTransaction();
         RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser(model));
-        offlineActivities.setType(KEY_RESOURCE_OPEN);
+        offlineActivities.setType(type);
         offlineActivities.setTitle(item.getTitle());
         offlineActivities.setResourceId(item.getResource_id());
         offlineActivities.setTime(new Date().getTime());
         mRealm.commitTransaction();
+        Utilities.log("Set resource open");
     }
 
 
