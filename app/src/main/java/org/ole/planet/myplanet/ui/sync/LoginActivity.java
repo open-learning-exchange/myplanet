@@ -434,6 +434,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void onChangeServerUrl() {
         RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
+        if (selected == null){
+            return;
+        }
         serverUrl.setText(selected.getLocalDomain());
         protocol_checkin.check(R.id.radio_https);
         settings.getString("serverProtocol", "https://");

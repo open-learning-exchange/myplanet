@@ -19,13 +19,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_DOWNLOAD
+import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.course.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -99,6 +100,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val arrayList = ArrayList<String>()
             arrayList.add(Utilities.getUrl(items, settings))
             startDownload(arrayList)
+            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
         }
     }
 
@@ -134,6 +136,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             Utilities.toast(activity, "Unable to open resource")
             return
         }
+        profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
         } else {
