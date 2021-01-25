@@ -85,7 +85,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (mRealm == null) mRealm = DatabaseService(activity).realmInstance
         Utilities.toast(activity, "Please select starting date : ")
         val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(activity, DatePickerDialog.OnDateSetListener { _: DatePicker?, i: Int, i1: Int, i2: Int ->
+        val dpd = DatePickerDialog(activity!!, DatePickerDialog.OnDateSetListener { _: DatePicker?, i: Int, i1: Int, i2: Int ->
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
@@ -140,7 +140,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun setUpMyList(c: Class<*>, flexboxLayout: FlexboxLayout, view: View) {
         val dbMycourses: List<RealmObject>
         val userId = BaseResourceFragment.settings.getString("userId", "--")
-        setUpMyLife(userId)
+        setUpMyLife(userId!!)
         dbMycourses = (if (c == RealmMyCourse::class.java) {
             RealmMyCourse.getMyByUserId(mRealm, BaseResourceFragment.settings)
         } else if (c == RealmMyTeam::class.java) {
