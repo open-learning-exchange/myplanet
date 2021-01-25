@@ -167,7 +167,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
         val builderSingle = AlertDialog.Builder(activity!!)
         builderSingle.setTitle("Select resource to open : ")
-        val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(activity, android.R.layout.select_dialog_item, downloadedResources) {
+        val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(activity!!, android.R.layout.select_dialog_item, downloadedResources!!) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertView = convertView
                 if (convertView == null) convertView = LayoutInflater.from(activity).inflate(android.R.layout.select_dialog_item, parent, false)
