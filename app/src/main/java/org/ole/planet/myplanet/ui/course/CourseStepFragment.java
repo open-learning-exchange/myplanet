@@ -101,6 +101,8 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         }
         courseProgress.setCourseId(step.getCourseId());
         courseProgress.setStepNum(stepNumber);
+
+        // TODO: 1/16/21 SET PASSED IF THERE IS ONLY RESOURCES
         courseProgress.setPassed(false);
         courseProgress.setCreatedOn(user.getPlanetCode());
         courseProgress.setUpdatedDate(new Date().getTime());
