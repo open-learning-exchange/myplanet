@@ -5,14 +5,14 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'realm-android'
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion '28'
+    compileSdkVersion 29
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode 882
         versionName "0.8.82"
+        ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
