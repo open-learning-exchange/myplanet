@@ -54,7 +54,6 @@ jobs:
 
       - name: Move Files to release
         run: |
-          cp app/build/outputs/mapping/release/mapping.txt build/release/signed/mapping.txt
           cp app/build/outputs/apk/debug/* build/release/signed/
           mv build/release/signed/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
           sha256sum build/release/signed/myPlanet.apk > build/release/signed/myPlanet.apk.sha256
