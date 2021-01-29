@@ -434,6 +434,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void onChangeServerUrl() {
         RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
+        Utilities.log((selected == null) + " selected ");
         if (selected == null){
             return;
         }
