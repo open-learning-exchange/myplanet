@@ -169,7 +169,7 @@ public class RealmCourseProgress extends RealmObject {
         courseProgress.setCreatedOn(JsonUtils.getString("createdOn", act));
         courseProgress.setCreatedDate(JsonUtils.getLong("createdDate", act));
         courseProgress.setUpdatedDate(JsonUtils.getLong("updatedDate", act));
-        mRealm.beginTransaction();
+        mRealm.commitTransaction();
     }
 
     public String getId() {
