@@ -56,7 +56,8 @@ jobs:
         run: |
           cp app/build/outputs/apk/debug/* build/release/signed/
           mv build/release/signed/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
-          sha256sum build/release/signed/myPlanet.apk > build/release/signed/myPlanet.apk.sha256
+          cd build/release/signed/
+          sha256sum myPlanet.apk > myPlanet.apk.sha256
 
       - name: Get Tag
         id: getTag
