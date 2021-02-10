@@ -217,7 +217,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
                     previous.setTextColor(getResources().getColor(R.color.md_white_1000));
-
                 }
                 onClickNext();
                 break;
