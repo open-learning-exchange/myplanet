@@ -104,8 +104,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
         if (stepExams.size() == 0) {
             courseProgress.setPassed(true);
-        } else {
-            courseProgress.setPassed(false);
         }
         courseProgress.setCreatedOn(user.getPlanetCode());
         courseProgress.setUpdatedDate(new Date().getTime());
