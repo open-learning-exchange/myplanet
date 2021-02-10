@@ -113,18 +113,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         setCourseData();
         setListeners();
         mViewPager.setCurrentItem(position);
-        showCourseEnrollPopup();
-    }
 
-    private void showCourseEnrollPopup() {
-        if (!currentCourse.getUserId().contains(userModel.getId())) {
-            DialogUtils.getAlertDialog(getActivity(), "Do you want to join this course?", "Join this course", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    addRemoveCourse();
-                }
-            });
-        }
+
     }
 
     private void setListeners() {
@@ -157,6 +147,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         if (!currentCourse.getUserId().contains(userModel.getId())) {
             btnAddRemove.setVisibility(View.VISIBLE);
             btnAddRemove.setText(getString(R.string.join));
+            DialogUtils.getAlertDialog(getActivity(), "Do you want to join this course?", "Join this course", (dialog, which) -> addRemoveCourse());
         } else {
             btnAddRemove.setVisibility(View.GONE);
         }
@@ -173,7 +164,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
     }
 
     @Override
@@ -230,7 +220,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
                     previous.setTextColor(getResources().getColor(R.color.md_white_1000));
-
                 }
                 onClickNext();
                 break;
