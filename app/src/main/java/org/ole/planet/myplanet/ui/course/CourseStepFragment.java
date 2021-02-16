@@ -102,8 +102,9 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         courseProgress.setCourseId(step.getCourseId());
         courseProgress.setStepNum(stepNumber);
 
-        // TODO: 1/16/21 SET PASSED IF THERE IS ONLY RESOURCES
-        courseProgress.setPassed(false);
+        if (stepExams.size() == 0) {
+            courseProgress.setPassed(true);
+        }
         courseProgress.setCreatedOn(user.getPlanetCode());
         courseProgress.setUpdatedDate(new Date().getTime());
         courseProgress.setParentCode(user.getParentCode());
@@ -161,12 +162,12 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     }
 
     private void setListeners() {
-        final RealmResults offlineResources = mRealm.where(RealmMyLibrary.class)
+        final RealmResults notDownloadedResources = mRealm.where(RealmMyLibrary.class)
                 .equalTo("stepId", stepId)
                 .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
                 .findAll();
-        setResourceButton(offlineResources, btnResource);
+        setResourceButton(notDownloadedResources, btnResource);
 
         btnExam.setOnClickListener(view -> {
             if (stepExams.size() > 0) {

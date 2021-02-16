@@ -186,7 +186,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
-        if (downloadedResources == null || downloadedResources.size == 0) {
+        if (downloadedResources == null || downloadedResources.isEmpty()) {
             btnOpen.visibility = View.GONE
         } else {
             btnOpen.visibility = View.VISIBLE
