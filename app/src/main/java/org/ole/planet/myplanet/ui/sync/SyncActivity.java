@@ -59,7 +59,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     boolean connectionResult;
     Realm mRealm;
     SharedPreferences.Editor editor;
-    int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
+    int[] syncTimeInteval = {60 * 60, 3 * 60 * 60};
     ImageView syncIcon;
     AnimationDrawable syncIconDrawable;
     @Override

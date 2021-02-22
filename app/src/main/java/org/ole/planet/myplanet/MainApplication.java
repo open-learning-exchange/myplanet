@@ -84,7 +84,7 @@ public class MainApplication extends Application implements Application.Activity
         preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
         if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
             dispatcher.cancelAll();
-            createJob(preferences.getInt("autoSyncInterval", 15 * 60), AutoSyncService.class);
+            createJob(preferences.getInt("autoSyncInterval", 60 * 60), AutoSyncService.class);
         } else {
             dispatcher.cancelAll();
         }
