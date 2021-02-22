@@ -5,11 +5,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.provider.Settings;
+import android.view.View;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-
-import android.view.View;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -17,9 +15,7 @@ import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.datamanager.Service;
-import org.ole.planet.myplanet.model.Download;
 import org.ole.planet.myplanet.model.MyPlanet;
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 
 import java.util.ArrayList;
 
@@ -79,6 +75,13 @@ public class DialogUtils {
                 .setMessage(message)
                 .setPositiveButton(R.string.dismiss, null)
                 .show();
+    }
+
+    public static AlertDialog getAlertDialog(Context context, String message,String pos, DialogInterface.OnClickListener listener) {
+        return new AlertDialog.Builder(context)
+                .setMessage(message)
+                .setIcon(R.drawable.courses)
+                .setPositiveButton(pos, listener).setNegativeButton("Cancel", null).show();
     }
 
     public static void showCloseAlert(Context context, String title, String message) {
