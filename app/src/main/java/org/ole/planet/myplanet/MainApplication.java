@@ -52,6 +52,7 @@ public class MainApplication extends Application implements Application.Activity
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
     public static boolean showDownload = false;
+    public static boolean isSyncRunning = false;
     public static boolean showHealthDialog = true;
     public static TeamPageListener listener;
     @SuppressLint("HardwareIds")
