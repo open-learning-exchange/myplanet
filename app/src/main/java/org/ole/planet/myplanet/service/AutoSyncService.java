@@ -131,7 +131,6 @@ public class AutoSyncService extends JobService implements SyncListener, Service
                 UploadManager.getInstance().uploadCrashLog(this);
                 UploadManager.getInstance().uploadActivities(success -> MainApplication.isSyncRunning = false);
             }
-
         }
     }
 
