@@ -3,6 +3,7 @@ package org.ole.planet.myplanet;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
+import android.app.job.JobScheduler;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
@@ -52,6 +53,7 @@ public class MainApplication extends Application implements Application.Activity
     public static int syncFailedCount = 0;
     public static boolean isCollectionSwitchOn = false;
     public static boolean showDownload = false;
+    public static boolean isSyncRunning = false;
     public static boolean showHealthDialog = true;
     public static TeamPageListener listener;
     @SuppressLint("HardwareIds")

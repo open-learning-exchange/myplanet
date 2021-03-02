@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.service;
 
+import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -36,10 +37,21 @@ public class AutoSyncService extends JobService implements SyncListener, Service
         preferences = getSharedPreferences(SyncManager.PREFS_NAME, MODE_PRIVATE);
         long lastSync = preferences.getLong("LastSync", 0);
         long currentTime = new Date().getTime();
-        int syncInterval = preferences.getInt("autoSyncInterval", 15 * 60);
+        int syncInterval = preferences.getInt("autoSyncInterval", 60 * 60);
         if ((currentTime - lastSync) > (syncInterval * 1000)) {
             Utilities.toast(this, "Syncing started...");
             new Service(this).checkVersion(this, preferences);
+        }
+        return false;
+    }
+
+
+    private boolean isMyServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
         }
         return false;
     }
@@ -102,20 +114,23 @@ public class AutoSyncService extends JobService implements SyncListener, Service
         if (!blockSync) {
             SyncManager.getInstance().start(this);
             UploadToShelfService.getInstance().uploadUserData(success -> new Service(MainApplication.context).healthAccess(success1 -> UploadToShelfService.getInstance().uploadHealth()));
-            UploadManager.getInstance().uploadExamResult(this);
-            UploadManager.getInstance().uploadFeedback(this);
-            UploadManager.getInstance().uploadAchievement();
-            UploadManager.getInstance().uploadResourceActivities("");
-            UploadManager.getInstance().uploadUserActivities(this);
-            UploadManager.getInstance().uploadCourseActivities();
-            UploadManager.getInstance().uploadSearchActivity();
-            UploadManager.getInstance().uploadRating(this);
-            UploadManager.getInstance().uploadResource(this);
-            UploadManager.getInstance().uploadNews();
-            UploadManager.getInstance().uploadTeams();
-            UploadManager.getInstance().uploadTeamTask();
-            UploadManager.getInstance().uploadCrashLog(this);
-            UploadManager.getInstance().uploadActivities(this);
+            if (!MainApplication.isSyncRunning){
+                MainApplication.isSyncRunning = true;
+                UploadManager.getInstance().uploadExamResult(this);
+                UploadManager.getInstance().uploadFeedback(this);
+                UploadManager.getInstance().uploadAchievement();
+                UploadManager.getInstance().uploadResourceActivities("");
+                UploadManager.getInstance().uploadUserActivities(this);
+                UploadManager.getInstance().uploadCourseActivities();
+                UploadManager.getInstance().uploadSearchActivity();
+                UploadManager.getInstance().uploadRating(this);
+                UploadManager.getInstance().uploadResource(this);
+                UploadManager.getInstance().uploadNews();
+                UploadManager.getInstance().uploadTeams();
+                UploadManager.getInstance().uploadTeamTask();
+                UploadManager.getInstance().uploadCrashLog(this);
+                UploadManager.getInstance().uploadActivities(success -> MainApplication.isSyncRunning = false);
+            }
         }
     }
 
@@ -123,5 +138,6 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     public void onSuccess(String s) {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
+
     }
 }
