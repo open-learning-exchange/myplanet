@@ -297,12 +297,15 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     @Override
     public void onSyncComplete() {
-        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
-        syncIconDrawable.stop();
-        syncIconDrawable.selectDrawable(0);
-        syncIcon.invalidateDrawable(syncIconDrawable);
-        DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
+        runOnUiThread(() -> {
+            syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+            syncIconDrawable.stop();
+            syncIconDrawable.selectDrawable(0);
+            syncIcon.invalidateDrawable(syncIconDrawable);
+        });
+        DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
+
         if (settings.getBoolean("isChild", false)) {
             runOnUiThread(() -> setUpChildMode());
         }
