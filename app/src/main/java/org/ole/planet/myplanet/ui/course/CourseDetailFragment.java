@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -77,6 +78,11 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         super.onActivityCreated(savedInstanceState);
         initRatingView("course", courses.getCourseId(), courses.getCourseTitle(), this);
         setCourseData();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
     }
 
     private void initView(View v) {
