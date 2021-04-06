@@ -92,6 +92,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
+        if (profileDbHandler == null){
+            profileDbHandler = UserProfileDbHandler(activity);
+        }
         if (items.resourceOffline != null && items.isResourceOffline) {
             openFileType(items, "offline")
         } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
