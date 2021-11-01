@@ -12,61 +12,61 @@
     <string name="err_msg_name">Introduce tu nombre de usuario</string>
     <string name="err_msg_password">Ingrese su contraseña</string>
     <string name="err_msg_login">El nombre de usuario y la contraseña no coinciden</string>
-    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.2.1)</string>
-    <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
-    <string name="radio_protocol">Protocol:</string>
+    <string name="hint_serverURl">Dirección del servidor de Planet (Ej. 192.168.2.1)</string>
+    <string name="hint_serverPin">Pin del servidor (Obtener este pin del administrador)</string>
+    <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
-    <string name="title_activity_dashboard">Dashboard</string>
+    <string name="title_activity_dashboard">Panel de Control</string>
     <string name="menu_myplanet">My Planet</string>
-    <string name="menu_home">Home</string>
-    <string name="menu_library">Library</string>
-    <string name="menu_courses">Courses</string>
-    <string name="menu_meetups">Meetups</string>
-    <string name="menu_surveys">Surveys</string>
-    <string name="menu_logout">Logout</string>
-    <string name="menu_feedback">Feedback</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_library">Biblioteca</string>
+    <string name="menu_courses">Cursos</string>
+    <string name="menu_meetups">Reuniones</string>
+    <string name="menu_surveys">Encuestas</string>
+    <string name="menu_logout">Cerrar sesión</string>
+    <string name="menu_feedback">Comentarios</string>
     <string name="system_name">myPlanet</string>
-    <string name="txt_myLibrary">myLibrary</string>
-    <string name="txt_myCourses">myCourses</string>
-    <string name="txt_myMeetups">myMeetups</string>
-    <string name="txt_myTeams">myTeams</string>
-    <string name="button_submit">Submit</string>
-    <string name="button_cancel">Cancel</string>
-    <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
-    <string name="download_selected">Download Selected</string>
-    <string name="txt_cancel">Cancel</string>
-    <string name="download_all">Download All</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="add_to_mycourse">Add to my courses</string>
-    <string name="join_selected">Join Selected</string>
-    <string name="join">Join</string>
-    <string name="add_to_mylib">Add To myLibrary</string>
-    <string name="step">step</string>
-    <string name="submission">mySubmissions</string>
-    <string name="calendar">Calendar</string>
+    <string name="txt_myLibrary">mibiblioteca</string>
+    <string name="txt_myCourses">misCursos</string>
+    <string name="txt_myMeetups">misReuniones</string>
+    <string name="txt_myTeams">misEquipos</string>
+    <string name="button_submit">Enviar</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="download_suggestion">No se han descargado los siguientes archivos. ¿Desea descargarlos para su uso sin conexión?</string>
+    <string name="download_selected">Descargar seleccionados</string>
+    <string name="txt_cancel">Cancelar</string>
+    <string name="download_all">Descargar todo</string>
+    <string name="hello_blank_fragment">Hola fragmento en blanco</string>
+    <string name="add_to_mycourse">Añadir a mis cursos</string>
+    <string name="join_selected">Unir seleccionados</string>
+    <string name="join">Unirse</string>
+    <string name="add_to_mylib">Añadir a miBiblioteca</string>
+    <string name="step">paso</string>
+    <string name="submission">mis envíos</string>
+    <string name="calendar">Calendario</string>
     <string name="email">Correo electrónico</string>
     <string name="documents">Documentos</string>
     <string name="your_ans">Tu respuesta</string>
     <string name="leave">Eliminar miCurso</string>
     <string name="invite_member">Invitar miembro</string>
-    <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type :</string>
-    <string name="suggestion">Suggestion</string>
+    <string name="is_urgent">¿Es urgente tu comentario?</string>
+    <string name="feedback_type">Tipo de comentario:</string>
+    <string name="suggestion">Sugerencia</string>
     <string name="no">No</string>
-    <string name="yes">Yes</string>
-    <string name="question">Question</string>
-    <string name="bug">Bug</string>
-    <string name="your_feedback">Your Feedback *</string>
-    <string name="button_update">Update</string>
-    <string name="level">Level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
-    <string name="gender">Gender</string>
-    <string name="birth_date">Birth Date</string>
-    <string name="phone_number">Phone Number</string>
-    <string name="language">Language</string>
-    <string name="last_name">Last Name</string>
+    <string name="yes">Sí</string>
+    <string name="question">Pregunta</string>
+    <string name="bug">Error</string>
+    <string name="your_feedback">Tus comentarios *</string>
+    <string name="button_update">Actualizar</string>
+    <string name="level">Nivel</string>
+    <string name="male">Masculino</string>
+    <string name="female">Femenino</string>
+    <string name="gender">Género</string>
+    <string name="birth_date">Fecha de nacimiento</string>
+    <string name="phone_number">Número de teléfono</string>
+    <string name="language">Idioma</string>
+    <string name="last_name">Apellido</string>
     <string name="version">Versión</string>
     <string name="middle_name">Segundo nombre</string>
     <string name="first_name">Nombre</string>
@@ -167,30 +167,30 @@
     <string name="added_by">Añadido por</string>
     <string name="record_audio">Grabar audio</string>
     <string name="record_video">Grabar vídeo</string>
-    <string name="select_gallery">Select From Gallery</string>
-    <string name="add_resource">Add Resource :</string>
-    <string name="reply">Reply</string>
-    <string name="show_reply">Show Replies</string>
-    <string name="show_main_conversation">Show main conversation</string>
+    <string name="select_gallery">Seleccionar de la galería</string>
+    <string name="add_resource">Añadir recurso :</string>
+    <string name="reply">Responder</string>
+    <string name="show_reply">Mostrar respuestas</string>
+    <string name="show_main_conversation">Mostrar conversación principal</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
-    <string name="showing_reply_of">Showing reply of :</string>
-    <string name="open_date">Open Date</string>
-    <string name="my_survey">mySurvey</string>
+    <string name="showing_reply_of">Mostrando respuesta de:</string>
+    <string name="open_date">Fecha de apertura</string>
+    <string name="my_survey">miEncuesta</string>
     <string-array name="level">
         <item></item>
-        <item>Beginner</item>
-        <item>Intermediate</item>
-        <item>Advanced</item>
-        <item>Expert</item>
+        <item>Principiante</item>
+        <item>Intermedio</item>
+        <item>Avanzado</item>
+        <item>Experto</item>
     </string-array>
     <string-array name="language">
-        <item>English</item>
+        <item>Inglés</item>
         <item>नेपाली</item>
-        <item>Français</item>
+        <item>Francés</item>
         <item>Español</item>
         <item>عربى</item>
-        <item>Somali</item>
+        <item>Somalí</item>
     </string-array>
     <string-array name="language_keys">
         <item>en</item>
@@ -201,10 +201,10 @@
         <item>so</item>
     </string-array>
     <string-array name="info_type">
-        <item>Languages</item>
-        <item>Education</item>
-        <item>Employment History</item>
-        <item>Badges</item>
+        <item>Idiomas</item>
+        <item>Educación</item>
+        <item>Historial de empleo</item>
+        <item>Medallas</item>
         <item>Certificados</item>
         <item>Prácticas</item>
         <item>Premios</item>
