@@ -147,26 +147,26 @@
     <string name="edit_post">Editar Post</string>
     <string name="search_user">Buscar usuario</string>
     <string name="get_started">Empieza</string>
-    <string name="enter_password">Enter Password</string>
-    <string name="managerial_login">Manager Login</string>
-    <string name="save_username_and_password">Save Username and Password</string>
-    <string name="year">Year</string>
-    <string name="publisher">Publisher</string>
-    <string name="link_to_license">Link to license</string>
-    <string name="resource_for">Resource For</string>
-    <string name="open_which_file">Open Which File</string>
-    <string name="file_upload">File Upload</string>
-    <string name="choose_file">Choose File</string>
-    <string name="file_downloadable">File downloadable</string>
-    <string name="priority">Priority</string>
-    <string name="status">Status</string>
-    <string name="title_not_compulsary">Title</string>
-    <string name="discussion">Discussion</string>
-    <string name="add_message">Add Message</string>
-    <string name="enter_message">Enter your message here..</string>
-    <string name="added_by">Added By</string>
-    <string name="record_audio">Record Audio</string>
-    <string name="record_video">Record Video</string>
+    <string name="enter_password">Introducir la contraseña</string>
+    <string name="managerial_login">Login del administrador</string>
+    <string name="save_username_and_password">Guardar nombre de usuario y contraseña</string>
+    <string name="year">Año</string>
+    <string name="publisher">Publicador</string>
+    <string name="link_to_license">Enlace a la licencia</string>
+    <string name="resource_for">Recurso para</string>
+    <string name="open_which_file">Abrir que archivo</string>
+    <string name="file_upload">Subir archivo</string>
+    <string name="choose_file">Elegir archivo</string>
+    <string name="file_downloadable">Archivo descargable</string>
+    <string name="priority">Prioridad</string>
+    <string name="status">Estado</string>
+    <string name="title_not_compulsary">Título</string>
+    <string name="discussion">Discusión</string>
+    <string name="add_message">Añadir mensaje</string>
+    <string name="enter_message">Introduzca su mensaje aquí..</string>
+    <string name="added_by">Añadido por</string>
+    <string name="record_audio">Grabar audio</string>
+    <string name="record_video">Grabar vídeo</string>
     <string name="select_gallery">Select From Gallery</string>
     <string name="add_resource">Add Resource :</string>
     <string name="reply">Reply</string>
@@ -269,55 +269,55 @@
     <string name="created_on">Creado el</string>
     <string name="name_normal">Nombre</string>
     <string name="mypersonals">myPersonals</string>
-    <string name="capture_image">Capture Image</string>
-    <string name="team_name">Enter Team Name</string>
-    <string name="resources">Resources</string>
-    <string name="button_reject">Reject</string>
-    <string name="button_accept">Accept</string>
+    <string name="capture_image">Capturar imagen</string>
+    <string name="team_name">Introducir nombre de equipo</string>
+    <string name="resources">Recursos</string>
+    <string name="button_reject">Rechazar</string>
+    <string name="button_accept">Aceptar</string>
     <string name="plan">Plan</string>
-    <string name="body_temperature">Body Temperature (°C)</string>
-    <string name="rectally">Rectally</string>
-    <string name="axillary">Axillary</string>
-    <string name="by_ear">By ear</string>
-    <string name="by_skin">By skin</string>
-    <string name="temperature_taken">Temperature taken :</string>
-    <string name="pulse_rate">Pulse Rate (bpm)</string>
-    <string name="respiration_rate">Respiration Rate</string>
-    <string name="systolic">Systolic</string>
-    <string name="diastolic">Diastolic</string>
-    <string name="blood_pressure">Blood Pressure</string>
-    <string name="orally">Orally</string>
-    <string name="save">Save</string>
-    <string name="vital_signs">Vital Signs Record</string>
-    <string name="task">Task (required)</string>
-    <string name="deadline">Deadline (required)</string>
-    <string name="click_here_to_pick_date">Click here to pick date</string>
-    <string name="enterprises">Enterprises</string>
-    <string name="select_member">Select Team Member</string>
-    <string name="assign_task_to">Task Assigned to</string>
-    <string name="leader_selected">Leader selected</string>
-    <string name="user_removed_from_team">User removed from team</string>
-    <string name="remove">Remove</string>
-    <string name="make_leader">Make Leader</string>
-    <string name="mission"><![CDATA[Mission & Services]]></string>
-    <string name="team">Team</string>
-    <string name="applicants">Applicants</string>
-    <string name="finances">Finances</string>
-    <string name="messages">messages</string>
-    <string name="nodata">No data available</string>
-    <string name="note">Note *</string>
-    <string name="amount">Amount</string>
-    <string name="debit">Debit</string>
-    <string name="credit">Credit</string>
+    <string name="body_temperature">Temperatura del cuerpo (°C)</string>
+    <string name="rectally">Rectal</string>
+    <string name="axillary">Axilar</string>
+    <string name="by_ear">Por oreja</string>
+    <string name="by_skin">Por piel</string>
+    <string name="temperature_taken">Temperatura tomada:</string>
+    <string name="pulse_rate">Tasa de pulso (bpm)</string>
+    <string name="respiration_rate">Tasa de Respiración</string>
+    <string name="systolic">Sistólica</string>
+    <string name="diastolic">Diastólica</string>
+    <string name="blood_pressure">Presión arterial</string>
+    <string name="orally">Oralmente</string>
+    <string name="save">Guardar</string>
+    <string name="vital_signs">Registro vital</string>
+    <string name="task">Tarea (requerida)</string>
+    <string name="deadline">Fecha límite (requerido)</string>
+    <string name="click_here_to_pick_date">Haga clic aquí para elegir la fecha</string>
+    <string name="enterprises">Empresas</string>
+    <string name="select_member">Seleccionar miembro del equipo</string>
+    <string name="assign_task_to">Tarea asignada a</string>
+    <string name="leader_selected">Líder seleccionado</string>
+    <string name="user_removed_from_team">Usuario eliminado del equipo</string>
+    <string name="remove">Eliminar</string>
+    <string name="make_leader">Nombrar líder</string>
+    <string name="mission"><![CDATA[Misión y servicios]]></string>
+    <string name="team">Equipo</string>
+    <string name="applicants">Solicitantes</string>
+    <string name="finances">Finanzas</string>
+    <string name="messages">mensajes</string>
+    <string name="nodata">No hay datos disponibles</string>
+    <string name="note">Nota *</string>
+    <string name="amount">Cantidad</string>
+    <string name="debit">Débito</string>
+    <string name="credit">Crédito</string>
     <string name="balance">Balance</string>
     <string name="total">Total</string>
-    <string name="location">Location</string>
-    <string name="start_date">Start Date</string>
-    <string name="click_here_to_pick_time">Click here to pick time</string>
-    <string name="start_time">Start Time</string>
-    <string name="end_date">End Date</string>
-    <string name="end_time">End Time</string>
-    <string name="daily">Daily</string>
+    <string name="location">Ubicación</string>
+    <string name="start_date">Fecha de inicio</string>
+    <string name="click_here_to_pick_time">Haga clic aquí para elegir la hora</string>
+    <string name="start_time">Hora de inicio</string>
+    <string name="end_date">Fecha de finalización</string>
+    <string name="end_time">Hora de finalización</string>
+    <string name="daily">Diario</string>
     <string name="weekly">Semanal</string>
     <string name="recurring_frequency">Frecuencia recurrente</string>
     <string name="filter_by_date">Filtro de fecha</string>
@@ -387,15 +387,15 @@
         <item>Débito</item>
     </string-array>
     <string-array name="sort_by_date">
-        <item>Order By Date - Asc</item>
-        <item>Order By Date - Desc</item>
-        <item>Order By Title</item>
+        <item>Ordenar por fecha - Asc</item>
+        <item>Ordenar por fecha - Desc</item>
+        <item>Ordenar por título</item>
     </string-array>
     <string-array name="sort_member">
-        <item>Order By Date - Asc</item>
-        <item>Order By Date - Desc</item>
-        <item>Order By Name - Asc</item>
-        <item>Order By Name - Desc</item>
+        <item>Ordenar por fecha - Asc</item>
+        <item>Ordenar por fecha - Desc</item>
+        <item>Ordenar por nombre - Asc</item>
+        <item>Ordenar por nombre - Desc</item>
     </string-array>
     <string-array name="grade_level">
         <item>Todos</item>
@@ -426,15 +426,15 @@
     <string-array name="diagnosis_list">
         <item>Cáncer</item>
         <item>Trastornos cardiovasculares</item>
-        <item>Cirrhosis of the liver</item>
+        <item>Cirrosis del hígado</item>
         <item>COVID-19</item>
         <item>Diabetes</item>
-        <item>Diarrhoea diseases</item>
-        <item>Ebola</item>
-        <item>Epilepsy</item>
+        <item>Enfermedades diarreicas</item>
+        <item>Ébola</item>
+        <item>Epilepsia</item>
         <item>FGM</item>
         <item>Influenza</item>
-        <item>Ischaemic heat disease</item>
+        <item>Enfermedad de calor isquémica</item>
         <item>Malaria</item>
         <item>Desnutrición</item>
         <item>Meningitis</item>
