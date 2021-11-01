@@ -318,73 +318,73 @@
     <string name="end_date">End Date</string>
     <string name="end_time">End Time</string>
     <string name="daily">Daily</string>
-    <string name="weekly">Weekly</string>
-    <string name="recurring_frequency">Recurring Frequency</string>
-    <string name="filter_by_date">Date Filter</string>
-    <string name="emergency_contact">Emergency Contact</string>
-    <string name="contact">Contact</string>
-    <string name="special_needs">Special Needs</string>
-    <string name="other_need">Other Needs</string>
-    <string name="update_health_record">Update Health Record</string>
-    <string name="vital_sign">Vital Signs</string>
-    <string name="examination">Examination</string>
-    <string name="add_examination">Add Examination</string>
-    <string name="new_patient">Next Member</string>
-    <string name="height">Height (cm)</string>
-    <string name="width">Width</string>
-    <string name="vision">Vision</string>
-    <string name="hearing">Hearing</string>
-    <string name="vitals">Vitals</string>
-    <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation">Observations and Notes</string>
-    <string name="diagnosis">Diagnosis</string>
-    <string name="treatments">Treatments</string>
-    <string name="medications">Medications</string>
-    <string name="immunization">Immunization Dates</string>
-    <string name="allergies">Allergies</string>
-    <string name="xray">X-rays</string>
-    <string name="labtest">Lab Tests</string>
-    <string name="referrals">Referrals</string>
-    <string name="full_name">Full Name</string>
-    <string name="weight">Weight (kg)</string>
-    <string name="no_records">No records found</string>
+    <string name="weekly">Semanal</string>
+    <string name="recurring_frequency">Frecuencia recurrente</string>
+    <string name="filter_by_date">Filtro de fecha</string>
+    <string name="emergency_contact">Contacto de emergencia</string>
+    <string name="contact">Contacto</string>
+    <string name="special_needs">Necesidades especiales</string>
+    <string name="other_need">Otras necesidades</string>
+    <string name="update_health_record">Actualizar historial de salud</string>
+    <string name="vital_sign">Signos vitales</string>
+    <string name="examination">Examen</string>
+    <string name="add_examination">Añadir examen</string>
+    <string name="new_patient">Siguiente miembro</string>
+    <string name="height">Altura (cm)</string>
+    <string name="width">Ancho</string>
+    <string name="vision">Visión</string>
+    <string name="hearing">Audiencia</string>
+    <string name="vitals">Vitales</string>
+    <string name="condition_and_treatment">Condición y tratamiento</string>
+    <string name="observation">Observaciones y notas</string>
+    <string name="diagnosis">Diagnóstico</string>
+    <string name="treatments">Tratamientos</string>
+    <string name="medications">Medicamentos</string>
+    <string name="immunization">Fechas de inmunización</string>
+    <string name="allergies">Alergias</string>
+    <string name="xray">Rayos X</string>
+    <string name="labtest">Pruebas de laboratorio</string>
+    <string name="referrals">Referencias</string>
+    <string name="full_name">Nombre completo</string>
+    <string name="weight">Peso (kg)</string>
+    <string name="no_records">No se encontraron registros</string>
     <string name="chats">Chats</string>
-    <string name="select_health_member">Select Member</string>
-    <string name="notifications">Notifications</string>
-    <string name="incorrect_ans">Incorrect answer, please try again</string>
-    <string name="diagnosis_note">Diagnosis Notes</string>
-    <string name="menu_community">Community</string>
-    <string name="library">Library</string>
-    <string name="device_name">Device Name</string>
-    <string name="enter_title">Enter title</string>
-    <string name="add_link">Add Link</string>
-    <string name="chat">Chat</string>
-    <string name="members">Members</string>
-    <string name="tasks">Tasks</string>
-    <string name="join_requests">Join Requests</string>
-    <string name="add_image">Add Image</string>
-    <string name="addImageToMessage">Beta Add image to message</string>
-    <string name="clear_data">Clear Data</string>
-    <string name="reset_app">Reset App</string>
-    <string name="freeup_space">Free-up disk space</string>
-    <string name="action_disclaimer">Disclaimer</string>
-    <string name="action_about">About</string>
-    <string name="engilsh_dictionary">English Dictionary</string>
+    <string name="select_health_member">Seleccionar Miembro</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="incorrect_ans">Respuesta incorrecta, inténtalo de nuevo</string>
+    <string name="diagnosis_note">Notas de diagnóstico</string>
+    <string name="menu_community">Comunidad</string>
+    <string name="library">Biblioteca</string>
+    <string name="device_name">Nombre del dispositivo</string>
+    <string name="enter_title">Introducir título</string>
+    <string name="add_link">Añadir enlace</string>
+    <string name="chat">Chatear</string>
+    <string name="members">Miembros</string>
+    <string name="tasks">Tareas</string>
+    <string name="join_requests">solicitud de admisión</string>
+    <string name="add_image">Añadir imagen</string>
+    <string name="addImageToMessage">Beta Añadir imagen al mensaje</string>
+    <string name="clear_data">Limpiar datos</string>
+    <string name="reset_app">Restablecer App</string>
+    <string name="freeup_space">Espacio libre en disco</string>
+    <string name="action_disclaimer">Descargo de responsabilidad</string>
+    <string name="action_about">Acerca de</string>
+    <string name="engilsh_dictionary">Diccionario de inglés</string>
     <string-array name="team_type">
-        <item>Local Team</item>
-        <item>Connect With Nation</item>
+        <item>Equipo local</item>
+        <item>Conectar con Nation</item>
     </string-array>
     <string-array name="contact_type">
-        <item>Phone</item>
-        <item>Email</item>
+        <item>Teléfono</item>
+        <item>Correo electrónico</item>
     </string-array>
     <string-array name="add_link_options">
-        <item>Teams</item>
-        <item>Enterprises</item>
+        <item>Equipos</item>
+        <item>Empresas</item>
     </string-array>
     <string-array name="transaction_type">
-        <item>Credit</item>
-        <item>Debit</item>
+        <item>Crédito</item>
+        <item>Débito</item>
     </string-array>
     <string-array name="sort_by_date">
         <item>Order By Date - Asc</item>
@@ -398,8 +398,8 @@
         <item>Order By Name - Desc</item>
     </string-array>
     <string-array name="grade_level">
-        <item>All</item>
-        <item>Pre-Kindergarten</item>
+        <item>Todos</item>
+        <item>PreKindergarten</item>
         <item>Kindergarten</item>
         <item>1</item>
         <item>2</item>
@@ -413,19 +413,19 @@
         <item>10</item>
         <item>11</item>
         <item>12</item>
-        <item>College</item>
-        <item>Post-Graduate</item>
+        <item>Universidad</item>
+        <item>Postgrado</item>
     </string-array>
     <string-array name="subject_level">
-        <item>All</item>
-        <item>Beginner</item>
-        <item>Intermediate</item>
-        <item>Advanced</item>
-        <item>Expert</item>
+        <item>Todos</item>
+        <item>Principiante</item>
+        <item>Intermedio</item>
+        <item>Avanzado</item>
+        <item>Experto</item>
     </string-array>
     <string-array name="diagnosis_list">
-        <item>Cancer</item>
-        <item>Cardiovascular disorders</item>
+        <item>Cáncer</item>
+        <item>Trastornos cardiovasculares</item>
         <item>Cirrhosis of the liver</item>
         <item>COVID-19</item>
         <item>Diabetes</item>
@@ -436,15 +436,15 @@
         <item>Influenza</item>
         <item>Ischaemic heat disease</item>
         <item>Malaria</item>
-        <item>Malnutrition</item>
+        <item>Desnutrición</item>
         <item>Meningitis</item>
-        <item>Neonatal sepsis and infections</item>
-        <item>HIV/AIDS</item>
-        <item>Pneumonia</item>
-        <item>Stroke</item>
+        <item>Sepsis neonatal e infecciones</item>
+        <item>VIH/SIDA</item>
+        <item>Pneumonía</item>
+        <item>Accidente cerebrovascular</item>
         <item>Tuberculosis</item>
     </string-array>
-    <string name="title_activity_news_detail">NewsDetailActivity</string>
+    <string name="title_activity_news_detail">Actividad de noticias</string>
     <string name="large_text">        \"Material is the metaphor.\n\n\"
 
         \"A material metaphor is the unifying theory of a rationalized space and a system of motion.\"
@@ -533,22 +533,22 @@
         \"For example, position the FAB to one side of stream of a cards so the FAB won’t interfere \"
         \"when a user tries to pick up one of cards.\n\n\"
     </string>
-    <string name="add_story">Add Story</string>
+    <string name="add_story">Añadir historia</string>
     <string name="txt_myprogress">myProgress</string>
-    <string name="more_action">Filter</string>
-    <string name="my_progress">My Progress</string>
-    <string name="my_activity">My Activity</string>
-    <string name="add_label">Add Label</string>
-    <string name="share_with_community">Share with community</string>
-    <string name="services">What are the Services your enterprise provides?</string>
-    <string name="rules">What are the Rules of your enterprise</string>
-    <string name="add_res">Add Resource</string>
-    <string name="password">Password</string>
-    <string name="retype_password">Confirm Password</string>
-    <string name="become_a_member">Become a member</string>
-    <string name="change_member">Change Member</string>
-    <string name="use_phone_number_as_password">Use phone number as password</string>
-    <string name="feedback">Feedback</string>
-    <string name="add_member">Add member</string>
-    <string name="confirm_exit">Are you sure you want to leave this team?</string>
+    <string name="more_action">Filtro</string>
+    <string name="my_progress">Mi progreso</string>
+    <string name="my_activity">Mi actividad</string>
+    <string name="add_label">Añadir etiqueta</string>
+    <string name="share_with_community">Compartir con la comunidad</string>
+    <string name="services">¿Cuáles son los Servicios que su empresa proporciona?</string>
+    <string name="rules">¿Cuáles son las reglas de su empresa?</string>
+    <string name="add_res">Añadir Recurso</string>
+    <string name="password">Contraseña</string>
+    <string name="retype_password">Confirmar contraseña</string>
+    <string name="become_a_member">Hazte miembro</string>
+    <string name="change_member">Cambiar miembro</string>
+    <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
+    <string name="feedback">Comentarios</string>
+    <string name="add_member">Añadir miembro</string>
+    <string name="confirm_exit">¿Estás seguro de que quieres abandonar este equipo?</string>
 </resources>
