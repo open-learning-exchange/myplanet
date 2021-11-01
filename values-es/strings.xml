@@ -87,66 +87,66 @@
     <string name="logout">Cerrar sesión</string>
     <string name="settings">Ajustes</string>
     <string name="change_password">Cambiar contraseña</string>
-    <string name="edit_profile">Edit Profile</string>
-    <string name="view_profile">View Profile</string>
-    <string name="alerts">Alerts</string>
-    <string name="profile">Profile</string>
-    <string name="user">User</string>
-    <string name="remove_selected">Remove Selected</string>
-    <string name="dismiss">Finish</string>
-    <string name="stop_download">Stop Download</string>
-    <string name="downloading_file">Downloading file...</string>
-    <string name="cancel">Cancel</string>
-    <string name="add_to_mycourses">Add To My Courses</string>
-    <string name="added_to">added to</string>
-    <string name="removed_from">removed from</string>
-    <string name="my_courses">my courses</string>
-    <string name="filter_collections">Filter Collections</string>
-    <string name="select_many_collections">Select Many Collections</string>
-    <string name="collections">Collections</string>
-    <string name="ok">OK</string>
-    <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
-    <string name="archive_mycourse">Archive myCourse</string>
-    <string name="menu_achievement">Achievements</string>
-    <string name="edit_achievement">Edit Achievement</string>
-    <string name="add_resources">Add Resources</string>
-    <string name="description">Description</string>
-    <string name="title">Title *</string>
-    <string name="name">Name *</string>
-    <string name="relationship">Relationship</string>
-    <string name="date">Date</string>
-    <string name="birth_place">Birth Place</string>
-    <string name="clear_tags">Clear</string>
-    <string name="add_an_achievement">Add an Achievement</string>
-    <string name="add_a_reference">Add a Reference</string>
-    <string name="learner">Learner</string>
-    <string name="show_filter">Show Filter</string>
-    <string name="subjects">Subjects</string>
-    <string name="mediums">Mediums</string>
-    <string name="levels">Levels</string>
-    <string name="languages">Languages</string>
+    <string name="edit_profile">Editar perfil</string>
+    <string name="view_profile">Ver perfil</string>
+    <string name="alerts">Alertas</string>
+    <string name="profile">Perfil</string>
+    <string name="user">Usuario</string>
+    <string name="remove_selected">Eliminar seleccionados</string>
+    <string name="dismiss">Finalizar</string>
+    <string name="stop_download">Detener descarga</string>
+    <string name="downloading_file">Descargando archivo...</string>
+    <string name="cancel">Cancelar</string>
+    <string name="add_to_mycourses">Añadir a mis cursos</string>
+    <string name="added_to">añadido a</string>
+    <string name="removed_from">eliminado de</string>
+    <string name="my_courses">mis cursos</string>
+    <string name="filter_collections">Filtrar colecciones</string>
+    <string name="select_many_collections">Seleccionar muchas colecciones</string>
+    <string name="collections">Colecciones</string>
+    <string name="ok">Ok</string>
+    <string name="inactive_message">Usuario no activado, póngase en contacto con el administrador o el administrador para activar su cuenta.</string>
+    <string name="archive_mycourse">Archivar mi curso</string>
+    <string name="menu_achievement">Logros</string>
+    <string name="edit_achievement">Editar logro</string>
+    <string name="add_resources">Añadir recursos</string>
+    <string name="description">Descripción</string>
+    <string name="title">Título *</string>
+    <string name="name">Nombre *</string>
+    <string name="relationship">Relación</string>
+    <string name="date">Fecha</string>
+    <string name="birth_place">Lugar de nacimiento</string>
+    <string name="clear_tags">Borrar</string>
+    <string name="add_an_achievement">Añadir un logro</string>
+    <string name="add_a_reference">Añadir referencia</string>
+    <string name="learner">Estudiante</string>
+    <string name="show_filter">Mostrar filtro</string>
+    <string name="subjects">Temas</string>
+    <string name="mediums">Medios</string>
+    <string name="levels">Niveles</string>
+    <string name="languages">Idiomas</string>
     <string name="txt_myLife">myLife</string>
     <string name="achievements">myAchievements</string>
     <string name="messeges">myMessages</string>
-    <string name="contacts">Contacts</string>
-    <string name="news">Our News</string>
-    <string name="references">References</string>
-    <string name="maps">Maps</string>
-    <string name="help_wanted">Help Wanted</string>
-    <string name="btn_guest_login">Login As Guest</string>
-    <string name="enter_username">Enter Username</string>
-    <string name="login">Login</string>
-    <string name="child_mode">Easy Mode</string>
-    <string name="joined_members">Joined Members</string>
-    <string name="requested_member">Requested Member</string>
-    <string name="courses">Courses</string>
-    <string name="enter_message_here">Enter message here</string>
-    <string name="what_would">What would you like to share?</string>
-    <string name="our_news">Our News</string>
-    <string name="delete_record">Are you sure you want to delete the following ?</string>
-    <string name="edit_post">Edit Post</string>
-    <string name="search_user">Search user</string>
-    <string name="get_started">GET STARTED</string>
+    <string name="contacts">Contactos</string>
+    <string name="news">Nuestras noticias</string>
+    <string name="references">Referencias</string>
+    <string name="maps">Mapas</string>
+    <string name="help_wanted">Ayuda Deseada</string>
+    <string name="btn_guest_login">Iniciar sesión como invitado</string>
+    <string name="enter_username">Ingrese nombre de usuario</string>
+    <string name="login">Iniciar sesión</string>
+    <string name="child_mode">Modo fácil</string>
+    <string name="joined_members">Miembros afiliados</string>
+    <string name="requested_member">Miembro solicitado</string>
+    <string name="courses">Cursos</string>
+    <string name="enter_message_here">Ingrese el mensaje aquí</string>
+    <string name="what_would">¿Qué te gustaría compartir?</string>
+    <string name="our_news">Nuestras noticias</string>
+    <string name="delete_record">¿Está seguro que desea eliminar lo siguiente?</string>
+    <string name="edit_post">Editar Post</string>
+    <string name="search_user">Buscar usuario</string>
+    <string name="get_started">Empieza</string>
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Manager Login</string>
     <string name="save_username_and_password">Save Username and Password</string>
@@ -205,69 +205,69 @@
         <item>Education</item>
         <item>Employment History</item>
         <item>Badges</item>
-        <item>Certificates</item>
-        <item>Internships</item>
-        <item>Awards</item>
+        <item>Certificados</item>
+        <item>Prácticas</item>
+        <item>Premios</item>
     </string-array>
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
-        <item>BeLL-Reader</item>
+        <item>Lector de BeL-</item>
         <item>Mp3</item>
-        <item>Flow Video Player</item>
-        <item>BeLL Video Book Player</item>
+        <item>Reproductor de vídeo de Flow</item>
+        <item>Reproductor de vídeo BeLL</item>
         <item>Native Video</item>
     </string-array>
     <string-array name="media">
-        <item>Text</item>
-        <item>Graphic/Pictures</item>
-        <item>Audio/Music/Book</item>
-        <item>Video</item>
+        <item>Texto</item>
+        <item>Gráficos/imágenes</item>
+        <item>Audio/Música/Libro</item>
+        <item>Vídeo</item>
     </string-array>
     <string-array name="resource_type">
-        <item>Textbook</item>
-        <item>Lesson Plan</item>
-        <item>Activities</item>
-        <item>Exercises</item>
-        <item>Discussion Questions</item>
+        <item>Libro de texto</item>
+        <item>Plan de Lección</item>
+        <item>Actividades</item>
+        <item>Ejercicios</item>
+        <item>Preguntas para discutir</item>
     </string-array>
     <string-array name="array_levels">
-        <item>Early Education</item>
-        <item>Lower Primary</item>
-        <item>Upper Primary</item>
-        <item>Lower Secondary</item>
-        <item>Upper Secondary</item>
-        <item>Undergraduate</item>
-        <item>Graduate</item>
-        <item>Professional</item>
+        <item>Educación temprana</item>
+        <item>Primaria inferior</item>
+        <item>Primaria superior</item>
+        <item>Secundaria inferior</item>
+        <item>Secundaria superior</item>
+        <item>No licensiado</item>
+        <item>Graduado</item>
+        <item>Profesional</item>
     </string-array>
     <string-array name="array_subjects">
-        <item>Agriculture</item>
-        <item>Arts</item>
-        <item>Business and Finance</item>
-        <item>Environment</item>
-        <item>Food and Nutrition</item>
-        <item>Geography</item>
-        <item>Health and Medicine</item>
-        <item>History</item>
-        <item>Human Development</item>
-        <item>Languages</item>
-        <item>Law</item>
-        <item>Learning</item>
+        <item>Agricultura</item>
+        <item>Artes</item>
+        <item>Negocios y finanzas</item>
+        <item>Medio ambiente</item>
+        <item>Alimentación y nutrición</item>
+        <item>Geografía</item>
+        <item>Salud y medicina</item>
+        <item>Historia</item>
+        <item>Desarrollo humano</item>
+        <item>Idiomas</item>
+        <item>Derecho</item>
+        <item>Aprendiendo</item>
     </string-array>
     <string-array name="array_resource_for">
-        <item>Default</item>
-        <item>Leader</item>
-        <item>Learner</item>
+        <item>Predeterminado</item>
+        <item>Líder</item>
+        <item>Estudiante</item>
     </string-array>
-    <string name="dictionaries">Dictionaries</string>
-    <string name="bible">Bibles</string>
-    <string name="feature_not">Feature not available</string>
+    <string name="dictionaries">Diccionarios</string>
+    <string name="bible">Biblias</string>
+    <string name="feature_not">Característica no disponible</string>
     <string name="myhealth">myHealth</string>
-    <string name="type_name_to_search">Type name to search</string>
-    <string name="action">Action</string>
-    <string name="created_on">Created On</string>
-    <string name="name_normal">Name</string>
+    <string name="type_name_to_search">Escribe el nombre para buscar</string>
+    <string name="action">Acción</string>
+    <string name="created_on">Creado el</string>
+    <string name="name_normal">Nombre</string>
     <string name="mypersonals">myPersonals</string>
     <string name="capture_image">Capture Image</string>
     <string name="team_name">Enter Team Name</string>
