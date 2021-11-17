@@ -1,147 +1,196 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
-    <string name="app_project_name">My Planet</string>
-    <string name="action_settings">Settings</string>
-    <string name="hint_name">Username</string>
-    <string name="hint_password">Password</string>
-    <string name="btn_sign_in">Sign In</string>
-    <string name="btn_sync">Sync</string>
-    <string name="btn_sync_save">Save</string>
-    <string name="btn_sync_cancel">Cancel</string>
-    <string name="err_msg_name">Enter your username</string>
-    <string name="err_msg_password">Enter the password</string>
-    <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">Planet Server Address</string>
-    <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
-    <string name="title_activity_dashboard">Dashboard</string>
+    <string name="app_project_name">myPlanet</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="hint_name">Nombre de usuario</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="btn_sign_in">Iniciar sesión</string>
+    <string name="btn_sync">Sincronizar</string>
+    <string name="btn_sync_save">Guardar</string>
+    <string name="btn_sync_cancel">Cancelar</string>
+    <string name="err_msg_name">Introduce tu nombre de usuario</string>
+    <string name="err_msg_password">Ingrese su contraseña</string>
+    <string name="err_msg_login">El nombre de usuario y la contraseña no coinciden</string>
+    <string name="hint_serverURl">Dirección del servidor de Planet (Ej. 192.168.2.1)</string>
+    <string name="hint_serverPin">Pin del servidor (Obtener este pin del administrador)</string>
+    <string name="radio_protocol">Protocolo:</string>
+    <string name="radio_http">HTTP</string>
+    <string name="radio_https">HTTPS</string>
+    <string name="title_activity_dashboard">Panel de Control</string>
     <string name="menu_myplanet">My Planet</string>
-    <string name="menu_home">Home</string>
-    <string name="menu_library">Our Library</string>
-    <string name="menu_courses">Our Courses</string>
-    <string name="menu_meetups">Meetups</string>
-    <string name="menu_surveys">Surveys</string>
-    <string name="menu_logout">Logout</string>
-    <string name="menu_feedback">Feedback</string>
-    <string name="system_name">My Planet</string>
-    <string name="txt_myLibrary">myLibrary</string>
-    <string name="txt_myCourses">myCourses</string>
-    <string name="txt_myMeetups">myMeetups</string>
-    <string name="txt_myTeams">myTeams</string>
-    <string name="button_submit">Submit</string>
-    <string name="button_cancel">Cancel</string>
-    <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
-    <string name="download_selected">Download Selected</string>
-    <string name="txt_cancel">Cancel</string>
-    <string name="download_all">Download All</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="add_to_mycourse">Add to my courses</string>
-    <string name="add_to_mylib">Add To myLibrary</string>
-    <string name="step">step</string>
-    <string name="submission">Submissions</string>
-    <string name="calendar">Calendar</string>
-    <string name="email">Email</string>
-    <string name="documents">Documents</string>
-    <string name="your_ans">Your Answer</string>
-    <string name="leave">Delete myCourse</string>
-    <string name="invite_member">Invite Member</string>
-    <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type :</string>
-    <string name="suggestion">Suggestion</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_library">Biblioteca</string>
+    <string name="menu_courses">Cursos</string>
+    <string name="menu_meetups">Reuniones</string>
+    <string name="menu_surveys">Encuestas</string>
+    <string name="menu_logout">Cerrar sesión</string>
+    <string name="menu_feedback">Comentarios</string>
+    <string name="system_name">myPlanet</string>
+    <string name="txt_myLibrary">mibiblioteca</string>
+    <string name="txt_myCourses">misCursos</string>
+    <string name="txt_myMeetups">misReuniones</string>
+    <string name="txt_myTeams">misEquipos</string>
+    <string name="button_submit">Enviar</string>
+    <string name="button_cancel">Cancelar</string>
+    <string name="download_suggestion">No se han descargado los siguientes archivos. ¿Desea descargarlos para su uso sin conexión?</string>
+    <string name="download_selected">Descargar seleccionados</string>
+    <string name="txt_cancel">Cancelar</string>
+    <string name="download_all">Descargar todo</string>
+    <string name="hello_blank_fragment">Hola fragmento en blanco</string>
+    <string name="add_to_mycourse">Añadir a mis cursos</string>
+    <string name="join_selected">Unir seleccionados</string>
+    <string name="join">Unirse</string>
+    <string name="add_to_mylib">Añadir a miBiblioteca</string>
+    <string name="step">paso</string>
+    <string name="submission">mis envíos</string>
+    <string name="calendar">Calendario</string>
+    <string name="email">Correo electrónico</string>
+    <string name="documents">Documentos</string>
+    <string name="your_ans">Tu respuesta</string>
+    <string name="leave">Eliminar miCurso</string>
+    <string name="invite_member">Invitar miembro</string>
+    <string name="is_urgent">¿Es urgente tu comentario?</string>
+    <string name="feedback_type">Tipo de comentario:</string>
+    <string name="suggestion">Sugerencia</string>
     <string name="no">No</string>
-    <string name="yes">Yes</string>
-    <string name="question">Question</string>
-    <string name="bug">Bug</string>
-    <string name="your_feedback">Your Feedback *</string>
-    <string name="button_update">Update</string>
-    <string name="level">Level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
-    <string name="gender">Gender</string>
-    <string name="birth_date">Birth Date</string>
-    <string name="phone_number">Phone Number</string>
-    <string name="language">Language</string>
-    <string name="last_name">Last Name</string>
-    <string name="version">Version</string>
-    <string name="middle_name">Middle Name</string>
-    <string name="first_name">First Name</string>
-    <string name="search">Search...</string>
-    <string name="btn_remove_lib">Remove</string>
-    <string name="download">Download</string>
-    <string name="published_by">Published By:</string>
-    <string name="author">Author:</string>
-    <string name="language_with_colon">Language :</string>
-    <string name="subject">Subject/s :</string>
-    <string name="license">License :</string>
-    <string name="type">Type :</string>
-    <string name="resource">Resource :</string>
-    <string name="your_rating">Your Rating</string>
-    <string name="your_comment">Leave your comment</string>
-    <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
-    <string name="sync_now">Sync Now</string>
-    <string name="logout">Logout</string>
-    <string name="settings">Settings</string>
-    <string name="change_password">Change Password</string>
-    <string name="edit_profile">Edit Profile</string>
-    <string name="view_profile">View Profile</string>
-    <string name="alerts">Alerts</string>
-    <string name="profile">Profile</string>
-    <string name="user">User</string>
-    <string name="remove_selected">Remove Selected</string>
-    <string name="dismiss">Finish</string>
-    <string name="stop_download">Stop Download</string>
-    <string name="downloading_file">Downloading file...</string>
-    <string name="cancel">Cancel</string>
-    <string name="add_to_mycourses">Add To My Courses</string>
-    <string name="added_to">added to</string>
-    <string name="removed_from">removed from</string>
-    <string name="my_courses">my courses</string>
-    <string name="filter_collections">Filter Collections</string>
-    <string name="select_many_collections">Select Many Collections</string>
-    <string name="collections">Collections</string>
-    <string name="ok">OK</string>
-    <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
-    <string name="archive_mycourse">Archive myCourse</string>
-    <string name="menu_achievement">Achievements</string>
-    <string name="edit_achievement">Edit Achievement</string>
-    <string name="add_resources">Add Resources</string>
-    <string name="description">Description</string>
-    <string name="title">Title *</string>
-    <string name="name">Name *</string>
-    <string name="relationship">Relationship</string>
-    <string name="date">Date</string>
-    <string name="birth_place">Birth Place</string>
-    <string name="clear_tags">Clear</string>
-    <string name="add_an_achievement">Add an Achievement</string>
-    <string name="add_a_reference">Add a Reference</string>
-    <string name="learner">Learner</string>
-    <string name="show_filter">Show Filter</string>
-    <string name="subjects">Subjects</string>
-    <string name="mediums">Mediums</string>
-    <string name="levels">Levels</string>
-    <string name="languages">Languages</string>
+    <string name="yes">Sí</string>
+    <string name="question">Pregunta</string>
+    <string name="bug">Error</string>
+    <string name="your_feedback">Tus comentarios *</string>
+    <string name="button_update">Actualizar</string>
+    <string name="level">Nivel</string>
+    <string name="male">Masculino</string>
+    <string name="female">Femenino</string>
+    <string name="gender">Género</string>
+    <string name="birth_date">Fecha de nacimiento</string>
+    <string name="phone_number">Número de teléfono</string>
+    <string name="language">Idioma</string>
+    <string name="last_name">Apellido</string>
+    <string name="version">Versión</string>
+    <string name="middle_name">Segundo nombre</string>
+    <string name="first_name">Nombre</string>
+    <string name="search">Buscar...</string>
+    <string name="btn_remove_lib">Eliminar</string>
+    <string name="download">Descargar</string>
+    <string name="published_by">Publicado por:</string>
+    <string name="author">Autor:</string>
+    <string name="language_with_colon">Idioma :</string>
+    <string name="subject">Tema/s :</string>
+    <string name="license">Licencia:</string>
+    <string name="type">Tipo :</string>
+    <string name="resource">Recurso:</string>
+    <string name="your_rating">Tu valoración</string>
+    <string name="your_comment">Deja tu comentario</string>
+    <string name="show_top_nav">Mostrar barra de navegación superior en el panel de control</string>
+    <string name="sync_now">Sincronizar ahora</string>
+    <string name="logout">Cerrar sesión</string>
+    <string name="settings">Ajustes</string>
+    <string name="change_password">Cambiar contraseña</string>
+    <string name="edit_profile">Editar perfil</string>
+    <string name="view_profile">Ver perfil</string>
+    <string name="alerts">Alertas</string>
+    <string name="profile">Perfil</string>
+    <string name="user">Usuario</string>
+    <string name="remove_selected">Eliminar seleccionados</string>
+    <string name="dismiss">Finalizar</string>
+    <string name="stop_download">Detener descarga</string>
+    <string name="downloading_file">Descargando archivo...</string>
+    <string name="cancel">Cancelar</string>
+    <string name="add_to_mycourses">Añadir a mis cursos</string>
+    <string name="added_to">añadido a</string>
+    <string name="removed_from">eliminado de</string>
+    <string name="my_courses">mis cursos</string>
+    <string name="filter_collections">Filtrar colecciones</string>
+    <string name="select_many_collections">Seleccionar muchas colecciones</string>
+    <string name="collections">Colecciones</string>
+    <string name="ok">Ok</string>
+    <string name="inactive_message">Usuario no activado, póngase en contacto con el administrador o el administrador para activar su cuenta.</string>
+    <string name="archive_mycourse">Archivar mi curso</string>
+    <string name="menu_achievement">Logros</string>
+    <string name="edit_achievement">Editar logro</string>
+    <string name="add_resources">Añadir recursos</string>
+    <string name="description">Descripción</string>
+    <string name="title">Título *</string>
+    <string name="name">Nombre *</string>
+    <string name="relationship">Relación</string>
+    <string name="date">Fecha</string>
+    <string name="birth_place">Lugar de nacimiento</string>
+    <string name="clear_tags">Borrar</string>
+    <string name="add_an_achievement">Añadir un logro</string>
+    <string name="add_a_reference">Añadir referencia</string>
+    <string name="learner">Estudiante</string>
+    <string name="show_filter">Mostrar filtro</string>
+    <string name="subjects">Temas</string>
+    <string name="mediums">Medios</string>
+    <string name="levels">Niveles</string>
+    <string name="languages">Idiomas</string>
     <string name="txt_myLife">myLife</string>
-    <string name="achievements">Achievements</string>
-    <string name="messeges">Messeges</string>
-    <string name="contacts">Contacts</string>
-    <string name="news">News</string>
-    <string name="dictionaries">Dictionaries</string>
-    <string name="maps">Maps</string>
-    <string name="help_wanted">Help Wanted</string>
+    <string name="achievements">myAchievements</string>
+    <string name="messeges">myMessages</string>
+    <string name="contacts">Contactos</string>
+    <string name="news">Nuestras noticias</string>
+    <string name="references">Referencias</string>
+    <string name="maps">Mapas</string>
+    <string name="help_wanted">Ayuda Deseada</string>
+    <string name="btn_guest_login">Iniciar sesión como invitado</string>
+    <string name="enter_username">Ingrese nombre de usuario</string>
+    <string name="login">Iniciar sesión</string>
+    <string name="child_mode">Modo fácil</string>
+    <string name="joined_members">Miembros afiliados</string>
+    <string name="requested_member">Miembro solicitado</string>
+    <string name="courses">Cursos</string>
+    <string name="enter_message_here">Ingrese el mensaje aquí</string>
+    <string name="what_would">¿Qué te gustaría compartir?</string>
+    <string name="our_news">Nuestras noticias</string>
+    <string name="delete_record">¿Está seguro que desea eliminar lo siguiente?</string>
+    <string name="edit_post">Editar Post</string>
+    <string name="search_user">Buscar usuario</string>
+    <string name="get_started">Empieza</string>
+    <string name="enter_password">Introducir la contraseña</string>
+    <string name="managerial_login">Login del administrador</string>
+    <string name="save_username_and_password">Guardar nombre de usuario y contraseña</string>
+    <string name="year">Año</string>
+    <string name="publisher">Publicador</string>
+    <string name="link_to_license">Enlace a la licencia</string>
+    <string name="resource_for">Recurso para</string>
+    <string name="open_which_file">Abrir que archivo</string>
+    <string name="file_upload">Subir archivo</string>
+    <string name="choose_file">Elegir archivo</string>
+    <string name="file_downloadable">Archivo descargable</string>
+    <string name="priority">Prioridad</string>
+    <string name="status">Estado</string>
+    <string name="title_not_compulsary">Título</string>
+    <string name="discussion">Discusión</string>
+    <string name="add_message">Añadir mensaje</string>
+    <string name="enter_message">Introduzca su mensaje aquí..</string>
+    <string name="added_by">Añadido por</string>
+    <string name="record_audio">Grabar audio</string>
+    <string name="record_video">Grabar vídeo</string>
+    <string name="select_gallery">Seleccionar de la galería</string>
+    <string name="add_resource">Añadir recurso :</string>
+    <string name="reply">Responder</string>
+    <string name="show_reply">Mostrar respuestas</string>
+    <string name="show_main_conversation">Mostrar conversación principal</string>
+    <string name="https_protocol">https://</string>
+    <string name="http_protocol">http://</string>
+    <string name="showing_reply_of">Mostrando respuesta de:</string>
+    <string name="open_date">Fecha de apertura</string>
+    <string name="my_survey">miEncuesta</string>
     <string-array name="level">
         <item></item>
-        <item>Beginner</item>
-        <item>Intermediate</item>
-        <item>Advanced</item>
-        <item>Expert</item>
+        <item>Principiante</item>
+        <item>Intermedio</item>
+        <item>Avanzado</item>
+        <item>Experto</item>
     </string-array>
     <string-array name="language">
         <item>English</item>
         <item>नेपाली</item>
-        <item>Français</item>
+        <item>Francés</item>
         <item>Español</item>
         <item>عربى</item>
-        <item>Somali</item>
+        <item>Somalí</item>
     </string-array>
     <string-array name="language_keys">
         <item>en</item>
@@ -152,12 +201,354 @@
         <item>so</item>
     </string-array>
     <string-array name="info_type">
-        <item>Languages</item>
-        <item>Education</item>
-        <item>Employment History</item>
-        <item>Badges</item>
-        <item>Certificates</item>
-        <item>Internships</item>
-        <item>Awards</item>
+        <item>Idiomas</item>
+        <item>Educación</item>
+        <item>Historial de empleo</item>
+        <item>Medallas</item>
+        <item>Certificados</item>
+        <item>Prácticas</item>
+        <item>Premios</item>
     </string-array>
+    <string-array name="open_With">
+        <item>HTML</item>
+        <item>PDF.js</item>
+        <item>Lector de BeL-</item>
+        <item>Mp3</item>
+        <item>Reproductor de vídeo de Flow</item>
+        <item>Reproductor de vídeo BeLL</item>
+        <item>Native Video</item>
+    </string-array>
+    <string-array name="media">
+        <item>Texto</item>
+        <item>Gráficos/imágenes</item>
+        <item>Audio/Música/Libro</item>
+        <item>Vídeo</item>
+    </string-array>
+    <string-array name="resource_type">
+        <item>Libro de texto</item>
+        <item>Plan de Lección</item>
+        <item>Actividades</item>
+        <item>Ejercicios</item>
+        <item>Preguntas para discutir</item>
+    </string-array>
+    <string-array name="array_levels">
+        <item>Educación temprana</item>
+        <item>Primaria inferior</item>
+        <item>Primaria superior</item>
+        <item>Secundaria inferior</item>
+        <item>Secundaria superior</item>
+        <item>No licensiado</item>
+        <item>Graduado</item>
+        <item>Profesional</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>Agricultura</item>
+        <item>Artes</item>
+        <item>Negocios y finanzas</item>
+        <item>Medio ambiente</item>
+        <item>Alimentación y nutrición</item>
+        <item>Geografía</item>
+        <item>Salud y medicina</item>
+        <item>Historia</item>
+        <item>Desarrollo humano</item>
+        <item>Idiomas</item>
+        <item>Derecho</item>
+        <item>Aprendiendo</item>
+    </string-array>
+    <string-array name="array_resource_for">
+        <item>Predeterminado</item>
+        <item>Líder</item>
+        <item>Estudiante</item>
+    </string-array>
+    <string name="dictionaries">Diccionarios</string>
+    <string name="bible">Biblias</string>
+    <string name="feature_not">Característica no disponible</string>
+    <string name="myhealth">myHealth</string>
+    <string name="type_name_to_search">Escribe el nombre para buscar</string>
+    <string name="action">Acción</string>
+    <string name="created_on">Creado el</string>
+    <string name="name_normal">Nombre</string>
+    <string name="mypersonals">myPersonals</string>
+    <string name="capture_image">Capturar imagen</string>
+    <string name="team_name">Introducir nombre de equipo</string>
+    <string name="resources">Recursos</string>
+    <string name="button_reject">Rechazar</string>
+    <string name="button_accept">Aceptar</string>
+    <string name="plan">Plan</string>
+    <string name="body_temperature">Temperatura del cuerpo (°C)</string>
+    <string name="rectally">Rectal</string>
+    <string name="axillary">Axilar</string>
+    <string name="by_ear">Por oreja</string>
+    <string name="by_skin">Por piel</string>
+    <string name="temperature_taken">Temperatura tomada:</string>
+    <string name="pulse_rate">Tasa de pulso (bpm)</string>
+    <string name="respiration_rate">Tasa de Respiración</string>
+    <string name="systolic">Sistólica</string>
+    <string name="diastolic">Diastólica</string>
+    <string name="blood_pressure">Presión arterial</string>
+    <string name="orally">Oralmente</string>
+    <string name="save">Guardar</string>
+    <string name="vital_signs">Registro vital</string>
+    <string name="task">Tarea (requerida)</string>
+    <string name="deadline">Fecha límite (requerido)</string>
+    <string name="click_here_to_pick_date">Haga clic aquí para elegir la fecha</string>
+    <string name="enterprises">Empresas</string>
+    <string name="select_member">Seleccionar miembro del equipo</string>
+    <string name="assign_task_to">Tarea asignada a</string>
+    <string name="leader_selected">Líder seleccionado</string>
+    <string name="user_removed_from_team">Usuario eliminado del equipo</string>
+    <string name="remove">Eliminar</string>
+    <string name="make_leader">Nombrar líder</string>
+    <string name="mission"><![CDATA[Misión y servicios]]></string>
+    <string name="team">Equipo</string>
+    <string name="applicants">Solicitantes</string>
+    <string name="finances">Finanzas</string>
+    <string name="messages">mensajes</string>
+    <string name="nodata">No hay datos disponibles</string>
+    <string name="note">Nota *</string>
+    <string name="amount">Cantidad</string>
+    <string name="debit">Débito</string>
+    <string name="credit">Crédito</string>
+    <string name="balance">Balance</string>
+    <string name="total">Total</string>
+    <string name="location">Ubicación</string>
+    <string name="start_date">Fecha de inicio</string>
+    <string name="click_here_to_pick_time">Haga clic aquí para elegir la hora</string>
+    <string name="start_time">Hora de inicio</string>
+    <string name="end_date">Fecha de finalización</string>
+    <string name="end_time">Hora de finalización</string>
+    <string name="daily">Diario</string>
+    <string name="weekly">Semanal</string>
+    <string name="recurring_frequency">Frecuencia recurrente</string>
+    <string name="filter_by_date">Filtro de fecha</string>
+    <string name="emergency_contact">Contacto de emergencia</string>
+    <string name="contact">Contacto</string>
+    <string name="special_needs">Necesidades especiales</string>
+    <string name="other_need">Otras necesidades</string>
+    <string name="update_health_record">Actualizar historial de salud</string>
+    <string name="vital_sign">Signos vitales</string>
+    <string name="examination">Examen</string>
+    <string name="add_examination">Añadir examen</string>
+    <string name="new_patient">Siguiente miembro</string>
+    <string name="height">Altura (cm)</string>
+    <string name="width">Ancho</string>
+    <string name="vision">Visión</string>
+    <string name="hearing">Audiencia</string>
+    <string name="vitals">Vitales</string>
+    <string name="condition_and_treatment">Condición y tratamiento</string>
+    <string name="observation">Observaciones y notas</string>
+    <string name="diagnosis">Diagnóstico</string>
+    <string name="treatments">Tratamientos</string>
+    <string name="medications">Medicamentos</string>
+    <string name="immunization">Fechas de inmunización</string>
+    <string name="allergies">Alergias</string>
+    <string name="xray">Rayos X</string>
+    <string name="labtest">Pruebas de laboratorio</string>
+    <string name="referrals">Referencias</string>
+    <string name="full_name">Nombre completo</string>
+    <string name="weight">Peso (kg)</string>
+    <string name="no_records">No se encontraron registros</string>
+    <string name="chats">Chats</string>
+    <string name="select_health_member">Seleccionar Miembro</string>
+    <string name="notifications">Notificaciones</string>
+    <string name="incorrect_ans">Respuesta incorrecta, inténtalo de nuevo</string>
+    <string name="diagnosis_note">Notas de diagnóstico</string>
+    <string name="menu_community">Comunidad</string>
+    <string name="library">Biblioteca</string>
+    <string name="device_name">Nombre del dispositivo</string>
+    <string name="enter_title">Introducir título</string>
+    <string name="add_link">Añadir enlace</string>
+    <string name="chat">Chatear</string>
+    <string name="members">Miembros</string>
+    <string name="tasks">Tareas</string>
+    <string name="join_requests">solicitud de admisión</string>
+    <string name="add_image">Añadir imagen</string>
+    <string name="addImageToMessage">Beta Añadir imagen al mensaje</string>
+    <string name="clear_data">Limpiar datos</string>
+    <string name="reset_app">Restablecer App</string>
+    <string name="freeup_space">Espacio libre en disco</string>
+    <string name="action_disclaimer">Descargo de responsabilidad</string>
+    <string name="action_about">Acerca de</string>
+    <string name="engilsh_dictionary">Diccionario de inglés</string>
+    <string-array name="team_type">
+        <item>Equipo local</item>
+        <item>Conectar con Nation</item>
+    </string-array>
+    <string-array name="contact_type">
+        <item>Teléfono</item>
+        <item>Correo electrónico</item>
+    </string-array>
+    <string-array name="add_link_options">
+        <item>Equipos</item>
+        <item>Empresas</item>
+    </string-array>
+    <string-array name="transaction_type">
+        <item>Crédito</item>
+        <item>Débito</item>
+    </string-array>
+    <string-array name="sort_by_date">
+        <item>Ordenar por fecha - Asc</item>
+        <item>Ordenar por fecha - Desc</item>
+        <item>Ordenar por título</item>
+    </string-array>
+    <string-array name="sort_member">
+        <item>Ordenar por fecha - Asc</item>
+        <item>Ordenar por fecha - Desc</item>
+        <item>Ordenar por nombre - Asc</item>
+        <item>Ordenar por nombre - Desc</item>
+    </string-array>
+    <string-array name="grade_level">
+        <item>Todos</item>
+        <item>PreKindergarten</item>
+        <item>Kindergarten</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>Universidad</item>
+        <item>Postgrado</item>
+    </string-array>
+    <string-array name="subject_level">
+        <item>Todos</item>
+        <item>Principiante</item>
+        <item>Intermedio</item>
+        <item>Avanzado</item>
+        <item>Experto</item>
+    </string-array>
+    <string-array name="diagnosis_list">
+        <item>Cáncer</item>
+        <item>Trastornos cardiovasculares</item>
+        <item>Cirrosis del hígado</item>
+        <item>COVID-19</item>
+        <item>Diabetes</item>
+        <item>Enfermedades diarreicas</item>
+        <item>Ébola</item>
+        <item>Epilepsia</item>
+        <item>FGM</item>
+        <item>Influenza</item>
+        <item>Enfermedad de calor isquémica</item>
+        <item>Malaria</item>
+        <item>Desnutrición</item>
+        <item>Meningitis</item>
+        <item>Sepsis neonatal e infecciones</item>
+        <item>VIH/SIDA</item>
+        <item>Pneumonía</item>
+        <item>Accidente cerebrovascular</item>
+        <item>Tuberculosis</item>
+    </string-array>
+    <string name="title_activity_news_detail">Actividad de noticias</string>
+    <string name="large_text">        \"Material is the metaphor.\n\n\"
+
+        \"A material metaphor is the unifying theory of a rationalized space and a system of motion.\"
+        \"The material is grounded in tactile reality, inspired by the study of paper and ink, yet \"
+        \"technologically advanced and open to imagination and magic.\n\"
+        \"Surfaces and edges of the material provide visual cues that are grounded in reality. The \"
+        \"use of familiar tactile attributes helps users quickly understand affordances. Yet the \"
+        \"flexibility of the material creates new affordances that supercede those in the physical \"
+        \"world, without breaking the rules of physics.\n\"
+        \"The fundamentals of light, surface, and movement are key to conveying how objects move, \"
+        \"interact, and exist in space and in relation to each other. Realistic lighting shows \"
+        \"seams, divides space, and indicates moving parts.\n\n\"
+
+        \"Bold, graphic, intentional.\n\n\"
+
+        \"The foundational elements of print based design typography, grids, space, scale, color, \"
+        \"and use of imagery guide visual treatments. These elements do far more than please the \"
+        \"eye. They create hierarchy, meaning, and focus. Deliberate color choices, edge to edge \"
+        \"imagery, large scale typography, and intentional white space create a bold and graphic \"
+        \"interface that immerse the user in the experience.\n\"
+        \"An emphasis on user actions makes core functionality immediately apparent and provides \"
+        \"waypoints for the user.\n\n\"
+
+        \"Motion provides meaning.\n\n\"
+
+        \"Motion respects and reinforces the user as the prime mover. Primary user actions are \"
+        \"inflection points that initiate motion, transforming the whole design.\n\"
+        \"All action takes place in a single environment. Objects are presented to the user without \"
+        \"breaking the continuity of experience even as they transform and reorganize.\n\"
+        \"Motion is meaningful and appropriate, serving to focus attention and maintain continuity. \"
+        \"Feedback is subtle yet clear. Transitions are efﬁcient yet coherent.\n\n\"
+
+        \"3D world.\n\n\"
+
+        \"The material environment is a 3D space, which means all objects have x, y, and z \"
+        \"dimensions. The z-axis is perpendicularly aligned to the plane of the display, with the \"
+        \"positive z-axis extending towards the viewer. Every sheet of material occupies a single \"
+        \"position along the z-axis and has a standard 1dp thickness.\n\"
+        \"On the web, the z-axis is used for layering and not for perspective. The 3D world is \"
+        \"emulated by manipulating the y-axis.\n\n\"
+
+        \"Light and shadow.\n\n\"
+
+        \"Within the material environment, virtual lights illuminate the scene. Key lights create \"
+        \"directional shadows, while ambient light creates soft shadows from all angles.\n\"
+        \"Shadows in the material environment are cast by these two light sources. In Android \"
+        \"development, shadows occur when light sources are blocked by sheets of material at \"
+        \"various positions along the z-axis. On the web, shadows are depicted by manipulating the \"
+        \"y-axis only. The following example shows the card with a height of 6dp.\n\n\"
+
+        \"Resting elevation.\n\n\"
+
+        \"All material objects, regardless of size, have a resting elevation, or default elevation \"
+        \"that does not change. If an object changes elevation, it should return to its resting \"
+        \"elevation as soon as possible.\n\n\"
+
+        \"Component elevations.\n\n\"
+
+        \"The resting elevation for a component type is consistent across apps (e.g., FAB elevation \"
+        \"does not vary from 6dp in one app to 16dp in another app).\n\"
+        \"Components may have different resting elevations across platforms, depending on the depth \"
+        \"of the environment (e.g., TV has a greater depth than mobile or desktop).\n\n\"
+
+        \"Responsive elevation and dynamic elevation offsets.\n\n\"
+
+        \"Some component types have responsive elevation, meaning they change elevation in response \"
+        \"to user input (e.g., normal, focused, and pressed) or system events. These elevation \"
+        \"changes are consistently implemented using dynamic elevation offsets.\n\"
+        \"Dynamic elevation offsets are the goal elevation that a component moves towards, relative \"
+        \"to the component’s resting state. They ensure that elevation changes are consistent \"
+        \"across actions and component types. For example, all components that lift on press have \"
+        \"the same elevation change relative to their resting elevation.\n\"
+        \"Once the input event is completed or cancelled, the component will return to its resting \"
+        \"elevation.\n\n\"
+
+        \"Avoiding elevation interference.\n\n\"
+
+        \"Components with responsive elevations may encounter other components as they move between \"
+        \"their resting elevations and dynamic elevation offsets. Because material cannot pass \"
+        \"through other material, components avoid interfering with one another any number of ways, \"
+        \"whether on a per component basis or using the entire app layout.\n\"
+        \"On a component level, components can move or be removed before they cause interference. \"
+        \"For example, a floating action button (FAB) can disappear or move off screen before a \"
+        \"user picks up a card, or it can move if a snackbar appears.\n\"
+        \"On the layout level, design your app layout to minimize opportunities for interference. \"
+        \"For example, position the FAB to one side of stream of a cards so the FAB won’t interfere \"
+        \"when a user tries to pick up one of cards.\n\n\"
+    </string>
+    <string name="add_story">Añadir historia</string>
+    <string name="txt_myprogress">myProgress</string>
+    <string name="more_action">Filtro</string>
+    <string name="my_progress">Mi progreso</string>
+    <string name="my_activity">Mi actividad</string>
+    <string name="add_label">Añadir etiqueta</string>
+    <string name="share_with_community">Compartir con la comunidad</string>
+    <string name="services">¿Cuáles son los Servicios que su empresa proporciona?</string>
+    <string name="rules">¿Cuáles son las reglas de su empresa?</string>
+    <string name="add_res">Añadir Recurso</string>
+    <string name="password">Contraseña</string>
+    <string name="retype_password">Confirmar contraseña</string>
+    <string name="become_a_member">Hazte miembro</string>
+    <string name="change_member">Cambiar miembro</string>
+    <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
+    <string name="feedback">Comentarios</string>
+    <string name="add_member">Añadir miembro</string>
+    <string name="confirm_exit">¿Estás seguro de que quieres abandonar este equipo?</string>
 </resources>
