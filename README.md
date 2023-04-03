@@ -1,6 +1,6 @@
 # myPlanet
 
-myPlanet is the Android port of the Planet web application. It will work with Planet community / nation.
+myPlanet is the Android port of the [Planet web application](https://github.com/open-learning-exchange/planet). It will work with Planet community / nation.
 
 ### App Screenshots:
 
