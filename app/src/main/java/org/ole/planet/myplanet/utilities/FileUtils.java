@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -8,15 +9,20 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 
+import androidx.annotation.RequiresApi;
 import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.BuildConfig;
+import org.ole.planet.myplanet.di.IOExecutor;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,34 +32,61 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+
+import javax.inject.Inject;
+
+import dagger.hilt.android.qualifiers.ApplicationContext;
 
 public class FileUtils {
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
+    private static final String LogTag = FileUtils.class.getSimpleName();
 
+    @Inject
+    @IOExecutor
+    public ExecutorService ioExecutor; //public because dagger does not support private field injection
+    @ApplicationContext
+    public Context context;
+
+    @Inject
+    public StorageManager storageManager;
+    private static final class GlobalFileUtilsInstanceHolder {
+        static final FileUtils globalFileUtilsInstance = new FileUtils();
+    }
+
+    public static FileUtils getInstance(){
+        return GlobalFileUtilsInstanceHolder.globalFileUtilsInstance;
+    }
 
     public static byte[] fullyReadFileToBytes(File f) throws IOException {
         int size = (int) f.length();
+        CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = new byte[size];
-        byte[] tmpBuff = new byte[size];
-        FileInputStream fis = new FileInputStream(f);
-        try {
 
-            int read = fis.read(bytes, 0, size);
-            if (read < size) {
-                int remain = size - read;
-                while (remain > 0) {
-                    read = fis.read(tmpBuff, 0, remain);
-                    System.arraycopy(tmpBuff, 0, bytes, size - remain, read);
-                    remain -= read;
+        FileUtils.getInstance().ioExecutor.execute(()->{
+            byte[] tmpBuff = new byte[size];
+            try (FileInputStream fis = new FileInputStream(f)) {
+
+                int read = fis.read(bytes, 0, size);
+                if (read < size) {
+                    int remain = size - read;
+                    while (remain > 0) {
+                        read = fis.read(tmpBuff, 0, remain);
+                        System.arraycopy(tmpBuff, 0, bytes, size - remain, read);
+                        remain -= read;
+                    }
                 }
+            } catch (IOException e) {
+                Log.e(LogTag,"the following exception occurred while reading file into bytes",e);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw e;
-        } finally {
-            fis.close();
-        }
+            latch.countDown();
+        });
 
+        try{
+            latch.await();
+        }catch (InterruptedException ignored){}
         return bytes;
     }
 
@@ -80,7 +113,7 @@ public class FileUtils {
     public static String getFileNameFromUrl(String url) {
         try {
             return url.substring(url.lastIndexOf("/") + 1);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         return "";
     }
@@ -90,7 +123,7 @@ public class FileUtils {
             String[] sp = url.substring(url.indexOf("resources/")).split("/");
             Utilities.log("Id " + sp[1]);
             return sp[1];
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         return "";
     }
@@ -108,19 +141,20 @@ public class FileUtils {
             if (!file.endsWith("apk")) return;
             File toInstall = FileUtils.getSDPathFromUrl(file);
             toInstall.setReadable(true, false);
+            Uri apkUri;
+            Intent intent;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Uri apkUri = FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", toInstall);
-                Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
+                apkUri = FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", toInstall);
+                intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
                 intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 intent.setData(apkUri);
-                activity.startActivity(intent);
             } else {
-                Uri apkUri = Uri.fromFile(toInstall);
-                Intent intent = new Intent(Intent.ACTION_VIEW);
+                apkUri = Uri.fromFile(toInstall);
+                intent = new Intent(Intent.ACTION_VIEW);
                 intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                activity.startActivity(intent);
             }
+            activity.startActivity(intent);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -139,22 +173,25 @@ public class FileUtils {
     public static void copyAssets(Context context) {
         String[] tiles = {"dhulikhel.mbtiles", "somalia.mbtiles"};
         AssetManager assetManager = context.getAssets();
-        try {
-            for (String s : tiles) {
-                InputStream in;
-                OutputStream out;
-                in = assetManager.open(s);
-                Utilities.log("MAP " + s);
-                File outFile = new File(Environment.getExternalStorageDirectory() + "/osmdroid", s);
-                out = new FileOutputStream(outFile);
-                copyFile(in, out);
-                out.close();
-                in.close();
+        FileUtils.getInstance().ioExecutor.execute(()->{
+            try {
+                for (String s : tiles) {
+                    InputStream in;
+                    OutputStream out;
+                    in = assetManager.open(s);
+                    Utilities.log("MAP " + s);
+                    File outFile = new File(Environment.getExternalStorageDirectory() + "/osmdroid", s);
+                    out = new FileOutputStream(outFile);
+                    copyFile(in, out);
+                    out.close();
+                    in.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Log.e(LogTag, "Failed to copy asset file: " + e);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            Log.e("ggggggggg", "Failed to copy asset file: " + e);
-        }
+        });
+
     }
 
     private static void copyFile(InputStream in, OutputStream out) throws IOException {
@@ -167,18 +204,25 @@ public class FileUtils {
 
 
     public static String getRealPathFromURI(Context context, Uri contentUri) {
-        Cursor cursor = null;
-        try {
+        CountDownLatch latch = new CountDownLatch(1);
+        String[] paths = new String[1];
+        FileUtils.getInstance().ioExecutor.execute(()->{
             String[] proj = {MediaStore.Images.Media.DATA};
-            cursor = context.getContentResolver().query(contentUri, proj, null, null, null);
-            int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-            cursor.moveToFirst();
-            return cursor.getString(column_index);
-        } finally {
-            if (cursor != null) {
-                cursor.close();
+            try (Cursor cursor = context.getContentResolver().query(contentUri, proj, null, null, null)) {
+                int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                cursor.moveToFirst();
+                paths[0] = cursor.getString(column_index);
             }
-        }
+
+            latch.countDown();
+
+        });
+
+        try{
+            latch.await();
+        }catch (InterruptedException ignored){}
+
+        return paths[0];
     }
 
 
@@ -210,20 +254,32 @@ public class FileUtils {
 
 
     public static String getImagePath(Context context, Uri uri) {
-        Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
-        cursor.moveToFirst();
-        String document_id = cursor.getString(0);
-        document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
-        cursor.close();
+        CountDownLatch  latch = new CountDownLatch(1);
+        String[] imagePaths = new String[1];
+        FileUtils.getInstance().ioExecutor.execute(()->{
+            Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
+            cursor.moveToFirst();
+            String document_id = cursor.getString(0);
+            document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
+            cursor.close();
 
-        cursor = context.getContentResolver().query(
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
-        cursor.moveToFirst();
-        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-        cursor.close();
+            cursor = context.getContentResolver().query(
+                    android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+            cursor.moveToFirst();
+            int columnIndex=cursor.getColumnIndex(MediaStore.Images.Media.DATA);
+            if (columnIndex!=-1){
+               imagePaths[0]= cursor.getString(columnIndex);
+            }
+            cursor.close();
+            latch.countDown();
+        });
 
-        return path;
+        try{
+            latch.await();
+        }catch (InterruptedException ignored){}
+
+        return imagePaths[0];
     }
 
     public static String getMediaType(String path) {
@@ -266,22 +322,50 @@ public class FileUtils {
         return android.os.Environment.getExternalStorageState().equals(
                 android.os.Environment.MEDIA_MOUNTED);
     }
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private static long getAvailableExternalMemorySizePostNougat(){
+       StorageManager storageManager1 = FileUtils.getInstance().storageManager;
+       StorageVolume primaryStorageVolume= storageManager1.getPrimaryStorageVolume();
+       if (primaryStorageVolume==null) return 0;
+       if (!primaryStorageVolume.getState().equals(Environment.MEDIA_MOUNTED)) return 0;
+       UUID primaryStorageUUID = UUID.fromString(primaryStorageVolume.getUuid());
+       try{
+           return storageManager1.getAllocatableBytes(primaryStorageUUID);
+       }catch (IOException ex){
+           Log.e(LogTag,"The following exception occurred while determining the available memory space post nougat",ex);
+           return 0;
+       }
+    }
+
+    private static long getAvailableExternalMemorySizePreNougat(){
+        if (!externalMemoryAvailable()) return 0;
+        File path = Environment.getExternalStorageDirectory();
+        StatFs stat = new StatFs(path.getPath());
+        long blockSize = stat.getBlockSizeLong();
+        long availableBlocks = stat.getAvailableBlocksLong();
+        return availableBlocks * blockSize;
+
+    }
 
     /**
      * Find space left in the external memory.
      */
     public static long getAvailableExternalMemorySize() {
-        // Not the best way to check, shows internal memory
-        // when there is not external memory mounted
-        if (externalMemoryAvailable()) {
-            File path = Environment.getExternalStorageDirectory();
-            StatFs stat = new StatFs(path.getPath());
-            long blockSize = stat.getBlockSizeLong();
-            long availableBlocks = stat.getAvailableBlocksLong();
-            return availableBlocks * blockSize;
-        } else {
-            return 0;
-        }
+        CountDownLatch latch = new CountDownLatch(1);
+        long[] memorySizes = new long[1];
+        FileUtils.getInstance().ioExecutor.execute(()->{
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+                memorySizes[0]=getAvailableExternalMemorySizePostNougat();
+            }else{
+                memorySizes[0]=getAvailableExternalMemorySizePreNougat();
+            }
+            latch.countDown();
+        });
+
+        try{
+            latch.await();
+        }catch (InterruptedException ignored){}
+    return memorySizes[0];
     }
 
     /**
@@ -306,31 +390,7 @@ public class FileUtils {
      * @return A string with size followed by an appropriate suffix
      */
     public static String formatSize(long size) {
-        String suffix = null;
-
-        if (size >= 1024) {
-            suffix = "KB";
-            size /= 1024;
-        }
-        if (size >= 1024) {
-            suffix = "MB";
-            size /= 1024;
-        }
-        if (size >= 1024) {
-            suffix = "GB";
-            size /= 1024;
-        }
-
-        StringBuilder resultBuffer = new StringBuilder(Long.toString(size));
-
-        int commaOffset = resultBuffer.length() - 3;
-        while (commaOffset > 0) {
-            resultBuffer.insert(commaOffset, ',');
-            commaOffset -= 3;
-        }
-
-        if (suffix != null) resultBuffer.append(suffix);
-        return resultBuffer.toString();
+        return Formatter.formatShortFileSize(FileUtils.getInstance().context,size);
     }
 
     public static long getTotalAvailableMemory() {
