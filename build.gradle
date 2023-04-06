@@ -16,15 +16,18 @@ buildscript {
     }
 
     repositories {
-        jcenter()
+        mavenCentral()
         google()
+        jcenter()
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
-        classpath 'io.realm:realm-gradle-plugin:5.14.0'
+        classpath 'com.android.tools.build:gradle:4.0.2'
+        classpath "io.realm:realm-gradle-plugin:5.14.0"
+        //classpath "io.realm:realm-gradle-plugin:10.11.1"
+
         classpath 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         // NOTE: Do not place your application dependencies here; they belong
@@ -35,6 +38,7 @@ buildscript {
 allprojects {
     repositories {
         google()
+        mavenCentral()
         jcenter()
         maven { url 'https://google.bintray.com/exoplayer/' }
         maven { url 'https://google.bintray.com/flexbox-layout/' }
