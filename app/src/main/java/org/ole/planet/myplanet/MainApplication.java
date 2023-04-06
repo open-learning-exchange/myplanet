@@ -44,7 +44,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import dagger.hilt.android.HiltAndroidApp;
 import io.realm.Realm;
+
 
 public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
     public static FirebaseJobDispatcher dispatcher;

@@ -1,15 +1,16 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'realm-android'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 31
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
-        targetSdkVersion 29
+        targetSdkVersion 31
         versionCode 889
         versionName "0.8.89"
         ndkVersion '21.3.6528147'
@@ -54,7 +55,6 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
         sourceCompatibility JavaVersion.VERSION_1_8
     }
-    buildToolsVersion '28.0.3'
 }
 
 repositories {
@@ -88,6 +88,10 @@ dependencies {
     implementation('com.github.jeancsanchez:JcPlayer:2.7.2') {
         exclude group: 'com.android.support.constraint'
     }
+
+    implementation "com.google.dagger:hilt-android:2.44"
+    kapt "com.google.dagger:hilt-android-compiler:2.44"
+
     implementation 'com.mikepenz:crossfader:1.5.1@aar'
     implementation 'com.mikepenz:crossfadedrawerlayout:1.0.1@aar'
     implementation 'com.github.barteksc:android-pdf-viewer:3.0.0-beta.5'
@@ -126,4 +130,7 @@ dependencies {
 }
 realm {
     syncEnabled = true
+}
+kapt{
+    correctErrorTypes  true
 }
