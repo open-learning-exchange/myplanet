@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.model
 
-import android.provider.DocumentsContract
 import junit.framework.TestCase
-import org.w3c.dom.Document
 
 class DocumentResponseTest : TestCase() {
     private lateinit var response: DocumentResponse

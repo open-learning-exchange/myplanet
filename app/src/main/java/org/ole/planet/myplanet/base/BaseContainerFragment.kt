@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-import java.util.*
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null

@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
-import java.util.HashMap;
 
 import io.realm.Realm;
 
