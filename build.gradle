@@ -6,7 +6,7 @@ buildscript {
         setup = [
                 compileSdk: 28,
                 buildTools: "28.0.0",
-                minSdk    : 19,
+                minSdk   : 19,
                 targetSdk : 28
         ]
 
@@ -17,14 +17,16 @@ buildscript {
 
     repositories {
         mavenCentral()
-        google()
         mavenCentral()
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots/'
+        }
+        google() 
 
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.2'
-        classpath 'io.realm:realm-gradle-plugin:5.14.0'
+        classpath 'com.android.tools.build:gradle:7.4.2'
+        classpath "io.realm:realm-gradle-plugin:10.14.0-SNAPSHOT"
         classpath 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         // NOTE: Do not place your application dependencies here; they belong
@@ -34,12 +36,15 @@ buildscript {
 
 allprojects {
     repositories {
-        google()
         mavenCentral()
         maven { url 'https://google.bintray.com/exoplayer/' }
         maven { url 'https://google.bintray.com/flexbox-layout/' }
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots/'
+        }
         mavenCentral()
         maven { url "https://jitpack.io" }
+        google()
     }
 }
 
