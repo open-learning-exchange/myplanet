@@ -12,6 +12,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.os.storage.StorageManager;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -43,6 +44,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import dagger.hilt.android.HiltAndroidApp;
 import io.realm.Realm;
@@ -59,6 +62,14 @@ public class MainApplication extends Application implements Application.Activity
     public static boolean isSyncRunning = false;
     public static boolean showHealthDialog = true;
     public static TeamPageListener listener;
+    private  ExecutorService executorService;
+    private StorageManager storageManager;
+    public  ExecutorService getIoExecutorService(){
+        return executorService;
+    }
+    public StorageManager getStorageManager(){
+        return storageManager;
+    }
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
         try {
@@ -78,6 +89,8 @@ public class MainApplication extends Application implements Application.Activity
     @Override
     public void onCreate() {
         super.onCreate();
+         executorService= Executors.newFixedThreadPool(4);
+         storageManager =(StorageManager) getSystemService(Context.STORAGE_SERVICE);
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
         builder.detectFileUriExposure();

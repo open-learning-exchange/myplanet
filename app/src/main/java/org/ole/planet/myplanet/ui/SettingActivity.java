@@ -98,7 +98,7 @@ public class SettingActivity extends AppCompatActivity {
 
             // Show Available space under the "Freeup Space" preference.
             Preference spacePreference = findPreference("freeup_space");
-            spacePreference.setSummary(FileUtils.getAvailableOverTotalMemoryFormattedString());
+            spacePreference.setSummary(FileUtils.getAvailableOverTotalMemoryFormattedString(getActivity()));
 
 //            Preference preference = findPreference("add_manager");
 //            preference.setOnPreferenceClickListener(preference1 -> {

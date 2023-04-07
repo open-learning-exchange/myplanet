@@ -38,7 +38,7 @@ public class SplashActivity extends AppCompatActivity {
 
         // Find and show space available on the device
         tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
+        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString(this));
 
         FileUtils.copyAssets(this);
         SharedPreferences settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);

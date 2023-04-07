@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utilities;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -22,7 +21,7 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.BuildConfig;
-import org.ole.planet.myplanet.di.IOExecutor;
+import org.ole.planet.myplanet.MainApplication;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,41 +33,16 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-
-import javax.inject.Inject;
-
-import dagger.hilt.android.qualifiers.ApplicationContext;
 
 public class FileUtils {
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
     private static final String LogTag = FileUtils.class.getSimpleName();
 
-    @Inject
-    @IOExecutor
-    public ExecutorService ioExecutor; //public because dagger does not support private field injection
-    @ApplicationContext
-    public Context context;
-
-    @Inject
-    public StorageManager storageManager;
-    private static final class GlobalFileUtilsInstanceHolder {
-        static final FileUtils globalFileUtilsInstance = new FileUtils();
-    }
-
-    public static FileUtils getInstance(){
-        return GlobalFileUtilsInstanceHolder.globalFileUtilsInstance;
-    }
-
     public static byte[] fullyReadFileToBytes(File f) throws IOException {
         int size = (int) f.length();
-        CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = new byte[size];
-
-        FileUtils.getInstance().ioExecutor.execute(()->{
-            byte[] tmpBuff = new byte[size];
-            try (FileInputStream fis = new FileInputStream(f)) {
-
+        byte[] tmpBuff = new byte[size];
+        try (FileInputStream fis = new FileInputStream(f)) {
                 int read = fis.read(bytes, 0, size);
                 if (read < size) {
                     int remain = size - read;
@@ -81,12 +55,7 @@ public class FileUtils {
             } catch (IOException e) {
                 Log.e(LogTag,"the following exception occurred while reading file into bytes",e);
             }
-            latch.countDown();
-        });
 
-        try{
-            latch.await();
-        }catch (InterruptedException ignored){}
         return bytes;
     }
 
@@ -173,7 +142,8 @@ public class FileUtils {
     public static void copyAssets(Context context) {
         String[] tiles = {"dhulikhel.mbtiles", "somalia.mbtiles"};
         AssetManager assetManager = context.getAssets();
-        FileUtils.getInstance().ioExecutor.execute(()->{
+        MainApplication mainApplication=(MainApplication)context.getApplicationContext();
+        mainApplication.getIoExecutorService().execute(()->{
             try {
                 for (String s : tiles) {
                     InputStream in;
@@ -206,7 +176,8 @@ public class FileUtils {
     public static String getRealPathFromURI(Context context, Uri contentUri) {
         CountDownLatch latch = new CountDownLatch(1);
         String[] paths = new String[1];
-        FileUtils.getInstance().ioExecutor.execute(()->{
+        MainApplication mainApplication = (MainApplication)context.getApplicationContext();
+        mainApplication.getIoExecutorService().execute(()->{
             String[] proj = {MediaStore.Images.Media.DATA};
             try (Cursor cursor = context.getContentResolver().query(contentUri, proj, null, null, null)) {
                 int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
@@ -256,7 +227,8 @@ public class FileUtils {
     public static String getImagePath(Context context, Uri uri) {
         CountDownLatch  latch = new CountDownLatch(1);
         String[] imagePaths = new String[1];
-        FileUtils.getInstance().ioExecutor.execute(()->{
+        MainApplication  mainApplication=(MainApplication)context.getApplicationContext();
+        mainApplication.getIoExecutorService().execute(()->{
             Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
             cursor.moveToFirst();
             String document_id = cursor.getString(0);
@@ -323,8 +295,10 @@ public class FileUtils {
                 android.os.Environment.MEDIA_MOUNTED);
     }
     @RequiresApi(api = Build.VERSION_CODES.O)
-    private static long getAvailableExternalMemorySizePostNougat(){
-       StorageManager storageManager1 = FileUtils.getInstance().storageManager;
+    private static long getAvailableExternalMemorySizePostNougat(Context context){
+        MainApplication mainApplication=(MainApplication)context.getApplicationContext();
+
+       StorageManager storageManager1 = mainApplication.getStorageManager();
        StorageVolume primaryStorageVolume= storageManager1.getPrimaryStorageVolume();
        if (primaryStorageVolume==null) return 0;
        if (!primaryStorageVolume.getState().equals(Environment.MEDIA_MOUNTED)) return 0;
@@ -350,12 +324,13 @@ public class FileUtils {
     /**
      * Find space left in the external memory.
      */
-    public static long getAvailableExternalMemorySize() {
+    public static long getAvailableExternalMemorySize(Context context) {
         CountDownLatch latch = new CountDownLatch(1);
         long[] memorySizes = new long[1];
-        FileUtils.getInstance().ioExecutor.execute(()->{
+        MainApplication mainApplication=(MainApplication)context.getApplicationContext();
+        mainApplication.getIoExecutorService().execute(()->{
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-                memorySizes[0]=getAvailableExternalMemorySizePostNougat();
+                memorySizes[0]=getAvailableExternalMemorySizePostNougat(context);
             }else{
                 memorySizes[0]=getAvailableExternalMemorySizePreNougat();
             }
@@ -389,13 +364,13 @@ public class FileUtils {
      * @param size
      * @return A string with size followed by an appropriate suffix
      */
-    public static String formatSize(long size) {
-        return Formatter.formatShortFileSize(FileUtils.getInstance().context,size);
+    public static String formatSize(long size,Context context) {
+        return Formatter.formatShortFileSize(context,size);
     }
 
-    public static long getTotalAvailableMemory() {
+    public static long getTotalAvailableMemory(Context context) {
         long internalAvailableMemory = getAvailableInternalMemorySize();
-        long externalAvailableMemory = getAvailableExternalMemorySize();
+        long externalAvailableMemory = getAvailableExternalMemorySize(context);
         // Temporary Check till we find a better way to do it
         if (internalAvailableMemory == externalAvailableMemory) {
             return internalAvailableMemory;
@@ -413,8 +388,8 @@ public class FileUtils {
         return internalTotalMemory + externalTotalMemory;
     }
 
-    public static long getTotalAvailableMemoryRatio() {
-        return Math.round(((double) getTotalAvailableMemory() / (double) getTotalMemoryCapacity()) * 100);
+    public static long getTotalAvailableMemoryRatio(Context context) {
+        return Math.round(((double) getTotalAvailableMemory(context) / (double) getTotalMemoryCapacity()) * 100);
     }
 
     /**
@@ -423,12 +398,12 @@ public class FileUtils {
      * param None
      * @return Available space and total space
      */
-    public static String getAvailableOverTotalMemoryFormattedString() {
-        long available = getTotalAvailableMemory();
+    public static String getAvailableOverTotalMemoryFormattedString(Context context) {
+        long available = getTotalAvailableMemory(context);
         long total = getTotalMemoryCapacity();
         return "Available Space: "
-                + formatSize(available)
+                + formatSize(available,context)
                 + "/"
-                + formatSize(total);
+                + formatSize(total,context);
     }
 }
