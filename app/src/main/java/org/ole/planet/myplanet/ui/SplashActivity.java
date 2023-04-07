@@ -16,12 +16,6 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 
-import java.util.concurrent.Executor;
-
-import javax.inject.Inject;
-
-import dagger.hilt.android.AndroidEntryPoint;
-
 public class SplashActivity extends AppCompatActivity {
 
     RadioButton rbChild, rbNormal;

@@ -35,6 +35,8 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 public class FileUtils {
+    // may lead to an unexpected behavior when the state of the ExternalStorageDirectory changes
+    // maybe allocate it at runtime?
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
     private static final String LogTag = FileUtils.class.getSimpleName();
 
@@ -294,16 +296,20 @@ public class FileUtils {
         return android.os.Environment.getExternalStorageState().equals(
                 android.os.Environment.MEDIA_MOUNTED);
     }
+    /*
+     An efficient way of accessing memory that the system can allocate to the app
+     if requested by the app, on post nougat devices.
+     */
     @RequiresApi(api = Build.VERSION_CODES.O)
     private static long getAvailableExternalMemorySizePostNougat(Context context){
         MainApplication mainApplication=(MainApplication)context.getApplicationContext();
-
        StorageManager storageManager1 = mainApplication.getStorageManager();
        StorageVolume primaryStorageVolume= storageManager1.getPrimaryStorageVolume();
        if (primaryStorageVolume==null) return 0;
        if (!primaryStorageVolume.getState().equals(Environment.MEDIA_MOUNTED)) return 0;
-       UUID primaryStorageUUID = UUID.fromString(primaryStorageVolume.getUuid());
+       UUID primaryStorageUUID = StorageManager.UUID_DEFAULT;
        try{
+           // get the number of storage bytes that can be allocated to us by the system
            return storageManager1.getAllocatableBytes(primaryStorageUUID);
        }catch (IOException ex){
            Log.e(LogTag,"The following exception occurred while determining the available memory space post nougat",ex);
@@ -369,13 +375,7 @@ public class FileUtils {
     }
 
     public static long getTotalAvailableMemory(Context context) {
-        long internalAvailableMemory = getAvailableInternalMemorySize();
-        long externalAvailableMemory = getAvailableExternalMemorySize(context);
-        // Temporary Check till we find a better way to do it
-        if (internalAvailableMemory == externalAvailableMemory) {
-            return internalAvailableMemory;
-        }
-        return internalAvailableMemory + externalAvailableMemory;
+       return getAvailableExternalMemorySize(context);
     }
 
     public static long getTotalMemoryCapacity() {

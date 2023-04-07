@@ -75,7 +75,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         Utilities.log("list size " + list.size)
         var adapter = AdapterNews(activity, list, user, null)
         adapter.setListener(this)
-        adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
+        arguments?.getBoolean("fromLogin", false)?.let { adapter.setFromLogin(it) }
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
       //  setFlexBox();

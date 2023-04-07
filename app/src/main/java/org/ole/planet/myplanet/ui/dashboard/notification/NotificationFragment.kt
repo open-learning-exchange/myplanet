@@ -72,7 +72,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
         notificationList.add(Notifications(R.drawable.task_pending,  "${tasks.size} tasks due."))
 
-        var storageRatio = getTotalAvailableMemoryRatio()
+        var storageRatio = getTotalAvailableMemoryRatio(requireContext())
         var storageNotiText : String
         if (storageRatio <= 10) {
             storageNotiText = "Storage critically low: " + storageRatio + "% available. Please free up space."
