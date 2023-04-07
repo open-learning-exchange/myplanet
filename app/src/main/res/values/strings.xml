@@ -604,6 +604,11 @@
     <string name="entRules">What are the Rules of your enterprise?</string>
     <string name="entEmptyDescription"><![CDATA[The enterprise has no mission & services.]]></string>
     <string name="total_visits">Total visits from last 30 days</string>
+    <string name="no_images">No images to download.</string>
+    <string name="file_unsupported">This file type is currently unsupported</string>
+    <string name="unable_to_open_res">Unable to open resource</string>
+    <string name="select_from_list">Please select link item from list</string>
+    <string name="no_data_available">No data available</string>
 
 </resources>
 

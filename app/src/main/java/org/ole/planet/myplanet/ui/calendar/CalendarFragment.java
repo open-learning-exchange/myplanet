@@ -26,15 +26,6 @@ public class CalendarFragment extends Fragment {
 
     OnHomeItemClickListener listener;
 
-    public void addEvents() {
-        List<EventDay> events = new ArrayList<>();
-        Calendar calendar = Calendar.getInstance();
-        events.add(new EventDay(calendar, R.drawable.bg_label_checked));
-        CalendarView calendarView = (CalendarView) getView().findViewById(R.id.calendarView);
-        calendarView.setEvents(events);
-    }
-
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);

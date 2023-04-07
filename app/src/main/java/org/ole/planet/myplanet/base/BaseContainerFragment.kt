@@ -35,9 +35,9 @@ import java.io.File
 import java.util.*
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
-    var timesRated: TextView? = null
-    var rating: TextView? = null
-    var ratingBar: AppCompatRatingBar? = null
+    private var timesRated: TextView? = null
+    private var rating: TextView? = null
+    private var ratingBar: AppCompatRatingBar? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         profileDbHandler = UserProfileDbHandler(activity)
         return super.onCreateView(inflater, container, savedInstanceState)
@@ -54,17 +54,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val url = Utilities.getUrl(library, settings)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
-        if (!urls.isEmpty()) startDownload(urls) else Utilities.toast(activity, "No images to download.")
+        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(activity, getString(R.string.no_images))
     }
 
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = view!!.findViewById(R.id.times_rated)
         rating = view!!.findViewById(R.id.tv_rating)
         ratingBar = view!!.findViewById(R.id.rating_bar)
-        ratingBar?.setOnTouchListener(View.OnTouchListener { vi: View?, e: MotionEvent ->
+        ratingBar?.setOnTouchListener { _, e: MotionEvent ->
             if (e.action == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog(type, id, title, listener)
             true
-        })
+        }
     }
 
     override fun onAttach(context: Context) {
@@ -74,7 +74,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
+    private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress.contains("ole/audio") || items.resourceLocalAddress.contains("ole/video")) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
@@ -84,7 +84,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivity(fileOpenIntent)
     }
 
-    fun openPdf(item: RealmMyLibrary) {
+    private fun openPdf(item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
         fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
         fileOpenIntent.putExtra("resourceId", item.id)
@@ -104,7 +104,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    fun checkFileExtension(items: RealmMyLibrary) {
+    private fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
@@ -119,21 +119,21 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
+    private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
         when (extension) {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
             "csv" -> openIntent(items, CSVViewerActivity::class.java)
-            else -> Toast.makeText(activity, "This file type is currently unsupported", Toast.LENGTH_LONG).show()
+            else -> Toast.makeText(activity, getString(R.string.file_unsupported), Toast.LENGTH_LONG).show()
         }
     }
 
-    fun openFileType(items: RealmMyLibrary, videotype: String) {
+    private fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         Utilities.log("Mime type $mimetype")
         Utilities.log("Mime type " + items.resourceLocalAddress)
         if (mimetype == null) {
-            Utilities.toast(activity, "Unable to open resource")
+            Utilities.toast(activity, getString(R.string.unable_to_open_res))
             return
         }
         if (profileDbHandler == null)
@@ -166,7 +166,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivity(intent)
     }
 
-    fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
+    private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
         val builderSingle = AlertDialog.Builder(activity!!)
         builderSingle.setTitle("Select resource to open : ")
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(activity!!, android.R.layout.select_dialog_item, downloadedResources!!) {
@@ -180,7 +180,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return tv
             }
         }
-        builderSingle.setAdapter(arrayAdapter) { dialogInterface: DialogInterface?, i: Int ->
+        builderSingle.setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
             val library = arrayAdapter.getItem(i)
             library?.let { openResource(it) }
         }
@@ -192,7 +192,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             btnOpen.visibility = View.GONE
         } else {
             btnOpen.visibility = View.VISIBLE
-            btnOpen.setOnClickListener { view: View? ->
+            btnOpen.setOnClickListener {
                 if (downloadedResources.size == 1) {
                     openResource(downloadedResources[0])
                 } else {
@@ -207,8 +207,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             btnResources.visibility = View.GONE
         } else {
             btnResources.visibility = View.VISIBLE
-            btnResources.text = "Resources [" + resources.size + "]"
-            btnResources.setOnClickListener { view: View? -> if (resources.size > 0) showDownloadDialog(resources as List<RealmMyLibrary>) }
+            btnResources.text = StringBuilder().append("Resources [").append(resources.size).append("]").toString()
+            btnResources.setOnClickListener { if (resources.size > 0) showDownloadDialog(resources as List<RealmMyLibrary>) }
         }
     }
 }

@@ -8,7 +8,7 @@ import java.security.MessageDigest
 
 class Sha256Utils {
 
-    public fun getCheckSumFromFile(f: File): String {
+    fun getCheckSumFromFile(f: File): String {
         val fis = FileInputStream(f)
         val bos = ByteArrayOutputStream()
         val buf = ByteArray(1024)

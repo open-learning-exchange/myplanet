@@ -6,19 +6,18 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.fragment_members.*
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
-import java.util.ArrayList
 
 class LeadersFragment : Fragment() {
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
 
         return inflater.inflate(R.layout.fragment_members, container, false)
     }
@@ -26,15 +25,17 @@ class LeadersFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        var mRealm = DatabaseService(activity!!).realmInstance;
+        val mRealm = DatabaseService(activity!!).realmInstance
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
-        if (leaders.isEmpty()){
-            tv_nodata.text = "No data available"
-        }else{
+        if (leaders.isEmpty()) {
+            tv_nodata.text = getString(R.string.no_data_available)
+        } else {
             rv_member.layoutManager = GridLayoutManager(activity, 2)
             val list = ArrayList<RealmUserModel>()
             for (team in leaders) {
-                val model = mRealm.where(RealmUserModel::class.java).equalTo("id", team.getUser_id()).findFirst()
+                val model =
+                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.getUser_id())
+                        .findFirst()
                 if (model != null && !list.contains(model))
                     list.add(model)
             }
@@ -42,7 +43,6 @@ class LeadersFragment : Fragment() {
         }
 
     }
-
 
 
 }

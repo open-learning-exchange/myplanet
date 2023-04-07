@@ -34,22 +34,22 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
                 holder.tvTotal.text = list[position].asJsonObject["mistakes"].asString
             else
                 holder.tvTotal.text = "0"
-            showStepMistakes(holder, position);
+            showStepMistakes(holder, position)
 
         }
     }
 
     private fun showStepMistakes(holder: ViewHolderMyProgress, position: Int) {
         if (list[position].asJsonObject.has("stepMistake")) {
-            var stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
+            val stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
             holder.llProgress.removeAllViews()
             if (stepMistake.keySet().size > 0) {
-                var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
+                val stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
                 stepView.step.text = Html.fromHtml("<b>Step</b>")
                 stepView.mistake.text = Html.fromHtml("<b>Mistake</b>")
                 holder.llProgress.addView(stepView)
                 stepMistake.keySet().forEach {
-                    var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
+                    val stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
                     stepView.step.text = (it.toInt().plus(1).toString())
                     stepView.mistake.text = stepMistake[it].asInt.toString()
                     holder.llProgress.addView(stepView)
