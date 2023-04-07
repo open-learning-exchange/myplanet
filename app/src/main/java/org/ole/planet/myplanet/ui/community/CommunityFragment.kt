@@ -84,15 +84,6 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     }
 
-
-
-
-    override fun onConfigurationChanged(newConfig: Configuration?) {
-        super.onConfigurationChanged(newConfig)
-        val orientation = newConfig!!.orientation
-        changeLayoutManager(orientation)
-    }
-
     private fun changeLayoutManager(orientation: Int) {
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             rv_community.layoutManager = GridLayoutManager(activity, 2)
