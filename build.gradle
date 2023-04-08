@@ -23,7 +23,7 @@ buildscript {
 
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
+        classpath 'com.android.tools.build:gradle:4.0.2'
         classpath 'io.realm:realm-gradle-plugin:5.14.0'
         classpath 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
