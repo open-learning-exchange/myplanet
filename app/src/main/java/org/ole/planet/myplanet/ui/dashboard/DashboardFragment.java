@@ -11,6 +11,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.CardProfileBinding;
+import org.ole.planet.myplanet.databinding.FragmentHomeBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -29,7 +31,8 @@ import io.realm.Realm;
 public class DashboardFragment extends BaseDashboardFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
-    TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole, tv_news;
+    private FragmentHomeBinding binding;
+    CardProfileBinding cardProfileBinding;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
@@ -44,13 +47,13 @@ public class DashboardFragment extends BaseDashboardFragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
-        declareElements(view);
-        onLoaded(view);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentHomeBinding.inflate(inflater, container, false);
+        cardProfileBinding = CardProfileBinding.bind(cardProfileBinding.getRoot());
+        declareElements(binding.getRoot());
+        onLoaded();
         ((AppCompatActivity) getActivity()).getSupportActionBar().setSubtitle(TimeUtils.currentDate());
-        return view;
+        return binding.getRoot();
     }
 
     @Override
@@ -58,28 +61,23 @@ public class DashboardFragment extends BaseDashboardFragment {
         super.onActivityCreated(savedInstanceState);
         int noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(settings.getString("userId", "--"), mRealm);
 
-        (getView().findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
-        getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
+        cardProfileBinding.imgSurveyWarn.setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
+        binding.addResource.setOnClickListener(v -> {
             // startActivity(new Intent(getActivity(), AddResourceActivity.class));
             new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
         });
     }
 
     private void declareElements(View view) {
-        tv_surveys = view.findViewById(R.id.tv_surveys);
-        tv_submission = view.findViewById(R.id.tv_submission);
-        tv_achievement = view.findViewById(R.id.tv_achievement);
-        tv_news = view.findViewById(R.id.tv_news);
-        tv_surveys.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey")));
-        tv_news.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(new NewsFragment()));
-        tv_submission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
-        tv_achievement.setVisibility(Constants.showBetaFeature(Constants.KEY_ACHIEVEMENT, getActivity()) ? View.VISIBLE : View.GONE);
-        tv_achievement.setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
-//        view.findViewById(R.id.ll_user).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
+        cardProfileBinding.tvSurveys.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey")));
+        cardProfileBinding.tvNews.setOnClickListener(view12 -> homeItemClickListener.openCallFragment(new NewsFragment()));
+        cardProfileBinding.tvSubmission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
+        cardProfileBinding.tvAchievement.setVisibility(Constants.showBetaFeature(Constants.KEY_ACHIEVEMENT, getActivity()) ? View.VISIBLE : View.GONE);
+        cardProfileBinding.tvAchievement.setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
+//        binding.llUser.setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         initView(view);
 
     }
-
 }
