@@ -29,6 +29,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            multiDexKeepProguard = file('multidex-config.pro')
         }
         debug {
             minifyEnabled false
@@ -41,11 +42,11 @@ android {
         }
     }
 
-
     compileOptions {
-        targetCompatibility JavaVersion.VERSION_1_8
         sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
+
     namespace 'org.ole.planet.myplanet'
     lint {
         abortOnError false
@@ -126,6 +127,7 @@ dependencies {
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.applandeo:material-calendar-view:1.4.0'
+    implementation 'androidx.startup:startup-runtime:1.1.1'
 }
 realm {
     syncEnabled = true

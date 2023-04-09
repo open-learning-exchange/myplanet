@@ -25,7 +25,7 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
 
     <application xmlns:tools="http://schemas.android.com/tools"
-        android:name=".MainApplication"
+        android:name="org.ole.planet.myplanet.MainApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_project_name"
@@ -34,9 +34,9 @@
         android:theme="@style/MyMaterialTheme"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
-        <activity android:name=".ui.userprofile.BecomeMemberActivity"
-            android:theme="@style/AppTheme"
-           />
+        <activity
+            android:name=".ui.userprofile.BecomeMemberActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.course.CourseProgressActivity"
             android:theme="@style/AppTheme" />
@@ -63,7 +63,8 @@
         <activity
             android:name=".ui.library.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.SplashActivity"
+        <activity
+            android:name=".ui.SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -111,6 +112,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
+
+
 
         <service
             android:name=".service.AutoSyncService"
