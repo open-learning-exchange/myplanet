@@ -48,6 +48,9 @@ public class Constants {
     public static final String KEY_NEWSADDIMAGE = "beta_addImageToMessage";
     public static final String KEY_AUTOUPDATE = "beta_auto_update";
     public static final String KEY_UPGRADE_MAX = "beta_upgrade_max";
+
+    public static final String KEY_IS_CHILD = "isChild";
+
     public static final String DISCLAIMER = "<td>\n" +
             "          <h1>Disclaimer</h1>\n" +
             "<p>Last updated: January 10, 2020</p>\n" +
