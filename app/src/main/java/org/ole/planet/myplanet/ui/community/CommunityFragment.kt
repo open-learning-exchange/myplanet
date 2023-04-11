@@ -87,9 +87,9 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
 
 
-    override fun onConfigurationChanged(newConfig: Configuration?) {
+    override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val orientation = newConfig!!.orientation
+        val orientation = newConfig.orientation
         changeLayoutManager(orientation)
     }
 
