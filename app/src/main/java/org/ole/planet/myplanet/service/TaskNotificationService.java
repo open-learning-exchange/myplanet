@@ -24,16 +24,28 @@ public class TaskNotificationService extends JobService {
         Calendar tomorrow = Calendar.getInstance();
         tomorrow.add(Calendar.DAY_OF_YEAR, 1);
         RealmUserModel user = new UserProfileDbHandler(this).getUserModel();
-        if (user != null) {
-            List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class).equalTo("completed", false).equalTo("assignee", user.getId()).equalTo("notified", false)
-                    .between("deadline", current, tomorrow.getTimeInMillis()).findAll();
-            mRealm.beginTransaction();
-            for (RealmTeamTask in : tasks) {
-                NotificationUtil.create(this, R.drawable.ole_logo, in.getTitle(), "Task expires on " + TimeUtils.formatDate(in.getDeadline()));
-                in.setNotified(true);
-            }
-            mRealm.commitTransaction();
+        
+        //Added a check for the user variable being null, and returning early if it is.
+        if (user == null) {
+            return false;
         }
+        List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class)
+                .equalTo("completed", false)
+                .equalTo("assignee", user.getId())
+                .equalTo("notified", false)
+                .between("deadline", current, tomorrow.getTimeInMillis())
+                .findAll();
+         // Replaced beginTransaction() and commitTransaction() with a lambda expression that calls executeTransaction().
+         // This is a more concise and recommended way to perform transactions in Realm.      
+        mRealm.executeTransaction(r -> {
+            //Renamed the loop variable from in to task for better readability.
+            //Moved the loop body inside the transaction block.
+            for (RealmTeamTask task : tasks) {
+                NotificationUtil.create(this, R.drawable.ole_logo, task.getTitle(),
+                        "Task expires on " + TimeUtils.formatDate(task.getDeadline()));
+                task.setNotified(true);
+            }
+        });
         return false;
     }
 
