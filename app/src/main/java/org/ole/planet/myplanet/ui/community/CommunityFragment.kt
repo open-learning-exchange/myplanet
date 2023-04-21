@@ -4,32 +4,27 @@ package org.ole.planet.myplanet.ui.community
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
-import android.os.Handler
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.LinearLayout
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Case
 import io.realm.Sort
-import kotlinx.android.synthetic.main.fragment_community.*
-
+import kotlinx.android.synthetic.main.fragment_community.btn_library
+import kotlinx.android.synthetic.main.fragment_community.ll_edit_delete
+import kotlinx.android.synthetic.main.fragment_community.rv_community
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Utilities
 
 /**
@@ -40,7 +35,10 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     }
 
     override fun showReply(news: RealmNews, fromLogin: Boolean) {
-        startActivity(Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id).putExtra("fromLogin", fromLogin))
+        startActivity(Intent(
+            activity,
+            ReplyActivity::class.java
+        ).putExtra("id", news.id).putExtra("fromLogin", fromLogin))
     }
 
 
@@ -73,13 +71,13 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         changeLayoutManager(orientation)
 
         Utilities.log("list size " + list.size)
-        var adapter = AdapterNews(activity, list, user, null)
+        val adapter = AdapterNews(activity, list, user, null)
         adapter.setListener(this)
         adapter.setFromLogin(arguments!!.getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
       //  setFlexBox();
-        ll_edit_delete.visibility = if (user!!.isManager()) View.VISIBLE else View.GONE
+        ll_edit_delete.visibility = if (user!!.isManager) View.VISIBLE else View.GONE
 
 
     }
@@ -87,9 +85,9 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
 
 
-    override fun onConfigurationChanged(newConfig: Configuration?) {
+    override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val orientation = newConfig!!.orientation
+        val orientation = newConfig.orientation
         changeLayoutManager(orientation)
     }
 

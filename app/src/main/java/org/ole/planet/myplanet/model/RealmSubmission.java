@@ -121,12 +121,12 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("source", sub.getSource());
         object.addProperty("parentCode", sub.getParentCode());
         JsonObject parent = new Gson().fromJson(sub.getParent(), JsonObject.class);
-        object.add("parent",parent );
+        object.add("parent", parent);
         Utilities.log("Parent " + sub.getParent());
         //
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
-        Utilities.log("Parent Exam "  + (exam == null) );
-        if (exam != null && parent==null)
+        Utilities.log("Parent Exam " + (exam == null));
+        if (exam != null && parent == null)
             object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
         if (TextUtils.isEmpty(sub.getUser())) {
             object.add("user", user.serialize());
@@ -169,7 +169,12 @@ public class RealmSubmission extends RealmObject {
         return sub;
     }
 
-    public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm, Context context) throws IOException {
+    public static void continueResultUpload(
+            RealmSubmission sub,
+            ApiInterface apiInterface,
+            Realm realm,
+            Context context
+    ) throws IOException {
         JsonObject object = null;
         if (!TextUtils.isEmpty(sub.getUserId()) && sub.getUserId().startsWith("guest"))
             return;
