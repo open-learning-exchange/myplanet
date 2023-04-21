@@ -3,13 +3,14 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'realm-android'
+apply plugin: 'com.google.dagger.hilt.android'
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 31
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
-        targetSdkVersion 33
+        targetSdkVersion 31
         versionCode 889
         versionName "0.8.89"
         ndkVersion '25.1.8937393'
@@ -35,17 +36,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
     packagingOptions {
-        exclude 'META-INF/DEPENDENCIES'
-        exclude 'META-INF/LICENSE'
-        exclude 'META-INF/LICENSE.txt'
-        exclude 'META-INF/license.txt'
-        exclude 'META-INF/NOTICE'
-        exclude 'META-INF/NOTICE.txt'
-        exclude 'META-INF/notice.txt'
-        exclude 'META-INF/ASL2.0'
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/license.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/notice.txt', 'META-INF/ASL2.0']
+        }
     }
+
 
     lintOptions {
         abortOnError false
@@ -126,6 +122,17 @@ dependencies {
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.applandeo:material-calendar-view:1.4.0'
+
+    //Coroutines
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutinesVersion}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${versions.coroutinesVersion}"
+
+    //Dagger Hilt
+    implementation "com.google.dagger:hilt-android:${versions.hiltVersion}"
+    kapt "com.google.dagger:hilt-compiler:${versions.hiltVersion}"
+
+    // Lifecycle
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.5.0"
 }
 realm {
     syncEnabled = true

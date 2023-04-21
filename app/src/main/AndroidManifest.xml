@@ -23,7 +23,8 @@
     <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <application xmlns:tools="http://schemas.android.com/tools"
         android:name=".MainApplication"
@@ -64,7 +65,8 @@
         <activity
             android:name=".ui.library.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.SplashActivity">
+        <activity android:name=".ui.SplashActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

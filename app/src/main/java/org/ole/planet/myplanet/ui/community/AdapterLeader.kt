@@ -1,27 +1,22 @@
 package org.ole.planet.myplanet.ui.community
 
-import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.domain.models.Leader
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class AdapterLeader: ListAdapter<RealmUserModel, AdapterLeader.ViewHolderLeader>(UserComparator) {
-    private object UserComparator: DiffUtil.ItemCallback<RealmUserModel>() {
-        override fun areItemsTheSame(oldItem: RealmUserModel, newItem: RealmUserModel): Boolean =
+class AdapterLeader: ListAdapter<Leader, AdapterLeader.ViewHolderLeader>(UserComparator) {
+    private object UserComparator: DiffUtil.ItemCallback<Leader>() {
+        override fun areItemsTheSame(oldItem: Leader, newItem: Leader): Boolean =
             oldItem.id == newItem.id
 
         override fun areContentsTheSame(
-            oldItem: RealmUserModel,
-            newItem: RealmUserModel
+            oldItem: Leader,
+            newItem: Leader
         ): Boolean = oldItem == newItem
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderLeader {
@@ -40,9 +35,9 @@ class AdapterLeader: ListAdapter<RealmUserModel, AdapterLeader.ViewHolderLeader>
     class ViewHolderLeader(
         private val binding: RowJoinedUserBinding
     ) : RecyclerView.ViewHolder(binding.root) {
-        fun bindUser(user: RealmUserModel) {
+        fun bindUser(user: Leader) {
             with(binding) {
-                tvTitle.text = user.toString()
+                tvTitle.text = user.name
                 tvDescription.text = user.email
             }
         }

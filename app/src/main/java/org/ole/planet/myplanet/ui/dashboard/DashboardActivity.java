@@ -18,6 +18,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+
+import dagger.hilt.android.AndroidEntryPoint;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
 import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
@@ -82,7 +84,7 @@ import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
 
-
+@AndroidEntryPoint
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
 
