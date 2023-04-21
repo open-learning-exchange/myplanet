@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.model;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -475,4 +477,8 @@ public class RealmUserModel extends RealmObject {
         return firstName + " " + lastName;
     }
 
+    @Override
+    public boolean equals(@Nullable Object obj) {
+        return super.equals(obj);
+    }
 }

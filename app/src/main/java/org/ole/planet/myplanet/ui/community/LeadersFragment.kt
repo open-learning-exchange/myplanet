@@ -26,7 +26,7 @@ class LeadersFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        var mRealm = DatabaseService(activity!!).realmInstance;
+        val mRealm = DatabaseService(activity!!).realmInstance;
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
         if (leaders.isEmpty()){
             tv_nodata.text = "No data available"
@@ -34,11 +34,16 @@ class LeadersFragment : Fragment() {
             rv_member.layoutManager = GridLayoutManager(activity, 2)
             val list = ArrayList<RealmUserModel>()
             for (team in leaders) {
-                val model = mRealm.where(RealmUserModel::class.java).equalTo("id", team.getUser_id()).findFirst()
+                val model = mRealm.where(RealmUserModel::class.java).equalTo(/* fieldName = */ "id", /* value = */
+                    team.user_id
+                ).findFirst()
                 if (model != null && !list.contains(model))
                     list.add(model)
             }
-            rv_member.adapter = AdapterLeader(activity!!, list)
+            rv_member.adapter = AdapterLeader().also {
+                it.submitList(list)
+            }
+
         }
 
     }

@@ -6,33 +6,46 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class AdapterLeader(var context: Context,var leaders: List<RealmUserModel>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        var v = LayoutInflater.from(context).inflate(R.layout.row_joined_user, parent, false)
-        return ViewHolderLeader(v)
+class AdapterLeader: ListAdapter<RealmUserModel, AdapterLeader.ViewHolderLeader>(UserComparator) {
+    private object UserComparator: DiffUtil.ItemCallback<RealmUserModel>() {
+        override fun areItemsTheSame(oldItem: RealmUserModel, newItem: RealmUserModel): Boolean =
+            oldItem.id == newItem.id
+
+        override fun areContentsTheSame(
+            oldItem: RealmUserModel,
+            newItem: RealmUserModel
+        ): Boolean = oldItem == newItem
+    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderLeader {
+        return ViewHolderLeader(
+            RowJoinedUserBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+        )
     }
 
-    override fun getItemCount(): Int {
-        return leaders!!.size
+    override fun onBindViewHolder(holder: ViewHolderLeader, position: Int) {
+        holder.bindUser(getItem(position))
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if(holder is ViewHolderLeader){
-            holder.title.text = leaders[position].toString()
-            holder.tv_description.text = leaders[position].email
+
+    class ViewHolderLeader(
+        private val binding: RowJoinedUserBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+        fun bindUser(user: RealmUserModel) {
+            with(binding) {
+                tvTitle.text = user.toString()
+                tvDescription.text = user.email
+            }
         }
-    }
-
-
-    internal inner class ViewHolderLeader(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var title: TextView = itemView.findViewById(R.id.tv_title)
-        var tv_description: TextView = itemView.findViewById(R.id.tv_description)
-        var icon: ImageView = itemView.findViewById(R.id.ic_more)
     }
 
 }
