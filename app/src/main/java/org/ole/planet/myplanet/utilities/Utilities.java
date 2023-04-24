@@ -95,8 +95,12 @@ public class Utilities {
 
     public static String getRelativeTime(long timestamp) {
         long nowtime = System.currentTimeMillis();
-        if (timestamp < nowtime) {
-            return (String) DateUtils.getRelativeTimeSpanString(timestamp, nowtime, 0);
+        if(timestamp > 0){
+            if (timestamp < nowtime) {
+                return (String) DateUtils.getRelativeTimeSpanString(timestamp, nowtime, 0);
+            }
+        }else{
+            return "Not yet synced";
         }
         return "Just now";
     }
