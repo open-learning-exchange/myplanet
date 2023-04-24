@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.ui.course.CourseFragment
 import org.ole.planet.myplanet.ui.course.MyProgressFragment
+import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.library.AddResourceFragment
 import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
