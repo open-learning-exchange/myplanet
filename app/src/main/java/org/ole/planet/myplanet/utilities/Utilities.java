@@ -95,6 +95,9 @@ public class Utilities {
 
     public static String getRelativeTime(long timestamp) {
         long nowtime = System.currentTimeMillis();
+        /**
+         * The timestamp value has to be greater than 0 or else when passed to the {@linkplain android.text.format.DateUtils#getRelativeTimeSpanString(0,0,0)} function, it will return an erroneous date.
+         **/
         if(timestamp > 0){
             if (timestamp < nowtime) {
                 return (String) DateUtils.getRelativeTimeSpanString(timestamp, nowtime, 0);

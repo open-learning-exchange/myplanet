@@ -14,6 +14,11 @@ import io.realm.Realm;
 
 public class FeedbackMvc implements FeedbackMvcInterface {
 
+/**
+ * This MVC class implements the methods as defined on the FeedbackMvcInterface
+ * It Decouples UI Logic to allow Activities/Fragments to take the role of controllers
+ * **/
+
     Realm mRealm;
     DatabaseService databaseService;
     Activity activity_;
