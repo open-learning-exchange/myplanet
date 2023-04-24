@@ -28,9 +28,11 @@ import io.realm.Realm;
 public class FeedbackListFragment extends Fragment {
 
     TextView etMessage;
-    RecyclerView rvFeedbacks;
+    public static RecyclerView rvFeedbacks;
+    public static AdapterFeedback adapterFeedback;
     Realm mRealm;
-    RealmUserModel userModel;
+    public static RealmUserModel userModel;
+    FeedbackMvc feedbackMvc;
 
     public FeedbackListFragment() {
         // Required empty public constructor
@@ -48,17 +50,16 @@ public class FeedbackListFragment extends Fragment {
         userModel = new UserProfileDbHandler(getActivity()).getUserModel();
         v.findViewById(R.id.fab).setOnClickListener(vi -> new FeedbackFragment().show(getChildFragmentManager(), ""));
         return v;
+
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         rvFeedbacks.setLayoutManager(new LinearLayoutManager(getActivity()));
-        List<RealmFeedback> list = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.getName()).findAll();
-        if (userModel.isManager())
-            list = mRealm.where(RealmFeedback.class).findAll();
-        AdapterFeedback adapterFeedback = new AdapterFeedback(getActivity(), list);
-        rvFeedbacks.setAdapter(adapterFeedback);
+
+        feedbackMvc = new FeedbackMvc(getActivity());
+        feedbackMvc.setAdapter();
     }
 
     @Override

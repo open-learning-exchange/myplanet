@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.feedback;
 
+import static org.ole.planet.myplanet.ui.feedback.FeedbackListFragment.userModel;
+
 import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
@@ -24,6 +26,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -41,6 +44,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     DatabaseService databaseService;
     RealmUserModel model;
     String user = "";
+    FeedbackMvc feedbackMvc;
 
     public FeedbackFragment() {
     }
@@ -115,6 +119,10 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
             mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, argumentArray), () -> Utilities.toast(getActivity(), "Feedback Saved.."));
         }else
             mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, message), () -> Utilities.toast(getActivity(), "Feedback Saved.."));
+
+        feedbackMvc = new FeedbackMvc(getActivity());
+        feedbackMvc.setAdapter();
+
         Toast.makeText(getActivity(), "Thank you, your feedback has been submitted", Toast.LENGTH_SHORT).show();
     }
 

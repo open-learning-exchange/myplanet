@@ -76,9 +76,6 @@
 
         <activity android:name=".ui.viewer.AudioPlayerActivity" />
         <activity
-            android:name=".ui.feedback.FeedbackDetailActivity"
-            android:theme="@style/AppTheme" />
-        <activity
             android:name=".ui.sync.LoginActivity"
             android:configChanges="orientation|keyboardHidden|screenSize" />
         <activity

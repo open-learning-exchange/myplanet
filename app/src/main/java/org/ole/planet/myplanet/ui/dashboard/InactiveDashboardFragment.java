@@ -8,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 
 /**
  * A simple {@link Fragment} subclass.

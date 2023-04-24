@@ -140,10 +140,10 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         }
 
         @Override
-        public RvFeedbackAdapter.ReplyViewHolder onCreateViewHolder(ViewGroup parent,
+        public ReplyViewHolder onCreateViewHolder(ViewGroup parent,
                                                          int viewType) {
             View v = LayoutInflater.from(context).inflate(R.layout.row_feedback_reply, parent, false);
-            return new RvFeedbackAdapter.ReplyViewHolder(v);
+            return new ReplyViewHolder(v);
         }
 
         @Override
