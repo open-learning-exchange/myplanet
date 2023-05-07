@@ -3,6 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="org.ole.planet.myplanet">
 
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:required="false" />
@@ -26,7 +31,7 @@
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
-    <application xmlns:tools="http://schemas.android.com/tools"
+    <application
         android:name=".MainApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
