@@ -21,8 +21,7 @@ public class AndroidDecrypter {
         final String MD5 = "MD5";
         try {
             // Create MD5 Hash
-            MessageDigest digest = java.security.MessageDigest
-                    .getInstance(MD5);
+            MessageDigest digest = java.security.MessageDigest.getInstance(MD5);
             digest.update(s.getBytes());
             byte[] messageDigest = digest.digest();
 
@@ -30,8 +29,7 @@ public class AndroidDecrypter {
             StringBuilder hexString = new StringBuilder();
             for (byte aMessageDigest : messageDigest) {
                 String h = Integer.toHexString(0xFF & aMessageDigest);
-                while (h.length() < 1)
-                    h = "0" + h;
+                while (h.length() < 1) h = "0" + h;
                 hexString.append(h);
             }
             return hexString.toString();
@@ -68,8 +66,7 @@ public class AndroidDecrypter {
         int len = s.length();
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i + 1), 16));
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
     }
@@ -82,7 +79,6 @@ public class AndroidDecrypter {
         return sb.toString();
     }
 
-
     public static String decrypt(String encrypted, String key, String initVector) {
         try {
             IvParameterSpec iv = new IvParameterSpec(hexStringToByteArray(initVector));
@@ -91,7 +87,7 @@ public class AndroidDecrypter {
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv);
             byte[] original = cipher.doFinal(hexStringToByteArray(encrypted));
-            Utilities.log("return string "+ new String(original));
+            Utilities.log("return string " + new String(original));
             return new String(original);
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -116,7 +112,6 @@ public class AndroidDecrypter {
         }
         return false;
     }
-
 
     public static String generateIv() {
         try {

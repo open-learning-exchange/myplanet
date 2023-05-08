@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:orientation="vertical"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -10,21 +10,21 @@
 
 
         <EditText
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
             android:id="@+id/et_name"
-            android:padding="@dimen/padding_normal" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-
-        <EditText
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:padding="@dimen/padding_normal" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+
+        <EditText
             android:id="@+id/et_description"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:padding="@dimen/padding_normal" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -35,10 +35,10 @@
 
 
         <EditText
+            android:id="@+id/et_services"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:hint="@string/entServices"
-            android:id="@+id/et_services"
             android:padding="@dimen/padding_normal" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -48,28 +48,27 @@
 
 
         <EditText
+            android:id="@+id/et_rules"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:hint="@string/entRules"
-            android:id="@+id/et_rules"
             android:padding="@dimen/padding_normal" />
     </com.google.android.material.textfield.TextInputLayout>
 
 
-
     <Spinner
-        android:layout_width="match_parent"
-        android:padding="@dimen/padding_normal"
-        android:entries="@array/team_type"
         android:id="@+id/spn_team_type"
-        android:layout_height="wrap_content"/>
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/team_type"
+        android:padding="@dimen/padding_normal" />
 
 
     <androidx.appcompat.widget.SwitchCompat
-        android:layout_width="wrap_content"
-        android:padding="@dimen/padding_normal"
-        android:text="Public"
         android:id="@+id/switch_public"
-        android:layout_height="wrap_content"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_normal"
+        android:text="Public" />
 
 </LinearLayout>

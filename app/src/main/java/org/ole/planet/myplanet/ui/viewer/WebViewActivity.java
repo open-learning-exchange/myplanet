@@ -74,6 +74,7 @@ public class WebViewActivity extends AppCompatActivity {
                 Uri i = Uri.parse(url);
                 tv_source.setText(i.getHost());
             }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
@@ -81,14 +82,13 @@ public class WebViewActivity extends AppCompatActivity {
         });
     }
 
-
     private void clearCookie() {
         CookieSyncManager.createInstance(this);
         CookieManager cookieManager = CookieManager.getInstance();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             cookieManager.removeAllCookies(aBoolean -> {
             });
-        }else{
+        } else {
             cookieManager.removeAllCookie();
         }
     }
@@ -98,7 +98,7 @@ public class WebViewActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 (WebViewActivity.this).setProgress(newProgress);
-                Utilities.log("Url " + view.getUrl() );
+                Utilities.log("Url " + view.getUrl());
                 if (view.getUrl().endsWith("/eng/")) {
                     finish();
                 }
@@ -112,9 +112,5 @@ public class WebViewActivity extends AppCompatActivity {
                 super.onReceivedTitle(view, title);
             }
         });
-
-
     }
-
-
 }

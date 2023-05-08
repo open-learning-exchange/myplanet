@@ -118,11 +118,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
+
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:srcCompat="@drawable/baseline_storage_24"
-                    android:paddingHorizontal="@dimen/padding_small"/>
+                    android:paddingHorizontal="@dimen/padding_small"
+                    app:srcCompat="@drawable/baseline_storage_24" />
+
                 <TextView
                     android:id="@+id/tv_available_space"
                     android:layout_width="wrap_content"
@@ -247,11 +249,11 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:alpha="0.7"
-                        android:visibility="gone"
                         android:fontFamily="sans-serif"
                         android:text="@string/managerial_login"
                         android:textColor="@color/material_drawer_dark_background"
-                        android:textSize="12sp" />
+                        android:textSize="12sp"
+                        android:visibility="gone" />
 
                     <Button
                         android:id="@+id/btn_signin"

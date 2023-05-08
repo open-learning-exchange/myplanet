@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.submission;
 
-
 import android.os.Bundle;
 
 import androidx.annotation.Nullable;
@@ -33,9 +32,6 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmQuery;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class MySubmissionFragment extends Fragment implements CompoundButton.OnCheckedChangeListener {
     Realm mRealm;
     RecyclerView rvSurvey;
@@ -57,17 +53,14 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null)
-            type = getArguments().getString("type");
+        if (getArguments() != null) type = getArguments().getString("type");
     }
 
     public MySubmissionFragment() {
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_my_submission, container, false);
         exams = new HashMap<>();
         rbExam = v.findViewById(R.id.rb_exam);
@@ -118,7 +111,6 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         }
     }
 
-
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
         if (rbSurvey.isChecked()) {
@@ -128,7 +120,6 @@ public class MySubmissionFragment extends Fragment implements CompoundButton.OnC
         }
         setData("");
     }
-
 
     private void setData(String s) {
         RealmQuery q = null;

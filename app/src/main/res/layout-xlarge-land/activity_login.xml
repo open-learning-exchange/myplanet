@@ -11,9 +11,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="@dimen/_40dp"
         android:background="@color/bg_white"
         android:baselineAligned="false"
-        android:layout_margin="@dimen/_40dp"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
         android:orientation="horizontal"
@@ -101,29 +101,30 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAlignment="center"
-                    android:textColor="@android:color/white"
-                    />
+                    android:textColor="@android:color/white" />
 
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/open_community"
-                    android:text="Open Community"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:gravity="center"
+                    android:text="Open Community"
                     android:textColor="@color/md_white_1000"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:layout_height="wrap_content"/>
+                    android:theme="@style/PrimaryFlatButton" />
 
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:srcCompat="@drawable/baseline_storage_24"
-                        android:paddingHorizontal="@dimen/padding_small"/>
+                        android:paddingHorizontal="@dimen/padding_small"
+                        app:srcCompat="@drawable/baseline_storage_24" />
+
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
@@ -178,143 +179,143 @@
             </RelativeLayout>
 
             <!--<ScrollView-->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_height="match_parent"-->
-                <!--android:layout_gravity="center"-->
-                <!--android:gravity="center"-->
-                <!--android:orientation="horizontal">-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="match_parent"-->
+            <!--android:layout_gravity="center"-->
+            <!--android:gravity="center"-->
+            <!--android:orientation="horizontal">-->
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/padding_normal">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/input_layout_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_name"
+                    app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+                    app:hintAnimationEnabled="true"
+                    app:hintEnabled="true">
+
+                    <EditText
+                        android:id="@+id/input_name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:singleLine="true"
+                        android:textColor="@android:color/background_dark"
+                        android:textColorHint="@android:color/darker_gray" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/input_layout_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_password"
+                    app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+                    app:hintAnimationEnabled="true"
+                    app:hintEnabled="true"
+                    app:passwordToggleEnabled="true">
+
+                    <EditText
+                        android:id="@+id/input_password"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:textColor="@android:color/background_dark"
+                        android:textColorHint="@android:color/darker_gray" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!--                    <CheckBox-->
+                <!--                        android:id="@+id/save"-->
+                <!--                        android:layout_width="match_parent"-->
+                <!--                        android:layout_height="wrap_content"-->
+                <!--                        android:alpha="0.7"-->
+                <!--                        android:fontFamily="sans-serif"-->
+                <!--                        android:text="@string/save_username_and_password"-->
+                <!--                        android:textColor="@color/material_drawer_dark_background"-->
+                <!--                        android:textSize="12sp" />-->
+
+                <CheckBox
+                    android:id="@+id/manager_login"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.7"
+                    android:fontFamily="sans-serif"
+                    android:text="@string/managerial_login"
+                    android:textColor="@color/material_drawer_dark_background"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+
+                <Button
+                    android:id="@+id/btn_signin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="40dp"
+                    android:background="@color/colorPrimary"
+                    android:text="@string/btn_sign_in"
+                    android:textColor="@android:color/white" />
+
+                <!--<Button-->
+                <!--android:id="@+id/btn_guest_login"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_marginTop="10dp"-->
+                <!--android:text="@string/btn_guest_login"-->
+                <!--android:textSize="14sp"-->
+                <!--android:theme="@style/PrimaryFlatButton" />-->
+
+                <!--<Button-->
+                <!--android:id="@+id/become_member"-->
+                <!--android:layout_width="wrap_content"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:layout_gravity="center"-->
+                <!--android:layout_margin="@dimen/padding_normal"-->
+                <!--android:text="Become a member"-->
+                <!--android:theme="@style/PrimaryFlatButton" />-->
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:layout_gravity="center"
-                    android:padding="@dimen/padding_normal"
-                    android:orientation="vertical">
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp">
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/input_layout_name"
-                        android:layout_width="match_parent"
+                    <Button
+                        android:id="@+id/btn_guest_login"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:hint="@string/hint_name"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
-                        app:hintAnimationEnabled="true"
-                        app:hintEnabled="true">
+                        android:layout_gravity="center"
+                        android:layout_weight="1"
+                        android:text="@string/btn_guest_login"
+                        android:textSize="14sp"
+                        android:theme="@style/PrimaryFlatButton" />
 
-                        <EditText
-                            android:id="@+id/input_name"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:singleLine="true"
-                            android:textColor="@android:color/background_dark"
-                            android:textColorHint="@android:color/darker_gray" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/input_layout_password"
-                        android:layout_width="match_parent"
+                    <Button
+                        android:id="@+id/become_member"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:hint="@string/hint_password"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
-                        app:hintAnimationEnabled="true"
-                        app:hintEnabled="true"
-                        app:passwordToggleEnabled="true">
-
-                        <EditText
-                            android:id="@+id/input_password"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textPassword"
-                            android:textColor="@android:color/background_dark"
-                            android:textColorHint="@android:color/darker_gray" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-<!--                    <CheckBox-->
-<!--                        android:id="@+id/save"-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:alpha="0.7"-->
-<!--                        android:fontFamily="sans-serif"-->
-<!--                        android:text="@string/save_username_and_password"-->
-<!--                        android:textColor="@color/material_drawer_dark_background"-->
-<!--                        android:textSize="12sp" />-->
-
-                    <CheckBox
-                        android:id="@+id/manager_login"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:alpha="0.7"
-                        android:visibility="gone"
-                        android:fontFamily="sans-serif"
-                        android:text="@string/managerial_login"
-                        android:textColor="@color/material_drawer_dark_background"
-                        android:textSize="12sp" />
+                        android:layout_gravity="center"
+                        android:layout_weight="1"
+                        android:text="Become a member"
+                        android:theme="@style/PrimaryFlatButton" />
 
 
                     <Button
-                        android:id="@+id/btn_signin"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/btn_feedback"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="40dp"
-                        android:background="@color/colorPrimary"
-                        android:text="@string/btn_sign_in"
-                        android:textColor="@android:color/white" />
+                        android:layout_gravity="center"
+                        android:layout_margin="@dimen/padding_normal"
+                        android:layout_weight="1"
+                        android:text="Feedback"
+                        android:theme="@style/PrimaryFlatButton" />
 
-                    <!--<Button-->
-                        <!--android:id="@+id/btn_guest_login"-->
-                        <!--android:layout_width="wrap_content"-->
-                        <!--android:layout_height="wrap_content"-->
-                        <!--android:layout_marginTop="10dp"-->
-                        <!--android:text="@string/btn_guest_login"-->
-                        <!--android:textSize="14sp"-->
-                        <!--android:theme="@style/PrimaryFlatButton" />-->
-
-                    <!--<Button-->
-                        <!--android:id="@+id/become_member"-->
-                        <!--android:layout_width="wrap_content"-->
-                        <!--android:layout_height="wrap_content"-->
-                        <!--android:layout_gravity="center"-->
-                        <!--android:layout_margin="@dimen/padding_normal"-->
-                        <!--android:text="Become a member"-->
-                        <!--android:theme="@style/PrimaryFlatButton" />-->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_marginTop="10dp"
-                        android:layout_height="wrap_content">
-
-                        <Button
-                            android:id="@+id/btn_guest_login"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:text="@string/btn_guest_login"
-                            android:textSize="14sp"
-                            android:layout_gravity="center"
-                            android:theme="@style/PrimaryFlatButton" />
-
-                        <Button
-                            android:id="@+id/become_member"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:text="Become a member"
-                            android:theme="@style/PrimaryFlatButton" />
-
-
-                        <Button
-                            android:id="@+id/btn_feedback"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:layout_margin="@dimen/padding_normal"
-                            android:text="Feedback"
-                            android:theme="@style/PrimaryFlatButton" />
-
-                    </LinearLayout>
                 </LinearLayout>
+            </LinearLayout>
             <!--</ScrollView>-->
         </LinearLayout>
     </LinearLayout>

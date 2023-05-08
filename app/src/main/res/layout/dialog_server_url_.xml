@@ -10,7 +10,6 @@
         android:gravity="center"
         android:orientation="vertical">
 
-
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_server_url"
             android:layout_width="wrap_content"
@@ -20,7 +19,6 @@
             android:gravity="right"
             android:padding="@dimen/padding_normal"
             android:text="Cloud Url" />
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,7 +50,6 @@
                     android:text="@string/radio_https" />
 
             </RadioGroup>
-
         </LinearLayout>
 
         <Spinner

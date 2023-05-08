@@ -15,6 +15,7 @@ public class VersionUtils {
         }
         return 0;
     }
+
     public static String getVersionName(Context context) {
         try {
             PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
@@ -25,11 +26,8 @@ public class VersionUtils {
         return "";
     }
 
-    public static String  getAndroidId(Context context){
-        return Settings.Secure.getString(context.getContentResolver(),
-                Settings.Secure.ANDROID_ID) ;
+    public static String getAndroidId(Context context) {
+        return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
 
     }
-
-
 }

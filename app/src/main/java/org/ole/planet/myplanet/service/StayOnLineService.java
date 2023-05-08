@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.service;
 
-
 import android.content.Intent;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;

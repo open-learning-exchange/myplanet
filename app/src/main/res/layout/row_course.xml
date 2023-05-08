@@ -12,7 +12,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -20,10 +19,10 @@
             <CheckBox
                 android:id="@+id/checkbox"
                 android:layout_width="wrap_content"
-                android:padding="@dimen/padding_large"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:gravity="center" />
+                android:gravity="center"
+                android:padding="@dimen/padding_large" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -43,9 +42,9 @@
                 <TextView
                     android:id="@+id/description"
                     android:layout_width="match_parent"
-                    android:maxLines="4"
-                    android:ellipsize="end"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="4"
                     android:padding="4dp" />
 
                 <com.google.android.flexbox.FlexboxLayout
@@ -89,8 +88,6 @@
                     android:id="@+id/subject_level"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
-
-
 
 
             </LinearLayout>
@@ -159,7 +156,6 @@
                     android:text="Average" />
 
 
-
             </LinearLayout>
 
 
@@ -167,11 +163,10 @@
 
         <androidx.appcompat.widget.AppCompatSeekBar
             android:id="@+id/course_progress"
+            style="@style/Seekbar"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:layout_gravity="center"
-            style="@style/Seekbar"
-            />
+            android:layout_gravity="center" />
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

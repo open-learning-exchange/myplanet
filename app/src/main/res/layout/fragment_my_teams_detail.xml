@@ -6,12 +6,10 @@
     android:background="@color/colorPrimaryDark"
     tools:context=".ui.team.MyTeamsDetailFragment">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -45,31 +43,31 @@
 
                     <Button
                         android:id="@+id/btn_invite"
+                        style="@style/BlueButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/invite_member"
-                        android:padding="@dimen/padding_normal"
-                        android:textColor="@color/md_white_1000"
+                        android:layout_marginRight="10dp"
                         android:background="@drawable/buttonblue"
-                        style="@style/BlueButton"
-                        android:layout_marginRight="10dp"/>
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/invite_member"
+                        android:textColor="@color/md_white_1000" />
 
 
                     <Button
                         android:id="@+id/btn_leave"
+                        style="@style/GreyButtons"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/leave"
-                        android:padding="@dimen/padding_normal"
                         android:background="@drawable/buttongrey"
-                        style="@style/GreyButtons" />
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/leave" />
 
                 </LinearLayout>
 
 
                 <!--<include layout="@layout/content_teams_detail"/>-->
 
-                    <include layout="@layout/content_team_detail_tab" />
+                <include layout="@layout/content_team_detail_tab" />
 
             </LinearLayout>
 

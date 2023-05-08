@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model;
 
-
 import java.util.List;
 import java.util.UUID;
 
@@ -9,7 +8,6 @@ import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmRemovedLog extends RealmObject {
-
     @PrimaryKey
     private String id;
     private String userId;
@@ -17,7 +15,7 @@ public class RealmRemovedLog extends RealmObject {
     private String docId;
 
     public static void onAdd(Realm mRealm, String type, String userId, String docId) {
-      if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         mRealm.where(RealmRemovedLog.class).equalTo("type", type).equalTo("userId", userId).equalTo("docId", docId).findAll().deleteAllFromRealm();
         mRealm.commitTransaction();
     }
@@ -31,12 +29,12 @@ public class RealmRemovedLog extends RealmObject {
         mRealm.commitTransaction();
     }
 
-    public static String[] removedIds(Realm realm, String type, String userId){
+    public static String[] removedIds(Realm realm, String type, String userId) {
         List<RealmRemovedLog> removedLibs = realm.where(RealmRemovedLog.class).equalTo("userId", userId).equalTo("type", type).findAll();
-        if (removedLibs!=null){
+        if (removedLibs != null) {
             String[] ids = new String[removedLibs.size()];
             int i = 0;
-            for (RealmRemovedLog removed: removedLibs) {
+            for (RealmRemovedLog removed : removedLibs) {
                 ids[i] = removed.getDocId();
                 i++;
             }

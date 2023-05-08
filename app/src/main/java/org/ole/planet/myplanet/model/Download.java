@@ -4,7 +4,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Download implements Parcelable {
-
     public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {
         public Download createFromParcel(Parcel in) {
             return new Download(in);

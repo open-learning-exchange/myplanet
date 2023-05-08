@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textfield.TextInputLayout android:id="@+id/input_layout_password"
+<com.google.android.material.textfield.TextInputLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/input_layout_password"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:hint="@string/hint_password"
+    android:padding="@dimen/padding_normal"
     app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
     app:hintAnimationEnabled="true"
-    android:padding="@dimen/padding_normal"
     app:hintEnabled="true"
-    app:passwordToggleEnabled="true"
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    app:passwordToggleEnabled="true">
 
     <EditText
         android:id="@+id/et_child_password"

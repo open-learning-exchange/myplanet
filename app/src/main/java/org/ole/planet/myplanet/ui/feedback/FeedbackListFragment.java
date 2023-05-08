@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.feedback;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -22,11 +23,7 @@ import java.util.List;
 
 import io.realm.Realm;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class FeedbackListFragment extends Fragment {
-
     TextView etMessage;
     RecyclerView rvFeedbacks;
     Realm mRealm;
@@ -36,10 +33,8 @@ public class FeedbackListFragment extends Fragment {
         // Required empty public constructor
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_feedback_list, container, false);
         etMessage = v.findViewById(R.id.et_message);
@@ -55,8 +50,7 @@ public class FeedbackListFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
         rvFeedbacks.setLayoutManager(new LinearLayoutManager(getActivity()));
         List<RealmFeedback> list = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.getName()).findAll();
-        if (userModel.isManager())
-            list = mRealm.where(RealmFeedback.class).findAll();
+        if (userModel.isManager()) list = mRealm.where(RealmFeedback.class).findAll();
         AdapterFeedback adapterFeedback = new AdapterFeedback(getActivity(), list);
         rvFeedbacks.setAdapter(adapterFeedback);
     }
@@ -64,7 +58,6 @@ public class FeedbackListFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (!mRealm.isClosed())
-            mRealm.close();
+        if (!mRealm.isClosed()) mRealm.close();
     }
 }

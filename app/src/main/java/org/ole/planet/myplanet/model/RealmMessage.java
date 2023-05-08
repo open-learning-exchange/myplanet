@@ -46,15 +46,15 @@ public class RealmMessage extends RealmObject {
         JsonArray array = new JsonArray();
         for (RealmMessage ms : messages) {
             JsonObject object = new JsonObject();
-            object.addProperty("user",ms.getUser());
-            object.addProperty("time",ms.getTime());
-            object.addProperty("message",ms.getMessage());
+            object.addProperty("user", ms.getUser());
+            object.addProperty("time", ms.getTime());
+            object.addProperty("message", ms.getMessage());
             array.add(object);
         }
         return array;
     }
 
-      public static void insertFeedback(Realm mRealm, JsonObject act) {
+    public static void insertFeedback(Realm mRealm, JsonObject act) {
 
-      }
+    }
 }

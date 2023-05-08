@@ -18,6 +18,7 @@ public class JsonUtils {
                 return el instanceof JsonNull ? "" : el.getAsString();
             }
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }
@@ -27,6 +28,7 @@ public class JsonUtils {
             JsonElement el = array.get(index);
             return el instanceof JsonNull ? "" : el.getAsString();
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }
@@ -46,34 +48,29 @@ public class JsonUtils {
                 return !(el instanceof JsonNull) && el.getAsBoolean();
             }
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return false;
     }
 
     public static void addString(JsonObject object, String fieldName, String value) {
-        if (!TextUtils.isEmpty(value))
-            object.addProperty(fieldName, value);
+        if (!TextUtils.isEmpty(value)) object.addProperty(fieldName, value);
     }
 
     public static void addLong(JsonObject object, String fieldName, long value) {
-        if (value > 0)
-            object.addProperty(fieldName, value);
+        if (value > 0) object.addProperty(fieldName, value);
     }
 
     public static void addInteger(JsonObject object, String fieldName, int value) {
-        if (value != 0)
-            object.addProperty(fieldName, value);
+        if (value != 0) object.addProperty(fieldName, value);
     }
 
     public static void addFloat(JsonObject object, String fieldName, float value) {
-        if (value != 0)
-            object.addProperty(fieldName, value);
+        if (value != 0) object.addProperty(fieldName, value);
     }
 
     public static void addJson(JsonObject object, String fieldName, JsonObject value) {
-        if (value != null && value.keySet().size() > 0)
-            object.add(fieldName, value);
+        if (value != null && value.keySet().size() > 0) object.add(fieldName, value);
     }
 
     public static int getInt(String fieldName, JsonObject jsonObject) {
@@ -83,7 +80,7 @@ public class JsonUtils {
                 return el instanceof JsonNull ? 0 : el.getAsInt();
             }
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return 0;
     }
@@ -96,7 +93,7 @@ public class JsonUtils {
                 return el instanceof JsonNull ? 0 : el.getAsFloat();
             }
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return getInt(fieldName, jsonObject);
     }
@@ -106,6 +103,7 @@ public class JsonUtils {
             JsonElement arry = getJsonElement(fieldName, jsonObject, JsonArray.class);
             return arry instanceof JsonNull || !(arry instanceof JsonArray) ? new JsonArray() : arry.getAsJsonArray();
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return new JsonArray();
     }
@@ -115,6 +113,7 @@ public class JsonUtils {
             JsonElement el = getJsonElement(fieldName, jsonObject, JsonArray.class);
             return el instanceof JsonObject ? el.getAsJsonObject() : new JsonObject();
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return new JsonObject();
     }
@@ -127,9 +126,9 @@ public class JsonUtils {
             }
             return jsonElement;
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return new JsonObject();
-
     }
 
     public static long getLong(String fieldName, JsonObject jsonObject) {

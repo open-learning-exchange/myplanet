@@ -51,21 +51,20 @@ public class ManagerSync {
 
     public void login(String userName, String password, SyncListener listener) {
         listener.onSyncStarted();
-        Utilities.log(Utilities.getUrl() + "/org.couchdb.user:" +  userName);
+        Utilities.log(Utilities.getUrl() + "/org.couchdb.user:" + userName);
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
 
-        apiInterface.getJsonObject("Basic " + Base64.encodeToString((userName + ":" +
-                password).getBytes(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:" + userName)).enqueue(new Callback<JsonObject>() {
+        apiInterface.getJsonObject("Basic " + Base64.encodeToString((userName + ":" + password).getBytes(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:" + userName)).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                JsonObject jsonDoc =  response.body();
+                JsonObject jsonDoc = response.body();
                 if (jsonDoc != null) {
                     AndroidDecrypter decrypt = new AndroidDecrypter();
                     String derivedKey = jsonDoc.get("derived_key").getAsString();
                     String salt = jsonDoc.get("salt").getAsString();
                     if (decrypt.AndroidDecrypter(userName, password, derivedKey, salt)) {
-                        checkManagerAndInsert(jsonDoc, mRealm,listener);
-                    }else{
+                        checkManagerAndInsert(jsonDoc, mRealm, listener);
+                    } else {
                         listener.onSyncFailed("Name or password is incorrect.");
                     }
                 } else {
@@ -79,25 +78,24 @@ public class ManagerSync {
                 listener.onSyncFailed("Server not reachable.");
             }
         });
-
     }
 
-    public void syncAdmin(){
+    public void syncAdmin() {
         JsonObject object = new JsonObject();
         JsonObject selector = new JsonObject();
         selector.addProperty("isUserAdmin", true);
-        object.add("selector",selector);
+        object.add("selector", selector);
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         final retrofit2.Call<JsonObject> allDocs = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/_find", object);
         allDocs.enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-               if (response.body()!=null){
-                  JsonArray array =  JsonUtils.getJsonArray("docs", response.body());
-                  if (array.size() > 0){
-                      settings.edit().putString("user_admin", new Gson().toJson(array.get(0))).commit();
-                  }
-               }
+                if (response.body() != null) {
+                    JsonArray array = JsonUtils.getJsonArray("docs", response.body());
+                    if (array.size() > 0) {
+                        settings.edit().putString("user_admin", new Gson().toJson(array.get(0))).commit();
+                    }
+                }
             }
 
             @Override
@@ -123,6 +121,4 @@ public class ManagerSync {
         boolean isManager = roles.toString().toLowerCase().contains("manager");
         return (jsonDoc.get("isUserAdmin").getAsBoolean() || isManager);
     }
-
-
 }

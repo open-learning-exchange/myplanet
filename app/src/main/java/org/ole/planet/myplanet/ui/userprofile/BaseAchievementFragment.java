@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.userprofile;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,8 +48,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
 
     public void initializeData() {
         if (achievement == null) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
             return;
         } else {
@@ -74,8 +74,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         ArrayList<Integer> selected = new ArrayList();
         for (int i = 0; i < list.size(); i++) {
             names.add(list.get(i).getTitle());
-            if (prevList.contains(list.get(i).getTitle()))
-                selected.add(i);
+            if (prevList.contains(list.get(i).getTitle())) selected.add(i);
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {

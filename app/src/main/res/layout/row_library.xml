@@ -51,6 +51,7 @@
                 app:alignItems="flex_start"
                 app:flexWrap="wrap"
                 app:showDivider="middle" />
+
             <TextView
                 android:id="@+id/tv_date"
                 android:layout_width="wrap_content"
@@ -60,7 +61,6 @@
 
 
         </LinearLayout>
-
 
 
         <ImageView

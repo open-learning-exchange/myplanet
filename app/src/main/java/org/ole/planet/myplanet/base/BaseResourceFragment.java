@@ -115,7 +115,7 @@ public abstract class BaseResourceFragment extends Fragment {
                     createListView(db_myLibrary, alertDialog);
                     alertDialog.show();
                     (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
-                }else{
+                } else {
                     Utilities.toast(requireContext(), "No resources to download");
                 }
             }
@@ -182,7 +182,6 @@ public abstract class BaseResourceFragment extends Fragment {
         }
     }
 
-
     public void onDownloadComplete() {
     }
 
@@ -199,7 +198,6 @@ public abstract class BaseResourceFragment extends Fragment {
         });
         lv.setAdapter(adapter);
     }
-
 
     private void registerReceiver() {
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
@@ -240,7 +238,6 @@ public abstract class BaseResourceFragment extends Fragment {
         return libraries;
     }
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -273,14 +270,12 @@ public abstract class BaseResourceFragment extends Fragment {
         }
     }
 
-
     @Override
     public void onResume() {
         super.onResume();
         registerReceiver();
 
     }
-
 
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder("Selected : ");
@@ -290,5 +285,4 @@ public abstract class BaseResourceFragment extends Fragment {
         }
         tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }
-
 }

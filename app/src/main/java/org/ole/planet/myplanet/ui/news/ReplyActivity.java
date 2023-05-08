@@ -1,21 +1,18 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Intent;
-
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.net.Uri;
 import android.os.Bundle;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
@@ -31,7 +28,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import io.realm.Case;
@@ -40,7 +36,6 @@ import io.realm.RealmList;
 import io.realm.Sort;
 
 public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNewsItemClickListener {
-
     Realm mRealm;
     String id;
     AdapterNews newsAdapter;
@@ -69,9 +64,7 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
     private void showData(String id) {
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
 
-        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", id, Case.INSENSITIVE)
-                .findAll();
+        List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll();
         newsAdapter = new AdapterNews(this, list, user, news);
         newsAdapter.setListener(this);
         newsAdapter.setmRealm(mRealm);
@@ -109,6 +102,7 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
             try {
                 showSelectedImages();
             } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
@@ -129,8 +123,7 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home)
-            finish();
+        if (item.getItemId() == android.R.id.home) finish();
         return super.onOptionsItemSelected(item);
     }
 }

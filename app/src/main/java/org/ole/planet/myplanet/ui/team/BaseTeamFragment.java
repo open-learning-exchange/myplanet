@@ -29,7 +29,6 @@ public abstract class BaseTeamFragment extends BaseNewsFragment {
     public String teamId;
     public RealmMyTeam team;
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.ui.library;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,9 +23,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class LibraryFilterFragment extends DialogFragment implements AdapterView.OnItemClickListener {
 
     ListView listSub, listLang, listMedium, listLevel;
@@ -41,10 +40,8 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
         this.listener = listener;
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_library_filter, container, false);
         listLang = v.findViewById(R.id.list_lang);
         listSub = v.findViewById(R.id.list_sub);
@@ -62,7 +59,6 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         initList();
-
     }
 
     private void initList() {
@@ -96,21 +92,16 @@ public class LibraryFilterFragment extends DialogFragment implements AdapterView
             int id = adapterView.getId();
             if (id == R.id.list_lang) {
                 addToList(s, selectedLang);
-            } else if (id == R.id.list_sub)
-                addToList(s, selectedSubs);
-            else if (id == R.id.list_level)
-                addToList(s, selectedLvls);
-            else if (id == R.id.list_medium)
-                addToList(s, selectedMeds);
+            } else if (id == R.id.list_sub) addToList(s, selectedSubs);
+            else if (id == R.id.list_level) addToList(s, selectedLvls);
+            else if (id == R.id.list_medium) addToList(s, selectedMeds);
             listener.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls);
             initList();
         }
     }
 
     public void addToList(String s, Set<String> list) {
-        if (list.contains(s))
-            list.remove(s);
-        else
-            list.add(s);
+        if (list.contains(s)) list.remove(s);
+        else list.add(s);
     }
 }

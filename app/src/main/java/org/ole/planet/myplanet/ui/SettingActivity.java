@@ -39,19 +39,13 @@ public class SettingActivity extends AppCompatActivity {
         super.attachBaseContext(LocaleHelper.onAttach(base));
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getFragmentManager().beginTransaction()
-                .replace(android.R.id.content, new SettingFragment())
-                .commit();
+        getFragmentManager().beginTransaction().replace(android.R.id.content, new SettingFragment()).commit();
         setTitle(getString(R.string.action_settings));
-
-
     }
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -59,7 +53,6 @@ public class SettingActivity extends AppCompatActivity {
             case android.R.id.home:
                 finish();
                 return true;
-
         }
         return super.onOptionsItemSelected(item);
     }
@@ -78,7 +71,6 @@ public class SettingActivity extends AppCompatActivity {
         UserProfileDbHandler profileDbHandler;
         RealmUserModel user;
         ProgressDialog dialog;
-
 
         @Override
         public void onCreate(Bundle savedInstanceState) {
@@ -145,13 +137,10 @@ public class SettingActivity extends AppCompatActivity {
             });
         }
 
-
         void deleteRecursive(File fileOrDirectory) {
-            if (fileOrDirectory.isDirectory())
-                for (File child : fileOrDirectory.listFiles())
-                    deleteRecursive(child);
+            if (fileOrDirectory.isDirectory()) for (File child : fileOrDirectory.listFiles())
+                deleteRecursive(child);
             fileOrDirectory.delete();
-
         }
 
         public void setBetaToggleOn() {
@@ -168,10 +157,8 @@ public class SettingActivity extends AppCompatActivity {
                     course.setChecked(true);
                     achievement.setChecked(true);
                 }
-
                 return true;
             });
-
         }
 
         public void setAutoSyncToggleOn() {
@@ -260,5 +247,4 @@ public class SettingActivity extends AppCompatActivity {
             return true;
         });
     }
-
 }

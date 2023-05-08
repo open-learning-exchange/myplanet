@@ -23,8 +23,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
         return result == PackageManager.PERMISSION_GRANTED;
     }
 
-
-    public void checkUsagesPermission(){
+    public void checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 Utilities.toast(this, "Please allow usages permission to myPlanet app.");
@@ -32,6 +31,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
             }
         }
     }
+
     public void requestPermission(String strPermission, int perCode) {
         ActivityCompat.requestPermissions(this, new String[]{strPermission}, perCode);
     }
@@ -61,5 +61,4 @@ public abstract class PermissionActivity extends AppCompatActivity {
             }, PERMISSION_REQUEST_CODE_FILE);
         }
     }
-
 }

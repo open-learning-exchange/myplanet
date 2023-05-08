@@ -56,6 +56,7 @@ public class MainApplication extends Application implements Application.Activity
     public static boolean isSyncRunning = false;
     public static boolean showHealthDialog = true;
     public static TeamPageListener listener;
+
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
         try {
@@ -97,14 +98,7 @@ public class MainApplication extends Application implements Application.Activity
     }
 
     public void createJob(int sec, Class jobClass) {
-        Job myJob = dispatcher.newJobBuilder()
-                .setService(jobClass)
-                .setTag("ole")
-                .setRecurring(true)
-                .setLifetime(Lifetime.FOREVER)
-                .setTrigger(Trigger.executionWindow(0, sec))
-                .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
-                .build();
+        Job myJob = dispatcher.newJobBuilder().setService(jobClass).setTag("ole").setRecurring(true).setLifetime(Lifetime.FOREVER).setTrigger(Trigger.executionWindow(0, sec)).setRetryStrategy(RetryStrategy.DEFAULT_LINEAR).build();
         dispatcher.mustSchedule(myJob);
     }
 
@@ -147,8 +141,7 @@ public class MainApplication extends Application implements Application.Activity
         Utilities.log("Handle exception " + e.getMessage());
         DatabaseService service = new DatabaseService(this);
         Realm mRealm = service.getRealmInstance();
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
         RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
         if (model != null) {

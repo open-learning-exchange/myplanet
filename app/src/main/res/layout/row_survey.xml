@@ -65,9 +65,9 @@
                 android:id="@+id/send_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
                 android:text="Send Survey"
-                android:theme="@style/AccentButton"
-                android:layout_marginRight="10dp"/>
+                android:theme="@style/AccentButton" />
 
             <Button
                 android:id="@+id/start_survey"

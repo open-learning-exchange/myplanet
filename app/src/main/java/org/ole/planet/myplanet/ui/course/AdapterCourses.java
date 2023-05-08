@@ -62,15 +62,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
-        config = Utilities.getCloudConfig()
-                .selectMode(ChipCloud.SelectMode.single);
+        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single);
     }
 
     public static void showRating(JsonObject object, TextView average, TextView ratingCount, AppCompatRatingBar ratingBar) {
         average.setText(String.format("%.2f", object.get("averageRating").getAsFloat()));
         ratingCount.setText(object.get("total").getAsInt() + " total");
-        if (object.has("ratingByUser"))
-            ratingBar.setRating(object.get("ratingByUser").getAsInt());
+        if (object.has("ratingByUser")) ratingBar.setRating(object.get("ratingByUser").getAsInt());
         else ratingBar.setRating(0);
     }
 
@@ -118,9 +116,9 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
             displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);
-            try{
+            try {
                 ((ViewHoldercourse) holder).tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
-            }catch (Exception e){
+            } catch (Exception e) {
 
             }
             ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
@@ -200,9 +198,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return courseList.size();
     }
 
-
     class ViewHoldercourse extends RecyclerView.ViewHolder {
-        TextView title, desc, grad_level, subject_level,tvDate, ratingCount, average;
+        TextView title, desc, grad_level, subject_level, tvDate, ratingCount, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         SeekBar progressBar;

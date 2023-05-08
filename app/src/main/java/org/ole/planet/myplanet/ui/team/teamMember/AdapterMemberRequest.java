@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team.teamMember;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -54,8 +55,7 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.View
     }
 
     private void acceptReject(RealmUserModel userModel, boolean isAccept, int position) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
         if (team != null) {
             if (isAccept) {

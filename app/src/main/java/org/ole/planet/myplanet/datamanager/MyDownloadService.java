@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.datamanager;
 
-
 import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -61,11 +61,7 @@ public class MyDownloadService extends IntentService {
         }
         notificationBuilder = new NotificationCompat.Builder(this, "11");
         NotificationUtil.setChannel(notificationManager);
-        Notification noti = notificationBuilder
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("OLE Download")
-                .setContentText("Downloading File...")
-                .setAutoCancel(true).build();
+        Notification noti = notificationBuilder.setSmallIcon(R.mipmap.ic_launcher).setContentTitle("OLE Download").setContentText("Downloading File...").setAutoCancel(true).build();
         notificationManager.notify(0, noti);
         urls = intent.getStringArrayListExtra("urls");
         realmConfig();
@@ -107,7 +103,6 @@ public class MyDownloadService extends IntentService {
         sendIntent(d);
         stopSelf();
     }
-
 
     private void downloadFile(ResponseBody body) throws IOException {
         long fileSize = body.contentLength();
@@ -170,8 +165,7 @@ public class MyDownloadService extends IntentService {
     }
 
     private void onDownloadComplete() {
-        if (outputFile.length() > 0)
-            changeOfflineStatus();
+        if (outputFile.length() > 0) changeOfflineStatus();
         Download download = new Download();
         download.setFileName(FileUtils.getFileNameFromUrl(url));
         download.setFileUrl(url);
@@ -218,11 +212,7 @@ public class MyDownloadService extends IntentService {
 
     public void realmConfig() {
         Realm.init(this);
-        RealmConfiguration config = new RealmConfiguration.Builder()
-                .name(Realm.DEFAULT_REALM_NAME)
-                .deleteRealmIfMigrationNeeded()
-                .schemaVersion(4)
-                .build();
+        RealmConfiguration config = new RealmConfiguration.Builder().name(Realm.DEFAULT_REALM_NAME).deleteRealmIfMigrationNeeded().schemaVersion(4).build();
         Realm.setDefaultConfiguration(config);
         mRealm = Realm.getInstance(config);
     }
@@ -231,5 +221,4 @@ public class MyDownloadService extends IntentService {
     public void onTaskRemoved(Intent rootIntent) {
         notificationManager.cancel(0);
     }
-
 }

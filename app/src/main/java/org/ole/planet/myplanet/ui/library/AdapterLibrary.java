@@ -59,8 +59,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.realm = realm;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
-        config = Utilities.getCloudConfig()
-                .selectMode(ChipCloud.SelectMode.single);
+        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single);
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
@@ -146,7 +145,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        TextView title, desc, rating, tvDate,timesRated, average;
+        TextView title, desc, rating, tvDate, timesRated, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;

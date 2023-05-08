@@ -212,7 +212,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         return libraries;
     }
 
-
     public List<RealmMyCourse> filterCourseByTag(String s, List<RealmTag> tags) {
         if (tags.size() == 0 && s.isEmpty()) {
             return applyCourseFilter((List<RealmMyCourse>) getList(RealmMyCourse.class));

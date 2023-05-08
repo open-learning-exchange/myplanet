@@ -4,7 +4,6 @@
     android:layout_height="match_parent"
     android:orientation="horizontal">
 
-
     <ListView
         android:id="@+id/list_desc"
         android:layout_width="0dp"
@@ -31,6 +30,4 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </LinearLayout>
-
-
 </LinearLayout>

@@ -10,7 +10,11 @@ import androidx.fragment.app.Fragment
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment
@@ -23,9 +27,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.*
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
@@ -73,7 +75,12 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    fun setTextViewProperties(textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?, c: Class<*>?) {
+    fun setTextViewProperties(
+        textViewArray: Array<TextView?>,
+        itemCnt: Int,
+        obj: RealmObject?,
+        c: Class<*>?
+    ) {
         textViewArray[itemCnt] = TextView(context)
         textViewArray[itemCnt]?.setPadding(20, 10, 20, 10)
         textViewArray[itemCnt]?.textAlignment = View.TEXT_ALIGNMENT_CENTER
@@ -81,9 +88,23 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (obj is RealmMyLibrary) {
             textViewArray[itemCnt]?.text = obj.title
         } else if (obj is RealmMyCourse) {
-            textViewArray[itemCnt]?.let { handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it) }
+            textViewArray[itemCnt]?.let {
+                handleClick(
+                    obj.courseId,
+                    obj.courseTitle,
+                    TakeCourseFragment(),
+                    it
+                )
+            }
         } else if (obj is RealmMeetup) {
-            textViewArray[itemCnt]?.let { handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it) }
+            textViewArray[itemCnt]?.let {
+                handleClick(
+                    obj.meetupId,
+                    obj.title,
+                    MyMeetupDetailFragment(),
+                    it
+                )
+            }
         }
     }
 
@@ -99,7 +120,13 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         val name = v.findViewById<TextView>(R.id.tv_name)
         setBackgroundColor(v, itemCnt)
         val title = (obj as RealmMyLife).title
-        img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", activity!!.packageName))
+        img.setImageResource(
+            resources.getIdentifier(
+                obj.imageId,
+                "drawable",
+                requireActivity().packageName
+            )
+        )
         name.text = title
         val user = UserProfileDbHandler(activity).userModel
         if (title == getString(R.string.my_survey)) {

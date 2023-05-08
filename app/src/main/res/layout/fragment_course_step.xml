@@ -4,7 +4,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.course.CourseStepFragment">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -21,7 +20,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Open Resource"
-                android:theme="@style/AccentButton"/>
+                android:theme="@style/AccentButton" />
 
             <Button
                 android:id="@+id/btn_resources"
@@ -57,9 +56,9 @@
                 android:textStyle="bold" />
 
             <br.tiagohm.markdownview.MarkdownView
-                android:layout_width="match_parent"
                 android:id="@+id/description"
-                android:layout_height="wrap_content"/>
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
         </LinearLayout>
     </LinearLayout>
 

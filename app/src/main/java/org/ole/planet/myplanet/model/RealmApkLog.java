@@ -27,6 +27,7 @@ public class RealmApkLog extends RealmObject {
     private String version;
     private String createdOn;
     private String time;
+
     public String getId() {
         return id;
     }

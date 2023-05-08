@@ -5,31 +5,31 @@
     android:layout_width="match_parent"
     android:layout_height="?android:attr/actionBarSize"
     android:background="?attr/colorPrimary"
+    android:theme="@style/ThemeOverlay.AppCompat.Dark"
     app:elevation="4dp"
-    app:popupTheme="@style/AppTheme"
-    android:theme="@style/ThemeOverlay.AppCompat.Dark">
+    app:popupTheme="@style/AppTheme">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <ImageView
+            android:id="@+id/img_logo"
             android:layout_width="@dimen/_40dp"
             android:layout_height="@dimen/_40dp"
-            android:padding="@dimen/padding_normal"
-            android:id="@+id/img_logo"
-            android:src="@drawable/ole_logo"
             android:layout_gravity="center"
-            android:tint="@color/md_white_1000" />
+            android:padding="@dimen/padding_normal"
+            android:src="@drawable/ole_logo"
+            app:tint="@color/md_white_1000" />
 
         <TextView
+            android:id="@+id/app_title_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="@dimen/padding_normal"
             android:paddingRight="65dp"
             android:text="@string/app_name"
-            android:id="@+id/app_title_name"
             android:textColor="@color/md_white_1000"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
@@ -37,28 +37,27 @@
         <include
             layout="@layout/bell_actionbar_items"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
+            android:layout_height="wrap_content" />
 
         <ImageView
             android:id="@+id/iv_sync"
             android:layout_width="@dimen/_40dp"
             android:layout_height="match_parent"
-            android:padding="@dimen/padding_small"
             android:layout_gravity="center"
-            android:tint="@color/md_white_1000"
+            android:padding="@dimen/padding_small"
+            android:visibility="gone"
             app:srcCompat="@drawable/sync_icon"
-            android:visibility="gone"/>
+            app:tint="@color/md_white_1000" />
 
         <ImageView
             android:id="@+id/iv_setting"
             android:layout_width="@dimen/_40dp"
             android:layout_height="match_parent"
-            android:padding="@dimen/padding_small"
             android:layout_gravity="center"
-            android:tint="@color/md_white_1000"
+            android:padding="@dimen/padding_small"
+            android:visibility="gone"
             app:srcCompat="@drawable/settings"
-            android:visibility="gone"/>
+            app:tint="@color/md_white_1000" />
 
     </LinearLayout>
 </androidx.appcompat.widget.Toolbar>

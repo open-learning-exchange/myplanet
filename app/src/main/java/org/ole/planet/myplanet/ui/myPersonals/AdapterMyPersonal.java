@@ -4,9 +4,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,11 +32,11 @@ import java.util.List;
 import io.realm.Realm;
 
 public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     private Context context;
     private Realm realm;
     private List<RealmMyPersonal> list;
     private OnSelectedMyPersonal listener;
+
     public AdapterMyPersonal(Context context, List<RealmMyPersonal> list) {
         this.context = context;
         this.list = list;
@@ -61,16 +63,14 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
             ((ViewHolderMyPersonal) holder).title.setText(list.get(position).getTitle());
             ((ViewHolderMyPersonal) holder).description.setText(list.get(position).getDescription());
             ((ViewHolderMyPersonal) holder).date.setText(TimeUtils.getFormatedDate(list.get(position).getDate()));
-            ((ViewHolderMyPersonal) holder).ivDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-                        if (!realm.isInTransaction())
-                            realm.beginTransaction();
-                        RealmMyPersonal personal = realm.where(RealmMyPersonal.class).equalTo("_id", list.get(position).get_id()).findFirst();
-                        personal.deleteFromRealm();
-                        realm.commitTransaction();
-                        notifyDataSetChanged();
-                        listener.onAddedResource();
-                    }).setNegativeButton(R.string.cancel, null).show());
+            ((ViewHolderMyPersonal) holder).ivDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                if (!realm.isInTransaction()) realm.beginTransaction();
+                RealmMyPersonal personal = realm.where(RealmMyPersonal.class).equalTo("_id", list.get(position).get_id()).findFirst();
+                personal.deleteFromRealm();
+                realm.commitTransaction();
+                notifyDataSetChanged();
+                listener.onAddedResource();
+            }).setNegativeButton(R.string.cancel, null).show());
 
             ((ViewHolderMyPersonal) holder).ivEdit.setOnClickListener(view -> {
                 editPersonal(list.get(position));
@@ -78,9 +78,8 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
             holder.itemView.setOnClickListener(view -> {
                 openResource(list.get(position).getPath());
             });
-            ((ViewHolderMyPersonal) holder).ivUpload.setOnClickListener(v->{
-                if (listener!=null)
-                    listener.onUpload(list.get(position));
+            ((ViewHolderMyPersonal) holder).ivUpload.setOnClickListener(v -> {
+                if (listener != null) listener.onUpload(list.get(position));
             });
         }
     }
@@ -106,7 +105,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
                 IntentUtils.openAudioFile(context, path);
                 break;
             case "mp4":
-               openVideo(path);
+                openVideo(path);
                 break;
         }
     }
@@ -128,25 +127,20 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
         EditText etDesc = v.findViewById(R.id.et_description);
         etDesc.setText(personal.getDescription());
         etTitle.setText(personal.getTitle());
-        new AlertDialog.Builder(context).setTitle("Edit Personal").setIcon(R.drawable.ic_edit)
-                .setView(v)
-                .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
-                    String title = etTitle.getText().toString().trim();
-                    String desc = etDesc.getText().toString().trim();
-                    if (title.isEmpty()) {
-                        Utilities.toast(context, "Please enter title");
-                        return;
-                    }
-                    if (!realm.isInTransaction())
-                        realm.beginTransaction();
-                    personal.setDescription(desc);
-                    personal.setTitle(title);
-                    realm.commitTransaction();
-                    notifyDataSetChanged();
-                    listener.onAddedResource();
-                }).setNegativeButton(R.string.cancel, null).show();
-
-
+        new AlertDialog.Builder(context).setTitle("Edit Personal").setIcon(R.drawable.ic_edit).setView(v).setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
+            String title = etTitle.getText().toString().trim();
+            String desc = etDesc.getText().toString().trim();
+            if (title.isEmpty()) {
+                Utilities.toast(context, "Please enter title");
+                return;
+            }
+            if (!realm.isInTransaction()) realm.beginTransaction();
+            personal.setDescription(desc);
+            personal.setTitle(title);
+            realm.commitTransaction();
+            notifyDataSetChanged();
+            listener.onAddedResource();
+        }).setNegativeButton(R.string.cancel, null).show();
     }
 
     @Override
@@ -156,7 +150,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     class ViewHolderMyPersonal extends RecyclerView.ViewHolder {
         TextView title, description, date;
-        ImageView ivEdit, ivDelete,ivUpload;
+        ImageView ivEdit, ivDelete, ivUpload;
 
         public ViewHolderMyPersonal(View itemView) {
             super(itemView);

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.mylife;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -14,7 +15,6 @@ import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 
 import java.util.List;
-
 
 public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements OnStartDragListener {
 
@@ -36,7 +36,6 @@ public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements O
         return adapterMyLife;
     }
 
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -53,6 +52,4 @@ public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements O
     public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
         mItemTouchHelper.startDrag(viewHolder);
     }
-
-
 }

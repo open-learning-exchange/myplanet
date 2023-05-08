@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".ui.enterprises.EnterprisesFragment">
 
     <LinearLayout
@@ -33,39 +33,40 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/name_normal"
+                android:alpha="0.5"
                 android:padding="@dimen/padding_small"
+                android:text="@string/name_normal"
                 android:textColor="@color/md_black_1000"
-                android:textStyle="bold"
-                android:alpha="0.5"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/created"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/created_on"
+                android:alpha="0.5"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/md_black_1000"
-                android:alpha="0.5"/>
+                android:text="@string/created_on"
+                android:textColor="@color/md_black_1000" />
 
             <TextView
                 android:id="@+id/type"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/type"
+                android:alpha="0.5"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/md_black_1000"
-                android:alpha="0.5"/>
+                android:text="@string/type"
+                android:textColor="@color/md_black_1000" />
+
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/action"
+                android:alpha="0.5"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/md_black_1000"
-                android:alpha="0.5"/>
+                android:text="@string/action"
+                android:textColor="@color/md_black_1000" />
 
         </LinearLayout>
 
@@ -77,12 +78,13 @@
             android:layout_weight="1" />
 
     </LinearLayout>
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/add_enterprise"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:padding="@dimen/padding_normal"
-        android:id="@+id/add_enterprise"
-        app:srcCompat="@drawable/ic_add"
-        android:layout_height="wrap_content" />
+        app:srcCompat="@drawable/ic_add" />
 
 </FrameLayout>

@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -30,9 +31,7 @@ import java.io.File;
 
 import io.realm.Realm;
 
-public class PDFReaderActivity extends AppCompatActivity implements OnPageChangeListener, OnLoadCompleteListener,
-        OnPageErrorListener, AudioRecorderService.AudioRecordListener {
-
+public class PDFReaderActivity extends AppCompatActivity implements OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecorderService.AudioRecordListener {
     private static final String TAG = "PDF Reader Log";
     private TextView mPdfFileNameTitle;
     private String fileName;
@@ -70,7 +69,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         });
 
         fabPlay.setOnClickListener(view -> {
-            if (library!=null && !TextUtils.isEmpty(library.getTranslationAudioPath())){
+            if (library != null && !TextUtils.isEmpty(library.getTranslationAudioPath())) {
                 IntentUtils.openAudioFile(this, library.getTranslationAudioPath());
             }
         });
@@ -85,13 +84,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         }
         try {
             Utilities.log(new File(Utilities.SD_PATH, fileName).getAbsolutePath());
-            pdfView.fromFile(new File(Utilities.SD_PATH, fileName))
-                    .defaultPage(0)
-                    .enableAnnotationRendering(true)
-                    .onLoad(this)
-                    .onPageChange(this)
-                    .scrollHandle(new DefaultScrollHandle(this))
-                    .load();
+            pdfView.fromFile(new File(Utilities.SD_PATH, fileName)).defaultPage(0).enableAnnotationRendering(true).onLoad(this).onPageChange(this).scrollHandle(new DefaultScrollHandle(this)).load();
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(getApplicationContext(), "Unable to load " + fileName, Toast.LENGTH_LONG).show();
@@ -126,15 +119,14 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         NotificationUtil.cancellAll(this);
         if (outputFile != null) {
             updateTranslation(outputFile);
-            AddResourceFragment.showAlert(this,outputFile);
+            AddResourceFragment.showAlert(this, outputFile);
         }
         fabRecord.setImageResource(R.drawable.ic_mic);
     }
 
     private void updateTranslation(String outputFile) {
         if (library != null) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             library.setTranslationAudioPath(outputFile);
             mRealm.commitTransaction();
             Utilities.toast(this, "Audio file saved in database.");

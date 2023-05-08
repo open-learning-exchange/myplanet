@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.model;
 
+import static android.content.Context.MODE_PRIVATE;
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
+
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.preference.PreferenceManager;
 
 import androidx.annotation.RequiresApi;
 
@@ -13,21 +15,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import org.json.JSONArray;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
-import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
-import static android.content.Context.MODE_PRIVATE;
-import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
 public class MyPlanet implements Serializable {
     private String planetVersion;
@@ -180,7 +175,7 @@ public class MyPlanet implements Serializable {
         if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
             JsonObject object = new JsonObject();
             object.addProperty("lastTimeUsed", s.getLastTimeUsed() > 0 ? s.getLastTimeUsed() : 0);
-            object.addProperty("firstTimeUsed", s.getFirstTimeStamp() > 0 ? s.getLastTimeStamp() :0);
+            object.addProperty("firstTimeUsed", s.getFirstTimeStamp() > 0 ? s.getLastTimeStamp() : 0);
             object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
             long totalUsed = s.getLastTimeUsed() - s.getFirstTimeStamp();
             object.addProperty("totalUsed", totalUsed > 0 ? totalUsed : 0);

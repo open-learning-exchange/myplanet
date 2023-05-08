@@ -1,29 +1,20 @@
 package org.ole.planet.myplanet.model;
 
-import android.nfc.Tag;
-
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.annotations.Ignore;
 import io.realm.annotations.PrimaryKey;
 
-
 public class RealmTag extends RealmObject {
-
     @PrimaryKey
     private String id;
     private String _rev;
@@ -124,7 +115,6 @@ public class RealmTag extends RealmObject {
         this._id = _id;
     }
 
-
     public static void insert(Realm mRealm, JsonObject act) {
         RealmTag tag = mRealm.where(RealmTag.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (tag == null)
@@ -145,14 +135,12 @@ public class RealmTag extends RealmObject {
         tag.setAttached(tag.getAttachedTo().size() > 0);
     }
 
-
     private void setAttachedTo(JsonArray attachedTo) {
         this.attachedTo = new RealmList<>();
         for (int i = 0; i < attachedTo.size(); i++) {
             this.attachedTo.add(JsonUtils.getString(attachedTo, i));
         }
         this.setAttached(this.attachedTo.size() > 0);
-
     }
 
     @Override
@@ -164,9 +152,9 @@ public class RealmTag extends RealmObject {
         return attachedTo;
     }
 
-    public static JsonArray getTagsArray(List<RealmTag> list){
+    public static JsonArray getTagsArray(List<RealmTag> list) {
         JsonArray array = new JsonArray();
-        for (RealmTag t : list){
+        for (RealmTag t : list) {
             array.add(t.get_id());
         }
         return array;

@@ -55,8 +55,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
     }
 
     private void createMyHealth() {
-        if (!realm.isInTransaction())
-            realm.beginTransaction();
+        if (!realm.isInTransaction()) realm.beginTransaction();
         RealmMyHealth.RealmMyHealthProfile health = new RealmMyHealth.RealmMyHealthProfile();
         userModelB.setFirstName(fname.getEditText().getText().toString().trim());
         userModelB.setMiddleName(mname.getEditText().getText().toString().trim());
@@ -128,15 +127,13 @@ public class AddMyHealthActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home)
-            finish();
+        if (item.getItemId() == android.R.id.home) finish();
         return super.onOptionsItemSelected(item);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (realm != null)
-            realm.close();
+        if (realm != null) realm.close();
     }
 }

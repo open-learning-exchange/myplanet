@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.model;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
@@ -9,22 +7,16 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
-import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmNews extends RealmObject {
@@ -231,10 +223,8 @@ public class RealmNews extends RealmObject {
     public static JsonObject serializeNews(RealmNews news, RealmUserModel user) {
         JsonObject object = new JsonObject();
         object.addProperty("message", news.getMessage());
-        if (news.get_id() != null)
-            object.addProperty("_id", news.get_id());
-        if (news.get_rev() != null)
-            object.addProperty("_rev", news.get_rev());
+        if (news.get_id() != null) object.addProperty("_id", news.get_id());
+        if (news.get_rev() != null) object.addProperty("_rev", news.get_rev());
         object.addProperty("time", news.getTime());
         object.addProperty("createdOn", news.getCreatedOn());
         object.addProperty("docType", news.getDocType());
@@ -261,8 +251,7 @@ public class RealmNews extends RealmObject {
         }
         if (!TextUtils.isEmpty(news.getViewIn())) {
             JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
-            if (ar.size() > 0)
-                object.add("viewIn", ar);
+            if (ar.size() > 0) object.add("viewIn", ar);
         }
     }
 
@@ -275,8 +264,7 @@ public class RealmNews extends RealmObject {
     }
 
     public static RealmNews createNews(HashMap<String, String> map, Realm mRealm, RealmUserModel user, RealmList<String> imageUrls) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmNews news = mRealm.createObject(RealmNews.class, UUID.randomUUID().toString());
         news.setMessage(map.get("message"));
         news.setTime(new Date().getTime());
@@ -405,7 +393,6 @@ public class RealmNews extends RealmObject {
     public void setImageUrls(RealmList<String> imageUrls) {
         this.imageUrls = imageUrls;
     }
-
 
 //    public void setImageName(String imageN ame) {
 //        this.imageName = imageName;

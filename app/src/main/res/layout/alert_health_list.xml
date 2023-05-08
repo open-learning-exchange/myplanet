@@ -14,8 +14,8 @@
             android:id="@+id/spn_sort"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:entries="@array/sort_member"
             android:layout_gravity="center"
+            android:entries="@array/sort_member"
             android:minWidth="150dp"
             android:padding="8dp" />
 

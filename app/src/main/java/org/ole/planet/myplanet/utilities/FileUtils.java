@@ -30,14 +30,12 @@ import java.io.OutputStream;
 public class FileUtils {
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
 
-
     public static byte[] fullyReadFileToBytes(File f) throws IOException {
         int size = (int) f.length();
         byte[] bytes = new byte[size];
         byte[] tmpBuff = new byte[size];
         FileInputStream fis = new FileInputStream(f);
         try {
-
             int read = fis.read(bytes, 0, size);
             if (read < size) {
                 int remain = size - read;
@@ -53,26 +51,22 @@ public class FileUtils {
         } finally {
             fis.close();
         }
-
         return bytes;
     }
 
     private static File createFilePath(String folder, String filename) {
         File f = new File(folder);
-        if (!f.exists())
-            f.mkdirs();
+        if (!f.exists()) f.mkdirs();
         Utilities.log("Return file " + folder + "/" + filename);
         return new File(f, filename);
     }
 
     public static File getSDPathFromUrl(String url) {
-
         return createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
     }
 
     public static boolean checkFileExist(String url) {
-        if (url == null || url.isEmpty())
-            return false;
+        if (url == null || url.isEmpty()) return false;
         File f = createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
         return f.exists();
     }
@@ -81,6 +75,7 @@ public class FileUtils {
         try {
             return url.substring(url.lastIndexOf("/") + 1);
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }
@@ -91,14 +86,14 @@ public class FileUtils {
             Utilities.log("Id " + sp[1]);
             return sp[1];
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }
 
 
     public static String getFileExtension(String address) {
-        if (TextUtils.isEmpty(address))
-            return "";
+        if (TextUtils.isEmpty(address)) return "";
         String filenameArray[] = address.split("\\.");
         return filenameArray[filenameArray.length - 1];
     }
@@ -165,7 +160,6 @@ public class FileUtils {
         }
     }
 
-
     public static String getRealPathFromURI(Context context, Uri contentUri) {
         Cursor cursor = null;
         try {
@@ -180,8 +174,6 @@ public class FileUtils {
             }
         }
     }
-
-
 
     public static String convertStreamToString(InputStream is) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
@@ -201,13 +193,13 @@ public class FileUtils {
         fin.close();
         return ret;
     }
+
     public static void openOleFolder(Fragment context, int request) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         Uri uri = Uri.parse(Utilities.SD_PATH);
         intent.setDataAndType(uri, "*/*");
         context.startActivityForResult(Intent.createChooser(intent, "Open folder"), request);
     }
-
 
     public static String getImagePath(Context context, Uri uri) {
         Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
@@ -216,9 +208,7 @@ public class FileUtils {
         document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
         cursor.close();
 
-        cursor = context.getContentResolver().query(
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+        cursor = context.getContentResolver().query(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
         cursor.moveToFirst();
         String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
         cursor.close();
@@ -228,19 +218,15 @@ public class FileUtils {
 
     public static String getMediaType(String path) {
         String ext = getFileExtension(path);
-        if (ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("png"))
-            return "image";
-        else if (ext.equalsIgnoreCase("mp4"))
-            return "mp4";
-        else if (ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("aac"))
-            return "audio";
+        if (ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("png")) return "image";
+        else if (ext.equalsIgnoreCase("mp4")) return "mp4";
+        else if (ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("aac")) return "audio";
         return "";
     }
 
     // Disk space utilities
 
     /**
-     *
      * @return Total internal memory capacity.
      */
     public static long getTotalInternalMemorySize() {
@@ -263,8 +249,7 @@ public class FileUtils {
     }
 
     public static boolean externalMemoryAvailable() {
-        return android.os.Environment.getExternalStorageState().equals(
-                android.os.Environment.MEDIA_MOUNTED);
+        return android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED);
     }
 
     /**
@@ -285,7 +270,6 @@ public class FileUtils {
     }
 
     /**
-     *
      * @return Total capacity of the external memory
      */
     public static long getTotalExternalMemorySize() {
@@ -302,6 +286,7 @@ public class FileUtils {
 
     /**
      * Coverts Bytes to KB/MB/GB and changes magnitude accordingly.
+     *
      * @param size
      * @return A string with size followed by an appropriate suffix
      */
@@ -361,14 +346,12 @@ public class FileUtils {
      * A method that returns a formatted string
      * of the format "Available Space / Total Space".
      * param None
+     *
      * @return Available space and total space
      */
     public static String getAvailableOverTotalMemoryFormattedString() {
         long available = getTotalAvailableMemory();
         long total = getTotalMemoryCapacity();
-        return "Available Space: "
-                + formatSize(available)
-                + "/"
-                + formatSize(total);
+        return "Available Space: " + formatSize(available) + "/" + formatSize(total);
     }
 }

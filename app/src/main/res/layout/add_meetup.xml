@@ -178,9 +178,9 @@
 
 
     <RadioGroup
+        android:id="@+id/rg_recuring"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/rg_recuring"
         android:orientation="horizontal">
 
         <RadioButton

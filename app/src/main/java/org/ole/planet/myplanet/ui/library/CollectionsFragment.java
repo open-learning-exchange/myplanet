@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.ui.library;
 
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
+
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -32,11 +34,7 @@ import java.util.List;
 
 import io.realm.Realm;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class CollectionsFragment extends DialogFragment implements TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
-
     static List<RealmTag> recentList;
     ExpandableListView listTag;
     TextInputLayout tlFilter;
@@ -62,7 +60,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         f.setArguments(b);
         return f;
     }
-
 
     public void setListener(TagClickListener listener) {
         this.listener = listener;
@@ -167,7 +164,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
                 l.add(t);
             childMap.put(s, l);
         }
-
     }
 
     @Override
@@ -185,7 +181,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
             selectedItemsList.add(tag);
         }
     }
-
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {

@@ -41,8 +41,7 @@ public class AdapterSteps extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getStepTitle());
             int size = 0;
             RealmStepExam exam = realm.where(RealmStepExam.class).equalTo("stepId", list.get(position).getId()).findFirst();
-            if (exam != null)
-                size = exam.getNoOfQuestions();
+            if (exam != null) size = exam.getNoOfQuestions();
             ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText("This test has " + size + " questions");
             holder.itemView.setOnClickListener(view -> ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setVisibility(((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.getVisibility() == View.GONE ? View.VISIBLE : View.GONE));
         }
@@ -52,6 +51,4 @@ public class AdapterSteps extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     public int getItemCount() {
         return list.size();
     }
-
-
 }

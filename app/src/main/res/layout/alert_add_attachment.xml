@@ -44,10 +44,10 @@
 
     <Button
         android:id="@+id/btn_add_resources"
+        style="@style/GreyButtons"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/add_resources"
         android:background="@drawable/buttongrey"
         android:padding="@dimen/padding_normal"
-        style="@style/GreyButtons" />
+        android:text="@string/add_resources" />
 </LinearLayout>

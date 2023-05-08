@@ -47,9 +47,6 @@ import io.realm.Realm;
 
 import static android.app.Activity.RESULT_OK;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class AddResourceFragment extends BottomSheetDialogFragment {
 
     static final int REQUEST_VIDEO_CAPTURE = 1;
@@ -114,8 +111,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_add_resource, container, false);
         v.findViewById(R.id.ll_record_video).setOnClickListener(view -> dispatchTakeVideoIntent());
         v.findViewById(R.id.ll_record_audio).setOnClickListener(view -> {
@@ -181,13 +177,11 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     public void takePhoto() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        File dir =
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
         output = new File(dir, UUID.randomUUID().toString() + ".jpg");
         intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(output));
         startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
     }
-
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -208,9 +202,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             }
             startIntent(path);
         }
-
     }
-
 
     private void startIntent(String path) {
         if (!TextUtils.isEmpty(path)) {
@@ -219,7 +211,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             Utilities.toast(getActivity(), "Invalid resource url");
         }
     }
-
 
     private void addResource(String path) {
         if (type == 0) {

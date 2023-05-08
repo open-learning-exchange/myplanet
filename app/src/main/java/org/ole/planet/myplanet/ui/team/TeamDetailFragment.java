@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team;
 
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,11 +28,7 @@ import java.util.UUID;
 
 import io.realm.Realm;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TeamDetailFragment extends Fragment {
-
     TabLayout tabLayout;
     ViewPager viewPager;
     Realm mRealm;
@@ -44,10 +39,8 @@ public class TeamDetailFragment extends Fragment {
     public TeamDetailFragment() {
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_team_detail, container, false);
         boolean isMyTeam = getArguments().getBoolean("isMyTeam", false);
@@ -78,7 +71,6 @@ public class TeamDetailFragment extends Fragment {
                 if (MainApplication.listener != null) {
                     MainApplication.listener.onAddDocument();
                 }
-
             });
         }
         if (RealmMyTeam.isTeamLeader(teamId, user.getId(), mRealm)) {
@@ -86,7 +78,6 @@ public class TeamDetailFragment extends Fragment {
         }
         return v;
     }
-
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -96,8 +87,7 @@ public class TeamDetailFragment extends Fragment {
 
     private void createTeamLog() {
         RealmUserModel user = new UserProfileDbHandler(getActivity()).getUserModel();
-        if (team == null)
-            return;
+        if (team == null) return;
         if (!mRealm.isInTransaction()) {
             mRealm.beginTransaction();
         }
@@ -112,6 +102,4 @@ public class TeamDetailFragment extends Fragment {
         log.setTime(new Date().getTime());
         mRealm.commitTransaction();
     }
-
-
 }

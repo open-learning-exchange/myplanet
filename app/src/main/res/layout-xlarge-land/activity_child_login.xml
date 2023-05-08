@@ -11,9 +11,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_margin="@dimen/_60dp"
         android:background="@color/bg_white"
         android:baselineAligned="false"
-        android:layout_margin="@dimen/_60dp"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
         android:orientation="horizontal"
@@ -84,8 +84,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/child_mode"
-                    android:textColor="@color/md_white_1000"
-                    />
+                    android:textColor="@color/md_white_1000" />
 
                 <TextView
                     android:id="@+id/lblVersion"
@@ -101,30 +100,30 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAlignment="center"
-                    android:textColor="@android:color/white"
-                    />
+                    android:textColor="@android:color/white" />
 
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/open_community"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
                     android:text="Open Community"
                     android:textColor="@color/md_white_1000"
-                    android:gravity="center"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:layout_height="wrap_content"/>
-
+                    android:theme="@style/PrimaryFlatButton" />
 
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:srcCompat="@drawable/baseline_storage_24"
-                        android:paddingHorizontal="@dimen/padding_small"/>
+                        android:paddingHorizontal="@dimen/padding_small"
+                        app:srcCompat="@drawable/baseline_storage_24" />
+
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
@@ -145,8 +144,7 @@
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                >
+                android:layout_height="wrap_content">
 
                 <ImageView
                     android:id="@+id/syncIcon"
@@ -157,6 +155,7 @@
                     android:layout_marginTop="15dp"
                     android:background="@null"
                     android:scaleType="fitCenter" />
+
                 <TextView
                     android:id="@+id/lblLastSyncDate"
                     android:layout_width="match_parent"
@@ -182,9 +181,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="5.5"
-                android:visibility="gone"
                 android:gravity="center"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:visibility="gone">
 
                 <LinearLayout
                     android:layout_width="200dp"
@@ -197,9 +196,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/hint_name"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
-                        app:hintEnabled="true"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
+                        app:hintEnabled="true">
 
                         <EditText
                             android:id="@+id/input_name"
@@ -213,11 +212,11 @@
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:hint="@string/hint_password"
+                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
                         app:hintEnabled="true"
-                        android:layout_height="wrap_content"
-                        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:passwordToggleEnabled="true">
 
                         <EditText
@@ -229,15 +228,15 @@
                             android:textColorHint="@android:color/darker_gray" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-<!--                    <CheckBox-->
-<!--                        android:id="@+id/save"-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:alpha="0.7"-->
-<!--                        android:fontFamily="sans-serif"-->
-<!--                        android:text="Save Username and Password"-->
-<!--                        android:textColor="@color/material_drawer_dark_background"-->
-<!--                        android:textSize="12sp" />-->
+                    <!--                    <CheckBox-->
+                    <!--                        android:id="@+id/save"-->
+                    <!--                        android:layout_width="match_parent"-->
+                    <!--                        android:layout_height="wrap_content"-->
+                    <!--                        android:alpha="0.7"-->
+                    <!--                        android:fontFamily="sans-serif"-->
+                    <!--                        android:text="Save Username and Password"-->
+                    <!--                        android:textColor="@color/material_drawer_dark_background"-->
+                    <!--                        android:textSize="12sp" />-->
 
                     <Button
                         android:id="@+id/btn_signin"
@@ -254,17 +253,17 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:text="@string/btn_guest_login"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:theme="@style/PrimaryFlatButton" />
 
                     <Button
+                        android:id="@+id/become_member"
                         android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
-                        android:theme="@style/PrimaryFlatButton"
-                        android:id="@+id/become_member"
                         android:text="@string/become_a_member"
-                        android:layout_height="wrap_content" />
+                        android:theme="@style/PrimaryFlatButton" />
 
                     <Button
                         android:id="@+id/btn_feedback"

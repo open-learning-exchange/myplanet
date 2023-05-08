@@ -36,12 +36,10 @@ import io.realm.RealmResults;
 import retrofit2.Response;
 
 public class UploadToShelfService {
-
     private static UploadToShelfService instance;
     private DatabaseService dbService;
     private SharedPreferences sharedPreferences;
     private Realm mRealm;
-
 
     public UploadToShelfService(Context context) {
         sharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
@@ -92,7 +90,7 @@ public class UploadToShelfService {
                             String rev = res.body().get("rev").getAsString();
                             model.set_rev(rev);
                             model.setUpdated(false);
-                        }else{
+                        } else {
                             Utilities.log(res.errorBody().string());
                         }
                     } else {
@@ -121,7 +119,6 @@ public class UploadToShelfService {
 //            }
         }
     }
-
 
     private static void changeUserSecurity(RealmUserModel model, JsonObject obj) {
         String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
@@ -178,7 +175,6 @@ public class UploadToShelfService {
         return true;
     }
 
-
     public void uploadHealth() {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
@@ -198,7 +194,6 @@ public class UploadToShelfService {
         });
     }
 
-
     public void uploadToshelf(final SuccessListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm = dbService.getRealmInstance();
@@ -206,8 +201,7 @@ public class UploadToShelfService {
             RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).isNotEmpty("_id").findAll();
             for (RealmUserModel model : users) {
                 try {
-                    if (model.getId().startsWith("guest"))
-                        continue;
+                    if (model.getId().startsWith("guest")) continue;
                     JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.get_id()).execute().body();
                     JsonObject object = getShelfData(realm, model.getId(), jsonDoc);
                     Utilities.log("JSON " + new Gson().toJson(jsonDoc));
@@ -216,14 +210,12 @@ public class UploadToShelfService {
                     apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), object).execute().body();
                 } catch (Exception e) {
                     e.printStackTrace();
-
                 }
             }
         }, () -> listener.onSuccess("Sync with server completed successfully"), (err) -> {
             listener.onSuccess("Unable to update documents.");
         });
     }
-
 
     public JsonObject getShelfData(Realm realm, String userId, JsonObject jsonDoc) {
         JsonArray myLibs = RealmMyLibrary.getMyLibIds(realm, userId);
@@ -239,7 +231,6 @@ public class UploadToShelfService {
 
         JsonObject object = new JsonObject();
 
-
         object.addProperty("_id", sharedPreferences.getString("userId", ""));
         object.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources));
         object.add("resourceIds", mergedResourceIds);
@@ -247,7 +238,6 @@ public class UploadToShelfService {
 //        object.add("myTeamIds", mergeJsonArray(myTeams, JsonUtils.getJsonArray("myTeamIds", jsonDoc), removedResources));
         return object;
     }
-
 
     public JsonArray mergeJsonArray(JsonArray array1, JsonArray array2, List<String> removedIds) {
         JsonArray array = new JsonArray();

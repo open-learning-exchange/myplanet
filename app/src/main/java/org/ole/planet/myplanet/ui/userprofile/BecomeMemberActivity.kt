@@ -37,16 +37,15 @@ class BecomeMemberActivity : BaseActivity() {
     lateinit var settings: SharedPreferences
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(this, DatePickerDialog.OnDateSetListener { datePicker, i, i1, i2 ->
-            dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-            txt_dob.text = dob
-        }, now[Calendar.YEAR],
-                now[Calendar.MONTH],
-                now[Calendar.DAY_OF_MONTH])
+        val dpd = DatePickerDialog(
+            this, DatePickerDialog.OnDateSetListener { datePicker, i, i1, i2 ->
+                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
+                txt_dob.text = dob
+            }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
+        )
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,23 +81,21 @@ class BecomeMemberActivity : BaseActivity() {
             var birthDate: String? = dob
             var level: String? = spn_level.selectedItem.toString()
 
-            var rb: RadioButton? = findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
+            var rb: RadioButton? =
+                findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
             var gender: String? = ""
-            if (rb != null)
-                gender = rb.text.toString()
+            if (rb != null) gender = rb.text.toString()
             else {
                 Utilities.toast(this, "Please select gender")
             }
             if (username!!.isEmpty()) {
                 et_username.error = "Please enter a username"
-            }
-            else if (username.contains(" ")){
+            } else if (username.contains(" ")) {
                 et_username.error = "Invalid username"
             }
             if (password!!.isEmpty()) {
                 et_password.error = "Please enter a password"
-            }
-            else if (password != repassword) {
+            } else if (password != repassword) {
                 et_re_password.error = "Password doesn't match"
             }
             if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
@@ -113,12 +110,39 @@ class BecomeMemberActivity : BaseActivity() {
                 ///Add dialog that using phone as password , Agree / disagree
             }
 
-            checkMandatoryFieldsAndAddMember(username, password, repassword, fname, lname, mname, email, language, level, phoneNumber, birthDate, gender, mRealm)
-
+            checkMandatoryFieldsAndAddMember(
+                username,
+                password,
+                repassword,
+                fname,
+                lname,
+                mname,
+                email,
+                language,
+                level,
+                phoneNumber,
+                birthDate,
+                gender,
+                mRealm
+            )
         }
     }
 
-    private fun checkMandatoryFieldsAndAddMember(username: String, password: String, repassword: String?, fname: String?, lname: String?, mname: String?, email: String?, language: String?, level: String?, phoneNumber: String?, birthDate: String?, gender: String?, mRealm: Realm) {
+    private fun checkMandatoryFieldsAndAddMember(
+        username: String,
+        password: String,
+        repassword: String?,
+        fname: String?,
+        lname: String?,
+        mname: String?,
+        email: String?,
+        language: String?,
+        level: String?,
+        phoneNumber: String?,
+        birthDate: String?,
+        gender: String?,
+        mRealm: Realm
+    ) {
         /**
          * Creates and adds a new member if the username and password
          * are not empty and password matches repassword.
@@ -130,7 +154,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("lastName", lname)
             obj.addProperty("middleName", mname)
             obj.addProperty("password", password)
-    //            obj.addProperty("repeatPassword", repassword )
+            //            obj.addProperty("repeatPassword", repassword )
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate", Calendar.getInstance().timeInMillis)
             obj.addProperty("email", email)
@@ -146,7 +170,9 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("macAddress", NetworkUtils.getMacAddr())
             obj.addProperty("androidId", NetworkUtils.getMacAddr())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            obj.addProperty(
+                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+            )
             var roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)

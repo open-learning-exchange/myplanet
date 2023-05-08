@@ -23,11 +23,11 @@
             android:lines="2"
             android:padding="@dimen/padding_normal"
             android:textColor="@color/md_black_1000" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@drawable/bg_grey"
-            />
+            android:background="@drawable/bg_grey" />
 
         <TextView
             android:id="@+id/txt_temp"
@@ -36,11 +36,11 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/body_temperature"
             android:textColor="@color/md_black_1000" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@drawable/bg_grey"
-            />
+            android:background="@drawable/bg_grey" />
 
         <TextView
             android:id="@+id/txt_pulse"
@@ -49,11 +49,11 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/pulse_rate"
             android:textColor="@color/md_black_1000" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@drawable/bg_grey"
-            />
+            android:background="@drawable/bg_grey" />
 
         <TextView
             android:id="@+id/txt_bp"
@@ -62,11 +62,11 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/blood_pressure"
             android:textColor="@color/md_black_1000" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@drawable/bg_grey"
-            />
+            android:background="@drawable/bg_grey" />
 
         <TextView
             android:id="@+id/txt_height"
@@ -75,11 +75,11 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/height"
             android:textColor="@color/md_black_1000" />
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@drawable/bg_grey"
-            />
+            android:background="@drawable/bg_grey" />
 
         <TextView
             android:id="@+id/txt_weight"
@@ -92,8 +92,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@drawable/bg_grey"
-            />
+            android:background="@drawable/bg_grey" />
 
         <TextView
             android:id="@+id/txt_vision"
@@ -106,8 +105,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@drawable/bg_grey"
-            />
+            android:background="@drawable/bg_grey" />
 
         <TextView
             android:id="@+id/txt_hearing"

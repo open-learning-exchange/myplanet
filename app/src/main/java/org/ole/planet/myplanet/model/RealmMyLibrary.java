@@ -74,12 +74,10 @@ public class RealmMyLibrary extends RealmObject {
     private String downloaded;
     private boolean isPrivate;
 
-
     public static List<RealmMyLibrary> getMyLibraryByUserId(Realm mRealm, SharedPreferences settings) {
         RealmResults<RealmMyLibrary> libs = mRealm.where(RealmMyLibrary.class).findAll();
         return getMyLibraryByUserId(settings.getString("userId", "--"), libs, mRealm);
     }
-
 
     public static List<RealmMyLibrary> getMyLibraryByUserId(String userId, List<RealmMyLibrary> libs, Realm mRealm) {
         List<RealmMyLibrary> libraries = new ArrayList<>();
@@ -92,7 +90,6 @@ public class RealmMyLibrary extends RealmObject {
         }
         return libraries;
     }
-
 
     public static List<RealmMyLibrary> getMyLibraryByUserId(String userId, List<RealmMyLibrary> libs) {
         List<RealmMyLibrary> libraries = new ArrayList<>();
@@ -131,8 +128,7 @@ public class RealmMyLibrary extends RealmObject {
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
         String[] ids = new String[list.size()];
         int i = 0;
-        for (RealmMyLibrary library : list
-        ) {
+        for (RealmMyLibrary library : list) {
             ids[i] = (library.getResource_id());
             i++;
         }
@@ -141,8 +137,7 @@ public class RealmMyLibrary extends RealmObject {
 
     public static void removeDeletedResource(List<String> newIds, Realm mRealm) {
         String[] ids = getIds(mRealm);
-        for (String id : ids
-        ) {
+        for (String id : ids) {
             if (!newIds.contains(id)) {
                 mRealm.where(RealmMyLibrary.class).equalTo("resourceId", id).findAll().deleteAllFromRealm();
             }
@@ -192,10 +187,8 @@ public class RealmMyLibrary extends RealmObject {
         insertMyLibrary("", doc, mRealm);
     }
 
-
     public static void createStepResource(Realm mRealm, JsonObject res, String myCoursesID, String stepId) {
         insertMyLibrary("", stepId, myCoursesID, res, mRealm);
-
     }
 
     public static void insertMyLibrary(String userId, JsonObject doc, Realm mRealm) {
@@ -219,8 +212,7 @@ public class RealmMyLibrary extends RealmObject {
     }
 
     public static void createFromResource(RealmMyLibrary resource, Realm mRealm, String userId) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         resource.setUserId(userId);
         mRealm.commitTransaction();
     }
@@ -350,8 +342,7 @@ public class RealmMyLibrary extends RealmObject {
     public JsonArray getArray(RealmList<String> ar) {
         JsonArray sub = new JsonArray();
         if (ar != null) {
-            for (String s : ar
-            ) {
+            for (String s : ar) {
                 sub.add(s);
             }
         }
@@ -367,8 +358,7 @@ public class RealmMyLibrary extends RealmObject {
             this.userId = new RealmList<>();
         }
 
-        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
-            this.userId.add(userId);
+        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId)) this.userId.add(userId);
     }
 
     public String getResourceId() {
@@ -419,26 +409,22 @@ public class RealmMyLibrary extends RealmObject {
         return resourceFor;
     }
 
-
     public void setResourceFor(JsonArray array, RealmMyLibrary resource) {
-        for (JsonElement s :
-                array) {
+        for (JsonElement s : array) {
             if (!(s instanceof JsonNull) && !resource.getResourceFor().contains(s.getAsString()))
                 resource.getResourceFor().add(s.getAsString());
         }
     }
 
     public void setSubject(JsonArray array, RealmMyLibrary resource) {
-        for (JsonElement s :
-                array) {
+        for (JsonElement s : array) {
             if (!(s instanceof JsonNull) && !resource.getSubject().contains(s.getAsString()))
                 resource.getSubject().add(s.getAsString());
         }
     }
 
     public void setLevel(JsonArray array, RealmMyLibrary resource) {
-        for (JsonElement s :
-                array) {
+        for (JsonElement s : array) {
             if (!(s instanceof JsonNull) && !resource.getLevel().contains(s.getAsString()))
                 resource.getLevel().add(s.getAsString());
         }
@@ -453,21 +439,18 @@ public class RealmMyLibrary extends RealmObject {
     }
 
     public void setTag(JsonArray array, RealmMyLibrary resource) {
-        for (JsonElement s :
-                array) {
+        for (JsonElement s : array) {
             if (!(s instanceof JsonNull) && !resource.getTag().contains(s.getAsString()))
                 resource.getTag().add(s.getAsString());
         }
     }
 
     public void setLanguages(JsonArray array, RealmMyLibrary resource) {
-        for (JsonElement s :
-                array) {
+        for (JsonElement s : array) {
             if (!(s instanceof JsonNull) && !resource.getLanguages().contains(s.getAsString()))
                 resource.getLanguages().add(s.getAsString());
         }
     }
-
 
     public static CharSequence[] getListAsArray(RealmResults<RealmMyLibrary> db_myLibrary) {
         CharSequence[] array = new CharSequence[db_myLibrary.size()];
@@ -540,7 +523,6 @@ public class RealmMyLibrary extends RealmObject {
             s.append(tag).append(", ");
         }
         return s.toString();
-
     }
 
     public String getCourseId() {
@@ -756,8 +738,7 @@ public class RealmMyLibrary extends RealmObject {
     public static JsonArray getMyLibIds(Realm realm, String userId) {
         List<RealmMyLibrary> myLibraries = realm.where(RealmMyLibrary.class).contains("userId", userId).findAll();
         JsonArray ids = new JsonArray();
-        for (RealmMyLibrary lib : myLibraries
-        ) {
+        for (RealmMyLibrary lib : myLibraries) {
             ids.add(lib.getId());
         }
         return ids;
@@ -798,8 +779,7 @@ public class RealmMyLibrary extends RealmObject {
         Set<String> list = new HashSet<>();
         for (RealmMyLibrary li : libraries) {
             String s = type.equals("mediums") ? li.getMediaType() : li.getLanguage();
-            if (!TextUtils.isEmpty(s))
-                list.add(s);
+            if (!TextUtils.isEmpty(s)) list.add(s);
         }
         return list;
     }
@@ -811,6 +791,4 @@ public class RealmMyLibrary extends RealmObject {
         }
         return list;
     }
-
-
 }

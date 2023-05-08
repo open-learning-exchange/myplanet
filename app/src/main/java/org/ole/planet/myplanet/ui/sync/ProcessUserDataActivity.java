@@ -1,7 +1,8 @@
 package org.ole.planet.myplanet.ui.sync;
 
+import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
+
 import android.app.ProgressDialog;
-import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,11 +10,6 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
-
-import com.google.android.material.textfield.TextInputLayout;
-
-import androidx.appcompat.app.AlertDialog;
-
 import android.text.TextUtils;
 import android.view.View;
 import android.view.WindowManager;
@@ -22,6 +18,10 @@ import android.webkit.URLUtil;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+
+import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.PermissionActivity;
@@ -36,8 +36,6 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Objects;
-
-import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 public abstract class ProcessUserDataActivity extends PermissionActivity implements SuccessListener {
     SharedPreferences settings;
@@ -162,7 +160,6 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
     }
 
-
     protected void hideKeyboard(View view) {
         InputMethodManager in = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         in.hideSoftInputFromWindow(view.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
@@ -209,5 +206,4 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         editor.putString("serverURL", url);
         editor.putString("couchdbURL", couchdbURL);
     }
-
 }

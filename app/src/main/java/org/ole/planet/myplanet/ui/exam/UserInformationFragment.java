@@ -34,11 +34,7 @@ import java.util.Locale;
 
 import io.realm.Realm;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class UserInformationFragment extends BaseDialogFragment implements View.OnClickListener {
-
     EditText etFname, etMname, etLname, etPhone, etEmail;
     TextView tvBirthDate;
     String dob = "";
@@ -65,8 +61,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_information, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         userModel = new UserProfileDbHandler(requireContext()).getUserModel();
@@ -138,22 +133,14 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
             mRealm.executeTransactionAsync(realm -> {
                 RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
                 if (model != null) {
-                    if (!TextUtils.isEmpty(fname))
-                        model.setFirstName(fname);
-                    if (!TextUtils.isEmpty(lname))
-                        model.setLastName(lname);
-                    if (!TextUtils.isEmpty(email))
-                        model.setEmail(email);
-                    if (!TextUtils.isEmpty(lang))
-                        model.setLanguage(lang);
-                    if (!TextUtils.isEmpty(phone))
-                        model.setPhoneNumber(phone);
-                    if (!TextUtils.isEmpty(dob))
-                        model.setBirthPlace(dob);
-                    if (!TextUtils.isEmpty(level))
-                        model.setLevel(level);
-                    if (!TextUtils.isEmpty(finalGender))
-                        model.setGender(finalGender);
+                    if (!TextUtils.isEmpty(fname)) model.setFirstName(fname);
+                    if (!TextUtils.isEmpty(lname)) model.setLastName(lname);
+                    if (!TextUtils.isEmpty(email)) model.setEmail(email);
+                    if (!TextUtils.isEmpty(lang)) model.setLanguage(lang);
+                    if (!TextUtils.isEmpty(phone)) model.setPhoneNumber(phone);
+                    if (!TextUtils.isEmpty(dob)) model.setBirthPlace(dob);
+                    if (!TextUtils.isEmpty(level)) model.setLevel(level);
+                    if (!TextUtils.isEmpty(finalGender)) model.setGender(finalGender);
                     model.setUpdated(true);
                 }
             }, () -> {
@@ -182,8 +169,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     }
 
     private void saveSubmission(JsonObject user) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         submissions.setUser(user.toString());
         submissions.setStatus("complete");
         mRealm.commitTransaction();
@@ -206,9 +192,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
                 dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
                 tvBirthDate.setText(dob);
             }
-        }, now.get(Calendar.YEAR),
-                now.get(Calendar.MONTH),
-                now.get(Calendar.DAY_OF_MONTH));
+        }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
         dpd.show();
     }
 

@@ -8,8 +8,8 @@
     tools:context=".ui.dashboard.DisclaimerActivity">
 
     <TextView
-        android:layout_width="match_parent"
         android:id="@+id/tv_disclaimer"
-        android:textColor="@color/md_black_1000"
-        android:layout_height="match_parent"/>
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textColor="@color/md_black_1000" />
 </androidx.core.widget.NestedScrollView>

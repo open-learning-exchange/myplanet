@@ -103,20 +103,11 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         TextView tvVitals = v.findViewById(R.id.tv_vitals);
         TextView tvCondition = v.findViewById(R.id.tv_condition);
         TextView tvOtherNotes = v.findViewById(R.id.tv_other_notes);
-        tvVitals.setText("Temperature : " + checkEmpty(realmExamination.getTemperature()) + "\n" +
-                "Pulse : " + checkEmptyInt(realmExamination.getPulse()) + "\n" +
-                "Blood Pressure : " + realmExamination.getBp() + "\n" +
-                "Height : " + checkEmpty(realmExamination.getHeight()) + "\n" +
-                "Weight : " + checkEmpty(realmExamination.getWeight()) + "\n" +
-                "Vision : " + realmExamination.getVision() + "\n" +
-                "Hearing : " + realmExamination.getHearing() + "\n"
-        );
+        tvVitals.setText("Temperature : " + checkEmpty(realmExamination.getTemperature()) + "\n" + "Pulse : " + checkEmptyInt(realmExamination.getPulse()) + "\n" + "Blood Pressure : " + realmExamination.getBp() + "\n" + "Height : " + checkEmpty(realmExamination.getHeight()) + "\n" + "Weight : " + checkEmpty(realmExamination.getWeight()) + "\n" + "Vision : " + realmExamination.getVision() + "\n" + "Hearing : " + realmExamination.getHearing() + "\n");
 
-      showConditions(tvCondition, realmExamination);
+        showConditions(tvCondition, realmExamination);
         showEncryptedData(tvOtherNotes, encrypted);
-        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
-                .setView(v)
-                .setPositiveButton("OK", null).create();
+        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy")).setView(v).setPositiveButton("OK", null).create();
         long time = new Date().getTime() - 5000 * 60;
         if (realmExamination.getDate() >= time) {
             dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Edit", (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("id", list.get(position).get_id()).putExtra("userId", mh.get_id())));
@@ -130,22 +121,14 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         StringBuilder conditions = new StringBuilder();
         for (String key : keys) {
             if (conditionsMap.get(key).getAsBoolean()) {
-                conditions.append(key +", ");
+                conditions.append(key + ", ");
             }
         }
         tvCondition.setText(conditions);
     }
 
     private void showEncryptedData(TextView tvOtherNotes, JsonObject encrypted) {
-        tvOtherNotes.setText("Observations & Notes : " + Utilities.checkNA(JsonUtils.getString("notes", encrypted)) + "\n"
-                + "Diagnosis : " + Utilities.checkNA(JsonUtils.getString("diagnosis", encrypted)) + "\n"
-                + "Treatments : " + Utilities.checkNA(JsonUtils.getString("treatments", encrypted))
-                + "\n" + "Medications : " + Utilities.checkNA(JsonUtils.getString("medications", encrypted))
-                + "\n" + "Immunizations : " + Utilities.checkNA(JsonUtils.getString("immunizations", encrypted))
-                + "\n" + "Allergies : " + Utilities.checkNA(JsonUtils.getString("allergies", encrypted)) +
-                "\n" + "X-rays : " + Utilities.checkNA(JsonUtils.getString("xrays", encrypted)) + "\n" +
-                "Lab Tests : " + Utilities.checkNA(JsonUtils.getString("tests", encrypted)) + "\n" +
-                "Referrals : " + Utilities.checkNA(JsonUtils.getString("referrals", encrypted)) + "\n");
+        tvOtherNotes.setText("Observations & Notes : " + Utilities.checkNA(JsonUtils.getString("notes", encrypted)) + "\n" + "Diagnosis : " + Utilities.checkNA(JsonUtils.getString("diagnosis", encrypted)) + "\n" + "Treatments : " + Utilities.checkNA(JsonUtils.getString("treatments", encrypted)) + "\n" + "Medications : " + Utilities.checkNA(JsonUtils.getString("medications", encrypted)) + "\n" + "Immunizations : " + Utilities.checkNA(JsonUtils.getString("immunizations", encrypted)) + "\n" + "Allergies : " + Utilities.checkNA(JsonUtils.getString("allergies", encrypted)) + "\n" + "X-rays : " + Utilities.checkNA(JsonUtils.getString("xrays", encrypted)) + "\n" + "Lab Tests : " + Utilities.checkNA(JsonUtils.getString("tests", encrypted)) + "\n" + "Referrals : " + Utilities.checkNA(JsonUtils.getString("referrals", encrypted)) + "\n");
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -23,9 +24,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import io.realm.Realm;
 
-/**
- * A placeholder fragment containing a simple view.
- */
 public class DashboardFragment extends BaseDashboardFragment {
 
     public static final String PREFS_NAME = "OLE_PLANET";
@@ -33,19 +31,14 @@ public class DashboardFragment extends BaseDashboardFragment {
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
-    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-            250,
-            100
-    );
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(250, 100);
     private UserProfileDbHandler profileDbHandler;
-
 
     public DashboardFragment() {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         declareElements(view);
         onLoaded(view);
@@ -81,5 +74,4 @@ public class DashboardFragment extends BaseDashboardFragment {
         initView(view);
 
     }
-
 }

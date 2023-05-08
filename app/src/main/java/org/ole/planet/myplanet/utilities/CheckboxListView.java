@@ -19,7 +19,7 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
         setOnItemClickListener(this);
     }
 
-   public interface CheckChangeListener {
+    public interface CheckChangeListener {
         void onCheckChange();
     }
 
@@ -54,7 +54,6 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
         } else {
             selectedItemsList.add((Integer) i);
         }
-        if (listener!=null)
-            listener.onCheckChange();
+        if (listener != null) listener.onCheckChange();
     }
 }

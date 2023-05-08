@@ -27,7 +27,6 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private Context context;
     private RealmResults<RealmMyTeam> list;
 
-
     public AdapterFinance(Context context, RealmResults<RealmMyTeam> list) {
         this.context = context;
         this.list = list;

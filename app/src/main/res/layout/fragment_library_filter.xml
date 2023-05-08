@@ -71,7 +71,6 @@
             android:layout_weight="1"
             android:orientation="horizontal">
 
-
             <ListView
                 android:id="@+id/list_sub"
                 android:layout_width="0dp"

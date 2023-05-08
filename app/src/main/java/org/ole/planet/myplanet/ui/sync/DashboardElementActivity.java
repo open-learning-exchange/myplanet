@@ -12,6 +12,7 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.menu.ActionMenuItemView;
@@ -45,10 +46,6 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
-
-/**
- * Extra class for excess methods in DashboardActivity activities
- */
 
 public abstract class DashboardElementActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
     public BottomNavigationView navigationView;
@@ -175,7 +172,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             }
             Utilities.log("SSID " + tmp.SSID);
         }
-
     }
 
     public void logout() {
@@ -198,7 +194,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         }
     }
 
-
     public void showRatingDialog(String type, String resource_id, String title, OnRatingChangeListener listener) {
         RatingFragment f = RatingFragment.newInstance(type, resource_id, title);
         f.setListener(listener);
@@ -212,19 +207,16 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         if (f instanceof CourseFragment) {
             if ("shelf".equals(fragmentTag))
                 navigationView.getMenu().findItem(R.id.menu_mycourses).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
+            else navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
         } else if (f instanceof LibraryFragment) {
             if ("shelf".equals(fragmentTag))
                 navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
+            else navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
         } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
         } else if (f instanceof SurveyFragment) {
             // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
-
     }
 
     public void openEnterpriseFragment() {

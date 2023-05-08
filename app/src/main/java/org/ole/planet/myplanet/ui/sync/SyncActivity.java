@@ -62,6 +62,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     int[] syncTimeInteval = {60 * 60, 3 * 60 * 60};
     ImageView syncIcon;
     AnimationDrawable syncIconDrawable;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,7 +105,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
-
     public void setUpChildMode() {
         if (!settings.getBoolean("isChild", false))
             return;
@@ -121,7 +121,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             tvNodata.setVisibility(View.VISIBLE);
         }
     }
-
 
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
@@ -182,7 +181,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncDate.setText(getString(R.string.last_sync_date) + convertDate());
         syncDropdownAdd();
     }
-
 
     // Converts OS date to human date
     public String convertDate() {
@@ -252,12 +250,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         return false;
     }
 
-
     public void startSync() {
         Utilities.log("Start sync");
-
         SyncManager.getInstance().start(SyncActivity.this);
-
     }
 
     public String saveConfigAndContinue(MaterialDialog dialog) {
@@ -274,13 +269,11 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         return processedUrl;
     }
 
-
     @Override
     public void onSyncStarted() {
         progressDialog.setMessage("Syncing data, Please wait...");
         progressDialog.show();
     }
-
 
     @Override
     public void onSyncFailed(final String s) {
@@ -312,5 +305,4 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
         NotificationUtil.cancellAll(this);
     }
-
 }

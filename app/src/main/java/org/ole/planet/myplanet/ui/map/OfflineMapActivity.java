@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.map;
 
 import android.preference.PreferenceManager;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 
 import org.ole.planet.myplanet.R;
@@ -31,7 +33,6 @@ public class OfflineMapActivity extends AppCompatActivity {
         GeoPoint startPoint = new GeoPoint(2.0593708, 45.236624);
         mapController.setCenter(startPoint);
     }
-
 
     public void onResume() {
         super.onResume();

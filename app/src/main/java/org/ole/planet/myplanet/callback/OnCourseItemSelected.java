@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface OnCourseItemSelected {
     void onSelectedListChange(List<RealmMyCourse> list);
+
     void onTagClicked(RealmTag tag);
 }

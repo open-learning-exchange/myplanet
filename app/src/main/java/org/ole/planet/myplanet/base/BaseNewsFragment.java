@@ -41,7 +41,6 @@ import io.realm.RealmList;
 import static android.app.Activity.RESULT_OK;
 
 public abstract class BaseNewsFragment extends BaseContainerFragment implements AdapterNews.OnNewsItemClickListener {
-
     public Realm mRealm;
     public OnHomeItemClickListener homeItemClickListener;
     public UserProfileDbHandler profileDbHandler;
@@ -100,7 +99,6 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
         return path;
     }
 
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 //        llImage = getView().findViewById(R.id.ll_images);
@@ -137,7 +135,6 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
 
     }
 
-
     public void changeLayoutManager(int orientation, RecyclerView recyclerView) {
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2));
@@ -145,7 +142,6 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
             recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         }
     }
-
 
     @Override
     public void addImage(LinearLayout llImage) {

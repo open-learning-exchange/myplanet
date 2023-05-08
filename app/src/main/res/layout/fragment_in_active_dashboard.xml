@@ -25,12 +25,12 @@
 
         <Button
             android:id="@+id/btn_feedback"
+            style="@style/GreyButtons"
             android:layout_width="wrap_content"
-            android:text="Submit Feedback"
             android:layout_height="wrap_content"
-            android:padding="@dimen/padding_normal"
             android:background="@drawable/buttongrey"
-            style="@style/GreyButtons" />
+            android:padding="@dimen/padding_normal"
+            android:text="Submit Feedback" />
     </LinearLayout>
 
 </FrameLayout>

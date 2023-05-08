@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -56,25 +57,25 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
     }
 
     public static Fragment find_fragment(String frag) {
-        switch (frag){
-            case  "ic_mypersonals":
+        switch (frag) {
+            case "ic_mypersonals":
                 return new MyPersonalsFragment();
-            case  "ic_news":
+            case "ic_news":
                 return new NewsFragment();
-            case  "ic_submissions":
-                return  new MySubmissionFragment();
-            case  "ic_my_survey":
+            case "ic_submissions":
+                return new MySubmissionFragment();
+            case "ic_my_survey":
                 Utilities.log("My survey");
-                return  MySubmissionFragment.newInstance("survey");
-            case  "ic_myhealth":
+                return MySubmissionFragment.newInstance("survey");
+            case "ic_myhealth":
                 return new MyHealthFragment();
-            case  "ic_calendar":
-                return  new CalendarFragment();
-            case  "ic_help_wanted":
+            case "ic_calendar":
+                return new CalendarFragment();
+            case "ic_help_wanted":
                 return new HelpWantedFragment();
-            case  "ic_references":
-                return  new ReferenceFragment();
-            case  "my_achievement":
+            case "ic_references":
+                return new ReferenceFragment();
+            case "my_achievement":
                 return new AchievementFragment();
         }
         return null;

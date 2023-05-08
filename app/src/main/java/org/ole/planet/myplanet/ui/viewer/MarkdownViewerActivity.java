@@ -14,13 +14,10 @@ import java.io.File;
 
 import br.tiagohm.markdownview.MarkdownView;
 
-
 public class MarkdownViewerActivity extends AppCompatActivity {
-
     private TextView mMarkdownNameTitle;
     private MarkdownView mMarkdownContent;
     private String fileName;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

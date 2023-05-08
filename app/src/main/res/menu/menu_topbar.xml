@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-
     <item
         android:id="@+id/menu_home"
         android:icon="@drawable/ic_home"
@@ -23,15 +22,15 @@
         android:icon="@drawable/ourcourses"
         android:title="@string/menu_courses" />
 
-   <!-- <item
-        android:id="@+id/menu_survey"
-        android:icon="@drawable/survey"
-        android:title="@string/menu_surveys" />-->
+    <!-- <item
+         android:id="@+id/menu_survey"
+         android:icon="@drawable/survey"
+         android:title="@string/menu_surveys" />-->
     <!--<item-->
-        <!--android:id="@+id/menu_teams"-->
-        <!--android:icon="@drawable/team"-->
-        <!--android:enabled="false"-->
-        <!--android:visible="false"-->
-        <!--app:iconTint="@color/disable_color"-->
-        <!--android:title="@string/menu_teams" />-->
+    <!--android:id="@+id/menu_teams"-->
+    <!--android:icon="@drawable/team"-->
+    <!--android:enabled="false"-->
+    <!--android:visible="false"-->
+    <!--app:iconTint="@color/disable_color"-->
+    <!--android:title="@string/menu_teams" />-->
 </menu>

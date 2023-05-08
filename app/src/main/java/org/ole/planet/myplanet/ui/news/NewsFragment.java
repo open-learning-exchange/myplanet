@@ -47,8 +47,6 @@ import io.realm.Case;
 import io.realm.Sort;
 
 public class NewsFragment extends BaseNewsFragment {
-
-
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
@@ -56,7 +54,6 @@ public class NewsFragment extends BaseNewsFragment {
     LinearLayout llAddNews;
     RealmUserModel user;
     TextView tvMessage;
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -135,7 +132,6 @@ public class NewsFragment extends BaseNewsFragment {
                     }
                 }
             }
-
         }
         return list;
     }
@@ -163,7 +159,6 @@ public class NewsFragment extends BaseNewsFragment {
         showNoData(tvMessage, adapterNews.getItemCount());
     }
 
-
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -187,5 +182,4 @@ public class NewsFragment extends BaseNewsFragment {
             showNoData(tvMessage, adapterNews.getItemCount());
         }
     };
-
 }

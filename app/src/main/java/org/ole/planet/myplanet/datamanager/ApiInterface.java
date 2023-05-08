@@ -20,7 +20,6 @@ import retrofit2.http.PUT;
 import retrofit2.http.Streaming;
 import retrofit2.http.Url;
 
-
 public interface ApiInterface {
     @Streaming
     @GET

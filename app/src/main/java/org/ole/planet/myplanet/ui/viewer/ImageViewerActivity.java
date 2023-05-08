@@ -46,9 +46,7 @@ public class ImageViewerActivity extends AppCompatActivity {
         }
 
         try {
-            Glide.with(getApplicationContext())
-                    .load(isFullPath ? new File(fileName) : new File(Utilities.SD_PATH, fileName))
-                    .into(mImageViewer);
+            Glide.with(getApplicationContext()).load(isFullPath ? new File(fileName) : new File(Utilities.SD_PATH, fileName)).into(mImageViewer);
         } catch (Exception e) {
             e.printStackTrace();
         }

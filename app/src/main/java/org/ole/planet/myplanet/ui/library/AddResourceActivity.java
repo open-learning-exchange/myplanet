@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.os.Bundle;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -60,8 +62,7 @@ public class AddResourceActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mRealm != null && !mRealm.isClosed())
-            mRealm.close();
+        if (mRealm != null && !mRealm.isClosed()) mRealm.close();
     }
 
     private void initializeViews() {
@@ -163,8 +164,7 @@ public class AddResourceActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home)
-            finish();
+        if (item.getItemId() == android.R.id.home) finish();
         return super.onOptionsItemSelected(item);
     }
 }

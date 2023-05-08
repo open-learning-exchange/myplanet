@@ -4,6 +4,6 @@
     android:id="@+id/thumb"
     android:layout_width="@dimen/_30dp"
     android:layout_height="@dimen/_30dp"
-    android:src="@drawable/ic_star"
     android:layout_gravity="center"
-    android:layout_margin="4dp" />
+    android:layout_margin="4dp"
+    android:src="@drawable/ic_star" />

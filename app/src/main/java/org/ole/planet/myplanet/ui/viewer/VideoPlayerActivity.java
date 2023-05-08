@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -38,7 +39,6 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
 
     SimpleExoPlayer exoPlayer;
     SimpleExoPlayerView exoPlayerView;
-
     String auth = "";
     String videoURL = "";
     SharedPreferences settings;
@@ -63,9 +63,7 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
         } else if (videoType.equals("online")) {
             new AuthSessionUpdater(this, settings);
         }
-
     }
-
 
     public void setAuthSession(Map<String, List<String>> responseHeader) {
         Utilities.log("Error " + new Gson().toJson(responseHeader));
@@ -110,26 +108,18 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
             e.printStackTrace();
         }
 
-        DataSource.Factory factory = new DataSource.Factory() {
-            @Override
-            public DataSource createDataSource() {
-                return fileDataSource;
-            }
-        };
-        MediaSource audioSource = new ExtractorMediaSource(fileDataSource.getUri(),
-                factory, new DefaultExtractorsFactory(), null, null);
+        DataSource.Factory factory = () -> fileDataSource;
+        MediaSource audioSource = new ExtractorMediaSource(fileDataSource.getUri(), factory, new DefaultExtractorsFactory(), null, null);
 
         exoPlayerView.setPlayer(exoPlayer);
         exoPlayer.prepare(audioSource);
         exoPlayer.setPlayWhenReady(true);
-
     }
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        if (exoPlayer != null)
-            exoPlayer.stop();
+        if (exoPlayer != null) exoPlayer.stop();
     }
 
 }

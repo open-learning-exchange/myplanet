@@ -3,16 +3,16 @@ package org.ole.planet.myplanet.ui.userprofile;
 
 import android.content.Context;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
@@ -36,9 +36,6 @@ import java.util.ArrayList;
 
 import io.realm.Realm;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class AchievementFragment extends BaseContainerFragment {
 
     TextView tvGoal, tvAchievement, tvPurpose, tvName, tvFirstName;
@@ -59,10 +56,8 @@ public class AchievementFragment extends BaseContainerFragment {
     public AchievementFragment() {
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_achievement, container, false);
         mRealm = new DatabaseService(MainApplication.context).getRealmInstance();
         user = new UserProfileDbHandler(MainApplication.context).getUserModel();
@@ -75,8 +70,7 @@ public class AchievementFragment extends BaseContainerFragment {
         llAchievement = v.findViewById(R.id.ll_achievement);
         tvAchievement = v.findViewById(R.id.tv_achievement_header);
         v.findViewById(R.id.btn_edit).setOnClickListener(vi -> {
-            if (listener != null)
-                listener.openCallFragment(new EditAchievementFragment());
+            if (listener != null) listener.openCallFragment(new EditAchievementFragment());
         });
 
         return v;
@@ -136,12 +130,10 @@ public class AchievementFragment extends BaseContainerFragment {
             rvOther.setAdapter(new AdapterOtherInfo(MainApplication.context, achievement.getreferences()));
         }
         mRealm.addChangeListener(realm -> {
-            if (llAchievement != null)
-                llAchievement.removeAllViews();
+            if (llAchievement != null) llAchievement.removeAllViews();
             createAchievementList();
         });
     }
-
 
     private void createAchievementList() {
         for (String s : achievement.getAchievements()) {
@@ -168,12 +160,10 @@ public class AchievementFragment extends BaseContainerFragment {
             }
             llAchievement.addView(v);
         }
-
     }
 
     private void showResourceButtons(FlexboxLayout flexboxLayout, ArrayList<RealmMyLibrary> libraries) {
-        for (RealmMyLibrary lib : libraries
-        ) {
+        for (RealmMyLibrary lib : libraries) {
             Button b = (Button) LayoutInflater.from(MainApplication.context).inflate(R.layout.layout_button_primary, null);
             b.setText(lib.getTitle());
             b.setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
@@ -192,12 +182,10 @@ public class AchievementFragment extends BaseContainerFragment {
 
     private ArrayList<RealmMyLibrary> getList(JsonArray array) {
         ArrayList<RealmMyLibrary> libraries = new ArrayList<>();
-        for (JsonElement e : array
-        ) {
+        for (JsonElement e : array) {
             String id = e.getAsJsonObject().get("_id").getAsString();
             RealmMyLibrary li = mRealm.where(RealmMyLibrary.class).equalTo("id", id).findFirst();
-            if (li != null)
-                libraries.add(li);
+            if (li != null) libraries.add(li);
         }
         return libraries;
     }

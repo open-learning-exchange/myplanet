@@ -206,20 +206,20 @@
 
             <Button
                 android:id="@+id/btn_submit"
+                style="@style/GreyButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/button_update"
-                style="@style/GreyButtons"
+                android:layout_marginRight="10dp"
                 android:background="@drawable/buttongrey"
-                android:layout_marginRight="10dp"/>
+                android:text="@string/button_update" />
 
             <Button
                 android:id="@+id/btn_cancel"
+                style="@style/GreyButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/button_cancel"
                 android:background="@drawable/buttongrey"
-                style="@style/GreyButtons" />
+                android:text="@string/button_cancel" />
 
         </LinearLayout>
 

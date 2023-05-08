@@ -21,17 +21,16 @@
             android:textSize="@dimen/text_size_large" />
 
         <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
             android:id="@+id/tl_urgent"
-            android:padding="@dimen/padding_normal"
-            android:layout_height="wrap_content">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal">
 
             <RadioGroup
                 android:id="@+id/rg_urgent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-               >
+                android:orientation="horizontal">
 
                 <RadioButton
                     android:id="@+id/urgent_yes"
@@ -54,37 +53,37 @@
             android:text="@string/feedback_type"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large" />
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:id="@+id/tl_type"
-            android:padding="@dimen/padding_normal"
-            android:layout_height="wrap_content">
 
-        <RadioGroup
-            android:id="@+id/rg_type"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tl_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-          >
+            android:padding="@dimen/padding_normal">
 
-            <RadioButton
-                android:id="@+id/type_question"
-                android:layout_width="wrap_content"
+            <RadioGroup
+                android:id="@+id/rg_type"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/question" />
+                android:orientation="horizontal">
 
-            <RadioButton
-                android:id="@+id/type_bug"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/bug" />
+                <RadioButton
+                    android:id="@+id/type_question"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/question" />
 
-            <RadioButton
-                android:id="@+id/type_suggestion"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/suggestion" />
-        </RadioGroup>
+                <RadioButton
+                    android:id="@+id/type_bug"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/bug" />
+
+                <RadioButton
+                    android:id="@+id/type_suggestion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/suggestion" />
+            </RadioGroup>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -108,19 +107,19 @@
 
             <Button
                 android:id="@+id/btn_cancel"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_cancel"
-                android:textSize="@dimen/text_size_mid"
-                style="@style/Widget.MaterialComponents.Button.TextButton" />
+                android:textSize="@dimen/text_size_mid" />
 
             <Button
                 android:id="@+id/btn_submit"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/button_submit"
-                android:textSize="@dimen/text_size_mid"
-                style="@style/Widget.MaterialComponents.Button.TextButton" />
+                android:textSize="@dimen/text_size_mid" />
 
         </LinearLayout>
 

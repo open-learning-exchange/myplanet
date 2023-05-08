@@ -26,7 +26,6 @@ public class UserProfileDbHandler {
     private DatabaseService realmService;
     private String fullName;
 
-
     public UserProfileDbHandler(Context context) {
         realmService = new DatabaseService(context);
         settings = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
@@ -50,7 +49,6 @@ public class UserProfileDbHandler {
         offlineActivities.setLoginTime(new Date().getTime());
         mRealm.commitTransaction();
     }
-
 
     public void onLogout() {
         if (!mRealm.isInTransaction())
@@ -163,6 +161,4 @@ public class UserProfileDbHandler {
         getUserModel().setShowTopbar(o);
         mRealm.commitTransaction();
     }
-
-
 }

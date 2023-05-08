@@ -12,7 +12,6 @@
         android:orientation="vertical">
 
 
-
         <LinearLayout
             android:id="@+id/ll_actions"
             android:layout_width="match_parent"
@@ -32,89 +31,88 @@
                 android:paddingLeft="@dimen/_20dp">
 
 
-
                 <Button
                     android:id="@+id/btn_collections"
-                    android:theme="@style/AccentButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="10dp"
                     android:text="@string/collections"
-                    android:textSize="@dimen/text_size_small"/>
+                    android:textSize="@dimen/text_size_small"
+                    android:theme="@style/AccentButton" />
 
                 <Button
                     android:id="@+id/show_filter"
-                    android:theme="@style/BlueButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="10dp"
+                    android:text="@string/show_filter"
                     android:textSize="@dimen/text_size_small"
-                    android:text="@string/show_filter" />
+                    android:theme="@style/BlueButton" />
 
 
                 <Button
                     android:id="@+id/btn_clear_tags"
-                    android:theme="@style/AccentButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="24dp"
-                    android:textSize="@dimen/text_size_small"
                     android:text="@string/clear_tags"
-                    android:textColor="@color/md_white_1000" />
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_small"
+                    android:theme="@style/AccentButton" />
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:paddingRight="@dimen/_10dp">
+
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="right"
-                    android:paddingRight="@dimen/_10dp">
+                    android:orientation="horizontal">
 
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_fragment_info"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small"
-                                android:textColor="@color/md_white_1000"
-                                android:textSize="@dimen/text_size_mid" />
-
-                            <TextView
-                                android:id="@+id/tv_selected"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small"
-                                android:textColor="@color/md_white_1000"
-                                android:textSize="@dimen/text_size_mid" />
-                        </LinearLayout>
-
-                        <Spinner
-                            android:id="@+id/spn_sort"
+                        <TextView
+                            android:id="@+id/tv_fragment_info"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:entries="@array/sort_by_date"
-                            android:padding="@dimen/padding_normal" />
+                            android:padding="@dimen/padding_small"
+                            android:textColor="@color/md_white_1000"
+                            android:textSize="@dimen/text_size_mid" />
 
-                        <!--                <Button-->
-                        <!--                    android:id="@+id/order_by_date_button"-->
-                        <!--                    android:layout_width="wrap_content"-->
-                        <!--                    android:layout_height="wrap_content"-->
-                        <!--                    android:layout_toLeftOf="@+id/order_by_title_button"-->
-                        <!--                    android:text="Order by Date"-->
-                        <!--                    android:theme="@style/AccentButton"/>-->
-
+                        <TextView
+                            android:id="@+id/tv_selected"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/padding_small"
+                            android:textColor="@color/md_white_1000"
+                            android:textSize="@dimen/text_size_mid" />
                     </LinearLayout>
 
-                    <TextView
+                    <Spinner
+                        android:id="@+id/spn_sort"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:entries="@array/sort_by_date"
+                        android:padding="@dimen/padding_normal" />
+
+                    <!--                <Button-->
+                    <!--                    android:id="@+id/order_by_date_button"-->
+                    <!--                    android:layout_width="wrap_content"-->
+                    <!--                    android:layout_height="wrap_content"-->
+                    <!--                    android:layout_toLeftOf="@+id/order_by_title_button"-->
+                    <!--                    android:text="Order by Date"-->
+                    <!--                    android:theme="@style/AccentButton"/>-->
+
+                </LinearLayout>
+
+                <TextView
                     android:id="@+id/tv_add"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
@@ -143,7 +141,7 @@
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone" />
 
-                </LinearLayout>
+            </LinearLayout>
 
 
         </LinearLayout>

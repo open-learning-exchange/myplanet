@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamResource;
 
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,11 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TeamResourceFragment extends BaseTeamFragment implements TeamPageListener {
-
     AdapterTeamResource adapterLibrary;
     RecyclerView rvResource;
     TextView tvNodata;
@@ -39,15 +34,11 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
     public TeamResourceFragment() {
     }
 
-
-
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_team_resource, container, false);
     }
-
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -59,9 +50,6 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
 //            showResourceListDialog();
         getView().findViewById(R.id.fab_add_resource).setOnClickListener(view -> showResourceListDialog());
     }
-
-
-
 
     private void showLibraryList() {
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
@@ -114,7 +102,6 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         alertDialog.show();
         (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
     }
-
 
     @Override
     public void onAddDocument() {

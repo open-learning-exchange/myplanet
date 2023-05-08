@@ -92,19 +92,19 @@
                 <Spinner
                     android:id="@+id/spn_sort"
                     android:layout_width="0dp"
-                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:layout_weight="1"
                     android:entries="@array/sort_by_date"
                     android:padding="@dimen/padding_normal" />
 
                 <TextView
                     android:id="@+id/tv_delete"
                     android:layout_width="0dp"
-                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
+                    android:layout_weight="1"
                     android:background="?attr/selectableItemBackground"
                     android:drawableStart="@drawable/ic_delete"
                     android:drawablePadding="4dp"
@@ -117,15 +117,15 @@
 
                 <ImageButton
                     android:id="@+id/filter"
-                    app:srcCompat="@drawable/ic_filter"
+                    style="@style/YellowButtons"
                     android:layout_width="@dimen/_50dp"
                     android:layout_height="@dimen/_50dp"
                     android:layout_margin="@dimen/padding_normal"
                     android:background="@drawable/buttonyellow"
-                    android:text="@string/more_action"
                     android:padding="@dimen/padding_normal"
-                    style="@style/YellowButtons"
-                    android:textColor="@color/md_white_1000" />
+                    android:text="@string/more_action"
+                    android:textColor="@color/md_white_1000"
+                    app:srcCompat="@drawable/ic_filter" />
 
             </LinearLayout>
 

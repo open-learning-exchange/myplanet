@@ -71,13 +71,11 @@ public class UserProfileFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mRealm != null)
-            mRealm.close();
+        if (mRealm != null) mRealm.close();
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_profile, container, false);
         handler = new UserProfileDbHandler(getActivity());
         realmService = new DatabaseService(getActivity());
@@ -88,11 +86,7 @@ public class UserProfileFragment extends Fragment {
         addPicture = (Button) v.findViewById(R.id.bt_profile_pic);
         imageView = (ImageView) v.findViewById(R.id.image);
 
-        addPicture.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                searchForPhoto();
-            }
-        });
+        addPicture.setOnClickListener(v1 -> searchForPhoto());
         populateUserData(v);
         return v;
     }
@@ -134,11 +128,12 @@ public class UserProfileFragment extends Fragment {
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText("Email : " + Utilities.checkNA(model.getEmail()));
         String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        ((TextView) v.findViewById(R.id.txt_dob)).setText("Date of birth : " +  dob);
+        ((TextView) v.findViewById(R.id.txt_dob)).setText("Date of birth : " + dob);
         if (!TextUtils.isEmpty(model.getUserImage()))
             Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(imageView, new Callback() {
                 @Override
-                public void onSuccess() { }
+                public void onSuccess() {
+                }
 
                 @Override
                 public void onError(Exception e) {

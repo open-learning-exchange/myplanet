@@ -85,7 +85,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (mRealm == null) mRealm = DatabaseService(activity).realmInstance
         Utilities.toast(activity, "Please select starting date : ")
         val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(activity!!, DatePickerDialog.OnDateSetListener { _: DatePicker?, i: Int, i1: Int, i2: Int ->
+        val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
@@ -290,12 +290,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         showDownloadDialog(getLibraryList(mRealm))
     }
 
-
     override fun showUserResourceDialog() {
         var userModelList: List<RealmUserModel>
         var dialog :AlertDialog? = null;
         userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        var adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+        var adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
         val btnAddMember = alertHealth.btn_add_member
         alertHealth.et_search.visibility = View.GONE
@@ -310,7 +309,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             dialog?.dismiss()
         }
 //        sortList(spnSort, lv);
-       dialog =  AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
+       dialog =  AlertDialog.Builder(requireActivity()).setTitle(getString(R.string.select_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
         dialog?.show()
     }
 
