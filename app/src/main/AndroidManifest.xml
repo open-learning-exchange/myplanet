@@ -3,6 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="org.ole.planet.myplanet">
 
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:required="false" />
@@ -10,6 +15,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
     <uses-permission android:name="android.permission.SEND_DOWNLOAD_COMPLETED_INTENTS" />
@@ -23,9 +31,11 @@
     <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
-    <application xmlns:tools="http://schemas.android.com/tools"
+    <application
         android:name=".MainApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -35,9 +45,9 @@
         android:theme="@style/MyMaterialTheme"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
-        <activity android:name=".ui.userprofile.BecomeMemberActivity"
-            android:theme="@style/AppTheme"
-           />
+        <activity
+            android:name=".ui.userprofile.BecomeMemberActivity"
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.course.CourseProgressActivity"
             android:theme="@style/AppTheme" />
@@ -64,7 +74,9 @@
         <activity
             android:name=".ui.library.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.SplashActivity">
+        <activity
+            android:name=".ui.SplashActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -136,5 +148,4 @@
 
         <activity android:name=".ui.viewer.WebViewActivity" />
     </application>
-
 </manifest>
