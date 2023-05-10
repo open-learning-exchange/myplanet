@@ -47,8 +47,7 @@ public class Utilities {
     }
 
     public static String getUrl(String id, String file, SharedPreferences settings) {
-        return getUrl()
-                + "/resources/" + id + "/" + file;
+        return getUrl() + "/resources/" + id + "/" + file;
     }
 
 
@@ -70,12 +69,7 @@ public class Utilities {
     }
 
     public static ChipCloudConfig getCloudConfig() {
-        return new ChipCloudConfig()
-                .useInsetPadding(true)
-                .checkedChipColor(Color.parseColor("#e0e0e0"))
-                .checkedTextColor(Color.parseColor("#000000"))
-                .uncheckedChipColor(Color.parseColor("#e0e0e0"))
-                .uncheckedTextColor(Color.parseColor("#000000"));
+        return new ChipCloudConfig().useInsetPadding(true).checkedChipColor(Color.parseColor("#e0e0e0")).checkedTextColor(Color.parseColor("#000000")).uncheckedChipColor(Color.parseColor("#e0e0e0")).uncheckedTextColor(Color.parseColor("#000000"));
     }
 
     public static String checkNA(String s) {
@@ -116,8 +110,7 @@ public class Utilities {
     public static String getHeader() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         Utilities.log("User " + settings.getString("url_user", "") + " " + settings.getString("url_pwd", ""));
-        return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
-                settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
+        return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" + settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
 
     public static String getUrl() {

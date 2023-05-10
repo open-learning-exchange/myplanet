@@ -65,8 +65,7 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (profileDbHandler != null)
-            profileDbHandler.onDestory();
+        if (profileDbHandler != null) profileDbHandler.onDestory();
     }
 
     @Override
@@ -74,13 +73,11 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
         startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.getId()).putExtra("fromLogin", fromLogin));
     }
 
-
     public abstract void setData(List<RealmNews> list);
 
     public void showNoData(View v, int count) {
         BaseRecyclerFragment.showNoData(v, count);
     }
-
 
     public String getImagePath(Uri uri) {
         Cursor cursor = getContext().getContentResolver().query(uri, null, null, null, null);
@@ -89,9 +86,7 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
         document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
         cursor.close();
 
-        cursor = getContext().getContentResolver().query(
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+        cursor = getContext().getContentResolver().query(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
         cursor.moveToFirst();
         String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
         cursor.close();
@@ -121,18 +116,14 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
                     JsonObject ob = new Gson().fromJson(img, JsonObject.class);
                     View inflater = LayoutInflater.from(getActivity()).inflate(R.layout.image_thumb, null);
                     ImageView imgView = inflater.findViewById(R.id.thumb);
-                    Glide.with(getActivity())
-                            .load(new File(JsonUtils.getString("imageUrl", ob)))
-                            .into(imgView);
+                    Glide.with(getActivity()).load(new File(JsonUtils.getString("imageUrl", ob))).into(imgView);
                     llImage.addView(inflater);
                 }
-                if (requestCode == 102)
-                    adapterNews.setImageList(imageList);
+                if (requestCode == 102) adapterNews.setImageList(imageList);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-
     }
 
     public void changeLayoutManager(int orientation, RecyclerView recyclerView) {

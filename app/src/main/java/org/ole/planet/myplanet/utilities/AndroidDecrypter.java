@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utilities;
 
-import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -16,7 +15,6 @@ import de.rtner.security.auth.spi.PBKDF2Engine;
 import de.rtner.security.auth.spi.PBKDF2Parameters;
 
 public class AndroidDecrypter {
-
     public static final String md5(final String s) {
         final String MD5 = "MD5";
         try {

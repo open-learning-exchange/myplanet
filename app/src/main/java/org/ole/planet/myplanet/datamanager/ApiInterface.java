@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.datamanager;
 
-
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.model.DocumentResponse;
@@ -46,14 +45,11 @@ public interface ApiInterface {
     @GET
     Call<MyPlanet> checkVersion(@Url String serverUrl);
 
-
     @GET
     Call<ResponseBody> getApkVersion(@Url String url);
 
-
     @GET
     Call<ResponseBody> healthAccess(@Url String url);
-
 
     @GET
     Call<ResponseBody> getChecksum(@Url String url);

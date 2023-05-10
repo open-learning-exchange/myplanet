@@ -199,7 +199,6 @@ public class RealmFeedback extends RealmObject {
 //        this.messages = messages;
 //    }
 
-
     public String getMessages() {
         return messages;
     }

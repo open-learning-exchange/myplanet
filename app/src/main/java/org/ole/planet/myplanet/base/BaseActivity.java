@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.base;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 public abstract class BaseActivity extends AppCompatActivity {

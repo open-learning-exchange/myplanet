@@ -89,17 +89,13 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
             e.printStackTrace();
             Toast.makeText(getApplicationContext(), "Unable to load " + fileName, Toast.LENGTH_LONG).show();
         }
-
-
     }
 
     @Override
-    public void loadComplete(int nbPages) {
-    }
+    public void loadComplete(int nbPages) {}
 
     @Override
-    public void onPageChanged(int page, int pageCount) {
-    }
+    public void onPageChanged(int page, int pageCount) {}
 
     @Override
     public void onPageError(int page, Throwable t) {

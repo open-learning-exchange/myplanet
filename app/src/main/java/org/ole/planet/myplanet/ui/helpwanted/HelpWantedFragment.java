@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.helpwanted;
 
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -26,7 +25,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
 public class HelpWantedFragment extends Fragment {
-
     SharedPreferences settings;
     JsonObject manager;
     LinearLayout llData;

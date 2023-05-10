@@ -66,8 +66,7 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
         for (RealmMyTeam team : list) {
             if ("debit".equalsIgnoreCase(team.getType().toLowerCase())) balance -= team.getAmount();
             else balance += team.getAmount();
-            if (i == position)
-                break;
+            if (i == position) break;
             i++;
         }
         return balance + "";

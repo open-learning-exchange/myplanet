@@ -115,8 +115,7 @@ public class MyPlanet implements Serializable {
         SharedPreferences preferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
-        if (planet != null)
-            postJSON.addProperty("planetVersion", planet.getPlanetVersion());
+        if (planet != null) postJSON.addProperty("planetVersion", planet.getPlanetVersion());
         postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getMacAddr());
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
@@ -133,8 +132,7 @@ public class MyPlanet implements Serializable {
         SharedPreferences preferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
-        if (planet != null)
-            postJSON.addProperty("planetVersion", planet.getPlanetVersion());
+        if (planet != null) postJSON.addProperty("planetVersion", planet.getPlanetVersion());
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
@@ -161,8 +159,7 @@ public class MyPlanet implements Serializable {
         JsonArray arr = new JsonArray();
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
             UsageStatsManager mUsageStatsManager = (UsageStatsManager) MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE);
-            List<UsageStats> queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(),
-                    System.currentTimeMillis());
+            List<UsageStats> queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(), System.currentTimeMillis());
             for (UsageStats s : queryUsageStats) {
                 addStats(s, arr, context, pref);
             }

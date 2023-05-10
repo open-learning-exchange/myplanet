@@ -27,8 +27,7 @@ public abstract class BaseMemberFragment extends BaseTeamFragment {
     public TextView tvNodata;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_members, container, false);
         rvMember = v.findViewById(R.id.rv_member);
         tvNodata = v.findViewById(R.id.tv_nodata);

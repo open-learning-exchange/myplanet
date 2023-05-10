@@ -225,8 +225,7 @@ public class Service {
                     callback.onSuccess("User already exists");
                     return;
                 }
-                if (!realm.isInTransaction())
-                    realm.beginTransaction();
+                if (!realm.isInTransaction()) realm.beginTransaction();
                 RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings);
                 String keyString = AndroidDecrypter.generateKey();
                 String iv = AndroidDecrypter.generateIv();

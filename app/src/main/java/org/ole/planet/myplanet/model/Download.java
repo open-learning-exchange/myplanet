@@ -22,9 +22,7 @@ public class Download implements Parcelable {
     private String message;
     private String fileUrl;
 
-    public Download() {
-
-    }
+    public Download() {}
 
     private Download(Parcel in) {
         fileName = in.readString();
@@ -108,7 +106,6 @@ public class Download implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-
         dest.writeString(fileName);
         dest.writeInt(progress);
         dest.writeInt(currentFileSize);

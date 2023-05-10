@@ -180,9 +180,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
                             etBloodPressure.setError("Systolic and diastolic must be numbers");
                             allowSubmission = false;
                         }
-
                     }
-
 //                    else{
 //                        for (int x = 0; x < sysDia.length; x++) {
 //                            if (!sysDia[x].matches("-?\\d+") || sysDia[x].isEmpty()) {
@@ -240,7 +238,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             c.setOnCheckedChangeListener(this);
             flexboxLayout.addView(c);
         }
-
 //        flexboxLayout.addView(otherDiag);
     }
 

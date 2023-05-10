@@ -12,7 +12,6 @@ import io.realm.RealmList;
 public class JsonUtils {
     public static String getString(String fieldName, JsonObject jsonObject) {
         try {
-
             if (jsonObject.has(fieldName)) {
                 JsonElement el = jsonObject.get(fieldName);
                 return el instanceof JsonNull ? "" : el.getAsString();

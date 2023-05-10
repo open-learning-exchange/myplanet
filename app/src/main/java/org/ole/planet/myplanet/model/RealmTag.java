@@ -36,8 +36,7 @@ public class RealmTag extends RealmObject {
 
     public static HashMap<String, RealmTag> getListAsMap(List<RealmTag> list) {
         HashMap<String, RealmTag> map = new HashMap<>();
-        for (RealmTag r : list
-        ) {
+        for (RealmTag r : list) {
             map.put(r.get_id(), r);
         }
         return map;
@@ -117,8 +116,7 @@ public class RealmTag extends RealmObject {
 
     public static void insert(Realm mRealm, JsonObject act) {
         RealmTag tag = mRealm.where(RealmTag.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
-        if (tag == null)
-            tag = mRealm.createObject(RealmTag.class, JsonUtils.getString("_id", act));
+        if (tag == null) tag = mRealm.createObject(RealmTag.class, JsonUtils.getString("_id", act));
         tag.set_rev(JsonUtils.getString("_rev", act));
         tag.set_id(JsonUtils.getString("_id", act));
         tag.setName(JsonUtils.getString("name", act));

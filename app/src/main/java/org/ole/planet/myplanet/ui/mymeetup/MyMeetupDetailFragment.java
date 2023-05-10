@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.mymeetup;
 
-
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -30,7 +29,6 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class MyMeetupDetailFragment extends Fragment implements View.OnClickListener {
-
     LinearLayout llContent;
     RealmMeetup meetups;
     Realm mRealm;

@@ -28,6 +28,5 @@ public class VersionUtils {
 
     public static String getAndroidId(Context context) {
         return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
-
     }
 }

@@ -10,11 +10,9 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -35,8 +33,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_team_resource, container, false);
     }
 
@@ -68,8 +65,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).not().in("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
         alertDialogBuilder.setView(convertView).setPositiveButton("Add", (dialogInterface, i) -> {
             ArrayList<Integer> selected = lv.getSelectedItemsList();
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
                 team.setTeamId(teamId);

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.userprofile;
 
-
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -37,7 +36,6 @@ import java.util.ArrayList;
 import io.realm.Realm;
 
 public class AchievementFragment extends BaseContainerFragment {
-
     TextView tvGoal, tvAchievement, tvPurpose, tvName, tvFirstName;
     RecyclerView rvOther;
     Realm mRealm;

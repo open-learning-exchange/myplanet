@@ -34,7 +34,6 @@ public class MarkdownViewerActivity extends AppCompatActivity {
 
     private void renderMarkdownFile() {
         // File name to be viewed
-
         Intent markdownOpenIntent = getIntent();
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE");
 

@@ -29,7 +29,6 @@ import java.util.List;
 import io.realm.Realm;
 
 public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersonal {
-
     RecyclerView rvMyPersonal;
     TextView tvNodata;
     Realm mRealm;
@@ -38,7 +37,6 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
     public MyPersonalsFragment() {
         // Required empty public constructor
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {

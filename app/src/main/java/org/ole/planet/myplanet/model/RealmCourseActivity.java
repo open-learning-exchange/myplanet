@@ -29,7 +29,6 @@ public class RealmCourseActivity extends RealmObject {
 
     private String courseId;
 
-
     private String parentCode;
 
     private String type;

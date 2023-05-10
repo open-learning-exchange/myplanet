@@ -3,17 +3,12 @@ package org.ole.planet.myplanet;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
-import android.app.job.JobScheduler;
-import android.app.usage.UsageStats;
-import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.provider.Settings;
-import android.util.Log;
 
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
@@ -32,16 +27,12 @@ import org.ole.planet.myplanet.service.StayOnLineService;
 import org.ole.planet.myplanet.service.TaskNotificationService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
-import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 import io.realm.Realm;
@@ -65,7 +56,6 @@ public class MainApplication extends Application implements Application.Activity
             e.printStackTrace();
         }
         return "0";
-
     }
 
     @Override
@@ -104,22 +94,18 @@ public class MainApplication extends Application implements Application.Activity
 
     @Override
     public void onActivityCreated(Activity activity, Bundle bundle) {
-
     }
 
     @Override
     public void onActivityStarted(Activity activity) {
-
     }
 
     @Override
     public void onActivityResumed(Activity activity) {
-
     }
 
     @Override
     public void onActivityPaused(Activity activity) {
-
     }
 
     @Override
@@ -128,7 +114,6 @@ public class MainApplication extends Application implements Application.Activity
 
     @Override
     public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {
-
     }
 
     @Override
@@ -159,5 +144,4 @@ public class MainApplication extends Application implements Application.Activity
         homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(homeIntent);
     }
-
 }

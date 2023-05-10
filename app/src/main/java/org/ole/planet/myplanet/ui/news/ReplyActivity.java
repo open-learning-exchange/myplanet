@@ -86,9 +86,9 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
         startActivityForResult(Intent.createChooser(intent, "Open folder"), 102);
     }
 
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             Uri url = data.getData();
             String path = FileUtils.getRealPathFromURI(this, url);
@@ -105,7 +105,6 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
                 e.printStackTrace();
             }
         }
-
     }
 
     private void showSelectedImages() {

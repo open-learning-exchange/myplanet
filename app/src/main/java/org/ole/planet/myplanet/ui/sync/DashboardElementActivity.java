@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
+import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +14,9 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,10 +26,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.Toast;
-
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
-import org.ole.planet.myplanet.ui.community.CommunityFragment;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
@@ -44,8 +44,6 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
-
-import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
 
 public abstract class DashboardElementActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
     public BottomNavigationView navigationView;

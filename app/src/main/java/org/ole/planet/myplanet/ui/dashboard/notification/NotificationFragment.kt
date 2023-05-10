@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
-
 import android.app.Dialog
 import android.os.Bundle
 import android.text.TextUtils
@@ -27,11 +26,9 @@ import org.ole.planet.myplanet.utilities.FileUtils.getTotalAvailableMemoryRatio
 import java.util.Calendar
 
 class NotificationFragment : BottomSheetDialogFragment() {
-
     public lateinit var callback: NotificationCallback
     public lateinit var resourceList: List<RealmMyLibrary>
     public var mRealm: Realm? = null
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -52,7 +49,6 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
         return bottomSheetDialog
     }
-
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
@@ -104,5 +100,4 @@ class NotificationFragment : BottomSheetDialogFragment() {
         rv_notifications.adapter =
             AdapterNotification(requireActivity(), notificationList, callback)
     }
-
 }

@@ -28,8 +28,7 @@ open class RealmSearchActivity(
         obj.addProperty("user", user)
         obj.addProperty("androidId", VersionUtils.getAndroidId(MainApplication.context))
         obj.addProperty(
-            "customDeviceName",
-            NetworkUtils.getCustomDeviceName(MainApplication.context)
+            "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
         )
         obj.addProperty("deviceName", NetworkUtils.getDeviceName())
         obj.addProperty("createdOn", createdOn)
@@ -48,8 +47,7 @@ open class RealmSearchActivity(
             ob.addProperty("androidId", NetworkUtils.getMacAddr())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty(
-                "customDeviceName",
-                NetworkUtils.getCustomDeviceName(MainApplication.context)
+                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
             )
             return ob
         }

@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.ui.team;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 
 import androidx.annotation.Nullable;
 
@@ -19,10 +18,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
-import static android.content.Context.MODE_PRIVATE;
-
 public abstract class BaseTeamFragment extends BaseNewsFragment {
-
     public static SharedPreferences settings;
     public DatabaseService dbService;
     public RealmUserModel user;
@@ -48,6 +44,5 @@ public abstract class BaseTeamFragment extends BaseNewsFragment {
 
     @Override
     public void setData(List<RealmNews> list) {
-
     }
 }

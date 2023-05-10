@@ -74,7 +74,6 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
                 else openSubmissionDetail(listener, list.get(position).getId());
             });
         }
-
     }
 
     private void showSubmittedBy(TextView submitted_by, int position) {
@@ -90,7 +89,6 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
 
     private void openSubmissionDetail(OnHomeItemClickListener listener, String id) {
         if (listener != null) {
-
         }
     }
 

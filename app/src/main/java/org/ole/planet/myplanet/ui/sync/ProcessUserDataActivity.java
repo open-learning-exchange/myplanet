@@ -183,8 +183,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
         builder1.setMessage(Message);
         builder1.setCancelable(true);
-        builder1.setNegativeButton("Okay",
-                (dialog, id) -> dialog.cancel());
+        builder1.setNegativeButton("Okay", (dialog, id) -> dialog.cancel());
         AlertDialog alert11 = builder1.create();
         alert11.show();
     }

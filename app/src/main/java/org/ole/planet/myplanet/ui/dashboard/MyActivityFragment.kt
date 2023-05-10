@@ -70,7 +70,7 @@ class MyActivityFragment : Fragment() {
         val dataSet = BarDataSet(entries, "No of login ")
 
         val lineData = BarData(dataSet)
-        chart.setData(lineData)
+        chart.data = lineData
         var d = Description()
         d.text = "Login Activity chart"
         chart.description = d

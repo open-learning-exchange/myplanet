@@ -52,35 +52,26 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun getUrlsAndStartDownload(
-        lib: List<RealmMyLibrary?>,
-        settings: SharedPreferences?,
-        urls: ArrayList<String?>
+        lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String?>
     ) {
         for (library in lib) {
             val url = Utilities.getUrl(library, settings)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
         if (!urls.isEmpty()) startDownload(urls) else Utilities.toast(
-            activity,
-            "No images to download."
+            activity, "No images to download."
         )
     }
 
     fun initRatingView(
-        type: String?,
-        id: String?,
-        title: String?,
-        listener: OnRatingChangeListener?
+        type: String?, id: String?, title: String?, listener: OnRatingChangeListener?
     ) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
         ratingBar = requireView().findViewById(R.id.rating_bar)
         ratingBar?.setOnTouchListener { vi: View?, e: MotionEvent ->
             if (e.action == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog(
-                type,
-                id,
-                title,
-                listener
+                type, id, title, listener
             )
             true
         }
@@ -147,9 +138,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
             "csv" -> openIntent(items, CSVViewerActivity::class.java)
             else -> Toast.makeText(
-                activity,
-                "This file type is currently unsupported",
-                Toast.LENGTH_LONG
+                activity, "This file type is currently unsupported", Toast.LENGTH_LONG
             ).show()
         }
     }
@@ -162,8 +151,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             Utilities.toast(activity, "Unable to open resource")
             return
         }
-        if (profileDbHandler == null)
-            profileDbHandler = UserProfileDbHandler(activity)
+        if (profileDbHandler == null) profileDbHandler = UserProfileDbHandler(activity)
         profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
@@ -199,9 +187,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val builderSingle = AlertDialog.Builder(requireActivity())
         builderSingle.setTitle("Select resource to open : ")
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
-            requireActivity(),
-            android.R.layout.select_dialog_item,
-            downloadedResources!!
+            requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
         ) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertView = convertView
@@ -219,7 +205,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return tv
             }
         }
-        builderSingle.setAdapter(arrayAdapter) { dialogInterface: DialogInterface?, i: Int ->
+        builderSingle.setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
             val library = arrayAdapter.getItem(i)
             library?.let { openResource(it) }
         }

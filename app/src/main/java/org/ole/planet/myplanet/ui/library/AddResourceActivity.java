@@ -32,7 +32,6 @@ import io.realm.Realm;
 import io.realm.RealmList;
 
 public class AddResourceActivity extends AppCompatActivity {
-
     EditText etTitle, etAuthor, etYear, etDescription, etPublisher, etLinkToLicense, etOpenWhich;
     Spinner spnLang, spnMedia, spnResourceType, spnOpenWith;
     TextView tvSubjects, tvLevels, tvResourceFor, tvAddedBy, fileUrl;
@@ -56,7 +55,6 @@ public class AddResourceActivity extends AppCompatActivity {
         resourceFor = new RealmList<>();
         mRealm = new DatabaseService(this).getRealmInstance();
         initializeViews();
-
     }
 
     @Override
@@ -158,7 +156,6 @@ public class AddResourceActivity extends AppCompatActivity {
                 items.add(s);
             }
             ((TextView) view).setText(selection);
-
         }).setNegativeButton("Dismiss", null).show();
     }
 

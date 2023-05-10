@@ -7,18 +7,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import kotlinx.android.synthetic.main.card_profile_bell.*
-import kotlinx.android.synthetic.main.card_profile_bell.view.*
-import kotlinx.android.synthetic.main.fragment_home_bell.*
-import kotlinx.android.synthetic.main.fragment_home_bell.view.*
-import kotlinx.android.synthetic.main.home_card_courses.view.*
-import kotlinx.android.synthetic.main.home_card_library.view.*
-import kotlinx.android.synthetic.main.home_card_mylife.view.*
-import kotlinx.android.synthetic.main.home_card_teams.view.*
+import kotlinx.android.synthetic.main.card_profile_bell.ll_badges
+import kotlinx.android.synthetic.main.card_profile_bell.txt_community_name
+import kotlinx.android.synthetic.main.card_profile_bell.txt_date
+import kotlinx.android.synthetic.main.card_profile_bell.view.fab_feedback
+import kotlinx.android.synthetic.main.fragment_home_bell.add_resource
+import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_my_activity
+import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_my_progress
+import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_notification
+import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_survey
+import kotlinx.android.synthetic.main.home_card_courses.view.myCoursesImageButton
+import kotlinx.android.synthetic.main.home_card_library.view.myLibraryImageButton
+import kotlinx.android.synthetic.main.home_card_mylife.view.myLifeImageButton
+import kotlinx.android.synthetic.main.home_card_teams.view.ll_home_team
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment
@@ -34,7 +37,7 @@ import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.util.*
+import java.util.Date
 
 class BellDashboardFragment : BaseDashboardFragment() {
     override fun onCreateView(

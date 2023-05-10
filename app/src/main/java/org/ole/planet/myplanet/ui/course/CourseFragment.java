@@ -43,7 +43,6 @@ import io.realm.Sort;
 
 public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected, TagClickListener {
     TextView tvAddToLib, tvMessage, tvSelected;
-
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
@@ -51,7 +50,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
     Spinner spn;
-
     AlertDialog confirmation;
 
     public CourseFragment() {

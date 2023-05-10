@@ -8,11 +8,9 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class AudioRecorderService {
-
     private String outputFile;
     private MediaRecorder myAudioRecorder;
     private AudioRecordListener audioRecordListener;
-
 
     public AudioRecorderService() {
     }

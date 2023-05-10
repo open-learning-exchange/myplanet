@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 public class VideoPlayerActivity extends AppCompatActivity implements AuthSessionUpdater.AuthCallback {
-
     SimpleExoPlayer exoPlayer;
     SimpleExoPlayerView exoPlayerView;
     String auth = "";
@@ -93,7 +92,6 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
         exoPlayerView.setPlayer(exoPlayer);
         exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
-
     }
 
     public void prepareExoPlayerFromFileUri(String uristring) {

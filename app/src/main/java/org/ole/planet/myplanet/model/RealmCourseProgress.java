@@ -94,7 +94,6 @@ public class RealmCourseProgress extends RealmObject {
         return i;
     }
 
-
     public String get_rev() {
         return _rev;
     }

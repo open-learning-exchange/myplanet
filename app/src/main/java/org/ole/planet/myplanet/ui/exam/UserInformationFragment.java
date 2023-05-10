@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.exam;
 
-
 import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -45,8 +44,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     RealmSubmission submissions;
     RealmUserModel userModel;
 
-    public UserInformationFragment() {
-    }
+    public UserInformationFragment() {}
 
     public static UserInformationFragment getInstance(String id) {
         UserInformationFragment f = new UserInformationFragment();
@@ -164,8 +162,6 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
             user.addProperty("level", level);
             saveSubmission(user);
         }
-
-
     }
 
     private void saveSubmission(JsonObject user) {
@@ -182,7 +178,6 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         Utilities.toast(getActivity(), "Thank you for taking this survey.");
         getActivity().onBackPressed();
     }
-
 
     private void showDatePickerDialog() {
         Calendar now = Calendar.getInstance();

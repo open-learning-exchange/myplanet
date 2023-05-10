@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.library;
 
-
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -24,7 +23,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class LibraryFilterFragment extends DialogFragment implements AdapterView.OnItemClickListener {
-
     ListView listSub, listLang, listMedium, listLevel;
     Set<String> languages, subjects, mediums, levels;
     OnFilterListener listener;

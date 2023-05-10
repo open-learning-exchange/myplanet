@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
@@ -11,25 +10,37 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
 import android.widget.Spinner
-import androidx.appcompat.app.AlertDialog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
-import kotlinx.android.synthetic.main.activity_become_member.*
-import kotlinx.android.synthetic.main.fragment_course_detail.*
+import kotlinx.android.synthetic.main.activity_become_member.btn_cancel
+import kotlinx.android.synthetic.main.activity_become_member.btn_submit
+import kotlinx.android.synthetic.main.activity_become_member.et_email
+import kotlinx.android.synthetic.main.activity_become_member.et_fname
+import kotlinx.android.synthetic.main.activity_become_member.et_lname
+import kotlinx.android.synthetic.main.activity_become_member.et_mname
+import kotlinx.android.synthetic.main.activity_become_member.et_password
+import kotlinx.android.synthetic.main.activity_become_member.et_phone
+import kotlinx.android.synthetic.main.activity_become_member.et_re_password
+import kotlinx.android.synthetic.main.activity_become_member.et_username
+import kotlinx.android.synthetic.main.activity_become_member.pbar
+import kotlinx.android.synthetic.main.activity_become_member.rb_gender
+import kotlinx.android.synthetic.main.activity_become_member.spn_lang
+import kotlinx.android.synthetic.main.activity_become_member.spn_level
+import kotlinx.android.synthetic.main.activity_become_member.txt_dob
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 
 class BecomeMemberActivity : BaseActivity() {
 
@@ -38,7 +49,7 @@ class BecomeMemberActivity : BaseActivity() {
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
-            this, DatePickerDialog.OnDateSetListener { datePicker, i, i1, i2 ->
+            this, { datePicker, i, i1, i2 ->
                 dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
                 txt_dob.text = dob
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
@@ -215,5 +226,4 @@ class BecomeMemberActivity : BaseActivity() {
             }
         })
     }
-
 }

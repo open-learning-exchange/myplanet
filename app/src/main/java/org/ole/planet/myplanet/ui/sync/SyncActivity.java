@@ -106,8 +106,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     public void setUpChildMode() {
-        if (!settings.getBoolean("isChild", false))
-            return;
+        if (!settings.getBoolean("isChild", false)) return;
         RecyclerView rvTeams = findViewById(R.id.rv_teams);
         TextView tvNodata = findViewById(R.id.tv_nodata);
 
@@ -149,8 +148,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 alertDialogOkay("Device couldn't reach server. Check and try again");
-                if (mRealm != null)
-                    mRealm.close();
+                if (mRealm != null) mRealm.close();
                 progressDialog.dismiss();
             }
         });
@@ -225,9 +223,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     private Boolean checkName(String username, String password, boolean isManagerMode) {
         try {
             AndroidDecrypter decrypt = new AndroidDecrypter();
-            RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class)
-                    .equalTo("name", username)
-                    .findAll();
+            RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class).equalTo("name", username).findAll();
             for (RealmUserModel user : db_users) {
                 if (user.get_id().isEmpty()) {
                     if (username.equals(user.getName()) && password.equals(user.getPassword())) {
@@ -236,8 +232,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     }
                 } else {
                     if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
-                        if (isManagerMode && !user.isManager())
-                            return false;
+                        if (isManagerMode && !user.isManager()) return false;
                         saveUserInfoPref(settings, password, user);
                         return true;
                     }
@@ -264,8 +259,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
         settings.edit().putString("customDeviceName", ((EditText) dialog.getCustomView().findViewById(R.id.deviceName)).getText().toString()).commit();
         url = protocol + url;
-        if (isUrlValid(url))
-            processedUrl = setUrlParts(url, pin, this);
+        if (isUrlValid(url)) processedUrl = setUrlParts(url, pin, this);
         return processedUrl;
     }
 

@@ -39,7 +39,6 @@ import io.noties.markwon.Markwon;
 import io.realm.Realm;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     private Context context;
     private List<RealmMyLibrary> libraryList;
     private List<RealmMyLibrary> selectedItems;
@@ -49,7 +48,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private HashMap<String, JsonObject> ratingMap;
     private OnRatingChangeListener ratingChangeListener;
     private Markwon markwon;
-
     private Realm realm;
 
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
@@ -63,7 +61,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
-
     }
 
     public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
@@ -118,7 +115,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             homeItemClickListener.openLibraryDetailFragment(library);
         }
     }
-
 
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();

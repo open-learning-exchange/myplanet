@@ -69,13 +69,11 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setStyle(DialogFragment.STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog_NoActionBar_MinWidth);
-        if (getArguments() != null)
-            dbType = getArguments().getString("dbType");
+        if (getArguments() != null) dbType = getArguments().getString("dbType");
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_collections, container, false);
         listTag = v.findViewById(R.id.list_tags);
@@ -160,16 +158,14 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
             if (childMap.containsKey(s)) {
                 l = childMap.get(s);
             }
-            if (!l.contains(t))
-                l.add(t);
+            if (!l.contains(t)) l.add(t);
             childMap.put(s, l);
         }
     }
 
     @Override
     public void onTagClicked(RealmTag tag) {
-        if (listener != null)
-            listener.onTagSelected(tag);
+        if (listener != null) listener.onTagSelected(tag);
         dismiss();
     }
 

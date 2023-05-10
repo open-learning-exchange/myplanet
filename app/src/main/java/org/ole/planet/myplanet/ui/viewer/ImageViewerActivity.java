@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 
 public class ImageViewerActivity extends AppCompatActivity {
-
     private TextView mImageFileNameTitle;
     private ImageView mImageViewer;
     private boolean isFullPath = false;

@@ -72,12 +72,10 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
 
     @Override
     public void onCompletedAudio() {
-
     }
 
     @Override
     public void onContinueAudio(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
@@ -87,26 +85,21 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
 
     @Override
     public void onPaused(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onPlaying(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onPreparedAudio(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onStopped(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onTimeChanged(@NotNull JcStatus jcStatus) {
-
     }
 }

@@ -174,7 +174,6 @@ public class RealmMyLibrary extends RealmObject {
         return object;
     }
 
-
     public String getDownloaded() {
         return downloaded;
     }

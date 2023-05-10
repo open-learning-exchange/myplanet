@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.myhealth;
 
-
 import java.io.Serializable;
 
 public class RealmExamination implements Serializable {

@@ -1,20 +1,14 @@
 package org.ole.planet.myplanet.ui.library;
 
+import static android.app.Activity.RESULT_OK;
 
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +16,9 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -45,10 +42,7 @@ import java.util.UUID;
 
 import io.realm.Realm;
 
-import static android.app.Activity.RESULT_OK;
-
 public class AddResourceFragment extends BottomSheetDialogFragment {
-
     static final int REQUEST_VIDEO_CAPTURE = 1;
     static final int REQUEST_RECORD_SOUND = 0;
     static final int REQUEST_CAPTURE_PICTURE = 2;

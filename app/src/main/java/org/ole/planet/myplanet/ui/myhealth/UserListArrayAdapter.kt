@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.io.File
 
-
 class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) :
     ArrayAdapter<RealmUserModel>(activity, view, list) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {

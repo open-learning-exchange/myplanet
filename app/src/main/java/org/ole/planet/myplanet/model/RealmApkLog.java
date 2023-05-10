@@ -48,7 +48,6 @@ public class RealmApkLog extends RealmObject {
         this.createdOn = createdOn;
     }
 
-
     public String getTime() {
         return time;
     }

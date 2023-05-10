@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.viewer;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -9,13 +8,11 @@ import android.text.TextUtils;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
-import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -23,7 +20,6 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 public class WebViewActivity extends AppCompatActivity {
-
     ProgressBar pBar;
     boolean fromDeepLink = false;
     String link;

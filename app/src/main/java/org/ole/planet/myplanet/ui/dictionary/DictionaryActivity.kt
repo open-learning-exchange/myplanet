@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dictionary
 
-
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.text.Html

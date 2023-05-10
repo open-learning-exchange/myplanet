@@ -76,10 +76,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     }
 
     fun setTextViewProperties(
-        textViewArray: Array<TextView?>,
-        itemCnt: Int,
-        obj: RealmObject?,
-        c: Class<*>?
+        textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?, c: Class<*>?
     ) {
         textViewArray[itemCnt] = TextView(context)
         textViewArray[itemCnt]?.setPadding(20, 10, 20, 10)
@@ -90,19 +87,13 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         } else if (obj is RealmMyCourse) {
             textViewArray[itemCnt]?.let {
                 handleClick(
-                    obj.courseId,
-                    obj.courseTitle,
-                    TakeCourseFragment(),
-                    it
+                    obj.courseId, obj.courseTitle, TakeCourseFragment(), it
                 )
             }
         } else if (obj is RealmMeetup) {
             textViewArray[itemCnt]?.let {
                 handleClick(
-                    obj.meetupId,
-                    obj.title,
-                    MyMeetupDetailFragment(),
-                    it
+                    obj.meetupId, obj.title, MyMeetupDetailFragment(), it
                 )
             }
         }
@@ -122,9 +113,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         val title = (obj as RealmMyLife).title
         img.setImageResource(
             resources.getIdentifier(
-                obj.imageId,
-                "drawable",
-                requireActivity().packageName
+                obj.imageId, "drawable", requireActivity().packageName
             )
         )
         name.text = title

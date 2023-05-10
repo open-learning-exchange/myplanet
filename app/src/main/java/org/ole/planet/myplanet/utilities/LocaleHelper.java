@@ -19,7 +19,6 @@ import java.util.Locale;
  * Created by gunhansancar on 07/10/15.
  */
 public class LocaleHelper {
-
     private static final String SELECTED_LANGUAGE = "app_language";
 
     public static Context onAttach(Context context) {

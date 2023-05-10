@@ -1,9 +1,5 @@
 package org.ole.planet.myplanet.ui.userprofile;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +13,9 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.google.gson.JsonArray;
 
 import org.ole.planet.myplanet.R;
@@ -26,7 +25,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +42,6 @@ public class BaseAchievementFragment extends BaseContainerFragment {
     JsonArray referenceArray, achievementArray, resourceArray;
     CheckBox checkBox;
     String dob = "";
-
 
     public void initializeData() {
         if (achievement == null) {
@@ -93,7 +90,6 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         lv.setAdapter(adapter);
         return lv;
     }
-
 
     public void setUserInfo() {
         //user.setFirstName(etName.getText().toString());

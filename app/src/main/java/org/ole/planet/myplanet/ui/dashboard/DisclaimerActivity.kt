@@ -8,7 +8,6 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.utilities.Constants
 
 class DisclaimerActivity : BaseActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_disclaimer)

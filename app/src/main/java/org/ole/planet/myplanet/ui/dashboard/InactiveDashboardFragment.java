@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;

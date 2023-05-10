@@ -129,12 +129,9 @@ public class RealmStepExam extends RealmObject {
     public static String[] getIds(List<RealmStepExam> list) {
         String[] ids = new String[list.size()];
         int i = 0;
-        for (RealmStepExam e : list
-        ) {
-            if (e.getType().startsWith("survey"))
-                ids[i] = (e.getId());
-            else
-                ids[i] = e.getId() + "@" + e.getCourseId();
+        for (RealmStepExam e : list) {
+            if (e.getType().startsWith("survey")) ids[i] = (e.getId());
+            else ids[i] = e.getId() + "@" + e.getCourseId();
             i++;
         }
         Utilities.log(new Gson().toJson(ids));

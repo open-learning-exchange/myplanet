@@ -50,13 +50,9 @@ class AdapterTeamList(
             holder.created.text = TimeUtils.getFormatedDate(list[position].createdDate)
             holder.type.text = list[position].teamType
             holder.type.visibility = if (type == null) View.VISIBLE else View.GONE
-            holder.editTeam.visibility = if (RealmMyTeam.getTeamLeader(
-                    list[position]._id, mRealm
-                ) == user.id
-            ) View.VISIBLE else View.GONE
+            holder.editTeam.visibility = if (RealmMyTeam.getTeamLeader(list[position]._id, mRealm) == user.id) View.VISIBLE else View.GONE
             holder.name.text = list[position].name
-            holder.noOfVisits.text =
-                RealmTeamLog.getVisitByTeam(mRealm, list[position]._id).toString() + ""
+            holder.noOfVisits.text = RealmTeamLog.getVisitByTeam(mRealm, list[position]._id).toString() + ""
             val isMyTeam = list[position].isMyTeam(user.id, mRealm)
             showActionButton(isMyTeam, holder, position)
             holder.itemView.setOnClickListener { view: View? ->

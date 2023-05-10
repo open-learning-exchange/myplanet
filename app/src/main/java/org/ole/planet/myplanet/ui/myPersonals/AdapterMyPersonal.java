@@ -120,7 +120,6 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
         context.startActivity(i);
     }
 
-
     private void editPersonal(RealmMyPersonal personal) {
         View v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null);
         EditText etTitle = v.findViewById(R.id.et_title);

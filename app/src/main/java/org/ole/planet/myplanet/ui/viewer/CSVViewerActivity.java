@@ -17,7 +17,6 @@ import java.io.FileReader;
 import java.util.Arrays;
 import java.util.List;
 
-
 public class CSVViewerActivity extends AppCompatActivity {
 
     private TextView mCSVNameTitle;

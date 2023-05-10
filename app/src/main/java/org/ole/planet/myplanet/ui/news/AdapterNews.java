@@ -41,7 +41,6 @@ import io.realm.RealmList;
 import io.realm.Sort;
 
 public class AdapterNews extends BaseNewsAdapter {
-
     private List<RealmNews> list;
 
     private OnNewsItemClickListener listener;
@@ -118,7 +117,6 @@ public class AdapterNews extends BaseNewsAdapter {
         }
     }
 
-
     private void addLabels(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
             PopupMenu menu = new PopupMenu(context, ((ViewHolderNews) holder).btnAddLabel);
@@ -159,6 +157,7 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 Glide.with(context).load(new File(JsonUtils.getString("imageUrl", imgObject))).into(((ViewHolderNews) holder).newsImage);
             } catch (Exception e) {
+                e.printStackTrace();
             }
         } else {
             loadRemoteImage(holder, news);

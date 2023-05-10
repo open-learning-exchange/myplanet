@@ -41,8 +41,7 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
     private List<LI> getMyLibItems(Class c) {
         if (c == RealmMyLibrary.class)
             return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
-        else
-            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
+        else return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
     }
 
     private List<LI> getMyLibItems(Class c, String orderBy) {

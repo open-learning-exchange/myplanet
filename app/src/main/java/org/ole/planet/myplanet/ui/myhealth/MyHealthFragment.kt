@@ -114,12 +114,9 @@ class MyHealthFragment : Fragment() {
     private fun selectPatient() {
         userModelList =
             mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        adapter =
-            UserListArrayAdapter(
-                requireActivity(),
-                android.R.layout.simple_list_item_1,
-                userModelList
-            )
+        adapter = UserListArrayAdapter(
+            requireActivity(), android.R.layout.simple_list_item_1, userModelList
+        )
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
         val btnAddMember = alertHealth.btn_add_member
         val etSearch = alertHealth.et_search
@@ -143,8 +140,8 @@ class MyHealthFragment : Fragment() {
             }
         sortList(spnSort, lv);
         dialog = AlertDialog.Builder(requireActivity())
-            .setTitle(getString(R.string.select_health_member))
-            .setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
+            .setTitle(getString(R.string.select_health_member)).setView(alertHealth)
+            .setCancelable(false).setNegativeButton("Dismiss", null).create()
         dialog?.show()
     }
 

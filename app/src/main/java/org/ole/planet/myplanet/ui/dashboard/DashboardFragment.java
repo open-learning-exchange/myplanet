@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import io.realm.Realm;
 
 public class DashboardFragment extends BaseDashboardFragment {
-
     public static final String PREFS_NAME = "OLE_PLANET";
     TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole, tv_news;
     String fullName;

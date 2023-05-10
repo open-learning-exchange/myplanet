@@ -57,7 +57,6 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMyHealthExamination) {
-
             ((ViewHolderMyHealthExamination) holder).temp.setText(checkEmpty(list.get(position).getTemperature()));
             ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
             JsonObject encrypted = list.get(position).getEncryptedDataAsJson(this.userModel);
@@ -94,7 +93,6 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     private String checkEmptyInt(int value) {
         return value == 0 ? "" : value + "";
     }
-
 
     private void showAlert(int position, JsonObject encrypted) {
         RealmMyHealthPojo realmExamination = list.get(position);

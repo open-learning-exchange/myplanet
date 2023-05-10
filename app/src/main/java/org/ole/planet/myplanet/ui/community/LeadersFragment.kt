@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class LeadersFragment : Fragment() {
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
@@ -32,8 +31,7 @@ class LeadersFragment : Fragment() {
             val list = ArrayList<RealmUserModel>()
             for (team in leaders) {
                 val model =
-                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.user_id)
-                        .findFirst()
+                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.user_id).findFirst()
                 if (model != null && !list.contains(model)) list.add(model)
             }
             rv_member.adapter = AdapterLeader(requireActivity(), list)

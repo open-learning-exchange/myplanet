@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 

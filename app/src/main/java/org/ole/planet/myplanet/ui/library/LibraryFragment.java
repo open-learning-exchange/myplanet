@@ -1,15 +1,11 @@
 package org.ole.planet.myplanet.ui.library;
 
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getArrayList;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.graphics.Color;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -18,9 +14,11 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -31,9 +29,7 @@ import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmSearchActivity;
-import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.ui.survey.AdapterSurvey;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -51,16 +47,9 @@ import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
 import io.realm.Sort;
 
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getArrayList;
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
-
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
-
     TextView tvAddToLib, tvSelected;
-
     EditText etSearch, etTags;
-
     ImageView imgSearch;
     AdapterLibrary adapterLibrary;
     FlexboxLayout flexBoxTags;

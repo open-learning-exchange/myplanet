@@ -11,7 +11,6 @@ import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmMyCourse;
-import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
@@ -26,7 +25,6 @@ import org.ole.planet.myplanet.model.RealmTeamTask;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Constants {
     public static final String KEY_LOGIN = "isLoggedIn";
@@ -69,7 +67,6 @@ public class Constants {
         LABELS.put("Help Wanted", "help");
         LABELS.put("Offer", "offer");
         LABELS.put("Request for advice", "advice");
-
     }
 
     private static void initClasses() {
