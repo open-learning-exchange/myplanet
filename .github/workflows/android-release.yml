@@ -2,8 +2,8 @@ name: Release And Update
 
 on:
   push:
-#    branches:
-#      - 'master'
+    branches:
+      - 'master'
 
 #on:
 #  workflow_dispatch:
