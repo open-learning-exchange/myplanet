@@ -57,7 +57,6 @@ public abstract class PermissionActivity extends AppCompatActivity {
         return granted;
     }
 
-
     public void requestAllPermissions() {
         ArrayList<String> permissions = new ArrayList<>();
 
