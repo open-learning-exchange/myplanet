@@ -55,10 +55,14 @@ public class FileUtils {
     }
 
     private static File createFilePath(String folder, String filename) {
-        File f = new File(folder);
-        if (!f.exists()) f.mkdirs();
+        File directory = new File(folder);
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw new RuntimeException("Failed to create directory: " + directory.getAbsolutePath());
+            }
+        }
         Utilities.log("Return file " + folder + "/" + filename);
-        return new File(f, filename);
+        return new File(directory, filename);
     }
 
     public static File getSDPathFromUrl(String url) {
@@ -90,7 +94,6 @@ public class FileUtils {
         }
         return "";
     }
-
 
     public static String getFileExtension(String address) {
         if (TextUtils.isEmpty(address))
@@ -188,7 +191,6 @@ public class FileUtils {
     }
 
     public static String getStringFromFile(File fl) throws Exception {
-
         FileInputStream fin = new FileInputStream(fl);
         String ret = convertStreamToString(fin);
         fin.close();
@@ -293,7 +295,6 @@ public class FileUtils {
      */
     public static String formatSize(long size) {
         String suffix = null;
-
         if (size >= 1024) {
             suffix = "KB";
             size /= 1024;
