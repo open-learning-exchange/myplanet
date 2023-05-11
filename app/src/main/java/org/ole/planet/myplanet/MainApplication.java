@@ -15,6 +15,14 @@ import android.os.StrictMode;
 import android.provider.Settings;
 import android.util.Log;
 
+import androidx.work.BackoffPolicy;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.WorkRequest;
+
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
 import com.firebase.jobdispatcher.Job;
@@ -43,11 +51,13 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 
+
 public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
-    public static FirebaseJobDispatcher dispatcher;
+    public static WorkManager workManager;
     public static Context context;
     public static SharedPreferences preferences;
     public static int syncFailedCount = 0;
@@ -78,64 +88,74 @@ public class MainApplication extends Application implements Application.Activity
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
         builder.detectFileUriExposure();
-        dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
         context = this;
         AndroidThreeTen.init(this);
 
         Realm.init(this);
         preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
+
         if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
-            dispatcher.cancelAll();
-            createJob(preferences.getInt("autoSyncInterval", 60 * 60), AutoSyncService.class);
+            if (workManager != null) {
+                workManager.cancelUniqueWork("autoSync");
+            }
+            createJob(preferences.getInt("autoSyncInterval", 60 * 60), AutoSyncWorker.class);
         } else {
-            dispatcher.cancelAll();
+            if (workManager != null) {
+                workManager.cancelUniqueWork("autoSync");
+            }
         }
-        createJob(5 * 60, StayOnLineService.class);
-        createJob(60, TaskNotificationService.class);
+
+        createJob(5 * 60, StayOnLineWorker.class);
+        createJob(60, TaskNotificationWorker.class);
         Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
         registerActivityLifecycleCallbacks(this);
     }
 
-    public void createJob(int sec, Class jobClass) {
-        Job myJob = dispatcher.newJobBuilder()
-                .setService(jobClass)
-                .setTag("ole")
-                .setRecurring(true)
-                .setLifetime(Lifetime.FOREVER)
-                .setTrigger(Trigger.executionWindow(0, sec))
-                .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
+    public void createWork(int sec, Class workerClass, String tag) {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build();
-        dispatcher.mustSchedule(myJob);
+
+        WorkRequest workRequest = new PeriodicWorkRequest.Builder(workerClass, sec, TimeUnit.SECONDS)
+                .setConstraints(constraints)
+                .setBackoffCriteria(BackoffPolicy.LINEAR, 5, TimeUnit.MINUTES)
+                .build();
+
+        if (workManager != null) {
+            workManager.enqueueUniquePeriodicWork(tag, ExistingPeriodicWorkPolicy.KEEP, (PeriodicWorkRequest) workRequest);
+        }
     }
+
+    public void createJob(int intervalSeconds, Class jobClass) {
+        PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                jobClass,
+                intervalSeconds,
+                TimeUnit.SECONDS)
+                .build();
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                "ole",
+                ExistingPeriodicWorkPolicy.REPLACE,
+                workRequest);
+    }
+
 
     @Override
-    public void onActivityCreated(Activity activity, Bundle bundle) {
-
-    }
+    public void onActivityCreated(Activity activity, Bundle bundle) {}
 
     @Override
-    public void onActivityStarted(Activity activity) {
-
-    }
+    public void onActivityStarted(Activity activity) {}
 
     @Override
-    public void onActivityResumed(Activity activity) {
-
-    }
+    public void onActivityResumed(Activity activity) {}
 
     @Override
-    public void onActivityPaused(Activity activity) {
-
-    }
+    public void onActivityPaused(Activity activity) {}
 
     @Override
-    public void onActivityStopped(Activity activity) {
-    }
+    public void onActivityStopped(Activity activity) {}
 
     @Override
-    public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {
-
-    }
+    public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {}
 
     @Override
     public void onActivityDestroyed(Activity activity) {
@@ -165,6 +185,6 @@ public class MainApplication extends Application implements Application.Activity
         homeIntent.addCategory(Intent.CATEGORY_HOME);
         homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(homeIntent);
+//        System.exit(2);
     }
-
 }
