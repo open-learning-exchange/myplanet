@@ -56,8 +56,8 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        mRealm = DatabaseService(activity!!).realmInstance
-        user = UserProfileDbHandler(activity!!).userModel
+        mRealm = DatabaseService(requireActivity()).realmInstance
+        user = UserProfileDbHandler(requireActivity()).userModel
         btn_library.setOnClickListener {
             homeItemClickListener.openCallFragment(LibraryFragment())
         }
@@ -75,7 +75,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         Utilities.log("list size " + list.size)
         var adapter = AdapterNews(activity, list, user, null)
         adapter.setListener(this)
-        adapter.setFromLogin(arguments!!.getBoolean("fromLogin", false))
+        adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
       //  setFlexBox();
@@ -87,9 +87,9 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
 
 
-    override fun onConfigurationChanged(newConfig: Configuration?) {
+    override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val orientation = newConfig!!.orientation
+        val orientation = newConfig.orientation
         changeLayoutManager(orientation)
     }
 

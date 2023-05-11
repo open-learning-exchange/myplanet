@@ -21,7 +21,7 @@ class CourseProgressActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_course_progress)
         initActionBar()
-        courseId = intent.getStringExtra("courseId");
+        courseId = intent.getStringExtra("courseId").toString();
         realm = DatabaseService(this).realmInstance
         user = UserProfileDbHandler(this).userModel
         var courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
