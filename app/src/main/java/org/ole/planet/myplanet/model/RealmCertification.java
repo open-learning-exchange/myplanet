@@ -1,28 +1,19 @@
 package org.ole.planet.myplanet.model;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
-import io.realm.RealmList;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmCertification extends RealmObject {
     @PrimaryKey
-    private
-    String _id;
+    private String _id;
     private String _rev;
     private String name;
     private String courseIds;
@@ -38,7 +29,6 @@ public class RealmCertification extends RealmObject {
         certification.setCourseIds(JsonUtils.getJsonArray("courseIds", object));
 
     }
-
 
     public static boolean isCourseCertified(Realm realm, String courseId) {
         long c = realm.where(RealmCertification.class).contains("courseIds", courseId).count();
@@ -79,6 +69,6 @@ public class RealmCertification extends RealmObject {
     }
 
     public void setCourseIds(JsonArray courseIds) {
-       this.courseIds = new Gson().toJson(courseIds);
+        this.courseIds = new Gson().toJson(courseIds);
     }
 }

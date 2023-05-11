@@ -9,7 +9,6 @@ import org.ole.planet.myplanet.model.Download;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 public class ProgressBroadcastReceiver extends BroadcastReceiver {
-
     private OnProgressChange onProgressChange;
 
     public void setOnProgressChange(OnProgressChange onProgressChange) {

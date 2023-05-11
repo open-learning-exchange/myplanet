@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
+
 import androidx.appcompat.widget.AppCompatImageView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,11 +17,6 @@ import org.ole.planet.myplanet.model.RealmTag;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-
-/**
- * Created by rowsun on 1/22/18.
- */
 
 public class TagExpandableAdapter extends BaseExpandableListAdapter {
     private Context context;
@@ -97,7 +94,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
         nonChildTitle.setText(headerTitle);
         createCheckbox(convertView, tagList.get(groupPosition));
         drawerTitle.setText(headerTitle);
-
 
         if (!childMap.containsKey(tagList.get(groupPosition).getId())) {
             nonChildTitle.setVisibility(View.VISIBLE);

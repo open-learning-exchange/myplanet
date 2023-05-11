@@ -10,7 +10,8 @@ import com.google.gson.JsonArray
 import kotlinx.android.synthetic.main.row_my_progress_grid.view.*
 import org.ole.planet.myplanet.R
 
-class AdapterProgressGrid(private val context: Context, private val list: JsonArray) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterProgressGrid(private val context: Context, private val list: JsonArray) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_my_progress_grid, parent, false)
@@ -32,14 +33,11 @@ class AdapterProgressGrid(private val context: Context, private val list: JsonAr
         }
     }
 
-
     override fun getItemCount(): Int {
         return list.size()
     }
 
     internal inner class ViewHolderMyProgress(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var tvProgress: TextView = itemView.tv_progress
-
-
     }
 }

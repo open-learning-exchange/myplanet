@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.service;
 
+import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
+
 import android.app.ActivityManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,12 +26,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 
-import org.ole.planet.myplanet.service.SyncManager;
-
-import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
-import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
-
-
 public class AutoSyncService extends JobService implements SyncListener, Service.CheckVersionCallback, SuccessListener {
     SharedPreferences preferences;
 
@@ -44,7 +41,6 @@ public class AutoSyncService extends JobService implements SyncListener, Service
         }
         return false;
     }
-
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
         ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
@@ -68,7 +64,6 @@ public class AutoSyncService extends JobService implements SyncListener, Service
         }
     };
 
-
     @Override
     public boolean onStopJob(JobParameters job) {
         return false;
@@ -87,11 +82,9 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     @Override
     public void onSyncFailed(String msg) {
         if (MainApplication.syncFailedCount > 3) {
-            startActivity(new Intent(this, LoginActivity.class).putExtra("showWifiDialog", true)
-                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            startActivity(new Intent(this, LoginActivity.class).putExtra("showWifiDialog", true).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         }
     }
-
 
     @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
@@ -114,7 +107,7 @@ public class AutoSyncService extends JobService implements SyncListener, Service
         if (!blockSync) {
             SyncManager.getInstance().start(this);
             UploadToShelfService.getInstance().uploadUserData(success -> new Service(MainApplication.context).healthAccess(success1 -> UploadToShelfService.getInstance().uploadHealth()));
-            if (!MainApplication.isSyncRunning){
+            if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true;
                 UploadManager.getInstance().uploadExamResult(this);
                 UploadManager.getInstance().uploadFeedback(this);

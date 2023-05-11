@@ -53,15 +53,15 @@
                     android:text="@string/add_examination"
                     android:theme="@style/PrimaryButton" />
 
-<!--                <Button-->
-<!--                    android:id="@+id/update_health"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_gravity="right"-->
-<!--                    android:visibility="gone"-->
-<!--                    android:gravity="center"-->
-<!--                    android:text="@string/update_health_record"-->
-<!--                    android:theme="@style/PrimaryButton" />-->
+                <!--                <Button-->
+                <!--                    android:id="@+id/update_health"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:layout_gravity="right"-->
+                <!--                    android:visibility="gone"-->
+                <!--                    android:gravity="center"-->
+                <!--                    android:text="@string/update_health_record"-->
+                <!--                    android:theme="@style/PrimaryButton" />-->
             </LinearLayout>
 
             <LinearLayout
@@ -364,13 +364,13 @@
     </androidx.core.widget.NestedScrollView>
 
     <com.github.clans.fab.FloatingActionMenu
+        android:id="@+id/fab_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
         app:menu_icon="@drawable/ic_add"
         app:menu_open="arc_left"
-        android:id="@+id/fab_group"
         app:menu_scr="@drawable/ic_add">
 
 
@@ -378,22 +378,22 @@
             android:id="@+id/update_health"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/update_health_record"
             android:layout_gravity="bottom|end"
-            android:tint="@color/md_white_1000"
             android:layout_margin="@dimen/padding_large"
-            app:fab_label="@string/update_health_record"
-            android:src="@drawable/ic_myhealth" />
+            android:src="@drawable/ic_myhealth"
+            android:text="@string/update_health_record"
+            android:tint="@color/md_white_1000"
+            app:fab_label="@string/update_health_record" />
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_add_member"
             android:layout_width="wrap_content"
-            android:tint="@color/md_white_1000"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/padding_large"
-            app:fab_label="@string/add_member"
-            android:src="@drawable/ic_add_member" />
+            android:src="@drawable/ic_add_member"
+            android:tint="@color/md_white_1000"
+            app:fab_label="@string/add_member" />
 
     </com.github.clans.fab.FloatingActionMenu>
 

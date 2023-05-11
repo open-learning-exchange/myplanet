@@ -5,7 +5,6 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 
@@ -19,7 +18,7 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
         setOnItemClickListener(this);
     }
 
-   public interface CheckChangeListener {
+    public interface CheckChangeListener {
         void onCheckChange();
     }
 
@@ -54,7 +53,6 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
         } else {
             selectedItemsList.add((Integer) i);
         }
-        if (listener!=null)
-            listener.onCheckChange();
+        if (listener != null) listener.onCheckChange();
     }
 }

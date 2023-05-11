@@ -36,11 +36,7 @@ import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class CourseStepFragment extends BaseContainerFragment implements CameraUtils.ImageCaptureCallback {
-
     TextView tvTitle;
     MarkdownView description;
     String stepId;
@@ -68,12 +64,10 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     @Override
     public void playVideo(String videoType, RealmMyLibrary items) {
-
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_course_step, container, false);
         tvTitle = v.findViewById(R.id.tv_title);
         description = v.findViewById(R.id.description);
@@ -88,13 +82,8 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     }
 
     public void saveCourseProgress() {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class)
-                .equalTo("courseId", step.getCourseId())
-                .equalTo("userId", user.getId())
-                .equalTo("stepNum", stepNumber)
-                .findFirst();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", step.getCourseId()).equalTo("userId", user.getId()).equalTo("stepNum", stepNumber).findFirst();
         if (courseProgress == null) {
             courseProgress = mRealm.createObject(RealmCourseProgress.class, UUID.randomUUID().toString());
             courseProgress.setCreatedDate(new Date().getTime());
@@ -124,8 +113,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         step = mRealm.where(RealmCourseStep.class).equalTo("id", stepId).findFirst();
         resources = mRealm.where(RealmMyLibrary.class).equalTo("stepId", stepId).findAll();
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
-        if (resources != null)
-            btnResource.setText("Resources [" + resources.size() + "]");
+        if (resources != null) btnResource.setText("Resources [" + resources.size() + "]");
         hideTestIfNoQuestion();
         tvTitle.setText(step.getStepTitle());
         description.loadMarkdown(step.getDescription());
@@ -134,7 +122,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         }
         setListeners();
     }
-
 
     private void hideTestIfNoQuestion() {
         btnExam.setVisibility(View.INVISIBLE);
@@ -158,15 +145,12 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
                 saveCourseProgress();
             }
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     private void setListeners() {
-        final RealmResults notDownloadedResources = mRealm.where(RealmMyLibrary.class)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+        final RealmResults notDownloadedResources = mRealm.where(RealmMyLibrary.class).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
         setResourceButton(notDownloadedResources, btnResource);
 
         btnExam.setOnClickListener(view -> {
@@ -180,11 +164,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
                 CameraUtils.CapturePhoto(this);
             }
         });
-        final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class)
-                .equalTo("stepId", stepId)
-                .equalTo("resourceOffline", true)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+        final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll();
 
         setOpenResourceButton(downloadedResources, btnOpen);
 
@@ -198,6 +178,5 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     @Override
     public void onImageCapture(String fileUri) {
-
     }
 }

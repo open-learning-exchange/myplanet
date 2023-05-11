@@ -151,7 +151,6 @@ public class SyncManager {
         }
     }
 
-
     public void resourceTransactionSync(SyncListener listener) {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         mRealm.executeTransaction(realm -> {
@@ -202,7 +201,6 @@ public class SyncManager {
         });
     }
 
-
     private void populateShelfItems(ApiInterface apiInterface, Realm mRealm) {
         try {
             this.mRealm = mRealm;
@@ -245,16 +243,14 @@ public class SyncManager {
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         try {
             JsonObject resourceDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + stringArray[2] + "/" + array_categoryIds.get(x).getAsString()).execute().body();
-            if (resourceDoc != null)
-                triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
+            if (resourceDoc != null) triggerInsert(stringArray, array_categoryIds, x, resourceDoc);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
     }
 
-    private void triggerInsert(String[] stringArray, JsonArray array_categoryIds,
-                               int x, JsonObject resourceDoc) {
+    private void triggerInsert(String[] stringArray, JsonArray array_categoryIds, int x, JsonObject resourceDoc) {
 
         switch (stringArray[2]) {
             case "resources":

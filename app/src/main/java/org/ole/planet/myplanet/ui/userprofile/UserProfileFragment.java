@@ -1,53 +1,42 @@
 package org.ole.planet.myplanet.ui.userprofile;
 
 
-import android.content.Context;
+import static android.app.Activity.RESULT_OK;
+
 import android.content.Intent;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.library.AddResourceActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.UUID;
 
 import io.realm.Realm;
-
-import static android.app.Activity.RESULT_OK;
 
 public class UserProfileFragment extends Fragment {
 
@@ -71,13 +60,11 @@ public class UserProfileFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mRealm != null)
-            mRealm.close();
+        if (mRealm != null) mRealm.close();
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_user_profile, container, false);
         handler = new UserProfileDbHandler(getActivity());
         realmService = new DatabaseService(getActivity());
@@ -88,11 +75,7 @@ public class UserProfileFragment extends Fragment {
         addPicture = (Button) v.findViewById(R.id.bt_profile_pic);
         imageView = (ImageView) v.findViewById(R.id.image);
 
-        addPicture.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                searchForPhoto();
-            }
-        });
+        addPicture.setOnClickListener(v1 -> searchForPhoto());
         populateUserData(v);
         return v;
     }
@@ -134,11 +117,12 @@ public class UserProfileFragment extends Fragment {
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         ((TextView) v.findViewById(R.id.txt_email)).setText("Email : " + Utilities.checkNA(model.getEmail()));
         String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        ((TextView) v.findViewById(R.id.txt_dob)).setText("Date of birth : " +  dob);
+        ((TextView) v.findViewById(R.id.txt_dob)).setText("Date of birth : " + dob);
         if (!TextUtils.isEmpty(model.getUserImage()))
             Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(imageView, new Callback() {
                 @Override
-                public void onSuccess() { }
+                public void onSuccess() {
+                }
 
                 @Override
                 public void onError(Exception e) {
@@ -186,5 +170,4 @@ public class UserProfileFragment extends Fragment {
             }
         });
     }
-
 }

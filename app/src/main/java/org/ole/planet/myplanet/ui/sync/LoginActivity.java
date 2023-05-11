@@ -66,7 +66,6 @@ import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
-
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     public static Calendar cal_today, cal_last_Sync;
     private EditText serverUrl, serverUrlProtocol;
@@ -87,16 +86,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private Spinner spnCloud;
     private TextView tvAvailableSpace;
 
-
     private void showShowCaseView() {
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
         MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "1");
         sequence.setConfig(config);
-        sequence.addSequenceItem(syncIcon,
-                "Press the Sync Button to Sync your Planet account data with your myPlanet application data", "GOT IT");
-        sequence.addSequenceItem(imgBtnSetting,
-                "Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.", "GOT IT");
+        sequence.addSequenceItem(syncIcon, "Press the Sync Button to Sync your Planet account data with your myPlanet application data", "GOT IT");
+        sequence.addSequenceItem(imgBtnSetting, "Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.", "GOT IT");
         sequence.start();
     }
 
@@ -145,8 +141,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
 
-        if (settings.getBoolean("firstRun", true))
-            showShowCaseView();
+        if (settings.getBoolean("firstRun", true)) showShowCaseView();
     }
 
     private boolean forceSyncTrigger() {
@@ -158,7 +153,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         return false;
     }
-
 
     private void showWifiDialog() {
         if (getIntent().getBooleanExtra("showWifiDialog", false)) {
@@ -176,8 +170,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (daysDiff >= maxDays) {
             Log.e("Sync Date ", "Expired - ");
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-            alertDialogBuilder.setMessage("It has been more than " + (daysDiff - 1) + " days since you last synced this device." +
-                    "\nConnect it to the server over wifi and sync it to reactivate this tablet");
+            alertDialogBuilder.setMessage("It has been more than " + (daysDiff - 1) + " days since you last synced this device." + "\nConnect it to the server over wifi and sync it to reactivate this tablet");
             alertDialogBuilder.setPositiveButton("Okay", (arg0, arg1) -> Toast.makeText(getApplicationContext(), "Connect to the server over WiFi and sync your device to continue", Toast.LENGTH_LONG).show());
             alertDialogBuilder.show();
             return true;
@@ -186,7 +179,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             return false;
         }
     }
-
 
     public void declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
@@ -211,7 +203,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settings.edit().putBoolean("isChild", b).commit();
             recreate();
         });
-
     }
 
     private void becomeAMember() {
@@ -227,28 +218,25 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor = settings.edit();
         View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
         TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-        new AlertDialog.Builder(this).setTitle("Login As Guest")
-                .setView(v)
-                .setPositiveButton("Login", (dialogInterface, i) -> {
-                    if (mRealm.isEmpty()) {
-                        alertDialogOkay("This device not configured properly. Please check and sync.");
-                        return;
-                    }
-                    String username = etUserName.getText().toString().toLowerCase().trim();
-                    if (username.isEmpty()) {
-                        Utilities.toast(this, "Username cannot be empty");
-                        return;
-                    }
-                    RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-                    if (model == null) {
-                        Utilities.toast(this, "Unable to login");
-                    } else {
-                        saveUserInfoPref(settings, "", model);
-                        onLogin();
-                    }
-                }).setNegativeButton("Cancel", null).show();
+        new AlertDialog.Builder(this).setTitle("Login As Guest").setView(v).setPositiveButton("Login", (dialogInterface, i) -> {
+            if (mRealm.isEmpty()) {
+                alertDialogOkay("This device not configured properly. Please check and sync.");
+                return;
+            }
+            String username = etUserName.getText().toString().toLowerCase().trim();
+            if (username.isEmpty()) {
+                Utilities.toast(this, "Username cannot be empty");
+                return;
+            }
+            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+            if (model == null) {
+                Utilities.toast(this, "Unable to login");
+            } else {
+                saveUserInfoPref(settings, "", model);
+                onLogin();
+            }
+        }).setNegativeButton("Cancel", null).show();
     }
-
 
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
@@ -270,7 +258,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         });
     }
-
 
     public void declareMoreElements() {
         syncIcon = findViewById(R.id.syncIcon);
@@ -308,20 +295,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
         btnlang.setText(languages[index]);
         btnlang.setOnClickListener(view -> {
-            new AlertDialog.Builder(this)
-                    .setTitle("Select Language")
-                    .setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null)
-                    .setPositiveButton("OK", (dialog, whichButton) -> {
-                        dialog.dismiss();
-                        int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-                        String lang = languageKey[selectedPosition];
-                        LocaleHelper.setLocale(LoginActivity.this, lang);
-                        recreate();
-                    }).setNegativeButton("Cancel", null)
-                    .show();
+            new AlertDialog.Builder(this).setTitle("Select Language").setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton("OK", (dialog, whichButton) -> {
+                dialog.dismiss();
+                int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                String lang = languageKey[selectedPosition];
+                LocaleHelper.setLocale(LoginActivity.this, lang);
+                recreate();
+            }).setNegativeButton("Cancel", null).show();
         });
     }
-
 
     /**
      * Form  Validation
@@ -379,7 +361,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor.commit();
     }
 
-
     private void onLogin() {
         UserProfileDbHandler handler = new UserProfileDbHandler(this);
         handler.onLogin();
@@ -388,12 +369,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         openDashboard();
     }
 
-
     public void settingDialog() {
         MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-        builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true)
-                .positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save)
-                .onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+        builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true).positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save).onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
 
         MaterialDialog dialog = builder.build();
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
@@ -435,7 +413,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void onChangeServerUrl() {
         RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
         Utilities.log((selected == null) + " selected ");
-        if (selected == null){
+        if (selected == null) {
             return;
         }
         serverUrl.setText(selected.getLocalDomain());
@@ -481,8 +459,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     public void onSuccess(String s) {
         Utilities.log("Sync completed ");
-        if (progressDialog.isShowing() && s.contains("Crash"))
-            progressDialog.dismiss();
+        if (progressDialog.isShowing() && s.contains("Crash")) progressDialog.dismiss();
         DialogUtils.showSnack(btnSignIn, s);
         settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
 
@@ -515,7 +492,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         bManager.registerReceiver(broadcastReceiver, intentFilter);
     }
 
-
     @Override
     public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
@@ -540,6 +516,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 startUpload();
             }
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -561,8 +538,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mRealm != null && !mRealm.isClosed())
-            mRealm.close();
+        if (mRealm != null && !mRealm.isClosed()) mRealm.close();
     }
 
     public String removeProtocol(String url) {

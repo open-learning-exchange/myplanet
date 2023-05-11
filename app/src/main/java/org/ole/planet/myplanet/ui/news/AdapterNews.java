@@ -41,7 +41,6 @@ import io.realm.RealmList;
 import io.realm.Sort;
 
 public class AdapterNews extends BaseNewsAdapter {
-
     private List<RealmNews> list;
 
     private OnNewsItemClickListener listener;
@@ -118,15 +117,13 @@ public class AdapterNews extends BaseNewsAdapter {
         }
     }
 
-
     private void addLabels(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
             PopupMenu menu = new PopupMenu(context, ((ViewHolderNews) holder).btnAddLabel);
             MenuInflater inflater = menu.getMenuInflater();
             inflater.inflate(R.menu.menu_add_label, menu.getMenu());
             menu.setOnMenuItemClickListener(menuItem -> {
-                if (!mRealm.isInTransaction())
-                    mRealm.beginTransaction();
+                if (!mRealm.isInTransaction()) mRealm.beginTransaction();
                 news.addLabel(Constants.LABELS.get(menuItem.getTitle() + ""));
                 Utilities.toast(context, "Label added.");
                 mRealm.commitTransaction();
@@ -144,8 +141,7 @@ public class AdapterNews extends BaseNewsAdapter {
         for (String s : news.getLabels()) {
             chipCloud.addChip(getLabel(s));
             chipCloud.setDeleteListener((i, s1) -> {
-                if (!mRealm.isInTransaction())
-                    mRealm.beginTransaction();
+                if (!mRealm.isInTransaction()) mRealm.beginTransaction();
                 news.getLabels().remove(Constants.LABELS.get(s1));
                 mRealm.commitTransaction();
                 ((ViewHolderNews) holder).btnAddLabel.setEnabled(news.getLabels().size() < 3);
@@ -154,7 +150,6 @@ public class AdapterNews extends BaseNewsAdapter {
         ((ViewHolderNews) holder).btnAddLabel.setEnabled(news.getLabels().size() < 3);
     }
 
-
     private void loadImage(RecyclerView.ViewHolder holder, RealmNews news) {
         if (news.getImageUrls() != null && news.getImageUrls().size() > 0) {
             try {
@@ -162,6 +157,7 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
                 Glide.with(context).load(new File(JsonUtils.getString("imageUrl", imgObject))).into(((ViewHolderNews) holder).newsImage);
             } catch (Exception e) {
+                e.printStackTrace();
             }
         } else {
             loadRemoteImage(holder, news);
@@ -208,22 +204,17 @@ public class AdapterNews extends BaseNewsAdapter {
         LinearLayout llImage = v.findViewById(R.id.ll_alert_image);
         v.findViewById(R.id.add_news_image).setOnClickListener(view -> listener.addImage(llImage));
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
-        if (isEdit)
-            et.setText(news.getMessage() + "");
-        new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit).setView(v)
-                .setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
-                    String s = et.getText().toString();
-                    if (isEdit) {
-                        editPost(s, news);
-                    } else
-                        postReply(s, news);
-                }).setNegativeButton(R.string.cancel, null).show();
+        if (isEdit) et.setText(news.getMessage() + "");
+        new AlertDialog.Builder(context).setTitle(isEdit ? R.string.edit_post : R.string.reply).setIcon(R.drawable.ic_edit).setView(v).setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
+            String s = et.getText().toString();
+            if (isEdit) {
+                editPost(s, news);
+            } else postReply(s, news);
+        }).setNegativeButton(R.string.cancel, null).show();
     }
 
-
     public void postReply(String s, RealmNews news) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         HashMap<String, String> map = new HashMap<>();
         map.put("message", s);
         map.put("viewableBy", news.getViewableBy());
@@ -240,8 +231,7 @@ public class AdapterNews extends BaseNewsAdapter {
             Utilities.toast(context, "Please enter message");
             return;
         }
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         news.setMessage(s);
         mRealm.commitTransaction();
         notifyDataSetChanged();
@@ -274,10 +264,8 @@ public class AdapterNews extends BaseNewsAdapter {
         }
     }
 
-
     private void deletePost(RealmNews news) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
 //        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         list.remove(news);
         if (news != null) {
@@ -285,9 +273,7 @@ public class AdapterNews extends BaseNewsAdapter {
         }
         mRealm.commitTransaction();
         notifyDataSetChanged();
-
     }
-
 
     @Override
     public int getItemCount() {
@@ -295,12 +281,9 @@ public class AdapterNews extends BaseNewsAdapter {
         return parentNews == null ? list.size() : list.size() + 1;
     }
 
-
     public interface OnNewsItemClickListener {
         void showReply(RealmNews news, boolean fromLogin);
 
         void addImage(LinearLayout llImage);
     }
-
-
 }

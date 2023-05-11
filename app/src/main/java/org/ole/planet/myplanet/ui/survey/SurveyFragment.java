@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.ui.survey;
 
-
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Spinner;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,12 +18,10 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Sort;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class SurveyFragment extends BaseRecyclerFragment<RealmStepExam> {
     FloatingActionButton addNewServey;
     Spinner spn;
+
     public SurveyFragment() {
     }
 
@@ -46,16 +44,15 @@ public class SurveyFragment extends BaseRecyclerFragment<RealmStepExam> {
         addNewServey.setOnClickListener(view -> {
             // TODO: 8/21/18 Create add survey page for administrator
         });
-        if (getAdapter() != null)
-            showNoData(tvMessage, getAdapter().getItemCount());
+        if (getAdapter() != null) showNoData(tvMessage, getAdapter().getItemCount());
 
         spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 Utilities.log("i " + i);
-                if (i == 0){
+                if (i == 0) {
                     recyclerView.setAdapter(new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.ASCENDING), mRealm, model.getId()));
-                }else{
+                } else {
                     recyclerView.setAdapter(new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.DESCENDING), mRealm, model.getId()));
                 }
             }
@@ -65,6 +62,5 @@ public class SurveyFragment extends BaseRecyclerFragment<RealmStepExam> {
 
             }
         });
-
     }
 }

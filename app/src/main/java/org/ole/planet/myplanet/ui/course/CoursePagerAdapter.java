@@ -7,7 +7,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 
 public class CoursePagerAdapter extends FragmentStatePagerAdapter {
-
     private String[] steps;
     private String courseId;
 

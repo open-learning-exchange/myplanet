@@ -34,7 +34,6 @@ import br.tiagohm.markdownview.MarkdownView;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-
 public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView subjectLevel, gradeLevel, method, language, noOfExams;
     LinearLayout llRating;
@@ -50,7 +49,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     public CourseDetailFragment() {
     }
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,10 +57,8 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         }
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
         dbService = new DatabaseService(getActivity());
@@ -99,7 +95,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
 //        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
-
     private void setCourseData() {
         subjectLevel.setText(courses.getSubjectLevel());
         method.setText(courses.getMethod());
@@ -107,17 +102,9 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         language.setText(courses.getLanguageOfInstruction());
         description.loadMarkdown(courses.getDescription());
         noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
-        final RealmResults resources = mRealm.where(RealmMyLibrary.class)
-                .equalTo("courseId", id)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+        final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
         setResourceButton(resources, btnResources);
-        final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class)
-                .equalTo("resourceOffline", true)
-                .equalTo("courseId", id)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+        final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll();
         setOpenResourceButton(downloadedResources, btnOpen);
         onRatingChanged();
         setStepsList();
@@ -127,9 +114,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
         rv_step_list.setLayoutManager(new LinearLayoutManager(getActivity()));
         rv_step_list.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
-
     }
-
 
     @Override
     public void onRatingChanged() {

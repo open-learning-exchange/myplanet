@@ -269,12 +269,12 @@
                 android:padding="@dimen/padding_normal">
 
                 <TextView
+                    android:id="@+id/file_url"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_large"
                     android:text="@string/file_upload"
-                    android:id="@+id/file_url"
                     android:textColor="@color/md_black_1000"
                     android:textSize="@dimen/text_size_mid" />
 
@@ -283,8 +283,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:visibility="gone"
-                    android:text="@string/choose_file" />
+                    android:text="@string/choose_file"
+                    android:visibility="gone" />
 
                 <CheckBox
                     android:id="@+id/cb_downloadable"
@@ -292,8 +292,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
-                    android:visibility="gone"
-                    android:text="@string/file_downloadable" />
+                    android:text="@string/file_downloadable"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout

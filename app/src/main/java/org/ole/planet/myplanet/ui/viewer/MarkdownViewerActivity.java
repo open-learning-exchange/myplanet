@@ -14,13 +14,10 @@ import java.io.File;
 
 import br.tiagohm.markdownview.MarkdownView;
 
-
 public class MarkdownViewerActivity extends AppCompatActivity {
-
     private TextView mMarkdownNameTitle;
     private MarkdownView mMarkdownContent;
     private String fileName;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +34,6 @@ public class MarkdownViewerActivity extends AppCompatActivity {
 
     private void renderMarkdownFile() {
         // File name to be viewed
-
         Intent markdownOpenIntent = getIntent();
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE");
 

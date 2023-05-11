@@ -6,26 +6,27 @@
 
     <TextView
         android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal"
-        android:text="Type*"
-        android:layout_height="wrap_content" />
+        android:text="Type*" />
+
     <Spinner
-        android:layout_width="match_parent"
         android:id="@+id/spn_type"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:entries="@array/info_type"
-        android:padding="@dimen/padding_normal"
-        android:layout_height="wrap_content" />
+        android:padding="@dimen/padding_normal" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
-        android:padding="@dimen/padding_normal"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_normal">
 
         <EditText
-            android:layout_width="match_parent"
             android:id="@+id/et_description"
-            android:hint="@string/description"
-            android:layout_height="wrap_content" />
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/description" />
 
     </com.google.android.material.textfield.TextInputLayout>
 

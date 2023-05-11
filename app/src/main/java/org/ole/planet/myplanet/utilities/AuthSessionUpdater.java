@@ -99,6 +99,4 @@ public class AuthSessionUpdater {
         }
         return null;
     }
-
-
 }

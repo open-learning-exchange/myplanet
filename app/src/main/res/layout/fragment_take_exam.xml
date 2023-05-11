@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryDark"
-
     tools:context=".ui.exam.TakeExamFragment">
 
     <LinearLayout
@@ -62,18 +61,18 @@
                                 android:id="@+id/tv_header"
                                 style="@style/HeaderText"
                                 android:layout_width="match_parent"
-                                android:textSize="18sp"
-                                android:textColor="@color/md_black_1000"
                                 android:layout_height="wrap_content"
-                                android:layout_gravity="center" />
+                                android:layout_gravity="center"
+                                android:textColor="@color/md_black_1000"
+                                android:textSize="18sp" />
 
                             <TextView
                                 android:id="@+id/tv_body"
                                 android:layout_width="match_parent"
-                                android:textSize="16sp"
-                                android:textColor="@color/md_black_1000"
                                 android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_normal" />
+                                android:padding="@dimen/padding_normal"
+                                android:textColor="@color/md_black_1000"
+                                android:textSize="16sp" />
 
                         </LinearLayout>
 

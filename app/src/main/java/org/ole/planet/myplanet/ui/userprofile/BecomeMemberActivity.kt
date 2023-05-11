@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
@@ -11,25 +10,37 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
 import android.widget.Spinner
-import androidx.appcompat.app.AlertDialog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
-import kotlinx.android.synthetic.main.activity_become_member.*
-import kotlinx.android.synthetic.main.fragment_course_detail.*
+import kotlinx.android.synthetic.main.activity_become_member.btn_cancel
+import kotlinx.android.synthetic.main.activity_become_member.btn_submit
+import kotlinx.android.synthetic.main.activity_become_member.et_email
+import kotlinx.android.synthetic.main.activity_become_member.et_fname
+import kotlinx.android.synthetic.main.activity_become_member.et_lname
+import kotlinx.android.synthetic.main.activity_become_member.et_mname
+import kotlinx.android.synthetic.main.activity_become_member.et_password
+import kotlinx.android.synthetic.main.activity_become_member.et_phone
+import kotlinx.android.synthetic.main.activity_become_member.et_re_password
+import kotlinx.android.synthetic.main.activity_become_member.et_username
+import kotlinx.android.synthetic.main.activity_become_member.pbar
+import kotlinx.android.synthetic.main.activity_become_member.rb_gender
+import kotlinx.android.synthetic.main.activity_become_member.spn_lang
+import kotlinx.android.synthetic.main.activity_become_member.spn_level
+import kotlinx.android.synthetic.main.activity_become_member.txt_dob
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 
 class BecomeMemberActivity : BaseActivity() {
 
@@ -37,16 +48,15 @@ class BecomeMemberActivity : BaseActivity() {
     lateinit var settings: SharedPreferences
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(this, DatePickerDialog.OnDateSetListener { datePicker, i, i1, i2 ->
-            dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-            txt_dob.text = dob
-        }, now[Calendar.YEAR],
-                now[Calendar.MONTH],
-                now[Calendar.DAY_OF_MONTH])
+        val dpd = DatePickerDialog(
+            this, { datePicker, i, i1, i2 ->
+                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
+                txt_dob.text = dob
+            }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
+        )
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,23 +92,21 @@ class BecomeMemberActivity : BaseActivity() {
             var birthDate: String? = dob
             var level: String? = spn_level.selectedItem.toString()
 
-            var rb: RadioButton? = findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
+            var rb: RadioButton? =
+                findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
             var gender: String? = ""
-            if (rb != null)
-                gender = rb.text.toString()
+            if (rb != null) gender = rb.text.toString()
             else {
                 Utilities.toast(this, "Please select gender")
             }
             if (username!!.isEmpty()) {
                 et_username.error = "Please enter a username"
-            }
-            else if (username.contains(" ")){
+            } else if (username.contains(" ")) {
                 et_username.error = "Invalid username"
             }
             if (password!!.isEmpty()) {
                 et_password.error = "Please enter a password"
-            }
-            else if (password != repassword) {
+            } else if (password != repassword) {
                 et_re_password.error = "Password doesn't match"
             }
             if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
@@ -113,12 +121,39 @@ class BecomeMemberActivity : BaseActivity() {
                 ///Add dialog that using phone as password , Agree / disagree
             }
 
-            checkMandatoryFieldsAndAddMember(username, password, repassword, fname, lname, mname, email, language, level, phoneNumber, birthDate, gender, mRealm)
-
+            checkMandatoryFieldsAndAddMember(
+                username,
+                password,
+                repassword,
+                fname,
+                lname,
+                mname,
+                email,
+                language,
+                level,
+                phoneNumber,
+                birthDate,
+                gender,
+                mRealm
+            )
         }
     }
 
-    private fun checkMandatoryFieldsAndAddMember(username: String, password: String, repassword: String?, fname: String?, lname: String?, mname: String?, email: String?, language: String?, level: String?, phoneNumber: String?, birthDate: String?, gender: String?, mRealm: Realm) {
+    private fun checkMandatoryFieldsAndAddMember(
+        username: String,
+        password: String,
+        repassword: String?,
+        fname: String?,
+        lname: String?,
+        mname: String?,
+        email: String?,
+        language: String?,
+        level: String?,
+        phoneNumber: String?,
+        birthDate: String?,
+        gender: String?,
+        mRealm: Realm
+    ) {
         /**
          * Creates and adds a new member if the username and password
          * are not empty and password matches repassword.
@@ -130,7 +165,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("lastName", lname)
             obj.addProperty("middleName", mname)
             obj.addProperty("password", password)
-    //            obj.addProperty("repeatPassword", repassword )
+            //            obj.addProperty("repeatPassword", repassword )
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate", Calendar.getInstance().timeInMillis)
             obj.addProperty("email", email)
@@ -146,7 +181,9 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("macAddress", NetworkUtils.getMacAddr())
             obj.addProperty("androidId", NetworkUtils.getMacAddr())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            obj.addProperty(
+                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+            )
             var roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
@@ -189,5 +226,4 @@ class BecomeMemberActivity : BaseActivity() {
             }
         })
     }
-
 }

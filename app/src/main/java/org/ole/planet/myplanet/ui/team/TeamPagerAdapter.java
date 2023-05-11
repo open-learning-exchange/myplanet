@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TeamPagerAdapter extends FragmentStatePagerAdapter {
-
     private String teamId;
     private List<String> list;
     private boolean isEnterprise;
@@ -34,7 +33,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     public TeamPagerAdapter(FragmentManager fm, RealmMyTeam team, boolean isMyTeam) {
         super(fm);
         this.teamId = team.get_id();
-        isEnterprise = TextUtils.equals(team.getType(),"enterprise");
+        isEnterprise = TextUtils.equals(team.getType(), "enterprise");
         list = new ArrayList<>();
         isInMyTeam = isMyTeam;
         list.add(MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
@@ -63,8 +62,7 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     public Fragment getItem(int position) {
         Fragment f = null;
         if (!isInMyTeam) {
-            if (position == 0)
-                f = new PlanFragment();
+            if (position == 0) f = new PlanFragment();
             else {
                 f = new JoinedMemberFragment();
             }
@@ -106,8 +104,6 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
                 f = new MembersFragment();
                 break;
         }
-
-
         return f;
     }
 
@@ -119,6 +115,4 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
     public int getCount() {
         return list.size();
     }
-
-
 }

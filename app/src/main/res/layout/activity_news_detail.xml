@@ -25,13 +25,12 @@
 
 
             <ImageView
-                android:layout_width="match_parent"
                 android:id="@+id/img"
-                android:scaleType="centerCrop"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
                 android:background="@color/colorPrimary"
-                android:visibility="visible"
-                android:layout_height="300dp"/>
-
+                android:scaleType="centerCrop"
+                android:visibility="visible" />
 
 
             <androidx.appcompat.widget.Toolbar

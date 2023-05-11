@@ -85,15 +85,15 @@
         </LinearLayout>
 
         <com.google.android.flexbox.FlexboxLayout
-            android:layout_width="match_parent"
             android:id="@+id/fb_chips"
-            android:padding="@dimen/padding_normal"
-            android:layout_height="wrap_content"/>
-<!--        <com.google.android.material.chip.ChipGroup-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:padding="@dimen/padding_normal"-->
-<!--            android:id="@+id/fb_chips"-->
-<!--            android:layout_height="wrap_content"/>-->
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal" />
+        <!--        <com.google.android.material.chip.ChipGroup-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:padding="@dimen/padding_normal"-->
+        <!--            android:id="@+id/fb_chips"-->
+        <!--            android:layout_height="wrap_content"/>-->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -123,9 +123,9 @@
                 android:id="@+id/btn_share"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:visibility="gone"
                 android:text="@string/share_with_community"
-                android:theme="@style/PrimaryFlatButton" />
+                android:theme="@style/PrimaryFlatButton"
+                android:visibility="gone" />
 
             <LinearLayout
                 android:id="@+id/ll_edit_delete"

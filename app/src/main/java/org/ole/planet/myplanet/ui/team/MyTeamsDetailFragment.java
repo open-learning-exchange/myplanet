@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team;
 
-
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -48,11 +47,7 @@ import java.util.UUID;
 
 import io.realm.RealmResults;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class MyTeamsDetailFragment extends BaseNewsFragment {
-
     TextView tvTitle, tvDescription;
     RealmUserModel user;
     String teamId;
@@ -67,7 +62,6 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     boolean isMyTeam;
     RealmResults<RealmMyLibrary> libraries;
 
-
     public MyTeamsDetailFragment() {
     }
 
@@ -81,8 +75,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_my_teams_detail, container, false);
         initializeViews(v);
         dbService = new DatabaseService(getActivity());
@@ -106,31 +99,27 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         v.findViewById(R.id.add_message).setOnClickListener(view -> {
             showAddMessage();
         });
-
     }
 
     private void showAddMessage() {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
         layout.setHint(getString(R.string.enter_message));
-        new AlertDialog.Builder(getActivity())
-                .setView(v)
-                .setTitle("Add Message")
-                .setPositiveButton("Save", (dialogInterface, i) -> {
-                    String msg = layout.getEditText().getText().toString().trim();
-                    if (msg.isEmpty()) {
-                        Utilities.toast(getActivity(), "Message is required");
-                        return;
-                    }
-                    HashMap<String, String> map = new HashMap<>();
-                    map.put("viewableBy", "teams");
-                    map.put("viewableId", teamId);
-                    map.put("message", msg);
-                    map.put("messageType", team.getTeamType());
-                    map.put("messagePlanetCode", team.getTeamPlanetCode());
-                    RealmNews.createNews(map, mRealm, user, imageList);
-                    rvDiscussion.getAdapter().notifyDataSetChanged();
-                }).setNegativeButton("Cancel", null).show();
+        new AlertDialog.Builder(getActivity()).setView(v).setTitle("Add Message").setPositiveButton("Save", (dialogInterface, i) -> {
+            String msg = layout.getEditText().getText().toString().trim();
+            if (msg.isEmpty()) {
+                Utilities.toast(getActivity(), "Message is required");
+                return;
+            }
+            HashMap<String, String> map = new HashMap<>();
+            map.put("viewableBy", "teams");
+            map.put("viewableId", teamId);
+            map.put("message", msg);
+            map.put("messageType", team.getTeamType());
+            map.put("messagePlanetCode", team.getTeamPlanetCode());
+            RealmNews.createNews(map, mRealm, user, imageList);
+            rvDiscussion.getAdapter().notifyDataSetChanged();
+        }).setNegativeButton("Cancel", null).show();
     }
 
     @Override
@@ -163,10 +152,10 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 ((ViewGroup) tabLayout.getChildAt(4)).getChildAt(0).setVisibility(View.GONE);
                 tabLayout.getTabAt(1).select();
             } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         setTabListener(users, courses, reqUsers);
-
     }
 
     private void createTeamLog() {
@@ -225,7 +214,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 LibraryDetailFragment f = new LibraryDetailFragment();
                 Bundle b = new Bundle();
                 b.putString("libraryId", libraries.get(i).getId());
-                b.putString("openFrom", team.getTeamType() + "-" + team.getTitle() );
+                b.putString("openFrom", team.getTeamType() + "-" + team.getTitle());
                 f.setArguments(b);
                 homeItemClickListener.openCallFragment(f);
             }
@@ -286,6 +275,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
             }
             return mRealm.where(RealmUserModel.class).in("id", ids).findAll();
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return new ArrayList<>();
     }
@@ -294,5 +284,4 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     public void setData(List<RealmNews> list) {
         showRecyclerView(list);
     }
-
 }

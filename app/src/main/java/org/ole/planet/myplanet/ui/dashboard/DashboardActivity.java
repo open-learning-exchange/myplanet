@@ -1,48 +1,26 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
-import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.view.menu.MenuView;
-import androidx.appcompat.widget.Toolbar;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.Fragment;
-import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
-import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
-import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
-
-import android.text.TextUtils;
-import android.util.Log;
-import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.Surface;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.google.android.material.bottomnavigation.BottomNavigationItemView;
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.Toolbar;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.internal.NavigationMenuItemView;
-import com.google.android.material.tabs.TabItem;
 import com.google.android.material.tabs.TabLayout;
 import com.mikepenz.materialdrawer.AccountHeader;
 import com.mikepenz.materialdrawer.AccountHeaderBuilder;
@@ -51,45 +29,39 @@ import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
-import com.mikepenz.materialize.holder.DimenHolder;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.TransactionSyncManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
-import org.ole.planet.myplanet.ui.community.CommunityFragment;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
 import org.ole.planet.myplanet.ui.library.LibraryDetailFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
-import org.ole.planet.myplanet.ui.references.ReferenceFragment;
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
-import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-import java.lang.annotation.Target;
 import java.util.ArrayList;
-import java.util.List;
 
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
+import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
-
     AccountHeader headerResult;
     RealmUserModel user;
     private Drawer result = null;
-    private Toolbar mTopToolbar,bellToolbar;
+    private Toolbar mTopToolbar, bellToolbar;
     TabLayout.Tab menul;
     TabLayout.Tab menuh;
     TabLayout.Tab menuc;
@@ -100,7 +72,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     View begin;
     DrawerLayout dl;
     ImageView img;
-
 
 //    private GestureDetector mDetector;
 
@@ -119,8 +90,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         sequence.addSequenceItem(menut.getCustomView(), "Navigate to the Teams Tab to join, request, and check up on your teams", "GOT IT");
         sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
         sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
-       sequence.start();
+        sequence.start();
     }
+
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -146,16 +118,16 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
         tl = findViewById(R.id.tab_layout);
         TextView appName = findViewById(R.id.app_title_name);
-        try{
+        try {
             String name = profileDbHandler.getUserModel().getFullName();
             if (name.trim().length() == 0) {
                 name = profileDbHandler.getUserModel().getName();
             }
             appName.setText(name + "'s Planet");
-        }catch (Exception err){
+        } catch (Exception err) {
         }
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if ( user.getRolesList().isEmpty() && !user.getUserAdmin()) {
+        if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
@@ -164,7 +136,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
-        if(getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             result.openDrawer();
 
         }//Opens drawer by default
@@ -223,7 +195,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         showShowCaseViewVertical();
     }
 
-
     private void checkUser() {
         user = new UserProfileDbHandler(this).getUserModel();
         if (user == null) {
@@ -273,7 +244,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         navigationView.setVisibility(View.GONE);
     }
 
-
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         if (user.getRolesList().isEmpty()) {
@@ -283,37 +253,19 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private AccountHeader getAccountHeader() {
-        return new AccountHeaderBuilder()
-                .withActivity(DashboardActivity.this)
-                .withTextColor(getResources().getColor(R.color.bg_white))
-                .withHeaderBackground(R.drawable.header_image)
-                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
-                .withDividerBelowHeader(false)
-                .build();
+        return new AccountHeaderBuilder().withActivity(DashboardActivity.this).withTextColor(getResources().getColor(R.color.bg_white)).withHeaderBackground(R.drawable.header_image).withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY).withDividerBelowHeader(false).build();
     }
-
 
     private void createDrawer() {
         com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
-        result = new DrawerBuilder()
-                .withActivity(this)
-                .withFullscreen(true)
-                .withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary))
-                .withToolbar(mTopToolbar)
-                .withAccountHeader(headerResult)
-                .withHeaderHeight(dimenHolder)
-                .addDrawerItems(getDrawerItems())
-                .addStickyDrawerItems(getDrawerItemsFooter())
-                .withOnDrawerItemClickListener((view, position, drawerItem) -> {
-                    if (drawerItem != null) {
-                        // if (drawerItem instanceof Nameable) {
-                        menuAction(((Nameable) drawerItem).getName().getTextRes());
-                        //   }
-                    }
-                    return false;
-                })
-                .withDrawerWidthDp(200)
-                .build();
+        result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
+            if (drawerItem != null) {
+                // if (drawerItem instanceof Nameable) {
+                menuAction(((Nameable) drawerItem).getName().getTextRes());
+                //   }
+            }
+            return false;
+        }).withDrawerWidthDp(200).build();
     }
 
     private void menuAction(int selectedMenuId) {
@@ -360,14 +312,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         }
     }
 
-
     private void openMyFragment(Fragment f) {
         Bundle b = new Bundle();
         b.putBoolean("isMyCourseLib", true);
         f.setArguments(b);
         openCallFragment(f, "shelf");
     }
-
 
     @Override
     protected void onDestroy() {
@@ -412,20 +362,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.team));
         menuImageList.add(getResources().getDrawable(R.drawable.business));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
-        return new IDrawerItem[]{
-                changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0),
-                changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1),
-                changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2),
-                changeUX(R.string.menu_library, menuImageList.get(3)),
-                changeUX(R.string.menu_courses, menuImageList.get(4)),
-                changeUX(R.string.team, menuImageList.get(5)),
-                changeUX(R.string.menu_community, menuImageList.get(7)),
-                changeUX(R.string.enterprises, menuImageList.get(6))
-                        .withSelectable(false)
-                        .withDisabledIconColor(getResources().getColor(R.color.disable_color))
-                        .withDisabledTextColor(getResources().getColor(R.color.disable_color)),
-                changeUX(R.string.menu_surveys, menuImageList.get(7))
-        };
+        return new IDrawerItem[]{changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0), changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1), changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2), changeUX(R.string.menu_library, menuImageList.get(3)), changeUX(R.string.menu_courses, menuImageList.get(4)), changeUX(R.string.team, menuImageList.get(5)), changeUX(R.string.menu_community, menuImageList.get(7)), changeUX(R.string.enterprises, menuImageList.get(6)).withSelectable(false).withDisabledIconColor(getResources().getColor(R.color.disable_color)).withDisabledTextColor(getResources().getColor(R.color.disable_color)), changeUX(R.string.menu_surveys, menuImageList.get(7))};
     }
 
     @NonNull
@@ -434,18 +371,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
-        return new IDrawerItem[]{
-                changeUX(R.string.menu_feedback, menuImageListFooter.get(0)),
-                changeUX(R.string.menu_logout, menuImageListFooter.get(1)),
-        };
+        return new IDrawerItem[]{changeUX(R.string.menu_feedback, menuImageListFooter.get(0)), changeUX(R.string.menu_logout, menuImageListFooter.get(1)),};
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {
-        return new PrimaryDrawerItem().withName(iconText)
-                .withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary))
-                .withIconColor(getResources().getColor(R.color.textColorPrimary))
-                .withSelectedIconColor(getResources().getColor(R.color.primary_dark))
-                .withIconTintingEnabled(true);
+        return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withIconColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIconColor(getResources().getColor(R.color.primary_dark)).withIconTintingEnabled(true);
     }
 
     @Override
@@ -459,7 +389,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         } else {
             super.onBackPressed();
         }
-
     }
 
     @Override
@@ -470,11 +399,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             openCallFragment(new CourseFragment());
         } else if (item.getItemId() == R.id.menu_mycourses) {
             openMyFragment(new CourseFragment());
-        }
-        else if (item.getItemId() == R.id.menu_mycourses) {
+        } else if (item.getItemId() == R.id.menu_mycourses) {
             openMyFragment(new CourseFragment());
-        }
-        else if (item.getItemId() == R.id.menu_mylibrary) {
+        } else if (item.getItemId() == R.id.menu_mylibrary) {
             openMyFragment(new LibraryFragment());
         } else if (item.getItemId() == R.id.menu_enterprises) {
             openEnterpriseFragment();

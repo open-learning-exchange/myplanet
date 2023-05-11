@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news;
 
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -11,12 +10,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputLayout;
@@ -37,7 +34,6 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,8 +43,6 @@ import io.realm.Case;
 import io.realm.Sort;
 
 public class NewsFragment extends BaseNewsFragment {
-
-
     RecyclerView rvNews;
     EditText etMessage;
     TextInputLayout tlMessage;
@@ -56,7 +50,6 @@ public class NewsFragment extends BaseNewsFragment {
     LinearLayout llAddNews;
     RealmUserModel user;
     TextView tvMessage;
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -78,7 +71,6 @@ public class NewsFragment extends BaseNewsFragment {
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());
         btnAddStory.setOnClickListener(view -> {
-
             llAddNews.setVisibility(llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
             btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? "Hide Add Story" : "Add Story");
         });
@@ -135,7 +127,6 @@ public class NewsFragment extends BaseNewsFragment {
                     }
                 }
             }
-
         }
         return list;
     }
@@ -163,7 +154,6 @@ public class NewsFragment extends BaseNewsFragment {
         showNoData(tvMessage, adapterNews.getItemCount());
     }
 
-
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -187,5 +177,4 @@ public class NewsFragment extends BaseNewsFragment {
             showNoData(tvMessage, adapterNews.getItemCount());
         }
     };
-
 }

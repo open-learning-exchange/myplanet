@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.references;
 
-
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -20,18 +19,14 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.model.Reference;
 import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity;
 import org.ole.planet.myplanet.ui.map.OfflineMapActivity;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class ReferenceFragment extends Fragment {
-
     RecyclerView rvReference;
     OnHomeItemClickListener homeItemClickListener;
+
     public ReferenceFragment() {
     }
 
@@ -39,12 +34,11 @@ public class ReferenceFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof OnHomeItemClickListener)
-            homeItemClickListener= (OnHomeItemClickListener) context;
+            homeItemClickListener = (OnHomeItemClickListener) context;
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_reference, container, false);
         List<Reference> list = new ArrayList<>();
         list.add(new Reference(getString(R.string.maps), android.R.drawable.ic_dialog_map));
@@ -69,13 +63,15 @@ public class ReferenceFragment extends Fragment {
                     ((ViewHolderReference) holder).title.setText(list.get(position).getTitle());
                     ((ViewHolderReference) holder).icon.setImageResource(list.get(position).getIcon());
                     holder.itemView.setOnClickListener(view -> {
-                        if (position == 0) startActivity(new Intent(getActivity(), OfflineMapActivity.class));
+                        if (position == 0)
+                            startActivity(new Intent(getActivity(), OfflineMapActivity.class));
                         else {
 //                            if (homeItemClickListener!=null){
 //
 //                            }
                             startActivity(new Intent(getActivity(), DictionaryActivity.class));
-                        };
+                        }
+                        ;
                     });
                 }
             }
@@ -86,7 +82,6 @@ public class ReferenceFragment extends Fragment {
             }
         });
     }
-
 
     class ViewHolderReference extends RecyclerView.ViewHolder {
         TextView title;

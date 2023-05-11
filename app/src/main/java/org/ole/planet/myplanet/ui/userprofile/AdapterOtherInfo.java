@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils;
 import java.util.List;
 
 public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     private Context context;
     private List<String> list;
 
@@ -38,10 +37,7 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderOtherInfo) {
             JsonObject object = new Gson().fromJson(list.get(position), JsonObject.class);
-            String res = JsonUtils.getString("name", object) + "\n" +
-                    JsonUtils.getString("relationship", object) + "\n" +
-                    JsonUtils.getString("phone", object) + "\n" +
-                    JsonUtils.getString("email", object) + "\n";
+            String res = JsonUtils.getString("name", object) + "\n" + JsonUtils.getString("relationship", object) + "\n" + JsonUtils.getString("phone", object) + "\n" + JsonUtils.getString("email", object) + "\n";
             ((ViewHolderOtherInfo) holder).tvDescription.setText(res);
 //            ((ViewHolderOtherInfo) holder).tvDescription.setText(JsonUtils.getString("description", object));
         }
@@ -53,13 +49,13 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
     }
 
     public static class ViewHolderOtherInfo extends RecyclerView.ViewHolder {
-       public TextView tvTitle, tvDescription;
+        public TextView tvTitle, tvDescription;
 
         public ViewHolderOtherInfo(View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tv_title);
             tvDescription = itemView.findViewById(R.id.tv_description);
-          //  tvTitle.setVisibility(View.GONE);
+            //  tvTitle.setVisibility(View.GONE);
         }
     }
 }

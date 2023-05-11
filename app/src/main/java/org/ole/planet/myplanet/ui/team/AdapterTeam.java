@@ -1,11 +1,6 @@
 package org.ole.planet.myplanet.ui.team;
 
 import android.content.Context;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -16,10 +11,13 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
@@ -47,10 +45,8 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.context = context;
         this.list = list;
         this.mRealm = mRealm;
-        if (context instanceof OnUserSelectedListener)
-            listener = (OnUserSelectedListener) context;
+        if (context instanceof OnUserSelectedListener) listener = (OnUserSelectedListener) context;
     }
-
 
     @NonNull
     @Override
@@ -62,13 +58,11 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderTeam) {
-
             ((ViewHolderTeam) holder).title.setText(list.get(position).getName());
             holder.itemView.setOnClickListener(view -> {
                 if (this.teamSelectedListener != null)
                     this.teamSelectedListener.onSelectedTeam(list.get(position));
-                else
-                    showUserList(list.get(position));
+                else showUserList(list.get(position));
             });
         }
     }
@@ -95,8 +89,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
         });
         lv.setOnItemClickListener((adapterView, view1, i, l) -> {
-            if (listener != null)
-                listener.onSelectedUser(users.get(i));
+            if (listener != null) listener.onSelectedUser(users.get(i));
         });
         new AlertDialog.Builder(context).setTitle("Select User To Login").setView(view).setNegativeButton("Dismiss", null).show();
     }

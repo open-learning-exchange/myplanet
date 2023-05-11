@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    app:contentPadding="@dimen/padding_normal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     app:cardElevation="4dp"
     app:cardUseCompatPadding="true"
-    android:layout_height="wrap_content">
+    app:contentPadding="@dimen/padding_normal">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/title"
@@ -27,8 +27,8 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="2"
-            android:textColor="@color/colorPrimaryDark"
-            android:padding="4dp" />
+            android:padding="4dp"
+            android:textColor="@color/colorPrimaryDark" />
 
         <TextView
             android:id="@+id/description"
@@ -37,6 +37,7 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:padding="4dp" />
+
         <LinearLayout
             android:id="@+id/ll_edit_delete"
             android:layout_width="wrap_content"

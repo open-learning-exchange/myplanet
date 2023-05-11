@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.model;
 
+import static android.content.Context.MODE_PRIVATE;
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
+
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.preference.PreferenceManager;
 
 import androidx.annotation.RequiresApi;
 
@@ -13,21 +15,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import org.json.JSONArray;
 import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
-import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.Serializable;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
-import static android.content.Context.MODE_PRIVATE;
-import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
 public class MyPlanet implements Serializable {
     private String planetVersion;
@@ -120,8 +115,7 @@ public class MyPlanet implements Serializable {
         SharedPreferences preferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
-        if (planet != null)
-            postJSON.addProperty("planetVersion", planet.getPlanetVersion());
+        if (planet != null) postJSON.addProperty("planetVersion", planet.getPlanetVersion());
         postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getMacAddr());
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
@@ -138,8 +132,7 @@ public class MyPlanet implements Serializable {
         SharedPreferences preferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
 
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
-        if (planet != null)
-            postJSON.addProperty("planetVersion", planet.getPlanetVersion());
+        if (planet != null) postJSON.addProperty("planetVersion", planet.getPlanetVersion());
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
@@ -166,8 +159,7 @@ public class MyPlanet implements Serializable {
         JsonArray arr = new JsonArray();
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
             UsageStatsManager mUsageStatsManager = (UsageStatsManager) MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE);
-            List<UsageStats> queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(),
-                    System.currentTimeMillis());
+            List<UsageStats> queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.getTimeInMillis(), System.currentTimeMillis());
             for (UsageStats s : queryUsageStats) {
                 addStats(s, arr, context, pref);
             }
@@ -180,7 +172,7 @@ public class MyPlanet implements Serializable {
         if (s.getPackageName().equals(MainApplication.context.getPackageName())) {
             JsonObject object = new JsonObject();
             object.addProperty("lastTimeUsed", s.getLastTimeUsed() > 0 ? s.getLastTimeUsed() : 0);
-            object.addProperty("firstTimeUsed", s.getFirstTimeStamp() > 0 ? s.getLastTimeStamp() :0);
+            object.addProperty("firstTimeUsed", s.getFirstTimeStamp() > 0 ? s.getLastTimeStamp() : 0);
             object.addProperty("totalForegroundTime", s.getTotalTimeInForeground());
             long totalUsed = s.getLastTimeUsed() - s.getFirstTimeStamp();
             object.addProperty("totalUsed", totalUsed > 0 ? totalUsed : 0);

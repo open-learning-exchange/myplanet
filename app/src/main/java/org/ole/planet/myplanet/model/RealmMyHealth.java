@@ -1,21 +1,5 @@
 package org.ole.planet.myplanet.model;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
-import org.ole.planet.myplanet.MainApplication;
-import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.myhealth.RealmExamination;
-import org.ole.planet.myplanet.utilities.JsonUtils;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import io.realm.Realm;
-import io.realm.RealmObject;
-import io.realm.annotations.PrimaryKey;
-
-
 public class RealmMyHealth {
     private RealmMyHealthProfile profile;
     private String userKey;
@@ -46,7 +30,7 @@ public class RealmMyHealth {
     }
 
     public static class RealmMyHealthProfile {
-        private String  emergencyContactName ="", emergencyContactType ="", emergencyContact="", specialNeeds="", notes="";
+        private String emergencyContactName = "", emergencyContactType = "", emergencyContact = "", specialNeeds = "", notes = "";
 
         public String getEmergencyContactName() {
             return emergencyContactName;
@@ -89,5 +73,4 @@ public class RealmMyHealth {
             this.notes = notes;
         }
     }
-
 }

@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.ui.viewer;
 
 import android.content.Intent;
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.view.View;
 import android.widget.TextView;
 
@@ -14,7 +16,6 @@ import java.io.File;
 import java.io.FileReader;
 
 public class TextFileViewerActivity extends AppCompatActivity {
-
     private TextView mTextFileNameTitle;
     private TextView mTextFileContent;
     private String fileName;

@@ -62,6 +62,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     int[] syncTimeInteval = {60 * 60, 3 * 60 * 60};
     ImageView syncIcon;
     AnimationDrawable syncIconDrawable;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,10 +105,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
-
     public void setUpChildMode() {
-        if (!settings.getBoolean("isChild", false))
-            return;
+        if (!settings.getBoolean("isChild", false)) return;
         RecyclerView rvTeams = findViewById(R.id.rv_teams);
         TextView tvNodata = findViewById(R.id.tv_nodata);
 
@@ -121,7 +120,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             tvNodata.setVisibility(View.VISIBLE);
         }
     }
-
 
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage("Connecting to server....");
@@ -150,8 +148,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 alertDialogOkay("Device couldn't reach server. Check and try again");
-                if (mRealm != null)
-                    mRealm.close();
+                if (mRealm != null) mRealm.close();
                 progressDialog.dismiss();
             }
         });
@@ -182,7 +179,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncDate.setText(getString(R.string.last_sync_date) + convertDate());
         syncDropdownAdd();
     }
-
 
     // Converts OS date to human date
     public String convertDate() {
@@ -227,9 +223,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     private Boolean checkName(String username, String password, boolean isManagerMode) {
         try {
             AndroidDecrypter decrypt = new AndroidDecrypter();
-            RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class)
-                    .equalTo("name", username)
-                    .findAll();
+            RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class).equalTo("name", username).findAll();
             for (RealmUserModel user : db_users) {
                 if (user.get_id().isEmpty()) {
                     if (username.equals(user.getName()) && password.equals(user.getPassword())) {
@@ -238,8 +232,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     }
                 } else {
                     if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
-                        if (isManagerMode && !user.isManager())
-                            return false;
+                        if (isManagerMode && !user.isManager()) return false;
                         saveUserInfoPref(settings, password, user);
                         return true;
                     }
@@ -252,12 +245,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         return false;
     }
 
-
     public void startSync() {
         Utilities.log("Start sync");
-
         SyncManager.getInstance().start(SyncActivity.this);
-
     }
 
     public String saveConfigAndContinue(MaterialDialog dialog) {
@@ -269,18 +259,15 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
         settings.edit().putString("customDeviceName", ((EditText) dialog.getCustomView().findViewById(R.id.deviceName)).getText().toString()).commit();
         url = protocol + url;
-        if (isUrlValid(url))
-            processedUrl = setUrlParts(url, pin, this);
+        if (isUrlValid(url)) processedUrl = setUrlParts(url, pin, this);
         return processedUrl;
     }
-
 
     @Override
     public void onSyncStarted() {
         progressDialog.setMessage("Syncing data, Please wait...");
         progressDialog.show();
     }
-
 
     @Override
     public void onSyncFailed(final String s) {
@@ -312,5 +299,4 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
         NotificationUtil.cancellAll(this);
     }
-
 }

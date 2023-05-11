@@ -24,9 +24,9 @@
                 android:padding="@dimen/padding_normal">
 
                 <EditText
+                    android:id="@+id/et_filter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:id="@+id/et_filter"
                     android:hint="@string/filter_collections" />
 
 
@@ -38,29 +38,29 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:checked="true"
-                android:visibility="gone"
                 android:padding="@dimen/padding_normal"
-                android:text="@string/select_many_collections" />
+                android:text="@string/select_many_collections"
+                android:visibility="gone" />
 
         </LinearLayout>
 
         <ExpandableListView
-            android:layout_width="match_parent"
             android:id="@+id/list_tags"
+            android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:padding="@dimen/padding_normal"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:padding="@dimen/padding_normal" />
 
 
         <Button
-            android:layout_width="wrap_content"
-            android:layout_gravity="right"
-            android:theme="@style/PrimaryButton"
-            android:text="@string/ok"
             android:id="@+id/btn_ok"
-            android:minWidth="100dp"
-            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
             android:layout_margin="@dimen/padding_large"
-            android:layout_height="wrap_content" />
+            android:minWidth="100dp"
+            android:text="@string/ok"
+            android:theme="@style/PrimaryButton"
+            android:visibility="gone" />
     </LinearLayout>
 </FrameLayout>

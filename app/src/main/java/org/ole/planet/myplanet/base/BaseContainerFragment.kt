@@ -38,7 +38,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
     var rating: TextView? = null
     var ratingBar: AppCompatRatingBar? = null
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
         profileDbHandler = UserProfileDbHandler(activity)
         return super.onCreateView(inflater, container, savedInstanceState)
     }
@@ -49,22 +51,30 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-    fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String?>) {
+    fun getUrlsAndStartDownload(
+        lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String?>
+    ) {
         for (library in lib) {
             val url = Utilities.getUrl(library, settings)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
-        if (!urls.isEmpty()) startDownload(urls) else Utilities.toast(activity, "No images to download.")
+        if (!urls.isEmpty()) startDownload(urls) else Utilities.toast(
+            activity, "No images to download."
+        )
     }
 
-    fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
-        timesRated = view!!.findViewById(R.id.times_rated)
-        rating = view!!.findViewById(R.id.tv_rating)
-        ratingBar = view!!.findViewById(R.id.rating_bar)
-        ratingBar?.setOnTouchListener(View.OnTouchListener { vi: View?, e: MotionEvent ->
-            if (e.action == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog(type, id, title, listener)
+    fun initRatingView(
+        type: String?, id: String?, title: String?, listener: OnRatingChangeListener?
+    ) {
+        timesRated = requireView().findViewById(R.id.times_rated)
+        rating = requireView().findViewById(R.id.tv_rating)
+        ratingBar = requireView().findViewById(R.id.rating_bar)
+        ratingBar?.setOnTouchListener { vi: View?, e: MotionEvent ->
+            if (e.action == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog(
+                type, id, title, listener
+            )
             true
-        })
+        }
     }
 
     override fun onAttach(context: Context) {
@@ -76,7 +86,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress.contains("ole/audio") || items.resourceLocalAddress.contains("ole/video")) {
+        if (items.resourceLocalAddress.contains("ole/audio") || items.resourceLocalAddress.contains(
+                "ole/video"
+            )
+        ) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
         } else {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
@@ -124,7 +137,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
             "csv" -> openIntent(items, CSVViewerActivity::class.java)
-            else -> Toast.makeText(activity, "This file type is currently unsupported", Toast.LENGTH_LONG).show()
+            else -> Toast.makeText(
+                activity, "This file type is currently unsupported", Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -136,8 +151,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             Utilities.toast(activity, "Unable to open resource")
             return
         }
-        if (profileDbHandler == null)
-            profileDbHandler = UserProfileDbHandler(activity)
+        if (profileDbHandler == null) profileDbHandler = UserProfileDbHandler(activity)
         profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
@@ -158,7 +172,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
                 bundle.putString("videoURL", items.resourceLocalAddress)
             } else {
-                bundle.putString("videoURL", "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress))))
+                bundle.putString(
+                    "videoURL",
+                    "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress)))
+                )
             }
             bundle.putString("Auth", "")
         }
@@ -167,20 +184,28 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
-        val builderSingle = AlertDialog.Builder(activity!!)
+        val builderSingle = AlertDialog.Builder(requireActivity())
         builderSingle.setTitle("Select resource to open : ")
-        val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(activity!!, android.R.layout.select_dialog_item, downloadedResources!!) {
+        val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
+            requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
+        ) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertView = convertView
-                if (convertView == null) convertView = LayoutInflater.from(activity).inflate(android.R.layout.select_dialog_item, parent, false)
+                if (convertView == null) convertView = LayoutInflater.from(activity)
+                    .inflate(android.R.layout.select_dialog_item, parent, false)
                 val tv = convertView as TextView
                 val library = getItem(position)
-                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0, if (library!!.isResourceOffline) R.drawable.ic_eye else R.drawable.ic_download, 0)
+                tv.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    0,
+                    if (library!!.isResourceOffline) R.drawable.ic_eye else R.drawable.ic_download,
+                    0
+                )
                 tv.text = library.title
                 return tv
             }
         }
-        builderSingle.setAdapter(arrayAdapter) { dialogInterface: DialogInterface?, i: Int ->
+        builderSingle.setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
             val library = arrayAdapter.getItem(i)
             library?.let { openResource(it) }
         }
@@ -208,7 +233,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         } else {
             btnResources.visibility = View.VISIBLE
             btnResources.text = "Resources [" + resources.size + "]"
-            btnResources.setOnClickListener { view: View? -> if (resources.size > 0) showDownloadDialog(resources as List<RealmMyLibrary>) }
+            btnResources.setOnClickListener {
+                if (resources.size > 0) showDownloadDialog(
+                    resources as List<RealmMyLibrary>
+                )
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.graphics.Color
@@ -34,11 +33,7 @@ import org.threeten.bp.YearMonth
 import org.threeten.bp.temporal.WeekFields
 import java.util.*
 
-/**
- * A simple [Fragment] subclass.
- */
 class EnterpriseCalendarFragment : BaseTeamFragment() {
-
     lateinit var list: List<RealmMeetup>
     lateinit var startDate: TextView
     lateinit var startTime: TextView
@@ -48,9 +43,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     lateinit var end: Calendar
     lateinit var rvCalendar: RecyclerView
 
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
         val v = inflater.inflate(R.layout.fragment_enterprise_calendar, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
@@ -62,19 +57,15 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     private fun showHideFab(fab: View) {
-         if (arguments!!.getBoolean("fromLogin", false)){
-             fab.visibility = View.GONE
-         }  else if(user!=null){
-            if(user.isManager || user.isLeader)
-                fab.visibility = View.VISIBLE
-            else
-                fab.visibility = View.GONE
-        }else{
+        if (arguments!!.getBoolean("fromLogin", false)) {
             fab.visibility = View.GONE
-
+        } else if (user != null) {
+            if (user.isManager || user.isLeader) fab.visibility = View.VISIBLE
+            else fab.visibility = View.GONE
+        } else {
+            fab.visibility = View.GONE
         }
     }
-
 
     private fun showMeetupAlert() {
         val v = LayoutInflater.from(activity).inflate(R.layout.add_meetup, null)
@@ -91,78 +82,77 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         setTimePicker(startTime)
         setTimePicker(endTime)
 
-        AlertDialog.Builder(activity!!).setView(v)
-                .setPositiveButton("Save") { dialogInterface, i ->
-                    val ttl = title.text.toString()
-                    val desc = description.text.toString()
-                    val loc = location.text.toString()
-                    if (ttl.isEmpty()) {
-                        Utilities.toast(activity, "Title is required")
-                    } else if (desc.isEmpty()) {
-                        Utilities.toast(activity, "Description is required")
-                    } else if (start == null) {
-                        Utilities.toast(activity, "Start time is required")
-                    } else {
-                        if (!mRealm.isInTransaction)
-                            mRealm.beginTransaction()
-                        val meetup = mRealm.createObject(RealmMeetup::class.java, UUID.randomUUID().toString())
-                        meetup.title = ttl
-                        meetup.description = desc
-                        meetup.meetupLocation = loc
-                        meetup.creator = user.id
-                        meetup.startDate = start!!.timeInMillis
-                        if (end != null)
-                            meetup.endDate = end!!.timeInMillis
-                        meetup.endTime = endTime.text.toString()
-                        meetup.startTime = startTime.text.toString()
-                        val rb = v.findViewById<RadioButton>(radioGroup.checkedRadioButtonId)
-                        if (rb != null) {
-                            meetup.recurring = rb.text.toString()
-                        }
-                        val ob = JsonObject()
-                        ob.addProperty("teams", teamId)
-                        meetup.links = Gson().toJson(ob)
-                        meetup.teamId = teamId
-                        mRealm.commitTransaction()
-                        Utilities.toast(activity, "Meetup added")
-                        rvCalendar.adapter?.notifyDataSetChanged()
-                        calendarView.notifyCalendarChanged()
+        AlertDialog.Builder(requireActivity()).setView(v)
+            .setPositiveButton("Save") { dialogInterface, i ->
+                val ttl = title.text.toString()
+                val desc = description.text.toString()
+                val loc = location.text.toString()
+                if (ttl.isEmpty()) {
+                    Utilities.toast(activity, "Title is required")
+                } else if (desc.isEmpty()) {
+                    Utilities.toast(activity, "Description is required")
+                } else if (start == null) {
+                    Utilities.toast(activity, "Start time is required")
+                } else {
+                    if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                    val meetup =
+                        mRealm.createObject(RealmMeetup::class.java, UUID.randomUUID().toString())
+                    meetup.title = ttl
+                    meetup.description = desc
+                    meetup.meetupLocation = loc
+                    meetup.creator = user.id
+                    meetup.startDate = start!!.timeInMillis
+                    if (end != null) meetup.endDate = end!!.timeInMillis
+                    meetup.endTime = endTime.text.toString()
+                    meetup.startTime = startTime.text.toString()
+                    val rb = v.findViewById<RadioButton>(radioGroup.checkedRadioButtonId)
+                    if (rb != null) {
+                        meetup.recurring = rb.text.toString()
                     }
-                }.setNegativeButton("Cancel", null).show()
+                    val ob = JsonObject()
+                    ob.addProperty("teams", teamId)
+                    meetup.links = Gson().toJson(ob)
+                    meetup.teamId = teamId
+                    mRealm.commitTransaction()
+                    Utilities.toast(activity, "Meetup added")
+                    rvCalendar.adapter?.notifyDataSetChanged()
+                    calendarView.notifyCalendarChanged()
+                }
+            }.setNegativeButton("Cancel", null).show()
     }
-
 
     private fun setDatePickerListener(view: TextView, date: Calendar?) {
         val c = Calendar.getInstance()
         view.setOnClickListener { v ->
 
-            DatePickerDialog(activity!!, { vi, year, monthOfYear, dayOfMonth ->
+            DatePickerDialog(requireActivity(), { vi, year, monthOfYear, dayOfMonth ->
                 date!!.set(Calendar.YEAR, year)
                 date.set(Calendar.MONTH, monthOfYear)
                 date.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                if (view != null)
-                    view.text = TimeUtils.formatDate(date.timeInMillis, "yyyy-MM-dd")
+                if (view != null) view.text = TimeUtils.formatDate(date.timeInMillis, "yyyy-MM-dd")
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
 
         }
     }
 
-
     private fun setTimePicker(time: TextView) {
         val c = Calendar.getInstance()
         time.setOnClickListener { v ->
-            val timePickerDialog = TimePickerDialog(activity,
-                    { view, hourOfDay, minute -> time.text = String.format("%02d:%02d", hourOfDay, minute) }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true)
+            val timePickerDialog = TimePickerDialog(
+                activity, { view, hourOfDay, minute ->
+                    time.text = String.format("%02d:%02d", hourOfDay, minute)
+                }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true
+            )
             timePickerDialog.show()
         }
 
     }
 
-
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         Utilities.log(teamId)
-        list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
+        list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId)
+            .greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
         rvCalendar.layoutManager = LinearLayoutManager(activity)
         rvCalendar.adapter = AdapterCalendar(activity, list)
         calendarView.inDateStyle = InDateStyle.ALL_MONTHS
@@ -181,11 +171,11 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
             override fun create(view: View) = MonthViewContainer(view)
             override fun bind(container: MonthViewContainer, month: CalendarMonth) {
                 container.textView.setTextColor(activity!!.resources.getColor(R.color.colorPrimaryDark))
-                container.textView.text = "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
+                container.textView.text =
+                    "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
             }
         }
     }
-
 
     fun setUpCalendar() {
         calendarView.dayBinder = object : DayBinder<DayViewContainer> {
@@ -204,19 +194,24 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     container.textView.textSize = 14.0f
                 }
                 if (event != null) {
-                    container.textView.setOnClickListener { DialogUtils.showAlert(activity!!, event.title, event.description) }
+                    container.textView.setOnClickListener {
+                        DialogUtils.showAlert(
+                            activity!!, event.title, event.description
+                        )
+                    }
                     container.textView.setBackgroundColor(resources.getColor(R.color.colorPrimaryDark))
                     container.textView.setTextColor(resources.getColor(R.color.md_white_1000))
                 }
             }
         }
-
-
     }
 
     private fun getEvent(time: Long): RealmMeetup? {
         for (realmMeetup in list) {
-            if (time >= getTimeMills(realmMeetup.startDate, false) && time <= getTimeMills(realmMeetup.endDate, true)) {
+            if (time >= getTimeMills(realmMeetup.startDate, false) && time <= getTimeMills(
+                    realmMeetup.endDate, true
+                )
+            ) {
                 return realmMeetup
             }
         }
@@ -239,5 +234,4 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     class MonthViewContainer(view: View) : ViewContainer(view) {
         val textView = view.calendarMonthText
     }
-
 }

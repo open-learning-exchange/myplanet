@@ -41,8 +41,8 @@
                         android:id="@+id/et_temperature"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="numberDecimal"
-                        android:hint="@string/body_temperature" />
+                        android:hint="@string/body_temperature"
+                        android:inputType="numberDecimal" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -57,8 +57,8 @@
                         android:id="@+id/et_pulse_rate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="number"
-                        android:hint="@string/pulse_rate" />
+                        android:hint="@string/pulse_rate"
+                        android:inputType="number" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -96,8 +96,8 @@
                         android:id="@+id/et_height"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="numberDecimal"
-                        android:hint="@string/height" />
+                        android:hint="@string/height"
+                        android:inputType="numberDecimal" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -112,8 +112,8 @@
                         android:id="@+id/et_weight"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="numberDecimal"
-                        android:hint="@string/weight" />
+                        android:hint="@string/weight"
+                        android:inputType="numberDecimal" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -177,25 +177,25 @@
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/diagnosis"
-                android:textSize="@dimen/text_size_small"
                 android:textColor="@color/colorPrimary"
-                />
+                android:textSize="@dimen/text_size_small" />
+
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/container_checkbox"
                 android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/padding_normal"
                 android:layout_marginRight="@dimen/padding_normal"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal"
                 android:background="@drawable/custom_border"
+                android:padding="@dimen/padding_normal"
                 app:flexWrap="wrap" />
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/container_other_diagnosis"
                 android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/padding_normal"
                 android:layout_marginRight="@dimen/padding_normal"
-                android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
 
                 app:flexWrap="wrap" />
@@ -203,27 +203,28 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
-            <com.google.android.material.textfield.TextInputLayout
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/padding_small">
 
-
-                <EditText
-                    android:id="@+id/et_other_diag"
-                    android:imeOptions="actionSend"
-                    android:layout_width="match_parent"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:hint="@string/other_diagnosis" />
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small">
 
-            </com.google.android.material.textfield.TextInputLayout>
+
+                    <EditText
+                        android:id="@+id/et_other_diag"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/other_diagnosis"
+                        android:imeOptions="actionSend" />
+
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <ImageButton
-                    android:layout_width="@dimen/_50dp"
-                    android:src="@drawable/ic_send"
                     android:id="@+id/btn_add_diag"
-                    android:layout_height="@dimen/_50dp"/>
+                    android:layout_width="@dimen/_50dp"
+                    android:layout_height="@dimen/_50dp"
+                    android:src="@drawable/ic_send" />
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout

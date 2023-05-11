@@ -39,8 +39,8 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:passwordToggleEnabled="true"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_normal"
+                app:passwordToggleEnabled="true">
 
                 <EditText
                     android:id="@+id/et_password"
@@ -54,8 +54,8 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:passwordToggleEnabled="true"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_normal"
+                app:passwordToggleEnabled="true">
 
                 <EditText
                     android:id="@+id/et_re_password"
@@ -152,8 +152,8 @@
                     <Spinner
                         android:id="@+id/spn_lang"
                         android:layout_width="match_parent"
-                        android:background="@drawable/border"
                         android:layout_height="wrap_content"
+                        android:background="@drawable/border"
                         android:entries="@array/language"
                         android:padding="@dimen/padding_normal" />
 
@@ -249,8 +249,9 @@
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:background="@drawable/border">
+                    android:background="@drawable/border"
+                    android:padding="@dimen/padding_normal">
+
                     <Spinner
                         android:id="@+id/spn_level"
                         android:layout_width="match_parent"
@@ -268,12 +269,12 @@
 
                 <Button
                     android:id="@+id/btn_cancel"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/button_cancel"
-                    android:textStyle="bold"
                     android:textSize="@dimen/text_size_mid"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                    android:textStyle="bold" />
 
                 <Button
                     android:id="@+id/btn_submit"
@@ -281,8 +282,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/become_a_member"
                     android:textSize="@dimen/text_size_mid"
-                    android:theme="@style/FocusButton"/>
-
+                    android:theme="@style/FocusButton" />
 
 
             </LinearLayout>

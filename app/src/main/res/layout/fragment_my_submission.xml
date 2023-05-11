@@ -58,10 +58,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:maxLines="1"
-                    android:inputType="text"
                     android:drawableLeft="@drawable/ic_search"
-                    android:hint="Search" />
+                    android:hint="Search"
+                    android:inputType="text"
+                    android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
@@ -90,11 +90,11 @@
 
 
             <TextView
+                android:id="@+id/submitted_by"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Submitted by"
-                android:id="@+id/submitted_by"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp" />
 

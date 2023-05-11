@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -21,8 +22,7 @@
                 android:layout_height="@dimen/_40dp"
                 android:layout_gravity="center_vertical"
                 android:src="@drawable/ic_left_arrow"
-                android:tint="@color/md_black_1000" />
-
+                app:tint="@color/md_black_1000" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -38,43 +38,38 @@
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/spn_link"
             android:layout_width="match_parent"
-            android:entries="@array/add_link_options"
             android:layout_height="wrap_content"
+            android:entries="@array/add_link_options"
             android:padding="@dimen/padding_normal" />
-
 
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
-            android:padding="@dimen/padding_normal"
             android:layout_height="wrap_content"
-            >
+            android:padding="@dimen/padding_normal">
 
             <EditText
-                android:layout_width="match_parent"
                 android:id="@+id/et_name"
-                android:hint="@string/enter_title"
-                android:layout_height="wrap_content"/>
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/enter_title" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
 
-
         <androidx.recyclerview.widget.RecyclerView
-            android:layout_width="match_parent"
             android:id="@+id/rv_list"
-            android:minHeight="200dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-        />
+            android:minHeight="200dp" />
 
 
         <Button
-            android:layout_width="match_parent"
-            android:theme="@style/PrimaryButton"
             android:id="@+id/btn_save"
-            android:text="@string/save"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-        />
+            android:text="@string/save"
+            android:theme="@style/PrimaryButton" />
     </LinearLayout>
 
 </FrameLayout>

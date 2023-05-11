@@ -3,17 +3,12 @@ package org.ole.planet.myplanet;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
-import android.app.job.JobScheduler;
-import android.app.usage.UsageStats;
-import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.provider.Settings;
-import android.util.Log;
 
 import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
@@ -40,16 +35,12 @@ import org.ole.planet.myplanet.service.StayOnLineService;
 import org.ole.planet.myplanet.service.TaskNotificationService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
-import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -66,6 +57,7 @@ public class MainApplication extends Application implements Application.Activity
     public static boolean isSyncRunning = false;
     public static boolean showHealthDialog = true;
     public static TeamPageListener listener;
+
     @SuppressLint("HardwareIds")
     public static String getAndroidId() {
         try {
@@ -74,7 +66,6 @@ public class MainApplication extends Application implements Application.Activity
             e.printStackTrace();
         }
         return "0";
-
     }
 
     @Override
@@ -167,8 +158,7 @@ public class MainApplication extends Application implements Application.Activity
         Utilities.log("Handle exception " + e.getMessage());
         DatabaseService service = new DatabaseService(this);
         Realm mRealm = service.getRealmInstance();
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
         RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
         if (model != null) {

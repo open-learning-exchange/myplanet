@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.model;
 
 import android.content.Context;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.FileUtils;
@@ -25,7 +24,6 @@ public class RealmMyPersonal extends RealmObject {
     private String userId;
     private String userName;
     private String path;
-
 
     public static JsonObject serialize(RealmMyPersonal personal, Context context) {
         JsonObject object = new JsonObject();

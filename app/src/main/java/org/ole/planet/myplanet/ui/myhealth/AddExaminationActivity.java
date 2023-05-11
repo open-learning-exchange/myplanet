@@ -43,8 +43,7 @@ import io.realm.Realm;
 public class AddExaminationActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
     Realm mRealm;
     String userId;
-    EditText etOtherDiagnosis, etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
-            etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
+    EditText etOtherDiagnosis, etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing, etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
     RealmUserModel user;
     RealmUserModel currentUser;
     RealmMyHealthPojo pojo;
@@ -55,7 +54,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     Boolean allowSubmission = true;
     int otherDiagId;
     private ChipCloudConfig config;
-
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
@@ -182,9 +180,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
                             etBloodPressure.setError("Systolic and diastolic must be numbers");
                             allowSubmission = false;
                         }
-
                     }
-
 //                    else{
 //                        for (int x = 0; x < sysDia.length; x++) {
 //                            if (!sysDia[x].matches("-?\\d+") || sysDia[x].isEmpty()) {
@@ -197,7 +193,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             }
         });
     }
-
 
     private void showOtherDiagnosis() {
         flexboxOther.removeAllViews();
@@ -243,7 +238,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             c.setOnCheckedChangeListener(this);
             flexboxLayout.addView(c);
         }
-
 //        flexboxLayout.addView(otherDiag);
     }
 
@@ -254,8 +248,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void initHealth() {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
         health.setLastExamination(new Date().getTime());
@@ -266,8 +259,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     private void saveData() {
 
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         createPojo();
         if (examination == null) {
             String userId = AndroidDecrypter.generateIv();
@@ -319,15 +311,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private boolean getHasInfo() {
-        return !TextUtils.isEmpty(etAllergies.getText().toString())
-                || !TextUtils.isEmpty(etDiag.getText().toString())
-                || !TextUtils.isEmpty(etImmunization.getText().toString())
-                || !TextUtils.isEmpty(etMedications.getText().toString())
-                || !TextUtils.isEmpty(etObservation.getText().toString())
-                || !TextUtils.isEmpty(etReferrals.getText().toString())
-                || !TextUtils.isEmpty(etLabtest.getText().toString())
-                || !TextUtils.isEmpty(etTretments.getText().toString())
-                || !TextUtils.isEmpty(etXray.getText().toString());
+        return !TextUtils.isEmpty(etAllergies.getText().toString()) || !TextUtils.isEmpty(etDiag.getText().toString()) || !TextUtils.isEmpty(etImmunization.getText().toString()) || !TextUtils.isEmpty(etMedications.getText().toString()) || !TextUtils.isEmpty(etObservation.getText().toString()) || !TextUtils.isEmpty(etReferrals.getText().toString()) || !TextUtils.isEmpty(etLabtest.getText().toString()) || !TextUtils.isEmpty(etTretments.getText().toString()) || !TextUtils.isEmpty(etXray.getText().toString());
     }
 
     private boolean isValidInput() {

@@ -1,20 +1,14 @@
 package org.ole.planet.myplanet.ui.library;
 
+import static android.app.Activity.RESULT_OK;
 
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,6 +16,9 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -45,13 +42,7 @@ import java.util.UUID;
 
 import io.realm.Realm;
 
-import static android.app.Activity.RESULT_OK;
-
-/**
- * A simple {@link Fragment} subclass.
- */
 public class AddResourceFragment extends BottomSheetDialogFragment {
-
     static final int REQUEST_VIDEO_CAPTURE = 1;
     static final int REQUEST_RECORD_SOUND = 0;
     static final int REQUEST_CAPTURE_PICTURE = 2;
@@ -114,8 +105,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_add_resource, container, false);
         v.findViewById(R.id.ll_record_video).setOnClickListener(view -> dispatchTakeVideoIntent());
         v.findViewById(R.id.ll_record_audio).setOnClickListener(view -> {
@@ -181,13 +171,11 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     public void takePhoto() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        File dir =
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
         output = new File(dir, UUID.randomUUID().toString() + ".jpg");
         intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(output));
         startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
     }
-
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -208,9 +196,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             }
             startIntent(path);
         }
-
     }
-
 
     private void startIntent(String path) {
         if (!TextUtils.isEmpty(path)) {
@@ -219,7 +205,6 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             Utilities.toast(getActivity(), "Invalid resource url");
         }
     }
-
 
     private void addResource(String path) {
         if (type == 0) {

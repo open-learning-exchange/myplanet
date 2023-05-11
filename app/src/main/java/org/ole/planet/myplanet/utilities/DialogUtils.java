@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.model.MyPlanet;
 
 import java.util.ArrayList;
 
-
 public class DialogUtils {
 
     public static ProgressDialog getProgressDialog(final Context context) {
@@ -40,8 +39,7 @@ public class DialogUtils {
     }
 
     public static void showWifiSettingDialog(final Context context) {
-        if (!NetworkUtils.isWifiBluetoothEnabled())
-            return;
+        if (!NetworkUtils.isWifiBluetoothEnabled()) return;
         showDialog(context);
     }
 
@@ -65,51 +63,31 @@ public class DialogUtils {
     }
 
     public static void showSnack(View v, String s) {
-        if (v != null)
-            Snackbar.make(v, s, Snackbar.LENGTH_LONG).show();
+        if (v != null) Snackbar.make(v, s, Snackbar.LENGTH_LONG).show();
     }
 
     public static void showAlert(Context context, String title, String message) {
-        new AlertDialog.Builder(context)
-                .setTitle(title)
-                .setMessage(message)
-                .setPositiveButton(R.string.dismiss, null)
-                .show();
+        new AlertDialog.Builder(context).setTitle(title).setMessage(message).setPositiveButton(R.string.dismiss, null).show();
     }
 
-    public static AlertDialog getAlertDialog(Context context, String message,String pos, DialogInterface.OnClickListener listener) {
-        return new AlertDialog.Builder(context)
-                .setMessage(message)
-                .setIcon(R.drawable.courses)
-                .setPositiveButton(pos, listener).setNegativeButton("Cancel", null).show();
+    public static AlertDialog getAlertDialog(Context context, String message, String pos, DialogInterface.OnClickListener listener) {
+        return new AlertDialog.Builder(context).setMessage(message).setIcon(R.drawable.courses).setPositiveButton(pos, listener).setNegativeButton("Cancel", null).show();
     }
 
     public static void showCloseAlert(Context context, String title, String message) {
-        new AlertDialog.Builder(context)
-                .setTitle(title)
-                .setMessage(message)
-                .setPositiveButton(R.string.close, null)
-                .show();
+        new AlertDialog.Builder(context).setTitle(title).setMessage(message).setPositiveButton(R.string.close, null).show();
     }
 
     public static AlertDialog getAlertDialog(Context context, String title, View v) {
-        return new AlertDialog.Builder(context)
-                .setTitle(title)
-                .setIcon(R.drawable.ic_edit)
-                .setView(v)
-                .setPositiveButton("Submit", null).setNegativeButton("Cancel", null).show();
+        return new AlertDialog.Builder(context).setTitle(title).setIcon(R.drawable.ic_edit).setView(v).setPositiveButton("Submit", null).setNegativeButton("Cancel", null).show();
     }
 
     public static AlertDialog.Builder getUpdateDialog(Context context, MyPlanet info, ProgressDialog progressDialog) {
-        return new AlertDialog.Builder(context).setTitle("New version of my planet available")
-                .setMessage("Download first to continue.")
-                .setNeutralButton("Upgrade(Local)", (dialogInterface, i) -> {
-                    startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), progressDialog);
-                })
-                .setPositiveButton("Upgrade", (dialogInterface, i) -> {
-                    startDownloadUpdate(context, info.getApkpath(), progressDialog);
-                });
-
+        return new AlertDialog.Builder(context).setTitle("New version of my planet available").setMessage("Download first to continue.").setNeutralButton("Upgrade(Local)", (dialogInterface, i) -> {
+            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), progressDialog);
+        }).setPositiveButton("Upgrade", (dialogInterface, i) -> {
+            startDownloadUpdate(context, info.getApkpath(), progressDialog);
+        });
     }
 
     public static void startDownloadUpdate(Context context, String path, ProgressDialog progressDialog) {
@@ -132,6 +110,5 @@ public class DialogUtils {
                 Utilities.openDownloadService(context, url);
             }
         }, path);
-
     }
 }

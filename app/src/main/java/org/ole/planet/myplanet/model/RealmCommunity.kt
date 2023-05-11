@@ -12,7 +12,6 @@ open class RealmCommunity : RealmObject() {
     var name: String = ""
     var parentDomain: String = ""
 
-
     override fun toString(): String {
         return name
     }

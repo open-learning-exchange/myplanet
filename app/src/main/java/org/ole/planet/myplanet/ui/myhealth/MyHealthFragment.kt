@@ -45,8 +45,9 @@ class MyHealthFragment : Fragment() {
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
     var dialog: AlertDialog? = null
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
         val v = inflater.inflate(R.layout.fragment_vital_sign, container, false)
         mRealm = DatabaseService(activity).realmInstance
         return v
@@ -57,15 +58,20 @@ class MyHealthFragment : Fragment() {
 
         val v = layoutInflater.inflate(R.layout.alert_users_spinner, null)
 
-        rv_records!!.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
+        rv_records!!.addItemDecoration(
+            DividerItemDecoration(
+                activity, DividerItemDecoration.VERTICAL
+            )
+        )
         profileDbHandler = UserProfileDbHandler(v.context)
-        userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
+        userId =
+            if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
         getHealthRecords(userId)
 
-        Utilities.log("ROLE " +  profileDbHandler?.userModel?.roleAsString!!)
+        Utilities.log("ROLE " + profileDbHandler?.userModel?.roleAsString!!)
         if (profileDbHandler?.userModel?.roleAsString!!.contains("health", true)) {
 //            btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
-            btnnew_patient.visibility =  View.VISIBLE
+            btnnew_patient.visibility = View.VISIBLE
             btnnew_patient.setOnClickListener { selectPatient() }
             fab_add_member.show(true)
             fab_add_member.visibility = View.VISIBLE
@@ -74,7 +80,13 @@ class MyHealthFragment : Fragment() {
             fab_add_member.hide(true)
             fab_add_member.visibility = View.GONE
         }
-        fab_add_member.setOnClickListener { startActivity(Intent(activity, BecomeMemberActivity::class.java)) }
+        fab_add_member.setOnClickListener {
+            startActivity(
+                Intent(
+                    activity, BecomeMemberActivity::class.java
+                )
+            )
+        }
 
     }
 
@@ -82,30 +94,54 @@ class MyHealthFragment : Fragment() {
         userId = memberId
         userModel = mRealm!!.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         lblHealthName!!.text = userModel!!.fullName
-        add_new_record.setOnClickListener { startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)) }
-        update_health.setOnClickListener { startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)) }
+        add_new_record.setOnClickListener {
+            startActivity(
+                Intent(
+                    activity, AddExaminationActivity::class.java
+                ).putExtra("userId", userId)
+            )
+        }
+        update_health.setOnClickListener {
+            startActivity(
+                Intent(
+                    activity, AddMyHealthActivity::class.java
+                ).putExtra("userId", userId)
+            )
+        }
         showRecords()
     }
 
     private fun selectPatient() {
-        userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+        userModelList =
+            mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
+        adapter = UserListArrayAdapter(
+            requireActivity(), android.R.layout.simple_list_item_1, userModelList
+        )
         val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
         val btnAddMember = alertHealth.btn_add_member
         val etSearch = alertHealth.et_search
         val spnSort = alertHealth.spn_sort
-        btnAddMember.setOnClickListener { startActivity(Intent(requireContext(), BecomeMemberActivity::class.java)) }
+        btnAddMember.setOnClickListener {
+            startActivity(
+                Intent(
+                    requireContext(), BecomeMemberActivity::class.java
+                )
+            )
+        }
         val lv = alertHealth.list
         setTextWatcher(etSearch, btnAddMember, lv)
         lv.adapter = adapter
-        lv.onItemClickListener = OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
-            val selected = lv.adapter.getItem(i) as RealmUserModel
-            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-            getHealthRecords(userId)
-            dialog!!.dismiss()
-        }
+        lv.onItemClickListener =
+            OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
+                val selected = lv.adapter.getItem(i) as RealmUserModel
+                userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                getHealthRecords(userId)
+                dialog!!.dismiss()
+            }
         sortList(spnSort, lv);
-        dialog = AlertDialog.Builder(activity!!).setTitle(getString(R.string.select_health_member)).setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
+        dialog = AlertDialog.Builder(requireActivity())
+            .setTitle(getString(R.string.select_health_member)).setView(alertHealth)
+            .setCancelable(false).setNegativeButton("Dismiss", null).create()
         dialog?.show()
     }
 
@@ -122,21 +158,27 @@ class MyHealthFragment : Fragment() {
                         sortBy = "joinDate"
                         sort = Sort.DESCENDING
                     }
+
                     p2 == 1 -> {
                         sortBy = "joinDate"
                         sort = Sort.ASCENDING
                     }
+
                     p2 == 2 -> {
                         sortBy = "name"
                         sort = Sort.ASCENDING
                     }
+
                     else -> {
                         sortBy = "name"
                         sort = Sort.DESCENDING
                     }
                 }
-                userModelList = mRealm!!.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+                userModelList =
+                    mRealm!!.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
+                adapter = UserListArrayAdapter(
+                    activity!!, android.R.layout.simple_list_item_1, userModelList
+                )
                 lv.adapter = adapter
             }
         }
@@ -148,7 +190,6 @@ class MyHealthFragment : Fragment() {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
 
-
             }
 
             override fun afterTextChanged(editable: Editable) {
@@ -157,16 +198,17 @@ class MyHealthFragment : Fragment() {
                     override fun onTick(millisUntilFinished: Long) {}
                     override fun onFinish() {
                         val userModelList = mRealm!!.where(RealmUserModel::class.java)
-                                .contains("firstName", editable.toString(), Case.INSENSITIVE)
-                                .or()
-                                .contains("lastName", editable.toString(), Case.INSENSITIVE)
-                                .or()
-                                .contains("name", editable.toString(), Case.INSENSITIVE)
-                                .sort("joinDate", Sort.DESCENDING).findAll()
+                            .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
+                            .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
+                            .contains("name", editable.toString(), Case.INSENSITIVE)
+                            .sort("joinDate", Sort.DESCENDING).findAll()
 
-                        val adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+                        val adapter = UserListArrayAdapter(
+                            activity!!, android.R.layout.simple_list_item_1, userModelList
+                        )
                         lv.adapter = adapter
-                        btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
+                        btnAddMember.visibility =
+                            if (adapter.count == 0) View.VISIBLE else View.GONE
                     }
                 }.start()
             }
@@ -181,7 +223,8 @@ class MyHealthFragment : Fragment() {
     private fun showRecords() {
         layout_user_detail.visibility = View.VISIBLE
         tv_message.visibility = View.GONE
-        txt_full_name.text = """${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"""
+        txt_full_name.text =
+            """${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"""
         txt_email.text = Utilities.checkNA(userModel!!.email)
         txt_language.text = Utilities.checkNA(userModel!!.language)
         txt_dob.text = Utilities.checkNA(userModel!!.dob)
@@ -229,7 +272,8 @@ class MyHealthFragment : Fragment() {
         healths.forEach {
             Utilities.log(it.profileId)
         }
-        healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
+        healths = mRealm?.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!
+            .findAll()
         return healths!!
     }
 

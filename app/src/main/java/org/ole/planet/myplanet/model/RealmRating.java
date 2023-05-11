@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.model;
 
-import android.content.SharedPreferences;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -18,7 +16,6 @@ import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmRating extends RealmObject {
-
     @PrimaryKey
     private String id;
     private String createdOn;
@@ -51,9 +48,8 @@ public class RealmRating extends RealmObject {
         RealmResults<RealmRating> r = mRealm.where(RealmRating.class).equalTo("type", type).findAll();
         HashMap<String, JsonObject> map = new HashMap<>();
         for (RealmRating rating : r) {
-            JsonObject object = getRatingsById(mRealm, rating.getType(), rating.getItem(),  userId);
-            if (object != null)
-                map.put(rating.getItem(), object);
+            JsonObject object = getRatingsById(mRealm, rating.getType(), rating.getItem(), userId);
+            if (object != null) map.put(rating.getItem(), object);
         }
         return map;
     }
@@ -69,7 +65,7 @@ public class RealmRating extends RealmObject {
             totalRating += rating.getRate();
         }
         RealmRating ratingObject = mRealm.where(RealmRating.class).equalTo("type", type).equalTo("userId", userid).equalTo("item", id).findFirst();
-        if (ratingObject!=null){
+        if (ratingObject != null) {
             object.addProperty("ratingByUser", ratingObject.rate);
         }
         object.addProperty("averageRating", (float) totalRating / r.size());
@@ -199,10 +195,8 @@ public class RealmRating extends RealmObject {
 
     public static JsonObject serializeRating(RealmRating realm_rating) {
         JsonObject ob = new JsonObject();
-        if (realm_rating.get_id()!=null)
-        ob.addProperty("_id", realm_rating.get_id());
-        if (realm_rating.get_rev()!=null)
-            ob.addProperty("_rev", realm_rating.get_rev());
+        if (realm_rating.get_id() != null) ob.addProperty("_id", realm_rating.get_id());
+        if (realm_rating.get_rev() != null) ob.addProperty("_rev", realm_rating.get_rev());
         ob.add("user", new Gson().fromJson(realm_rating.getUser(), JsonObject.class));
         ob.addProperty("item", realm_rating.getItem());
         ob.addProperty("type", realm_rating.getType());
@@ -218,7 +212,6 @@ public class RealmRating extends RealmObject {
         ob.addProperty("androidId", NetworkUtils.getMacAddr());
         return ob;
     }
-
 
     public static void insert(Realm mRealm, JsonObject act) {
         Utilities.log("Insert rating " + act);

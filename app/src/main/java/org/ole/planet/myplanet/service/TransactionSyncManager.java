@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
-import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
@@ -44,7 +43,6 @@ public class TransactionSyncManager {
         }
         return false;
     }
-
 
     public static void syncAllHealthData(Realm mRealm, SharedPreferences settings, SyncListener listener) {
         listener.onSyncStarted();
@@ -80,8 +78,6 @@ public class TransactionSyncManager {
         }
     }
 
-
-
     public static void syncKeyIv(Realm mRealm, SharedPreferences settings, SyncListener listener) {
         listener.onSyncStarted();
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
@@ -95,7 +91,6 @@ public class TransactionSyncManager {
             syncHealthData(userModel, header);
         }, listener::onSyncComplete, error -> listener.onSyncFailed(error.getMessage()));
     }
-
 
     public static void syncDb(Realm realm, String table) {
         realm.executeTransactionAsync(mRealm -> {
@@ -159,6 +154,4 @@ public class TransactionSyncManager {
         } catch (Exception e) {
         }
     }
-
-
 }

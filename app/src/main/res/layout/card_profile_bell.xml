@@ -43,6 +43,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
+
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -74,8 +75,8 @@
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
-                            android:visibility="gone"
-                            android:background="@color/colorPrimaryDark" />
+                            android:background="@color/colorPrimaryDark"
+                            android:visibility="gone" />
 
                         <TextView
                             android:id="@+id/txtVisits"
@@ -101,15 +102,15 @@
                             android:gravity="center"
                             android:padding="@dimen/padding_normal"
                             android:textColor="@color/md_black_1000"
-                            android:visibility="gone"
                             android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:textStyle="bold"
+                            android:visibility="gone" />
 
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
-                            android:visibility="gone"
-                            android:background="@color/colorPrimaryDark" />
+                            android:background="@color/colorPrimaryDark"
+                            android:visibility="gone" />
 
                         <TextView
                             android:id="@+id/txt_community_name"
@@ -189,53 +190,54 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-               android:layout_height="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="right"
                 android:gravity="right">
 
-<!--                <Button-->
-<!--                    android:id="@+id/fab_my_activity"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="@string/my_activity"-->
-<!--                    android:theme="@style/PrimaryButton" />-->
+                <!--                <Button-->
+                <!--                    android:id="@+id/fab_my_activity"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:text="@string/my_activity"-->
+                <!--                    android:theme="@style/PrimaryButton" />-->
 
-<!--                <Button-->
-<!--                    android:id="@+id/fab_my_progress"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="@string/my_progress"-->
-<!--                    android:theme="@style/PrimaryButton" />-->
+                <!--                <Button-->
+                <!--                    android:id="@+id/fab_my_progress"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:text="@string/my_progress"-->
+                <!--                    android:theme="@style/PrimaryButton" />-->
 
-<!--                <Button-->
-<!--                    android:id="@+id/fab_notification"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="@string/notifications"-->
-<!--                    android:theme="@style/PrimaryButton"-->
-<!--                    app:srcCompat="@drawable/notifications" />-->
+                <!--                <Button-->
+                <!--                    android:id="@+id/fab_notification"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:text="@string/notifications"-->
+                <!--                    android:theme="@style/PrimaryButton"-->
+                <!--                    app:srcCompat="@drawable/notifications" />-->
 
-<!--                <Button-->
-<!--                    android:id="@+id/fab_survey"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:text="@string/menu_surveys"-->
-<!--                    android:theme="@style/PrimaryButton"-->
-<!--                    android:tint="@color/md_white_1000"-->
-<!--                    app:srcCompat="@drawable/ic_my_survey" />-->
+                <!--                <Button-->
+                <!--                    android:id="@+id/fab_survey"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:text="@string/menu_surveys"-->
+                <!--                    android:theme="@style/PrimaryButton"-->
+                <!--                    android:tint="@color/md_white_1000"-->
+                <!--                    app:srcCompat="@drawable/ic_my_survey" />-->
                 <LinearLayout
-                    android:layout_width="wrap_content"
                     android:id="@+id/ll_badges"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:orientation="horizontal"
-                    android:layout_height="wrap_content"/>
+                    android:orientation="horizontal" />
+
                 <Button
                     android:id="@+id/fab_feedback"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/menu_feedback"
-                    android:visibility="gone"
                     android:theme="@style/PrimaryButton"
+                    android:visibility="gone"
                     app:srcCompat="@drawable/feedback" />
             </LinearLayout>
 

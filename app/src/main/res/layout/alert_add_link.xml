@@ -8,22 +8,21 @@
     <androidx.appcompat.widget.AppCompatSpinner
         android:id="@+id/spn_link"
         android:layout_width="match_parent"
-        android:entries="@array/add_link_options"
         android:layout_height="wrap_content"
+        android:entries="@array/add_link_options"
         android:padding="@dimen/padding_normal" />
 
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
-        android:padding="@dimen/padding_normal"
         android:layout_height="wrap_content"
-       >
+        android:padding="@dimen/padding_normal">
 
         <EditText
-            android:layout_width="match_parent"
             android:id="@+id/et_name"
-            android:hint="@string/enter_title"
-            android:layout_height="wrap_content"/>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/enter_title" />
 
     </com.google.android.material.textfield.TextInputLayout>
 

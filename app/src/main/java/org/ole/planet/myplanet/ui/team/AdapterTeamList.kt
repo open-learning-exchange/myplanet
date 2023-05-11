@@ -21,7 +21,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, fragmentManager: FragmentManager) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterTeamList(
+    private val context: Context,
+    private val list: List<RealmMyTeam>,
+    private val mRealm: Realm,
+    fragmentManager: FragmentManager
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val user: RealmUserModel
     private var type: String? = ""
     private val fragmentManager: FragmentManager
@@ -71,21 +76,26 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     fun getBundle(team: RealmMyTeam): Bundle {
         val bundle = Bundle()
-        if (team.type.isEmpty()) bundle.putString("state", "teams") else bundle.putString("state", team.type + "s")
+        if (team.type.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
+            "state", team.type + "s"
+        )
         bundle.putString("item", team._id)
         bundle.putString("parentCode", "dev")
         return bundle
     }
 
-    private fun showActionButton(isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int) {
+    private fun showActionButton(
+        isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int
+    ) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id, mRealm)) {
                 (holder as ViewHolderTeam).action.text = "Leave"
                 holder.action.setOnClickListener { view: View? ->
-                    AlertDialog.Builder(context).setMessage(R.string.confirm_exit).setPositiveButton("Yes") { dialogInterface: DialogInterface?, i: Int ->
-                        list[position].leave(user, mRealm)
-                        notifyDataSetChanged()
-                    }.setNegativeButton("No", null).show()
+                    AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
+                        .setPositiveButton("Yes") { dialogInterface: DialogInterface?, i: Int ->
+                            list[position].leave(user, mRealm)
+                            notifyDataSetChanged()
+                        }.setNegativeButton("No", null).show()
                 }
             } else {
                 (holder as ViewHolderTeam).action.visibility = View.GONE

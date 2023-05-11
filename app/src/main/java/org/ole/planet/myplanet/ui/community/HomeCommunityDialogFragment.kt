@@ -14,9 +14,9 @@ import java.util.*
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
         return inflater.inflate(R.layout.fragment_team_detail, container, false)
     }
 
@@ -27,10 +27,11 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     private fun initCommunityTab() {
         ll_action_buttons.visibility = View.GONE
-        var settings = activity!!.getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
+        var settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
         var sPlanetcode = settings.getString("planetCode", "")
         var sParentcode = settings.getString("parentCode", "")
-        view_pager.adapter = CommunityPagerAdapter(childFragmentManager, sPlanetcode + "@" + sParentcode, true)
+        view_pager.adapter =
+            CommunityPagerAdapter(childFragmentManager, sPlanetcode + "@" + sParentcode, true)
         title.text = sPlanetcode
         title.setTextColor(resources.getColor(R.color.md_black_1000))
         subtitle.setTextColor(resources.getColor(R.color.md_black_1000))

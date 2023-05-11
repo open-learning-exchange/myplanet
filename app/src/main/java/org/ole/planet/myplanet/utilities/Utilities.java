@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.utilities;
 
+import static android.content.Context.MODE_PRIVATE;
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,20 +25,10 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 
 import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Date;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 
 import fisk.chipcloud.ChipCloudConfig;
-
-import static android.content.Context.MODE_PRIVATE;
-import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
-
 
 public class Utilities {
     public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
@@ -43,7 +36,6 @@ public class Utilities {
     public static void log(String message) {
         Log.d("OLE ", "log: " + message);
     }
-
 
     public static String getUrl(RealmMyLibrary library, SharedPreferences settings) {
         return getUrl(library.getResource_id(), library.getResourceLocalAddress(), settings);
@@ -55,8 +47,7 @@ public class Utilities {
     }
 
     public static String getUrl(String id, String file, SharedPreferences settings) {
-        return getUrl()
-                + "/resources/" + id + "/" + file;
+        return getUrl() + "/resources/" + id + "/" + file;
     }
 
 
@@ -64,13 +55,11 @@ public class Utilities {
         return getUrl() + "/_users/" + userId + "/" + imageName;
     }
 
-
     public static void openDownloadService(Context context, ArrayList urls) {
         Intent intent = new Intent(context, MyDownloadService.class);
         intent.putStringArrayListExtra("urls", urls);
         context.startService(intent);
     }
-
 
     public static void toast(Context context, String s) {
         if (context == null) {
@@ -80,12 +69,7 @@ public class Utilities {
     }
 
     public static ChipCloudConfig getCloudConfig() {
-        return new ChipCloudConfig()
-                .useInsetPadding(true)
-                .checkedChipColor(Color.parseColor("#e0e0e0"))
-                .checkedTextColor(Color.parseColor("#000000"))
-                .uncheckedChipColor(Color.parseColor("#e0e0e0"))
-                .uncheckedTextColor(Color.parseColor("#000000"));
+        return new ChipCloudConfig().useInsetPadding(true).checkedChipColor(Color.parseColor("#e0e0e0")).checkedTextColor(Color.parseColor("#000000")).uncheckedChipColor(Color.parseColor("#e0e0e0")).uncheckedTextColor(Color.parseColor("#000000"));
     }
 
     public static String checkNA(String s) {
@@ -126,10 +110,8 @@ public class Utilities {
     public static String getHeader() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         Utilities.log("User " + settings.getString("url_user", "") + " " + settings.getString("url_pwd", ""));
-        return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" +
-                settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
+        return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" + settings.getString("url_pwd", "")).getBytes(), Base64.NO_WRAP);
     }
-
 
     public static String getUrl() {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);

@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.os.Bundle;
+
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -30,7 +32,6 @@ import io.realm.Realm;
 import io.realm.RealmList;
 
 public class AddResourceActivity extends AppCompatActivity {
-
     EditText etTitle, etAuthor, etYear, etDescription, etPublisher, etLinkToLicense, etOpenWhich;
     Spinner spnLang, spnMedia, spnResourceType, spnOpenWith;
     TextView tvSubjects, tvLevels, tvResourceFor, tvAddedBy, fileUrl;
@@ -54,14 +55,12 @@ public class AddResourceActivity extends AppCompatActivity {
         resourceFor = new RealmList<>();
         mRealm = new DatabaseService(this).getRealmInstance();
         initializeViews();
-
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mRealm != null && !mRealm.isClosed())
-            mRealm.close();
+        if (mRealm != null && !mRealm.isClosed()) mRealm.close();
     }
 
     private void initializeViews() {
@@ -157,14 +156,12 @@ public class AddResourceActivity extends AppCompatActivity {
                 items.add(s);
             }
             ((TextView) view).setText(selection);
-
         }).setNegativeButton("Dismiss", null).show();
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home)
-            finish();
+        if (item.getItemId() == android.R.id.home) finish();
         return super.onOptionsItemSelected(item);
     }
 }

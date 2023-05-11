@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.viewer;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -31,8 +32,7 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
         jcAudios = new ArrayList<>();
         isFullPath = getIntent().getBooleanExtra("isFullPath", false);
         String fullPath = String.valueOf(new File(Utilities.SD_PATH, filePath));
-        if (isFullPath)
-            fullPath = String.valueOf(new File(filePath));
+        if (isFullPath) fullPath = String.valueOf(new File(filePath));
         jcAudios.add(JcAudio.createFromFilePath(fullPath));
         jcplayer.initPlaylist(jcAudios, null);
         jcplayer.getRootView().findViewById(R.id.btnNext).setVisibility(View.GONE);
@@ -59,8 +59,7 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
     @Override
     protected void onStop() {
         super.onStop();
-        if (jcplayer != null)
-            jcplayer.kill();
+        if (jcplayer != null) jcplayer.kill();
     }
 
     @Override
@@ -73,12 +72,10 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
 
     @Override
     public void onCompletedAudio() {
-
     }
 
     @Override
     public void onContinueAudio(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
@@ -88,26 +85,21 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
 
     @Override
     public void onPaused(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onPlaying(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onPreparedAudio(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onStopped(@NotNull JcStatus jcStatus) {
-
     }
 
     @Override
     public void onTimeChanged(@NotNull JcStatus jcStatus) {
-
     }
 }

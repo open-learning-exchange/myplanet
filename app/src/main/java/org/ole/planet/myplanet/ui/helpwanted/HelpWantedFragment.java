@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.ui.helpwanted;
 
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
@@ -24,11 +24,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class HelpWantedFragment extends Fragment {
-
     SharedPreferences settings;
     JsonObject manager;
     LinearLayout llData;
@@ -37,10 +33,8 @@ public class HelpWantedFragment extends Fragment {
     public HelpWantedFragment() {
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_help_wanted, container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         name = v.findViewById(R.id.tv_name);
@@ -64,7 +58,7 @@ public class HelpWantedFragment extends Fragment {
             name.setText(Html.fromHtml(boldName + JsonUtils.getString("name", manager)));
             email.setText(Html.fromHtml(boldEmail + JsonUtils.getString("name", manager)));
             phone.setText(Html.fromHtml(boldPhone + JsonUtils.getString("phoneNumber", manager)));
-        }else{
+        } else {
             llData.setVisibility(View.GONE);
             nodata.setText("No data available");
             nodata.setVisibility(View.VISIBLE);

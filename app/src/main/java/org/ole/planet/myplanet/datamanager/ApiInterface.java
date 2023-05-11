@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.datamanager;
 
-
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.model.DocumentResponse;
@@ -19,7 +18,6 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Streaming;
 import retrofit2.http.Url;
-
 
 public interface ApiInterface {
     @Streaming
@@ -47,14 +45,11 @@ public interface ApiInterface {
     @GET
     Call<MyPlanet> checkVersion(@Url String serverUrl);
 
-
     @GET
     Call<ResponseBody> getApkVersion(@Url String url);
 
-
     @GET
     Call<ResponseBody> healthAccess(@Url String url);
-
 
     @GET
     Call<ResponseBody> getChecksum(@Url String url);

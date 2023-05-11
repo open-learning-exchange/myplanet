@@ -4,27 +4,19 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-
 public class NotificationUtil {
-
-
     public static void create(Context context, int smallIcon, String contentTitle, String contentText) {
-        NotificationManager manager =
-                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
         NotificationCompat.Builder a = new NotificationCompat.Builder(context, "11");
 
         setChannel(manager);
 
-        Notification noti = a
-                .setContentTitle(contentTitle)
-                .setContentText(contentText)
-                .setSmallIcon(smallIcon)
-                .setProgress(0, 0, true)
-                .setAutoCancel(true).build();
+        Notification noti = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon).setProgress(0, 0, true).setAutoCancel(true).build();
         manager.notify(111, noti);
 
     }

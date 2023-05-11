@@ -11,84 +11,85 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
+
         <Button
-            android:layout_width="wrap_content"
             android:id="@+id/btn_add_story"
-            android:text="@string/add_story"
-            android:layout_height="wrap_content"/>
-   <LinearLayout
-       android:layout_width="match_parent"
-       android:id="@+id/ll_add_news"
-       android:orientation="vertical"
-       android:visibility="gone"
-       android:layout_height="wrap_content">
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/add_story" />
 
-       <LinearLayout
-           android:layout_width="match_parent"
-           android:layout_height="wrap_content"
-           android:orientation="vertical">
+        <LinearLayout
+            android:id="@+id/ll_add_news"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
 
-           <com.google.android.material.textfield.TextInputLayout
-               android:id="@+id/tl_message"
-               android:layout_width="match_parent"
-               android:layout_height="wrap_content"
-               android:hint="@string/what_would">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-               <EditText
-                   android:id="@+id/et_message"
-                   android:layout_width="match_parent"
-                   android:layout_height="wrap_content"
-                   android:minHeight="@dimen/profile_card_bell" />
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tl_message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/what_would">
 
-           </com.google.android.material.textfield.TextInputLayout>
+                    <EditText
+                        android:id="@+id/et_message"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="@dimen/profile_card_bell" />
 
-           <LinearLayout
-               android:layout_width="match_parent"
-               android:orientation="horizontal"
-               android:layout_gravity="center"
-               android:gravity="left"
-               android:layout_height="wrap_content">
+                </com.google.android.material.textfield.TextInputLayout>
 
-               <Button
-                   android:id="@+id/btn_submit"
-                   android:layout_width="wrap_content"
-                   android:layout_height="wrap_content"
-                   android:layout_gravity="center"
-                   android:minWidth="@dimen/user_image_size"
-                   android:text="@string/button_submit"
-                   android:theme="@style/PrimaryButton" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="left"
+                    android:orientation="horizontal">
 
-
-               <Button
-                   android:id="@+id/add_news_image"
-                   android:layout_width="wrap_content"
-                   android:layout_height="wrap_content"
-                   android:layout_gravity="center"
-                   android:text="@string/add_image"
-                   android:theme="@style/PrimaryButton" />
-
-               <HorizontalScrollView
-                   android:layout_width="match_parent"
-                   android:layout_height="wrap_content"
-                   >
-                   <LinearLayout
-                       android:layout_width="match_parent"
-                       android:id="@+id/ll_images"
-                       android:layout_gravity="center"
-                       android:layout_height="wrap_content"/>
-               </HorizontalScrollView>
-
-<!--               <ImageView-->
-<!--                   android:layout_width="@dimen/_80dp"-->
-<!--                   android:id="@+id/thumb"-->
-<!--                   android:visibility="gone"-->
-<!--                   android:layout_height="@dimen/_80dp"/>-->
-           </LinearLayout>
-       </LinearLayout>
+                    <Button
+                        android:id="@+id/btn_submit"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:minWidth="@dimen/user_image_size"
+                        android:text="@string/button_submit"
+                        android:theme="@style/PrimaryButton" />
 
 
+                    <Button
+                        android:id="@+id/add_news_image"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="@string/add_image"
+                        android:theme="@style/PrimaryButton" />
 
-   </LinearLayout>
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <LinearLayout
+                            android:id="@+id/ll_images"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center" />
+                    </HorizontalScrollView>
+
+                    <!--               <ImageView-->
+                    <!--                   android:layout_width="@dimen/_80dp"-->
+                    <!--                   android:id="@+id/thumb"-->
+                    <!--                   android:visibility="gone"-->
+                    <!--                   android:layout_height="@dimen/_80dp"/>-->
+                </LinearLayout>
+            </LinearLayout>
+
+
+        </LinearLayout>
 
         <Button
             android:id="@+id/btn_main"

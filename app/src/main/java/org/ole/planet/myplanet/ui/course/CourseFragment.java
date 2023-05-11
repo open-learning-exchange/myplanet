@@ -41,14 +41,8 @@ import java.util.UUID;
 
 import io.realm.Sort;
 
-/**
- * A simple {@link Fragment} subclass.
- */
-
 public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected, TagClickListener {
-
     TextView tvAddToLib, tvMessage, tvSelected;
-
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
@@ -56,7 +50,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
     Spinner spn;
-
     AlertDialog confirmation;
 
     public CourseFragment() {
@@ -95,12 +88,9 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         //btnRemove.setOnClickListener(V -> deleteSelected(true));
-        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage("Are you sure you want to delete these courses?")
-                .setPositiveButton("Yes", (dialogInterface, i) -> {
-                    deleteSelected(true);
-                })
-                .setNegativeButton("No", null).show()
-        );
+        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage("Are you sure you want to delete these courses?").setPositiveButton("Yes", (dialogInterface, i) -> {
+            deleteSelected(true);
+        }).setNegativeButton("No", null).show());
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -149,7 +139,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 confirmation.show();
                 addToMyList();
                 selectedItems.clear();
-                tvAddToLib.setEnabled( false );  // selectedItems will always have a size of 0
+                tvAddToLib.setEnabled(false);  // selectedItems will always have a size of 0
             }
         });
         etSearch = getView().findViewById(R.id.et_search);
@@ -165,7 +155,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         spnSubject.setOnItemSelectedListener(itemSelectedListener);
     }
 
-    private AdapterView.OnItemSelectedListener   itemSelectedListener = new AdapterView.OnItemSelectedListener() {
+    private AdapterView.OnItemSelectedListener itemSelectedListener = new AdapterView.OnItemSelectedListener() {
         @Override
         public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
             Utilities.log("On item selected");
@@ -197,8 +187,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             for (int i = 0; i < selectedItems.size(); i++) {
                 msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < 5; i++) {
                 msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
             }
@@ -207,9 +196,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         msg += "\n\n Return to the Home tab to access myCourses.\n";
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton(
-                "Ok",
-                (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton("Ok", (dialog, id) -> dialog.cancel());
         return builder.create();
     }
 
@@ -250,8 +237,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     @Override
     public void onTagClicked(RealmTag tag) {
 //        searchTags.clear();
-        if (!searchTags.contains(tag))
-            searchTags.add(tag);
+        if (!searchTags.contains(tag)) searchTags.add(tag);
         adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
         showTagText(searchTags, tvSelected);
         showNoData(tvMessage, adapterCourses.getItemCount());
@@ -285,12 +271,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     }
 
     private boolean filterApplied() {
-        return !(searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty() && etSearch.getText().toString().isEmpty() );
+        return !(searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty() && etSearch.getText().toString().isEmpty());
     }
+
     private void saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
             activity.setUser(model.getName());
             activity.setTime(Calendar.getInstance().getTimeInMillis());
@@ -301,7 +287,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             JsonObject filter = new JsonObject();
             filter.add("tags", RealmTag.getTagsArray(searchTags));
             filter.addProperty("doc.gradeLevel", gradeLevel);
-            filter.addProperty("doc.subjectLevel",subjectLevel );
+            filter.addProperty("doc.subjectLevel", subjectLevel);
             activity.setFilter(new Gson().toJson(filter));
             mRealm.commitTransaction();
         }

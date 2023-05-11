@@ -71,8 +71,7 @@ public class RealmAnswer extends RealmObject {
     }
 
     public void setValueChoices(HashMap<String, String> map, boolean isLastAnsvalid) {
-        if (!isLastAnsvalid)
-            this.valueChoices.clear();
+        if (!isLastAnsvalid) this.valueChoices.clear();
         for (String key : map.keySet()) {
             JsonObject ob = new JsonObject();
             ob.addProperty("id", map.get(key));

@@ -1,15 +1,11 @@
 package org.ole.planet.myplanet.ui.library;
 
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getArrayList;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
+import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.graphics.Color;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -18,9 +14,11 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
@@ -31,9 +29,7 @@ import org.ole.planet.myplanet.callback.TagClickListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmSearchActivity;
-import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmTag;
-import org.ole.planet.myplanet.ui.survey.AdapterSurvey;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -51,19 +47,9 @@ import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
 import io.realm.Sort;
 
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getArrayList;
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getLevels;
-import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
-
-/**
- * A simple {@link Fragment} subclass.
- */
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
-
     TextView tvAddToLib, tvSelected;
-
     EditText etSearch, etTags;
-
     ImageView imgSearch;
     AdapterLibrary adapterLibrary;
     FlexboxLayout flexBoxTags;
@@ -79,7 +65,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     public LibraryFragment() {
     }
 
-
     @Override
     public int getLayout() {
         return R.layout.fragment_my_library;
@@ -93,7 +78,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         adapterLibrary.setListener(this);
         return adapterLibrary;
     }
-
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -117,7 +101,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 confirmation.show();
                 addToMyList();
                 selectedItems.clear();
-                tvAddToLib.setEnabled( false );  // After clearing selectedItems size is always 0
+                tvAddToLib.setEnabled(false);  // After clearing selectedItems size is always 0
             }
         });
         imgSearch.setOnClickListener(view -> {
@@ -161,14 +145,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
     }
 
-
     private void initArrays() {
         subjects = new HashSet<>();
         languages = new HashSet<>();
         levels = new HashSet<>();
         mediums = new HashSet<>();
     }
-
 
     private AlertDialog createAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
@@ -177,23 +159,18 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             for (int i = 0; i < selectedItems.size(); i++) {
                 msg += " - " + selectedItems.get(i).getTitle() + "\n";
             }
-        }
-        else {
+        } else {
             for (int i = 0; i < 5; i++) {
                 msg += " - " + selectedItems.get(i).getTitle() + "\n";
             }
             msg += "And " + (selectedItems.size() - 5) + " more resource(s)...\n";
         }
-        msg +=  "\n\nReturn to the Home tab to access myLibrary.\n" +
-                "\nNote: You may still need to download the newly added resources.";
+        msg += "\n\nReturn to the Home tab to access myLibrary.\n" + "\nNote: You may still need to download the newly added resources.";
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton(
-                "Ok",
-                (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton("Ok", (dialog, id) -> dialog.cancel());
         return builder.create();
     }
-
 
     private void clearTagsButton() {
         clearTags.setOnClickListener(vi -> {
@@ -210,7 +187,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
     }
 
-
     @Override
     public void onSelectedListChange(List<RealmMyLibrary> list) {
         this.selectedItems = list;
@@ -222,8 +198,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         flexBoxTags.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(getActivity(), flexBoxTags, config);
         chipCloud.setDeleteListener(this);
-        if (!searchTags.contains(realmTag))
-            searchTags.add(realmTag);
+        if (!searchTags.contains(realmTag)) searchTags.add(realmTag);
         chipCloud.addChips(searchTags);
         adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString(), searchTags)));
         showTagText(searchTags, tvSelected);
@@ -265,7 +240,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
 
-
     @Override
     public void filter(Set<String> subjects, Set<String> languages, Set<String> mediums, Set<String> levels) {
         this.subjects = subjects;
@@ -275,7 +249,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
-
 
     @Override
     public Map<String, Set<String>> getData() {
@@ -305,13 +278,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
     private boolean filterApplied() {
-        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch.getText().toString().isEmpty() );
+        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch.getText().toString().isEmpty());
     }
 
     private void saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
             activity.setUser(model.getName());
             activity.setTime(Calendar.getInstance().getTimeInMillis());
@@ -329,6 +301,4 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             mRealm.commitTransaction();
         }
     }
-
-
 }

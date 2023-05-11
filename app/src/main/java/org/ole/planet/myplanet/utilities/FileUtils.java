@@ -36,7 +36,6 @@ public class FileUtils {
         byte[] tmpBuff = new byte[size];
         FileInputStream fis = new FileInputStream(f);
         try {
-
             int read = fis.read(bytes, 0, size);
             if (read < size) {
                 int remain = size - read;
@@ -52,7 +51,6 @@ public class FileUtils {
         } finally {
             fis.close();
         }
-
         return bytes;
     }
 
@@ -68,7 +66,6 @@ public class FileUtils {
     }
 
     public static File getSDPathFromUrl(String url) {
-
         return createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
     }
 
@@ -82,6 +79,7 @@ public class FileUtils {
         try {
             return url.substring(url.lastIndexOf("/") + 1);
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }
@@ -92,6 +90,7 @@ public class FileUtils {
             Utilities.log("Id " + sp[1]);
             return sp[1];
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }

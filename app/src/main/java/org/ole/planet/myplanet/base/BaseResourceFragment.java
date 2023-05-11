@@ -76,15 +76,10 @@ public abstract class BaseResourceFragment extends Fragment {
     BroadcastReceiver stateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            new AlertDialog.Builder(getActivity())
-                    .setMessage("Do you want to stay online?")
-                    .setPositiveButton("Yes", null)
-                    .setNegativeButton("No", (dialogInterface, i) -> {
-                        WifiManager wifi = (WifiManager) MainApplication.context.getSystemService(Context.WIFI_SERVICE);
-                        if (wifi != null)
-                            wifi.setWifiEnabled(false);
-                    })
-                    .show();
+            new AlertDialog.Builder(getActivity()).setMessage("Do you want to stay online?").setPositiveButton("Yes", null).setNegativeButton("No", (dialogInterface, i) -> {
+                WifiManager wifi = (WifiManager) MainApplication.context.getSystemService(Context.WIFI_SERVICE);
+                if (wifi != null) wifi.setWifiEnabled(false);
+            }).show();
         }
     };
     private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -115,7 +110,7 @@ public abstract class BaseResourceFragment extends Fragment {
                     createListView(db_myLibrary, alertDialog);
                     alertDialog.show();
                     (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
-                }else{
+                } else {
                     Utilities.toast(requireContext(), "No resources to download");
                 }
             }
@@ -168,7 +163,6 @@ public abstract class BaseResourceFragment extends Fragment {
                 Utilities.toast(getActivity(), "Device not connected to planet.");
             }
         });
-
     }
 
     public void setProgress(Download download) {
@@ -181,7 +175,6 @@ public abstract class BaseResourceFragment extends Fragment {
             onDownloadComplete();
         }
     }
-
 
     public void onDownloadComplete() {
     }
@@ -199,7 +192,6 @@ public abstract class BaseResourceFragment extends Fragment {
         });
         lv.setAdapter(adapter);
     }
-
 
     private void registerReceiver() {
         LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(getActivity());
@@ -240,14 +232,12 @@ public abstract class BaseResourceFragment extends Fragment {
         return libraries;
     }
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
-
     }
 
     @Override
@@ -273,22 +263,17 @@ public abstract class BaseResourceFragment extends Fragment {
         }
     }
 
-
     @Override
     public void onResume() {
         super.onResume();
         registerReceiver();
-
     }
-
 
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder("Selected : ");
-        for (RealmTag tags :
-                list) {
+        for (RealmTag tags : list) {
             selected.append(tags.getName()).append(",");
         }
         tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }
-
 }

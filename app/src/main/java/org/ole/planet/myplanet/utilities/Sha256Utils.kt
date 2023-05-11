@@ -7,7 +7,6 @@ import java.io.IOException
 import java.security.MessageDigest
 
 class Sha256Utils {
-
     public fun getCheckSumFromFile(f: File): String {
         val fis = FileInputStream(f)
         val bos = ByteArrayOutputStream()
@@ -18,6 +17,7 @@ class Sha256Utils {
                 bos.write(buf, 0, readNum)
             }
         } catch (ex: IOException) {
+            ex.printStackTrace();
         }
         return generateChecksum(bos);
     }
@@ -30,7 +30,6 @@ class Sha256Utils {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
         return ""
     }
 
@@ -39,8 +38,7 @@ class Sha256Utils {
         val hexString: StringBuilder = StringBuilder()
         for (aMessageDigest: Byte in data) {
             var h: String = Integer.toHexString(0xFF and aMessageDigest.toInt())
-            while (h.length < 2)
-                h = "0$h"
+            while (h.length < 2) h = "0$h"
             hexString.append(h)
         }
         return hexString.toString()

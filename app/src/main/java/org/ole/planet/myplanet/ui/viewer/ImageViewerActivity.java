@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 
 public class ImageViewerActivity extends AppCompatActivity {
-
     private TextView mImageFileNameTitle;
     private ImageView mImageViewer;
     private boolean isFullPath = false;
@@ -46,9 +45,7 @@ public class ImageViewerActivity extends AppCompatActivity {
         }
 
         try {
-            Glide.with(getApplicationContext())
-                    .load(isFullPath ? new File(fileName) : new File(Utilities.SD_PATH, fileName))
-                    .into(mImageViewer);
+            Glide.with(getApplicationContext()).load(isFullPath ? new File(fileName) : new File(Utilities.SD_PATH, fileName)).into(mImageViewer);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
-import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmSubmitPhotos;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -23,13 +22,9 @@ import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.http.Header;
 
 public class FileUploadService {
-
-
     public void uploadAttachment(String id, String rev, RealmMyPersonal personal, SuccessListener listener) {
-
         File f = new File(personal.getPath());
         String name = FileUtils.getFileNameFromUrl(personal.getPath());
 
@@ -37,7 +32,6 @@ public class FileUploadService {
     }
 
     public void uploadAttachment(String id, String rev, RealmMyLibrary personal, SuccessListener listener) {
-
         File f = new File(personal.getResourceLocalAddress());
         String name = FileUtils.getFileNameFromUrl(personal.getResourceLocalAddress());
 
@@ -94,5 +88,4 @@ public class FileUploadService {
         }
         listener.onSuccess("Unable to upload resource");
     }
-
 }

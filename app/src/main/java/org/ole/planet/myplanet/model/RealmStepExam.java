@@ -33,7 +33,7 @@ public class RealmStepExam extends RealmObject {
     private boolean isFromNation;
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, Realm mRealm) {
-        insertCourseStepsExams(myCoursesID, step_id, exam,"", mRealm);
+        insertCourseStepsExams(myCoursesID, step_id, exam, "", mRealm);
     }
 
     public static void insertCourseStepsExams(String myCoursesID, String step_id, JsonObject exam, String parentId, Realm mRealm) {
@@ -54,12 +54,11 @@ public class RealmStepExam extends RealmObject {
         myExam.setTotalMarks(JsonUtils.getInt("totalMarks", exam));
         myExam.setNoOfQuestions(JsonUtils.getJsonArray("questions", exam).size());
         myExam.setFromNation(!TextUtils.isEmpty(parentId));
-        RealmResults oldQuestions = mRealm.where(RealmExamQuestion.class).equalTo("examId",  JsonUtils.getString("_id", exam)).findAll();
-        if(oldQuestions==null ||  oldQuestions.isEmpty() ){
+        RealmResults oldQuestions = mRealm.where(RealmExamQuestion.class).equalTo("examId", JsonUtils.getString("_id", exam)).findAll();
+        if (oldQuestions == null || oldQuestions.isEmpty()) {
             RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm);
         }
     }
-
 
     public String getSourcePlanet() {
         return sourcePlanet;
@@ -94,7 +93,6 @@ public class RealmStepExam extends RealmObject {
         }
     }
 
-
     public static int getNoOfExam(Realm mRealm, String courseId) {
         RealmResults res = mRealm.where(RealmStepExam.class).equalTo("courseId", courseId).findAll();
         if (res != null) {
@@ -102,7 +100,6 @@ public class RealmStepExam extends RealmObject {
         }
         return 0;
     }
-
 
     public static JsonObject serializeExam(Realm mRealm, RealmStepExam exam) {
         JsonObject object = new JsonObject();
@@ -132,12 +129,9 @@ public class RealmStepExam extends RealmObject {
     public static String[] getIds(List<RealmStepExam> list) {
         String[] ids = new String[list.size()];
         int i = 0;
-        for (RealmStepExam e : list
-        ) {
-            if (e.getType().startsWith("survey"))
-                ids[i] = (e.getId());
-            else
-                ids[i] = e.getId() + "@" + e.getCourseId();
+        for (RealmStepExam e : list) {
+            if (e.getType().startsWith("survey")) ids[i] = (e.getId());
+            else ids[i] = e.getId() + "@" + e.getCourseId();
             i++;
         }
         Utilities.log(new Gson().toJson(ids));
@@ -151,7 +145,6 @@ public class RealmStepExam extends RealmObject {
     public void setPassingPercentage(String passingPercentage) {
         this.passingPercentage = passingPercentage;
     }
-
 
     public String getType() {
         return type;
@@ -176,7 +169,6 @@ public class RealmStepExam extends RealmObject {
     public void setStepId(String stepId) {
         this.stepId = stepId;
     }
-
 
     public String get_rev() {
         return _rev;
