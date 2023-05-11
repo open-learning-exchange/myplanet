@@ -93,8 +93,9 @@ public class FileUtils {
 
 
     public static String getFileExtension(String address) {
-        if (TextUtils.isEmpty(address)) return "";
-        String filenameArray[] = address.split("\\.");
+        if (TextUtils.isEmpty(address))
+            return "";
+        String[] filenameArray = address.split("\\.");
         return filenameArray[filenameArray.length - 1];
     }
 
