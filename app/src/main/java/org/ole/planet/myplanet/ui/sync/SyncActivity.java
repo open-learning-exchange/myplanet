@@ -68,7 +68,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         editor = settings.edit();
         mRealm = new DatabaseService(this).getRealmInstance();
-        requestPermission();
+        requestAllPermissions();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
     }
