@@ -79,8 +79,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                         .into(imageView)
                 }
             })
-        v.txtVisits.text = """${profileDbHandler.offlineVisits} visits"""
-        v.txtRole.text = """ - ${model.roleAsString}"""
+        v.txtVisits.text = "${profileDbHandler.offlineVisits} visits"
+        v.txtRole.text = "- ${model.roleAsString}"
         v.txtFullName.text = fullName
     }
 
@@ -99,7 +99,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                         .findAll()
                 val urls = ArrayList<String>()
                 getUrlsAndStartDownload(
-                    imageList, BaseResourceFragment.settings, urls as ArrayList<String?>
+                    imageList, settings, urls as ArrayList<String?>
                 )
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
@@ -120,11 +120,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun myLibraryDiv(view: View) {
         view.flexboxLayout.flexDirection = FlexDirection.ROW
-        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, BaseResourceFragment.settings)
+        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
         if (dbMylibrary.size == 0) {
             view.count_library.visibility = View.GONE
         } else {
-            view.count_library.text = dbMylibrary.size.toString() + ""
+            view.count_library.text = "${dbMylibrary.size}"
         }
         var itemCnt = 0
         for (items in dbMylibrary) {
@@ -151,10 +151,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyList(c: Class<*>, flexboxLayout: FlexboxLayout, view: View) {
         val dbMycourses: List<RealmObject>
-        val userId = BaseResourceFragment.settings.getString("userId", "--")
+        val userId = settings.getString("userId", "--")
         setUpMyLife(userId!!)
         dbMycourses = (if (c == RealmMyCourse::class.java) {
-            RealmMyCourse.getMyByUserId(mRealm, BaseResourceFragment.settings)
+            RealmMyCourse.getMyByUserId(mRealm, settings)
         } else if (c == RealmMyTeam::class.java) {
             val i = myTeamInit(flexboxLayout)
             setCountText(i, RealmMyTeam::class.java, view)
@@ -178,7 +178,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
-        val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, BaseResourceFragment.settings)
+        val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
         val userId = UserProfileDbHandler(activity).userModel.id
         var count = 0
         for (ob in dbMyTeam) {
@@ -221,7 +221,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val dbMylife: MutableList<RealmMyLife>
         val rawMylife: List<RealmMyLife> =
-            RealmMyLife.getMyLifeByUserId(mRealm, BaseResourceFragment.settings)
+            RealmMyLife.getMyLifeByUserId(mRealm, settings)
         dbMylife = ArrayList()
         for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
         var itemCnt = 0
@@ -233,7 +233,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyLife(userId: String) {
         val realm = DatabaseService(context).realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, BaseResourceFragment.settings)
+        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) realm.beginTransaction()
             val myLifeListBase = getMyLifeListBase(userId)
@@ -349,9 +349,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         di?.setMessage("Syncing health , please wait...")
         Utilities.log(model.roleAsString)
         if (model.roleAsString.contains("health")) {
-            TransactionSyncManager.syncAllHealthData(mRealm, BaseResourceFragment.settings, this)
+            TransactionSyncManager.syncAllHealthData(mRealm, settings, this)
         } else {
-            TransactionSyncManager.syncKeyIv(mRealm, BaseResourceFragment.settings, this)
+            TransactionSyncManager.syncKeyIv(mRealm, settings, this)
         }
     }
 

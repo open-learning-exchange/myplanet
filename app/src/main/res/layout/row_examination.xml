@@ -10,7 +10,6 @@
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_small">
 
-
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="match_parent"

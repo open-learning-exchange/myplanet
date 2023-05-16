@@ -39,152 +39,162 @@
                 android:textSize="@dimen/text_size_mid" />
         </LinearLayout>
 
-        <LinearLayout
+        <TableLayout
+            android:id="@+id/tableTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingLeft="@dimen/padding_normal"
-            android:paddingRight="@dimen/padding_normal">
+            android:layout_marginTop="2dp"
+            android:stretchColumns="*">
 
-            <LinearLayout
-                android:id="@+id/ll_date"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1">
+            <TableRow
+                android:id="@+id/firstRow"
+                android:layout_margin="3dp"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content">
 
-                <TextView
-                    android:id="@+id/date"
+                <LinearLayout
+                    android:id="@+id/ll_date"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_weight="1">
+
+                    <TextView
+                        android:id="@+id/date"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:padding="@dimen/padding_small"
+                        android:text="@string/date"
+                        android:textColor="@color/md_black_1000"
+                        android:textSize="@dimen/text_size_mid"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:id="@+id/img_date"
+                        android:layout_width="@dimen/icon_size_mid"
+                        android:layout_height="@dimen/icon_size_mid"
+                        android:layout_gravity="center"
+                        app:srcCompat="@drawable/ic_down" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/note"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
                     android:padding="@dimen/padding_small"
-                    android:text="@string/date"
+                    android:text="@string/note"
                     android:textColor="@color/md_black_1000"
                     android:textSize="@dimen/text_size_mid"
                     android:textStyle="bold" />
 
-                <ImageView
-                    android:id="@+id/img_date"
-                    android:layout_width="@dimen/icon_size_mid"
-                    android:layout_height="@dimen/icon_size_mid"
+                <TextView
+                    android:id="@+id/credit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/credit"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/debit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/debit"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/balance"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    app:srcCompat="@drawable/ic_down" />
-
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/note"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2"
-                android:padding="@dimen/padding_small"
-                android:text="@string/note"
-                android:textColor="@color/md_black_1000"
-                android:textSize="@dimen/text_size_mid"
-                android:textStyle="bold" />
-
-
-            <TextView
-                android:id="@+id/credit"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="@dimen/padding_small"
-                android:text="@string/credit"
-                android:textColor="@color/md_black_1000"
-                android:textSize="@dimen/text_size_mid"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/debit"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="@dimen/padding_small"
-                android:text="@string/debit"
-                android:textColor="@color/md_black_1000"
-                android:textSize="@dimen/text_size_mid"
-                android:textStyle="bold" />
-
-
-            <TextView
-                android:id="@+id/balance"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:padding="@dimen/padding_small"
-                android:text="@string/balance"
-                android:textColor="@color/md_black_1000"
-                android:textSize="@dimen/text_size_mid"
-                android:textStyle="bold"
-                android:visibility="visible" />
-
-        </LinearLayout>
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/balance"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold"
+                    android:visibility="visible" />
+            </TableRow>
+        </TableLayout>
 
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/md_blue_grey_700" />
 
-        <LinearLayout
+        <TableLayout
+            android:id="@+id/tableTitle2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/cardview_dark_background"
-            android:padding="@dimen/padding_normal">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="@dimen/text_size_mid" />
+            android:stretchColumns="*">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2"
-                android:padding="@dimen/padding_small"
-                android:text="@string/total"
-                android:textColor="@color/bg_white"
-                android:textSize="@dimen/text_size_mid" />
+            <TableRow
+                android:id="@+id/secondRow"
+                android:layout_margin="3dp"
+                android:background="@color/cardview_dark_background"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/tv_credit"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="@dimen/padding_small"
-                android:text="@string/credit"
-                android:textColor="@color/bg_white"
-                android:textSize="@dimen/text_size_mid" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="@dimen/text_size_mid" />
 
-            <TextView
-                android:id="@+id/tv_debit"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="@dimen/padding_small"
-                android:text="@string/debit"
-                android:textColor="@color/bg_white"
-                android:textSize="@dimen/text_size_mid" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/total"
+                    android:textColor="@color/bg_white"
+                    android:textSize="@dimen/text_size_mid" />
 
+                <TextView
+                    android:id="@+id/tv_credit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/credit"
+                    android:textColor="@color/bg_white"
+                    android:textSize="@dimen/text_size_mid" />
 
-            <TextView
-                android:id="@+id/tv_balance"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:padding="@dimen/padding_small"
-                android:text="@string/balance"
-                android:textColor="@color/bg_white"
-                android:textSize="@dimen/text_size_mid"
-                android:visibility="visible" />
+                <TextView
+                    android:id="@+id/tv_debit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/debit"
+                    android:textColor="@color/bg_white"
+                    android:textSize="@dimen/text_size_mid" />
 
-
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_balance"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/balance"
+                    android:textColor="@color/bg_white"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="visible" />
+            </TableRow>
+        </TableLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_finance"

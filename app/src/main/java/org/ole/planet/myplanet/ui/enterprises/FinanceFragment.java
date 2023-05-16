@@ -119,7 +119,7 @@ public class FinanceFragment extends BaseTeamFragment {
         int debit = 0;
         int credit = 0;
         for (RealmMyTeam team : list) {
-            if ("credit".equalsIgnoreCase(team.getType().toLowerCase())) {
+            if ("credit".equalsIgnoreCase(team.getType())) {
                 credit += team.getAmount();
             } else {
                 debit += team.getAmount();
@@ -130,7 +130,7 @@ public class FinanceFragment extends BaseTeamFragment {
         ((TextView) getView().findViewById(R.id.tv_credit)).setText(credit + "");
         ((TextView) getView().findViewById(R.id.tv_balance)).setText(total + "");
         if (total >= 0)
-            ((TextView) getView().findViewById(R.id.balance_caution)).setVisibility(View.GONE);
+            getView().findViewById(R.id.balance_caution).setVisibility(View.GONE);
 
     }
 

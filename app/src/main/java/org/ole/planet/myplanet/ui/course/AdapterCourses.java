@@ -40,7 +40,6 @@ import io.noties.markwon.Markwon;
 import io.realm.Realm;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     private Context context;
     private List<RealmMyCourse> courseList;
     private List<RealmMyCourse> selectedItems;
