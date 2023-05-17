@@ -25,7 +25,7 @@
                     android:id="@+id/btn_open"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Open Resource"
+                    android:text="@string/open_resource"
                     android:theme="@style/AccentButton" />
 
                 <Button
@@ -75,7 +75,7 @@
                                 android:layout_gravity="center"
                                 android:gravity="center"
                                 android:padding="4dp"
-                                android:text="0 total"
+                                android:text="@string/_0_total"
                                 android:textColor="@color/md_black_1000" />
 
                             <androidx.appcompat.widget.AppCompatRatingBar
@@ -103,7 +103,7 @@
                                 android:layout_gravity="center"
                                 android:gravity="center"
                                 android:padding="4dp"
-                                android:text="0.0"
+                                android:text="@string/_0_0"
                                 android:textColor="@color/md_black_1000"
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
@@ -113,7 +113,7 @@
                                 android:id="@+id/average"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Average" />
+                                android:text="@string/average" />
 
                         </LinearLayout>
                     </LinearLayout>
@@ -126,7 +126,7 @@
                             style="@style/HeaderText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Subject Level : " />
+                            android:text="@string/subject_level" />
 
                         <TextView
                             android:id="@+id/subject_level"
@@ -144,7 +144,7 @@
                             style="@style/HeaderText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Grade Level : " />
+                            android:text="@string/grade_level" />
 
                         <TextView
                             android:id="@+id/grade_level"
@@ -162,7 +162,7 @@
                             style="@style/HeaderText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Language : " />
+                            android:text="@string/_language" />
 
                         <TextView
                             android:id="@+id/language"
@@ -180,7 +180,7 @@
                             style="@style/HeaderText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Method : " />
+                            android:text="@string/method" />
 
                         <TextView
                             android:id="@+id/method"
@@ -198,7 +198,7 @@
                             style="@style/HeaderText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Number of exams : " />
+                            android:text="@string/number_of_exams" />
 
                         <TextView
                             android:id="@+id/no_of_exams"
@@ -217,7 +217,7 @@
                             style="@style/HeaderText"
                             android:layout_width="wrap_content"
                             android:layout_height="match_parent"
-                            android:text="Description : " />
+                            android:text="@string/_description" />
 
                         <br.tiagohm.markdownview.MarkdownView
                             android:id="@+id/description"

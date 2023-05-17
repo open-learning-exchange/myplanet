@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/buttongrey"
             android:padding="@dimen/padding_normal"
-            android:text="Submit Feedback" />
+            android:text="@string/submit_feedback" />
     </LinearLayout>
 
 </FrameLayout>

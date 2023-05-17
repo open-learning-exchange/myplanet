@@ -129,7 +129,7 @@
                         android:layout_gravity="center"
                         android:background="@drawable/buttonyellow"
                         android:padding="@dimen/padding_normal"
-                        android:text="Submit Answer" />
+                        android:text="@string/submit_answer" />
 
                 </LinearLayout>
 

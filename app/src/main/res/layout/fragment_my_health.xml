@@ -18,7 +18,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Vital Signs Record"
+            android:text="@string/vital_signs"
             android:textSize="24sp" />
 
     </androidx.cardview.widget.CardView>

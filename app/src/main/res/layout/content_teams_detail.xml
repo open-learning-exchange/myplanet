@@ -23,7 +23,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="Joined Members : "
+            android:text="@string/_joined_members"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_mid"
             android:textStyle="bold" />
@@ -38,7 +38,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="Requested Members : "
+            android:text="@string/_requested_members"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_mid"
             android:textStyle="bold" />
@@ -53,7 +53,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="Courses : "
+            android:text="@string/_courses"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_mid"
             android:textStyle="bold" />

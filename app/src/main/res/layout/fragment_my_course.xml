@@ -37,7 +37,7 @@
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
-                    android:text="My Courses"
+                    android:text="@string/my_courses"
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />

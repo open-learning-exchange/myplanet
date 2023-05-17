@@ -15,7 +15,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="Send Survey to : " />
+            android:text="@string/send_survey_to" />
 
         <org.ole.planet.myplanet.utilities.CheckboxListView
             android:id="@+id/list_users"
@@ -35,7 +35,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:text="Cancel"
+                android:text="@string/cancel"
                 android:theme="@style/PrimaryButton" />
 
             <Button
@@ -44,7 +44,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:text="Send Survey"
+                android:text="@string/send_survey"
                 android:theme="@style/PrimaryButton" />
         </LinearLayout>
 

@@ -18,13 +18,13 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_alignParentBottom="true"
-            android:hint="date" />
+            android:hint="@string/date" />
 
         <TextView
             android:id="@+id/tv_user"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:hint="user"
+            android:hint="@string/user"
             android:textStyle="bold" />
 
 
@@ -33,7 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/tv_user"
-            android:hint="message" />
+            android:hint="@string/messages" />
 
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

@@ -86,7 +86,7 @@
                         android:drawableLeft="@drawable/ic_left_arrow"
                         android:gravity="center"
                         android:minWidth="100dp"
-                        android:text="Previous"
+                        android:text="@string/previous"
                         android:textColor="@color/md_white_1000" />
 
                     <TextView
@@ -99,7 +99,7 @@
                         android:drawableRight="@drawable/ic_right_arrow"
                         android:gravity="center"
                         android:minWidth="100dp"
-                        android:text="Next"
+                        android:text="@string/next"
                         android:textColor="@color/md_white_1000" />
 
                 </LinearLayout>
@@ -146,7 +146,6 @@
                         android:layout_gravity="center"
                         android:gravity="center"
                         android:padding="@dimen/padding_normal"
-                        android:text="42% complete"
                         android:textColor="@color/md_white_1000"
                         android:textSize="@dimen/text_size_mid"
                         android:visibility="gone" />

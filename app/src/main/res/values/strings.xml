@@ -38,8 +38,8 @@
     <string name="download_all">Download All</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="add_to_mycourse">Add to my courses</string>
-    <string name="join_selected">Join Selected</string>
-    <string name="join">Join</string>
+    <string name="join_selected" translatable="false">Join Selected</string>
+    <string name="join" translatable="false">Join</string>
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
     <string name="submission">mySubmissions</string>
@@ -99,7 +99,7 @@
     <string name="add_to_mycourses">Add To My Courses</string>
     <string name="added_to">added to</string>
     <string name="removed_from">removed from</string>
-    <string name="my_courses">my courses</string>
+    <string name="my_courses">My Courses</string>
     <string name="filter_collections">Filter Collections</string>
     <string name="select_many_collections">Select Many Collections</string>
     <string name="collections">Collections</string>
@@ -294,7 +294,7 @@
     <string name="save">Save</string>
     <string name="vital_signs">Vital Signs Record</string>
     <string name="task">Task (required)</string>
-    <string name="deadline">Deadline (required)</string>
+    <string name="deadline" translatable="false">Deadline (required)</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
     <string name="enterprises">Enterprises</string>
     <string name="select_member">Select Team Member</string>
@@ -391,7 +391,6 @@
         <item>Enterprises</item>
     </string-array>
 
-
     <string-array name="transaction_type">
         <item>Credit</item>
         <item>Debit</item>
@@ -409,7 +408,6 @@
         <item>Order By Name - Asc</item>
         <item>Order By Name - Desc</item>
     </string-array>
-
 
     <string-array name="grade_level">
         <item>All</item>
@@ -461,8 +459,8 @@
         <item>Tuberculosis</item>
         <item>Trauma</item>
     </string-array>
-    <string name="title_activity_news_detail">NewsDetailActivity</string>
-    <string name="large_text">
+    <string name="title_activity_news_detail" translatable="false">NewsDetailActivity</string>
+    <string name="large_text" translatable="false">
         "Material is the metaphor.\n\n"
 
         "A material metaphor is the unifying theory of a rationalized space and a system of motion."
@@ -564,7 +562,7 @@
     <string name="become_a_member">Become a member</string>
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
-    <string name="feedback">Feedback</string>
+    <string name="feedback" translatable="false">Feedback</string>
     <string name="add_member">Add member</string>
     <string name="confirm_exit">Are you sure you want to leave this team?</string>
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
@@ -604,6 +602,76 @@
     <string name="entRules">What are the Rules of your enterprise?</string>
     <string name="entEmptyDescription"><![CDATA[The enterprise has no mission & services.]]></string>
     <string name="total_visits">Total visits from last 30 days</string>
-
+    <string name="open_community" translatable="false">Open Community</string>
+    <string name="dash" translatable="false">----</string>
+    <string name="logo_image" translatable="false">logo Image</string>
+    <string name="steps" translatable="false">Steps</string>
+    <string name="csv_filename" translatable="false">CSV Filename</string>
+    <string name="please_enter_reply" translatable="false">Please enter reply</string>
+    <string name="image_filename" translatable="false">Image Filename</string>
+    <string name="markdown_filename" translatable="false">Markdown Filename</string>
+    <string name="select_login_mode" translatable="false">Select Login Mode:</string>
+    <string name="normal_mode" translatable="false">Normal Mode</string>
+    <string name="select_date" translatable="false">Select Date</string>
+    <string name="_public" translatable="false">Public</string>
+    <string name="_type" translatable="false">Type*</string>
+    <string name="_joined_members" translatable="false">Joined Members:</string>
+    <string name="_requested_members" translatable="false">Requested Members:</string>
+    <string name="_courses" translatable="false">Courses:</string>
+    <string name="_title" translatable="false">Title</string>
+    <string name="source" translatable="false">Source</string>
+    <string name="cloud_url" translatable="false">Cloud Url</string>
+    <string name="autosync_off" translatable="false">Autosync Off!</string>
+    <string name="autosync" translatable="false">Autosync</string>
+    <string name="autosync_on" translatable="false">Autosync On</string>
+    <string name="interval" translatable="false">Interval</string>
+    <string name="attached_resources" translatable="false">Attached resources:</string>
+    <string name="edit" translatable="false">Edit</string>
+    <string name="my_purpose" translatable="false">My Purpose</string>
+    <string name="my_goals" translatable="false">My Goals</string>
+    <string name="my_achievements" translatable="false">My Achievements</string>
+    <string name="open_resource" translatable="false">Open Resource</string>
+    <string name="_0_total" translatable="false">0 total</string>
+    <string name="_0_0" translatable="false">0.0</string>
+    <string name="average" translatable="false">Average</string>
+    <string name="subject_level" translatable="false">Subject Level :</string>
+    <string name="grade_level" translatable="false">Grade Level :</string>
+    <string name="_language" translatable="false">Language :</string>
+    <string name="method" translatable="false">Method :</string>
+    <string name="number_of_exams" translatable="false">Number of exams :</string>
+    <string name="_description" translatable="false">Description :</string>
+    <string name="download_resources" translatable="false">Download Resources</string>
+    <string name="take_test" translatable="false">Take Test</string>
+    <string name="search_" translatable="false">Search</string>
+    <string name="for_ambulance" translatable="false">For Ambulance</string>
+    <string name="for_police" translatable="false">For Police</string>
+    <string name="for_emergency" translatable="false">For Emergency</string>
+    <string name="submit_feedback" translatable="false">Submit Feedback</string>
+    <string name="media" translatable="false">Media :</string>
+    <string name="exams" translatable="false">Exams</string>
+    <string name="survey" translatable="false">Survey</string>
+    <string name="submitted_by" translatable="false">Submitted by</string>
+    <string name="updated_on" translatable="false">Updated On</string>
+    <string name="send_survey_to" translatable="false">Send Survey to :</string>
+    <string name="send_survey" translatable="false">Send Survey</string>
+    <string name="next" translatable="false">Next</string>
+    <string name="previous" translatable="false">Previous</string>
+    <string name="submit_answer" translatable="false">Submit Answer</string>
+    <string name="add_documents" translatable="false">Add Documents</string>
+    <string name="leave_" translatable="false">Leave</string>
+    <string name="myplanet" translatable="false">myPlanet</string>
+    <string name="all_task" translatable="false">All Task</string>
+    <string name="my_task" translatable="false">My task</string>
+    <string name="completed" translatable="false">Completed</string>
+    <string name="add_profile_picture" translatable="false">Add Profile Picture</string>
+    <string name="das" translatable="false">--</string>
+    <string name="n_a" translatable="false">N/A</string>
+    <string name="request_to_join" translatable="false">Request To join</string>
+    <string name="filter_labels" translatable="false">Filter Labels</string>
+    <string name="offer" translatable="false">Offer</string>
+    <string name="request_for_advice" translatable="false">Request for advice</string>
+    <string name="mistakes" translatable="false">Mistakes</string>
+    <string name="take_survey" translatable="false">Take Survey</string>
+    <string name="checkbox" translatable="false">CheckBox</string>
 </resources>
 

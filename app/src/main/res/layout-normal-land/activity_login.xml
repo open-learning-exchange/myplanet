@@ -47,7 +47,7 @@
                     android:id="@+id/logoImageView"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
-                    android:contentDescription="TODO"
+                    android:contentDescription="@string/logo_image"
                     android:tint="@color/md_white_1000"
                     app:srcCompat="@drawable/ole_logo" />
 
@@ -109,7 +109,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
-                    android:text="Open Community"
+                    android:text="@string/open_community"
                     android:textColor="@color/md_white_1000"
                     android:theme="@style/PrimaryFlatButton" />
 
@@ -165,7 +165,7 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:padding="@dimen/padding_small"
-                    android:text="----"
+                    android:text="@string/dash"
                     android:textAlignment="center" />
 
                 <ImageButton
@@ -285,7 +285,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:layout_weight="1"
-                            android:text="Become a member"
+                            android:text="@string/become_a_member"
                             android:theme="@style/PrimaryFlatButton" />
 
 
@@ -296,7 +296,7 @@
                             android:layout_gravity="center"
                             android:layout_margin="@dimen/padding_normal"
                             android:layout_weight="1"
-                            android:text="Feedback"
+                            android:text="@string/feedback"
                             android:theme="@style/PrimaryFlatButton" />
 
                     </LinearLayout>

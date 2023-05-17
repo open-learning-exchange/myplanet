@@ -27,7 +27,7 @@
             android:layout_height="72dp"
             android:layout_gravity="center"
             android:padding="@dimen/padding_large"
-            android:text="Select Login Mode : "
+            android:text="@string/select_login_mode"
             android:textColor="@color/bg_white"
             android:textSize="@dimen/text_size_mid"
             android:textStyle="bold" />
@@ -50,7 +50,7 @@
                     android:layout_height="wrap_content"
                     android:checked="true"
                     android:padding="@dimen/padding_normal"
-                    android:text="Normal Mode"
+                    android:text="@string/normal_mode"
                     android:textColor="@color/md_white_1000" />
 
                 <RadioButton
