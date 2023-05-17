@@ -56,14 +56,12 @@
                 <TextView
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
-                    android:layout_height="0dp"
-                    android:layout_weight="0.7"
+                    android:layout_height="wrap_content"
                     android:text="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:textSize="18sp"
                     android:textStyle="bold" />
-
 
                 <Button
                     android:id="@+id/btn_lang"
@@ -75,7 +73,6 @@
                     android:text="@string/language"
                     android:textColor="@android:color/white"
                     android:theme="@style/PrimaryFlatButton" />
-
 
                 <androidx.appcompat.widget.SwitchCompat
                     android:id="@+id/switch_child_mode"
