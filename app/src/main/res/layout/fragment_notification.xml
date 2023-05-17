@@ -23,7 +23,7 @@
                 android:layout_height="@dimen/_40dp"
                 android:layout_gravity="center_vertical"
                 android:src="@drawable/ic_left_arrow"
-                android:tint="@color/md_black_1000" />
+                app:tint="@color/md_black_1000" />
 
 
             <TextView

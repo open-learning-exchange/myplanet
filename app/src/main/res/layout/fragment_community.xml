@@ -47,7 +47,7 @@
                     android:layout_height="@dimen/_24dp"
                     android:layout_gravity="center_vertical"
                     android:src="@drawable/ic_delete"
-                    android:tint="@color/md_black_1000" />
+                    app:tint="@color/md_black_1000" />
 
                 <ImageView
                     android:id="@+id/ic_add"
@@ -55,7 +55,7 @@
                     android:layout_height="@dimen/_24dp"
                     android:layout_gravity="center_vertical"
                     android:src="@drawable/ic_add"
-                    android:tint="@color/md_black_1000" />
+                    app:tint="@color/md_black_1000" />
 
             </LinearLayout>
 

@@ -30,9 +30,9 @@
                 android:layout_width="@dimen/_40dp"
                 android:layout_height="@dimen/_40dp"
                 android:padding="4dp"
-                android:tint="@color/md_black_1000"
                 android:visibility="gone"
-                app:srcCompat="@drawable/ic_more" />
+                app:srcCompat="@drawable/ic_more"
+                app:tint="@color/md_black_1000" />
 
 
         </LinearLayout>
