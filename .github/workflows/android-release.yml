@@ -35,7 +35,7 @@ jobs:
       - name: Build APK and List Build Artifacts
         run: |
           ./gradlew build
-          ls ${APK_DIR}
+          ls -alR ${APK_DIR}
 
       - name: Sign Android APK
         uses: Tlaster/android-sign@v1.2.2
