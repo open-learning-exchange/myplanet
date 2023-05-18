@@ -1,75 +1,83 @@
-name: Release And Update
-
-on:
+name: Build, Sign and Release APK
+on: 
   push:
     branches:
       - 'master'
-
-#on:
-#  workflow_dispatch:
-#    inputs:
+  workflow_dispatch:
 
 jobs:
-  apk:
-    name: Release APK
+  build_and_release:
+    name: Build and Release APK
     runs-on: ubuntu-latest
-    steps:
-      - name: run number with offset
-        id: build_id
-        env:
-          NUM: ${{ github.run_number }}
-        run: echo "::set-output name=id::$(($NUM+6050))"
 
-      - name: Checkout code
+    env:
+      ANDROID_NDK_VERSION: "21.3.6528147"
+      BUILD_TOOLS_VERSION: "30.0.2"
+      RELEASE_DIR: "build/release/signed"
+      APK_DIR: "app/build/outputs/apk"
+      XML_FILE: 'app/src/main/res/values/versions.xml'
+
+    steps:
+      - name: Checkout repository code
         uses: actions/checkout@v2
 
-      - name: Set up JDK 11
+      - name: Set up JDK 11 for Android
         uses: actions/setup-java@v1
         with:
           java-version: 11
 
-      - name: Install NDK
-        run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.3.6528147" --sdk_root=${ANDROID_SDK_ROOT}
+      - name: Install Android NDK and Make Gradle Wrapper Executable
+        run: |
+          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
+          chmod +x ./gradlew
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Build APK and List Build Artifacts
+        run: |
+          ./gradlew build
+          ls ${APK_DIR}
 
-      - name: Generate APK
-        run: ./gradlew build
-
-      - name: List APK
-        run: ls app/build/outputs/apk
-
-      - name: Android Sign
+      - name: Sign Android APK
         uses: Tlaster/android-sign@v1.2.2
         with:
-          releaseDirectory: app/build/outputs/apk/release
+          releaseDirectory: ${APK_DIR}/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          output: build/release/signed
+          output: ${RELEASE_DIR}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: "30.0.2"
 
-      - name: Move Files to release
+      - name: Copy Debug Build to Release Directory and Generate SHA256
         run: |
-          cp app/build/outputs/apk/debug/* build/release/signed/
-          mv build/release/signed/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
-          cd build/release/signed/
+          cp ${APK_DIR}/debug/* ${RELEASE_DIR}/
+          mv ${RELEASE_DIR}/myPlanet-build-signed.apk ${RELEASE_DIR}/myPlanet.apk
+          cd ${RELEASE_DIR}/
           sha256sum myPlanet.apk > myPlanet.apk.sha256
 
-      - name: Get Tag
-        id: getTag
+      - name: Extract Version from XML File
+        id: getVersion
         uses: mavrosxristoforos/get-xml-info@1.0
         with:
-          xml-file: 'app/src/main/res/values/versions.xml'
+          xml-file: ${XML_FILE}
           xpath: '//string'
-      - name: Upload binaries to release
+
+      - name: Rename APK with Version and Branch for Artifact
+        if: github.ref != 'refs/heads/master'
+        run: |
+          mv ${RELEASE_DIR}/myPlanet.apk ${RELEASE_DIR}/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk
+
+      - name: Upload APK as Build Artifact
+        if: github.ref != 'refs/heads/master'
+        uses: actions/upload-artifact@v2
+        with:
+          name: APK
+          path: ${RELEASE_DIR}/*
+
+      - name: Release Signed APK on GitHub
+        if: github.ref == 'refs/heads/master'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/release/signed/*
-          tag: v${{ steps.getTag.outputs.info }}
+          file: ${RELEASE_DIR}/*
+          tag: v${{ steps.getVersion.outputs.info }}
           overwrite: true
           file_glob: true
