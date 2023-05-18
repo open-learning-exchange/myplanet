@@ -14,8 +14,6 @@ jobs:
     env:
       ANDROID_NDK_VERSION: "21.3.6528147"
       BUILD_TOOLS_VERSION: "30.0.2"
-      RELEASE_DIR: "build/release/signed"
-      APK_DIR: "app/build/outputs/apk"
       XML_FILE: 'app/src/main/res/values/versions.xml'
 
     steps:
@@ -35,23 +33,23 @@ jobs:
       - name: Build APK and List Build Artifacts
         run: |
           ./gradlew build
-          ls -alR ${APK_DIR}
+          ls -alR app/build/outputs/apk
 
       - name: Sign Android APK
         uses: Tlaster/android-sign@v1.2.2
         with:
-          releaseDirectory: ${APK_DIR}/release
+          releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          output: ${RELEASE_DIR}
+          output: build/release/signed
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
       - name: Copy Debug Build to Release Directory and Generate SHA256
         run: |
-          cp ${APK_DIR}/debug/* ${RELEASE_DIR}/
-          mv ${RELEASE_DIR}/myPlanet-build-signed.apk ${RELEASE_DIR}/myPlanet.apk
-          cd ${RELEASE_DIR}/
+          cp app/build/outputs/apk/debug/* build/release/signed/
+          mv build/release/signed/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
+          cd build/release/signed/
           sha256sum myPlanet.apk > myPlanet.apk.sha256
 
       - name: Extract Version from XML File
@@ -64,21 +62,21 @@ jobs:
       - name: Rename APK with Version and Branch for Artifact
         if: github.ref != 'refs/heads/master'
         run: |
-          mv ${RELEASE_DIR}/myPlanet.apk ${RELEASE_DIR}/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk
+          mv build/release/signed/myPlanet.apk build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk
 
       - name: Upload APK as Build Artifact
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v2
         with:
           name: APK
-          path: ${RELEASE_DIR}/*
+          path: build/release/signed/*
 
       - name: Release Signed APK on GitHub
         if: github.ref == 'refs/heads/master'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${RELEASE_DIR}/*
+          file: build/release/signed/*
           tag: v${{ steps.getVersion.outputs.info }}
           overwrite: true
           file_glob: true
