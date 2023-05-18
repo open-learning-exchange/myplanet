@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - 'master'
+      - 'newworkflow'
   workflow_dispatch:
 
 jobs:
