@@ -48,14 +48,13 @@
                     android:layout_width="100dp"
                     android:layout_height="100dp"
                     android:contentDescription="TODO"
-                    android:tint="@color/md_white_1000"
-                    app:srcCompat="@drawable/ole_logo" />
+                    app:srcCompat="@drawable/ole_logo"
+                    app:tint="@color/md_white_1000" />
 
                 <TextView
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
-                    android:layout_height="0dp"
-                    android:layout_weight="0.7"
+                    android:layout_height="wrap_content"
                     android:text="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
