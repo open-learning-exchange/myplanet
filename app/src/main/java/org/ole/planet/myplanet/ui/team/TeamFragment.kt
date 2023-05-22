@@ -36,7 +36,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
-            type = arguments!!.getString("type")
+            type = requireArguments().getString("type")
             Utilities.log("Team fragment")
             if (TextUtils.isEmpty(type)) {
                 type = "team"
@@ -216,7 +216,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             activity?.let { AdapterTeamList(it, getList(query), mRealm!!, childFragmentManager) }
         adapterTeamList?.setType(type)
         adapterTeamList?.setTeamListener(this@TeamFragment)
-        view!!.findViewById<View>(R.id.type).visibility =
+        requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) View.VISIBLE else View.GONE
         rvTeamList!!.adapter = adapterTeamList
     }
