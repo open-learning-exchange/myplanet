@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.FileProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -173,7 +174,15 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
         output = new File(dir, UUID.randomUUID().toString() + ".jpg");
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(output));
+
+        // Generate a content URI using FileProvider
+        Uri photoURI = FileProvider.getUriForFile(requireContext(), "org.ole.planet.myplanet.fileprovider", output);
+
+        // Grant temporary permission to the camera app to access the file
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        // Set the output URI
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
         startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
     }
 
