@@ -26,7 +26,7 @@
             android:layout_gravity="right"
             android:minWidth="150dp"
             android:padding="8dp"
-            android:text="Add Member"
+            android:text="@string/add_member"
             android:textSize="14sp"
             android:theme="@style/PrimaryButton"
             android:visibility="gone" />

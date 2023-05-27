@@ -3,14 +3,14 @@
 
     <item
         android:id="@+id/help_wanted"
-        android:title="Help Wanted" />
+        android:title="@string/help_wanted" />
 
     <item
         android:id="@+id/offer"
-        android:title="Offer" />
+        android:title="@string/offer" />
 
     <item
         android:id="@+id/request_for_advice"
-        android:title="Request for advice" />
+        android:title="@string/request_for_advice" />
 
 </menu>

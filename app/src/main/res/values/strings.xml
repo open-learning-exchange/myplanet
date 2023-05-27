@@ -99,7 +99,7 @@
     <string name="add_to_mycourses">Add To My Courses</string>
     <string name="added_to">added to</string>
     <string name="removed_from">removed from</string>
-    <string name="my_courses">my courses</string>
+    <string name="my_courses">My Courses</string>
     <string name="filter_collections">Filter Collections</string>
     <string name="select_many_collections">Select Many Collections</string>
     <string name="collections">Collections</string>
@@ -340,15 +340,15 @@
     <string name="hearing">Hearing</string>
     <string name="vitals">Vitals</string>
     <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation" translatable="false">Observations and Notes</string>
-    <string name="diagnosis" translatable="false">Diagnosis</string>
-    <string name="treatments" translatable="false">Treatments</string>
-    <string name="medications" translatable="false">Medications</string>
-    <string name="immunization" translatable="false">Immunization Dates</string>
-    <string name="allergies" translatable="false">Allergies</string>
-    <string name="xray" translatable="false">X-rays</string>
-    <string name="labtest" translatable="false">Lab Tests</string>
-    <string name="referrals" translatable="false">Referrals</string>
+    <string name="observation">Observations and Notes</string>
+    <string name="diagnosis">Diagnosis</string>
+    <string name="treatments">Treatments</string>
+    <string name="medications">Medications</string>
+    <string name="immunization">Immunization Dates</string>
+    <string name="allergies">Allergies</string>
+    <string name="xray">X-rays</string>
+    <string name="labtest">Lab Tests</string>
+    <string name="referrals">Referrals</string>
     <string name="full_name">Full Name</string>
     <string name="weight">Weight (kg)</string>
     <string name="no_records">No records found</string>
@@ -391,7 +391,6 @@
         <item>Enterprises</item>
     </string-array>
 
-
     <string-array name="transaction_type">
         <item>Credit</item>
         <item>Debit</item>
@@ -409,7 +408,6 @@
         <item>Order By Name - Asc</item>
         <item>Order By Name - Desc</item>
     </string-array>
-
 
     <string-array name="grade_level">
         <item>All</item>
@@ -604,6 +602,76 @@
     <string name="entRules">What are the Rules of your enterprise?</string>
     <string name="entEmptyDescription"><![CDATA[The enterprise has no mission & services.]]></string>
     <string name="total_visits">Total visits from last 30 days</string>
-
+    <string name="open_community">Open Community</string>
+    <string name="dash">----</string>
+    <string name="logo_image">logo Image</string>
+    <string name="steps">Steps</string>
+    <string name="csv_filename">CSV Filename</string>
+    <string name="please_enter_reply">Please enter reply</string>
+    <string name="image_filename">Image Filename</string>
+    <string name="markdown_filename">Markdown Filename</string>
+    <string name="select_login_mode">Select Login Mode:</string>
+    <string name="normal_mode">Normal Mode</string>
+    <string name="select_date">Select Date</string>
+    <string name="_public">Public</string>
+    <string name="_type">Type*</string>
+    <string name="_joined_members">Joined Members:</string>
+    <string name="_requested_members">Requested Members:</string>
+    <string name="_courses">Courses:</string>
+    <string name="_title">Title</string>
+    <string name="source">Source</string>
+    <string name="cloud_url">Cloud Url</string>
+    <string name="autosync_off">Autosync Off!</string>
+    <string name="autosync">Autosync</string>
+    <string name="autosync_on">Autosync On</string>
+    <string name="interval">Interval</string>
+    <string name="attached_resources">Attached resources:</string>
+    <string name="edit">Edit</string>
+    <string name="my_purpose">My Purpose</string>
+    <string name="my_goals">My Goals</string>
+    <string name="my_achievements">My Achievements</string>
+    <string name="open_resource">Open Resource</string>
+    <string name="_0_total">0 total</string>
+    <string name="_0_0">0.0</string>
+    <string name="average">Average</string>
+    <string name="subject_level">Subject Level :</string>
+    <string name="grade_level">Grade Level :</string>
+    <string name="_language">Language :</string>
+    <string name="method">Method :</string>
+    <string name="number_of_exams">Number of exams :</string>
+    <string name="_description">Description :</string>
+    <string name="download_resources">Download Resources</string>
+    <string name="take_test">Take Test</string>
+    <string name="search_">Search</string>
+    <string name="for_ambulance">For Ambulance</string>
+    <string name="for_police">For Police</string>
+    <string name="for_emergency">For Emergency</string>
+    <string name="submit_feedback">Submit Feedback</string>
+    <string name="media">Media :</string>
+    <string name="exams">Exams</string>
+    <string name="survey">Survey</string>
+    <string name="submitted_by">Submitted by</string>
+    <string name="updated_on">Updated On</string>
+    <string name="send_survey_to">Send Survey to :</string>
+    <string name="send_survey">Send Survey</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="submit_answer">Submit Answer</string>
+    <string name="add_documents">Add Documents</string>
+    <string name="leave_">Leave</string>
+    <string name="myplanet">myPlanet</string>
+    <string name="all_task">All Task</string>
+    <string name="my_task">My task</string>
+    <string name="completed">Completed</string>
+    <string name="add_profile_picture">Add Profile Picture</string>
+    <string name="das">--</string>
+    <string name="n_a">N/A</string>
+    <string name="request_to_join">Request To join</string>
+    <string name="filter_labels">Filter Labels</string>
+    <string name="offer">Offer</string>
+    <string name="request_for_advice">Request for advice</string>
+    <string name="mistakes">Mistakes</string>
+    <string name="take_survey">Take Survey</string>
+    <string name="checkbox">CheckBox</string>
 </resources>
 

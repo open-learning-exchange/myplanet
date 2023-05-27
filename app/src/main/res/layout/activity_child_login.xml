@@ -48,7 +48,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="0dp"
                     android:layout_weight="3"
-                    android:contentDescription="TODO"
+                    android:contentDescription="@string/logo_image"
                     app:srcCompat="@drawable/ole_logo" />
 
                 <TextView
@@ -104,7 +104,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
-                    android:text="Open Community"
+                    android:text="@string/open_community"
                     android:textColor="@color/md_white_1000"
                     android:theme="@style/PrimaryFlatButton" />
 
@@ -159,7 +159,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="15dp"
                     android:padding="@dimen/padding_normal"
-                    android:text="----"
+                    android:text="@string/dash"
                     android:textAlignment="center" />
 
                 <ImageButton

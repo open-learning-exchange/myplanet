@@ -35,7 +35,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="3"
-                android:hint="Please enter reply" />
+                android:hint="@string/please_enter_reply"
+                android:inputType="text" />
 
             <Button
                 android:id="@+id/reply_feedback"
@@ -43,7 +44,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Reply" />
+                android:text="@string/reply" />
 
             <Button
                 android:id="@+id/close_feedback"
@@ -51,7 +52,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Close" />
+                android:text="@string/close" />
 
         </LinearLayout>
 

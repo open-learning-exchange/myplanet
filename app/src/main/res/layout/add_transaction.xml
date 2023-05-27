@@ -54,7 +54,7 @@
         android:id="@+id/tv_select_date"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Select Date"
+        android:hint="@string/select_date"
         android:padding="@dimen/padding_normal"
         android:textColor="@color/colorPrimaryDark"
         android:textSize="18sp" />

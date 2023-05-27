@@ -19,7 +19,7 @@
             android:id="@+id/et_tags"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Filter Labels"
+            android:hint="@string/filter_labels"
             android:visibility="gone" />
 
         <com.google.android.flexbox.FlexboxLayout

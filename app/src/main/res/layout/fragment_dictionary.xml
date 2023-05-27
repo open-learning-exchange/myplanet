@@ -20,7 +20,7 @@
                 android:id="@+id/et_search"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Search ...." />
+                android:hint="@string/search" />
         </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -28,7 +28,7 @@
             android:id="@+id/btn_search"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Search" />
+            android:text="@string/search_" />
 
         <TextView
             android:id="@+id/tv_result"

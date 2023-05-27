@@ -137,7 +137,7 @@
                                         android:layout_gravity="center"
                                         android:gravity="center"
                                         android:padding="4dp"
-                                        android:text="0.0"
+                                        android:text="@string/_0_0"
                                         android:textColor="@color/md_black_1000"
                                         android:textSize="@dimen/text_size_large"
                                         android:textStyle="bold" />
@@ -147,7 +147,7 @@
                                         android:id="@+id/average"
                                         android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
-                                        android:text="Average" />
+                                        android:text="@string/average" />
 
                                 </LinearLayout>
                             </LinearLayout>
@@ -196,7 +196,7 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Media : " />
+                                    android:text="@string/media" />
 
                                 <TextView
                                     android:id="@+id/tv_media"

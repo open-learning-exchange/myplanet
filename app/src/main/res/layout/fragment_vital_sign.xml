@@ -88,7 +88,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="--"
+                        android:text="@string/das"
                         android:textAlignment="center"
                         android:textAppearance="@style/TextAppearance.AppCompat.Body2"
                         android:textSize="18sp"
@@ -144,7 +144,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="N/A" />
+                                    android:text="@string/n_a" />
 
                             </LinearLayout>
 
@@ -167,7 +167,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="N/A" />
+                                    android:text="@string/n_a" />
                             </LinearLayout>
 
                             <LinearLayout
@@ -189,7 +189,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="N/A" />
+                                    android:text="@string/n_a" />
                             </LinearLayout>
 
                             <LinearLayout
@@ -211,7 +211,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="N/A" />
+                                    android:text="@string/n_a" />
                             </LinearLayout>
 
 
@@ -245,7 +245,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="N/A" />
+                                    android:text="@string/n_a" />
 
                             </LinearLayout>
 
@@ -268,7 +268,7 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="N/A" />
+                                    android:text="@string/n_a" />
                             </LinearLayout>
 
 
@@ -298,7 +298,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
-                                android:text="N/A" />
+                                android:text="@string/n_a" />
                         </LinearLayout>
 
                         <View
@@ -324,7 +324,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
-                                android:text="N/A" />
+                                android:text="@string/n_a" />
                         </LinearLayout>
 
 

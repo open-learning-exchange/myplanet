@@ -28,21 +28,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="All Task" />
+            android:text="@string/all_task" />
 
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_my"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="My task" />
+            android:text="@string/my_task" />
 
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_completed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="Completed" />
+            android:text="@string/completed" />
 
 
     </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>

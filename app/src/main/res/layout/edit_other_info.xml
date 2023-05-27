@@ -25,7 +25,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:background="@drawable/buttongrey"
-            android:text="Edit"
+            android:text="@string/edit"
             android:visibility="visible" />
 
         <ImageView
