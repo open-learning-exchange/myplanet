@@ -33,6 +33,8 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 /**
  * A simple [Fragment] subclass.
@@ -227,7 +229,15 @@ class MyHealthFragment : Fragment() {
             """${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"""
         txt_email.text = Utilities.checkNA(userModel!!.email)
         txt_language.text = Utilities.checkNA(userModel!!.language)
-        txt_dob.text = Utilities.checkNA(userModel!!.dob)
+
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+        val dateString = userModel!!.dob
+        val date = inputFormat.parse(dateString)
+        val formattedDate = outputFormat.format(date)
+
+        txt_dob.text = Utilities.checkNA(formattedDate)
         var mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
