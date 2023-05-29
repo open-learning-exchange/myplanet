@@ -44,7 +44,7 @@ class MyActivityFragment : Fragment() {
                 .findAll()
 
         var countMap = HashMap<String, Int>();
-        var format = SimpleDateFormat("MMM")
+        var format = SimpleDateFormat("MMM", Locale.getDefault())
         resourceActivity.forEach {
 
             var d = format.format(it.loginTime)
