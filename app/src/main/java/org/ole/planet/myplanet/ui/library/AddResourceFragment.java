@@ -164,10 +164,20 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     private void dispatchTakeVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString() + ".mp4")));
+        Uri videoUri = FileProvider.getUriForFile(getActivity(), "org.ole.planet.myplanet.fileprovider", createVideoFile());
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri);
+        takeVideoIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
+    }
+
+    private File createVideoFile() {
+        File videoDir = new File(Utilities.SD_PATH + "/video/");
+        videoDir.mkdirs();
+        File videoFile = new File(videoDir, UUID.randomUUID().toString() + ".mp4");
+        return videoFile;
     }
 
     public void takePhoto() {

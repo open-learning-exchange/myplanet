@@ -83,11 +83,11 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:background="?attr/selectableItemBackground"
-                        android:drawableLeft="@drawable/ic_left_arrow"
                         android:gravity="center"
                         android:minWidth="100dp"
                         android:text="Previous"
-                        android:textColor="@color/md_white_1000" />
+                        android:textColor="@color/md_white_1000"
+                        app:drawableLeftCompat="@drawable/ic_left_arrow" />
 
                     <TextView
                         android:id="@+id/next_step"
@@ -96,11 +96,11 @@
                         android:layout_gravity="center"
                         android:layout_marginLeft="@dimen/padding_normal"
                         android:background="?attr/selectableItemBackground"
-                        android:drawableRight="@drawable/ic_right_arrow"
                         android:gravity="center"
                         android:minWidth="100dp"
                         android:text="Next"
-                        android:textColor="@color/md_white_1000" />
+                        android:textColor="@color/md_white_1000"
+                        app:drawableRightCompat="@drawable/ic_right_arrow" />
 
                 </LinearLayout>
 

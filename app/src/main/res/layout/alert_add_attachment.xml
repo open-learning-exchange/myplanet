@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical">
@@ -23,12 +24,12 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:background="?attr/selectableItemBackground"
-        android:drawableRight="@drawable/ic_date"
         android:foregroundGravity="center"
         android:gravity="center_vertical"
         android:padding="@dimen/padding_normal"
         android:text="@string/date"
-        android:textSize="@dimen/text_size_mid" />
+        android:textSize="@dimen/text_size_mid"
+        app:drawableRightCompat="@drawable/ic_date" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
