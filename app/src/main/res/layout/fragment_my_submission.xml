@@ -43,7 +43,6 @@
                     android:padding="@dimen/padding_normal"
                     android:text="Survey"
                     android:textSize="20sp" />
-
             </RadioGroup>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -65,49 +64,54 @@
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
-
-        <LinearLayout
+        <TableLayout
+            android:id="@+id/llayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/md_blue_grey_50"
-            android:padding="@dimen/padding_normal">
+            android:stretchColumns="*">
 
-            <TextView
-                android:layout_width="0dp"
+            <TableRow
+                android:id="@+id/secondRow"
+                android:layout_width="fill_parent"
+                android:padding="@dimen/padding_normal"
+                android:background="@color/md_blue_grey_50"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Name"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp" />
+                android:layout_margin="3dp">
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Status"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Name"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
 
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Status"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
 
-            <TextView
-                android:id="@+id/submitted_by"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Submitted by"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/submitted_by"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Submitted by"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Updated On"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp" />
-
-        </LinearLayout>
-
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Updated On"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="18sp" />
+            </TableRow>
+        </TableLayout>
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_mysurvey"
             android:layout_width="match_parent"

@@ -21,7 +21,6 @@
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
 
-
         <TextView
             android:id="@+id/tv_description"
             android:layout_width="match_parent"
@@ -39,5 +38,4 @@
             android:textColor="@color/colorPrimaryDark" />
 
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

@@ -24,62 +24,120 @@
                 android:padding="@dimen/padding_normal" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <LinearLayout
+        <TableLayout
+            android:id="@+id/tableTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_marginTop="10dp"
+            android:stretchColumns="*">
 
-            <TextView
-                android:id="@+id/name"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:alpha="0.5"
-                android:padding="@dimen/padding_small"
-                android:text="@string/name_normal"
-                android:textColor="@color/md_black_1000"
-                android:textStyle="bold" />
+            <TableRow
+                android:id="@+id/firstRow"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content">
 
-            <TextView
-                android:id="@+id/created"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:alpha="0.5"
-                android:padding="@dimen/padding_small"
-                android:text="@string/created_on"
-                android:textColor="@color/md_black_1000" />
+                <TextView
+                    android:id="@+id/name"
+                    android:layout_width="0dp"
+                    android:text="@string/name_normal"
+                    android:textStyle="bold"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/md_black_1000" />
 
-            <TextView
-                android:id="@+id/type"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:alpha="0.5"
-                android:padding="@dimen/padding_small"
-                android:text="@string/type"
-                android:textColor="@color/md_black_1000" />
+                <TextView
+                    android:id="@+id/created"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:text="@string/created_on"
+                    android:textColor="@color/md_black_1000" />
 
-            <TextView
-                android:id="@+id/no_of_visits"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="2"
-                android:alpha="0.8"
-                android:padding="@dimen/padding_small"
-                android:text="@string/total_visits"
-                android:textColor="@color/md_black_1000" />
+                <TextView
+                    android:id="@+id/type"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/type"
+                    android:textStyle="bold"
+                    android:textColor="@color/md_black_1000" />
 
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:alpha="0.5"
-                android:padding="@dimen/padding_small"
-                android:text="@string/action"
-                android:textColor="@color/md_black_1000" />
+                <TextView
+                    android:id="@+id/no_of_visits"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textStyle="bold"
+                    android:text="@string/total_visits"
+                    android:textColor="@color/md_black_1000" />
 
-        </LinearLayout>
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:layout_weight="5"
+                    android:textStyle="bold"
+                    android:text="@string/action"
+                    android:textColor="@color/md_black_1000" />
+            </TableRow>
+        </TableLayout>
+
+<!--        <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="horizontal">-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/name"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:alpha="0.5"-->
+<!--                android:padding="@dimen/padding_small"-->
+<!--                android:text="@string/name_normal"-->
+<!--                android:textColor="@color/md_black_1000"-->
+<!--                android:textStyle="bold" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/created"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:alpha="0.5"-->
+<!--                android:padding="@dimen/padding_small"-->
+<!--                android:text="@string/created_on"-->
+<!--                android:textColor="@color/md_black_1000" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/type"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:alpha="0.5"-->
+<!--                android:padding="@dimen/padding_small"-->
+<!--                android:text="@string/type"-->
+<!--                android:textColor="@color/md_black_1000" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/no_of_visits"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="2"-->
+<!--                android:alpha="0.8"-->
+<!--                android:padding="@dimen/padding_small"-->
+<!--                android:text="@string/total_visits"-->
+<!--                android:textColor="@color/md_black_1000" />-->
+
+<!--            <TextView-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:alpha="0.5"-->
+<!--                android:padding="@dimen/padding_small"-->
+<!--                android:text="@string/action"-->
+<!--                android:textColor="@color/md_black_1000" />-->
+
+<!--        </LinearLayout>-->
 
 
         <androidx.recyclerview.widget.RecyclerView

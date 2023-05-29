@@ -42,7 +42,6 @@
                 android:maxLines="2"
                 android:padding="4dp" />
 
-
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexbox_drawable"
                 android:layout_width="match_parent"
@@ -58,10 +57,7 @@
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/colorPrimary" />
-
-
         </LinearLayout>
-
 
         <ImageView
             android:id="@+id/iv_downloaded"
@@ -69,7 +65,6 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="@dimen/padding_small" />
-
 
         <LinearLayout
             android:id="@+id/ll_rating"
@@ -99,8 +94,6 @@
                 android:isIndicator="true"
                 android:numStars="5"
                 android:stepSize="1" />
-
-
         </LinearLayout>
 
         <LinearLayout
@@ -123,17 +116,12 @@
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
-
             <TextView
                 android:id="@+id/average"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:text="Average" />
-
-
         </LinearLayout>
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

@@ -6,7 +6,6 @@
     android:orientation="horizontal"
     android:padding="@dimen/padding_small">
 
-
     <ImageView
         android:id="@+id/icon"
         android:layout_width="@dimen/_40dp"
@@ -23,5 +22,4 @@
         android:padding="@dimen/padding_normal"
         android:textColor="@color/md_black_1000"
         android:textSize="@dimen/text_size_mid" />
-
 </LinearLayout>
