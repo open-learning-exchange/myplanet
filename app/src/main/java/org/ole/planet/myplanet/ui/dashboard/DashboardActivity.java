@@ -263,8 +263,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .build();
 
         ImageView headerBackground = header.getHeaderBackgroundView();
+        headerBackground.setPadding(20, 12, 20, 12); // Add padding values as per your requirement
         headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
-
         return header;
     }
 
