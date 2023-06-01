@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet;
+package org.ole.planet.myplanet.utilities;
 
 import android.content.Context;
 
