@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -253,7 +254,18 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private AccountHeader getAccountHeader() {
-        return new AccountHeaderBuilder().withActivity(DashboardActivity.this).withTextColor(getResources().getColor(R.color.bg_white)).withHeaderBackground(R.drawable.header_image).withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY).withDividerBelowHeader(false).build();
+        AccountHeader header = new AccountHeaderBuilder()
+                .withActivity(DashboardActivity.this)
+                .withTextColor(getResources().getColor(R.color.bg_white))
+                .withHeaderBackground(R.drawable.ole_logo)
+                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
+                .withDividerBelowHeader(false)
+                .build();
+
+        ImageView headerBackground = header.getHeaderBackgroundView();
+        headerBackground.setPadding(20, 12, 20, 12); // Add padding values as per your requirement
+        headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
+        return header;
     }
 
     private void createDrawer() {
