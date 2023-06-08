@@ -37,7 +37,7 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/buttonblue"
                 android:padding="4dp"
-                android:text="Mistakes"
+                android:text="@string/mistakes"
                 android:textColor="@color/md_white_1000"
                 android:textSize="12sp" />
         </LinearLayout>
