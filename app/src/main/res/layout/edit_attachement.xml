@@ -32,7 +32,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text=" Attached resources:"
+                    android:text="@string/attached_resources"
                     android:textSize="@dimen/text_size_small" />
 
                 <com.google.android.flexbox.FlexboxLayout
@@ -50,7 +50,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:background="@drawable/buttongrey"
-                android:text="Edit"
+                android:text="@string/edit"
                 android:visibility="visible" />
 
             <ImageView
