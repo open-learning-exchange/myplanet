@@ -19,7 +19,7 @@
             android:id="@+id/et_tags"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Filter Labels"
+            android:hint="@string/filter_labels"
             android:visibility="gone" />
 
         <com.google.android.flexbox.FlexboxLayout
@@ -46,7 +46,7 @@
             android:layout_gravity="center"
             android:background="@null"
             android:gravity="bottom"
-            android:hint="@string/search"
+            android:hint="@string/search_dots"
             android:inputType="text"
             android:maxLines="1"
             android:padding="@dimen/padding_normal" />

@@ -18,7 +18,7 @@
             android:checked="false"
             android:gravity="right"
             android:padding="@dimen/padding_normal"
-            android:text="Cloud Url" />
+            android:text="@string/cloud_url" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -118,9 +118,9 @@
                     android:id="@+id/syncSwitch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Autosync"
-                    android:textOff="Autosync Off!"
-                    android:textOn="Autosync On" />
+                    android:text="@string/autosync"
+                    android:textOff="@string/autosync_off"
+                    android:textOn="@string/autosync_on" />
 
 
             </RelativeLayout>
@@ -135,7 +135,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentLeft="true"
                     android:layout_centerVertical="true"
-                    android:text="Interval"
+                    android:text="@string/interval"
                     android:textColor="@color/dialog_sync_labels"
                     android:visibility="gone" />
 
