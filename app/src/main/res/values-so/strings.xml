@@ -474,7 +474,7 @@
     <string name="select_login_mode">Select Login Mode:</string>
     <string name="normal_mode">Normal Mode</string>
     <string name="select_date">Select Date</string>
-    <string name="Public">Public</string>
+    <string name="public_public">Public</string>
     <string name="type_asterisk">Type*</string>
     <string name="joined_members_colon">Joined Members:</string>
     <string name="requested_members_colon">Requested Members:</string>
