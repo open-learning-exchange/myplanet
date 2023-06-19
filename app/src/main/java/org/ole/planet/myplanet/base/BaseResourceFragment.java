@@ -62,6 +62,8 @@ public abstract class BaseResourceFragment extends Fragment {
     public RealmUserModel model;
     public Realm mRealm;
     public UserProfileDbHandler profileDbHandler;
+    public SharedPreferences.Editor editor;
+    public
     //    ArrayList<Integer> selectedItemsList = new ArrayList<>();
     CheckboxListView lv;
     View convertView;
@@ -238,6 +240,7 @@ public abstract class BaseResourceFragment extends Fragment {
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         prgDialog = DialogUtils.getProgressDialog(getActivity());
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
+        editor = settings.edit();
     }
 
     @Override

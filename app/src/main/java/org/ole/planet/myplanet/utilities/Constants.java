@@ -52,6 +52,8 @@ public class Constants {
     public static HashMap<String, Class> classList = new HashMap<>();
     public static HashMap<String, String> LABELS = new HashMap<>();
 
+    public static final String KEY_NOTIFICATION_SHOWN = "notification_shown";
+
     static {
         initClasses();
         shelfDataList = new ArrayList<>();
