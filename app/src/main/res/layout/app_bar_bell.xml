@@ -31,7 +31,7 @@
             android:paddingRight="65dp"
             android:text="@string/app_name"
             android:textColor="@color/md_white_1000"
-            android:textSize="@dimen/text_size_large"
+            android:textSize="25dp"
             android:textStyle="bold" />
 
         <include
