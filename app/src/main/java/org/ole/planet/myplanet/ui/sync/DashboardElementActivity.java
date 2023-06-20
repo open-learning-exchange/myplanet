@@ -130,7 +130,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     }
 
     @SuppressLint("RestrictedApi")
-    private void wifiStatusSwitch() {
+    public void wifiStatusSwitch() {
         ActionMenuItemView goOnline = findViewById(R.id.menu_goOnline);
         Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
