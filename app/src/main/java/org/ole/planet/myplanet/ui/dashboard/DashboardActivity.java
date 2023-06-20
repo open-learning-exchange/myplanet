@@ -194,6 +194,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuco = tl.getTabAt(5);
 
         showShowCaseViewVertical();
+        hideWifi();
+    }
+
+    private void hideWifi() {
+        Menu nav_Menu = bellToolbar.getMenu();
+        nav_Menu.findItem(R.id.menu_goOnline).setVisible((Constants.showBetaFeature(Constants.KEY_SYNC, this)));
     }
 
     private void checkUser() {
