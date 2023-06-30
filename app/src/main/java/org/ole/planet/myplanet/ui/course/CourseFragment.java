@@ -127,7 +127,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         orderByDate = getView().findViewById(R.id.order_by_date_button);
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
         orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate")));
-        orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle")));
+        orderByTitle.setOnClickListener(view -> adapterCourses.toggleTitleSortOrder());
     }
 
     private void initializeView() {
