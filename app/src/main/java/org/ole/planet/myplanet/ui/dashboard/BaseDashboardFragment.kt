@@ -297,7 +297,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
-        Log.d("isShown", settings.getBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).toString())
         if(!settings.getBoolean(Constants.KEY_NOTIFICATION_SHOWN, false)) {
             showNotificationFragment()
         }
