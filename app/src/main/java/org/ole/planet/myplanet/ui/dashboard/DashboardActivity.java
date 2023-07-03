@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -176,11 +178,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                         startActivity(new Intent(DashboardActivity.this, AboutActivity.class));
                         break;
                     case R.id.action_logout:
-                        logout();
+                        showLogoutDialog();
                         break;
                     default:
                         break;
-
                 }
                 return true;
             }
@@ -316,7 +317,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 openMyFragment(new FeedbackListFragment());
                 break;
             case R.string.menu_logout:
-                logout();
+                showLogoutDialog();
                 break;
             default:
                 openCallFragment(new BellDashboardFragment());
@@ -361,7 +362,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
         f.show(getSupportFragmentManager(), "");
     }
-
 
     @NonNull
     private IDrawerItem[] getDrawerItems() {
@@ -427,6 +427,15 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    public void showLogoutDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(DashboardActivity.this);
+        builder.setTitle("Logout")
+                .setMessage("Do you want to sync before you logout?")
+                .setPositiveButton("Yes", (dialog, which) -> syncNow())
+                .setNegativeButton("No", (dialog, which) -> logout())
+                .show();
     }
 
 //    @Override

@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.library.LibraryFragment;
@@ -51,12 +52,14 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     public UserProfileDbHandler profileDbHandler;
     boolean doubleBackToExitPressedOnce;
     private SharedPreferences settings;
+    public DashboardActivity dashboardActivity;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
         settings = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        dashboardActivity = new DashboardActivity();
     }
 
     public void onClickTabItems(int position) {
@@ -111,7 +114,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         if (id == R.id.menu_goOnline) {
             wifiStatusSwitch();
         } else if (id == R.id.menu_logout) {
-            logout();
+            dashboardActivity.showLogoutDialog();
         } else if (id == R.id.action_feedback) {
             openCallFragment(new FeedbackFragment(), getString(R.string.menu_feedback));
         } else if (id == R.id.action_setting) {
@@ -174,13 +177,12 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     public void logout() {
         profileDbHandler.onLogout();
-        syncNow();
-//        settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-//        Intent loginscreen = new Intent(this, LoginActivity.class)
-//                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-//        startActivity(loginscreen);
-//        doubleBackToExitPressedOnce = true;
-//        this.finish();
+        settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
+        Intent loginscreen = new Intent(this, LoginActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(loginscreen);
+        doubleBackToExitPressedOnce = true;
+        this.finish();
     }
 
     @Override
