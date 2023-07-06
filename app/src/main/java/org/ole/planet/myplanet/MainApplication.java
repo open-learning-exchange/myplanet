@@ -35,17 +35,13 @@ import org.ole.planet.myplanet.service.StayOnLineService;
 import org.ole.planet.myplanet.service.TaskNotificationService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.utilities.AutoSyncWorker;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
-import org.ole.planet.myplanet.utilities.StayOnLineWorker;
-import org.ole.planet.myplanet.utilities.TaskNotificationWorker;
 import org.ole.planet.myplanet.utilities.Utilities;
 import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Date;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 
