@@ -10,6 +10,7 @@ public class DatabaseService {
 
     public DatabaseService(Context context) {
         this.context = context;
+        Realm.init(context);
     }
 
     public Realm getRealmInstance() {
