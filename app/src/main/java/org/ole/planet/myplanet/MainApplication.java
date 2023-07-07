@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -10,13 +9,9 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.provider.Settings;
 
-import androidx.work.BackoffPolicy;
-import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.NetworkType;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
-import androidx.work.WorkRequest;
 
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
@@ -30,9 +25,9 @@ import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmApkLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.AutoSyncService;
-import org.ole.planet.myplanet.service.StayOnLineService;
-import org.ole.planet.myplanet.service.TaskNotificationService;
+import org.ole.planet.myplanet.service.AutoSyncWorker;
+import org.ole.planet.myplanet.service.StayOnlineWorker;
+import org.ole.planet.myplanet.service.TaskNotificationWorker;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
@@ -42,11 +37,15 @@ import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
 
-public class MainApplication extends Application implements Application.ActivityLifecycleCallbacks {
-    public static FirebaseJobDispatcher dispatcher;
+public class MainApplication extends Application {
+    private static final String AUTO_SYNC_WORK_TAG = "autoSyncWork";
+    private static final String STAY_ONLINE_WORK_TAG = "stayOnlineWork";
+    private static final String TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork";
+
     public static Context context;
     public static SharedPreferences preferences;
     public static int syncFailedCount = 0;
@@ -55,7 +54,83 @@ public class MainApplication extends Application implements Application.Activity
     public static boolean isSyncRunning = false;
     public static boolean showHealthDialog = true;
     public static TeamPageListener listener;
-    @SuppressLint("HardwareIds")
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        context = this;
+        preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
+
+        // Initialize libraries and settings
+        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+        StrictMode.setVmPolicy(builder.build());
+        builder.detectFileUriExposure();
+        AndroidThreeTen.init(this);
+
+        // Set up auto-sync using WorkManager
+        if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
+            int syncInterval = preferences.getInt("autoSyncInterval", 60 * 60);
+            scheduleAutoSyncWork(syncInterval);
+        } else {
+            cancelAutoSyncWork();
+        }
+
+        // Set up other periodic works using WorkManager
+        scheduleStayOnlineWork(5 * 60);
+        scheduleTaskNotificationWork(60);
+
+    }
+
+    private void scheduleAutoSyncWork(int syncInterval) {
+        PeriodicWorkRequest autoSyncWork = new PeriodicWorkRequest.Builder(
+                AutoSyncWorker.class,
+                syncInterval,
+                TimeUnit.SECONDS
+        ).build();
+
+        WorkManager workManager = WorkManager.getInstance(this);
+        workManager.enqueueUniquePeriodicWork(
+                AUTO_SYNC_WORK_TAG,
+                ExistingPeriodicWorkPolicy.REPLACE,
+                autoSyncWork
+        );
+    }
+
+    private void cancelAutoSyncWork() {
+        WorkManager workManager = WorkManager.getInstance(this);
+        workManager.cancelUniqueWork(AUTO_SYNC_WORK_TAG);
+    }
+
+    private void scheduleStayOnlineWork(int interval) {
+        PeriodicWorkRequest stayOnlineWork = new PeriodicWorkRequest.Builder(
+                StayOnlineWorker.class,
+                interval,
+                TimeUnit.SECONDS
+        ).build();
+
+        WorkManager workManager = WorkManager.getInstance(this);
+        workManager.enqueueUniquePeriodicWork(
+                STAY_ONLINE_WORK_TAG,
+                ExistingPeriodicWorkPolicy.REPLACE,
+                stayOnlineWork
+        );
+    }
+
+    private void scheduleTaskNotificationWork(int interval) {
+        PeriodicWorkRequest taskNotificationWork = new PeriodicWorkRequest.Builder(
+                TaskNotificationWorker.class,
+                interval,
+                TimeUnit.SECONDS
+        ).build();
+
+        WorkManager workManager = WorkManager.getInstance(this);
+        workManager.enqueueUniquePeriodicWork(
+                TASK_NOTIFICATION_WORK_TAG,
+                ExistingPeriodicWorkPolicy.REPLACE,
+                taskNotificationWork
+        );
+    }
+
     public static String getAndroidId() {
         try {
             return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -63,7 +138,6 @@ public class MainApplication extends Application implements Application.Activity
             e.printStackTrace();
         }
         return "0";
-
     }
 
     @Override
@@ -71,72 +145,35 @@ public class MainApplication extends Application implements Application.Activity
         super.attachBaseContext(LocaleHelper.onAttach(base, "en"));
     }
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
-        StrictMode.setVmPolicy(builder.build());
-        builder.detectFileUriExposure();
-        dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
-        context = this;
-        AndroidThreeTen.init(this);
-
-        Realm.init(this);
-        preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
-        if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
-            dispatcher.cancelAll();
-            createJob(preferences.getInt("autoSyncInterval", 60 * 60), AutoSyncService.class);
-        } else {
-            dispatcher.cancelAll();
-        }
-        createJob(5 * 60, StayOnLineService.class);
-        createJob(60, TaskNotificationService.class);
-        Thread.setDefaultUncaughtExceptionHandler((thread, e) -> handleUncaughtException(e));
-        registerActivityLifecycleCallbacks(this);
-    }
-
     public void createJob(int sec, Class jobClass) {
-        Job myJob = dispatcher.newJobBuilder()
-                .setService(jobClass)
-                .setTag("ole")
-                .setRecurring(true)
-                .setLifetime(Lifetime.FOREVER)
-                .setTrigger(Trigger.executionWindow(0, sec))
-                .setRetryStrategy(RetryStrategy.DEFAULT_LINEAR)
-                .build();
+        FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(new GooglePlayDriver(this));
+        Job myJob = dispatcher.newJobBuilder().setService(jobClass).setTag("ole").setRecurring(true).setLifetime(Lifetime.FOREVER).setTrigger(Trigger.executionWindow(0, sec)).setRetryStrategy(RetryStrategy.DEFAULT_LINEAR).build();
         dispatcher.mustSchedule(myJob);
     }
 
-    @Override
     public void onActivityCreated(Activity activity, Bundle bundle) {
 
     }
 
-    @Override
     public void onActivityStarted(Activity activity) {
 
     }
 
-    @Override
     public void onActivityResumed(Activity activity) {
 
     }
 
-    @Override
     public void onActivityPaused(Activity activity) {
 
     }
 
-    @Override
     public void onActivityStopped(Activity activity) {
     }
 
-    @Override
     public void onActivitySaveInstanceState(Activity activity, Bundle bundle) {
 
     }
 
-    @Override
     public void onActivityDestroyed(Activity activity) {
         NotificationUtil.cancellAll(this);
     }
@@ -146,8 +183,7 @@ public class MainApplication extends Application implements Application.Activity
         Utilities.log("Handle exception " + e.getMessage());
         DatabaseService service = new DatabaseService(this);
         Realm mRealm = service.getRealmInstance();
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
         RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
         if (model != null) {
