@@ -27,7 +27,7 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
             holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
             if (list[position].asJsonObject.has("progress")) {
                 holder.tvDescription.text =
-                    "Current step : " + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() + " of " + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
+                    context.getString(R.string.current_step) + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() + " of " + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
                 holder.itemView.setOnClickListener {
                     context.startActivity(
                         Intent(

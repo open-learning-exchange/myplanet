@@ -89,17 +89,18 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     private void validateAndSaveData() {
         final String message = etMessage.getText().toString().trim();
         if (message.isEmpty()) {
-            tlMessage.setError("Please enter feedback.");
+            tlMessage.setError(getString(R.string.please_enter_feedback));
             return;
         }
+
         RadioButton rbUrgent = getView().findViewById(rgUrgent.getCheckedRadioButtonId());
         RadioButton rbType = getView().findViewById(rgType.getCheckedRadioButtonId());
         if (rbUrgent == null) {
-            tlUrgent.setError("Feedback priority is required.");
+            tlUrgent.setError(getString(R.string.feedback_priority_is_required));
             return;
         }
         if (rbType == null) {
-            tlType.setError("Feedback type is required.");
+            tlType.setError(getString(R.string.feedback_type_is_required));
             return;
         }
         final String urgent = rbUrgent.getText().toString();
@@ -107,10 +108,10 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
         Bundle arguments = getArguments();
         if (arguments != null) {
             String[] argumentArray = getArgumentArray(message);
-            mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, argumentArray), () -> Utilities.toast(getActivity(), "Feedback Saved.."));
+            mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, argumentArray), () -> Utilities.toast(getActivity(), getString(R.string.feedback_saved)));
         } else
-            mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, message), () -> Utilities.toast(getActivity(), "Feedback Saved.."));
-        Toast.makeText(getActivity(), "Thank you, your feedback has been submitted", Toast.LENGTH_SHORT).show();
+            mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, message), () -> Utilities.toast(getActivity(), getString(R.string.feedback_saved)));
+        Toast.makeText(getActivity(), getString(R.string.thank_you_your_feedback_has_been_submitted), Toast.LENGTH_SHORT).show();
     }
 
     public String[] getArgumentArray(String message) {
@@ -130,7 +131,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     private void saveData(Realm realm, String urgent, String type, String message) {
         RealmFeedback feedback = realm.createObject(RealmFeedback.class, UUID.randomUUID().toString());
 //        RealmMessage msg = realm.createObject(RealmMessage.class, UUID.randomUUID().toString());
-        feedback.setTitle("Question regarding /");
+        feedback.setTitle(getString(R.string.question_regarding));
         feedback.setOpenTime(new Date().getTime() + "");
         feedback.setUrl("/");
         feedback.setOwner(user);
@@ -152,7 +153,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     private void saveData(Realm realm, String urgent, String type, String[] argumentArray) {
         RealmFeedback feedback = realm.createObject(RealmFeedback.class, UUID.randomUUID().toString());
 //        RealmMessage msg = realm.createObject(RealmMessage.class, UUID.randomUUID().toString());
-        feedback.setTitle("Question regarding /" + argumentArray[2]);
+        feedback.setTitle(getString(R.string.question_regarding) + argumentArray[2]);
         feedback.setOpenTime(new Date().getTime() + "");
         feedback.setUrl("/" + argumentArray[2]);
         feedback.setOwner(user);

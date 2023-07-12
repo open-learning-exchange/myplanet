@@ -113,7 +113,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         step = mRealm.where(RealmCourseStep.class).equalTo("id", stepId).findFirst();
         resources = mRealm.where(RealmMyLibrary.class).equalTo("stepId", stepId).findAll();
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
-        if (resources != null) btnResource.setText("Resources [" + resources.size() + "]");
+        if (resources != null) btnResource.setText(getString(R.string.resources) + " [" + resources.size() + "]");
         hideTestIfNoQuestion();
         tvTitle.setText(step.getStepTitle());
         description.loadMarkdown(step.getDescription());
@@ -131,7 +131,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.getCourseId()).notEqualTo("status", "pending", Case.INSENSITIVE).count();
 
             if (questions != null && questions.size() > 0) {
-                btnExam.setText((submissionsCount > 0 ? "Retake Test" : "Take Test") + " [" + stepExams.size() + "]");
+                btnExam.setText((submissionsCount > 0 ? getString(R.string.retake_test) : getString(R.string.take_test)) + " [" + stepExams.size() + "]");
                 btnExam.setVisibility(View.VISIBLE);
             }
         }

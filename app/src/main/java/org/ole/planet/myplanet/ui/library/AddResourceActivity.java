@@ -98,7 +98,7 @@ public class AddResourceActivity extends AppCompatActivity {
             resource.setTitle(title);
             createResource(resource, id);
         }, () -> {
-            Utilities.toast(AddResourceActivity.this, "Resource saved successfully");
+            Utilities.toast(AddResourceActivity.this, getString(R.string.resource_saved_successfully));
             finish();
         });
     }
@@ -127,15 +127,16 @@ public class AddResourceActivity extends AppCompatActivity {
 
     private boolean validate(String title) {
         if (title.isEmpty()) {
-            ((TextInputLayout) findViewById(R.id.tl_title)).setError("Title is required");
+            ((TextInputLayout) findViewById(R.id.tl_title)).setError(getString(R.string.title_is_required));
             return false;
         }
         if (levels.isEmpty()) {
-            Utilities.toast(this, "Level is required");
+            Utilities.toast(this, getString(R.string.level_is_required));
             return false;
         }
+
         if (subjects.isEmpty()) {
-            Utilities.toast(this, "Subject is required");
+            Utilities.toast(this, getString(R.string.subject_is_required));
             return false;
         }
         return true;
@@ -146,7 +147,7 @@ public class AddResourceActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.rowlayout, R.id.checkBoxRowLayout, list);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
-        new AlertDialog.Builder(this).setView(listView).setPositiveButton("Ok", (dialogInterface, i) -> {
+        new AlertDialog.Builder(this).setView(listView).setPositiveButton(getString(R.string.ok), (dialogInterface, i) -> {
             ArrayList<Integer> selected = listView.getSelectedItemsList();
             items.clear();
             String selection = "";

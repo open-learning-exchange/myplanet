@@ -120,7 +120,7 @@ public class SettingActivity extends AppCompatActivity {
 
             Preference pref_freeup = findPreference("freeup_space");
             pref_freeup.setOnPreferenceClickListener(preference1 -> {
-                new AlertDialog.Builder(getActivity()).setTitle("Are you sure want to delete all the files?").setPositiveButton("YES", (dialogInterface, i) -> {
+                new AlertDialog.Builder(getActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files).setPositiveButton(R.string.yes, (dialogInterface, i) -> {
                     mRealm.executeTransactionAsync(realm -> {
                         RealmResults<RealmMyLibrary> libraries = realm.where(RealmMyLibrary.class).findAll();
                         for (RealmMyLibrary library : libraries)
@@ -128,8 +128,8 @@ public class SettingActivity extends AppCompatActivity {
                     }, () -> {
                         File f = new File(Utilities.SD_PATH);
                         deleteRecursive(f);
-                        Utilities.toast(getActivity(), "Data cleared");
-                    }, error -> Utilities.toast(getActivity(), "Unable to clear files"));
+                        Utilities.toast(getActivity(), getString(R.string.data_cleared));
+                    }, error -> Utilities.toast(getActivity(), getString(R.string.unable_to_clear_files)));
 
 
                 }).setNegativeButton("No", null).show();
@@ -184,8 +184,8 @@ public class SettingActivity extends AppCompatActivity {
             SharedPreferences settings = getActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             long lastSynced = settings.getLong("LastSync", 0);
             if (lastSynced == 0) {
-                lastSyncDate.setTitle("Last Synced: Never");
-            } else lastSyncDate.setTitle("Last Synced: " + Utilities.getRelativeTime(lastSynced));
+                lastSyncDate.setTitle(R.string.last_synced_never);
+            } else lastSyncDate.setTitle(getString(R.string.last_synced) + Utilities.getRelativeTime(lastSynced));
         }
 //
 //        private void managerLogin() {

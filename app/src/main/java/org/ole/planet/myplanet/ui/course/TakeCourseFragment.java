@@ -139,12 +139,12 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         if (!currentCourse.getUserId().contains(userModel.getId())) {
             btnAddRemove.setVisibility(View.VISIBLE);
             btnAddRemove.setText(getString(R.string.join));
-            DialogUtils.getAlertDialog(getActivity(), "Do you want to join this course?", "Join this course", (dialog, which) -> addRemoveCourse());
+            DialogUtils.getAlertDialog(getActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course), (dialog, which) -> addRemoveCourse());
         } else {
             btnAddRemove.setVisibility(View.GONE);
         }
         RealmCourseActivity.createActivity(mRealm, userModel, currentCourse);
-        tvSteps.setText("Step 0/" + steps.size());
+        tvSteps.setText(getString(R.string.step_0) + steps.size());
         if (steps != null) courseProgress.setMax(steps.size());
         int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
         if (i < steps.size()) courseProgress.setSecondaryProgress(i + 1);

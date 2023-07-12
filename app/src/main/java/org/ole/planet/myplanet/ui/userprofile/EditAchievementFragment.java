@@ -145,7 +145,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
             String name = etName.getText().toString().trim();
             if (name.isEmpty()) {
-                tlName.setError("Name is required.");
+                tlName.setError(getString(R.string.name_is_required));
                 return;
             }
             if (object != null) referenceArray.remove(object);
@@ -177,16 +177,16 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         resourceArray = new JsonArray();
         List<String> prevList = setUpOldAchievement(object, etDescription, etTitle, tvDate);
         btnAddResource.setOnClickListener(view -> showResourseListDialog(prevList));
-        new AlertDialog.Builder(getActivity()).setTitle("Add Achievement").setIcon(R.drawable.ic_edit).setView(v).setCancelable(false).setPositiveButton("Submit", (dialogInterface, i) -> {
+        new AlertDialog.Builder(getActivity()).setTitle(R.string.add_achievement).setIcon(R.drawable.ic_edit).setView(v).setCancelable(false).setPositiveButton(getString(R.string.submit), (dialogInterface, i) -> {
             String desc = etDescription.getText().toString().trim();
             String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {
-                Toast.makeText(getActivity(), "Title is required", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), getString(R.string.title_is_required), Toast.LENGTH_SHORT).show();
                 return;
             }
             if (object != null) achievementArray.remove(object);
             saveAchievement(desc, title);
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton(getString(R.string.cancel), null).show();
     }
 
     private List<String> setUpOldAchievement(JsonObject object, EditText etDescription, EditText etTitle, AppCompatTextView tvDate) {
@@ -229,7 +229,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
 
     private void showResourseListDialog(List<String> prevList) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle("Select resources : ");
+        builder.setTitle(getString(R.string.select_resource));
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.my_library_alertdialog, null);
         CheckboxListView lv = createResourceList(v, list, prevList);

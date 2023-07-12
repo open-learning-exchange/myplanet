@@ -56,7 +56,7 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         TextView tvDate = findViewById(R.id.tv_date);
         if (!TextUtils.isEmpty(feedback.getOpenTime()))
             tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
-        else tvDate.setText("Date : N/A");
+        else tvDate.setText(getString(R.string.date) + " : N/A");
         tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
         closeButton = findViewById(R.id.close_feedback);
         replyButton = findViewById(R.id.reply_feedback);

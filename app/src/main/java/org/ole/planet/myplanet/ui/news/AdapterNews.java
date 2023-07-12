@@ -228,7 +228,7 @@ public class AdapterNews extends BaseNewsAdapter {
 
     private void editPost(String s, RealmNews news) {
         if (s.isEmpty()) {
-            Utilities.toast(context, "Please enter message");
+            Utilities.toast(context, context.getString(R.string.please_enter_message));
             return;
         }
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();

@@ -72,7 +72,7 @@ class MyActivityFragment : Fragment() {
         val lineData = BarData(dataSet)
         chart.data = lineData
         var d = Description()
-        d.text = "Login Activity chart"
+        d.text = getString(R.string.login_activity_chart)
         chart.description = d
         chart.xAxis.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {

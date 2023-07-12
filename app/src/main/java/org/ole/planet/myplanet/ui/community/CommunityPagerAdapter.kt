@@ -4,14 +4,17 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
+import org.ole.planet.myplanet.MainApplication.context
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
 
 class CommunityPagerAdapter(fm: FragmentManager, val id: String, var fromLogin: Boolean) :
     FragmentStatePagerAdapter(fm) {
-    var titles = arrayOf("News", "Community Leaders", "Calendar", "Services", "Finances")
-    var titles_login = arrayOf("News", "Community Leaders", "Calendar")
+    var titles = arrayOf("News", context.getString(R.string.community_leaders), "Calendar", context.getString(
+            R.string.services), "Finances")
+    var titles_login = arrayOf("News", context.getString(R.string.community_leaders), "Calendar")
     override fun getItem(position: Int): Fragment {
         var fragment: Fragment;
         if (position == 0) {

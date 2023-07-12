@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.course;
 
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
@@ -51,6 +52,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     List<RealmTag> searchTags;
     Spinner spn;
     AlertDialog confirmation;
+    Context context;
 
     public CourseFragment() {
     }
@@ -88,9 +90,9 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         //btnRemove.setOnClickListener(V -> deleteSelected(true));
-        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage("Are you sure you want to delete these courses?").setPositiveButton("Yes", (dialogInterface, i) -> {
+        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage(context.getString(R.string.delete_course)).setPositiveButton(context.getString(R.string.yes), (dialogInterface, i) -> {
             deleteSelected(true);
-        }).setNegativeButton("No", null).show());
+        }).setNegativeButton(context.getString(R.string.no), null).show());
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -252,7 +254,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
         searchTags = li;
-        tvSelected.setText("Selected : " + tag.getName());
+        tvSelected.setText(getString(R.string.selected) + tag.getName());
         adapterCourses.setCourseList((filterCourseByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterCourses.getItemCount());
     }

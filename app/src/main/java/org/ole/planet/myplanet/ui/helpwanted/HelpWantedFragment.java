@@ -50,9 +50,9 @@ public class HelpWantedFragment extends Fragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        String boldName = "<b>" + "Name : " + "</b>";
-        String boldEmail = "<b>" + "Email : " + "</b>";
-        String boldPhone = "<b>" + "Phone Number : " + "</b>";
+        String boldName = "<b>" + getString(R.string.name_colon)  + "</b>";
+        String boldEmail = "<b>" + getString(R.string.email_colon) + "</b>";
+        String boldPhone = "<b>" + getString(R.string.phone_number_colon) + "</b>";
         if (manager != null) {
             llData.setVisibility(View.VISIBLE);
             name.setText(Html.fromHtml(boldName + JsonUtils.getString("name", manager)));
@@ -60,7 +60,7 @@ public class HelpWantedFragment extends Fragment {
             phone.setText(Html.fromHtml(boldPhone + JsonUtils.getString("phoneNumber", manager)));
         } else {
             llData.setVisibility(View.GONE);
-            nodata.setText("No data available");
+            nodata.setText(getString(R.string.no_data_available));
             nodata.setVisibility(View.VISIBLE);
         }
     }

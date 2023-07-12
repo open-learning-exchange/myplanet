@@ -66,24 +66,23 @@ class NotificationFragment : BottomSheetDialogFragment() {
         var notificationList: MutableList<Notifications> = ArrayList()
         notificationList.add(
             Notifications(
-                R.drawable.mylibrary, "${resourceList.size} resource not downloaded."
-            )
+                R.drawable.mylibrary, "${resourceList.size} " + getString(R.string.resource_not_downloaded))
         )
-        notificationList.add(Notifications(R.drawable.mylibrary, "Bulk resource download."))
-        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} pending survey."))
-        notificationList.add(Notifications(R.drawable.ic_news, "Download news images."))
-        notificationList.add(Notifications(R.drawable.ic_dictionary, "Download dictionary."))
-        notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} tasks due."))
+        notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download)))
+        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} " + getString(R.string.pending_survey)))
+        notificationList.add(Notifications(R.drawable.ic_news, getString(R.string.download_news_images)))
+        notificationList.add(Notifications(R.drawable.ic_dictionary, getString(R.string.download_dictionary)))
+        notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} " + getString(R.string.tasks_due)))
 
         var storageRatio = getTotalAvailableMemoryRatio()
         var storageNotiText: String
         if (storageRatio <= 10) {
             storageNotiText =
-                "Storage critically low: $storageRatio% available. Please free up space."
+                getString(R.string.storage_critically_low) + " $storageRatio" + getString(R.string.please_free_up_space)
         } else if (storageRatio <= 40) {
-            storageNotiText = "Storage running low: $storageRatio% available."
+            storageNotiText = getString(R.string.storage_running_low) + " $storageRatio" + getString(R.string.percentage_available)
         } else {
-            storageNotiText = "Storage available: $storageRatio%."
+            storageNotiText = getString(R.string.storage_available) + " $storageRatio" + getString(R.string.percent_dot)
         }
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
@@ -91,7 +90,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
             if (!model.id.startsWith("guest")) {
                 notificationList.add(
                     Notifications(
-                        R.drawable.ic_myhealth, "Health record not available. Click to sync."
+                        R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)
                     )
                 )
             }

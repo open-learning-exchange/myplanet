@@ -116,10 +116,10 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
         mRealm.executeTransaction(realm -> {
             if (meetups.getUserId().isEmpty()) {
                 meetups.setUserId(user.getId());
-                btnLeave.setText("Leave");
+                btnLeave.setText(getString(R.string.leave));
             } else {
                 meetups.setUserId("");
-                btnLeave.setText("Join");
+                btnLeave.setText(getString(R.string.join));
             }
         });
     }

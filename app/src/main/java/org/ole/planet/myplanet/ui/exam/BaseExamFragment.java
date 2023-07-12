@@ -116,7 +116,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             showUserInfoDialog();
         } else {
             saveCourseProgress();
-            new AlertDialog.Builder(getActivity()).setTitle("Thank you for taking this " + type + ". We wish you all the best").setPositiveButton("Finish", (dialogInterface, i) -> {
+            new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.thank_you_for_taking_this) + type + R.string.we_wish_you_all_the_best).setPositiveButton(getString(R.string.dismiss), (dialogInterface, i) -> {
                 getActivity().onBackPressed();
                 try {
                 } catch (Exception e) {
@@ -140,9 +140,9 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            sub.setStatus("complete");
+            sub.setStatus(getString(R.string.complete));
             mRealm.commitTransaction();
-            Utilities.toast(getActivity(), "Thank you for taking this survey.");
+            Utilities.toast(getActivity(), getString(R.string.thank_you_for_taking_this_survey_));
             getActivity().onBackPressed();
         }
     }

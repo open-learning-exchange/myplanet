@@ -91,8 +91,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         config.setDelay(500);
         MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "1");
         sequence.setConfig(config);
-        sequence.addSequenceItem(syncIcon, "Press the Sync Button to Sync your Planet account data with your myPlanet application data", "GOT IT");
-        sequence.addSequenceItem(imgBtnSetting, "Press the Settings Button to access your myPlanet/Planet account server settings to properly set up your syncing process.", "GOT IT");
+        sequence.addSequenceItem(syncIcon, getString(R.string.press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data), getString(R.string.got_it));
+        sequence.addSequenceItem(imgBtnSetting, getString(R.string.press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process), getString(R.string.got_it));
         sequence.start();
     }
 
@@ -170,8 +170,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (daysDiff >= maxDays) {
             Log.e("Sync Date ", "Expired - ");
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-            alertDialogBuilder.setMessage("It has been more than " + (daysDiff - 1) + " days since you last synced this device." + "\nConnect it to the server over wifi and sync it to reactivate this tablet");
-            alertDialogBuilder.setPositiveButton("Okay", (arg0, arg1) -> Toast.makeText(getApplicationContext(), "Connect to the server over WiFi and sync your device to continue", Toast.LENGTH_LONG).show());
+            alertDialogBuilder.setMessage(getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(R.string.days_since_you_last_synced_this_device) + getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet));
+            alertDialogBuilder.setPositiveButton("Okay", (arg0, arg1) -> Toast.makeText(getApplicationContext(), R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue, Toast.LENGTH_LONG).show());
             alertDialogBuilder.show();
             return true;
         } else {
@@ -209,7 +209,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!Utilities.getUrl().isEmpty()) {
             startActivity(new Intent(this, BecomeMemberActivity.class));
         } else {
-            Utilities.toast(this, "Please enter server url first.");
+            Utilities.toast(this, getString(R.string.please_enter_server_url_first));
             settingDialog();
         }
     }
@@ -220,17 +220,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
         new AlertDialog.Builder(this).setTitle("Login As Guest").setView(v).setPositiveButton("Login", (dialogInterface, i) -> {
             if (mRealm.isEmpty()) {
-                alertDialogOkay("This device not configured properly. Please check and sync.");
+                alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
                 return;
             }
             String username = etUserName.getText().toString().toLowerCase().trim();
             if (username.isEmpty()) {
-                Utilities.toast(this, "Username cannot be empty");
+                Utilities.toast(this, getString(R.string.username_cannot_be_empty));
                 return;
             }
             RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
             if (model == null) {
-                Utilities.toast(this, "Unable to login");
+                Utilities.toast(this, getString(R.string.unable_to_login));
             } else {
                 saveUserInfoPref(settings, "", model);
                 onLogin();
@@ -254,7 +254,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
             @Override
             public void notAvailable() {
-                DialogUtils.showAlert(LoginActivity.this, "Error", "Planet server not reachable.");
+                DialogUtils.showAlert(LoginActivity.this, "Error", getString(R.string.planet_server_not_reachable));
             }
         });
     }
@@ -295,13 +295,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
         btnlang.setText(languages[index]);
         btnlang.setOnClickListener(view -> {
-            new AlertDialog.Builder(this).setTitle("Select Language").setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton("OK", (dialog, whichButton) -> {
+            new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
                 dialog.dismiss();
                 int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
                 String lang = languageKey[selectedPosition];
                 LocaleHelper.setLocale(LoginActivity.this, lang);
                 recreate();
-            }).setNegativeButton("Cancel", null).show();
+            }).setNegativeButton(R.string.cancel, null).show();
         });
     }
 
@@ -323,13 +323,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor.putString("loginUserPassword", inputPassword.getText().toString());
         boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), false);
         if (isLoggedIn) {
-            Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), R.string.thank_you, Toast.LENGTH_SHORT).show();
             onLogin();
         } else {
             ManagerSync.getInstance().login(inputName.getText().toString(), inputPassword.getText().toString(), new SyncListener() {
                 @Override
                 public void onSyncStarted() {
-                    progressDialog.setMessage("Please wait....");
+                    progressDialog.setMessage(getString(R.string.please_wait));
                     progressDialog.show();
                 }
 
@@ -339,7 +339,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     Utilities.log("on complete");
                     boolean log = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), true);
                     if (log) {
-                        Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), R.string.thank_you, Toast.LENGTH_SHORT).show();
                         onLogin();
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login));
@@ -481,7 +481,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onCheckingVersion() {
-        progressDialog.setMessage("Checking version....");
+        progressDialog.setMessage(getString(R.string.checking_version));
         progressDialog.show();
     }
 
@@ -524,7 +524,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onSelectedUser(RealmUserModel userModel) {
         View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
         EditText et = v.findViewById(R.id.et_child_password);
-        new AlertDialog.Builder(this).setView(v).setTitle("Please enter your password").setPositiveButton(R.string.login, (dialogInterface, i) -> {
+        new AlertDialog.Builder(this).setView(v).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
             String password = et.getText().toString();
             if (authenticateUser(settings, userModel.getName(), password, false)) {
                 Toast.makeText(getApplicationContext(), "Thank You!", Toast.LENGTH_SHORT).show();

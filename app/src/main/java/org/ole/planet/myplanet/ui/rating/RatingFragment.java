@@ -107,7 +107,7 @@ public class RatingFragment extends DialogFragment {
             model = realm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", "")).findFirst();
             setData(model, ratingObject, comment, rating);
         }, () -> {
-            Utilities.toast(getActivity(), "Thank you, your rating is submitted.");
+            Utilities.toast(getActivity(), getString(R.string.thank_you_your_rating_is_submitted));
             if (listener != null) listener.onRatingChanged();
             dismiss();
         });

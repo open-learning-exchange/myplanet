@@ -91,7 +91,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         lv.setOnItemClickListener((adapterView, view1, i, l) -> {
             if (listener != null) listener.onSelectedUser(users.get(i));
         });
-        new AlertDialog.Builder(context).setTitle("Select User To Login").setView(view).setNegativeButton("Dismiss", null).show();
+        new AlertDialog.Builder(context).setTitle(R.string.select_user_to_login).setView(view).setNegativeButton("Dismiss", null).show();
     }
 
     private void setListAdapter(ListView lv, List<RealmUserModel> users) {

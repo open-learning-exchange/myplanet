@@ -105,10 +105,10 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
         layout.setHint(getString(R.string.enter_message));
-        new AlertDialog.Builder(getActivity()).setView(v).setTitle("Add Message").setPositiveButton("Save", (dialogInterface, i) -> {
+        new AlertDialog.Builder(getActivity()).setView(v).setTitle(getString(R.string.add_message)).setPositiveButton(getString(R.string.save), (dialogInterface, i) -> {
             String msg = layout.getEditText().getText().toString().trim();
             if (msg.isEmpty()) {
-                Utilities.toast(getActivity(), "Message is required");
+                Utilities.toast(getActivity(), getString(R.string.message_is_required));
                 return;
             }
             HashMap<String, String> map = new HashMap<>();
@@ -119,7 +119,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
             map.put("messagePlanetCode", team.getTeamPlanetCode());
             RealmNews.createNews(map, mRealm, user, imageList);
             rvDiscussion.getAdapter().notifyDataSetChanged();
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton(getString(R.string.cancel), null).show();
     }
 
     @Override

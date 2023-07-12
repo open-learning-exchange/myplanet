@@ -85,7 +85,7 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
         Utilities.log("Show nodata");
         if (rvMyPersonal.getAdapter().getItemCount() == 0) {
             tvNodata.setVisibility(View.VISIBLE);
-            tvNodata.setText("No data available, please click + button to add new resource in myPersonal.");
+            tvNodata.setText(R.string.no_data_available_please_click_button_to_add_new_resource_in_mypersonal);
         } else {
             tvNodata.setVisibility(View.GONE);
         }

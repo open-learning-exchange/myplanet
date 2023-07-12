@@ -62,11 +62,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
         showBadges()
         if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
             AlertDialog.Builder(activity!!)
-                .setMessage("Health record not available, Sync health data?")
-                .setPositiveButton("Sync") { dialogInterface: DialogInterface?, i: Int ->
+                .setMessage(getString(R.string.health_record_not_available_sync_health_data))
+                .setPositiveButton(getString(R.string.btn_sync)) { dialogInterface: DialogInterface?, i: Int ->
                     syncKeyId()
                     MainApplication.showHealthDialog = false
-                }.setNegativeButton("Cancel", null).show()
+                }.setNegativeButton(getString(R.string.btn_sync_cancel), null).show()
         }
         // forceDownloadNewsImages();
     }

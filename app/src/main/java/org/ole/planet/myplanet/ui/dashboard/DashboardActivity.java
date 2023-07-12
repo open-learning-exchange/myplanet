@@ -84,14 +84,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         config.setDelay(500);
         MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP_v2");
         sequence.setConfig(config);
-        sequence.addSequenceItem(begin, "Please make sure your device is horizontal", "GOT IT");
-        sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys", "GOT IT");
-        sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
-        sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
-        sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
-        sequence.addSequenceItem(menut.getCustomView(), "Navigate to the Teams Tab to join, request, and check up on your teams", "GOT IT");
-        sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
-        sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
+        sequence.addSequenceItem(begin, getString(R.string.make_sure_your_device_is_horizontal), getString(R.string.got_it));
+        sequence.addSequenceItem(img, getString(R.string.click_on_the_logo_to_get_the_full_menu), getString(R.string.got_it));
+        sequence.addSequenceItem(menuh.getCustomView(), getString(R.string.navigate_to_the_home_tab), getString(R.string.got_it));
+        sequence.addSequenceItem(menul.getCustomView(), getString(R.string.navigate_to_the_library_tab), getString(R.string.got_it));
+        sequence.addSequenceItem(menuc.getCustomView(), getString(R.string.navigate_to_the_courses_tab), getString(R.string.got_it));
+        sequence.addSequenceItem(menut.getCustomView(), getString(R.string.navigate_to_the_teams_tab), getString(R.string.got_it));
+        sequence.addSequenceItem(menue.getCustomView(), getString(R.string.navigate_to_the_enterprises_tab), getString(R.string.got_it));
+        sequence.addSequenceItem(menuco.getCustomView(), getString(R.string.navigate_to_the_community_tab), getString(R.string.got_it));
         sequence.start();
     }
 
@@ -209,7 +209,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private void checkUser() {
         user = new UserProfileDbHandler(this).getUserModel();
         if (user == null) {
-            Utilities.toast(this, "Session expired.");
+            Utilities.toast(this, getString(R.string.session_expired));
             logout();
             return;
         }

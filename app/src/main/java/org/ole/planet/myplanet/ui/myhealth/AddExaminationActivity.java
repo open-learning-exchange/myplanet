@@ -159,25 +159,25 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (!etBloodPressure.getText().toString().contains("/")) {
-                    etBloodPressure.setError("Blood Pressure should be numeric systolic/diastolic");
+                    etBloodPressure.setError(getString(R.string.should_be_numeric_systolic_diastolic));
                     allowSubmission = false;
                 } else {
                     String[] sysDia = etBloodPressure.getText().toString().trim().split("/");
                     if (sysDia.length > 2 || sysDia.length < 1) {
-                        etBloodPressure.setError("Blood Pressure should be systolic/diastolic");
+                        etBloodPressure.setError(getString(R.string.should_be_systolic_diastolic));
                         allowSubmission = false;
                     } else {
                         try {
                             int sys = Integer.parseInt(sysDia[0]);
                             int dis = Integer.parseInt(sysDia[1]);
                             if ((sys < 60 || dis < 40) || (sys > 300 || dis > 200)) {
-                                etBloodPressure.setError("Bp must be between 60/40 and 300/200");
+                                etBloodPressure.setError(getString(R.string.must_be_between_60_40));
                                 allowSubmission = false;
                             } else {
                                 allowSubmission = true;
                             }
                         } catch (Exception e) {
-                            etBloodPressure.setError("Systolic and diastolic must be numbers");
+                            etBloodPressure.setError(getString(R.string.systolic_and_diastolic_must_be_numbers));
                             allowSubmission = false;
                         }
                     }
@@ -306,7 +306,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             e.printStackTrace();
         }
         mRealm.commitTransaction();
-        Utilities.toast(this, "Added successfully");
+        Utilities.toast(this, getString(R.string.added_successfully));
         super.finish();
     }
 
@@ -320,16 +320,16 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         boolean isValidHeight = 1 <= getFloat(etHeight.getText().toString().trim()) && getFloat(etHeight.getText().toString().trim()) <= 250 || getFloat(etHeight.getText().toString().trim()) == 0;
         boolean isValidWeight = 1 <= getFloat(etWeight.getText().toString().trim()) && getFloat(etWeight.getText().toString().trim()) <= 150 || getFloat(etWeight.getText().toString().trim()) == 0;
         if (!isValidTemp) {
-            etTemperature.setError("Invalid input , must be between 30 and 40");
+            etTemperature.setError(getString(R.string.must_be_between_30_and_40));
         }
         if (!isValidPulse) {
-            etPulseRate.setError("Invalid input , must be between 40 and 120");
+            etPulseRate.setError(getString(R.string.must_be_between_40_and_120));
         }
         if (!isValidHeight) {
-            etHeight.setError("Invalid input , must be between 1 and 250");
+            etHeight.setError(getString(R.string.must_be_between_1_and_250));
         }
         if (!isValidWeight) {
-            etWeight.setError("Invalid input , must be between 1 and 150");
+            etWeight.setError(getString(R.string.must_be_between_1_and_150));
         }
         return isValidTemp && isValidHeight && isValidPulse && isValidWeight;
     }
@@ -365,7 +365,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 //            }
         } catch (Exception e) {
             e.printStackTrace();
-            Utilities.toast(this, "Unable to add health record.");
+            Utilities.toast(this, getString(R.string.unable_to_add_health_record));
         }
     }
 
@@ -380,10 +380,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     @Override
     public void finish() {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setMessage("Are you sure you want to exit? Your data will be lost.");
-        alertDialogBuilder.setPositiveButton("Yes, I want to exit. ", (dialogInterface, i) -> {
+        alertDialogBuilder.setMessage(getString(R.string.sure_want_to_exit));
+        alertDialogBuilder.setPositiveButton(getString(R.string.yes_i_want_to_exit), (dialogInterface, i) -> {
             super.finish();
-        }).setNegativeButton("Cancel", null);
+        }).setNegativeButton(getString(R.string.cancel), null);
         alertDialogBuilder.show();
     }
 

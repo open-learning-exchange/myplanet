@@ -180,7 +180,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     public void onDelete(RealmTeamTask task) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         task.deleteFromRealm();
-        Utilities.toast(getActivity(), "Task deleted successfully");
+        Utilities.toast(getActivity(), getString(R.string.task_deleted_successfully));
         mRealm.commitTransaction();
         adapterTask.notifyDataSetChanged();
         showNoData(nodata, rvTask.getAdapter().getItemCount());

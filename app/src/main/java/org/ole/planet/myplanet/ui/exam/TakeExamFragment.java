@@ -95,7 +95,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             container.setVisibility(View.GONE);
             btnSubmit.setVisibility(View.GONE);
             tvQuestionCount.setText(R.string.no_questions);
-            Snackbar.make(tvQuestionCount, "No questions available", Snackbar.LENGTH_LONG).show();
+            Snackbar.make(tvQuestionCount, getString(R.string.no_questions), Snackbar.LENGTH_LONG).show();
         }
     }
 
@@ -113,7 +113,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
         }
         sub.setUserId(user.getId());
-        sub.setStatus("pending");
+        sub.setStatus(getString(R.string.pending));
         sub.setType(type);
         sub.setStartTime(new Date().getTime());
         if (sub.getAnswers() != null) {
@@ -210,7 +210,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         if (view.getId() == R.id.btn_submit) {
             String type = questions.get(currentIndex).getType();
             showTextInput(type);
-            if (showErrorMessage("Please select / write your answer to continue")) {
+            if (showErrorMessage(getString(R.string.please_select_to_continue))) {
                 return;
             }
             boolean cont = updateAnsDb();
@@ -237,7 +237,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     private boolean updateAnsDb() {
         boolean flag;
         startTransaction();
-        sub.setStatus(currentIndex == questions.size() - 1 ? "graded" : "pending");
+        sub.setStatus(currentIndex == questions.size() - 1 ? getString(R.string.graded) : getString(R.string.pending));
         RealmList<RealmAnswer> list = sub.getAnswers();
         RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));

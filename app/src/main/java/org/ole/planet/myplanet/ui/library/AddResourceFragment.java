@@ -63,10 +63,10 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userId = realmUserModel.getId();
         String userName = realmUserModel.getName();
-        new AlertDialog.Builder(context).setTitle("Enter resource detail").setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
+        new AlertDialog.Builder(context).setTitle(context.getString(R.string.enter_resource_detail)).setView(v).setPositiveButton(context.getString(R.string.save), (dialogInterface, i) -> {
             String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {
-                Utilities.toast(context, "Title is required.");
+                Utilities.toast(context, context.getString(R.string.title_is_required));
                 return;
             }
             String desc = etDesc.getText().toString().trim();
@@ -79,7 +79,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 myPersonal.setPath(path);
                 myPersonal.setDate(new Date().getTime());
                 myPersonal.setDescription(desc);
-            }, () -> Utilities.toast(MainApplication.context, "Resource Saved to my personal"));
+            }, () -> Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal)));
         }).setNegativeButton("Dismiss", null).show();
     }
 
@@ -121,7 +121,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_sound_recorder, null);
         tvTime = v.findViewById(R.id.tv_time);
         floatingActionButton = v.findViewById(R.id.fab_record);
-        AlertDialog dialog = new AlertDialog.Builder(getActivity()).setTitle("Record Audio").setView(v).setCancelable(false).create();
+        AlertDialog dialog = new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.recording_audio)).setView(v).setCancelable(false).create();
         createAudioRecorderService(dialog);
         floatingActionButton.setOnClickListener(view -> {
             if (!audioRecorderService.isRecording()) {
@@ -221,7 +221,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         if (!TextUtils.isEmpty(path)) {
             addResource(path);
         } else {
-            Utilities.toast(getActivity(), "Invalid resource url");
+            Utilities.toast(getActivity(), getString(R.string.invalid_resource_url));
         }
     }
 
