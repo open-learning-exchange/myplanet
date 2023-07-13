@@ -177,6 +177,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             tvSelected.setText("");
             adapterCourses.setCourseList(filterCourseByTag("", searchTags));
             showNoData(tvMessage, adapterCourses.getItemCount());
+            spnGrade.setSelection(0);
+            spnSubject.setSelection(0);
         });
     }
 
