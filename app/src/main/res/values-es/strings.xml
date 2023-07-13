@@ -77,7 +77,7 @@
     <string name="subject">Subject/s :</string>
     <string name="license">License :</string>
     <string name="type">Type :</string>
-    <string name="resource">Resource :</string>
+    <string name="resource_colon">Resource:</string>
     <string name="your_rating">Your Rating</string>
     <string name="your_comment">Leave your comment</string>
     <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
