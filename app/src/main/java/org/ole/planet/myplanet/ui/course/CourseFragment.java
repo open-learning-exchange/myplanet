@@ -126,7 +126,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
         orderByDate = getView().findViewById(R.id.order_by_date_button);
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
-        orderByDate.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate")));
+        orderByDate.setOnClickListener(view -> adapterCourses.toggleSortOrder());
         orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle")));
     }
 
