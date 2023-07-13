@@ -92,7 +92,6 @@
     <string name="profile">Profile</string>
     <string name="user">User</string>
     <string name="remove_selected">Remove Selected</string>
-    <string name="dismiss">Finish</string>
     <string name="stop_download">Stop Download</string>
     <string name="downloading_file">Downloading file...</string>
     <string name="cancel">Cancel</string>
