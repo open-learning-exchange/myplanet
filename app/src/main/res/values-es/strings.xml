@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">My Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">Ajustes</string>
-    <string name="hint_name">Nombre de usuario</string>
+    <string name="action_settings">Configuración</string>
+    <string name="hint_name">Nombre</string>
     <string name="hint_password">Contraseña</string>
     <string name="btn_sign_in">Iniciar sesión</string>
     <string name="btn_sync">Sincronizar</string>
@@ -19,7 +19,7 @@
     <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">Panel de control</string>
     <string name="menu_myplanet">My Planet</string>
-    <string name="menu_home">Hogar</string>
+    <string name="menu_home">Inicio</string>
     <string name="menu_library">Nuestra biblioteca</string>
     <string name="menu_courses">Nuestros cursos</string>
     <string name="menu_meetups">reunirse</string>
