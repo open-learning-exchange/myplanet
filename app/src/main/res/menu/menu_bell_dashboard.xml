@@ -2,6 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/menu_goOnline"
+        android:icon="@drawable/goonline"
+        android:title="@string/user"
+        app:iconTint="@color/material_drawer_accent"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_sync"
         android:icon="@drawable/sync_icon"
         android:title="@string/sync_now"
