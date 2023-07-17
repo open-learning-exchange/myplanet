@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
     <string name="app_project_name">myPlanet</string>
@@ -69,7 +70,7 @@
     <string name="version">Version</string>
     <string name="middle_name">Middle Name</string>
     <string name="first_name">First Name</string>
-    <string name="search_dots">Search...</string>
+    <string name="search_dots">Search…</string>
     <string name="btn_remove_lib">Remove</string>
     <string name="download">Download</string>
     <string name="published_by">Published By:</string>
@@ -372,7 +373,6 @@
     <string name="reset_app">Reset App</string>
     <string name="freeup_space">Free-up disk space</string>
     <string name="action_disclaimer">Disclaimer</string>
-
     <string name="action_about">About</string>
     <string name="engilsh_dictionary">English Dictionary</string>
 
@@ -390,7 +390,6 @@
         <item>Teams</item>
         <item>Enterprises</item>
     </string-array>
-
 
     <string-array name="transaction_type">
         <item>Credit</item>
@@ -679,6 +678,4 @@
     <string name="checkbox">CheckBox</string>
     <string name="offer">Offer</string>
     <string name="request_for_advice">Request for advice</string>
-
 </resources>
-

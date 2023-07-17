@@ -20,8 +20,8 @@
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">My Planet</string>
     <string name="menu_home">Home</string>
-    <string name="menu_library">Our Library</string>
-    <string name="menu_courses">Our Courses</string>
+    <string name="menu_library">Library</string>
+    <string name="menu_courses">Courses</string>
     <string name="menu_meetups">Meetups</string>
     <string name="menu_surveys">Surveys</string>
     <string name="menu_logout">Logout</string>
@@ -39,6 +39,8 @@
     <string name="download_all">Download All</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="add_to_mycourse">Add to my courses</string>
+    <string name="join_selected">Join Selected</string>
+    <string name="join">Join</string>
     <string name="add_to_mylib">Add To myLibrary</string>
     <string name="step">step</string>
     <string name="submission">mySubmissions</string>
@@ -49,7 +51,7 @@
     <string name="delete_my_course">Delete myCourse</string>
     <string name="invite_member">Invite Member</string>
     <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type :</string>
+    <string name="feedback_type">Feedback Type:</string>
     <string name="suggestion">Suggestion</string>
     <string name="no">No</string>
     <string name="yes">Yes</string>
@@ -68,16 +70,16 @@
     <string name="version">Version</string>
     <string name="middle_name">Middle Name</string>
     <string name="first_name">First Name</string>
-    <string name="search_dots">Search...</string>
+    <string name="search_dots">Search…</string>
     <string name="btn_remove_lib">Remove</string>
     <string name="download">Download</string>
     <string name="published_by">Published By:</string>
     <string name="author">Author:</string>
-    <string name="language_with_colon">Language :</string>
-    <string name="subject">Subject/s :</string>
-    <string name="license">License :</string>
-    <string name="type">Type :</string>
-    <string name="resource">Resource :</string>
+    <string name="language_with_colon">Language:</string>
+    <string name="subject">Subject/s:</string>
+    <string name="license">License:</string>
+    <string name="type">Type:</string>
+    <string name="resource">Resource:</string>
     <string name="your_rating">Your Rating</string>
     <string name="your_comment">Leave your comment</string>
     <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
@@ -98,7 +100,7 @@
     <string name="add_to_mycourses">Add To My Courses</string>
     <string name="added_to">added to</string>
     <string name="removed_from">removed from</string>
-    <string name="my_courses">my courses</string>
+    <string name="my_courses">My Courses</string>
     <string name="filter_collections">Filter Collections</string>
     <string name="select_many_collections">Select Many Collections</string>
     <string name="collections">Collections</string>
@@ -118,9 +120,6 @@
     <string name="add_an_achievement">Add an Achievement</string>
     <string name="add_a_reference">Add a Reference</string>
     <string name="learner">Learner</string>
-    <string name="enter_username">Enter Username</string>
-    <string name="device_name">Device Name</string>
-
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
     <string name="mediums">Mediums</string>
@@ -131,13 +130,53 @@
     <string name="messeges">myMessages</string>
     <string name="contacts">Contacts</string>
     <string name="news">Our News</string>
-    <string name="dictionaries">Dictionaries</string>
+    <string name="references">References</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
     <string name="btn_guest_login">Login As Guest</string>
+    <string name="enter_username">Enter Username</string>
+    <string name="login">Login</string>
+    <string name="child_mode">Easy Mode</string>
     <string name="joined_members">Joined Members</string>
     <string name="requested_member">Requested Member</string>
     <string name="courses">Courses</string>
+    <string name="enter_message_here">Enter message here</string>
+    <string name="what_would">What would you like to share?</string>
+    <string name="our_news">Our News</string>
+    <string name="delete_record">Are you sure you want to delete the following ?</string>
+    <string name="edit_post">Edit Post</string>
+    <string name="search_user">Search user</string>
+    <string name="get_started">GET STARTED</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="managerial_login">Manager Login</string>
+    <string name="save_username_and_password">Save Username and Password</string>
+    <string name="year">Year</string>
+    <string name="publisher">Publisher</string>
+    <string name="link_to_license">Link to license</string>
+    <string name="resource_for">Resource For</string>
+    <string name="open_which_file">Open Which File</string>
+    <string name="file_upload">File Upload</string>
+    <string name="choose_file">Choose File</string>
+    <string name="file_downloadable">File downloadable</string>
+    <string name="priority">Priority</string>
+    <string name="status">Status</string>
+    <string name="title_not_compulsary">Title</string>
+    <string name="discussion">Discussion</string>
+    <string name="add_message">Add Message</string>
+    <string name="enter_message">Enter your message here..</string>
+    <string name="added_by">Added By</string>
+    <string name="record_audio">Record Audio</string>
+    <string name="record_video">Record Video</string>
+    <string name="select_gallery">Select From Gallery</string>
+    <string name="add_resource">Add Resource:</string>
+    <string name="reply">Reply</string>
+    <string name="show_reply">Show Replies</string>
+    <string name="show_main_conversation">Show main conversation</string>
+    <string name="https_protocol">https://</string>
+    <string name="http_protocol">http://</string>
+    <string name="showing_reply_of">Showing reply of:</string>
+    <string name="open_date">Open Date</string>
+    <string name="my_survey">mySurvey</string>
     <string-array name="level">
         <item></item>
         <item>Beginner</item>
@@ -145,6 +184,7 @@
         <item>Advanced</item>
         <item>Expert</item>
     </string-array>
+
     <string-array name="language">
         <item>English</item>
         <item>नेपाली</item>
@@ -172,47 +212,60 @@
         <item>Internships</item>
         <item>Awards</item>
     </string-array>
-    <string name="login">Login</string>
-    <string name="enter_message_here">Enter message here</string>
-    <string name="what_would">What would you like to share?</string>
-    <string name="delete_record">Are you sure you want to delete the following ?</string>
-    <string name="edit_post">Edit Post</string>
-    <string name="our_news">Our News</string>
-    <string name="child_mode">Easy Mode</string>
+    <string-array name="open_With">
+        <item>HTML</item>
+        <item>PDF.js</item>
+        <item>BeLL-Reader</item>
+        <item>Mp3</item>
+        <item>Flow Video Player</item>
+        <item>BeLL Video Book Player</item>
+        <item>Native Video</item>
+    </string-array>
+    <string-array name="media">
+        <item>Text</item>
+        <item>Graphic/Pictures</item>
+        <item>Audio/Music/Book</item>
+        <item>Video</item>
+    </string-array>
 
-    <string name="get_started">GET STARTED</string>
-    <string name="enter_password">Enter Password</string>
-    <string name="managerial_login">Manager Login</string>
-    <string name="save_username_and_password">Save Username and Password</string>
-    <string name="year">Year</string>
-    <string name="publisher">Publisher</string>
-    <string name="link_to_license">Link to license</string>
-    <string name="resource_for">Resource For</string>
-    <string name="open_which_file">Open Which File</string>
-    <string name="file_upload">File Upload</string>
-    <string name="choose_file">Choose File</string>
-    <string name="file_downloadable">File downloadable</string>
-    <string name="priority">Priority</string>
-    <string name="status">Status</string>
-    <string name="title_not_compulsary">Title</string>
-    <string name="discussion">Discussion</string>
-    <string name="add_message">Add Message</string>
-    <string name="enter_message">Enter your message here..</string>
-    <string name="search_user">Search user</string>
-    <string name="added_by">Added By</string>
-    <string name="record_audio">Record Audio</string>
-    <string name="record_video">Record Video</string>
-    <string name="select_gallery">Select From Gallery</string>
-    <string name="add_resource">Add Resource :</string>
-    <string name="reply">Reply</string>
-    <string name="show_reply">Show Replies</string>
-    <string name="show_main_conversation">Show main conversation</string>
-    <string name="https_protocol">https://</string>
-    <string name="http_protocol">http://</string>
-    <string name="showing_reply_of">Showing reply of :</string>
-    <string name="open_date">Open Date</string>
-    <string name="my_survey">mySurvey</string>
-    <string name="references">References</string>
+    <string-array name="resource_type">
+        <item>Textbook</item>
+        <item>Lesson Plan</item>
+        <item>Activities</item>
+        <item>Exercises</item>
+        <item>Discussion Questions</item>
+    </string-array>
+
+    <string-array name="array_levels">
+        <item>Early Education</item>
+        <item>Lower Primary</item>
+        <item>Upper Primary</item>
+        <item>Lower Secondary</item>
+        <item>Upper Secondary</item>
+        <item>Undergraduate</item>
+        <item>Graduate</item>
+        <item>Professional</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>Agriculture</item>
+        <item>Arts</item>
+        <item>Business and Finance</item>
+        <item>Environment</item>
+        <item>Food and Nutrition</item>
+        <item>Geography</item>
+        <item>Health and Medicine</item>
+        <item>History</item>
+        <item>Human Development</item>
+        <item>Languages</item>
+        <item>Law</item>
+        <item>Learning</item>
+    </string-array>
+    <string-array name="array_resource_for">
+        <item>Default</item>
+        <item>Leader</item>
+        <item>Learner</item>
+    </string-array>
+    <string name="dictionaries">Dictionaries</string>
     <string name="bible">Bibles</string>
     <string name="feature_not">Feature not available</string>
     <string name="myhealth">myHealth</string>
@@ -227,22 +280,22 @@
     <string name="button_reject">Reject</string>
     <string name="button_accept">Accept</string>
     <string name="plan">Plan</string>
-    <string name="body_temperature">Body Temperature</string>
+    <string name="body_temperature">Body Temperature (°C)</string>
     <string name="rectally">Rectally</string>
     <string name="axillary">Axillary</string>
     <string name="by_ear">By ear</string>
     <string name="by_skin">By skin</string>
-    <string name="temperature_taken">Temperature taken :</string>
+    <string name="temperature_taken">Temperature taken:</string>
     <string name="pulse_rate">Pulse Rate (bpm)</string>
     <string name="respiration_rate">Respiration Rate</string>
     <string name="systolic">Systolic</string>
     <string name="diastolic">Diastolic</string>
-    <string name="blood_pressure">Blood Pressure</string>
+    <string name="blood_pressure">Blood Pressure (Systolic/Diastolic)</string>
     <string name="orally">Orally</string>
     <string name="save">Save</string>
     <string name="vital_signs">Vital Signs Record</string>
-    <string name="task">Task</string>
-    <string name="deadline">Deadline</string>
+    <string name="task">Task (required)</string>
+    <string name="deadline">Deadline (required)</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
     <string name="enterprises">Enterprises</string>
     <string name="select_member">Select Team Member</string>
@@ -282,31 +335,32 @@
     <string name="examination">Examination</string>
     <string name="add_examination">Add Examination</string>
     <string name="new_patient">Next Member</string>
-    <string name="height">Height</string>
+    <string name="height">Height (cm)</string>
     <string name="width">Width</string>
     <string name="vision">Vision</string>
     <string name="hearing">Hearing</string>
     <string name="vitals">Vitals</string>
     <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation">Observation and Notes</string>
-    <string name="diagnosis">Diagnosis</string>
-    <string name="treatments">Treatments</string>
-    <string name="medications">Medications</string>
-    <string name="immunization">Immunization Dates</string>
-    <string name="allergies">Allergies</string>
-    <string name="xray">X-rays</string>
-    <string name="labtest">Lab Tests</string>
-    <string name="referrals">Referrals</string>
+    <string name="observation" translatable="false">Observations and Notes</string>
+    <string name="diagnosis" translatable="false">Diagnosis</string>
+    <string name="treatments" translatable="false">Treatments</string>
+    <string name="medications" translatable="false">Medications</string>
+    <string name="immunization" translatable="false">Immunization Dates</string>
+    <string name="allergies" translatable="false">Allergies</string>
+    <string name="xray" translatable="false">X-rays</string>
+    <string name="labtest" translatable="false">Lab Tests</string>
+    <string name="referrals" translatable="false">Referrals</string>
     <string name="full_name">Full Name</string>
-    <string name="weight">Weight</string>
+    <string name="weight">Weight (kg)</string>
     <string name="no_records">No records found</string>
     <string name="chats">Chats</string>
     <string name="select_health_member">Select Member</string>
     <string name="notifications">Notifications</string>
     <string name="incorrect_ans">Incorrect answer, please try again</string>
-    <string name="diagnosis_note">Diagnosis Note</string>
+    <string name="diagnosis_note">Diagnosis Notes</string>
     <string name="menu_community">Community</string>
     <string name="library">Library</string>
+    <string name="device_name">Device Name</string>
     <string name="enter_title">Enter title</string>
     <string name="add_link">Add Link</string>
     <string name="chat">Chat</string>
@@ -317,15 +371,95 @@
     <string name="addImageToMessage">Beta Add image to message</string>
     <string name="clear_data">Clear Data</string>
     <string name="reset_app">Reset App</string>
-    <string name="freeup_space">Free up disk space</string>
+    <string name="freeup_space">Free-up disk space</string>
     <string name="action_disclaimer">Disclaimer</string>
     <string name="action_about">About</string>
     <string name="engilsh_dictionary">English Dictionary</string>
+
+    <string-array name="team_type">
+        <item>Local Team</item>
+        <item>Connect With Nation</item>
+    </string-array>
+
+    <string-array name="contact_type">
+        <item>Phone</item>
+        <item>Email</item>
+    </string-array>
+
+    <string-array name="add_link_options">
+        <item>Teams</item>
+        <item>Enterprises</item>
+    </string-array>
+
+    <string-array name="transaction_type">
+        <item>Credit</item>
+        <item>Debit</item>
+    </string-array>
+
+    <string-array name="sort_by_date">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Title</item>
+    </string-array>
+
+    <string-array name="sort_member">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Name - Asc</item>
+        <item>Order By Name - Desc</item>
+    </string-array>
+
+    <string-array name="grade_level">
+        <item>All</item>
+        <item>Pre-Kindergarten</item>
+        <item>Kindergarten</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>College</item>
+        <item>Post-Graduate</item>
+    </string-array>
+
+    <string-array name="subject_level">
+        <item>All</item>
+        <item>Beginner</item>
+        <item>Intermediate</item>
+        <item>Advanced</item>
+        <item>Expert</item>
+    </string-array>
+
+    <string-array name="diagnosis_list">
+        <item>Cancer</item>
+        <item>Cardiovascular disorders</item>
+        <item>Cirrhosis of the liver</item>
+        <item>COVID-19</item>
+        <item>Diabetes</item>
+        <item>Diarrhoea diseases</item>
+        <item>Ebola</item>
+        <item>Epilepsy</item>
+        <item>FGM</item>
+        <item>Influenza</item>
+        <item>Ischaemic heat disease</item>
+        <item>Malaria</item>
+        <item>Malnutrition</item>
+        <item>Meningitis</item>
+        <item>Neonatal sepsis and infections</item>
+        <item>HIV/AIDS</item>
+        <item>Pneumonia</item>
+        <item>Stroke</item>
+        <item>Tuberculosis</item>
+        <item>Trauma</item>
+    </string-array>
     <string name="title_activity_news_detail">NewsDetailActivity</string>
-    <string name="large_text">
-        "Large Text\n\n"
-        "... is only available in english.\n\n"
-    </string>
     <string name="add_story">Add Story</string>
     <string name="txt_myprogress">myProgress</string>
     <string name="more_action">Filter</string>
@@ -335,26 +469,26 @@
     <string name="share_with_community">Share with community</string>
     <string name="add_res">Add Resource</string>
     <string name="password">Password</string>
-    <string name="retype_password">Retype Password</string>
+    <string name="retype_password">Confirm Password</string>
+    <string name="become_a_member">Become a member</string>
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
-    <string name="become_a_member">Become a member</string>
     <string name="add_member">Add member</string>
     <string name="confirm_exit">Are you sure you want to leave this team?</string>
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
     <string name="other_notes">Other Notes</string>
     <string name="archive">Archive</string>
-    <string name="Q1">Question : 1/</string>
+    <string name="Q1">Question: 1/</string>
     <string name="no_questions">No questions available</string>
-    <string name="Q">"Question : "</string>
+    <string name="Q">"Question: "</string>
     <string name="finish">Finish</string>
     <string name="submit">Submit</string>
     <string name="our_courses">Our Courses</string>
-    <string name="file">"File : "</string>
+    <string name="file">"File: "</string>
     <string name="recording_audio">Recording audio......</string>
     <string name="show_replies">"Show replies "</string>
-    <string name="selected">"Selected : "</string>
+    <string name="selected">"Selected: "</string>
     <string name="last_sync"><![CDATA["<< Last sync with server: "]]></string>
     <string name="last_syncs">LastSync</string>
     <string name="login_user">loginUserName</string>
