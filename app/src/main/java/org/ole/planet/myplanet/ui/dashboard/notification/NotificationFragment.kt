@@ -34,6 +34,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         mRealm = DatabaseService(requireActivity()).realmInstance
+        resourceList = emptyList()
         return inflater.inflate(R.layout.fragment_notification, container, false)
     }
 

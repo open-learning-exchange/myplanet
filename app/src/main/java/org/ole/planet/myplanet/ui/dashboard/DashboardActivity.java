@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -47,6 +48,7 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
+import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -159,6 +161,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             @Override
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
+                    case R.id.menu_goOnline:
+                        wifiStatusSwitch();
+                        break;
                     case R.id.action_sync:
                         syncNow();
                         break;
@@ -193,6 +198,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuco = tl.getTabAt(5);
 
         showShowCaseViewVertical();
+        hideWifi();
+    }
+
+    private void hideWifi() {
+        Menu nav_Menu = bellToolbar.getMenu();
+        nav_Menu.findItem(R.id.menu_goOnline).setVisible((Constants.showBetaFeature(Constants.KEY_SYNC, this)));
     }
 
     private void checkUser() {
@@ -253,7 +264,18 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private AccountHeader getAccountHeader() {
-        return new AccountHeaderBuilder().withActivity(DashboardActivity.this).withTextColor(getResources().getColor(R.color.bg_white)).withHeaderBackground(R.drawable.header_image).withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY).withDividerBelowHeader(false).build();
+        AccountHeader header = new AccountHeaderBuilder()
+                .withActivity(DashboardActivity.this)
+                .withTextColor(getResources().getColor(R.color.bg_white))
+                .withHeaderBackground(R.drawable.ole_logo)
+                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
+                .withDividerBelowHeader(false)
+                .build();
+
+        ImageView headerBackground = header.getHeaderBackgroundView();
+        headerBackground.setPadding(20, 12, 20, 12); // Add padding values as per your requirement
+        headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
+        return header;
     }
 
     private void createDrawer() {
@@ -414,6 +436,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_bell_dashboard, menu);
+        menu.findItem(R.id.menu_goOnline).setVisible(Constants.showBetaFeature(Constants.KEY_SYNC, this));
         return super.onCreateOptionsMenu(menu);
     }
 

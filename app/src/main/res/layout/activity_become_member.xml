@@ -185,11 +185,11 @@
                     android:layout_gravity="center_vertical"
                     android:layout_weight="1"
                     android:background="@drawable/border"
-                    android:drawableRight="@drawable/ic_date"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/birth_date"
-                    android:textSize="@dimen/text_size_mid" />
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableRightCompat="@drawable/ic_date" />
 
             </LinearLayout>
 

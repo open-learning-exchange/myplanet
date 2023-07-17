@@ -31,6 +31,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -52,7 +54,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private Realm mRealm;
     private ChipCloudConfig config;
     private Markwon markwon;
-
+    private boolean isAscending = true;
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
         this.context = context;
@@ -86,6 +88,26 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public void setCourseList(List<RealmMyCourse> courseList) {
         this.courseList = courseList;
+        sortCourseList();
+        notifyDataSetChanged();
+    }
+
+    private void sortCourseList() {
+        Collections.sort(courseList, new Comparator<RealmMyCourse>() {
+            @Override
+            public int compare(RealmMyCourse course1, RealmMyCourse course2) {
+                if (isAscending) {
+                    return course1.getCreatedDate().compareTo(course2.getCreatedDate());
+                } else {
+                    return course2.getCreatedDate().compareTo(course1.getCreatedDate());
+                }
+            }
+        });
+    }
+
+    public void toggleSortOrder() {
+        isAscending = !isAscending;
+        sortCourseList();
         notifyDataSetChanged();
     }
 
