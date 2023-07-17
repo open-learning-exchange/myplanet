@@ -60,7 +60,7 @@
                         android:layout_height="wrap_content"
                         android:background="@drawable/buttongrey"
                         android:padding="@dimen/padding_normal"
-                        android:text="@string/leave" />
+                        android:text="@string/delete_my_course" />
 
                 </LinearLayout>
 

@@ -34,7 +34,7 @@
             android:id="@+id/bt_profile_pic"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add Profile Picture" />
+            android:text="@string/add_profile_picture" />
 
         <TextView
             android:id="@+id/txt_email"

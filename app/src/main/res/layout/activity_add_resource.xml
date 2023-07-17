@@ -32,7 +32,7 @@
                         android:id="@+id/et_title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/title" />
+                        android:hint="@string/title_asterisk" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -96,7 +96,7 @@
                     android:layout_weight="1"
                     android:enabled="false"
                     android:entries="@array/language"
-                    android:hint="@string/title"
+                    android:hint="@string/title_asterisk"
                     android:padding="@dimen/padding_large" />
 
 

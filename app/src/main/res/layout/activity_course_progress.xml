@@ -62,7 +62,7 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="8dp"
-            android:text="Steps"
+            android:text="@string/steps"
             android:textColor="@color/md_black_1000"
             android:textSize="18sp" />
 

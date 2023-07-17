@@ -38,10 +38,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
     var rating: TextView? = null
     var ratingBar: AppCompatRatingBar? = null
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
-        profileDbHandler = UserProfileDbHandler(activity)
+    lateinit var profileDbHandler: UserProfileDbHandler
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        profileDbHandler = UserProfileDbHandler(requireActivity())
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return super.onCreateView(inflater, container, savedInstanceState)
     }
 

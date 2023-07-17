@@ -10,5 +10,5 @@
     android:checkMark="?android:attr/listChoiceIndicatorMultiple"
     android:gravity="center_vertical"
     android:padding="5dp"
-    android:text="CheckBox"
+    android:text="@string/checkbox"
     android:textSize="20sp" />

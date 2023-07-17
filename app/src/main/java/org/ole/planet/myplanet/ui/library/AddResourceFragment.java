@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.FileProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -163,17 +164,35 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     private void dispatchTakeVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Utilities.SD_PATH + "/video/" + UUID.randomUUID().toString() + ".mp4")));
+        Uri videoUri = FileProvider.getUriForFile(getActivity(), "org.ole.planet.myplanet.fileprovider", createVideoFile());
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri);
+        takeVideoIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
         if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
+    }
+
+    private File createVideoFile() {
+        File videoDir = new File(Utilities.SD_PATH + "/video/");
+        videoDir.mkdirs();
+        File videoFile = new File(videoDir, UUID.randomUUID().toString() + ".mp4");
+        return videoFile;
     }
 
     public void takePhoto() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
         output = new File(dir, UUID.randomUUID().toString() + ".jpg");
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(output));
+
+        // Generate a content URI using FileProvider
+        Uri photoURI = FileProvider.getUriForFile(requireContext(), "org.ole.planet.myplanet.fileprovider", output);
+
+        // Grant temporary permission to the camera app to access the file
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        // Set the output URI
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
         startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
     }
 
