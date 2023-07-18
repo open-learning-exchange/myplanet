@@ -62,7 +62,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
         if (!urls.isEmpty()) startDownload(urls) else Utilities.toast(
-            activity, "No images to download."
+            activity, getString(R.string.no_images_to_download)
         )
     }
 
@@ -141,7 +141,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
             "csv" -> openIntent(items, CSVViewerActivity::class.java)
             else -> Toast.makeText(
-                activity, "This file type is currently unsupported", Toast.LENGTH_LONG
+                activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG
             ).show()
         }
     }
@@ -151,7 +151,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         Utilities.log("Mime type $mimetype")
         Utilities.log("Mime type " + items.resourceLocalAddress)
         if (mimetype == null) {
-            Utilities.toast(activity, "Unable to open resource")
+            Utilities.toast(activity, getString(R.string.unable_to_open_resource))
             return
         }
         if (profileDbHandler == null) profileDbHandler = UserProfileDbHandler(activity)
@@ -188,7 +188,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
         val builderSingle = AlertDialog.Builder(requireActivity())
-        builderSingle.setTitle("Select resource to open : ")
+        builderSingle.setTitle(getString(R.string.select_resource_to_open))
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
             requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
         ) {
@@ -235,7 +235,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             btnResources.visibility = View.GONE
         } else {
             btnResources.visibility = View.VISIBLE
-            btnResources.text = "Resources [" + resources.size + "]"
+            btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
             btnResources.setOnClickListener {
                 if (resources.size > 0) showDownloadDialog(
                     resources as List<RealmMyLibrary>

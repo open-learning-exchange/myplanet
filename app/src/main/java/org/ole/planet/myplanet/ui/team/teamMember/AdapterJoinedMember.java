@@ -56,14 +56,14 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
         if (holder instanceof ViewHolderUser) {
             String[] overflowMenuOptions;
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
-            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " visits )");
+            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
 
             boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId());
 
             // If the current user card is the logged in user/team leader
             if (this.teamLeaderId.equals(list.get(position).getId())) {
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
-                ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
+                ((ViewHolderUser) holder).isLeader.setText("("+ R.string.team_leader +")");
                 //Show no option for leader now
                 ///overflowMenuOptions = new String[] {context.getString(R.string.remove)};
             } else {

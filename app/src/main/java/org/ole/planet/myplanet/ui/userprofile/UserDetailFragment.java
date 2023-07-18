@@ -66,7 +66,7 @@ public class UserDetailFragment extends Fragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (user == null) {
-            Utilities.toast(getActivity(), "User not available in our database");
+            Utilities.toast(getActivity(), getString(R.string.user_not_available_in_our_database));
             return;
         }
         List<Detail> list = getList(user, db);

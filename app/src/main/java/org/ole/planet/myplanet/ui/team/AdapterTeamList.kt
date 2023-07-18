@@ -92,20 +92,20 @@ class AdapterTeamList(
                 (holder as ViewHolderTeam).action.text = "Leave"
                 holder.action.setOnClickListener { view: View? ->
                     AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
-                        .setPositiveButton("Yes") { dialogInterface: DialogInterface?, i: Int ->
+                        .setPositiveButton(R.string.yes) { dialogInterface: DialogInterface?, i: Int ->
                             list[position].leave(user, mRealm)
                             notifyDataSetChanged()
-                        }.setNegativeButton("No", null).show()
+                        }.setNegativeButton(R.string.no, null).show()
                 }
             } else {
                 (holder as ViewHolderTeam).action.visibility = View.GONE
                 return
             }
         } else if (list[position].requested(user.id, mRealm)) {
-            (holder as ViewHolderTeam).action.text = "Requested"
+            (holder as ViewHolderTeam).action.text = context.getString(R.string.requested)
             holder.action.isEnabled = false
         } else {
-            (holder as ViewHolderTeam).action.text = "Request to Join"
+            (holder as ViewHolderTeam).action.text = context.getString(R.string.request_to_join)
             holder.action.setOnClickListener { view: View? ->
                 RealmMyTeam.requestToJoin(list[position]._id, user, mRealm)
                 notifyDataSetChanged()

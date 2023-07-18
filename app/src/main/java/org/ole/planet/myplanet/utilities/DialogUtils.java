@@ -48,9 +48,9 @@ public class DialogUtils {
             AlertDialog.Builder pd = new AlertDialog.Builder(context);
             String message = NetworkUtils.isBluetoothEnabled() ? "Bluetooth " : "";
             message += NetworkUtils.isWifiEnabled() ? "Wifi " : "";
-            message += " is on please turn of to save battery";
+            message += R.string.is_on_please_turn_of_to_save_battery;
             pd.setMessage(message);
-            pd.setPositiveButton("Go to settings", (dialogInterface, i) -> {
+            pd.setPositiveButton(R.string.go_to_settings, (dialogInterface, i) -> {
                 MainApplication.syncFailedCount = 0;
                 Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
                 context.startActivity(intent);
@@ -79,13 +79,13 @@ public class DialogUtils {
     }
 
     public static AlertDialog getAlertDialog(Context context, String title, View v) {
-        return new AlertDialog.Builder(context).setTitle(title).setIcon(R.drawable.ic_edit).setView(v).setPositiveButton("Submit", null).setNegativeButton("Cancel", null).show();
+        return new AlertDialog.Builder(context).setTitle(title).setIcon(R.drawable.ic_edit).setView(v).setPositiveButton(R.string.submit, null).setNegativeButton(R.string.cancel, null).show();
     }
 
     public static AlertDialog.Builder getUpdateDialog(Context context, MyPlanet info, ProgressDialog progressDialog) {
-        return new AlertDialog.Builder(context).setTitle("New version of my planet available").setMessage("Download first to continue.").setNeutralButton("Upgrade(Local)", (dialogInterface, i) -> {
+        return new AlertDialog.Builder(context).setTitle(R.string.new_version_of_my_planet_available).setMessage(R.string.download_first_to_continue).setNeutralButton(R.string.upgrade_local, (dialogInterface, i) -> {
             startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), progressDialog);
-        }).setPositiveButton("Upgrade", (dialogInterface, i) -> {
+        }).setPositiveButton(R.string.upgrade, (dialogInterface, i) -> {
             startDownloadUpdate(context, info.getApkpath(), progressDialog);
         });
     }
@@ -94,7 +94,7 @@ public class DialogUtils {
         new Service(MainApplication.context).checkCheckSum(new Service.ChecksumCallback() {
             @Override
             public void onMatch() {
-                Utilities.toast(MainApplication.context, "Apk already exists");
+                Utilities.toast(MainApplication.context, String.valueOf(R.string.apk_already_exists));
                 FileUtils.installApk(context, path);
             }
 
@@ -103,7 +103,7 @@ public class DialogUtils {
                 ArrayList url = new ArrayList();
                 url.add(path);
                 if (progressDialog != null) {
-                    progressDialog.setMessage("Downloading file...");
+                    progressDialog.setMessage(String.valueOf(R.string.downloading_file));
                     progressDialog.setCancelable(false);
                     progressDialog.show();
                 }

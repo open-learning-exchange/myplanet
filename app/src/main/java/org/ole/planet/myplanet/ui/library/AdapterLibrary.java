@@ -94,7 +94,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).title.setText(libraryList.get(position).getTitle());
             Utilities.log(libraryList.get(position).getDescription());
             markwon.setMarkdown(((ViewHolderLibrary) holder).desc, libraryList.get(position).getDescription());
-            ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + " Total");
+            ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + context.getString(R.string.total));
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             ((ViewHolderLibrary) holder).tvDate.setText(TimeUtils.formatDate(libraryList.get(position).getCreatedDate(), "MMM dd, yyyy"));

@@ -79,14 +79,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                         .into(imageView)
                 }
             })
-        v.txtVisits.text = """${profileDbHandler.offlineVisits} visits"""
-        v.txtRole.text = """ - ${model.roleAsString}"""
+        v.txtVisits.text = "${profileDbHandler.offlineVisits} ${getString(R.string.visits)}"
+        v.txtRole.text = "- ${model.roleAsString}"
         v.txtFullName.text = fullName
     }
 
     override fun forceDownloadNewsImages() {
         if (mRealm == null) mRealm = DatabaseService(activity).realmInstance
-        Utilities.toast(activity, "Please select starting date : ")
+        Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
             requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -103,7 +103,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 )
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
-        dpd.setTitle("Read offline news from : ")
+        dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
     }
 
@@ -111,10 +111,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val list = ArrayList<String>()
         list.add(Constants.DICTIONARY_URL)
         if (!FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
-            Utilities.toast(activity, "Downloading started, please check notification...")
+            Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
             Utilities.openDownloadService(activity, list)
         } else {
-            Utilities.toast(activity, "File already exists...")
+            Utilities.toast(activity, getString(R.string.file_already_exists))
         }
     }
 
@@ -346,7 +346,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun syncKeyId() {
         di = ProgressDialog(activity)
-        di?.setMessage("Syncing health , please wait...")
+        di?.setMessage(getString(R.string.syncing_health_please_wait))
         Utilities.log(model.roleAsString)
         if (model.roleAsString.contains("health")) {
             TransactionSyncManager.syncAllHealthData(mRealm, BaseResourceFragment.settings, this)
@@ -361,12 +361,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onSyncComplete() {
         di?.dismiss()
-        Utilities.toast(activity, "myHealth synced successfully")
+        Utilities.toast(activity, getString(R.string.myhealth_synced_successfully))
     }
 
     override fun onSyncFailed(msg: String) {
         di?.dismiss()
-        Utilities.toast(activity, "myHealth synced failed")
+        Utilities.toast(activity, getString(R.string.myhealth_synced_failed))
     }
 
     override fun showTaskListDialog() {
@@ -375,13 +375,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 .equalTo("completed", false)
                 .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
         if (tasks.size == 0) {
-            Utilities.toast(requireContext(), "No due tasks")
+            Utilities.toast(requireContext(), getString(R.string.no_due_tasks))
             return
         }
         var adapter = ArrayAdapter<RealmTeamTask>(
             requireContext(), android.R.layout.simple_expandable_list_item_1, tasks
         )
-        AlertDialog.Builder(requireContext()).setTitle("Due tasks")
+        AlertDialog.Builder(requireContext()).setTitle(getString(R.string.due_tasks))
             .setAdapter(adapter, object : DialogInterface.OnClickListener {
                 override fun onClick(p0: DialogInterface?, p1: Int) {
                     var task = adapter.getItem(p1);

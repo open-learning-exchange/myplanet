@@ -72,7 +72,7 @@ public class SendSurveyFragment extends BaseDialogFragment {
                 RealmUserModel u = users.get(i);
                 createSurveySubmission(u.getId());
             }
-            Utilities.toast(getActivity(), "Survey sent to users");
+            Utilities.toast(getActivity(), getString(R.string.survey_sent_to_users));
             dismiss();
         });
     }

@@ -236,18 +236,14 @@ class MyHealthFragment : Fragment() {
             val mm = getHealthProfile(mh)
             if (mm == null) {
                 rv_records.adapter = null
-                Utilities.toast(activity, "Health Record not available.")
+                Utilities.toast(activity, getString(R.string.health_record_not_available))
                 return
             }
             val myHealths = mm.profile
             txt_other_need.text = Utilities.checkNA(myHealths.notes)
             txt_special_needs.text = Utilities.checkNA(myHealths.specialNeeds)
             txt_birth_place.text = Utilities.checkNA(userModel?.birthPlace)
-            txt_emergency_contact!!.text = """
-                Name : ${Utilities.checkNA(myHealths.emergencyContactName)}
-                Type : ${Utilities.checkNA(myHealths.emergencyContactName)}
-                Contact : ${Utilities.checkNA(myHealths.emergencyContact)}
-                """.trimIndent()
+            txt_emergency_contact!!.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths.emergencyContactName)} ${getString(R.string.type)} ${Utilities.checkNA(myHealths.emergencyContactName)} ${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths.emergencyContact)}").trimIndent()
             val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(activity, list, mh, userModel)

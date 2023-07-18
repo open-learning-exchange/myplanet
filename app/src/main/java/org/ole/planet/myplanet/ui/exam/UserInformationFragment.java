@@ -142,10 +142,10 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
                     model.setUpdated(true);
                 }
             }, () -> {
-                Utilities.toast(MainApplication.context, "User profile updated");
+                Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated));
                 dismiss();
             }, error -> {
-                Utilities.toast(MainApplication.context, "Unable to update user");
+                Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user));
                 dismiss();
             });
         } else {
@@ -167,7 +167,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     private void saveSubmission(JsonObject user) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         submissions.setUser(user.toString());
-        submissions.setStatus("complete");
+        submissions.setStatus(getString(R.string.complete));
         mRealm.commitTransaction();
         dismiss();
     }
@@ -175,7 +175,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     @Override
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);
-        Utilities.toast(getActivity(), "Thank you for taking this survey.");
+        Utilities.toast(getActivity(), getString(R.string.thank_you_for_taking_this_survey));
         getActivity().onBackPressed();
     }
 

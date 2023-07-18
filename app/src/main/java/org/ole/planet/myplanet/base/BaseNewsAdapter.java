@@ -51,7 +51,7 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             news.setViewIn(new Gson().toJson(array));
             mRealm.commitTransaction();
-            Utilities.toast(context, "Shared to community");
+            Utilities.toast(context, context.getString(R.string.shared_to_community));
             ((ViewHolderNews) holder).btnShare.setVisibility(View.GONE);
         });
     }
