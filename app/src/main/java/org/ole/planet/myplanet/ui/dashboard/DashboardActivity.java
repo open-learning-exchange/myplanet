@@ -397,7 +397,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {
-        return new PrimaryDrawerItem().withName(iconText).withIcon(drawable).withTextColor(getResources().getColor(R.color.textColorPrimary)).withIconColor(getResources().getColor(R.color.textColorPrimary)).withSelectedIconColor(getResources().getColor(R.color.primary_dark)).withIconTintingEnabled(true);
+        return new PrimaryDrawerItem().withName(iconText)
+                .withIcon(drawable)
+                .withTextColor(getResources().getColor(R.color.textColorPrimary))
+                .withSelectedTextColor(getResources().getColor(R.color.primary_dark))
+                .withIconColor(getResources().getColor(R.color.textColorPrimary))
+                .withSelectedIconColor(getResources().getColor(R.color.primary_dark))
+                .withSelectedColor(getResources().getColor(R.color.textColorPrimary))
+                .withIconTintingEnabled(true);
     }
 
     @Override

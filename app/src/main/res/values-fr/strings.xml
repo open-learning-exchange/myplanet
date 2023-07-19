@@ -754,7 +754,7 @@
         <li>By visiting this page on our website: <a href="https://ole.org/contact">https://ole.org/contact</a></li>
     </ul>
     ]]>
-</string>
+    </string>
     <string name="about">
     <![CDATA[
     <h3>MyPlanet</h3>
@@ -776,7 +776,7 @@
     <p>myPlanet has been proven highly effective in improving learning opportunities for over fifty thousand learners in more than 100 locations,
         in schools throughout Nepal, Ghana, Kenya, and Rwanda, with Syrian refugees in Jordan, Somali refugees in Kenya, and village health workers in Uganda.</p>
     ]]>
-</string>
+    </string>
     <string name="is_on_please_turn_of_to_save_battery">" is on please turn of to save battery"</string>
     <string name="go_to_settings">Go to settings</string>
     <string name="new_version_of_my_planet_available">New version of my planet available</string>
