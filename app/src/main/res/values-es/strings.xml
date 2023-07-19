@@ -452,5 +452,6 @@
     <string name="checkbox">Casilla de Verificación</string>
     <string name="offer">Oferta</string>
     <string name="request_for_advice">Solicitud de consejo</string>
+    <string name="ai_chat">AI Chat</string>
 
 </resources>

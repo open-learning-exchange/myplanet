@@ -445,6 +445,7 @@
     <string name="checkbox">CheckBox</string>
     <string name="offer">Offer</string>
     <string name="request_for_advice">Request for advice</string>
+    <string name="ai_chat">AI Chat</string>
 
     <string-array name="info_type">
         <item>Languages</item>
