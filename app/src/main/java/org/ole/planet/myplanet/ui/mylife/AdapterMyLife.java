@@ -123,10 +123,10 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         RealmMyLife.updateVisibility(!isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
         if (isVisible) {
             changeVisibility(holder, R.drawable.ic_visibility, HIDE);
-            Utilities.toast(context, myLifeList.get(position).getTitle() + " is now hidden");
+            Utilities.toast(context, myLifeList.get(position).getTitle() + R.string.is_now_hidden);
         } else {
             changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
-            Utilities.toast(context, myLifeList.get(position).getTitle() + " is now shown");
+            Utilities.toast(context, myLifeList.get(position).getTitle() + R.string.is_now_shown);
         }
     }
 

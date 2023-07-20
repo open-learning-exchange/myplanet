@@ -35,7 +35,7 @@ class CourseProgressActivity : BaseActivity() {
         }
         tv_course.text = course!!.courseTitle
         tv_progress.text =
-            "Progress " + courseProgress[courseId]!!["current"].asString + " of " + courseProgress[courseId]!!["max"].asString
+            getString(R.string.progress) + courseProgress[courseId]!!["current"].asString + getString(R.string.of) + courseProgress[courseId]!!["max"].asString
         rv_progress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }

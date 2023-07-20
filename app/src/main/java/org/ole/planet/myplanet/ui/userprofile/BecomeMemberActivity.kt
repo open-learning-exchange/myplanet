@@ -97,23 +97,23 @@ class BecomeMemberActivity : BaseActivity() {
             var gender: String? = ""
             if (rb != null) gender = rb.text.toString()
             else {
-                Utilities.toast(this, "Please select gender")
+                Utilities.toast(this, getString(R.string.please_select_gender))
             }
             if (username!!.isEmpty()) {
-                et_username.error = "Please enter a username"
+                et_username.error = getString(R.string.please_enter_a_username)
             } else if (username.contains(" ")) {
-                et_username.error = "Invalid username"
+                et_username.error = getString(R.string.invalid_username)
             }
             if (password!!.isEmpty()) {
-                et_password.error = "Please enter a password"
+                et_password.error = getString(R.string.please_enter_a_password)
             } else if (password != repassword) {
-                et_re_password.error = "Password doesn't match"
+                et_re_password.error = getString(R.string.password_doesn_t_match)
             }
             if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
-                et_email.error = "Invalid email."
+                et_email.error = getString(R.string.invalid_email)
             }
             if (level == null) {
-                Utilities.toast(this, "Level is required")
+                Utilities.toast(this, getString(R.string.level_is_required));
             }
             if (password!!.isEmpty() && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
@@ -202,7 +202,7 @@ class BecomeMemberActivity : BaseActivity() {
         et_username.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable) {
                 if (RealmUserModel.isUserExists(mRealm, et_username.text.toString())) {
-                    et_username.error = "username taken"
+                    et_username.error = getString(R.string.username_taken)
                     return
                 }
             }

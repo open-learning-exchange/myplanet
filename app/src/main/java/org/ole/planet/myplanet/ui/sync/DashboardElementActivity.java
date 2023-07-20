@@ -145,10 +145,10 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             wifi.setWifiEnabled(false);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
-            Toast.makeText(this, "Wifi is turned Off. Saving battery power", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show();
         } else {
             wifi.setWifiEnabled(true);
-            Toast.makeText(this, "Turning on Wifi. Please wait...", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show();
             (new Handler()).postDelayed(this::connectToWifi, 5000);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
@@ -161,7 +161,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         WifiManager wifiManager = (WifiManager) MainApplication.context.getSystemService(WIFI_SERVICE);
         int netId = -1;
         if (wifiManager == null) {
-            Utilities.toast(this, "Unable to connect to planet wifi.");
+            Utilities.toast(this, getString(R.string.unable_to_connect_to_planet_wifi));
             return;
         }
 
@@ -169,7 +169,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             if (tmp.networkId > -1 && tmp.networkId == id) {
                 netId = tmp.networkId;
                 wifiManager.enableNetwork(netId, true);
-                Toast.makeText(this, "You are now connected " + netId, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.you_are_now_connected + netId, Toast.LENGTH_SHORT).show();
                 LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_NETWORK_CHANGED"));
                 break;
             }
@@ -192,7 +192,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             super.finish();
         } else {
             this.doubleBackToExitPressedOnce = true;
-            Toast.makeText(this, "Press BACK again to exit", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show();
             new Handler().postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
         }
     }

@@ -73,7 +73,7 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
 
     @Override
     public void onError(String s) {
-        runOnUiThread(() -> Utilities.toast(VideoPlayerActivity.this, "Connection failed : reason " + s));
+        runOnUiThread(() -> Utilities.toast(VideoPlayerActivity.this, getString(R.string.connection_failed_reason) + s));
     }
 
     public void streamVideoFromUrl(String videoUrl, String auth) {

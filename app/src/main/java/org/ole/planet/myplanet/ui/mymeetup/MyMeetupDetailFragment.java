@@ -84,7 +84,7 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
         String[] ids = RealmMeetup.getJoinedUserIds(mRealm);
         RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", ids).findAll();
         listUsers.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, users));
-        tvJoined.setText(String.format("Joined Members : %s", users.size() == 0 ? "(0)\nNo members has joined this meet up" : users.size()));
+        tvJoined.setText(String.format(getString(R.string.joined_members_colon) + " %s", users.size() == 0 ? "(0)\n " + getString(R.string.no_members_has_joined_this_meet_up) : users.size()));
     }
 
     private void setUpData() {
@@ -116,10 +116,10 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
         mRealm.executeTransaction(realm -> {
             if (meetups.getUserId().isEmpty()) {
                 meetups.setUserId(user.getId());
-                btnLeave.setText("Leave");
+                btnLeave.setText(R.string.leave);
             } else {
                 meetups.setUserId("");
-                btnLeave.setText("Join");
+                btnLeave.setText(R.string.join);
             }
         });
     }

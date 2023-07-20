@@ -76,7 +76,7 @@ public abstract class BaseResourceFragment extends Fragment {
     BroadcastReceiver stateReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            new AlertDialog.Builder(getActivity()).setMessage("Do you want to stay online?").setPositiveButton("Yes", null).setNegativeButton("No", (dialogInterface, i) -> {
+            new AlertDialog.Builder(getActivity()).setMessage(R.string.do_you_want_to_stay_online).setPositiveButton(R.string.yes, null).setNegativeButton(R.string.no, (dialogInterface, i) -> {
                 WifiManager wifi = (WifiManager) MainApplication.context.getSystemService(Context.WIFI_SERVICE);
                 if (wifi != null) wifi.setWifiEnabled(false);
             }).show();
@@ -111,13 +111,13 @@ public abstract class BaseResourceFragment extends Fragment {
                     alertDialog.show();
                     (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
                 } else {
-                    Utilities.toast(requireContext(), "No resources to download");
+                    Utilities.toast(requireContext(), getString(R.string.no_resources_to_download));
                 }
             }
 
             @Override
             public void notAvailable() {
-                Utilities.toast(requireContext(), "Planet not available");
+                Utilities.toast(requireContext(), getString(R.string.planet_not_available));
 
                 Utilities.log("Planet not available");
             }
@@ -140,12 +140,12 @@ public abstract class BaseResourceFragment extends Fragment {
                 if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
                     ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
                 else {
-                    ((TextView) convertView).setText("N/A");
+                    ((TextView) convertView).setText(R.string.n_a);
                 }
                 return convertView;
             }
         };
-        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton("Dismiss", null).show();
+        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton(R.string.dismiss, null).show();
     }
 
     public void startDownload(ArrayList urls) {
@@ -160,7 +160,7 @@ public abstract class BaseResourceFragment extends Fragment {
 
             @Override
             public void notAvailable() {
-                Utilities.toast(getActivity(), "Device not connected to planet.");
+                Utilities.toast(getActivity(), getString(R.string.device_not_connected_to_planet));
             }
         });
     }
@@ -171,7 +171,7 @@ public abstract class BaseResourceFragment extends Fragment {
             prgDialog.setTitle(download.getFileName());
         }
         if (download.isCompleteAll()) {
-            DialogUtils.showError(prgDialog, "All files downloaded successfully");
+            DialogUtils.showError(prgDialog, getString(R.string.all_files_downloaded_successfully));
             onDownloadComplete();
         }
     }
@@ -254,12 +254,12 @@ public abstract class BaseResourceFragment extends Fragment {
             RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
             myObject.removeUserId(model.getId());
             RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
-            Utilities.toast(getActivity(), "Removed from myLibrary");
+            Utilities.toast(getActivity(), getString(R.string.removed_from_mylibrary));
         } else {
             RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
             myObject.removeUserId(model.getId());
             RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
-            Utilities.toast(getActivity(), "Removed from myCourse");
+            Utilities.toast(getActivity(), getString(R.string.removed_from_mycourse));
         }
     }
 
@@ -270,7 +270,7 @@ public abstract class BaseResourceFragment extends Fragment {
     }
 
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
-        StringBuilder selected = new StringBuilder("Selected : ");
+        StringBuilder selected = new StringBuilder(getString(R.string.selected));
         for (RealmTag tags : list) {
             selected.append(tags.getName()).append(",");
         }

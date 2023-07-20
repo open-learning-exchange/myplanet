@@ -53,7 +53,7 @@ public class DashboardFragment extends BaseDashboardFragment {
         (getView().findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
         getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
             // startActivity(new Intent(getActivity(), AddResourceActivity.class));
-            new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
+            new AddResourceFragment().show(getChildFragmentManager(),  getString(R.string.add_res));
         });
     }
 
