@@ -93,7 +93,6 @@
     <string name="profile">Profile</string>
     <string name="user">User</string>
     <string name="remove_selected">Remove Selected</string>
-    <string name="dismiss">Finish</string>
     <string name="stop_download">Stop Download</string>
     <string name="downloading_file">Downloading file...</string>
     <string name="cancel">Cancel</string>
@@ -294,8 +293,8 @@
     <string name="orally">Orally</string>
     <string name="save">Save</string>
     <string name="vital_signs">Vital Signs Record</string>
-    <string name="task">Task (required)</string>
-    <string name="deadline">Deadline (required)</string>
+    <string name="task">Task</string>
+    <string name="deadline_required">Deadline (required)</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
     <string name="enterprises">Enterprises</string>
     <string name="select_member">Select Team Member</string>
