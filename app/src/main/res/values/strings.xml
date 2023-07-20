@@ -1021,13 +1021,4 @@
     <string name="beta_functionality">Beta Functionality</string>
     <string name="main_controls">Main Controls</string>
 
-    <string-array name="info_type">
-        <item>Languages</item>
-        <item>Education</item>
-        <item>Employment History</item>
-        <item>Badges</item>
-        <item>Certificates</item>
-        <item>Internships</item>
-        <item>Awards</item>
-    </string-array>
 </resources>
