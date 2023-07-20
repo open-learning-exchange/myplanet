@@ -39,6 +39,8 @@
     <string name="download_all">Descargar todo</string>
     <string name="hello_blank_fragment">Hola fragmento en blanco</string>
     <string name="add_to_mycourse">Agregar a misCursos</string>
+    <string name="join_selected">Join Selected</string>
+    <string name="join">Join</string>
     <string name="add_to_mylib">Agregar a miBiblioteca</string>
     <string name="step">paso</string>
     <string name="submission">misEnvíos</string>
@@ -68,7 +70,7 @@
     <string name="version">Versión</string>
     <string name="middle_name">Segundo nombre</string>
     <string name="first_name">Nombre de Pila</string>
-    <string name="search_dots">Buscar...</string>
+    <string name="search_dots">Buscar…</string>
     <string name="btn_remove_lib">Eliminar</string>
     <string name="download">Descargar</string>
     <string name="published_by">Publicado por:</string>
@@ -89,7 +91,6 @@
     <string name="view_profile">Ver perfil</string>
     <string name="alerts">Alertas</string>
     <string name="profile">Perfil</string>
-    <string name="device_name">Nombre del dispositivo</string>
     <string name="user">Usuario</string>
     <string name="remove_selected">Eliminar seleccionados</string>
     <string name="dismiss">Finalizar</string>
@@ -129,54 +130,22 @@
     <string name="messeges">misMensajes</string>
     <string name="contacts">Contactos</string>
     <string name="news">Nuestras noticias</string>
-    <string name="dictionaries">Diccionarios</string>
+    <string name="references">Referencias</string>
     <string name="maps">Mapas</string>
     <string name="help_wanted">Se busca ayuda</string>
     <string name="btn_guest_login">Iniciar sesión como invitado</string>
     <string name="enter_username">Ingresa tu nombre de usuario</string>
+    <string name="login">Iniciar sesión</string>
+    <string name="child_mode">Modo fácil</string>
     <string name="joined_members">Miembros inscritos</string>
     <string name="requested_member">Miembro solicitado</string>
     <string name="courses">Cursos</string>
-
-    <string-array name="level">
-        <item></item>
-        <item>Principiante</item>
-        <item>Intermedio</item>
-        <item>Avanzado</item>
-        <item>Experto</item>
-    </string-array>
-    <string-array name="language">
-        <item>English</item>
-        <item>नेपाली</item>
-        <item>Français</item>
-        <item>Español</item>
-        <item>عربى</item>
-        <item>Somali</item>
-    </string-array>
-    <string-array name="language_keys">
-        <item>en</item>
-        <item>ne</item>
-        <item>fr</item>
-        <item>es</item>
-        <item>ar</item>
-        <item>so</item>
-    </string-array>
-    <string-array name="info_type">
-        <item>Idiomas</item>
-        <item>Educación</item>
-        <item>Historial laboral</item>
-        <item>Insignias</item>
-        <item>Certificados</item>
-        <item>Pasantías</item>
-        <item>Premios</item>
-    </string-array>
-    <string name="login">Iniciar sesión</string>
     <string name="enter_message_here">Ingresa el mensaje aquí</string>
     <string name="what_would">¿Qué te gustaría compartir?</string>
+    <string name="our_news">Nuestras noticias</string>
     <string name="delete_record">¿Estás seguro de que quieres eliminar lo siguiente?</string>
     <string name="edit_post">Editar publicación</string>
-    <string name="child_mode">Modo fácil</string>
-    <string name="our_news">Nuestras noticias</string>
+    <string name="search_user">Buscar usuario</string>
     <string name="get_started">EMPEZAR</string>
     <string name="enter_password">Ingresar contraseña</string>
     <string name="managerial_login">Inicio de sesión del administrador</string>
@@ -194,8 +163,7 @@
     <string name="title_not_compulsary">Título</string>
     <string name="discussion">Discusión</string>
     <string name="add_message">Agregar mensaje</string>
-    <string name="enter_message">Ingresa tu mensaje aquí...</string>
-    <string name="search_user">Buscar usuario</string>
+    <string name="enter_message">Ingresa tu mensaje aquí…</string>
     <string name="added_by">Agregado por</string>
     <string name="record_audio">Grabar audio</string>
     <string name="record_video">Grabar video</string>
@@ -209,7 +177,95 @@
     <string name="showing_reply_of">mostrando la respuesta de:</string>
     <string name="open_date">Fecha de apertura</string>
     <string name="my_survey">miEncuesta</string>
-    <string name="references">Referencias</string>
+    <string-array name="level">
+        <item></item>
+        <item>Principiante</item>
+        <item>Intermedio</item>
+        <item>Avanzado</item>
+        <item>Experto</item>
+    </string-array>
+
+    <string-array name="language">
+        <item>English</item>
+        <item>नेपाली</item>
+        <item>Français</item>
+        <item>Español</item>
+        <item>عربى</item>
+        <item>Somali</item>
+    </string-array>
+
+    <string-array name="language_keys">
+        <item>en</item>
+        <item>ne</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>ar</item>
+        <item>so</item>
+    </string-array>
+
+    <string-array name="info_type">
+        <item>Idiomas</item>
+        <item>Educación</item>
+        <item>Historial laboral</item>
+        <item>Insignias</item>
+        <item>Certificados</item>
+        <item>Pasantías</item>
+        <item>Premios</item>
+    </string-array>
+    <string-array name="open_With">
+        <item>HTML</item>
+        <item>PDF.js</item>
+        <item>BeLL-Reader</item>
+        <item>Mp3</item>
+        <item>Flow Video Player</item>
+        <item>BeLL Video Book Player</item>
+        <item>Native Video</item>
+    </string-array>
+    <string-array name="media">
+        <item>Text</item>
+        <item>Graphic/Pictures</item>
+        <item>Audio/Music/Book</item>
+        <item>Video</item>
+    </string-array>
+
+    <string-array name="resource_type">
+        <item>Textbook</item>
+        <item>Lesson Plan</item>
+        <item>Activities</item>
+        <item>Exercises</item>
+        <item>Discussion Questions</item>
+    </string-array>
+
+    <string-array name="array_levels">
+        <item>Early Education</item>
+        <item>Lower Primary</item>
+        <item>Upper Primary</item>
+        <item>Lower Secondary</item>
+        <item>Upper Secondary</item>
+        <item>Undergraduate</item>
+        <item>Graduate</item>
+        <item>Professional</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>Agriculture</item>
+        <item>Arts</item>
+        <item>Business and Finance</item>
+        <item>Environment</item>
+        <item>Food and Nutrition</item>
+        <item>Geography</item>
+        <item>Health and Medicine</item>
+        <item>History</item>
+        <item>Human Development</item>
+        <item>Languages</item>
+        <item>Law</item>
+        <item>Learning</item>
+    </string-array>
+    <string-array name="array_resource_for">
+        <item>Default</item>
+        <item>Leader</item>
+        <item>Learner</item>
+    </string-array>
+    <string name="dictionaries">Diccionarios</string>
     <string name="bible">Biblias</string>
     <string name="feature_not">Función no disponible</string>
     <string name="myhealth">miSalud</string>
@@ -304,6 +360,7 @@
     <string name="diagnosis_note">Nota de Diagnóstico</string>
     <string name="menu_community">Comunidad</string>
     <string name="library">Biblioteca</string>
+    <string name="device_name">Nombre del dispositivo</string>
     <string name="enter_title">Ingresar título</string>
     <string name="add_link">Agregar enlace</string>
     <string name="chat">Chat</string>
@@ -318,6 +375,90 @@
     <string name="action_disclaimer">Descargo de responsabilidad</string>
     <string name="action_about">Acerca de</string>
     <string name="engilsh_dictionary">Diccionario de inglés</string>
+
+    <string-array name="team_type">
+        <item>Local Team</item>
+        <item>Connect With Nation</item>
+    </string-array>
+
+    <string-array name="contact_type">
+        <item>Phone</item>
+        <item>Email</item>
+    </string-array>
+
+    <string-array name="add_link_options">
+        <item>Teams</item>
+        <item>Enterprises</item>
+    </string-array>
+
+    <string-array name="transaction_type">
+        <item>Credit</item>
+        <item>Debit</item>
+    </string-array>
+
+    <string-array name="sort_by_date">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Title</item>
+    </string-array>
+
+    <string-array name="sort_member">
+        <item>Order By Date - Asc</item>
+        <item>Order By Date - Desc</item>
+        <item>Order By Name - Asc</item>
+        <item>Order By Name - Desc</item>
+    </string-array>
+
+    <string-array name="grade_level">
+        <item>All</item>
+        <item>Pre-Kindergarten</item>
+        <item>Kindergarten</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>College</item>
+        <item>Post-Graduate</item>
+    </string-array>
+
+    <string-array name="subject_level">
+        <item>All</item>
+        <item>Beginner</item>
+        <item>Intermediate</item>
+        <item>Advanced</item>
+        <item>Expert</item>
+    </string-array>
+
+    <string-array name="diagnosis_list">
+        <item>Cancer</item>
+        <item>Cardiovascular disorders</item>
+        <item>Cirrhosis of the liver</item>
+        <item>COVID-19</item>
+        <item>Diabetes</item>
+        <item>Diarrhoea diseases</item>
+        <item>Ebola</item>
+        <item>Epilepsy</item>
+        <item>FGM</item>
+        <item>Influenza</item>
+        <item>Ischaemic heat disease</item>
+        <item>Malaria</item>
+        <item>Malnutrition</item>
+        <item>Meningitis</item>
+        <item>Neonatal sepsis and infections</item>
+        <item>HIV/AIDS</item>
+        <item>Pneumonia</item>
+        <item>Stroke</item>
+        <item>Tuberculosis</item>
+        <item>Trauma</item>
+    </string-array>
     <string name="title_activity_news_detail">Actividad de detalle de noticias</string>
     <string name="large_text">
         "Large Text\n\n"
@@ -333,10 +474,10 @@
     <string name="add_res">Agregar Recurso</string>
     <string name="password">Contraseña</string>
     <string name="retype_password">Volver a ingresar la contraseña</string>
+    <string name="become_a_member">Convertirse en miembro</string>
     <string name="change_member">Cambiar Miembro</string>
     <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
     <string name="feedback">Comentarios</string>
-    <string name="become_a_member">Convertirse en miembro</string>
     <string name="add_member">Agregar miembro</string>
     <string name="confirm_exit">¿Estás seguro/a de que quieres abandonar este equipo?</string>
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>

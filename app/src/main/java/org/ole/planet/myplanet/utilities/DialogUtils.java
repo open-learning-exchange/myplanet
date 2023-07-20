@@ -27,7 +27,7 @@ public class DialogUtils {
         prgDialog.setMax(100);
         prgDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         prgDialog.setCancelable(false);
-        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.dismiss), (dialogInterface, i) -> prgDialog.dismiss());
+        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.finish), (dialogInterface, i) -> prgDialog.dismiss());
         prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.stop_download), (dialogInterface, i) -> context.stopService(new Intent(context, MyDownloadService.class)));
         return prgDialog;
     }
@@ -67,7 +67,7 @@ public class DialogUtils {
     }
 
     public static void showAlert(Context context, String title, String message) {
-        new AlertDialog.Builder(context).setTitle(title).setMessage(message).setPositiveButton(R.string.dismiss, null).show();
+        new AlertDialog.Builder(context).setTitle(title).setMessage(message).setPositiveButton(R.string.finish, null).show();
     }
 
     public static AlertDialog getAlertDialog(Context context, String message, String pos, DialogInterface.OnClickListener listener) {

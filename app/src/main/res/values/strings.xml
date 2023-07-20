@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
     <string name="app_project_name">myPlanet</string>
@@ -69,7 +70,7 @@
     <string name="version">Version</string>
     <string name="middle_name">Middle Name</string>
     <string name="first_name">First Name</string>
-    <string name="search_dots">Search...</string>
+    <string name="search_dots">Search…</string>
     <string name="btn_remove_lib">Remove</string>
     <string name="download">Download</string>
     <string name="published_by">Published By:</string>
@@ -78,7 +79,7 @@
     <string name="subject">Subject/s:</string>
     <string name="license">License:</string>
     <string name="type">Type:</string>
-    <string name="resource">Resource:</string>
+    <string name="resource_colon">Resource:</string>
     <string name="your_rating">Your Rating</string>
     <string name="your_comment">Leave your comment</string>
     <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
@@ -92,7 +93,6 @@
     <string name="profile">Profile</string>
     <string name="user">User</string>
     <string name="remove_selected">Remove Selected</string>
-    <string name="dismiss">Finish</string>
     <string name="stop_download">Stop Download</string>
     <string name="downloading_file">Downloading file...</string>
     <string name="cancel">Cancel</string>
@@ -294,7 +294,7 @@
     <string name="save">Save</string>
     <string name="vital_signs">Vital Signs Record</string>
     <string name="task">Task (required)</string>
-    <string name="deadline">Deadline (required)</string>
+    <string name="deadline_required">Deadline (required)</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
     <string name="enterprises">Enterprises</string>
     <string name="select_member">Select Team Member</string>
@@ -372,7 +372,6 @@
     <string name="reset_app">Reset App</string>
     <string name="freeup_space">Free-up disk space</string>
     <string name="action_disclaimer">Disclaimer</string>
-
     <string name="action_about">About</string>
     <string name="engilsh_dictionary">English Dictionary</string>
 
@@ -390,7 +389,6 @@
         <item>Teams</item>
         <item>Enterprises</item>
     </string-array>
-
 
     <string-array name="transaction_type">
         <item>Credit</item>
@@ -679,7 +677,7 @@
     <string name="checkbox">CheckBox</string>
     <string name="offer">Offer</string>
     <string name="request_for_advice">Request for advice</string>
-    <string name="no_images_to_download">No images to download.</string>
+<string name="no_images_to_download">No images to download.</string>
     <string name="this_file_type_is_currently_unsupported">This file type is currently unsupported</string>
     <string name="unable_to_open_resource">Unable to open resource</string>
     <string name="select_resource_to_open">"Select resource to open : "</string>
@@ -786,7 +784,6 @@
     <string name="subject_is_required">Subject is required</string>
     <string name="enter_resource_detail">Enter resource detail</string>
     <string name="resource_saved_to_my_personal">Resource Saved to my personal</string>
-    <string name="invalid_resource_url">Invalid resource url</string>
     <string name="my_library">" my library"</string>
     <string name="link_not_available">Link not available</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Success! You have added these resources to your myLibrary:\n\n</string>
@@ -903,7 +900,7 @@
     <string name="team_created">Team Created</string>
     <string name="please_select_gender">Please select gender</string>
     <string name="please_enter_a_username">Please enter a username</string>
-    <string name="invalid_username">Invalid usernamfdatee</string>
+    <string name="invalid_username">Invalid username</string>
     <string name="please_enter_a_password">Please enter a password</string>
     <string name="password_doesn_t_match">Password doesn\'t match</string>
     <string name="invalid_email">Invalid email.</string>
@@ -979,7 +976,7 @@
         <li>By visiting this page on our website: <a href="https://ole.org/contact">https://ole.org/contact</a></li>
     </ul>
     ]]>
-</string>
+    </string>
     <string name="about">
     <![CDATA[
     <h3>MyPlanet</h3>
@@ -1001,7 +998,7 @@
     <p>myPlanet has been proven highly effective in improving learning opportunities for over fifty thousand learners in more than 100 locations,
         in schools throughout Nepal, Ghana, Kenya, and Rwanda, with Syrian refugees in Jordan, Somali refugees in Kenya, and village health workers in Uganda.</p>
     ]]>
-</string>
+    </string>
     <string name="is_on_please_turn_of_to_save_battery">" is on please turn of to save battery"</string>
     <string name="go_to_settings">Go to settings</string>
     <string name="new_version_of_my_planet_available">New version of my planet available</string>
@@ -1024,5 +1021,13 @@
     <string name="beta_functionality">Beta Functionality</string>
     <string name="main_controls">Main Controls</string>
 
+    <string-array name="info_type">
+        <item>Languages</item>
+        <item>Education</item>
+        <item>Employment History</item>
+        <item>Badges</item>
+        <item>Certificates</item>
+        <item>Internships</item>
+        <item>Awards</item>
+    </string-array>
 </resources>
-
