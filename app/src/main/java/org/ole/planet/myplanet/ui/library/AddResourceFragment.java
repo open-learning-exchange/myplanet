@@ -63,10 +63,10 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userId = realmUserModel.getId();
         String userName = realmUserModel.getName();
-        new AlertDialog.Builder(context).setTitle("Enter resource detail").setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
+        new AlertDialog.Builder(context).setTitle(R.string.enter_resource_detail).setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
             String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {
-                Utilities.toast(context, "Title is required.");
+                Utilities.toast(context, String.valueOf(R.string.title_is_required));
                 return;
             }
             String desc = etDesc.getText().toString().trim();
@@ -79,7 +79,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 myPersonal.setPath(path);
                 myPersonal.setDate(new Date().getTime());
                 myPersonal.setDescription(desc);
-            }, () -> Utilities.toast(MainApplication.context, "Resource Saved to my personal"));
+            }, () -> Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal)));
         }).setNegativeButton("Dismiss", null).show();
     }
 
@@ -221,7 +221,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         if (!TextUtils.isEmpty(path)) {
             addResource(path);
         } else {
-            Utilities.toast(getActivity(), "Invalid resource url");
+            Utilities.toast(getActivity(), getString(R.string.invalid_resource_url));
         }
     }
 

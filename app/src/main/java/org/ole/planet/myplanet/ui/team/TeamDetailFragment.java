@@ -57,12 +57,12 @@ public class TeamDetailFragment extends Fragment {
         if (!isMyTeam) {
             llButtons.setVisibility(View.GONE);
         } else {
-            leave.setOnClickListener(vi -> new AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit).setPositiveButton("Yes", (dialogInterface, i) -> {
+            leave.setOnClickListener(vi -> new AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit).setPositiveButton(R.string.yes, (dialogInterface, i) -> {
                 team.leave(user, mRealm);
-                Utilities.toast(getActivity(), "Left team");
+                Utilities.toast(getActivity(), getString(R.string.left_team));
                 viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
                 llButtons.setVisibility(View.GONE);
-            }).setNegativeButton("No", null).show());
+            }).setNegativeButton(R.string.no, null).show());
 
             v.findViewById(R.id.btn_add_doc).setOnClickListener(view -> {
                 MainApplication.showDownload = true;

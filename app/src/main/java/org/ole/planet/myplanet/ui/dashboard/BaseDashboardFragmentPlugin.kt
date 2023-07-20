@@ -66,10 +66,10 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     if (!model.id.startsWith("guest")) {
                         homeItemClickListener.openCallFragment(MyHealthFragment())
                     } else {
-                        Utilities.toast(activity, "Feature not available for guest user")
+                        Utilities.toast(activity, getString(R.string.feature_not_available_for_guest_user))
                     }
                 } else {
-                    Utilities.toast(activity, "Feature Not Available")
+                    Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
             }
         }

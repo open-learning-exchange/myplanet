@@ -75,11 +75,11 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             var type = spn_link?.selectedItem.toString()
             var title = et_name?.text.toString()
             if (title.isNullOrEmpty()) {
-                Utilities.toast(requireActivity(), "Title is required")
+                Utilities.toast(requireActivity(), getString(R.string.title_is_required))
                 return@setOnClickListener
             }
             if (selectedTeam == null) {
-                Utilities.toast(requireActivity(), "Please select link item from list")
+                Utilities.toast(requireActivity(), getString(R.string.please_select_link_item_from_list))
                 return@setOnClickListener
             }
 
