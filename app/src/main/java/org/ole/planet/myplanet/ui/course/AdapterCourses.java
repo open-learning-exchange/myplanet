@@ -133,8 +133,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
             markwon.setMarkdown(((ViewHoldercourse) holder).desc, courseList.get(position).getDescription());
 
-            ((ViewHoldercourse) holder).grad_level.setText("Grade Level  : " + courseList.get(position).getGradeLevel());
-            ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " + courseList.get(position).getSubjectLevel());
+            ((ViewHoldercourse) holder).grad_level.setText(context.getString(R.string.grade_level_colon) + courseList.get(position).getGradeLevel());
+            ((ViewHoldercourse) holder).subject_level.setText(context.getString(R.string.subject_level_colon) + courseList.get(position).getSubjectLevel());
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
             displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);

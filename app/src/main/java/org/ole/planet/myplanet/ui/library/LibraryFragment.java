@@ -154,7 +154,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     private AlertDialog createAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
-        String msg = "Success! You have added these resources to your myLibrary:\n\n";
+        String msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary);
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
                 msg += " - " + selectedItems.get(i).getTitle() + "\n";
@@ -163,12 +163,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             for (int i = 0; i < 5; i++) {
                 msg += " - " + selectedItems.get(i).getTitle() + "\n";
             }
-            msg += "And " + (selectedItems.size() - 5) + " more resource(s)...\n";
+            msg += getString(R.string.and) + (selectedItems.size() - 5) + getString(R.string.more_resource_s);
         }
-        msg += "\n\nReturn to the Home tab to access myLibrary.\n" + "\nNote: You may still need to download the newly added resources.";
+        msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources);
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton("Ok", (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton(getString(R.string.ok), (dialog, id) -> dialog.cancel());
         return builder.create();
     }
 

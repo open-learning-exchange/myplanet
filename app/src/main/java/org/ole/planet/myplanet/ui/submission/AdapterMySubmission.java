@@ -46,7 +46,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
             this.listener = (OnHomeItemClickListener) context;
         }
         if (list != null && list.isEmpty()) {
-            Toast.makeText(getApplicationContext(), "No items", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), context.getString(R.string.no_items), Toast.LENGTH_SHORT).show();
         }
     }
 

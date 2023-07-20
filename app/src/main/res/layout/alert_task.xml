@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/padding_normal"
         android:paddingRight="@dimen/padding_normal"
-        android:text="@string/deadline"
+        android:text="@string/deadline_required"
         android:textColor="@color/colorPrimaryDark" />
 
 

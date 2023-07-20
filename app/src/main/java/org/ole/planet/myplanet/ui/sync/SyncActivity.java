@@ -122,7 +122,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     public boolean isServerReachable(String processedUrl) throws Exception {
-        progressDialog.setMessage("Connecting to server....");
+        progressDialog.setMessage(getString(R.string.connecting_to_server));
         progressDialog.show();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         Utilities.log(processedUrl + "/_all_dbs");
@@ -135,19 +135,19 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     List<String> myList = Arrays.asList(ss.split(","));
                     Utilities.log("List size " + ss);
                     if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
+                        alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server));
                     } else {
                         startSync();
                     }
                 } catch (Exception e) {
-                    alertDialogOkay("Device couldn't reach server. Check and try again");
+                    alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again));
                     progressDialog.dismiss();
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                alertDialogOkay("Device couldn't reach server. Check and try again");
+                alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again));
                 if (mRealm != null) mRealm.close();
                 progressDialog.dismiss();
             }
@@ -212,7 +212,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode) {
         this.settings = settings;
         if (mRealm.isEmpty()) {
-            alertDialogOkay("Server not configured properly. Connect this device with Planet server");
+            alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server));
             return false;
         } else {
             return checkName(username, password, isManagerMode);
@@ -265,7 +265,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     @Override
     public void onSyncStarted() {
-        progressDialog.setMessage("Syncing data, Please wait...");
+        progressDialog.setMessage(getString(R.string.syncing_data_please_wait));
         progressDialog.show();
     }
 
@@ -277,7 +277,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncIcon.invalidateDrawable(syncIconDrawable);
 
         runOnUiThread(() -> {
-            DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
+            DialogUtils.showAlert(SyncActivity.this, getString(R.string.sync_failed), s);
             DialogUtils.showWifiSettingDialog(SyncActivity.this);
         });
     }
@@ -291,7 +291,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             syncIconDrawable.selectDrawable(0);
             syncIcon.invalidateDrawable(syncIconDrawable);
         });
-        DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
+        DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
 
         if (settings.getBoolean("isChild", false)) {
             runOnUiThread(() -> setUpChildMode());
