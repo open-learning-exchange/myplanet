@@ -7,8 +7,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -52,6 +55,7 @@ class AdapterTeamList(
             holder.type.visibility = if (type == null) View.VISIBLE else View.GONE
             holder.editTeam.visibility = if (RealmMyTeam.getTeamLeader(list[position]._id, mRealm) == user.id) View.VISIBLE else View.GONE
             holder.name.text = list[position].name
+
             holder.noOfVisits.text = RealmTeamLog.getVisitByTeam(mRealm, list[position]._id).toString() + ""
             val isMyTeam = list[position].isMyTeam(user.id, mRealm)
             showActionButton(isMyTeam, holder, position)
@@ -130,6 +134,7 @@ class AdapterTeamList(
         var action: Button
         var feedback: Button
         var editTeam: Button
+        var ltButtons: ConstraintLayout
 
         init {
             name = itemView.findViewById(R.id.name)
@@ -139,6 +144,7 @@ class AdapterTeamList(
             editTeam = itemView.findViewById(R.id.edit_team)
             noOfVisits = itemView.findViewById(R.id.no_of_visits)
             feedback = itemView.findViewById(R.id.btn_feedback)
+            ltButtons = itemView.findViewById(R.id.ltButtons)
         }
     }
 
