@@ -340,7 +340,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             }
 //        sortList(spnSort, lv);
         dialog = AlertDialog.Builder(requireActivity()).setTitle(getString(R.string.select_member))
-            .setView(alertHealth).setCancelable(false).setNegativeButton("Dismiss", null).create()
+            .setView(alertHealth).setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
         dialog?.show()
     }
 
@@ -386,6 +386,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 override fun onClick(p0: DialogInterface?, p1: Int) {
                     var task = adapter.getItem(p1);
                 }
-            }).setNegativeButton("Dismiss", null).show();
+            }).setNegativeButton(R.string.dismiss, null).show();
     }
 }

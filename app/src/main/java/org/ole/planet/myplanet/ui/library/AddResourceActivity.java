@@ -156,7 +156,7 @@ public class AddResourceActivity extends AppCompatActivity {
                 items.add(s);
             }
             ((TextView) view).setText(selection);
-        }).setNegativeButton("Dismiss", null).show();
+        }).setNegativeButton(R.string.dismiss, null).show();
     }
 
     @Override

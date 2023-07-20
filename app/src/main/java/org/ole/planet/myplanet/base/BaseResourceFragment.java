@@ -145,7 +145,7 @@ public abstract class BaseResourceFragment extends Fragment {
                 return convertView;
             }
         };
-        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton("Dismiss", null).show();
+        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton(R.string.dismiss, null).show();
     }
 
     public void startDownload(ArrayList urls) {

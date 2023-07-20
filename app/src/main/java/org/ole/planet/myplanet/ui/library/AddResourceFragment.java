@@ -80,7 +80,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 myPersonal.setDate(new Date().getTime());
                 myPersonal.setDescription(desc);
             }, () -> Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal)));
-        }).setNegativeButton("Dismiss", null).show();
+        }).setNegativeButton(R.string.dismiss, null).show();
     }
 
     @Override
@@ -130,7 +130,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 audioRecorderService.stopRecording();
             }
         });
-        dialog.setButton(AlertDialog.BUTTON_POSITIVE, "Dismiss", (dialogInterface, i) -> {
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss), (dialogInterface, i) -> {
             if (audioRecorderService != null && audioRecorderService.isRecording()) {
                 audioRecorderService.forceStop();
             }

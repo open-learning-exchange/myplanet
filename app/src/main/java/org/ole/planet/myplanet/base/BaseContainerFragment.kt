@@ -212,7 +212,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val library = arrayAdapter.getItem(i)
             library?.let { openResource(it) }
         }
-        builderSingle.setNegativeButton("Dismiss", null).show()
+        builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
 
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {

@@ -931,5 +931,7 @@
     <string name="auto_sync_device">Auto Sync Device</string>
     <string name="beta_functionality">Beta Functionality</string>
     <string name="main_controls">Main Controls</string>
+    <string name="select_user_to_login">Select User To Login</string>
+    <string name="dismiss">Dismiss</string>
 
 </resources>

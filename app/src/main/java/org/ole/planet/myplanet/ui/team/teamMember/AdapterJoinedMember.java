@@ -88,7 +88,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
                     } else {
                         makeLeader(list.get(position), position);
                     }
-                }).setNegativeButton("Dismiss", null).show();
+                }).setNegativeButton(R.string.dismiss, null).show();
             });
         } else {
             holder.icMore.setVisibility(View.GONE);
