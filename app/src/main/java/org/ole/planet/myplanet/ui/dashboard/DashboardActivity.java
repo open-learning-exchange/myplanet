@@ -388,7 +388,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.team));
         menuImageList.add(getResources().getDrawable(R.drawable.business));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
-        return new IDrawerItem[]{changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0), changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1), changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2), changeUX(R.string.menu_library, menuImageList.get(3)), changeUX(R.string.menu_courses, menuImageList.get(4)), changeUX(R.string.team, menuImageList.get(5)), changeUX(R.string.menu_community, menuImageList.get(7)), changeUX(R.string.enterprises, menuImageList.get(6)).withSelectable(false).withDisabledIconColor(getResources().getColor(R.color.disable_color)).withDisabledTextColor(getResources().getColor(R.color.disable_color)), changeUX(R.string.menu_surveys, menuImageList.get(7))};
+        return new IDrawerItem[]{changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0), changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1), changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2), changeUX(R.string.menu_library, menuImageList.get(3)), changeUX(R.string.menu_courses, menuImageList.get(4)), changeUX(R.string.team, menuImageList.get(5)), changeUX(R.string.menu_community, menuImageList.get(7)), changeUX(R.string.enterprises, menuImageList.get(6)), changeUX(R.string.menu_surveys, menuImageList.get(7))};
     }
 
     @NonNull

@@ -48,7 +48,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
                     homeItemClickListener.openCallFragment(MySubmissionFragment())
-                } else if (title == getString(R.string.news)) {
+                } else if (title == getString(R.string.our_news)) {
                     homeItemClickListener.openCallFragment(NewsFragment())
                 } else if (title == getString(R.string.references)) {
                     homeItemClickListener.openCallFragment(ReferenceFragment())
