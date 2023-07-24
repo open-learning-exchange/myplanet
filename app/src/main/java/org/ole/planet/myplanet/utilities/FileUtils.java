@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utilities;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -17,6 +19,7 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.BuildConfig;
+import org.ole.planet.myplanet.R;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -361,6 +364,6 @@ public class FileUtils {
     public static String getAvailableOverTotalMemoryFormattedString() {
         long available = getTotalAvailableMemory();
         long total = getTotalMemoryCapacity();
-        return "Available Space: " + formatSize(available) + "/" + formatSize(total);
+        return context.getString(R.string.available_space_colon) + formatSize(available) + "/" + formatSize(total);
     }
 }
