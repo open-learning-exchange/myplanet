@@ -1028,5 +1028,7 @@
     <string name="available_space_colon">Available Space: </string>
     <string name="community_leaders">Community Leaders</string>
     <string name="services">Services</string>
+    <string name="survey_taken">Survey Taken </string>
+    <string name="times"> times</string>
 
 </resources>

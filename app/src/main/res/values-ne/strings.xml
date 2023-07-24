@@ -939,5 +939,7 @@
     <string name="available_space_colon">उपलब्ध ठाउँ: </string>
     <string name="community_leaders">सामुदायिक नेताहरू</string>
     <string name="services">सेवाहरू</string>
+    <string name="survey_taken">सर्वेक्षण लिइएको </string>
+    <string name="times"> पल्टीहरू</string>
 
 </resources>
