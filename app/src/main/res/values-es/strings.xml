@@ -128,7 +128,7 @@
     <string name="achievements">misLogros</string>
     <string name="messeges">misMensajes</string>
     <string name="contacts">Contactos</string>
-    <string name="news">Nuestras noticias</string>
+    <string name="news">Noticias</string>
     <string name="references">Referencias</string>
     <string name="maps">Mapas</string>
     <string name="help_wanted">Se busca ayuda</string>
@@ -934,5 +934,10 @@
     <string name="main_controls">Controles principales</string>
     <string name="select_user_to_login">Seleccionar usuario para iniciar sesión</string>
     <string name="dismiss">Descartar</string>
+    <string name="gps_is_settings">GPS está en configuraciones</string>
+    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS no está habilitado. ¿Deseas ir al menú de configuraciones?</string>
+    <string name="available_space_colon">Espacio disponible: </string>
+    <string name="community_leaders">Líderes comunitarios</string>
+    <string name="services">Servicios</string>
 
 </resources>

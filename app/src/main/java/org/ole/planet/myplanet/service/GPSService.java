@@ -18,6 +18,7 @@ import android.provider.Settings;
 import androidx.core.app.ActivityCompat;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 
 public class GPSService extends Service implements LocationListener {
@@ -107,13 +108,13 @@ public class GPSService extends Service implements LocationListener {
 
     public void showSettingsAlert() {
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(mContext);
-        alertDialog.setTitle("GPS is settings");
-        alertDialog.setMessage("GPS is not enabled. Do you want to go to settings menu?");
-        alertDialog.setPositiveButton("Settings", (dialog, which) -> {
+        alertDialog.setTitle(R.string.gps_is_settings);
+        alertDialog.setMessage(R.string.gps_is_not_enabled_do_you_want_to_go_to_settings_menu);
+        alertDialog.setPositiveButton(R.string.action_settings, (dialog, which) -> {
             Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             mContext.startActivity(intent);
         });
-        alertDialog.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        alertDialog.setNegativeButton(R.string.button_cancel, (dialog, which) -> dialog.cancel());
         alertDialog.show();
     }
 

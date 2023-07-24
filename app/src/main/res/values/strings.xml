@@ -128,7 +128,7 @@
     <string name="achievements">myAchievements</string>
     <string name="messeges">myMessages</string>
     <string name="contacts">Contacts</string>
-    <string name="news">Our News</string>
+    <string name="news">News</string>
     <string name="references">References</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">Help Wanted</string>
@@ -1023,5 +1023,10 @@
     <string name="main_controls">Main Controls</string>
     <string name="select_user_to_login">Select User To Login</string>
     <string name="dismiss">Dismiss</string>
+    <string name="gps_is_settings">GPS is settings</string>
+    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS is not enabled. Do you want to go to settings menu?</string>
+    <string name="available_space_colon">Available Space: </string>
+    <string name="community_leaders">Community Leaders</string>
+    <string name="services">Services</string>
 
 </resources>
