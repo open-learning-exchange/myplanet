@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.content.Context;
 import android.text.TextUtils;
 
@@ -7,6 +9,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -170,7 +173,7 @@ public class RealmSubmission extends RealmObject {
     }
 
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
-        return "Survey Taken " + mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
+        return context.getString(R.string.survey_taken) + mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + context.getString(R.string.times);
     }
 
     public static int getNoOfSurveySubmissionByUser(String userId, Realm mRealm) {
