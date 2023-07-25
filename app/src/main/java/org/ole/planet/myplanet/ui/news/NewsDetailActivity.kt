@@ -36,7 +36,7 @@ class NewsDetailActivity : BaseActivity() {
         var id = intent.getStringExtra("newsId")
         news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (news == null) {
-            Utilities.toast(this, "New not available")
+            Utilities.toast(this, getString(R.string.new_not_available))
             finish()
             return
         }

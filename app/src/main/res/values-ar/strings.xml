@@ -2,146 +2,188 @@
 <resources>
     <string name="app_name">My Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">Settings</string>
-    <string name="hint_name">Username</string>
-    <string name="hint_password">Password</string>
-    <string name="btn_sign_in">Sign In</string>
-    <string name="btn_sync">Sync</string>
-    <string name="btn_sync_save">Save</string>
-    <string name="btn_sync_cancel">Cancel</string>
-    <string name="err_msg_name">Enter your username</string>
-    <string name="err_msg_password">Enter the password</string>
-    <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.2.1)</string>
-    <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
-    <string name="radio_protocol">Protocol:</string>
+    <string name="action_settings">الإعدادات</string>
+    <string name="hint_name">اسم المستخدم</string>
+    <string name="hint_password">كلمة المرور</string>
+    <string name="btn_sign_in">تسجيل الدخول</string>
+    <string name="btn_sync">مزامنة</string>
+    <string name="btn_sync_save">حفظ</string>
+    <string name="btn_sync_cancel">إلغاء</string>
+    <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
+    <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
+    <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
+    <string name="hint_serverURl">عنوان خادم الكوكب (مثال: 192.168.2.1)</string>
+    <string name="hint_serverPin">رقم التعريف الشخصي للخادم (احصل على هذا الرقم من المسؤول)</string>
+    <string name="radio_protocol">البروتوكول:</string>
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
-    <string name="title_activity_dashboard">Dashboard</string>
+    <string name="title_activity_dashboard">لوحة التحكم</string>
     <string name="menu_myplanet">My Planet</string>
-    <string name="menu_home">Home</string>
-    <string name="menu_library">Our Library</string>
-    <string name="menu_courses">Our Courses</string>
-    <string name="menu_meetups">Meetups</string>
-    <string name="menu_surveys">Surveys</string>
-    <string name="menu_logout">Logout</string>
-    <string name="menu_feedback">Feedback</string>
+    <string name="menu_home">الرئيسية</string>
+    <string name="menu_library">المكتبة</string>
+    <string name="menu_courses">الدورات</string>
+    <string name="menu_meetups">التجمعات</string>
+    <string name="menu_surveys">الاستبيانات</string>
+    <string name="menu_logout">تسجيل الخروج</string>
+    <string name="menu_feedback">ملاحظات</string>
     <string name="system_name">myPlanet</string>
-    <string name="txt_myLibrary">myLibrary</string>
-    <string name="txt_myCourses">myCourses</string>
-    <string name="txt_myMeetups">myMeetups</string>
-    <string name="txt_myTeams">myTeams</string>
-    <string name="button_submit">Submit</string>
-    <string name="button_cancel">Cancel</string>
-    <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
-    <string name="download_selected">Download Selected</string>
-    <string name="txt_cancel">Cancel</string>
-    <string name="download_all">Download All</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="add_to_mycourse">Add to my courses</string>
-    <string name="add_to_mylib">Add To myLibrary</string>
-    <string name="step">step</string>
-    <string name="submission">mySubmissions</string>
-    <string name="calendar">Calendar</string>
-    <string name="email">Email</string>
-    <string name="documents">Documents</string>
-    <string name="your_ans">Your Answer</string>
-    <string name="delete_my_course">Delete myCourse</string>
-    <string name="invite_member">Invite Member</string>
-    <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type :</string>
-    <string name="suggestion">Suggestion</string>
-    <string name="no">No</string>
-    <string name="yes">Yes</string>
-    <string name="question">Question</string>
-    <string name="bug">Bug</string>
-    <string name="your_feedback">Your Feedback *</string>
-    <string name="button_update">Update</string>
-    <string name="level">Level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
-    <string name="gender">Gender</string>
-    <string name="birth_date">Birth Date</string>
-    <string name="phone_number">Phone Number</string>
-    <string name="language">Language</string>
-    <string name="last_name">Last Name</string>
-    <string name="version">Version</string>
-    <string name="middle_name">Middle Name</string>
-    <string name="first_name">First Name</string>
-    <string name="search_dots">Search...</string>
-    <string name="btn_remove_lib">Remove</string>
-    <string name="download">Download</string>
-    <string name="published_by">Published By:</string>
-    <string name="author">Author:</string>
-    <string name="language_with_colon">Language :</string>
-    <string name="subject">Subject/s :</string>
-    <string name="license">License :</string>
-    <string name="type">Type :</string>
-    <string name="resource">Resource :</string>
-    <string name="your_rating">Your Rating</string>
-    <string name="your_comment">Leave your comment</string>
-    <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
-    <string name="sync_now">Sync Now</string>
-    <string name="logout">Logout</string>
-    <string name="settings">Settings</string>
-    <string name="change_password">Change Password</string>
-    <string name="edit_profile">Edit Profile</string>
-    <string name="view_profile">View Profile</string>
-    <string name="alerts">Alerts</string>
-    <string name="profile">Profile</string>
-    <string name="user">User</string>
-    <string name="remove_selected">Remove Selected</string>
-    <string name="dismiss">Finish</string>
-    <string name="stop_download">Stop Download</string>
-    <string name="downloading_file">Downloading file...</string>
-    <string name="cancel">Cancel</string>
-    <string name="add_to_mycourses">Add To My Courses</string>
-    <string name="added_to">added to</string>
-    <string name="removed_from">removed from</string>
-    <string name="my_courses">my courses</string>
-    <string name="filter_collections">Filter Collections</string>
-    <string name="select_many_collections">Select Many Collections</string>
-    <string name="collections">Collections</string>
-    <string name="ok">OK</string>
-    <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
-    <string name="archive_mycourse">Archive myCourse</string>
-    <string name="menu_achievement">Achievements</string>
-    <string name="edit_achievement">Edit Achievement</string>
-    <string name="add_resources">Add Resources</string>
-    <string name="description">Description</string>
-    <string name="title_asterisk">Title *</string>
-    <string name="name_asterisk">Name *</string>
-    <string name="relationship">Relationship</string>
-    <string name="date">Date</string>
-    <string name="birth_place">Birth Place</string>
-    <string name="clear_tags">Clear</string>
-    <string name="add_an_achievement">Add an Achievement</string>
-    <string name="add_a_reference">Add a Reference</string>
-    <string name="learner">Learner</string>
-    <string name="show_filter">Show Filter</string>
-    <string name="subjects">Subjects</string>
-    <string name="mediums">Mediums</string>
-    <string name="levels">Levels</string>
-    <string name="languages">Languages</string>
-    <string name="our_news">Our News</string>
-    <string name="txt_myLife">myLife</string>
-    <string name="achievements">myAchievements</string>
-    <string name="messeges">myMessages</string>
-    <string name="contacts">Contacts</string>
-    <string name="news">Our News</string>
-    <string name="dictionaries">Dictionaries</string>
-    <string name="maps">Maps</string>
-    <string name="help_wanted">Help Wanted</string>
-    <string name="btn_guest_login">Login As Guest</string>
-    <string name="login">Login</string>
-    <string name="child_mode">Easy Mode</string>
+    <string name="txt_myLibrary">مكتبتي</string>
+    <string name="txt_myCourses">دوراتي</string>
+    <string name="txt_myMeetups">تجمعاتي</string>
+    <string name="txt_myTeams">فرقي</string>
+    <string name="button_submit">إرسال</string>
+    <string name="button_cancel">إلغاء</string>
+    <string name="download_suggestion">الملفات التالية غير محمّلة. هل ترغب في تحميلها للاستخدام دون اتصال؟</string>
+    <string name="download_selected">تحميل المحدد</string>
+    <string name="txt_cancel">إلغاء</string>
+    <string name="download_all">تحميل الكل</string>
+    <string name="hello_blank_fragment">مرحبًا بك في قطعة فارغة</string>
+    <string name="add_to_mycourse">أضف إلى دوراتي</string>
+    <string name="join_selected">الانضمام إلى المحدد</string>
+    <string name="join">انضمام</string>
+    <string name="add_to_mylib">أضف إلى مكتبتي</string>
+    <string name="step">خطوة</string>
+    <string name="submission">إرسالي</string>
+    <string name="calendar">التقويم</string>
+    <string name="email">البريد الإلكتروني</string>
+    <string name="documents">الوثائق</string>
+    <string name="your_ans">إجابتك</string>
+    <string name="delete_my_course">حذف دورتي</string>
+    <string name="invite_member">دعوة عضو</string>
+    <string name="is_urgent">هل تحتاج ملاحظاتك إلى إجراء عاجل؟</string>
+    <string name="feedback_type">نوع التعليق:</string>
+    <string name="suggestion">اقتراح</string>
+    <string name="no">لا</string>
+    <string name="yes">نعم</string>
+    <string name="question">سؤال</string>
+    <string name="bug">خطأ</string>
+    <string name="your_feedback">تعليقك *</string>
+    <string name="button_update">تحديث</string>
+    <string name="level">مستوى</string>
+    <string name="male">ذكر</string>
+    <string name="female">أنثى</string>
+    <string name="gender">الجنس</string>
+    <string name="birth_date">تاريخ الميلاد</string>
+    <string name="phone_number">رقم الهاتف</string>
+    <string name="language">اللغة</string>
+    <string name="last_name">الاسم الأخير</string>
+    <string name="version">الإصدار</string>
+    <string name="middle_name">الاسم الأوسط</string>
+    <string name="first_name">الاسم الأول</string>
+    <string name="search_dots">بحث…</string>
+    <string name="btn_remove_lib">إزالة</string>
+    <string name="download">تحميل</string>
+    <string name="published_by">نشر بواسطة:</string>
+    <string name="author">المؤلف:</string>
+    <string name="language_with_colon">اللغة:</string>
+    <string name="subject">الموضوعات:</string>
+    <string name="license">الترخيص:</string>
+    <string name="type">النوع:</string>
+    <string name="resource_colon">المصدر:</string>
+    <string name="your_rating">تقييمك</string>
+    <string name="your_comment">اترك تعليقك</string>
+    <string name="show_top_nav">عرض شريط التنقل العلوي في لوحة التحكم</string>
+    <string name="sync_now">مزامنة الآن</string>
+    <string name="logout">تسجيل الخروج</string>
+    <string name="settings">الإعدادات</string>
+    <string name="change_password">تغيير كلمة المرور</string>
+    <string name="edit_profile">تحرير الملف الشخصي</string>
+    <string name="view_profile">عرض الملف الشخصي</string>
+    <string name="alerts">التنبيهات</string>
+    <string name="profile">الملف الشخصي</string>
+    <string name="user">مستخدم</string>
+    <string name="remove_selected">إزالة المحدد</string>
+    <string name="stop_download">إيقاف التنزيل</string>
+    <string name="downloading_file">جارٍ تنزيل الملف…</string>
+    <string name="cancel">إلغاء</string>
+    <string name="add_to_mycourses">إضافة إلى دوراتي</string>
+    <string name="added_to">تمت الإضافة إلى</string>
+    <string name="removed_from">تمت الإزالة من</string>
+    <string name="my_courses">دوراتي</string>
+    <string name="filter_collections">تصفية المجموعات</string>
+    <string name="select_many_collections">اختيار العديد من المجموعات</string>
+    <string name="collections">المجموعات</string>
+    <string name="ok">موافق</string>
+    <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
+    <string name="archive_mycourse">أرشفة دورتي</string>
+    <string name="menu_achievement">الإنجازات</string>
+    <string name="edit_achievement">تعديل الإنجاز</string>
+    <string name="add_resources">إضافة موارد</string>
+    <string name="description">الوصف</string>
+    <string name="title_asterisk">العنوان *</string>
+    <string name="name_asterisk">الاسم *</string>
+    <string name="relationship">العلاقة</string>
+    <string name="date">التاريخ</string>
+    <string name="birth_place">مكان الميلاد</string>
+    <string name="clear_tags">مسح</string>
+    <string name="add_an_achievement">إضافة إنجاز</string>
+    <string name="add_a_reference">إضافة مرجع</string>
+    <string name="learner">متعلم</string>
+    <string name="show_filter">عرض الفلتر</string>
+    <string name="subjects">الموضوعات</string>
+    <string name="mediums">وسائط</string>
+    <string name="levels">المستويات</string>
+    <string name="languages">اللغات</string>
+    <string name="txt_myLife">حياتي</string>
+    <string name="achievements">إنجازاتي</string>
+    <string name="messeges">رسائلي</string>
+    <string name="contacts">جهات الاتصال</string>
+    <string name="news">أخبار</string>
+    <string name="references">المراجع</string>
+    <string name="maps">الخرائط</string>
+    <string name="help_wanted">مساعدة مطلوبة</string>
+    <string name="btn_guest_login">تسجيل الدخول كضيف</string>
+    <string name="enter_username">أدخل اسم المستخدم</string>
+    <string name="login">تسجيل الدخول</string>
+    <string name="child_mode">وضع سهل</string>
+    <string name="joined_members">الأعضاء المنضمين</string>
+    <string name="requested_member">عضو مطلوب</string>
+    <string name="courses">الدورات</string>
+    <string name="enter_message_here">أدخل الرسالة هنا</string>
+    <string name="what_would">ما الذي ترغب في مشاركته؟</string>
+    <string name="our_news">أخبارنا</string>
+    <string name="delete_record">هل أنت متأكد من رغبتك في حذف ما يلي؟</string>
+    <string name="edit_post">تعديل المنشور</string>
+    <string name="search_user">البحث عن مستخدم</string>
+    <string name="get_started">البدء</string>
+    <string name="enter_password">أدخل كلمة المرور</string>
+    <string name="managerial_login">تسجيل الدخول كمدير</string>
+    <string name="save_username_and_password">حفظ اسم المستخدم وكلمة المرور</string>
+    <string name="year">السنة</string>
+    <string name="publisher">الناشر</string>
+    <string name="link_to_license">رابط الترخيص</string>
+    <string name="resource_for">مصدر لـ</string>
+    <string name="open_which_file">فتح أي ملف</string>
+    <string name="file_upload">رفع الملف</string>
+    <string name="choose_file">اختيار الملف</string>
+    <string name="file_downloadable">الملف قابل للتنزيل</string>
+    <string name="priority">الأولوية</string>
+    <string name="status">الحالة</string>
+    <string name="title_not_compulsary">العنوان (غير مطلوب)</string>
+    <string name="discussion">المناقشة</string>
+    <string name="add_message">إضافة رسالة</string>
+    <string name="enter_message">أدخل رسالتك هنا…</string>
+    <string name="added_by">أُضيف بواسطة</string>
+    <string name="record_audio">تسجيل الصوت</string>
+    <string name="record_video">تسجيل الفيديو</string>
+    <string name="select_gallery">اختيار من المعرض</string>
+    <string name="add_resource">إضافة مصدر:</string>
+    <string name="reply">الرد</string>
+    <string name="show_reply">إظهار الردود</string>
+    <string name="show_main_conversation">عرض المحادثة الرئيسية</string>
+    <string name="https_protocol">https://</string>
+    <string name="http_protocol">http://</string>
+    <string name="showing_reply_of">عرض الرد على:</string>
+    <string name="open_date">تاريخ الافتتاح</string>
+    <string name="my_survey">استطلاعي</string>
     <string-array name="level">
         <item></item>
-        <item>Beginner</item>
-        <item>Intermediate</item>
-        <item>Advanced</item>
-        <item>Expert</item>
+        <item>مبتدئ</item>
+        <item>متوسط</item>
+        <item>متقدم</item>
+        <item>خبير</item>
     </string-array>
+
     <string-array name="language">
         <item>English</item>
         <item>नेपाली</item>
@@ -159,301 +201,741 @@
         <item>ar</item>
         <item>so</item>
     </string-array>
-    <string name="enter_username">Enter Username</string>
-    <string name="joined_members">Joined Members</string>
-    <string name="requested_member">Requested Member</string>
-    <string name="courses">Courses</string>
-    <string name="enter_message_here">Enter message here</string>
-    <string name="what_would">What would you like to share?</string>
-    <string name="delete_record">Are you sure you want to delete the following ?</string>
-    <string name="edit_post">Edit Post</string>
-    <string name="get_started">GET STARTED</string>
-    <string name="enter_password">Enter Password</string>
-    <string name="managerial_login">Manager Login</string>
-    <string name="save_username_and_password">Save Username and Password</string>
-    <string name="year">Year</string>
-    <string name="publisher">Publisher</string>
-    <string name="link_to_license">Link to license</string>
-    <string name="resource_for">Resource For</string>
-    <string name="open_which_file">Open Which File</string>
-    <string name="file_upload">File Upload</string>
-    <string name="choose_file">Choose File</string>
-    <string name="file_downloadable">File downloadable</string>
-    <string name="priority">Priority</string>
-    <string name="device_name">Device Name</string>
+    <string-array name="info_type">
+        <item>اللغات</item>
+        <item>التعليم</item>
+        <item>سجل التوظيف</item>
+        <item>الشارات</item>
+        <item>الشهادات</item>
+        <item>التدريبات الصيفية</item>
+        <item>الجوائز</item>
+    </string-array>
+    <string-array name="open_With">
+        <item>HTML</item>
+        <item>PDF.js</item>
+        <item>قارئ BeLL</item>
+        <item>Mp3</item>
+        <item>مشغل فيديو Flow</item>
+        <item>مشغل كتاب فيديو BeLL</item>
+        <item>فيديو Native</item>
+    </string-array>
+    <string-array name="media">
+        <item>نص</item>
+        <item>جرافيك/صور</item>
+        <item>صوت/موسيقى/كتاب</item>
+        <item>فيديو</item>
+    </string-array>
 
-    <string name="status">Status</string>
-    <string name="title_not_compulsary">Title</string>
-    <string name="discussion">Discussion</string>
-    <string name="add_message">Add Message</string>
-    <string name="enter_message">Enter your message here..</string>
-    <string name="search_user">Search user</string>
-    <string name="added_by">Added By</string>
-    <string name="record_audio">Record Audio</string>
-    <string name="record_video">Record Video</string>
-    <string name="select_gallery">Select From Gallery</string>
-    <string name="add_resource">Add Resource :</string>
-    <string name="reply">Reply</string>
-    <string name="show_reply">Show Replies</string>
-    <string name="show_main_conversation">Show main conversation</string>
-    <string name="https_protocol">https://</string>
-    <string name="http_protocol">http://</string>
-    <string name="showing_reply_of">Showing reply of :</string>
-    <string name="open_date">Open Date</string>
-    <string name="my_survey">mySurvey</string>
-    <string name="references">References</string>
-    <string name="bible">Bibles</string>
-    <string name="feature_not">Feature not available</string>
-    <string name="myhealth">myHealth</string>
-    <string name="type_name_to_search">Type name to search</string>
-    <string name="action">Action</string>
-    <string name="created_on">Created On</string>
-    <string name="name_normal">Name</string>
-    <string name="mypersonals">myPersonals</string>
-    <string name="capture_image">Capture Image</string>
-    <string name="team_name">Enter Team Name</string>
-    <string name="resources">Resources</string>
-    <string name="button_reject">Reject</string>
-    <string name="button_accept">Accept</string>
-    <string name="plan">Plan</string>
-    <string name="body_temperature">Body Temperature</string>
-    <string name="rectally">Rectally</string>
-    <string name="axillary">Axillary</string>
-    <string name="by_ear">By ear</string>
-    <string name="by_skin">By skin</string>
-    <string name="temperature_taken">Temperature taken :</string>
-    <string name="pulse_rate">Pulse Rate (bpm)</string>
-    <string name="respiration_rate">Respiration Rate</string>
-    <string name="systolic">Systolic</string>
-    <string name="diastolic">Diastolic</string>
-    <string name="blood_pressure">Blood Pressure</string>
-    <string name="orally">Orally</string>
-    <string name="save">Save</string>
-    <string name="vital_signs">Vital Signs Record</string>
-    <string name="task">Task</string>
-    <string name="deadline">Deadline</string>
-    <string name="click_here_to_pick_date">Click here to pick date</string>
-    <string name="enterprises">Enterprises</string>
-    <string name="select_member">Select Team Member</string>
-    <string name="assign_task_to">Task Assigned to</string>
-    <string name="leader_selected">Leader selected</string>
-    <string name="user_removed_from_team">User removed from team</string>
-    <string name="remove">Remove</string>
-    <string name="make_leader">Make Leader</string>
-    <string name="mission"><![CDATA[Mission & Services]]></string>
-    <string name="team">Team</string>
-    <string name="applicants">Applicants</string>
-    <string name="finances">Finances</string>
-    <string name="messages">messages</string>
-    <string name="nodata">No data available</string>
-    <string name="note">Note *</string>
-    <string name="amount">Amount</string>
-    <string name="debit">Debit</string>
-    <string name="credit">Credit</string>
-    <string name="balance">Balance</string>
-    <string name="total">Total</string>
-    <string name="location">Location</string>
-    <string name="start_date">Start Date</string>
-    <string name="click_here_to_pick_time">Click here to pick time</string>
-    <string name="start_time">Start Time</string>
-    <string name="end_date">End Date</string>
-    <string name="end_time">End Time</string>
-    <string name="daily">Daily</string>
-    <string name="weekly">Weekly</string>
-    <string name="recurring_frequency">Recurring Frequency</string>
-    <string name="filter_by_date">Date Filter</string>
-    <string name="emergency_contact">Emergency Contact</string>
-    <string name="contact">Contact</string>
-    <string name="special_needs">Special Needs</string>
-    <string name="other_need">Other Needs</string>
-    <string name="update_health_record">Update Health Record</string>
-    <string name="vital_sign">Vital Signs</string>
-    <string name="examination">Examination</string>
-    <string name="add_examination">Add Examination</string>
-    <string name="new_patient">New Patient</string>
-    <string name="height">Height</string>
-    <string name="width">Width</string>
-    <string name="vision">Vision</string>
-    <string name="hearing">Hearing</string>
-    <string name="vitals">Vitals</string>
-    <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation">Observation and Notes</string>
-    <string name="diagnosis">Diagnosis</string>
-    <string name="treatments">Treatments</string>
-    <string name="medications">Medications</string>
-    <string name="immunization">Immunization Dates</string>
-    <string name="allergies">Allergies</string>
-    <string name="xray">X-rays</string>
-    <string name="labtest">Lab Tests</string>
-    <string name="referrals">Referrals</string>
-    <string name="full_name">Full Name</string>
-    <string name="weight">Weight</string>
-    <string name="no_records">No records found</string>
-    <string name="chats">Chats</string>
-    <string name="select_health_member">Select Member</string>
-    <string name="notifications">Notifications</string>
-    <string name="incorrect_ans">Incorrect answer, please try again</string>
-    <string name="diagnosis_note">Diagnosis Note</string>
-    <string name="menu_community">Community</string>
-    <string name="library">Library</string>
-    <string name="enter_title">Enter title</string>
-    <string name="add_link">Add Link</string>
-    <string name="chat">Chat</string>
-    <string name="members">Members</string>
-    <string name="tasks">Tasks</string>
-    <string name="join_requests">Join Requests</string>
-    <string name="add_image">Add Image</string>
-    <string name="addImageToMessage">Beta Add image to message</string>
-    <string name="clear_data">Clear Data</string>
-    <string name="reset_app">Reset App</string>
-    <string name="freeup_space">Free up disk space</string>
-    <string name="action_disclaimer">Disclaimer</string>
+    <string-array name="resource_type">
+        <item>كتاب دراسي</item>
+        <item>خطة الدرس</item>
+        <item>أنشطة</item>
+        <item>تمارين</item>
+        <item>أسئلة المناقشة</item>
+    </string-array>
 
-    <string name="action_about">About</string>
-    <string name="engilsh_dictionary">English Dictionary</string>
-    <string name="title_activity_news_detail">NewsDetailActivity</string>
-    <string name="large_text">
-        "Large Text\n\n"
-        "... is only available in english.\n\n"
-    </string>
-    <string name="add_story">Add Story</string>
-    <string name="txt_myprogress">myProgress</string>
-    <string name="more_action">Filter</string>
-    <string name="my_progress">My Progress</string>
-    <string name="my_activity">My Activity</string>
-    <string name="add_label">Add Label</string>
-    <string name="share_with_community">Share with community</string>
-    <string name="add_res">Add Resource</string>
-    <string name="password">Password</string>
-    <string name="retype_password">Retype Password</string>
-    <string name="change_member">Change Member</string>
-    <string name="use_phone_number_as_password">Use phone number as password</string>
-    <string name="feedback">Feedback</string>
-    <string name="become_a_member">Become a member</string>
-    <string name="add_member">Add member</string>
-    <string name="confirm_exit">Are you sure you want to leave this team?</string>
-    <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
-    <string name="other_notes">Other Notes</string>
-    <string name="archive">Archive</string>
-    <string name="Q1">Question : 1/</string>
-    <string name="no_questions">No questions available</string>
-    <string name="Q">"Question : "</string>
-    <string name="finish">Finish</string>
-    <string name="submit">Submit</string>
-    <string name="our_courses">Our Courses</string>
-    <string name="file">"File : "</string>
-    <string name="recording_audio">Recording audio......</string>
-    <string name="show_replies">"Show replies "</string>
-    <string name="selected">"Selected : "</string>
-    <string name="last_sync"><![CDATA["<< Last sync with server: "]]></string>
-    <string name="last_syncs">LastSync</string>
-    <string name="login_user">loginUserName</string>
-    <string name="login_password">loginUserPassword</string>
-    <string name="no_team_available">No team / enterprise available</string>
-    <string name="last_sync_date">"Last Sync Date: "</string>
-    <string name="no_assignee">No assignee</string>
-    <string name="note_">notes</string>
-    <string name="diagno">diagnosis</string>
-    <string name="treat">treatments</string>
-    <string name="medicay">medications</string>
-    <string name="immunizations">immunizations</string>
-    <string name="allergy">allergies</string>
-    <string name="xrays">xrays</string>
-    <string name="tests">tests</string>
-    <string name="referral">referrals</string>
-    <string name="other_diagnosis">Other Diagnosis</string>
-    <string name="close">Close</string>
-    <string name="negative_balance">The current balance is negative!</string>
-    <string name="entMission">What is your enterprise\'s Mission?</string>
-    <string name="entServices">What are the Services your enterprise provides?</string>
-    <string name="entRules">What are the Rules of your enterprise?</string>
-    <string name="entEmptyDescription"><![CDATA[The enterprise has no mission & services.]]></string>
-    <string name="total_visits">Total visits from last 30 days</string>
-    <string name="ole_logo">Open Learning Exchange Logo</string>
-    <string name="open_community">Open Community</string>
+    <string-array name="array_levels">
+        <item>التعليم المبكر</item>
+        <item>التعليم الأساسي الأدنى</item>
+        <item>التعليم الأساسي العلوي</item>
+        <item>التعليم الثانوي الأدنى</item>
+        <item>التعليم الثانوي العلوي</item>
+        <item>الدراسة الجامعية</item>
+        <item>الدراسات العليا</item>
+        <item>المهني</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>الزراعة</item>
+        <item>الفنون</item>
+        <item>الأعمال والتمويل</item>
+        <item>البيئة</item>
+        <item>الغذاء والتغذية</item>
+        <item>الجغرافيا</item>
+        <item>الصحة والطب</item>
+        <item>التاريخ</item>
+        <item>تنمية البشرية</item>
+        <item>اللغات</item>
+        <item>القانون</item>
+        <item>التعلم</item>
+    </string-array>
+    <string-array name="array_resource_for">
+        <item>الافتراضي</item>
+        <item>القائد</item>
+        <item>المتعلم</item>
+    </string-array>
+    <string name="dictionaries">القواميس</string>
+    <string name="bible">الكتاب المقدس</string>
+    <string name="feature_not">الميزة غير متوفرة</string>
+    <string name="myhealth">صحتي</string>
+    <string name="type_name_to_search">اكتب اسم للبحث</string>
+    <string name="action">إجراء</string>
+    <string name="created_on">تم الإنشاء في</string>
+    <string name="name_normal">الاسم</string>
+    <string name="mypersonals">معلوماتي الشخصية</string>
+    <string name="capture_image">التقاط صورة</string>
+    <string name="team_name">أدخل اسم الفريق</string>
+    <string name="resources">موارد</string>
+    <string name="button_reject">رفض</string>
+    <string name="button_accept">قبول</string>
+    <string name="plan">خطة</string>
+    <string name="body_temperature">درجة حرارة الجسم (°C)</string>
+    <string name="rectally">مستقيمياً</string>
+    <string name="axillary">تحت الإبط</string>
+    <string name="by_ear">عن طريق الأذن</string>
+    <string name="by_skin">عن طريق الجلد</string>
+    <string name="temperature_taken">تم قياس الحرارة:</string>
+    <string name="pulse_rate">معدل النبض (نبضة في الدقيقة)</string>
+    <string name="respiration_rate">معدل التنفس</string>
+    <string name="systolic">الضغط الانقباضي</string>
+    <string name="diastolic">الضغط الانبساطي</string>
+    <string name="blood_pressure">ضغط الدم (الضغط الانقباضي/الانبساطي)</string>
+    <string name="orally">عن طريق الفم</string>
+    <string name="save">حفظ</string>
+    <string name="vital_signs">سجل علامات الحيوية</string>
+    <string name="task">المهمة (مطلوبة)</string>
+    <string name="deadline_required">الموعد النهائي (مطلوب)</string>
+    <string name="click_here_to_pick_date">انقر هنا لاختيار التاريخ</string>
+    <string name="enterprises">الشركات</string>
+    <string name="select_member">اختر عضو الفريق</string>
+    <string name="assign_task_to">المهمة المخصصة لـ</string>
+    <string name="leader_selected">القائد المختار</string>
+    <string name="user_removed_from_team">تمت إزالة المستخدم من الفريق</string>
+    <string name="remove">إزالة</string>
+    <string name="make_leader">جعله قائدًا</string>
+    <string name="mission"><![CDATA[المهمة والخدمات]]></string>
+    <string name="team">الفريق</string>
+    <string name="applicants">المتقدمون</string>
+    <string name="finances">المالية</string>
+    <string name="messages">رسائل</string>
+    <string name="nodata">لا توجد بيانات متاحة</string>
+    <string name="note">ملاحظة *</string>
+    <string name="amount">المبلغ</string>
+    <string name="debit">مدين</string>
+    <string name="credit">دائن</string>
+    <string name="balance">الرصيد</string>
+    <string name="total">الإجمالي</string>
+    <string name="location">الموقع</string>
+    <string name="start_date">تاريخ البدء</string>
+    <string name="click_here_to_pick_time">انقر هنا لاختيار الوقت</string>
+    <string name="start_time">وقت البدء</string>
+    <string name="end_date">تاريخ الانتهاء</string>
+    <string name="end_time">وقت الانتهاء</string>
+    <string name="daily">يوميًا</string>
+    <string name="weekly">أسبوعيًا</string>
+    <string name="recurring_frequency">تكرار التكرار</string>
+    <string name="filter_by_date">تصفية حسب التاريخ</string>
+    <string name="emergency_contact">جهة الاتصال الطارئة</string>
+    <string name="contact">اتصال</string>
+    <string name="special_needs">احتياجات خاصة</string>
+    <string name="other_need">احتياجات أخرى</string>
+    <string name="update_health_record">تحديث سجل الصحة</string>
+    <string name="vital_sign">علامات حيوية</string>
+    <string name="examination">فحص</string>
+    <string name="add_examination">إضافة فحص</string>
+    <string name="new_patient">المريض التالي</string>
+    <string name="height">الطول (سم)</string>
+    <string name="width">العرض</string>
+    <string name="vision">الرؤية</string>
+    <string name="hearing">السمع</string>
+    <string name="vitals">مؤشرات الصحة</string>
+    <string name="condition_and_treatment">الحالة والعلاج</string>
+    <string name="observation" translatable="false">الملاحظات والملاحظات</string>
+    <string name="diagnosis" translatable="false">التشخيص</string>
+    <string name="treatments" translatable="false">العلاجات</string>
+    <string name="medications" translatable="false">الأدوية</string>
+    <string name="immunization" translatable="false">تواريخ التطعيم</string>
+    <string name="allergies" translatable="false">الحساسية</string>
+    <string name="xray" translatable="false">الأشعة السينية</string>
+    <string name="labtest" translatable="false">اختبارات المختبر</string>
+    <string name="referrals" translatable="false">الإحالات</string>
+    <string name="full_name">الاسم الكامل</string>
+    <string name="weight">الوزن (كجم)</string>
+    <string name="no_records">لم يتم العثور على سجلات</string>
+    <string name="chats">المحادثات</string>
+    <string name="select_health_member">اختر عضو الفريق</string>
+    <string name="notifications">الإشعارات</string>
+    <string name="incorrect_ans">إجابة غير صحيحة، يرجى المحاولة مرة أخرى</string>
+    <string name="diagnosis_note">ملاحظات التشخيص</string>
+    <string name="menu_community">المجتمع</string>
+    <string name="library">المكتبة</string>
+    <string name="device_name">اسم الجهاز</string>
+    <string name="enter_title">أدخل العنوان</string>
+    <string name="add_link">إضافة رابط</string>
+    <string name="chat">الدردشة</string>
+    <string name="members">الأعضاء</string>
+    <string name="tasks">المهام</string>
+    <string name="join_requests">طلبات الانضمام</string>
+    <string name="add_image">إضافة صورة</string>
+    <string name="addImageToMessage">إضافة صورة للرسالة (بيتا)</string>
+    <string name="clear_data">مسح البيانات</string>
+    <string name="reset_app">إعادة تعيين التطبيق</string>
+    <string name="freeup_space">تحرير مساحة القرص</string>
+    <string name="action_disclaimer">تنصل</string>
+    <string name="action_about">حول</string>
+    <string name="engilsh_dictionary">قاموس الإنجليزية</string>
+
+    <string-array name="team_type">
+        <item>فريق محلي</item>
+        <item>الاتصال بالوطن</item>
+    </string-array>
+
+    <string-array name="contact_type">
+        <item>هاتف</item>
+        <item>بريد إلكتروني</item>
+    </string-array>
+
+    <string-array name="add_link_options">
+        <item>فرق</item>
+        <item>المؤسسات</item>
+    </string-array>
+
+    <string-array name="transaction_type">
+        <item>ائتمان</item>
+        <item>مدين</item>
+    </string-array>
+
+    <string-array name="sort_by_date">
+        <item>ترتيب حسب التاريخ - تصاعديًا</item>
+        <item>ترتيب حسب التاريخ - تنازليًا</item>
+        <item>ترتيب حسب العنوان</item>
+    </string-array>
+
+    <string-array name="sort_member">
+        <item>ترتيب حسب التاريخ - تصاعديًا</item>
+        <item>ترتيب حسب التاريخ - تنازليًا</item>
+        <item>ترتيب حسب الاسم - تصاعديًا</item>
+        <item>ترتيب حسب الاسم - تنازليًا</item>
+    </string-array>
+
+    <string-array name="grade_level">
+        <item>الكل</item>
+        <item>رياض الأطفال</item>
+        <item>روضة الأطفال</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>الجامعة</item>
+        <item>الدراسات العليا</item>
+    </string-array>
+
+    <string-array name="subject_level">
+        <item>الكل</item>
+        <item>مبتدئ</item>
+        <item>متوسط</item>
+        <item>متقدم</item>
+        <item>خبير</item>
+    </string-array>
+
+    <string-array name="diagnosis_list">
+        <item>السرطان</item>
+        <item>اضطرابات الجهاز القلبي الوعائي</item>
+        <item>تليف الكبد</item>
+        <item>كوفيد-19</item>
+        <item>السكري</item>
+        <item>أمراض الإسهال</item>
+        <item>إيبولا</item>
+        <item>الصرع</item>
+        <item>تجريح الإناث</item>
+        <item>الأنفلونزا</item>
+        <item>أمراض القلب الشريانية الإقفارية</item>
+        <item>الملاريا</item>
+        <item>سوء التغذية</item>
+        <item>التهاب السحايا</item>
+        <item>عدوى الأطفال الحديثين والعدوى</item>
+        <item>الإيدز</item>
+        <item>التهاب الرئة</item>
+        <item>السكتة الدماغية</item>
+        <item>السل</item>
+        <item>الإصابات</item>
+    </string-array>
+    <string name="title_activity_news_detail">تفاصيل الأخبار</string>
+    <string name="add_story">إضافة قصة</string>
+    <string name="txt_myprogress">تقدمي</string>
+    <string name="more_action">تصفية</string>
+    <string name="my_progress">تقدمي</string>
+    <string name="my_activity">نشاطي</string>
+    <string name="add_label">إضافة تصنيف</string>
+    <string name="share_with_community">مشاركة مع المجتمع</string>
+    <string name="add_res">إضافة موارد</string>
+    <string name="password">كلمة المرور</string>
+    <string name="retype_password">تأكيد كلمة المرور</string>
+    <string name="become_a_member">أصبح عضوًا</string>
+    <string name="change_member">تغيير العضو</string>
+    <string name="use_phone_number_as_password">استخدام رقم الهاتف ككلمة مرور</string>
+    <string name="feedback">تغذية راجعة</string>
+    <string name="add_member">إضافة عضو</string>
+    <string name="confirm_exit">هل أنت متأكد أنك تريد مغادرة هذا الفريق؟</string>
+    <string name="update_profile_alert">يرجى استكمال ملف التعريف الخاص بك للاستمتاع بجميع الميزات</string>
+    <string name="other_notes">ملاحظات أخرى</string>
+    <string name="archive">الأرشيف</string>
+    <string name="Q1">السؤال: 1/</string>
+    <string name="no_questions">لا تتوفر أسئلة</string>
+    <string name="Q">"السؤال: "</string>
+    <string name="finish">إنهاء</string>
+    <string name="submit">إرسال</string>
+    <string name="our_courses">دوراتنا</string>
+    <string name="file">"ملف: "</string>
+    <string name="recording_audio">جارٍ تسجيل الصوت......</string>
+    <string name="show_replies">"عرض الردود "</string>
+    <string name="selected">"المحدد: "</string>
+    <string name="last_sync"><![CDATA["<< آخر مزامنة مع الخادم: "]]></string>
+    <string name="last_syncs">آخر مزامنة</string>
+    <string name="login_user">اسم المستخدم لتسجيل الدخول</string>
+    <string name="login_password">كلمة مرور المستخدم لتسجيل الدخول</string>
+    <string name="no_team_available">لا توجد فرق/مؤسسات متاحة</string>
+    <string name="last_sync_date">"تاريخ آخر مزامنة: "</string>
+    <string name="no_assignee">لا يوجد مُعيَّن</string>
+    <string name="note_">ملاحظات</string>
+    <string name="diagno">التشخيص</string>
+    <string name="treat">العلاجات</string>
+    <string name="medicay">الأدوية</string>
+    <string name="immunizations">التحصينات</string>
+    <string name="allergy">الحساسية</string>
+    <string name="xrays">الأشعة السينية</string>
+    <string name="tests">الفحوصات</string>
+    <string name="referral">الإحالات</string>
+    <string name="other_diagnosis">تشخيصات أخرى</string>
+    <string name="close">إغلاق</string>
+    <string name="negative_balance">الرصيد الحالي سالب!</string>
+    <string name="entMission">ما هي مهمة المؤسسة الخاصة بك؟</string>
+    <string name="entServices">ما هي الخدمات التي تقدمها المؤسسة الخاصة بك؟</string>
+    <string name="entRules">ما هي قواعد المؤسسة الخاصة بك؟</string>
+    <string name="entEmptyDescription"><![CDATA[لا يوجد لدى المؤسسة مهمة وخدمات.]]></string>
+    <string name="total_visits">إجمالي الزيارات خلال الـ 30 يومًا الماضية</string>
+    <string name="ole_logo">شعار Open Learning Exchange</string>
+    <string name="open_community">المجتمع المفتوح</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Add Documents</string>
-    <string name="leave">Leave</string>
-    <string name="steps">Steps</string>
-    <string name="csv_filename">CSV Filename</string>
-    <string name="please_enter_reply">Please enter reply</string>
-    <string name="image_filename">Image Filename</string>
-    <string name="markdown_filename">Markdown Filename</string>
-    <string name="select_login_mode">Select Login Mode:</string>
-    <string name="normal_mode">Normal Mode</string>
-    <string name="select_date">Select Date</string>
-    <string name="public_public">Public</string>
-    <string name="type_asterisk">Type*</string>
-    <string name="joined_members_colon">Joined Members:</string>
-    <string name="requested_members_colon">Requested Members:</string>
-    <string name="courses_colon">Courses:</string>
-    <string name="title">Title</string>
-    <string name="source">Source</string>
-    <string name="cloud_url">Cloud Url</string>
-    <string name="interval">Interval</string>
-    <string name="autosync">Autosync</string>
-    <string name="autosync_off">Autosync Off!</string>
-    <string name="autosync_on">Autosync On</string>
-    <string name="attached_resources">Attached resources:</string>
-    <string name="edit">Edit</string>
-    <string name="my_achievements">My Achievements</string>
-    <string name="open_resource">Open Resource</string>
-    <string name="zero_total">0 total</string>
-    <string name="average">Average</string>
+    <string name="add_documents">إضافة وثائق</string>
+    <string name="leave">مغادرة</string>
+    <string name="steps">خطوات</string>
+    <string name="csv_filename">اسم ملف CSV</string>
+    <string name="please_enter_reply">يرجى إدخال رد</string>
+    <string name="image_filename">اسم ملف الصورة</string>
+    <string name="markdown_filename">اسم ملف التنسيق</string>
+    <string name="select_login_mode">حدد وضع تسجيل الدخول:</string>
+    <string name="normal_mode">الوضع العادي</string>
+    <string name="select_date">حدد التاريخ</string>
+    <string name="public_public">عام</string>
+    <string name="type_asterisk">اكتب*</string>
+    <string name="joined_members_colon">الأعضاء المنضمون:</string>
+    <string name="requested_members_colon">الأعضاء المطلوبين:</string>
+    <string name="courses_colon">الدورات:</string>
+    <string name="title">العنوان</string>
+    <string name="source">المصدر</string>
+    <string name="cloud_url">رابط السحابة</string>
+    <string name="interval">الفترة الزمنية</string>
+    <string name="autosync">المزامنة التلقائية</string>
+    <string name="autosync_off">إيقاف المزامنة التلقائية!</string>
+    <string name="autosync_on">تشغيل المزامنة التلقائية</string>
+    <string name="attached_resources">الموارد المرفقة:</string>
+    <string name="edit">تحرير</string>
+    <string name="my_achievements">إنجازاتي</string>
+    <string name="open_resource">فتح المورد</string>
+    <string name="zero_total">إجمالي: 0</string>
+    <string name="average">المتوسط</string>
     <string name="zero_point_zero">0.0</string>
-    <string name="subject_level_colon">Subject Level:</string>
-    <string name="grade_level_colon">Grade Level:</string>
-    <string name="language_colon">Language:</string>
-    <string name="method">Method:</string>
-    <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">Description:</string>
-    <string name="download_resources">Download Resources</string>
-    <string name="take_test">Take Test</string>
-    <string name="search">Search</string>
-    <string name="for_ambulance">For Ambulance</string>
-    <string name="for_police">For Police</string>
-    <string name="for_emergency">For Emergency</string>
-    <string name="submit_feedback">Submit Feedback</string>
-    <string name="media">Media:</string>
-    <string name="filter">Filter</string>
-    <string name="grade_level">Grade Level</string>
-    <string name="subject_level">Subject Level</string>
-    <string name="order_by_date">Order by Date</string>
-    <string name="order_by_title">Order by Title</string>
-    <string name="vital_signs_record">Vital Signs Record</string>
-    <string name="exams">Exams</string>
-    <string name="survey">Survey</string>
-    <string name="submitted_by">Submitted by</string>
-    <string name="updated_on">Updated On</string>
-    <string name="name">Name</string>
-    <string name="send_survey_to">Send Survey to:</string>
-    <string name="send_survey">Send Survey</string>
-    <string name="previous">Previous</string>
-    <string name="next">Next</string>
-    <string name="submit_answer">Submit Answer</string>
-    <string name="all_task">All Task</string>
-    <string name="my_task">My task</string>
-    <string name="completed">Completed</string>
-    <string name="add_profile_picture">Add Profile Picture</string>
+    <string name="subject_level_colon">مستوى الموضوع:</string>
+    <string name="grade_level_colon">مستوى الصف:</string>
+    <string name="language_colon">اللغة:</string>
+    <string name="method">الطريقة:</string>
+    <string name="number_of_exams">عدد الامتحانات:</string>
+    <string name="description_colon">الوصف:</string>
+    <string name="download_resources">تحميل الموارد</string>
+    <string name="take_test">أداء الاختبار</string>
+    <string name="search">بحث</string>
+    <string name="for_ambulance">للإسعاف</string>
+    <string name="for_police">للشرطة</string>
+    <string name="for_emergency">للطوارئ</string>
+    <string name="submit_feedback">إرسال ملاحظات</string>
+    <string name="media">وسائط:</string>
+    <string name="filter">تصفية</string>
+    <string name="grade_level">مستوى الصف</string>
+    <string name="subject_level">مستوى الموضوع</string>
+    <string name="order_by_date">ترتيب حسب التاريخ</string>
+    <string name="order_by_title">ترتيب حسب العنوان</string>
+    <string name="vital_signs_record">سجل علامات الحيوية</string>
+    <string name="exams">الامتحانات</string>
+    <string name="survey">الاستبيان</string>
+    <string name="submitted_by">تم الإرسال بواسطة</string>
+    <string name="updated_on">تم التحديث في</string>
+    <string name="name">الاسم</string>
+    <string name="send_survey_to">إرسال الاستبيان إلى:</string>
+    <string name="send_survey">إرسال الاستبيان</string>
+    <string name="previous">السابق</string>
+    <string name="next">التالي</string>
+    <string name="submit_answer">إرسال الإجابة</string>
+    <string name="all_task">جميع المهام</string>
+    <string name="my_task">مهمتي</string>
+    <string name="completed">تم الانتهاء</string>
+    <string name="add_profile_picture">إضافة صورة الملف الشخصي</string>
     <string name="two_dash">--</string>
     <string name="n_a">N/A</string>
-    <string name="request_to_join">Request To join</string>
-    <string name="filter_labels">Filter Labels</string>
-    <string name="message">message</string>
-    <string name="mistakes">Mistakes</string>
-    <string name="take_survey">Take Survey</string>
-    <string name="checkbox">CheckBox</string>
-    <string name="offer">Offer</string>
-    <string name="request_for_advice">Request for advice</string>
-    <string name="ai_chat">AI Chat</string>
+    <string name="request_to_join">طلب الانضمام</string>
+    <string name="filter_labels">تصفية التصنيفات</string>
+    <string name="message">الرسالة</string>
+    <string name="mistakes">الأخطاء</string>
+    <string name="take_survey">أداء الاستبيان</string>
+    <string name="checkbox">خانة اختيار</string>
+    <string name="offer">عرض</string>
+    <string name="request_for_advice">طلب النصيحة</string>
+    <string name="no_images_to_download">لا توجد صور للتحميل.</string>
+    <string name="this_file_type_is_currently_unsupported">نوع الملف غير مدعوم حاليًا</string>
+    <string name="unable_to_open_resource">غير قادر على فتح المصدر</string>
+    <string name="select_resource_to_open">"حدد المصدر للفتح: "</string>
+    <string name="shared_to_community">مشاركة مع المجتمع</string>
+    <string name="no_data_available_please_check_and_try_again">لا تتوفر بيانات، يرجى التحقق والمحاولة مرة أخرى.</string>
+    <string name="added_to_my_library">تمت الإضافة إلى مكتبتي</string>
+    <string name="added_to_my_courses">تمت الإضافة إلى دوراتي</string>
+    <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
+    <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
+    <string name="planet_not_available">الكوكب غير متاح</string>
+    <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
+    <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
+    <string name="removed_from_mylibrary">تمت الإزالة من مكتبتي</string>
+    <string name="removed_from_mycourse">تمت الإزالة من دوراتي</string>
+    <string name="please_allow_usages_permission_to_myplanet_app">يرجى السماح بإذن الاستخدام لتطبيق MyPlanet.</string>
+    <string name="permissions_granted">الأذونات الممنوحة</string>
+    <string name="permissions_denied">الأذونات المرفوضة</string>
+    <string name="unable_to_upload_resource">غير قادر على رفع المصدر</string>
+    <string name="please_select_link_item_from_list">يرجى تحديد عنصر الرابط من القائمة</string>
+    <string name="title_is_required">العنوان مطلوب</string>
+    <string name="no_data_available">لا توجد بيانات متاحة</string>
+    <string name="current_step">"الخطوة الحالية: "</string>
+    <string name="of">" من "</string>
+    <string name="this_test_has">"هذا الاختبار يحتوي على "</string>
+    <string name="questions">" أسئلة"</string>
+    <string name="are_you_sure_you_want_to_delete_these_courses">هل أنت متأكد أنك تريد حذف هذه الدورات؟</string>
+    <string name="success_you_have_added_the_following_courses">تمت الإضافة بنجاح! لقد أضفت الدورات التالية:\n\n</string>
+    <string name="return_to_the_home_tab_to_access_mycourses">\n\nعودة إلى علامة التبويب الرئيسية للوصول إلى "دوراتي".\n</string>
+    <string name="and">"و "</string>
+    <string name="more_course_s">" دورة (دورات) أخرى…\n"</string>
+    <string name="progress">"التقدم "</string>
+    <string name="retake_test">إعادة أداء الاختبار</string>
+    <string name="do_you_want_to_join_this_course">هل ترغب في الانضمام إلى هذه الدورة؟</string>
+    <string name="join_this_course">انضم إلى هذه الدورة</string>
+    <string name="download_dictionary">تنزيل القاموس.</string>
+    <string name="resource_not_downloaded">لم يتم تنزيل المصدر.</string>
+    <string name="bulk_resource_download">تنزيل مجمع للمصادر.</string>
+    <string name="pending_survey">استبيان معلق.</string>
+    <string name="download_news_images">تنزيل صور الأخبار.</string>
+    <string name="tasks_due">المهام المستحقة.</string>
+    <string name="storage_critically_low">"التخزين منخفض بشكل حرج: "</string>
+    <string name="available_please_free_up_space">متاح. يرجى تحرير المساحة.</string>
+    <string name="storage_running_low">"التخزين قليل: "</string>
+    <string name="available">متاح.</string>
+    <string name="storage_available">"التخزين المتاح: "</string>
+    <string name="health_record_not_available_click_to_sync">سجل الصحة غير متاح. انقر للمزامنة.</string>
+    <string name="visits">الزيارات</string>
+    <string name="please_select_starting_date">"يرجى تحديد تاريخ البدء: "</string>
+    <string name="read_offline_news_from">"قراءة الأخبار غير المتصلة من: "</string>
+    <string name="downloading_started_please_check_notification">بدأ التنزيل، يرجى التحقق من الإشعار…</string>
+    <string name="file_already_exists">الملف موجود بالفعل…</string>
+    <string name="syncing_health_please_wait">مزامنة الصحة، يرجى الانتظار…</string>
+    <string name="myhealth_synced_successfully">تمت مزامنة MyHealth بنجاح</string>
+    <string name="myhealth_synced_failed">فشلت عملية مزامنة MyHealth</string>
+    <string name="no_due_tasks">لا توجد مهام مستحقة</string>
+    <string name="due_tasks">المهام المستحقة</string>
+    <string name="feature_not_available_for_guest_user">الميزة غير متاحة للمستخدم الضيف</string>
+    <string name="feature_not_available">الميزة غير متاحة</string>
+    <string name="health_record_not_available_sync_health_data">سجل الصحة غير متاح، هل ترغب في مزامنة بيانات الصحة؟</string>
+    <string name="sync">مزامنة</string>
+    <string name="got_it">فهمت</string>
+    <string name="please_make_sure_your_device_is_horizontal">يرجى التأكد من أن جهازك أفقي</string>
+    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">انقر على الشعار للحصول على القائمة الكاملة لكوكبك: الصفحة الرئيسية، مكتبتي، دوراتي، المكتبة، الدورات، المجتمع، المؤسسات، والاستبيانات</string>
+    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">انتقل إلى علامة التبويب الرئيسية للوصول إلى لوحة المعلومات الخاصة بك مع مكتبتك ودوراتك وفرقك</string>
+    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">انتقل إلى علامة التبويب المكتبة للوصول إلى الموارد في مجتمعك</string>
+    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">انتقل إلى علامة التبويب الدورات للوصول إلى الدورات (الاختبارات والأسئلة والدروس) داخل مجتمعك</string>
+    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">انتقل إلى علامة التبويب الفرق للانضمام وطلب الانضمام ومتابعة فرقك</string>
+    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">انتقل إلى علامة التبويب المؤسسات للبحث في قائمة المؤسسات داخل مجتمعك</string>
+    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">انتقل إلى علامة التبويب المجتمع للوصول إلى الأخبار وقادة المجتمع والتقويم والخدمات والمال المشارك في مجتمعك</string>
+    <string name="session_expired">انتهت الجلسة.</string>
+    <string name="downloading_started_please_check_notificati">بدأ التنزيل، يرجى التحقق من الإشعار…</string>
+    <string name="dictionary">القاموس</string>
+    <string name="list_size">حجم القائمة</string>
+    <string name="word_not_available_in_our_database">الكلمة غير متوفرة في قاعدة بياناتنا.</string>
+    <string name="description_is_required">الوصف مطلوب</string>
+    <string name="start_time_is_required">وقت البدء مطلوب</string>
+    <string name="meetup_added">تمت إضافة اللقاء</string>
+    <string name="add_transaction">إضافة المعاملة</string>
+    <string name="note_is_required">الملاحظة مطلوبة</string>
+    <string name="amount_is_required">المبلغ مطلوب</string>
+    <string name="date_is_required">التاريخ مطلوب</string>
+    <string name="transaction_added">تمت إضافة المعاملة</string>
+    <string name="thank_you_for_taking_this">"شكرًا لك على إجراء هذا "</string>
+    <string name="we_wish_you_all_the_best">. نتمنى لك كل التوفيق</string>
+    <string name="thank_you_for_taking_this_survey">شكرًا لك على إجراء هذا الاستبيان.</string>
+    <string name="complete">اكتمل</string>
+    <string name="no_questions_available">لا تتوفر أسئلة</string>
+    <string name="please_select_write_your_answer_to_continue">يرجى تحديد / كتابة إجابتك للمتابعة</string>
+    <string name="graded">تم التقييم</string>
+    <string name="pending">معلقة</string>
+    <string name="user_profile_updated">تم تحديث ملف المستخدم</string>
+    <string name="unable_to_update_user">غير قادر على تحديث المستخدم</string>
+    <string name="date_n_a">التاريخ: غ/م</string>
+    <string name="please_enter_feedback">يرجى إدخال التعليقات.</string>
+    <string name="feedback_priority_is_required">يجب تحديد أولوية التعليقات.</string>
+    <string name="feedback_type_is_required">يجب تحديد نوع التعليقات.</string>
+    <string name="thank_you_your_feedback_has_been_submitted">شكرًا لك، تم تقديم تعليقاتك بنجاح</string>
+    <string name="feedback_saved">تم حفظ التعليقات..</string>
+    <string name="name_colon">"الاسم: "</string>
+    <string name="email_colon">"البريد الإلكتروني: "</string>
+    <string name="phone_number_colon">"رقم الهاتف: "</string>
+    <string name="resource_saved_successfully">تم حفظ المصدر بنجاح</string>
+    <string name="level_is_required">المستوى مطلوب</string>
+    <string name="subject_is_required">الموضوع مطلوب</string>
+    <string name="enter_resource_detail">أدخل تفاصيل المصدر</string>
+    <string name="resource_saved_to_my_personal">تم حفظ المصدر في "شخصي"</string>
+    <string name="invalid_resource_url">عنوان url للمورد غير صالح</string>
+    <string name="my_library">"مكتبتي"</string>
+    <string name="link_not_available">الرابط غير متاح</string>
+    <string name="success_you_have_added_these_resources_to_your_mylibrary">تمت الإضافة بنجاح! لقد أضفت هذه الموارد إلى مكتبتي:\n\n</string>
+    <string name="more_resource_s">"مورد (موارد) أخرى…\n"</string>
+    <string name="return_to_the_home_tab_to_access_mylibrary">\n\nعودة إلى علامة التبويب الرئيسية للوصول إلى "مكتبتي".\n</string>
+    <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nملاحظة: قد تحتاج لاستكمال تنزيل الموارد المضافة حديثًا.</string>
+    <string name="self_examination">\nفحص ذاتي</string>
+    <string name="temperature_colon">"الحرارة: "</string>
+    <string name="pulse_colon">"نبضات القلب: "</string>
+    <string name="blood_pressure_colon">"ضغط الدم: "</string>
+    <string name="height_colon">"الطول: "</string>
+    <string name="weight_colon">"الوزن: "</string>
+    <string name="vision_colon">"الرؤية: "</string>
+    <string name="hearing_colon">"الاستماع: "</string>
+    <string name="observations_notes_colon"><![CDATA["الملاحظات والملاحظات: "]]></string>
+    <string name="diagnosis_colon">"التشخيص: "</string>
+    <string name="treatments_colon">"العلاجات: "</string>
+    <string name="medications_colon">"الأدوية: "</string>
+    <string name="immunizations_colon">"التطعيمات: "</string>
+    <string name="allergies_colon">"الحساسية: "</string>
+    <string name="x_rays_colon">"أشعة سينية: "</string>
+    <string name="lab_tests_colon">"اختبارات مختبرية: "</string>
+    <string name="referrals_colon">"الإحالات: "</string>
+    <string name="invalid_input">إدخال غير صالح</string>
+    <string name="blood_pressure_should_be_numeric_systolic_diastolic">يجب أن يكون ضغط الدم عبارة عن أرقام نبضية/انبساطية</string>
+    <string name="blood_pressure_should_be_systolic_diastolic">يجب أن يكون ضغط الدم عبارة عن نبضي/انبساطي</string>
+    <string name="bp_must_be_between_60_40_and_300_200">يجب أن يكون ضغط الدم بين 60/40 و 300/200</string>
+    <string name="systolic_and_diastolic_must_be_numbers">يجب أن تكون القيم النبضية والانبساطية أرقام</string>
+    <string name="added_successfully">تمت الإضافة بنجاح</string>
+    <string name="invalid_input_must_be_between_30_and_40">إدخال غير صالح، يجب أن يكون بين 30 و 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">إدخال غير صالح، يجب أن يكون بين 40 و 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">إدخال غير صالح، يجب أن يكون بين 1 و 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">إدخال غير صالح، يجب أن يكون بين 1 و 150</string>
+    <string name="unable_to_add_health_record">غير قادر على إضافة سجل صحي</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">هل أنت متأكد أنك ترغب في الخروج؟ سيتم فقدان البيانات الخاصة بك.</string>
+    <string name="yes_i_want_to_exit">"نعم، أرغب في الخروج. "</string>
+    <string name="my_health_saved_successfully">تم حفظ صحتي بنجاح</string>
+    <string name="health_record_not_available">سجل الصحة غير متاح.</string>
+    <string name="contact_colon">جهة الاتصال:</string>
+    <string name="joined_colon">"انضم: "</string>
+    <string name="is_now_hidden">"أصبح مخفيًا الآن"</string>
+    <string name="is_now_shown">"أصبح ظاهرًا الآن"</string>
+    <string name="no_members_has_joined_this_meet_up">لم ينضم أي أعضاء إلى هذا الاجتماع</string>
+    <string name="edit_personal">تحرير شخصي</string>
+    <string name="please_enter_title">يرجى إدخال العنوان</string>
+    <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">لا توجد بيانات متاحة، يرجى النقر على الزر + لإضافة مصدر جديد في "شخصي".</string>
+    <string name="label_added">تمت إضافة التسمية.</string>
+    <string name="please_enter_message">يرجى إدخال الرسالة</string>
+    <string name="new_not_available">غير متاح جديد</string>
+    <string name="hide_add_story">إخفاء إضافة قصة</string>
+    <string name="no_items">لا توجد عناصر</string>
+    <string name="record_survey">تسجيل الاستبيان</string>
+    <string name="survey_sent_to_users">تم إرسال الاستبيان للمستخدمين</string>
+    <string name="wifi_is_turned_off_saving_battery_power">تم تعطيل الواي فاي. يتم حفظ طاقة البطارية</string>
+    <string name="turning_on_wifi_please_wait">جاري تشغيل الواي فاي. يرجى الانتظار…</string>
+    <string name="unable_to_connect_to_planet_wifi">غير قادر على الاتصال بشبكة بلانت اللاسلكية</string>
+    <string name="you_are_now_connected">لقد تم الآن الاتصال</string>
+    <string name="press_back_again_to_exit">اضغط BACK مرة أخرى للخروج</string>
+    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">اضغط على زر المزامنة لمزامنة بيانات حسابك في بلانت مع بيانات تطبيق ماي بلانت الخاص بك</string>
+    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">اضغط على زر الإعدادات للوصول إلى إعدادات الخادم الخاص بحسابك في بلانت ماي بلانت لإعداد عملية المزامنة الخاصة بك بشكل صحيح</string>
+    <string name="it_has_been_more_than">لقد مرت مدة تزيد عن </string>
+    <string name="days_since_you_last_synced_this_device">أيام منذ آخر مزامنة لهذا الجهاز.</string>
+    <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n اتصل به بالخادم عبر الواي فاي وقم بمزامنته لإعادة تنشيط هذا الجهاز اللوحي</string>
+    <string name="okay">موافق</string>
+    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">قم بالاتصال بالخادم عبر الواي فاي وقم بمزامنة جهازك للمتابعة</string>
+    <string name="please_enter_server_url_first">يرجى إدخال عنوان URL الخادم أولاً.</string>
+    <string name="this_device_not_configured_properly_please_check_and_sync">لم يتم تكوين هذا الجهاز بشكل صحيح. يرجى التحقق والمزامنة.</string>
+    <string name="username_cannot_be_empty">اسم المستخدم لا يمكن أن يكون فارغًا</string>
+    <string name="unable_to_login">غير قادر على تسجيل الدخول</string>
+    <string name="planet_server_not_reachable">غير قادر على الوصول إلى خادم بلانت</string>
+    <string name="select_language">اختر اللغة</string>
+    <string name="thank_you">شكرًا لك!</string>
+    <string name="please_wait">يرجى الانتظار…</string>
+    <string name="update_later">تحديث لاحقًا</string>
+    <string name="checking_version">جاري التحقق من الإصدار…</string>
+    <string name="please_enter_your_password">يرجى إدخال كلمة المرور الخاصة بك</string>
+    <string name="downloading">جارٍ التنزيل…</string>
+    <string name="pin_is_required">مطلوب رمز التعريف الشخصي</string>
+    <string name="invalid_url">عنوان URL غير صالح</string>
+    <string name="please_enter_valid_url_to_continue">يرجى إدخال عنوان URL صالح للمتابعة</string>
+    <string name="uploading_data_to_server_please_wait">جارٍ تحميل البيانات إلى الخادم، يرجى الانتظار…</string>
+    <string name="uploading_activities_to_server_please_wait">جارٍ تحميل الأنشطة إلى الخادم، يرجى الانتظار…</string>
+    <string name="connecting_to_server">جارٍ الاتصال بالخادم…</string>
+    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">تحقق مرة أخرى من عنوان الخادم. ما قمت بالاتصال به ليس خادم بلانت</string>
+    <string name="device_couldn_t_reach_server_check_and_try_again">الجهاز لم يتمكن من الوصول إلى الخادم. تحقق وحاول مرة أخرى</string>
+    <string name="server_not_configured_properly_connect_this_device_with_planet_server">الخادم لم يتم تكوينه بشكل صحيح. اتصل بهذا الجهاز بخادم بلانت</string>
+    <string name="syncing_data_please_wait">جارٍ مزامنة البيانات، يرجى الانتظار…</string>
+    <string name="sync_failed">فشلت المزامنة</string>
+    <string name="sync_completed">اكتملت المزامنة</string>
+    <string name="message_is_required">الرسالة مطلوبة</string>
+    <string name="team_leader">قائد الفريق</string>
+    <string name="select_resource">اختر المصدر:</string>
+    <string name="add">إضافة</string>
+    <string name="deadline_colon">الموعد النهائي:</string>
+    <string name="completed_colon">تم الانتهاء:</string>
+    <string name="assigned_to_colon">معيّن لـ:</string>
+    <string name="add_task">إضافة مهمة</string>
+    <string name="task_title_is_required">اسم المهمة مطلوب</string>
+    <string name="deadline_is_required">الموعد النهائي مطلوب</string>
+    <string name="updated">تم التحديث</string>
+    <string name="added">تمت الإضافة</string>
+    <string name="task_s_successfully">تمت المهمة %s بنجاح</string>
+    <string name="task_deleted_successfully">تم حذف المهمة بنجاح</string>
+    <string name="requested">طُلب</string>
+    <string name="resources_colon">الموارد:</string>
+    <string name="left_team">غادر الفريق</string>
+    <string name="enter_enterprise_s_name">أدخل اسم المؤسسة</string>
+    <string name="what_is_your_team_s_plan">ما هو خطة فريقك؟</string>
+    <string name="enter_team_s_name">أدخل اسم الفريق</string>
+    <string name="enter">أدخل</string>
+    <string name="detail">التفصيل</string>
+    <string name="please_enter_a_name">يرجى إدخال الاسم</string>
+    <string name="name_is_required">الاسم مطلوب</string>
+    <string name="team_created">تم إنشاء الفريق</string>
+    <string name="please_select_gender">يرجى تحديد الجنس</string>
+    <string name="please_enter_a_username">يرجى إدخال اسم المستخدم</string>
+    <string name="invalid_username">اسم مستخدم غير صالح</string>
+    <string name="please_enter_a_password">يرجى إدخال كلمة المرور</string>
+    <string name="password_doesn_t_match">كلمة المرور غير متطابقة</string>
+    <string name="invalid_email">بريد إلكتروني غير صالح</string>
+    <string name="username_taken">تم استخدام اسم المستخدم من قبل</string>
+    <string name="add_reference">إضافة مرجع</string>
+    <string name="add_achievement">إضافة إنجاز</string>
+    <string name="select_resources">اختر الموارد:</string>
+    <string name="user_not_available_in_our_database">المستخدم غير متاح في قاعدة البيانات الخاصة بنا</string>
+    <string name="date_of_birth">تاريخ الميلاد:</string>
+    <string name="unable_to_play_audio">غير قادر على تشغيل الصوت</string>
+    <string name="unable_to_load">غير قادر على التحميل</string>
+    <string name="recording_started">بدء التسجيل…</string>
+    <string name="ole_is_recording_audio">أولي يقوم بتسجيل الصوت</string>
+    <string name="recording_stopped">تم إيقاف التسجيل</string>
+    <string name="audio_file_saved_in_database">تم حفظ ملف الصوت في قاعدة البيانات</string>
+    <string name="connection_failed_reason">فشل الاتصال: السبب </string>
+    <string name="are_you_sure">هل أنت متأكد؟</string>
+    <string name="data_cleared">تم مسح البيانات</string>
+    <string name="are_you_sure_want_to_delete_all_the_files">هل أنت متأكد أنك ترغب في حذف جميع الملفات؟</string>
+    <string name="unable_to_clear_files">غير قادر على مسح الملفات</string>
+    <string name="last_synced_never">آخر مزامنة: أبدًا</string>
+    <string name="last_synced_colon">آخر مزامنة: </string>
+    <string name="disclaimer">
+    <![CDATA[
+    <h1>تنصل من المسؤولية</h1>
+    <p>تم تحديث آخر مرة في: 10 يناير 2020</p>
+    <h1>التفسير والتعريفات</h1>
+    <h2>التفسير</h2>
+    <p>الكلمات التي تبدأ بحرف كبير لها معانٍ محددة في الشروط التالية.</p>
+    <p>تعريفات الوصول الواحد تحمل نفس المعنى بغض النظر عما إذا كانت في صيغة المفرد أم الجمع.</p>
+    <h2>التعريفات</h2>
+    <p>لأغراض هذا التنصل من المسؤولية:</p>
+    <ul>
+        <li><strong>الشركة</strong> (المشار إليها في هذا سياسة الكوكيز باسم "الشركة" أو "نحن" أو "لنا") تشير إلى myPlanet.</li>
+        <li><strong>أنت</strong> تعني الفرد الذي يستخدم الخدمة، أو الشركة، أو الكيان القانوني الآخر الذي يستخدم الخدمة نيابة عن هذا الفرد، حسب الاقتضاء.</li>
+        <li><strong>التطبيق</strong> يعني برنامج البرمجيات الذي قدمته الشركة وتم تنزيله بواسطتك على أي جهاز إلكتروني يحمل اسم myPlanet.</li>
+        <li><strong>الخدمة</strong> تشير إلى التطبيق.</li>
+    </ul>
+    <h1>تنصل من المسؤولية</h1>
+    <p>المعلومات الواردة في الخدمة هي لأغراض عامة فقط.</p>
+    <p>الشركة لا تتحمل أي مسؤولية عن الأخطاء أو الغفوات في محتويات الخدمة.</p>
+    <p>في أي حال من الأحوال، لا تكون الشركة مسؤولة عن أي أضرار خاصة أو مباشرة أو غير مباشرة أو تبعية أو عرضية أو أي أضرار أخرى، سواء كانت في إطار عقد أو إهمال أو غير ذلك من القضايا القانونية، تنشأ عن استخدام الخدمة أو محتويات الخدمة. تحتفظ الشركة بالحق في إضافة أو حذف أو تعديل المحتويات في الخدمة في أي وقت دون إشعار مسبق.</p>
+    <p>لا تضمن الشركة أن الخدمة خالية من الفيروسات أو المكونات الضارة الأخرى.</p>
+    <h1>تنصل من معلومات الرعاية الصحية</h1>
+    <p>المعلومات المقدمة بواسطة الخدمة حول الصحة ليست مقصودة لتشخيص أو علاج أو علاج أو منع الأمراض. يتم توفير المنتجات والخدمات والمعلومات والمحتوى الآخر المقدمة من خلال الخدمة، بما في ذلك المعلومات المرتبطة بمواقع الويب الأخرى، لأغراض إعلامية فقط.</p>
+    <p>المعلومات المقدمة من خلال الخدمة ليست شاملة ولا تغطي جميع الأمراض أو الأوجاع أو الحالات الطبية أو علاجها.</p>
+    <p>الأفراد مختلفون وقد يتفاعلون بشكل مختلف مع منتجات مختلفة. التعليقات التي يدلي بها الموظفون أو المستخدمون الآخرون على الخدمة هي آراءهم الشخصية الخاصة التي تعبر عن آرائهم الشخصية الخاصة ولا تمثل موقف أو وجهة نظر الشركة.</p>
+    <p>لا تتحمل الشركة أي مسؤولية عن أي معلومات يتم توفيرها من خلال الخدمة فيما يتعلق بتوصيات بشأن المكملات لأي أغراض صحية.</p>
+    <p>لا تقدم الشركة أي ضمان أو ضمان بشأن أي منتجات أو خدمات مباعة. الشركة ليست مسؤولة عن أي أضرار ناتجة عن المعلومات أو الخدمات المقدمة حتى إذا تم تنبيه الشركة إلى إمكانية حدوث أضرار.</p>
+    <h1>تنصل من المسؤولية بشأن الروابط الخارجية</h1>
+    <p>قد تحتوي الخدمة على روابط إلى مواقع ويب خارجية لا تقدمها أو تحتفظ بها الشركة بأي طريقة.</p>
+    <p>يرجى ملاحظة أن الشركة لا تضمن دقة أو صلة أو توقيت أو اكتمال أي معلومات على هذه المواقع الخارجية.</p>
+    <h1>تنصل من المسؤولية عن الأخطاء والغفوات</h1>
+    <p>تتمثل معلومات الخدمة في إرشادات عامة حول مسائل ذات أهمية فقط. حتى إذا اتخذت الشركة كل احتياطات لضمان أن محتوى الخدمة سارٍ ودقيق، قد تحدث أخطاء. بالإضافة إلى ذلك، ونظرًا للطبيعة المتغيرة للقوانين والقواعد واللوائح، قد تحدث تأخيرات أو حذفات أو عدم دقة في المعلومات الموجودة في الخدمة.</p>
+    <p>لا تتحمل الشركة أي مسؤولية عن أي أخطاء أو غفوات، أو عن النتائج المتحققة من استخدام هذه المعلومات.</p>
+    <h1>تنصل من الاستخدام العادل</h1>
+    <p>قد يستخدم الشركة مواد محمية بحقوق الطبع والنشر والتي لم يتم تفويضها دائمًا بشكل صريح من قبل مالك حقوق الطبع والنشر. تتيح الشركة هذه المواد المحمية بحقوق الطبع والنشر للانتقاد والتعليق ونشر الأخبار والتدريس والبحوث العلمية أو الأكاديمية.</p>
+    <p>تعتقد الشركة أن هذا يشكل "استخدامًا عادلاً" لأي مواد محمية بحقوق الطبع والنشر من هذا النوع كما هو موضح في القسم 107 من قانون حقوق الطبع والنشر في الولايات المتحدة.</p>
+    <p>إذا كنت ترغب في استخدام المواد المحمية بحقوق الطبع والنشر من الخدمة لأغراضك الشخصية التي تتجاوز الاستخدام العادل، يجب عليك الحصول على إذن من مالك حقوق الطبع والنشر.</p>
+    <h1>تنصل من المسؤولية عن الآراء المعبر عنها</h1>
+    <p>قد تحتوي الخدمة على آراء وآراء هي للمؤلفين ولا تعكس بالضرورة السياسة الرسمية أو الموقف الرسمي لأي مؤلف آخر أو وكالة أو منظمة أو صاحب عمل أو شركة، بما في ذلك الشركة.</p>
+    <p>التعليقات التي ينشرها المستخدمون هي مسؤوليتهم الشخصية فقط، وسيتحمل المستخدمون المسؤولية الكاملة والمسؤولية واللوم عن أي قذف أو دعوى قانونية ناتجة عن شيء مكتوب في تعليق أو نتيجة مباشرة لشيء مكتوب في تعليق. الشركة غير مسؤولة عن أي تعليق ينشره المستخدمون وتحتفظ بالحق في حذف أي تعليق لأي سبب كان.</p>
+    <h1>تنصل من المسؤولية عن عدم التحمل</h1>
+    <p>تم توفير المعلومات في الخدمة مع الفهم بأن الشركة ليست مشغولة هنا في تقديم الاستشارة والمشورة القانونية والمحاسبية والضريبية أو غيرها من المشورة والخدمات المهنية. على هذا النحو، لا يجب استخدامها كبديل للاستشارة مع مستشاري المحاسبة والضرائب والقانونية أو غيرها من المستشارين المختصين.</p>
+    <p>في أي حال من الأحوال، لا تكون الشركة أو مورديها مسؤولين عن أي أضرار خاصة أو عرضية أو غير مباشرة أو تبعية تنشأ عن استخدامك للخدمة أو عدم القدرة على الوصول إليها أو استخدامها.</p>
+    <h1>تنصل من "استخدام على مسؤوليتك الخاصة"</h1>
+    <p>جميع المعلومات المقدمة في الخدمة هي "كما هي"، دون ضمان كامل للمعلومات الكاملة أو الدقة أو الاتساق أو النتائج التي تم الحصول عليها من استخدام هذه المعلومات، ودون أي ضمان صريح أو ضمني، بما في ذلك، على سبيل المثال لا الحصر، ضمانات الأداء أو التسويق أو اللياقة لغرض معين.</p>
+    <p>لن تكون الشركة مسؤولة تجاهك أو تجاه أي شخص آخر عن أي قرار تتخذه أو أي إجراء تتخذه بالاعتماد على المعلومات المقدمة من خلال الخدمة أو عن أي أضرار تبعية أو خاصة مماثلة، حتى إذا تم تنبيه الشركة إلى إمكانية حدوث مثل تلك الأضرار.</p>
+    <h2>اتصل بنا</h2>
+    <p>إذا كان لديك أي أسئلة حول هذا التنصل من المسؤولية، يمكنك الاتصال بنا:</p>
+    <ul>
+        <li>عبر البريد الإلكتروني: myplanet@ole.org</li>
+        <li>عن طريق زيارة هذه الصفحة على موقعنا على الويب: <a href="https://ole.org/contact">https://ole.org/contact</a></li>
+    </ul>
+    ]]>
+</string>
+    <string name="about">
+    <![CDATA[
+    <h3>ماي بلانت</h3>
+    <p>ماي بلانت هو أداة تعليمية مصممة للعمل مع تطبيق ويب بلانت.
+    تم استخدامه لتحسين التعليم المبكر، والمدارس الثانوية، وصحة القرى، وتنمية قوى العمل الشبابية،
+    والتنمية الاقتصادية والمجتمعية.</p>
+    <p>بلانت هاوس هو مستودع للموارد المجانية ومفتوحة الوصول والمجال العام لصالح جميع المتعلمين.</p>
+    <p>تم تصميم ماي بلانت ليكون متاحًا للجميع، في كل مكان، في كل وقت. إنه قابل للنقل وبأسعار معقولة وقابل للتوسع ومستدام.
+    يعمل على أي جهاز أندرويد مثل الأجهزة اللوحية والهواتف المحمولة. يعمل مع أو بدون اتصال بالإنترنت.</p>
+    <p>يتيح هذا التطبيق للمدارس والمجتمعات الحصول على مكتبة ونظام تعلم متعدد الوسائط كامل يتصل ببلانت بشكل دوري.
+    يمكن أن تحتوي الأجهزة المكونة على لوحة القيادة الشخصية للمتعلمين. يتأكد هذا من قدرة المتعلمين على قراءة الكتب على رفهم وأخذ الدورات بدون اتصال - أي
+    بدون اتصال بخادم مركزي. يتم تشجيع المتعلمين على تقييم الموارد والدورات التي يستخدمونها من خلال نظام تصنيف من واحد إلى خمس نجوم.
+    يمكن للمتعلمين بشكل دوري مزامنة بياناتهم مع الخادم. يتم تحميل بيانات الأنشطة وتحميل الموارد الجديدة في غضون دقائق قليلة إلى ماي بلانت للاستخدام دون اتصال.</p>
+    <p>تحتوي لوحة القيادة أيضًا على سجل إنجازات وتقويم أحداث ونظام محادثة داخلي للتواصل مع أعضاء الفريق.</p>
+    <p>ثبت أن ماي بلانت فعالة للغاية في تحسين فرص التعلم لأكثر من خمسين ألف متعلم في أكثر من 100 موقع،
+    في المدارس في جميع أنحاء نيبال وغانا وكينيا ورواندا، مع اللاجئين السوريين في الأردن، واللاجئين الصوماليين في كينيا، وعمال الصحة في القرى في أوغندا.</p>
+    ]]>
+    </string>
+    <string name="is_on_please_turn_of_to_save_battery">تم تشغيله، يرجى إيقافه لتوفير البطارية</string>
+    <string name="go_to_settings">الذهاب إلى الإعدادات</string>
+    <string name="new_version_of_my_planet_available">إصدار جديد من my planet متاح</string>
+    <string name="download_first_to_continue">قم بالتنزيل أولاً للاستمرار</string>
+    <string name="upgrade_local">الترقية (محلي)</string>
+    <string name="upgrade">ترقية</string>
+    <string name="apk_already_exists">APK موجود بالفعل</string>
+    <string name="auto_sync">مزامنة تلقائية</string>
+    <string name="force_weekly_sync">فرض مزامنة أسبوعية</string>
+    <string name="force_monthly_sync">فرض مزامنة شهرية</string>
+    <string name="beta_function_for_course">وظيفة بيتا للدورة التدريبية</string>
+    <string name="beta_function_for_auto_update">وظيفة بيتا للتحديث التلقائي</string>
+    <string name="beta_function_for_wifi_switch">وظيفة بيتا لتبديل الواي فاي</string>
+    <string name="beta_function_for_achievement">وظيفة بيتا للإنجاز</string>
+    <string name="upgrade_application">ترقية التطبيق</string>
+    <string name="auto_upgrade">ترقية تلقائية</string>
+    <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى؟</string>
+    <string name="all_beta_functions">جميع وظائف بيتا</string>
+    <string name="auto_sync_device">جهاز مزامنة تلقائي</string>
+    <string name="beta_functionality">وظائف بيتا</string>
+    <string name="main_controls">التحكم الرئيسي</string>
+    <string name="select_user_to_login">اختر المستخدم لتسجيل الدخول</string>
+    <string name="dismiss">رفض</string>
+    <string name="gps_is_settings">إعدادات نظام تحديد المواقع (GPS)</string>
+    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">نظام تحديد المواقع (GPS) غير مفعل. هل ترغب في الانتقال إلى قائمة الإعدادات؟</string>
+    <string name="available_space_colon">المساحة المتوفرة: </string>
+    <string name="community_leaders">قادة المجتمع</string>
+    <string name="services">الخدمات</string>
+    <string name="survey_taken">تم أخذ الاستبيان </string>
+    <string name="times"> مرات</string>
+    <string name="ai_chat">الدردشة ai</string>
 
-    <string-array name="info_type">
-        <item>Languages</item>
-        <item>Education</item>
-        <item>Employment History</item>
-        <item>Badges</item>
-        <item>Certificates</item>
-        <item>Internships</item>
-        <item>Awards</item>
-    </string-array>
 </resources>

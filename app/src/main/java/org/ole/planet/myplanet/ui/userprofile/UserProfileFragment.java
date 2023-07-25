@@ -115,9 +115,10 @@ public class UserProfileFragment extends Fragment {
     private void populateUserData(View v) {
         model = handler.getUserModel();
         ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
-        ((TextView) v.findViewById(R.id.txt_email)).setText("Email : " + Utilities.checkNA(model.getEmail()));
+        ((TextView) v.findViewById(R.id.txt_email)).setText(getString(R.string.email_colon)
+                + Utilities.checkNA(model.getEmail()));
         String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        ((TextView) v.findViewById(R.id.txt_dob)).setText("Date of birth : " + dob);
+        ((TextView) v.findViewById(R.id.txt_dob)).setText(getString(R.string.date_of_birth) + dob);
         if (!TextUtils.isEmpty(model.getUserImage()))
             Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(imageView, new Callback() {
                 @Override

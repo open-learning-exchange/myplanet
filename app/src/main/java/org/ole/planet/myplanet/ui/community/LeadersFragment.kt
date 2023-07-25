@@ -25,7 +25,7 @@ class LeadersFragment : Fragment() {
         var mRealm = DatabaseService(requireActivity()).realmInstance;
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
         if (leaders.isEmpty()) {
-            tv_nodata.text = "No data available"
+            tv_nodata.text = getString(R.string.no_data_available)
         } else {
             rv_member.layoutManager = GridLayoutManager(activity, 2)
             val list = ArrayList<RealmUserModel>()

@@ -3,147 +3,187 @@
     <string name="app_name">My Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">Settings</string>
-    <string name="hint_name">Username</string>
+    <string name="hint_name">Magaca isticmaalaha</string>
     <string name="hint_password">Password</string>
-    <string name="btn_sign_in">Sign In</string>
-    <string name="btn_sync">Sync</string>
-    <string name="btn_sync_save">Save</string>
-    <string name="btn_sync_cancel">Cancel</string>
-    <string name="err_msg_name">Enter your username</string>
-    <string name="err_msg_password">Enter the password</string>
-    <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.2.1)</string>
-    <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
+    <string name="btn_sign_in">Soo gal</string>
+    <string name="btn_sync">Isku xidh </string>
+    <string name="btn_sync_save">Keyd</string>
+    <string name="btn_sync_cancel">burin</string>
+    <string name="err_msg_name">Geli magaca isticmaalaha</string>
+    <string name="err_msg_password">Geli erayga sirta ah</string>
+    <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
+    <string name="hint_serverURl">Cinwaanka Server-ka meeraha (Tusaale 192.168.2.1) </string>
+    <string name="hint_serverPin">Biinanka server-ka (Ka hel biinka maamulaha) </string>
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
-    <string name="device_name">Device Name</string>
-    <string name="title_activity_dashboard">Dashboard</string>
-    <string name="menu_myplanet">myPlanet</string>
-    <string name="menu_home">Home</string>
-    <string name="menu_library">Our Library</string>
-    <string name="menu_courses">Our Courses</string>
-    <string name="menu_meetups">Meetups</string>
-    <string name="menu_surveys">Surveys</string>
-    <string name="menu_logout">Logout</string>
-    <string name="menu_feedback">Feedback</string>
-    <string name="system_name">My Planet</string>
-    <string name="txt_myLibrary">myLibrary</string>
-    <string name="txt_myCourses">myCourses</string>
+    <string name="title_activity_dashboard">dashboard</string>
+    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_home">Guriga</string>
+    <string name="menu_library">Library</string>
+    <string name="menu_courses">Koorsooyin</string>
+    <string name="menu_meetups">Kulamo</string>
+    <string name="menu_surveys">Sahaminta</string>
+    <string name="menu_logout">ka bax</string>
+    <string name="menu_feedback">jawaab celin</string>
+    <string name="system_name">myPlanet</string>
+    <string name="txt_myLibrary">maktabadayda</string>
+    <string name="txt_myCourses">coursyadayda</string>
     <string name="txt_myMeetups">myMeetups</string>
-    <string name="txt_myTeams">myTeams</string>
-    <string name="button_submit">Submit</string>
-    <string name="button_cancel">Cancel</string>
-    <string name="download_suggestion">The following files are not downloaded. Do you want to download them for offline use?</string>
-    <string name="download_selected">Download Selected</string>
-    <string name="txt_cancel">Cancel</string>
-    <string name="download_all">Download All</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="add_to_mycourse">Add to my courses</string>
-    <string name="add_to_mylib">Add To myLibrary</string>
-    <string name="step">step</string>
-    <string name="submission">mySubmissions</string>
+    <string name="txt_myTeams">kooxahayga</string>
+    <string name="button_submit">Gudbi</string>
+    <string name="button_cancel">burin</string>
+    <string name="download_suggestion">Faylasha soo socda lama soo dejin. Ma rabtaa inaad u soo dejiso si offline loogu isticmaalo?</string>
+    <string name="download_selected">Soo dejin ayaa la doortay</string>
+    <string name="txt_cancel">burin</string>
+    <string name="download_all">Soo deji Dhammaan</string>
+    <string name="hello_blank_fragment">Hello jajab maran</string>
+    <string name="add_to_mycourse">ku darso koorsooyinkayga</string>
+    <string name="join_selected">Ku biir la doortay</string>
+    <string name="join">Ku biir</string>
+    <string name="add_to_mylib">Kudar Maktabadayda</string>
+    <string name="step">tallaabo</string>
+    <string name="submission">soo-gudbintay</string>
     <string name="calendar">Calendar</string>
-    <string name="email">Email</string>
+    <string name="email">iimayl</string>
     <string name="documents">Documents</string>
-    <string name="your_ans">Your Answer</string>
-    <string name="delete_my_course">Delete myCourse</string>
-    <string name="invite_member">Invite Member</string>
-    <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type :</string>
-    <string name="suggestion">Suggestion</string>
-    <string name="no">No</string>
-    <string name="yes">Yes</string>
-    <string name="question">Question</string>
+    <string name="your_ans">jawaabtaada</string>
+    <string name="delete_my_course">Tirtir MyCourse</string>
+    <string name="invite_member">Casuuma Xubin</string>
+    <string name="is_urgent">jawaab celintaadu ma degdegbaa?</string>
+    <string name="feedback_type">Nooca jawaab celinta:</string>
+    <string name="suggestion">talo soo jeedin</string>
+    <string name="no">Maya</string>
+    <string name="yes">Haa</string>
+    <string name="question">Su\'aal</string>
     <string name="bug">Bug</string>
-    <string name="your_feedback">Your Feedback *</string>
-    <string name="button_update">Update</string>
-    <string name="level">Level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
-    <string name="gender">Gender</string>
-    <string name="birth_date">Birth Date</string>
-    <string name="phone_number">Phone Number</string>
-    <string name="language">Language</string>
-    <string name="last_name">Last Name</string>
-    <string name="version">Version</string>
-    <string name="middle_name">Middle Name</string>
-    <string name="first_name">First Name</string>
-    <string name="search_dots">Search...</string>
-    <string name="btn_remove_lib">Remove</string>
+    <string name="your_feedback">jawaab celintaada *</string>
+    <string name="button_update">Cusbooneysiin</string>
+    <string name="level">Heerka</string>
+    <string name="male">Lab</string>
+    <string name="female">Naag</string>
+    <string name="gender">Jinsi</string>
+    <string name="birth_date">Taariikhda Dhalashada</string>
+    <string name="phone_number">Telefoon Number</string>
+    <string name="language">Luuqad</string>
+    <string name="last_name">Magaca Dambe</string>
+    <string name="version">Nooca</string>
+    <string name="middle_name">Magaca Dhexe</string>
+    <string name="first_name">Magaca koowaad</string>
+    <string name="search_dots">Raadi…</string>
+    <string name="btn_remove_lib">saar </string>
     <string name="download">Download</string>
-    <string name="published_by">Published By:</string>
-    <string name="author">Author:</string>
-    <string name="language_with_colon">Language :</string>
-    <string name="subject">Subject/s :</string>
-    <string name="license">License :</string>
-    <string name="type">Type :</string>
-    <string name="resource">Resource :</string>
-    <string name="your_rating">Your Rating</string>
-    <string name="your_comment">Leave your comment</string>
-    <string name="show_top_nav">Show Top Navigation Bar in Dashboard</string>
-    <string name="sync_now">Sync Now</string>
-    <string name="logout">Logout</string>
+    <string name="published_by">Waxaa daabacay:</string>
+    <string name="author">Qoraaga:</string>
+    <string name="language_with_colon">Luuqad:</string>
+    <string name="subject">Mawduuc/s:</string>
+    <string name="license">Shatiga:</string>
+    <string name="type">Nooca:</string>
+    <string name="resource_colon">Ilaha:</string>
+    <string name="your_rating">qiimayntaada</string>
+    <string name="your_comment">ka tag faallooyinkaaga</string>
+    <string name="show_top_nav">Show sare navigation Bar gudaha Dashboard</string>
+    <string name="sync_now">Isku-dar hadda</string>
+    <string name="logout">ka bax</string>
     <string name="settings">Settings</string>
-    <string name="change_password">Change Password</string>
-    <string name="edit_profile">Edit Profile</string>
-    <string name="view_profile">View Profile</string>
-    <string name="alerts">Alerts</string>
+    <string name="change_password">Beddel erayga sirta ah</string>
+    <string name="edit_profile">wax ka beddel xogta</string>
+    <string name="view_profile">Arag Profile</string>
+    <string name="alerts">digniino</string>
     <string name="profile">Profile</string>
-    <string name="user">User</string>
-    <string name="remove_selected">Remove Selected</string>
-    <string name="dismiss">Finish</string>
-    <string name="stop_download">Stop Download</string>
-    <string name="downloading_file">Downloading file...</string>
-    <string name="cancel">Cancel</string>
-    <string name="add_to_mycourses">Add To My Courses</string>
-    <string name="added_to">added to</string>
-    <string name="removed_from">removed from</string>
-    <string name="my_courses">my courses</string>
-    <string name="filter_collections">Filter Collections</string>
-    <string name="select_many_collections">Select Many Collections</string>
-    <string name="collections">Collections</string>
+    <string name="user">Isticmaal</string>
+    <string name="remove_selected">saar la xushay</string>
+    <string name="stop_download">jooji soo dejinta</string>
+    <string name="downloading_file">soo dejinta faylka…</string>
+    <string name= "cancel">burin</string>
+    <string name="add_to_mycourses">Ku dar Koorasyadayda</string>
+    <string name="added_to">ku daray</string>
+    <string name="removed_from">laga saaray</string>
+    <string name="my_courses">Korasyadayda</string>
+    <string name="filter_collections">Uruurinta shaandhaynta</string>
+    <string name="select_many_collections">Dooro Ururo Badan</string>
+    <string name="collections">Ururinta</string>
     <string name="ok">OK</string>
-    <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
-    <string name="archive_mycourse">Archive myCourse</string>
-    <string name="menu_achievement">Achievements</string>
-    <string name="edit_achievement">Edit Achievement</string>
-    <string name="add_resources">Add Resources</string>
-    <string name="description">Description</string>
-    <string name="title_asterisk">Title *</string>
-    <string name="name_asterisk">Name *</string>
-    <string name="relationship">Relationship</string>
-    <string name="date">Date</string>
-    <string name="birth_place">Birth Place</string>
-    <string name="clear_tags">Clear</string>
-    <string name="add_an_achievement">Add an Achievement</string>
-    <string name="add_a_reference">Add a Reference</string>
-    <string name="learner">Learner</string>
+    <string name="inactive_message">Isticmalahu ma hawlgelin, fadlan la xidhiidh maamulaha ama maareeyaha si aad u hawlgeliso akoonkaaga.</string>
+    <string name= "archive_mycourse">Kaydi myCourse</string>
+    <string name="menu_achievement">Guulaha</string>
+    <string name="edit_achievement">wax ka beddel guul </string>
+    <string name="add_resources">Kudar Khayraadka</string>
+    <string name="description">Sharaxaad</string>
+    <string name="title_asterisk">Cuqaal *</string>
+    <string name="name_asterisk">Magaca *</string>
+    <string name="relationship">Xiriirka</string>
+    <string name="date">Taariikhda</string>
+    <string name="birth_place">Meesha dhalashada</string>
+    <string name="clear_tags">Nadiifi</string>
+    <string name="add_an_achievement">Kudar Guul</string>
+    <string name="add_a_reference">Kudar Tixraac</string>
+    <string name="learner">barte</string>
     <string name="show_filter">Show Filter</string>
-    <string name="subjects">Subjects</string>
+    <string name="subjects">Mawduucyo</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Levels</string>
-    <string name="languages">Languages</string>
-    <string name="txt_myLife">myLife</string>
-    <string name="achievements">myAchievements</string>
-    <string name="messeges">myMessages</string>
-    <string name="contacts">Contacts</string>
-    <string name="news">Our News</string>
-    <string name="dictionaries">Dictionaries</string>
+    <string name="levels">Heerarka</string>
+    <string name="languages">Luqadaha</string>
+    <string name="txt_myLife">Nolosheyda</string>
+    <string name="achievements">Dhamaanada</string>
+    <string name="messeges">Farriimahayga</string>
+    <string name="contacts">Xiriirrada</string>
+    <string name="news">Wararka</string>
+    <string name="references">Tixraacyo</string>
     <string name="maps">Maps</string>
-    <string name="enter_username">Enter Username</string>
-    <string name="help_wanted">Help Wanted</string>
-    <string name="btn_guest_login">Login As Guest</string>
-    <string name="joined_members">Joined Members</string>
-    <string name="requested_member">Requested Member</string>
-    <string name="courses">Courses</string>
+    <string name="help_wanted">caawin la rabo </string>
+    <string name="btn_guest_login">Marti ahaan u soo gal</string>
+    <string name= "enter_username">Geli Magaca isticmaalaha</string>
+    <string name="login">Giri</string>
+    <string name="child_mode">Qaabka fudud</string>
+    <string name="joined_members">Xubno ku biiray</string>
+    <string name="requested_member">la codsaday </string>
+    <string name="courses">Koorsooyin</string>
+    <string name="enter_message_here">halkan ku gali fariinta</string>
+    <string name="what_would">maxaad jeceshahay inaad wadaagto?</string>
+    <string name="our_news">Wararkayaga</string>
+    <string name="delete_record">Ma hubtaa inaad rabto inaad tirtirto kuwa soo socda?</string>
+    <string name="edit_post">wax ka beddel boostada</string>
+    <string name="search_user">raadiye isticmaale</string>
+    <string name="get_started">BILAAB</string>
+    <string name="enter_password">Geli Password</string>
+    <string name="managerial_login">Maareeyaha Soo gal</string>
+    <string name= "save_username_and_password">Keydi magaca isticmaalaha iyo erayga sirta ah</string>
+    <string name="year">Sannad</string>
+    <string name="publisher">Daabace</string>
+    <string name="link_to_license">Link to shatiga</string>
+    <string name="resource_for">Ilaha loogu talagalay</string>
+    <string name="open_which_file">Fur waa kuwee faylka</string>
+    <string name= "file_upload">Soo rarista faylka</string>
+    <string name="choose_file">Dooro faylka</string>
+    <string name="file_downloadable">Faylka la soo dejisan karo</string>
+    <string name="priority">mudnaanta</string>
+    <string name="status">xaalad</string>
+    <string name="title_not_compulsary">Cuqaal</string>
+    <string name="discussion">dood</string>
+    <string name="add_message">Ku dar fariin</string>
+    <string name="enter_message">halkan ku geli fariintaada..</string>
+    <string name="added_by">Waxaa ku daray</string>
+    <string name="record_audio">Maqalka duubi</string>
+    <string name="record_video">Diiwaangeli Video</string>
+    <string name="select_gallery">Ka dooro Gallery</string>
+    <string name="add_resource">Kudar Ilaha:</string>
+    <string name="reply">jawaab</string>
+    <string name="show_reply">muuji jawaabaha</string>
+    <string name="show_main_conversation">muuji wada hadalka ugu muhiimsan</string>
+    <string name="https_protocol">https://</string>
+    <string name="http_protocol">http://</string>
+    <string name="showing_reply_of">muujinaya jawaabta:</string>
+    <string name="open_date">Taariikhda Furan</string>
+    <string name="my_survey">Galmadaayda</string>
     <string-array name="level">
         <item></item>
-        <item>Beginner</item>
-        <item>Intermediate</item>
-        <item>Advanced</item>
-        <item>Expert</item>
+        <item>Bilow</item>
+        <item>Dhexdhexaad</item>
+        <item>Sareeye</item>
+        <item>Khabiir</item>
     </string-array>
+
     <string-array name="language">
         <item>English</item>
         <item>नेपाली</item>
@@ -163,294 +203,737 @@
     </string-array>
 
     <string-array name="info_type">
-        <item>Languages</item>
-        <item>Education</item>
-        <item>Employment History</item>
-        <item>Badges</item>
-        <item>Certificates</item>
-        <item>Internships</item>
-        <item>Awards</item>
+        <item>Afka</item>
+        <item>Waxbarashada</item>
+        <item>Taariikhda Shaqada</item>
+        <item>Lambarada</item>
+        <item>Dhameystirada</item>
+        <item>Maqal</item>
+        <item>Dhamaan</item>
     </string-array>
-    <string name="login">Login</string>
-    <string name="enter_message_here">Enter message here</string>
-    <string name="what_would">What would you like to share?</string>
-    <string name="delete_record">Are you sure you want to delete the following ?</string>
-    <string name="edit_post">Edit Post</string>
-    <string name="child_mode">Easy Mode</string>
-    <string name="our_news">Our News</string>
-    <string name="get_started">GET STARTED</string>
-    <string name="enter_password">Enter Password</string>
-    <string name="managerial_login">Manager Login</string>
-    <string name="save_username_and_password">Save Username and Password</string>
-    <string name="year">Year</string>
-    <string name="publisher">Publisher</string>
-    <string name="link_to_license">Link to license</string>
-    <string name="resource_for">Resource For</string>
-    <string name="open_which_file">Open Which File</string>
-    <string name="file_upload">File Upload</string>
-    <string name="choose_file">Choose File</string>
-    <string name="file_downloadable">File downloadable</string>
-    <string name="priority">Priority</string>
-    <string name="status">Status</string>
-    <string name="title_not_compulsary">Title</string>
-    <string name="discussion">Discussion</string>
-    <string name="add_message">Add Message</string>
-    <string name="enter_message">Enter your message here..</string>
-    <string name="search_user">Search user</string>
-    <string name="added_by">Added By</string>
-    <string name="record_audio">Record Audio</string>
-    <string name="record_video">Record Video</string>
-    <string name="select_gallery">Select From Gallery</string>
-    <string name="add_resource">Add Resource :</string>
-    <string name="reply">Reply</string>
-    <string name="show_reply">Show Replies</string>
-    <string name="show_main_conversation">Show main conversation</string>
-    <string name="https_protocol">https://</string>
-    <string name="http_protocol">http://</string>
-    <string name="showing_reply_of">Showing reply of :</string>
-    <string name="open_date">Open Date</string>
-    <string name="my_survey">mySurvey</string>
-    <string name="references">References</string>
-    <string name="bible">Bibles</string>
-    <string name="feature_not">Feature not available</string>
-    <string name="myhealth">myHealth</string>
-    <string name="type_name_to_search">Type name to search</string>
-    <string name="action">Action</string>
-    <string name="created_on">Created On</string>
-    <string name="name_normal">Name</string>
-    <string name="mypersonals">myPersonals</string>
-    <string name="capture_image">Capture Image</string>
-    <string name="team_name">Enter Team Name</string>
-    <string name="resources">Resources</string>
-    <string name="button_reject">Reject</string>
-    <string name="button_accept">Accept</string>
-    <string name="plan">Plan</string>
-    <string name="body_temperature">Body Temperature</string>
-    <string name="rectally">Rectally</string>
-    <string name="axillary">Axillary</string>
-    <string name="by_ear">By ear</string>
-    <string name="by_skin">By skin</string>
-    <string name="temperature_taken">Temperature taken :</string>
-    <string name="pulse_rate">Pulse Rate (bpm)</string>
-    <string name="respiration_rate">Respiration Rate</string>
-    <string name="systolic">Systolic</string>
-    <string name="diastolic">Diastolic</string>
-    <string name="blood_pressure">Blood Pressure</string>
-    <string name="orally">Orally</string>
-    <string name="save">Save</string>
-    <string name="vital_signs">Vital Signs Record</string>
-    <string name="task">Task</string>
-    <string name="click_here_to_pick_date">Click here to pick date</string>
-    <string name="enterprises">Enterprises</string>
-    <string name="select_member">Select Team Member</string>
-    <string name="assign_task_to">Task Assigned to</string>
-    <string name="leader_selected">Leader selected</string>
-    <string name="user_removed_from_team">User removed from team</string>
-    <string name="remove">Remove</string>
-    <string name="make_leader">Make Leader</string>
-    <string name="mission"><![CDATA[Mission & Services]]></string>
-    <string name="team">Team</string>
-    <string name="applicants">Applicants</string>
-    <string name="finances">Finances</string>
-    <string name="messages">messages</string>
-    <string name="nodata">No data available</string>
-    <string name="note">Note *</string>
-    <string name="amount">Amount</string>
+    <string-array name="open_With">
+        <item>HTML</item>
+        <item>PDF.js</item>
+        <item>BeLL-Reader</item>
+        <item>Mp3</item>
+        <item>Flow Video Player</item>
+        <item>BeLL Video Book Player</item>
+        <item>Native Video</item>
+    </string-array>
+    <string-array name="media">
+        <item>Qoraal</item>
+        <item>Sawir/Diirada</item>
+        <item>Damiir/Muusiqaa/Kitaab</item>
+        <item>Filim</item>
+    </string-array>
+
+    <string-array name="resource_type">
+        <item>Buugga Barashada</item>
+        <item>Qorshaha Darsiga</item>
+        <item>Sharciyo</item>
+        <item>Dhakhaatiir</item>
+        <item>Su\'aalaha warka</item>
+    </string-array>
+
+    <string-array name="array_levels">
+        <item>Barashada hore</item>
+        <item>Dugsiga hoose</item>
+        <item>Dugsiga sare</item>
+        <item>Dugsiga hoose sare</item>
+        <item>Dugsiga sare sare</item>
+        <item>Dugsiga hore soo duuban</item>
+        <item>Graduate</item>
+        <item>Xirfadle</item>
+    </string-array>
+    <string-array name="array_subjects">
+        <item>Beeraha</item>
+        <item>Fanka</item>
+        <item>Boostada iyo Maaliyadda</item>
+        <item>Dhul iyo Dabiiciga</item>
+        <item>Cunto iyo Caafimaadka</item>
+        <item>Jiographya</item>
+        <item>Caafimaad iyo Daawo</item>
+        <item>Taariikhda</item>
+        <item>Horumarin dadka</item>
+        <item>Afka</item>
+        <item>Sharci</item>
+        <item>Barashada</item>
+    </string-array>
+    <string-array name="array_resource_for">
+        <item>Default</item>
+        <item>Ra\'iis</item>
+        <item>Arday</item>
+    </string-array>
+    <string name="dictionaries">Qaamuusyada</string>
+    <string name="bible">Quraan</string>
+    <string name="feature_not">Heerkaan lama helin</string>
+    <string name="myhealth">Caafimaadkaan</string>
+    <string name="type_name_to_search">Geli magaca si aad u raadto</string>
+    <string name="action">Hawlgal</string>
+    <string name="created_on">Lagu sameeyey</string>
+    <string name="name_normal">Magaca</string>
+    <string name="mypersonals">Dhamaan xogtaaga caafimaadka</string>
+    <string name="capture_image">Sawir ku xir</string>
+    <string name="team_name">Geli magaca kooxda</string>
+    <string name="resources">Vifijo</string>
+    <string name="button_reject">Diida</string>
+    <string name="button_accept">Qabto</string>
+    <string name="plan">Qorshe</string>
+    <string name="body_temperature">Dhererka Badan (°C)</string>
+    <string name="rectally">Dherer (Geedho)</string>
+    <string name="axillary">Dherer (Xoogga)</string>
+    <string name="by_ear">Dherer (Cilmiga)</string>
+    <string name="by_skin">Dherer (Guriyaha)</string>
+    <string name="temperature_taken">Dhererka lagu qaaday:</string>
+    <string name="pulse_rate">Dhererka Calaamadda (bpm)</string>
+    <string name="respiration_rate">Dhererka Helay</string>
+    <string name="systolic">Dhererka xiran</string>
+    <string name="diastolic">Dhererka hoostooda</string>
+    <string name="blood_pressure">Dhererka Dhiiga (Xiran/Hoostooda)</string>
+    <string name="orally">Dherer (Go\'do)</string>
+    <string name="save">Keyd</string>
+    <string name="vital_signs">Kitaabka Dhererada Muhiimka ah</string>
+    <string name="task">Hawlo (lazim)</string>
+    <string name="deadline_required">Dib-u-heshiisi (lazim)</string>
+    <string name="click_here_to_pick_date">Si aad u doorato taariikhda</string>
+    <string name="enterprises">Shirkado</string>
+    <string name="select_member">Dooro Xubin Kooxda</string>
+    <string name="assign_task_to">Hawlo Laga Soo Diray</string>
+    <string name="leader_selected">Ra\'is lagu doortay</string>
+    <string name="user_removed_from_team">User ka baxsaday kooxda</string>
+    <string name="remove">Ka saar</string>
+    <string name="make_leader">Gacan-siin</string>
+    <string name="mission"><![CDATA[Mission & Adeegyada]]></string>
+    <string name="team">Kooxda</string>
+    <string name="applicants">Loo baahan yahay</string>
+    <string name="finances">Maaliyadda</string>
+    <string name="messages">Fariimaha</string>
+    <string name="nodata">Wax ma jirin</string>
+    <string name="note">Fariin *</string>
+    <string name="amount">Masaafad</string>
     <string name="debit">Debit</string>
     <string name="credit">Credit</string>
-    <string name="balance">Balance</string>
-    <string name="total">Total</string>
-    <string name="location">Location</string>
-    <string name="start_date">Start Date</string>
-    <string name="click_here_to_pick_time">Click here to pick time</string>
-    <string name="start_time">Start Time</string>
-    <string name="end_date">End Date</string>
-    <string name="end_time">End Time</string>
-    <string name="daily">Daily</string>
-    <string name="weekly">Weekly</string>
-    <string name="recurring_frequency">Recurring Frequency</string>
-    <string name="filter_by_date">Date Filter</string>
-    <string name="emergency_contact">Emergency Contact</string>
-    <string name="contact">Contact</string>
-    <string name="special_needs">Special Needs</string>
-    <string name="other_need">Other Needs</string>
-    <string name="update_health_record">Update Health Record</string>
-    <string name="vital_sign">Vital Signs</string>
-    <string name="examination">Examination</string>
-    <string name="add_examination">Add Examination</string>
-    <string name="new_patient">Next Member</string>
-    <string name="height">Height</string>
-    <string name="width">Width</string>
-    <string name="vision">Vision</string>
-    <string name="hearing">Hearing</string>
-    <string name="vitals">Vitals</string>
-    <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation">Observation and Notes</string>
-    <string name="diagnosis">Diagnosis</string>
-    <string name="treatments">Treatments</string>
-    <string name="medications">Medications</string>
-    <string name="immunization">Immunization Dates</string>
-    <string name="allergies">Allergies</string>
-    <string name="xray">X-rays</string>
-    <string name="labtest">Lab Tests</string>
-    <string name="referrals">Referrals</string>
-    <string name="full_name">Full Name</string>
-    <string name="weight">Weight</string>
-    <string name="no_records">No records found</string>
-    <string name="chats">Chats</string>
-    <string name="select_health_member">Select Member</string>
-    <string name="notifications">Notifications</string>
-    <string name="incorrect_ans">Incorrect answer, please try again</string>
-    <string name="diagnosis_note">Diagnosis Note</string>
-    <string name="menu_community">Community</string>
-    <string name="library">Library</string>
-    <string name="enter_title">Enter title</string>
-    <string name="add_link">Add Link</string>
-    <string name="chat">Chat</string>
-    <string name="members">Members</string>
-    <string name="tasks">Tasks</string>
-    <string name="join_requests">Join Requests</string>
-    <string name="add_image">Add Image</string>
-    <string name="addImageToMessage">Beta Add image to message</string>
-    <string name="clear_data">Clear Data</string>
-    <string name="reset_app">Reset App</string>
-    <string name="freeup_space">Freeup disk space</string>
-    <string name="action_disclaimer">Disclaimer</string>
-    <string name="action_about">About</string>
-    <string name="engilsh_dictionary">English Dictionary</string>
-    <string name="title_activity_news_detail">NewsDetailActivity</string>
-    <string name="large_text">
-        "Large Text\n\n"
-        "... is only available in english.\n\n"
-    </string>
-    <string name="add_story">Add Story</string>
-    <string name="txt_myprogress">myProgress</string>
-    <string name="more_action">Filter</string>
-    <string name="my_progress">My Progress</string>
-    <string name="my_activity">My Activity</string>
-    <string name="add_label">Add Label</string>
-    <string name="share_with_community">Share with community</string>
-    <string name="add_res">Add Resource</string>
-    <string name="password">Password</string>
-    <string name="retype_password">Retype Password</string>
-    <string name="change_member">Change Member</string>
-    <string name="use_phone_number_as_password">Use phone number as password</string>
-    <string name="feedback">Feedback</string>
-    <string name="become_a_member">Become a member</string>
-    <string name="add_member">Add member</string>
-    <string name="confirm_exit">Are you sure you want to leave this team?</string>
-    <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
-    <string name="other_notes">Other Notes</string>
-    <string name="archive">Archive</string>
-    <string name="Q1">Question : 1/</string>
-    <string name="no_questions">No questions available</string>
-    <string name="Q">"Question : "</string>
-    <string name="finish">Finish</string>
-    <string name="submit">Submit</string>
-    <string name="our_courses">Our Courses</string>
-    <string name="file">"File : "</string>
-    <string name="recording_audio">Recording audio......</string>
-    <string name="show_replies">"Show replies "</string>
-    <string name="selected">"Selected : "</string>
-    <string name="last_sync"><![CDATA["<< Last sync with server: "]]></string>
-    <string name="last_syncs">LastSync</string>
-    <string name="login_user">loginUserName</string>
-    <string name="login_password">loginUserPassword</string>
-    <string name="no_team_available">No team / enterprise available</string>
-    <string name="last_sync_date">"Last Sync Date: "</string>
-    <string name="no_assignee">No assignee</string>
-    <string name="note_">notes</string>
-    <string name="diagno">diagnosis</string>
-    <string name="treat">treatments</string>
-    <string name="medicay">medications</string>
-    <string name="immunizations">immunizations</string>
-    <string name="allergy">allergies</string>
-    <string name="xrays">xrays</string>
-    <string name="tests">tests</string>
-    <string name="referral">referrals</string>
-    <string name="other_diagnosis">Other Diagnosis</string>
-    <string name="close">Close</string>
-    <string name="negative_balance">The current balance is negative!</string>
-    <string name="entMission">What is your enterprise\'s Mission?</string>
-    <string name="entServices">What are the Services your enterprise provides?</string>
-    <string name="entRules">What are the Rules of your enterprise?</string>
-    <string name="entEmptyDescription"><![CDATA[The enterprise has no mission & services.]]></string>
-    <string name="total_visits">Total visits from last 30 days</string>
-    <string name="ole_logo">Open Learning Exchange Logo</string>
-    <string name="open_community">Open Community</string>
+    <string name="balance">Baaki</string>
+    <string name="total">Gudaha</string>
+    <string name="location">Goobta</string>
+    <string name="start_date">Bilowga Dhibaatada</string>
+    <string name="click_here_to_pick_time">Si aad u doorato waqtiga</string>
+    <string name="start_time">Bilowga Waqtiga</string>
+    <string name="end_date">Dhamaadka Dhibaatada</string>
+    <string name="end_time">Dhamaadka Waqtiga</string>
+    <string name="daily">Maalinle</string>
+    <string name="weekly">Toddobaad</string>
+    <string name="recurring_frequency">Inta soo bixiyay oo socota</string>
+    <string name="filter_by_date">Filtiirka Tariikhda</string>
+    <string name="emergency_contact">Xiriirka Gargaarka</string>
+    <string name="contact">Xiriir</string>
+    <string name="special_needs">Dib-u-xuso</string>
+    <string name="other_need">Dib-u-heshiisi kale</string>
+    <string name="update_health_record">Cusbooneysiinta Dabeecada Caafimaadka</string>
+    <string name="vital_sign">Calaamadaha Dhererka</string>
+    <string name="examination">Baaris</string>
+    <string name="add_examination">Kudar Baaris</string>
+    <string name="new_patient">Qof kasta oo cusub</string>
+    <string name="height">Dhamaan (cm)</string>
+    <string name="width">Wiil (cm)</string>
+    <string name="vision">Ruuxa</string>
+    <string name="hearing">Gurinaan</string>
+    <string name="vitals">Calaamaddaha</string>
+    <string name="condition_and_treatment">Caddaaladda iyo Dib u dhiska</string>
+    <string name="observation" translatable="false">La xiriira iyo falanqeynta</string>
+    <string name="diagnosis" translatable="false">Baaris</string>
+    <string name="treatments" translatable="false">Dib u dhiska</string>
+    <string name="medications" translatable="false">Daaweynaha</string>
+    <string name="immunization" translatable="false">Taariikhda xoojinta</string>
+    <string name="allergies" translatable="false">Alargada</string>
+    <string name="xray" translatable="false">X-ray</string>
+    <string name="labtest" translatable="false">Baarista labada</string>
+    <string name="referrals" translatable="false">Dabaqyo</string>
+    <string name="full_name">Magaca Buugaagta oo Dhan</string>
+    <string name="weight">Cirka (kg)</string>
+    <string name="no_records">Wax ma jirin</string>
+    <string name="chats">Sawiro</string>
+    <string name="select_health_member">Dooro Xubin</string>
+    <string name="notifications">Ciidamo</string>
+    <string name="incorrect_ans">Jawaab aan sax ahayn, fadlan isku day</string>
+    <string name="diagnosis_note">Fariin Baaris</string>
+    <string name="menu_community">Bulshada</string>
+    <string name="library">Maktabada</string>
+    <string name="device_name">Magaca Qalabka</string>
+    <string name="enter_title">Geli lambarka</string>
+    <string name="add_link">Kudar Xiriir</string>
+    <string name="chat">Sawir</string>
+    <string name="members">Xubinayaasha</string>
+    <string name="tasks">Hawlgalaha</string>
+    <string name="join_requests">Su\'aasha xubinaha</string>
+    <string name="add_image">Kudar Sawir</string>
+    <string name="addImageToMessage">Beta Ku dar sawir fariin</string>
+    <string name="clear_data">Tirtir Data</string>
+    <string name="reset_app">Isku day App-ka</string>
+    <string name="freeup_space">Bac Wadatid xogta diiskaga</string>
+    <string name="action_disclaimer">Soo Celinta</string>
+    <string name="action_about">Ku saabsan</string>
+    <string name="engilsh_dictionary">Qaamuuska Af Ingiriiska</string>
+
+    <string-array name="team_type">
+        <item>Koox Caasimadda</item>
+        <item>La xiriir Dalkeena</item>
+    </string-array>
+
+    <string-array name="contact_type">
+        <item>Telefoon</item>
+        <item>Email</item>
+    </string-array>
+
+    <string-array name="add_link_options">
+        <item>Kooxaha</item>
+        <item>Mashruucyo</item>
+    </string-array>
+
+    <string-array name="transaction_type">
+        <item>Kaar</item>
+        <item>Dhegaysto</item>
+    </string-array>
+
+    <string-array name="sort_by_date">
+        <item>Ururinta Tariikhda - Asc</item>
+        <item>Ururinta Tariikhda - Desc</item>
+        <item>Ururinta Magaca</item>
+    </string-array>
+
+    <string-array name="sort_member">
+        <item>Ururinta Tariikhda - Asc</item>
+        <item>Ururinta Tariikhda - Desc</item>
+        <item>Ururinta Magaca - Asc</item>
+        <item>Ururinta Magaca - Desc</item>
+    </string-array>
+
+    <string-array name="grade_level">
+        <item>Dhammaan</item>
+        <item>Dugsiga barbaarinta ka hor</item>
+        <item>Xanaanada</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>Kolej</item>
+        <item>Qalinjabinta ka dib</item>
+    </string-array>
+
+    <string-array name="subject_level">
+        <item>Dhammaan</item>
+        <item>Bilaash</item>
+        <item>Dhexe</item>
+        <item>Sare</item>
+        <item>Farsamo</item>
+    </string-array>
+
+    <string-array name="diagnosis_list">
+        <item>Cansar</item>
+        <item>Xayawaanka xididka dhiiggu</item>
+        <item>Cirrhosis-ga jigarkeeda</item>
+        <item>COVID-19</item>
+        <item>Xanuunka dibatidka</item>
+        <item>Xanuunada da\'yaradaha</item>
+        <item>Ebola</item>
+        <item>Qabka joogtada</item>
+        <item>FGM</item>
+        <item>Influenza</item>
+        <item>Xanuunka dhiigga oo xadhigga ah</item>
+        <item>Malaria</item>
+        <item>Dhakhtarka</item>
+        <item>Meningitis</item>
+        <item>Qabka daryeelka oo dugsiyeedka ah iyo cudurro</item>
+        <item>HIV/AIDS</item>
+        <item>Nimoonida</item>
+        <item>Dhagaxga</item>
+        <item>Tuberculosis</item>
+        <item>Waji</item>
+    </string-array>
+    <string name="title_activity_news_detail">XogtaFareeysaActivity</string>
+    <string name="add_story">Ku Dar Hees</string>
+    <string name="txt_myprogress">Halistaaga</string>
+    <string name="more_action">Gaaji</string>
+    <string name="my_progress">Halistaaga</string>
+    <string name="my_activity">Halistaagayga</string>
+    <string name="add_label">Ku Dar Lambarka</string>
+    <string name="share_with_community">Waxbaridii Bulshada la Wadaag</string>
+    <string name="add_res">Ku Dar Mashiinada</string>
+    <string name="password">Furaha Erayga Sirta</string>
+    <string name="retype_password">Xaqiiji Furaha Erayga Sirta</string>
+    <string name="become_a_member">Noqo Xubin</string>
+    <string name="change_member">Beddel Xubin</string>
+    <string name="use_phone_number_as_password">Isticmaal Lambarka Taleefonka Sirta</string>
+    <string name="feedback">Rajayn</string>
+    <string name="add_member">Ku Dar Xubin</string>
+    <string name="confirm_exit">Ma hubtaa inaad ka tashato kooxan?</string>
+    <string name="update_profile_alert">Fadlan Buuxi Profaylkaaga si aad u hesho tallaabooyin oo dhan</string>
+    <string name="other_notes">Fikirro Kale</string>
+    <string name="archive">Arsiif</string>
+    <string name="Q1">Suaal: 1/</string>
+    <string name="no_questions">Suaaladaan ma jiro</string>
+    <string name="Q">"Suaal: "</string>
+    <string name="finish">Dhammaad</string>
+    <string name="submit">Ku Dir</string>
+    <string name="our_courses">Koorsadayaashay</string>
+    <string name="file">"Fayl: "</string>
+    <string name="recording_audio">Furayaasha Sireyska......</string>
+    <string name="show_replies">"Muuqaalka Jawaabo "</string>
+    <string name="selected">"La Xulo: "</string>
+    <string name="last_sync"><![CDATA["<< Halkan jeedadda hore ee iskaashiga: "]]></string>
+    <string name="last_syncs">Halkan jeedadda ee Hore</string>
+    <string name="login_user">Magaca Login</string>
+    <string name="login_password">Furaha Erayga Login</string>
+    <string name="no_team_available">Koox / Mashruuc la jira ma jiro</string>
+    <string name="last_sync_date">"Taariikhda Hore ee Iskaashiga: "</string>
+    <string name="no_assignee">Qof oo xoolo aan la yeelan</string>
+    <string name="note_">fikirro</string>
+    <string name="diagno">xeerka qalbiga</string>
+    <string name="treat">falafelaha</string>
+    <string name="medicay">duubistada</string>
+    <string name="immunizations">xallinta daryeelka</string>
+    <string name="allergy">istinka halista</string>
+    <string name="xrays">xaraashada xaraashada</string>
+    <string name="tests">Baarista</string>
+    <string name="referral">diraasaadka</string>
+    <string name="other_diagnosis">Xeerka Kale</string>
+    <string name="close">Dhagax</string>
+    <string name="negative_balance">Xalinta hanaanka hadda waa ka baxa!</string>
+    <string name="entMission">Nabadgelyada Beelahaada waa maxay?</string>
+    <string name="entServices">Xidhiidhka Beelahaada waxay bixisaa?</string>
+    <string name="entRules">Qawaanada Beelahaada waa maxay?</string>
+    <string name="entEmptyDescription"><![CDATA[Beelaha waa maxay & adeegyadooda ma jirto.]]></string>
+    <string name="total_visits">Jawaabaha Guud ee 30 maalmood ee u dambeeya</string>
+    <string name="ole_logo">Lambarka Xarunta Ogaalaya</string>
+    <string name="open_community">Bulsho Ogaal</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Add Documents</string>
-    <string name="leave">Leave</string>
-    <string name="steps">Steps</string>
-    <string name="csv_filename">CSV Filename</string>
-    <string name="please_enter_reply">Please enter reply</string>
-    <string name="image_filename">Image Filename</string>
-    <string name="markdown_filename">Markdown Filename</string>
-    <string name="select_login_mode">Select Login Mode:</string>
-    <string name="normal_mode">Normal Mode</string>
-    <string name="select_date">Select Date</string>
-    <string name="public_public">Public</string>
-    <string name="type_asterisk">Type*</string>
-    <string name="joined_members_colon">Joined Members:</string>
-    <string name="requested_members_colon">Requested Members:</string>
-    <string name="courses_colon">Courses:</string>
-    <string name="title">Title</string>
-    <string name="source">Source</string>
-    <string name="cloud_url">Cloud Url</string>
-    <string name="interval">Interval</string>
-    <string name="autosync">Autosync</string>
-    <string name="autosync_off">Autosync Off!</string>
-    <string name="autosync_on">Autosync On</string>
-    <string name="attached_resources">Attached resources:</string>
-    <string name="edit">Edit</string>
-    <string name="my_achievements">My Achievements</string>
-    <string name="open_resource">Open Resource</string>
-    <string name="zero_total">0 total</string>
-    <string name="average">Average</string>
+    <string name="add_documents">Ku Dar Documents</string>
+    <string name="leave">Ka Dib</string>
+    <string name="steps">Agoonta</string>
+    <string name="csv_filename">Magaca Faylasha CSV</string>
+    <string name="please_enter_reply">Fadlan geli jawaab</string>
+    <string name="image_filename">Magaca Faylasha Sawirka</string>
+    <string name="markdown_filename">Magaca Faylasha Markdown</string>
+    <string name="select_login_mode">Xulo Habka Loginka:</string>
+    <string name="normal_mode">Habka Caadi</string>
+    <string name="select_date">Xulo Taariikhda</string>
+    <string name="public_public">Ciidamo</string>
+    <string name="type_asterisk">Nooc*</string>
+    <string name="joined_members_colon">Xubinayaasha la kufsaday:</string>
+    <string name="requested_members_colon">Xubinayaasha Codsanaya:</string>
+    <string name="courses_colon">Koorsadayaasha:</string>
+    <string name="title">Cinwaanka</string>
+    <string name="source">Soo Saar</string>
+    <string name="cloud_url">URL-ka Nabadgelyada</string>
+    <string name="interval">Dhibic</string>
+    <string name="autosync">Iskaashiga Hore</string>
+    <string name="autosync_off">Iskaashiga Off!</string>
+    <string name="autosync_on">Iskaashiga On</string>
+    <string name="attached_resources">Adeegyada la dhamaystiray:</string>
+    <string name="edit">Tafatir</string>
+    <string name="my_achievements">Halistaaga</string>
+    <string name="open_resource">Ugu Dar Magacaabe</string>
+    <string name="zero_total">0 guud</string>
+    <string name="average">Miisaanka</string>
     <string name="zero_point_zero">0.0</string>
-    <string name="subject_level_colon">Subject Level:</string>
-    <string name="grade_level_colon">Grade Level:</string>
-    <string name="language_colon">Language:</string>
-    <string name="method">Method:</string>
-    <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">Description:</string>
-    <string name="download_resources">Download Resources</string>
-    <string name="take_test">Take Test</string>
-    <string name="search">Search</string>
-    <string name="for_ambulance">For Ambulance</string>
-    <string name="for_police">For Police</string>
-    <string name="for_emergency">For Emergency</string>
-    <string name="submit_feedback">Submit Feedback</string>
-    <string name="media">Media:</string>
-    <string name="filter">Filter</string>
-    <string name="grade_level">Grade Level</string>
-    <string name="subject_level">Subject Level</string>
-    <string name="order_by_date">Order by Date</string>
-    <string name="order_by_title">Order by Title</string>
-    <string name="vital_signs_record">Vital Signs Record</string>
-    <string name="exams">Exams</string>
-    <string name="survey">Survey</string>
-    <string name="submitted_by">Submitted by</string>
-    <string name="updated_on">Updated On</string>
-    <string name="name">Name</string>
-    <string name="send_survey_to">Send Survey to:</string>
-    <string name="send_survey">Send Survey</string>
-    <string name="previous">Previous</string>
-    <string name="next">Next</string>
-    <string name="submit_answer">Submit Answer</string>
-    <string name="all_task">All Task</string>
-    <string name="my_task">My task</string>
-    <string name="completed">Completed</string>
-    <string name="add_profile_picture">Add Profile Picture</string>
+    <string name="subject_level_colon">Darajo Mawduuc:</string>
+    <string name="grade_level_colon">Darajo Loo qoondeeyey:</string>
+    <string name="language_colon">Luqadda:</string>
+    <string name="method">Hab:</string>
+    <string name="number_of_exams">Tirada Baaristada:</string>
+    <string name="description_colon">Sharaxaad:</string>
+    <string name="download_resources">Dhig Resources</string>
+    <string name="take_test">Barto Imtixaan</string>
+    <string name="search">Raadi</string>
+    <string name="for_ambulance">Ciidanka Masaajid</string>
+    <string name="for_police">Ciidanka Boolis</string>
+    <string name="for_emergency">Ciidamada Daryeelka</string>
+    <string name="submit_feedback">Rajayn Qoraalka</string>
+    <string name="media">Warbaahinta:</string>
+    <string name="filter">Gaaji</string>
+    <string name="grade_level">Darajo Loo qoondeeyey</string>
+    <string name="subject_level">Darajo Mawduuc</string>
+    <string name="order_by_date">Ku qoraalka Taariikhda</string>
+    <string name="order_by_title">Ku qoraalka Cinwaanka</string>
+    <string name="vital_signs_record">Dastuurka Xalinta Asaasiga ah</string>
+    <string name="exams">Imtixaanada</string>
+    <string name="survey">Soo Gudbi</string>
+    <string name="submitted_by">La Diyaariyay</string>
+    <string name="updated_on">Ku cusbooneysiisay</string>
+    <string name="name">Magaca</string>
+    <string name="send_survey_to">Soo dir Survey to:</string>
+    <string name="send_survey">Dir Survey</string>
+    <string name="previous">Hore</string>
+    <string name="next">Ku Xus</string>
+    <string name="submit_answer">Ku Dir Jawaab</string>
+    <string name="all_task">Dhammaan Xogta</string>
+    <string name="my_task">Xogtaagayga</string>
+    <string name="completed">La Dhameystiray</string>
+    <string name="add_profile_picture">Ku Dar Sawirka Profaylka</string>
     <string name="two_dash">--</string>
-    <string name="n_a">N/A</string>
-    <string name="request_to_join">Request To join</string>
-    <string name="filter_labels">Filter Labels</string>
-    <string name="message">message</string>
-    <string name="mistakes">Mistakes</string>
-    <string name="take_survey">Take Survey</string>
-    <string name="checkbox">CheckBox</string>
-    <string name="offer">Offer</string>
-    <string name="request_for_advice">Request for advice</string>
+    <string name="n_a">Maa jiro</string>
+    <string name="request_to_join">Codso Inaad Ku Dhaqmeyso</string>
+    <string name="filter_labels">Gaaji Lambarka</string>
+    <string name="message">farriin</string>
+    <string name="mistakes">Khalad</string>
+    <string name="take_survey">Ku Dar Survey</string>
+    <string name="checkbox">Furaha Qalbigan</string>
+    <string name="offer">Ku Dar Hawl</string>
+    <string name="request_for_advice">Codso Fikir</string>
+    Somali for hardcoded
+
+    https://chat.openai.com/share/147d7b5e-07d5-4107-9f5b-9040385efba3
+
+    <string name="no_images_to_download">Ma jiraan sawirro si aad kuugu diiwaangasho.</string>
+    <string name="this_file_type_is_currently_unsupported">Nooca faylkaan waa hadda aan taageerinno.</string>
+    <string name="unable_to_open_resource">Lama oggola in aad furto ilaha xogta.</string>
+    <string name="select_resource_to_open">"Xulasho ka doona xogta si aad u furato: "</string>
+    <string name="shared_to_community">Lagu wadaa bulshada</string>
+    <string name="no_data_available_please_check_and_try_again">Ma jiro wax macluumaad, fadlan mari karo oo isku day.</string>
+    <string name="added_to_my_library">Ku daray maktabaddayda</string>
+    <string name="added_to_my_courses">Ku daray kursiyada kayga</string>
+    <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
+    <string name="no_resources_to_download">Ma jiro khadka ay la diyaariyaan.</string>
+    <string name="planet_not_available">Geedka aan la helin</string>
+    <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>
+    <string name="all_files_downloaded_successfully">Dhammaan faylashu waa la degsanayaa si guul ah.</string>
+    <string name="removed_from_mylibrary">Ka tirtiray Maktabaddayda</string>
+    <string name="removed_from_mycourse">Ka tirtiray kursiga kayga</string>
+    <string name="please_allow_usages_permission_to_myplanet_app">Fadlan ogow xidhiidhka adeegga myPlanet.</string>
+    <string name="permissions_granted">Xidhiidhka Lagu Celiyay</string>
+    <string name="permissions_denied">Xidhiidhka Lagu Midan</string>
+    <string name="unable_to_upload_resource">Ma awoodi doontid inaad ku diiwaangashid xogta.</string>
+    <string name="please_select_link_item_from_list">Fadlan xulo xogta isku xirka listka.</string>
+    <string name="title_is_required">Magaca waa loo baahan yahay</string>
+    <string name="no_data_available">Wax macluumaad ah ayaa lama helin</string>
+    <string name="current_step">"Xidhiidhka hadda: "</string>
+    <string name="of">" ee "</string>
+    <string name="this_test_has">"Imtixaankan wuxuu leeyahay "</string>
+    <string name="questions">" su\'aalo"</string>
+    <string name="are_you_sure_you_want_to_delete_these_courses">Ma hubtaa inaad tirtirto ka dhamaan kursiyadaan?</string>
+    <string name="success_you_have_added_the_following_courses">Guul! Waxaad ku daraysay kursiyadaan soo socota:\n\n</string>
+    <string name="return_to_the_home_tab_to_access_mycourses">\n\n Ku noqo tabka Home si aad uga heli karto myCourseska.\n</string>
+    <string name="and">"Iyo "</string>
+    <string name="more_course_s">" kursi dheer…\n"</string>
+    <string name="progress">"Habka "</string>
+    <string name="retake_test">Dib u habayn Imtixaanka</string>
+    <string name="do_you_want_to_join_this_course">Ma rabtaa inaad ka qaadato kursigaan?</string>
+    <string name="join_this_course">Ka qaad kursigaan</string>
+    <string name="download_dictionary">Soo deg Qaamuus.</string>
+    <string name="resource_not_downloaded">Xogta ma la diyaariyay.</string>
+    <string name="bulk_resource_download">Soo deg diyaarinta xogta oo dhan.</string>
+    <string name="pending_survey">Raadinta hadda la kordhin</string>
+    <string name="download_news_images">Soo deg sawirro wararka.</string>
+    <string name="tasks_due">Hawsha due ah.</string>
+    <string name="storage_critically_low">"Xaddida maaliyadeed waa ku xoogaa: "</string>
+    <string name="available_please_free_up_space">habeen aan waxba kaga helin. Fadlan fal khadkaada.</string>
+    <string name="storage_running_low">"Xaddida maaliyadeed waa tagaa: "</string>
+    <string name="available">habeen aan waxba kaga helin.</string>
+    <string name="storage_available">"Xaddida maaliyadeed waa heli kara: "</string>
+    <string name="health_record_not_available_click_to_sync">Diiwaanka caafimaadka lama helin. Guji si aad u iska saarto.</string>
+    <string name="visits">Dabooliyo</string>
+    <string name="please_select_starting_date">"Fadlan dooro taariikhda hore : "</string>
+    <string name="read_offline_news_from">"Akhri wararka gudaha ka hor : "</string>
+    <string name="downloading_started_please_check_notification">Degsaday soo degista, fadlan check notifikishanka…</string>
+    <string name="file_already_exists">Faylku horey ayaa jira…</string>
+    <string name="syncing_health_please_wait">Dib u bilaabma caafimaadka, fadlan sug…</string>
+    <string name="myhealth_synced_successfully">Caafimaadkaygii ayaa la isku dejiyey si guul ah</string>
+    <string name="myhealth_synced_failed">Caafimaadkaygii ayaa la isku dhejiyey si aanan guulin</string>
+    <string name="no_due_tasks">Hawsho kama jiraan</string>
+    <string name="due_tasks">Hawshooyin la jira</string>
+    <string name="feature_not_available_for_guest_user">Fayraska aan la heli karin xubnaha khaas ah</string>
+    <string name="feature_not_available">Fayraska Ma heli karaan</string>
+    <string name="health_record_not_available_sync_health_data">Diiwaanka caafimaadka lama helin, dib u hagrees data caafimaadka?</string>
+    <string name="sync">Dib u hagrees</string>
+    <string name="got_it">GUUL</string>
+    <string name="please_make_sure_your_device_is_horizontal">Fadlan hubso in qalabkaada ay joogaan afarood</string>
+    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">Guji logga si aad u heli karto menu buuxa ee Geedkaaga: Hoose, Maktabaddaada, Kursiyadaaga, Maktabadda, Kursiyada, Bulshada, Shirkadaha, iyo Suuragal</string>
+    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">Dabool tabka Hoose si aad u heli karto xirmooyinkaaga oo ku yaala maktabadda, kursiyada iyo kooxahaaga</string>
+    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">Dabool tabka Maktabadda si aad u heli karto khadka ay ka shaqeeyaan bulshaddeeda</string>
+    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">Dabool tabka Kursiyada si aad u heli karto kursiyada (imtixaanka, su\'aasha, darsashada) ee ku jira bulshaddeeda</string>
+    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">Dabool tabka kooxaha si aad uga qaadato, codsatid, iyo kaga soo xidhiidho kooxahaada</string>
+    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">Dabool tabka Shirkadaha si aad u raadi karto liiska shirkadaha ee ka jira bulshaddeeda</string>
+    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">Dabool tabka Bulshada si aad u heli karto wararka, madaxda bulshada, taariikhda, adeegyada, iyo maaliyada ee ku jira bulshaddeeda</string>
+    <string name="session_expired">Ku dhacday wakhti la isla xiriiray.</string>
+    <string name="downloading_started_please_check_notificati">Degsaday soo degista, fadlan check notifikishanka…</string>
+    <string name="dictionary">Qaamuus</string>
+    <string name="list_size">Cinwaanka Liiska</string>
+    <string name="word_not_available_in_our_database">Ereyadan ma haysano daabacaadkeena.</string>
+    <string name="description_is_required">Sharraxaad waa loo baahan yahay</string>
+    <string name="start_time_is_required">Waqtiga bilaabid waa loo baahan yahay</string>
+    <string name="meetup_added">Ku daray la isku day</string>
+    <string name="add_transaction">Ku daray Hawlaha</string>
+    <string name="note_is_required">Fariin waa loo baahan yahay</string>
+    <string name="amount_is_required">Qaddarku waa loo baahan yahay</string>
+    <string name="date_is_required">Taariikhdu waa loo baahan yahay</string>
+    <string name="transaction_added">Hawlasha lagu daray</string>
+    <string name="thank_you_for_taking_this">"Mahadsanid in aad la qaato "</string>
+    <string name="we_wish_you_all_the_best">. Waxaan kugu rajaynaynaa dhammaan khayrka</string>
+    <string name="thank_you_for_taking_this_survey">Mahadsanid in aad iska soo qaatay suuragal</string>
+    <string name="complete">Buuxi</string>
+    <string name="no_questions_available">Suuqyada ma haysano</string>
+    <string name="please_select_write_your_answer_to_continue">Fadlan dooro / qor jawaabtaada si aad u sii wadato</string>
+    <string name="graded">Isku diiwaangelin</string>
+    <string name="pending">Inta aan dib u celin</string>
+    <string name="user_profile_updated">Macluumaadka isticmaalaha oo la cusboonaysiin</string>
+    <string name="unable_to_update_user">Lama heli karo isticmaalaha cusbooneysan</string>
+    <string name="date_n_a">Taariikh: M/H</string>
+    <string name="please_enter_feedback">Fadlan geli warbixinteeda</string>
+    <string name="feedback_priority_is_required">Tabinta faahfaahinta waa loo baahan yahay</string>
+    <string name="feedback_type_is_required">Nooca faahfaahinta waa loo baahan yahay</string>
+    <string name="thank_you_your_feedback_has_been_submitted">Waad ku mahadsan tahay, warbixinteeda waa la soo diray</string>
+    <string name="feedback_saved">Warbixinta lagu kayd geliyay…</string>
+    <string name="name_colon">"Magac: "</string>
+    <string name="email_colon">"Email: "</string>
+    <string name="phone_number_colon">"Lambarka taleefonka: "</string>
+    <string name="resource_saved_successfully">Khadka lagu keydiyey si guul ah</string>
+    <string name="level_is_required">Heerka waa loo baahan yahay</string>
+    <string name="subject_is_required">Mawduuca waa loo baahan yahay</string>
+    <string name="enter_resource_detail">Geli faahfaahinta khadka</string>
+    <string name="resource_saved_to_my_personal">Khadi laga keydiyey shakhsi</string>
+    <string name="invalid_resource_url">url kheyraad aan sax ahayn</string>
+    <string name="my_library">"Maktabaddayda"</string>
+    <string name="link_not_available">Xogta lama helin</string>
+    <string name="success_you_have_added_these_resources_to_your_mylibrary">Guul! Waxaad ka daraysay khadkaan maktabaddaaga:\n\n</string>
+    <string name="more_resource_s">" khadka dheer…\n"</string>
+    <string name="return_to_the_home_tab_to_access_mylibrary">\n\nKu noqo tabka Home si aad uga heli karto maktabaddaaga.\n</string>
+    <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: Amaan waxaad u baahan tahay inaad ku diyaariyey khadkaan cusub ee la soo kiciyey.</string>
+    <string name="self_examination">\nBaaris aad u shooqan</string>
+    <string name="temperature_colon">"Cabbirka: "</string>
+    <string name="pulse_colon">"Kiltirka: "</string>
+    <string name="blood_pressure_colon">"Dhacdo dheecaanka: "</string>
+    <string name="height_colon">"Dhererka: "</string>
+    <string name="weight_colon">"Kalluunka: "</string>
+    <string name="vision_colon">"Daboolka: "</string>
+    <string name="hearing_colon">"Cabsi: "</string>
+    <string name="observations_notes_colon"><![CDATA["Shaxooyinka & Fariimaha: "]]></string>
+    <string name="diagnosis_colon">"Dib u dhigaasho: "</string>
+    <string name="treatments_colon">"Dib-u-helidda: "</string>
+    <string name="medications_colon">"Ciidammada: "</string>
+    <string name="immunizations_colon">"Ciidammada ka hortagga: "</string>
+    <string name="allergies_colon">"Galmada: "</string>
+    <string name="x_rays_colon">"Sawirradiyo: "</string>
+    <string name="lab_tests_colon">"Baarista Labada: "</string>
+    <string name="referrals_colon">"Soo diraayista: "</string>
+    <string name="invalid_input">Kalluun aan sax ahayn</string>
+    <string name="blood_pressure_should_be_numeric_systolic_diastolic">Dhacdo dheecaanka waa in uu noocan yahay (systolic/diastolic)</string>
+    <string name="blood_pressure_should_be_systolic_diastolic">Dhacdo dheecaanka waa in uu noocan yahay (systolic/diastolic)</string>
+    <string name="bp_must_be_between_60_40_and_300_200">Dhacdo dheecaan waa in uu ka dhiman yahay 60/40 ilaa 300/200</string>
+    <string name="systolic_and_diastolic_must_be_numbers">Dhacdo dheecaanka iyo dheecaanku waa in ay yihiin lambarka</string>
+    <string name="added_successfully">Ku daray si guul ah</string>
+    <string name="invalid_input_must_be_between_30_and_40">Galin waajib ah, waa in lagu jiro 30 ilaa 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">Galin waajib ah, waa in lagu jiro 40 ilaa 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">Galin waajib ah, waa in lagu jiro 1 ilaa 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">Galin waajib ah, waa in lagu jiro 1 ilaa 150</string>
+    <string name="unable_to_add_health_record">Lama helayno diiwaan caafimaad</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Ma hubtaa in aad ka cabsato? Waxaad kala baxaysaan macluumaadkaaga.</string>
+    <string name="yes_i_want_to_exit">"Haa, waxaan rabaa inaan ka cabsado. "</string>
+    <string name="my_health_saved_successfully">Caafimaadkaygii ayaa si guul ah lagu kayd geliyey</string>
+    <string name="health_record_not_available">Diiwaanada Caafimaadka ma helayo.</string>
+    <string name="contact_colon">Xiriir:</string>
+    <string name="joined_colon">"Ka qaadisay: "</string>
+    <string name="is_now_hidden">hadda waa la saaray</string>
+    <string name="is_now_shown">hadda waa la muujiyey</string>
+    <string name="no_members_has_joined_this_meet_up">Xubnaha kooxaha waxba ma ka qaadanyahay</string>
+    <string name="edit_personal">Tafatir Shakhsi</string>
+    <string name="please_enter_title">Fadlan geli cinwaan</string>
+    <string name="no_data_available_please_click_button_to_add_new_resource_in_mypersonal">Macluumaad waxba ma haysano, fadlan guji xidiga + si aad u dhejiso khadka cusub ee ku jira maktabaddayda.</string>
+    <string name="label_added">Dabool halkan loo dejinayey</string>
+    <string name="please_enter_message">Fadlan geli farriimaha</string>
+    <string name="new_not_available">Xogta cusub ma haysano</string>
+    <string name="hide_add_story">Soo saar sheeko cusub</string>
+    <string name="no_items">Qeybtaan ma jiro</string>
+    <string name="record_survey">Gali suuragal</string>
+    <string name="survey_sent_to_users">Suuragal loo diray isticmaale</string>
+    <string name="wifi_is_turned_off_saving_battery_power">Wifi waxaa la soo casishay. Khaariidka betareegee ku sug</string>
+    <string name="turning_on_wifi_please_wait">Wifi lagu daboolo, fadlan sug…</string>
+    <string name="unable_to_connect_to_planet_wifi">Lama soo galin karo wifi-ka Geedka.</string>
+    <string name="you_are_now_connected">Hadda waxaad la xiriirayaa</string>
+    <string name="press_back_again_to_exit">Daboolka BACK wixii hore ugu celi</string>
+    <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">Daboolka dib-u-hagreeska si aad u hagreesid data-accountka Geedkaaga oo isku xirka app-kaaga myPlanet</string>
+    <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">Daboolka cajiib ah si aad u heli karto goobta lacag bixinta oo loo hagreeso serverkaaka Geedka</string>
+    <string name="it_has_been_more_than">waxaa ka badan </string>
+    <string name="days_since_you_last_synced_this_device">maalmood ka dib marka aad dib u hagreesatid qalabkanan.</string>
+    <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\nKu xiran talaalka serverka oo ku sug WiFi si aad u hagreesid taabeltaaga.</string>
+    <string name="okay">Waayo</string>
+    <string name="connect_to_the_server_over_wifi_and_sync_your_device_to_continue">Ku xiran serverka oo ku sug WiFi si aad u hagreesid qalabkaaga si aad uga sii wadato</string>
+    <string name="please_enter_server_url_first">Fadlan geli URL-ka serverka ee ugu horaysa.</string>
+    <string name="this_device_not_configured_properly_please_check_and_sync">Qalabkanan lama hagaagin dib-u-hagreeska, fadlan hagaaj dheeri</string>
+    <string name="username_cannot_be_empty">Magaca isticmaasha waa in lagu jiro waxaan kusoo haysano</string>
+    <string name="unable_to_login">Lama helayno gashad</string>
+    <string name="planet_server_not_reachable">Serverka Geedka lama heli karo</string>
+    <string name="select_language">Xulo luqadda</string>
+    <string name="thank_you">Mahadsanid!</string>
+    <string name="please_wait">Fadlan sug....</string>
+    <string name="update_later">Guji dib iminka</string>
+    <string name="checking_version">Rajoo marka</string>
+    <string name="please_enter_your_password">Fadlan geli ereygaaga sirta</string>
+    <string name="downloading">Soo degsado.... "</string>
+    <string name="pin_is_required">Pini waa loo baahan yahay</string>
+    <string name="invalid_url">URL-ka ma jiro</string>
+    <string name="please_enter_valid_url_to_continue">Fadlan geli URL-ka sax ah si aad uga sii wadato.</string>
+    <string name="uploading_data_to_server_please_wait">Qiimeynta data-ka ee serverka, fadlan sug.....</string>
+    <string name="uploading_activities_to_server_please_wait">Qiimeynta waxqabadkiisa ee serverka, fadlan sug…</string>
+    <string name="connecting_to_server">Ku xiran serverka....</string>
+    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Xaqiij marka hore cinwaankaga serverka ah, waxaana aan la xiriirnay seriver Geed ah.</string>
+    <string name="device_couldn_t_reach_server_check_and_try_again">Qalabku ma fikiri karin serverka, fadlan eeg iyo isku day</string>
+    <string name="server_not_configured_properly_connect_this_device_with_planet_server">Serverka lama aha inuu horaynayo sida hore, ku xiran qalabkan Geedka si aad uga fikiri karto serverka.</string>
+    <string name="syncing_data_please_wait">Dib-u-hagreeska macluumaadka, fadlan sug…</string>
+    <string name="sync_failed">Dib-u-hagreeska khaatimay</string>
+    <string name="sync_completed">Dib-u-hagreeska la kahadsanayaa</string>
+    <string name="message_is_required">Farriin waa loo baahan yahay</string>
+    <string name="team_leader">Xoghayaha kooxda</string>
+    <string name="select_resource">Xulo khadka</string>
+    <string name="add">Ku dar</string>
+    <string name="deadline_colon">"Waqtiga la socdo: "</string>
+    <string name="completed_colon">"\nLa soo socdo: "</string>
+    <string name="assigned_to_colon">"La soo saaray: "</string>
+    <string name="add_task">Ku dar xog</string>
+    <string name="task_title_is_required">Cinwaanka xogta waa loo baahan yahay</string>
+    <string name="deadline_is_required">Waqtiga la socdo waa loo baahan yahay</string>
+    <string name="updated">Dib u cusbooneysay</string>
+    <string name="added">Ku dar</string>
+    <string name="task_s_successfully">Xog %s oo keliya</string>
+    <string name="task_deleted_successfully">Xog la tirtiray si guul ah</string>
+    <string name="requested">Waqti ku dejiyey</string>
+    <string name="resources_colon">"Muujiyaha: "</string>
+    <string name="left_team">Kooxda iska saaray</string>
+    <string name="enter_enterprise_s_name">Fadlan geli magaca shirkadda</string>
+    <string name="what_is_your_team_s_plan">Ninka kooxdaada waa maxay qorsheheeda?</string>
+    <string name="enter_team_s_name">Fadlan geli magaca kooxda</string>
+    <string name="enter">"Geli "</string>
+    <string name="detail">Faahfaahinta</string>
+    <string name="please_enter_a_name">Fadlan geli magac</string>
+    <string name="name_is_required">Magacu waa loo baahan yahay</string>
+    <string name="team_created">Kooxda loo sameeyay</string>
+    <string name="please_select_gender">Fadlan xulo jinsiga</string>
+    <string name="please_enter_a_username">Fadlan geli magaca isticmaalaha</string>
+    <string name="invalid_username">Magac isticmaalaha aan sax ahayn</string>
+    <string name="please_enter_a_password">Fadlan geli ereyga sirta ah</string>
+    <string name="password_doesn_t_match">Ereyga sirta ah ayaa hore u dhigay</string>
+    <string name="invalid_email">Email aan sax ahayn.</string>
+    <string name="username_taken">Magaca isticmaalaha laga qaadsiyey</string>
+    <string name="add_reference">Ku dar rasmiga ah</string>
+    <string name="add_achievement">Ku dar guulaysta</string>
+    <string name="select_resources">"Xullo khadka: "</string>
+    <string name="user_not_available_in_our_database">Isticmaale aan la helin data base-nayagu</string>
+    <string name="date_of_birth">"Taariikhda dhalashada: "</string>
+    <string name="unable_to_play_audio">Lama helin qaab dhismeedka</string>
+    <string name="unable_to_load">"Lama helin "</string>
+    <string name="recording_started">Xog ku dhamaystiran....</string>
+    <string name="ole_is_recording_audio">Ole wuxuu kayd dhigayaa qoraallo</string>
+    <string name="recording_stopped">Xogu dhacay.</string>
+    <string name="audio_file_saved_in_database">Faylka audio-ka laga keydiyay data base-ka</string>
+    <string name="connection_failed_reason">"Kooban oo aan la safri karin: sababta "</string>
+    <string name="are_you_sure">Ma hubtaa?</string>
+    <string name="data_cleared">Macluumaadka waa la la abuuray</string>
+    <string name="are_you_sure_want_to_delete_all_the_files">Ma hubtaa inaad tirtirto faylasha oo dhan?</string>
+    <string name="unable_to_clear_files">Lama xarigo faylasha</string>
+    <string name="last_synced_never">Kor u kac: Ma heli karin</string>
+    <string name="last_synced_colon">"Kor u kac: "</string>
+    <string name="disclaimer">
+    <![CDATA[
+    <h1>Fikir ku saabsan</h1>
+    <p>Kusoo dhowoow: Janaayo 10, 2020</p>
+    <h1>Fara-xijo iyo Macluumaad</h1>
+    <h2>Fara-xijo</h2>
+    <p>Ereyada oo asal ahaan loo casumay (yaala) waxay leeyihiin macluumaadka la soo jeediyay halkan hoose.</p>
+    <p>Astaamahaynta soo jeediyay ee ku saabsan waxaa ka kooban fara-xijo ay ku yaallaan mar hore iyo mar kale.</p>
+    <h2>Macluumaadka</h2>
+    <p>Astaamaha soo jeediyay waxaa loo yaqaan astaamaha mar walba oo ay ka mid yihiin:</p>
+    <ul>
+        <li><strong>Shirkadda</strong> (oo ku xiran "Shirkadda", "Ninkayga", "Anigu", ama "Nagu" ee Warbixintan Falanqeynta) waxaa ka kooban myPlanet.</li>
+        <li><strong>Adiga</strong> wuxuu leeyahay qofka gashan adeegga, ama shirkadda, ama shan liiska kale ee sharciga ah oo ku saabsan qofkaas oo adeegsan ama isticmaala adeegga, sidaas darteed.</li>
+        <li><strong>Kalmadaha</strong> waxay ku yeelan kartaa barnaamijyada fureta Shirkadda oo ku dhow keenay adiga inaad shirkaddeeda haanad adkaysanayso.</li>
+        <li><strong>Adeegga</strong> wuxuu leeyahay barnaamijka.</li>
+    </ul>
+    <h1>Fikir ku saabsan</h1>
+    <p>Warbixintan oo laga helay adeegga waxaa ay tahay warbixino guud oo shaqaalaha kale kala duwan. </p>
+    <p>Shirkadda wuxuu xilka ha ku taagan farsamo ama xaggii ay ku jirtay xogta adeegga.</p>
+    <p>Xiligaas, shirkaddu wuxuu u oggolaanayaa inuu sameeyo kabadan, murugsan, aan saxnayn, ama kabadan ku dhacdo xogta adeegga iyadoona sidaas darteed haddii shirkaddu la socdo.</p>
+    <p>Shirkaddu wuxuu kuwaas oggolaanayaa in adeegga aan lahayn fayruso ama xubno kale oo ka dhammaato.</p>
+    <h1>Fikirka Xogaha Caafimaadka</h1>
+    <p>Warbixinta ku saabsan caafimaadka ee loo bixiyo adeegga waxaa lagu tusaa inay la mid yihiin inuu saxo, xanaanado, nafta iyo jiritaankaba ha ka wareego cudurro. Tiro badeed, adeegga, macluumaad iyo kontent kale oo loo bixiyo adeegga, oo ka mid ah warbixinta la qalinka ah ee hawada lagu xidhiidho ayaa loo bixiyaa iyada oo kaliya iyada oo uu ogolaanshaha Shirkadda.</p>
+    <p>Warbixinta ee la bixinayaa adeegga ma mid maamuleysa iyo ma maamuleyso dhamaan cudurro, maraakiibta, xaaladaha jidhka ah, ama tallaabooyinkooda.</p>
+    <p>Shakhsiyaad waxaa leh wax kasta oo kordhinta ah oo ay ku jiraan inay si keliya u reejin kala fogaadaan xubnaha ka hortagga adeegga iyo aragti la xidhiidha. Faallooyin oo lagu qoray adeegga oo laga helay xubnaha, shaqaalaha kale ama shaqaalaha kale oo kale waxaa ay ku jiri karaan mas\'uuliyaddooda shaqsiyaddooda, iyo shaqaalaha wuxuu ka mid yahay dhibaatada loo xasuusto xubnaha oo u baahana sababta aan qorin.</p>
+    <p>Shirkaddu waa inuu fogaadaan macluumaadka ay bixiso adeegga si toos ah. Shirkaddu waa inuu dhammaan mashaariicda ama adeegyada ay isku beegsado ku tilmaami karo.</p>
+    <h1>Fikirka la xidhiidha Liinka Waajahan</h1>
+    <p>Adeegga waxaa ku leeyahay liinka waajahan oo aan laga bixin ama laga sugayo Shirkadda.</p>
+    <p>Fadlan ogeysi in Shirkaddu aan oggolaanayn dhammaan cinwaanka, caawinta, wakhtiyo, ama buuxinta awoodaha liinka waajahan la qoray.</p>
+    <h1>Fikirka Cilmi Baariseedka iyo Daboolid</h1>
+    <p>Warbixinta laga bixinayaa adeegga waxaa lagu taageeray cilmi baariseed oo kuwaas oo qayb ka ah cilmi baariseedka Caalamiga ah.</p>
+    <p>Shirkaddu waa inuu u oggolaan doono xiligaan cilmi baariseed ee cilmi baarisada caalamiga ah oo lagu heli karo qodob 107 ee xeerka Caalamiga ee soo jiitaanka.</p>
+    <p>Haddii aad rabto inaad adeegga ka isticmaasho cilmi baariseed caalamiga ah ama qiimeynta kaladuwan, waad heli kartaan idinkoo hortaaganin oggolaanshaha milkiilaha xuquuqda cilmi baarisada.</p>
+    <h1>Fikirka Fikradaha Qaybta</h1>
+    <p>Adeegga waxaa ku leeyahay fikradda iyo fikraddaha oo ahaan jira oo ah kuwa qoraaga oo ku leh Shirkadda ama kuwa kale u aragnaan ama kuwa kale ee shaqaalaha ama shirkadda, kuwaasoo ka kooban Shirkadda.</p>
+    <p>Caqliga u dirayey shaqaalayaasha ayaa waa mas\'uuliyaddooda kaliya iyo ka maamulayaa shaqaalayaasha shirkadda ee ay ku soo baxaan fikradan. Shirkaddu ma lahan shaqsiyaad meesha loogu talagalay qoraalka kasta oo ay ku jiraan shirkadda iyo wuxuu awoodi doonaa inuu tirtiro fikradda kasta oo sababta ah.</p>
+    <h1>Fikirka Maamulka</h1>
+    <p>Warbixinta ku saabsan adeegga waxaa loo bixiyaa fahansashada in Shirkaddu ma ku dhaqmeyn cilmi baarisada, xisaabaadka, sii wadda caawinaada, ama adeegga kale oo wax ka beddel, sahlan karo.</p>
+    <p>Marxalad walba ma wuxuu Shirkadda ama sareecadda ku haya in laqaado oo ku saabsan qaababka adeegga ama u isticmaala adeegga.</p>
+    <h1>Fikirka "Isticmaal in Xabadkaaga Gaadho"</h1>
+    <p>Dhamaan macluumaadka adeegga waxaa la bixin "sidaa waxaa", aan ka horreeyay koorso, saxiddada, waqtiga, ama natiijooyinka la heli karo xogtaan, waayo, iyo la yidhaahdo, oo aan wax ka beddelin, maqaayadka, iyo dib-uheshiisa.</p>
+    <p>Shirkaddu ma doonayo in aad ama qof kale aad adeegga ka isticmaasho inaad quudinayso ama faallayso qiimeynta laga bixinayo adeegga ama xaaladaha ka dambeeya, gaar ahaan haddii lagu oggolaanshaha ka yar.</p>
+    <h2>Nala soo xiriir</h2>
+    <p>Haddii aad su\'aasho leedahay ku saabsan Fikirkan, waxaad nala soo xiriiri kartaa:</p>
+    <ul>
+        <li>Email: myplanet@ole.org</li>
+        <li>La socda boggaan: <a href="https://ole.org/contact">https://ole.org/contact</a></li>
+    </ul>
+    ]]>
+    </string>
+    <string name="about">
+    <![CDATA[
+    <h3>myPlanet</h3>
+    <p>myPlanet waa qalab waxbarasho oo laga qaadayo bogga Planet web application. Waxaa loo isticmaali karaa si loo hagaajiyo waxbarashada hore, dugsiyada hoose, caafimaadka degmooyinka, horumarka shaqaalaha dhalinyarada, iyo horumarinta iyo taageerada bulshada.</p>
+    <p>Planet houses waa xog ururin oo bilaash ah, oo macquul ah, oo ay ku fududayn doonaan waxbarayaal dhammaan.</p>
+
+    <p>myPlanet waa loo isticmaali karaa dadka oo dhan, meel kasta, waqtiga oo dhan. Wuxuu ku noolaa hay\'ad android sida gacan ahaanba loo yaqaan lahaa shaqooyinka, gobollo iyo teleefoonada moobilka. Waxaa saamaynaya inta ku dhex jira, iyada oo loo isticmaalo, Internetka.</p>
+
+    <p>Hay\'addaani waxaa ku saabsan inay soo gudbiso kutubka iyo nidaamka waxbarasho oo multimedia oo dhinacyada ah, waxaana wax u sameynaya dadka oo ku xiran Planet. Qalabka la filayo waxay ku jiraan nidaamka qalabka, waxayna leedahay shaqsiyadaha waxbarayaasha. Tani waa inay ogolaatay waxbarayaasha inay akhristo buugaagta ku dhex jira gudaha iyo inay dhigaan kursiyada goobta internet-ka la\'isku jiro. Waxbarayaasha waxay loo dhihi karaa cilmibadan iyo midda ku yartahay kuwa ay isticmaalaan iyo kuwa ay qaadan kursiyada. Si ka badan waxbarayaasha waxay la heshiisiin karaan tayada iyo nuqullada xisaabaadka kala duwan oo ay isticmaalaan.</p>
+
+    <p>Qalabka oo dhan waxay jiraan qodobo kala duwan oo ku saabsan heerarka waxbarashada, taariikhda dhacdooyinka, iyo nidaamka kala duwan ee wadashaqaynta oo loogu adeegsanayo kala duwan oo u dhaxeeya xubnaha.</p>
+
+    <p>myPlanet waxay la dul saaray in ay hirgeliso waxbarasho oo fudud oo ku saabsan in ay ka fogaadaan waxbarashada labaatan iyo kun in degmooyinka ka badan, dugsiyada ayaa la dul saaray dhammaan wadashada Nepal, Ghana, Kenya, iyo Rwanda, dhaqan celinta Syria ee Yordani, dhaqan celinta Soomaaliya ee Kenya, iyo shaqaalaha caafimaadka degmooyinka Uganda.</p>
+    ]]>
+    </string>
+    <string name="is_on_please_turn_of_to_save_battery">waa la xiriiriyay fadlan na soo bandhig si aad u kala wareegto shidaalka</string>
+    <string name="go_to_settings">Tag fariimaha</string>
+    <string name="new_version_of_my_planet_available">Vershanka cusub ee my planet ayaa la heli karaa</string>
+    <string name="download_first_to_continue">Soo deg faylka hore si aad u sii wadi</string>
+    <string name="upgrade_local">Ku hubi(Samee)</string>
+    <string name="upgrade">Ku hubi</string>
+    <string name="apk_already_exists">APKka tayada kale ayaa hore</string>
+    <string name="auto_sync">Shidka saxda ah</string>
+    <string name="force_weekly_sync">Shidka xisaabtan sare</string>
+    <string name="force_monthly_sync">Shidka bishaan sare</string>
+    <string name="beta_function_for_course">Beta Function for Course</string>
+    <string name="beta_function_for_auto_update">Beta Function for auto update</string>
+    <string name="beta_function_for_wifi_switch">Beta Function for WiFi Switch</string>
+    <string name="beta_function_for_achievement">Beta Function for Achievement</string>
+    <string name="upgrade_application">Codsiga cusboonaysii</string>
+    <string name="auto_upgrade">Casriyeynta tooska ah</string>
+    <string name="always_move_to_maximum_version">Haddaaba kuso geli kala hore</string>
+    <string name="all_beta_functions">Dhammaan Hawlaha Beta</string>
+    <string name="auto_sync_device">Shidka saxda ah</string>
+    <string name="beta_functionality">Waxqabadka Beta</string>
+    <string name="main_controls">Xakamaynta ugu weyn</string>
+    <string name="select_user_to_login">Dooro isticmaale si aad u gasho</string>
+    <string name="dismiss">saar</string>
+    <string name="gps_is_settings">GPS waa Settings</string>
+    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS lama hawlgelin. Ma rabtaa inaad aado menu settings?</string>
+    <string name="available_space_colon">Boos la heli karo: </string>
+    <string name="community_leaders">Hogaamiyayaasha bulshada</string>
+    <string name="services">adeegyo</string>
+    <string name="survey_taken">Soo dhaweyn laga qaadayo </string>
+    <string name="times"> magaalada</string>
     <string name="ai_chat">AI Chat</string>
+
 </resources>

@@ -62,12 +62,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         if (TextUtils.equals(type, "enterprise")) {
             v.spn_team_type.visibility = View.GONE
             v.et_description.hint = getString(R.string.entMission);
-            v.et_name.hint = "Enter enterprise's name"
+            v.et_name.hint = getString(R.string.enter_enterprise_s_name)
         } else {
             v.et_services.visibility = View.GONE
             v.et_rules.visibility = View.GONE
-            v.et_description.hint = "What is your team's plan?"
-            v.et_name.hint = "Enter team's name"
+            v.et_description.hint = getString(R.string.what_is_your_team_s_plan)
+            v.et_name.hint = getString(R.string.enter_team_s_name)
         }
         if (team != null) {
             v.et_services.setText(team.services)
@@ -77,8 +77,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         }
 
         val builder = AlertDialog.Builder(requireActivity())
-            .setTitle(String.format("Enter %s detail", if (type == null) "Team" else type))
-            .setView(v).setPositiveButton("Save", null).setNegativeButton("Cancel", null)
+            .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
+            .setView(v).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
 
         val dialog = builder.create()
 
@@ -93,8 +93,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 map["rules"] = v.et_rules.text.toString()
                 when {
                     name.isEmpty() -> {
-                        Utilities.toast(activity, "Name is required")
-                        v.et_name.error = "Please enter a name"
+                        Utilities.toast(activity, getString(R.string.name_is_required))
+                        v.et_name.error = getString(R.string.please_enter_a_name)
                     }
 
                     else -> {
@@ -116,7 +116,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                             team.isUpdated = true
                             team.realm.commitTransaction()
                         }
-                        Utilities.toast(activity, "Team Created")
+                        Utilities.toast(activity, getString(R.string.team_created))
                         setTeamList()
                         // dialog won't close by default
                         dialog.dismiss()

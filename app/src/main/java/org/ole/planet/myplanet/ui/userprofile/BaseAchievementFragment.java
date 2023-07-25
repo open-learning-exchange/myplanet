@@ -56,7 +56,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
             etGoals.setText(achievement.getGoals());
             checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
-        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? getString(R.string.birth_date) : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         resourceArray = new JsonArray();
         etName.setText(user.getFirstName());
         etMiddleName.setText(user.getMiddleName());
