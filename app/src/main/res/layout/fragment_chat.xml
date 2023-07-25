@@ -21,9 +21,14 @@
         android:id="@+id/text_gchat_indicator"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:textColor="@color/md_red_500"
+        android:textSize="18sp"
         android:visibility="gone"
+        android:gravity="center"
+        android:textStyle="bold"
+        android:layout_margin="10dp"
         app:layout_constraintBottom_toTopOf="@id/view"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <View

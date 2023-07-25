@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import okhttp3.MediaType
@@ -26,6 +27,7 @@ class ChatFragment : Fragment() {
     private lateinit var chatMessage: EditText
     private lateinit var imageLoading: ImageView
     private lateinit var mAdapter: ChatAdapter
+    private lateinit var errorIndicator: TextView
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val rootView = inflater.inflate(R.layout.fragment_chat, container, false)
@@ -33,6 +35,7 @@ class ChatFragment : Fragment() {
         chatMessage = rootView.findViewById(R.id.edit_gchat_message)
         recyclerView = rootView.findViewById(R.id.recycler_gchat)
         imageLoading = rootView.findViewById(R.id.image_gchat_loading)
+        errorIndicator = rootView.findViewById(R.id.text_gchat_indicator)
 
         mAdapter = ChatAdapter(ArrayList(), requireContext())
         recyclerView.adapter = mAdapter
@@ -60,6 +63,7 @@ class ChatFragment : Fragment() {
             val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
             makePostRequest(requestBody)
             chatMessage.text.clear()
+            errorIndicator.visibility = View.GONE
         }
 
         return rootView
@@ -91,6 +95,8 @@ class ChatFragment : Fragment() {
                         }
                     }
                 } else {
+                    errorIndicator.visibility = View.VISIBLE
+                    errorIndicator.text = "${response.body()!!.message}"
                     Log.d("failed chat message", "${response.body()!!.message}")
                 }
 
@@ -101,6 +107,8 @@ class ChatFragment : Fragment() {
 
             override fun onFailure(call: Call<ChatModel>, t: Throwable) {
                 Log.d("onFailure chat message", "${t.message}")
+                errorIndicator.visibility = View.VISIBLE
+                errorIndicator.text = "${t.message}"
                 sendMessage.isEnabled = true
                 chatMessage.isEnabled = true
                 imageLoading.visibility = View.INVISIBLE
