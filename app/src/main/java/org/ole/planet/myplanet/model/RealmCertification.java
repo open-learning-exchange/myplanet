@@ -31,6 +31,7 @@ public class RealmCertification extends RealmObject {
     }
 
     public static boolean isCourseCertified(Realm realm, String courseId) {
+        // FIXME
         if (courseId == null) {
             return false;
         }
