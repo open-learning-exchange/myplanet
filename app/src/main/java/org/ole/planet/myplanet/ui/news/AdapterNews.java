@@ -125,7 +125,7 @@ public class AdapterNews extends BaseNewsAdapter {
             menu.setOnMenuItemClickListener(menuItem -> {
                 if (!mRealm.isInTransaction()) mRealm.beginTransaction();
                 news.addLabel(Constants.LABELS.get(menuItem.getTitle() + ""));
-                Utilities.toast(context, "Label added.");
+                Utilities.toast(context, String.valueOf(R.string.label_added));
                 mRealm.commitTransaction();
                 showChips(holder, news);
                 return false;
@@ -228,7 +228,7 @@ public class AdapterNews extends BaseNewsAdapter {
 
     private void editPost(String s, RealmNews news) {
         if (s.isEmpty()) {
-            Utilities.toast(context, "Please enter message");
+            Utilities.toast(context, String.valueOf(R.string.please_enter_message));
             return;
         }
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();

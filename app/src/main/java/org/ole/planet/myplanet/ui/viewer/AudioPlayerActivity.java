@@ -80,7 +80,7 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
 
     @Override
     public void onJcpError(@NotNull Throwable throwable) {
-        Utilities.toast(this, "Unable to play audio.");
+        Utilities.toast(this, getString(R.string.unable_to_play_audio));
     }
 
     @Override

@@ -27,7 +27,7 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
         val image = v?.findViewById<ImageView>(R.id.iv_user)
         val um = getItem(position)
         tvName?.text = """${um?.fullName} (${um?.name})"""
-        joined?.text = """Joined : ${TimeUtils.formatDate(um!!.joinDate)}"""
+        joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
 
         if (!TextUtils.isEmpty(um?.userImage)) Picasso.get().load(um?.userImage)
             .placeholder(R.drawable.profile).into(image, object : Callback {

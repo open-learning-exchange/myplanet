@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
     public void checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                Utilities.toast(this, "Please allow usages permission to myPlanet app.");
+                Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app));
                 startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
             }
         }
@@ -103,9 +104,9 @@ public abstract class PermissionActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE_FILE || requestCode == PERMISSION_REQUEST_CODE_CAMERA) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permissions Granted", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.permissions_granted, Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Permissions Denied", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.permissions_denied, Toast.LENGTH_SHORT).show();
             }
         }
     }

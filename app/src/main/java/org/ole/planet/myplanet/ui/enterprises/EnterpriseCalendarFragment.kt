@@ -88,11 +88,11 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 val desc = description.text.toString()
                 val loc = location.text.toString()
                 if (ttl.isEmpty()) {
-                    Utilities.toast(activity, "Title is required")
+                    Utilities.toast(activity, getString(R.string.title_is_required))
                 } else if (desc.isEmpty()) {
-                    Utilities.toast(activity, "Description is required")
+                    Utilities.toast(activity, getString(R.string.description_is_required))
                 } else if (start == null) {
-                    Utilities.toast(activity, "Start time is required")
+                    Utilities.toast(activity, getString(R.string.start_time_is_required))
                 } else {
                     if (!mRealm.isInTransaction) mRealm.beginTransaction()
                     val meetup =
@@ -114,7 +114,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     meetup.links = Gson().toJson(ob)
                     meetup.teamId = teamId
                     mRealm.commitTransaction()
-                    Utilities.toast(activity, "Meetup added")
+                    Utilities.toast(activity, getString(R.string.meetup_added))
                     rvCalendar.adapter?.notifyDataSetChanged()
                     calendarView.notifyCalendarChanged()
                 }
