@@ -126,11 +126,11 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<RecyclerView.ViewHol
         EditText etDesc = v.findViewById(R.id.et_description);
         etDesc.setText(personal.getDescription());
         etTitle.setText(personal.getTitle());
-        new AlertDialog.Builder(context).setTitle("Edit Personal").setIcon(R.drawable.ic_edit).setView(v).setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
+        new AlertDialog.Builder(context).setTitle(R.string.edit_personal).setIcon(R.drawable.ic_edit).setView(v).setPositiveButton(R.string.button_submit, (dialogInterface, i) -> {
             String title = etTitle.getText().toString().trim();
             String desc = etDesc.getText().toString().trim();
             if (title.isEmpty()) {
-                Utilities.toast(context, "Please enter title");
+                Utilities.toast(context, String.valueOf(R.string.please_enter_title));
                 return;
             }
             if (!realm.isInTransaction()) realm.beginTransaction();

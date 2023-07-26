@@ -55,6 +55,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private ChipCloudConfig config;
     private Markwon markwon;
     private boolean isAscending = true;
+    private boolean isTitleAscending = true;
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
         this.context = context;
@@ -89,7 +90,18 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public void setCourseList(List<RealmMyCourse> courseList) {
         this.courseList = courseList;
         sortCourseList();
+        sortCourseListByTitle();
         notifyDataSetChanged();
+    }
+
+    private void sortCourseListByTitle() {
+        Collections.sort(courseList, (course1, course2) -> {
+            if (isTitleAscending) {
+                return course1.getCourseTitle().compareToIgnoreCase(course2.getCourseTitle());
+            } else {
+                return course2.getCourseTitle().compareToIgnoreCase(course1.getCourseTitle());
+            }
+        });
     }
 
     private void sortCourseList() {
@@ -103,6 +115,12 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             }
         });
+    }
+
+    public void toggleTitleSortOrder() {
+        isTitleAscending = !isTitleAscending;
+        sortCourseListByTitle();
+        notifyDataSetChanged();
     }
 
     public void toggleSortOrder() {
@@ -133,8 +151,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
             markwon.setMarkdown(((ViewHoldercourse) holder).desc, courseList.get(position).getDescription());
 
-            ((ViewHoldercourse) holder).grad_level.setText("Grade Level  : " + courseList.get(position).getGradeLevel());
-            ((ViewHoldercourse) holder).subject_level.setText("Subject Level : " + courseList.get(position).getSubjectLevel());
+            ((ViewHoldercourse) holder).grad_level.setText(context.getString(R.string.grade_level_colon) + courseList.get(position).getGradeLevel());
+            ((ViewHoldercourse) holder).subject_level.setText(context.getString(R.string.subject_level_colon) + courseList.get(position).getSubjectLevel());
             ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
             ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
             displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);

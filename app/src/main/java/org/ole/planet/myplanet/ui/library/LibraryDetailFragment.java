@@ -126,7 +126,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     public void setClickListeners() {
         download.setOnClickListener(view -> {
             if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
-                Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();
+                Toast.makeText(getActivity(), getString(R.string.link_not_available), Toast.LENGTH_LONG).show();
                 return;
             }
             openResource(library);
@@ -144,7 +144,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
                 library.removeUserId(profileDbHandler.getUserModel().getId());
                 RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
             }
-            Utilities.toast(getActivity(), "Resource " + (isAdd ? " added to" : " removed from ") + " my library");
+            Utilities.toast(getActivity(), getString(R.string.resources) + (isAdd ? getString(R.string.added_to) : getString(R.string.removed_from) + getString(R.string.my_library)));
             setLibraryData();
         });
     }

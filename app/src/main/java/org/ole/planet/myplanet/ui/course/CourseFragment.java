@@ -88,9 +88,9 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
         //btnRemove.setOnClickListener(V -> deleteSelected(true));
-        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage("Are you sure you want to delete these courses?").setPositiveButton("Yes", (dialogInterface, i) -> {
+        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage(R.string.are_you_sure_you_want_to_delete_these_courses).setPositiveButton(R.string.yes, (dialogInterface, i) -> {
             deleteSelected(true);
-        }).setNegativeButton("No", null).show());
+        }).setNegativeButton(R.string.no, null).show());
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -127,7 +127,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         orderByDate = getView().findViewById(R.id.order_by_date_button);
         orderByTitle = getView().findViewById(R.id.order_by_title_button);
         orderByDate.setOnClickListener(view -> adapterCourses.toggleSortOrder());
-        orderByTitle.setOnClickListener(view -> adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle")));
+        orderByTitle.setOnClickListener(view -> adapterCourses.toggleTitleSortOrder());
     }
 
     private void initializeView() {
@@ -184,7 +184,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     private AlertDialog createAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext(), 5);
-        String msg = "Success! You have added the following courses:\n\n";
+        String msg = getString(R.string.success_you_have_added_the_following_courses);
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
                 msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
@@ -193,12 +193,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             for (int i = 0; i < 5; i++) {
                 msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
             }
-            msg += "And " + (selectedItems.size() - 5) + " more course(s)...\n";
+            msg += getString(R.string.and) + (selectedItems.size() - 5) + getString(R.string.more_course_s);
         }
-        msg += "\n\n Return to the Home tab to access myCourses.\n";
+        msg += getString(R.string.return_to_the_home_tab_to_access_mycourses);
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton("Ok", (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton(R.string.ok, (dialog, id) -> dialog.cancel());
         return builder.create();
     }
 
@@ -254,7 +254,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
         searchTags = li;
-        tvSelected.setText("Selected : " + tag.getName());
+        tvSelected.setText(R.string.selected + tag.getName());
         adapterCourses.setCourseList((filterCourseByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterCourses.getItemCount());
     }

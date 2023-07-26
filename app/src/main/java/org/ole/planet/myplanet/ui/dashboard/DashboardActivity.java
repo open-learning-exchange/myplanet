@@ -84,14 +84,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         config.setDelay(500);
         MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP_v2");
         sequence.setConfig(config);
-        sequence.addSequenceItem(begin, "Please make sure your device is horizontal", "GOT IT");
-        sequence.addSequenceItem(img, "Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys", "GOT IT");
-        sequence.addSequenceItem(menuh.getCustomView(), "Navigate to the Home Tab to access your dashboard with your library, courses, and teams", "GOT IT");
-        sequence.addSequenceItem(menul.getCustomView(), "Navigate to the Library Tab to access resources in your community", "GOT IT");
-        sequence.addSequenceItem(menuc.getCustomView(), "Navigate to the Courses Tab to access the courses (exams, questions, lessons) within your community", "GOT IT");
-        sequence.addSequenceItem(menut.getCustomView(), "Navigate to the Teams Tab to join, request, and check up on your teams", "GOT IT");
-        sequence.addSequenceItem(menue.getCustomView(), "Navigate to the Enterprises tab to search through a list of enterprises within your community", "GOT IT");
-        sequence.addSequenceItem(menuco.getCustomView(), "Navigate to the Community tab to access the news, community leaders, calendar, services, and finances involved within your community", "GOT IT");
+        sequence.addSequenceItem(begin, getString(R.string.please_make_sure_your_device_is_horizontal), getString(R.string.got_it));
+        sequence.addSequenceItem(img, getString(R.string.click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys), getString(R.string.got_it));
+        sequence.addSequenceItem(menuh.getCustomView(), getString(R.string.navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams), getString(R.string.got_it));
+        sequence.addSequenceItem(menul.getCustomView(), getString(R.string.navigate_to_the_library_tab_to_access_resources_in_your_community), getString(R.string.got_it));
+        sequence.addSequenceItem(menuc.getCustomView(), getString(R.string.navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community), getString(R.string.got_it));
+        sequence.addSequenceItem(menut.getCustomView(), getString(R.string.navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams), getString(R.string.got_it));
+        sequence.addSequenceItem(menue.getCustomView(), getString(R.string.navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community), getString(R.string.got_it));
+        sequence.addSequenceItem(menuco.getCustomView(), getString(R.string.navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community), getString(R.string.got_it));
         sequence.start();
     }
 
@@ -209,7 +209,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     private void checkUser() {
         user = new UserProfileDbHandler(this).getUserModel();
         if (user == null) {
-            Utilities.toast(this, "Session expired.");
+            Utilities.toast(this, getString(R.string.session_expired));
             logout();
             return;
         }
@@ -384,7 +384,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuImageList.add(getResources().getDrawable(R.drawable.team));
         menuImageList.add(getResources().getDrawable(R.drawable.business));
         menuImageList.add(getResources().getDrawable(R.drawable.survey));
-        return new IDrawerItem[]{changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0), changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1), changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2), changeUX(R.string.menu_library, menuImageList.get(3)), changeUX(R.string.menu_courses, menuImageList.get(4)), changeUX(R.string.team, menuImageList.get(5)), changeUX(R.string.menu_community, menuImageList.get(7)), changeUX(R.string.enterprises, menuImageList.get(6)).withSelectable(false).withDisabledIconColor(getResources().getColor(R.color.disable_color)).withDisabledTextColor(getResources().getColor(R.color.disable_color)), changeUX(R.string.menu_surveys, menuImageList.get(7))};
+        return new IDrawerItem[]{changeUX(R.string.menu_myplanet, menuImageList.get(0)).withIdentifier(0), changeUX(R.string.txt_myLibrary, menuImageList.get(1)).withIdentifier(1), changeUX(R.string.txt_myCourses, menuImageList.get(2)).withIdentifier(2), changeUX(R.string.menu_library, menuImageList.get(3)), changeUX(R.string.menu_courses, menuImageList.get(4)), changeUX(R.string.team, menuImageList.get(5)), changeUX(R.string.menu_community, menuImageList.get(7)), changeUX(R.string.enterprises, menuImageList.get(6)), changeUX(R.string.menu_surveys, menuImageList.get(7))};
     }
 
     @NonNull

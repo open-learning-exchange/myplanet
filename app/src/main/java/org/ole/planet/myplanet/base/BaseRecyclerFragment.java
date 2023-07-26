@@ -56,7 +56,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     public static void showNoData(View v, int count) {
         if (v == null) return;
         v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-        ((TextView) v).setText("No data available, please check and try again.");
+        ((TextView) v).setText(R.string.no_data_available_please_check_and_try_again);
     }
 
     public abstract int getLayout();
@@ -115,13 +115,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
                 RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
                 RealmMyLibrary.createFromResource(myObject, mRealm, model.getId());
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
-                Utilities.toast(getActivity(), "Added to my library");
+                Utilities.toast(getActivity(), getString(R.string.added_to_my_library));
                 recyclerView.setAdapter(getAdapter());
             } else {
                 RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
                 RealmMyCourse.createMyCourse(myObject, mRealm, model.getId());
                 RealmRemovedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().getId(), myObject.getCourseId());
-                Utilities.toast(getActivity(), "Added to my courses");
+                Utilities.toast(getActivity(), getString(R.string.added_to_my_courses));
                 recyclerView.setAdapter(getAdapter());
             }
             showNoData(tvMessage, getAdapter().getItemCount());
