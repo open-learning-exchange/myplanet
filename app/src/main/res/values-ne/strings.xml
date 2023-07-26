@@ -128,7 +128,7 @@
     <string name="achievements">मेरो साधारणता</string>
     <string name="messeges">मेरा सन्देशहरू</string>
     <string name="contacts">सम्पर्कहरू</string>
-    <string name="news">हाम्रो समाचार</string>
+    <string name="news">समाचार</string>
     <string name="references">सन्दर्भहरू</string>
     <string name="maps">नक्सा</string>
     <string name="help_wanted">सहयोग चाहियो</string>
@@ -934,5 +934,12 @@
     <string name="main_controls">मुख्य नियन्त्रणहरू</string>
     <string name ="select_user_to_login"> लगइन गर्न प्रयोगकर्ता चयन गर्नुहोस्</string>
     <string name ="dismiss"> खारेज गर्नुहोस्</string>
+    <string name="gps_is_settings">GPS सेटिङहरू हो</string>
+    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS सक्षम गरिएको छैन। के तपाईँ सेटिङ मेनुमा जान चाहनुहुन्छ?</string>
+    <string name="available_space_colon">उपलब्ध ठाउँ: </string>
+    <string name="community_leaders">सामुदायिक नेताहरू</string>
+    <string name="services">सेवाहरू</string>
+    <string name="survey_taken">सर्वेक्षण लिइएको </string>
+    <string name="times"> पल्टीहरू</string>
 
 </resources>

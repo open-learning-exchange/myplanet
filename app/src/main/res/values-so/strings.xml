@@ -128,7 +128,7 @@
     <string name="achievements">Dhamaanada</string>
     <string name="messeges">Farriimahayga</string>
     <string name="contacts">Xiriirrada</string>
-    <string name="news">Warkeena</string>
+    <string name="news">Wararka</string>
     <string name="references">Tixraacyo</string>
     <string name="maps">Maps</string>
     <string name="help_wanted">caawin la rabo </string>
@@ -927,5 +927,12 @@
     <string name="main_controls">Xakamaynta ugu weyn</string>
     <string name="select_user_to_login">Dooro isticmaale si aad u gasho</string>
     <string name="dismiss">saar</string>
+    <string name="gps_is_settings">GPS waa Settings</string>
+    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS lama hawlgelin. Ma rabtaa inaad aado menu settings?</string>
+    <string name="available_space_colon">Boos la heli karo: </string>
+    <string name="community_leaders">Hogaamiyayaasha bulshada</string>
+    <string name="services">adeegyo</string>
+    <string name="survey_taken">Soo dhaweyn laga qaadayo </string>
+    <string name="times"> magaalada</string>
 
 </resources>
