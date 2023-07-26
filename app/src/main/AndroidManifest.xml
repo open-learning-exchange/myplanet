@@ -132,28 +132,6 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <service
-            android:name=".service.AutoSyncService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
-            </intent-filter>
-        </service>
-        <service
-            android:name=".service.StayOnLineService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
-            </intent-filter>
-        </service>
-        <service
-            android:name=".service.TaskNotificationService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE" />
-            </intent-filter>
-        </service>
-
         <activity android:name=".ui.viewer.WebViewActivity" />
     </application>
 </manifest>
