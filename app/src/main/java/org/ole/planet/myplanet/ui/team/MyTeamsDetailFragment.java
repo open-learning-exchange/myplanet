@@ -105,10 +105,10 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         View v = getLayoutInflater().inflate(R.layout.alert_input, null);
         TextInputLayout layout = v.findViewById(R.id.tl_input);
         layout.setHint(getString(R.string.enter_message));
-        new AlertDialog.Builder(getActivity()).setView(v).setTitle("Add Message").setPositiveButton("Save", (dialogInterface, i) -> {
+        new AlertDialog.Builder(getActivity()).setView(v).setTitle(R.string.add_message).setPositiveButton(R.string.save, (dialogInterface, i) -> {
             String msg = layout.getEditText().getText().toString().trim();
             if (msg.isEmpty()) {
-                Utilities.toast(getActivity(), "Message is required");
+                Utilities.toast(getActivity(), String.valueOf(R.string.message_is_required));
                 return;
             }
             HashMap<String, String> map = new HashMap<>();
@@ -119,7 +119,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
             map.put("messagePlanetCode", team.getTeamPlanetCode());
             RealmNews.createNews(map, mRealm, user, imageList);
             rvDiscussion.getAdapter().notifyDataSetChanged();
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton(R.string.cancel, null).show();
     }
 
     @Override
@@ -141,10 +141,10 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
         libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
 
-        tabLayout.getTabAt(1).setText(String.format("Joined Members : (%s)", users.size()));
-        tabLayout.getTabAt(3).setText(String.format("Courses : (%s)", courses.size()));
-        tabLayout.getTabAt(2).setText(String.format("Requested Members : (%s)", reqUsers.size()));
-        tabLayout.getTabAt(4).setText(String.format("Resources : (%s)", libraries.size()));
+        tabLayout.getTabAt(1).setText(String.format(getString(R.string.joined_members_colon) + " (%s)", users.size()));
+        tabLayout.getTabAt(3).setText(String.format(getString(R.string.courses_colon) + " (%s)", courses.size()));
+        tabLayout.getTabAt(2).setText(String.format(getString(R.string.requested_members_colon) + " (%s)", reqUsers.size()));
+        tabLayout.getTabAt(4).setText(String.format(getString(R.string.resources_colon) + " (%s)", libraries.size()));
 
         if (!isMyTeam) {
             try {
@@ -189,9 +189,9 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                     listContent.setVisibility(View.GONE);
                     llRv.setVisibility(View.VISIBLE);
                 } else if (tab.getPosition() == 1)
-                    setListContent(tab, String.format("Joined Members : (%s)", users.size()), users);
+                    setListContent(tab, String.format(getString(R.string.joined_members_colon) + " (%s)", users.size()), users);
                 else if (tab.getPosition() == 2)
-                    setListContent(tab, String.format("Requested Members : (%s)", reqUsers.size()), reqUsers);
+                    setListContent(tab, String.format(getString(R.string.requested_members_colon) + " (%s)", reqUsers.size()), reqUsers);
                 else if (tab.getPosition() == 3) setCourseList(tab, courses);
                 else if (tab.getPosition() == 4) setLibraryList(tab);
             }
@@ -207,7 +207,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     }
 
     private void setLibraryList(TabLayout.Tab tab) {
-        hideRv(tab, String.format("Resources : (%s)", libraries.size()));
+        hideRv(tab, String.format(getString(R.string.resources_colon) + " (%s)", libraries.size()));
         listContent.setAdapter(new ArrayAdapter<RealmMyLibrary>(getActivity(), android.R.layout.simple_list_item_1, libraries));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
@@ -223,7 +223,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     }
 
     private void setCourseList(TabLayout.Tab tab, RealmResults<RealmMyCourse> courses) {
-        hideRv(tab, String.format("Courses : (%s)", courses.size()));
+        hideRv(tab, String.format(getString(R.string.courses_colon)+ " (%s)", courses.size()));
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
@@ -249,7 +249,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
                 TextView tv = convertView.findViewById(android.R.id.text1);
-                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName(), teamId) + " visits )");
+                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName(), teamId) + getString(R.string.visits) + ")");
                 return convertView;
             }
         });

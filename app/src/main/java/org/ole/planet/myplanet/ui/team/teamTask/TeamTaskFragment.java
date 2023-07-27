@@ -98,13 +98,13 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         Calendar myCalendar = Calendar.getInstance();
         datePicker.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, myCalendar.get(Calendar.YEAR), myCalendar.get(Calendar.MONTH), myCalendar.get(Calendar.DAY_OF_MONTH)).show());
 
-        new AlertDialog.Builder(getActivity()).setTitle("Add Task").setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
+        new AlertDialog.Builder(getActivity()).setTitle(R.string.add_task).setView(v).setPositiveButton(R.string.save, (dialogInterface, i) -> {
             String task = title.getText().toString();
             String desc = description.getText().toString();
-            if (task.isEmpty()) Utilities.toast(getActivity(), "Task title is required");
-            else if (deadline == null) Utilities.toast(getActivity(), "Deadline is required");
+            if (task.isEmpty()) Utilities.toast(getActivity(), getString(R.string.task_title_is_required));
+            else if (deadline == null) Utilities.toast(getActivity(), getString(R.string.deadline_is_required));
             else createOrUpdateTask(task, desc, t);
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton(getString(R.string.cancel), null).show();
     }
 
     private void createOrUpdateTask(String task, String desc, RealmTeamTask t) {
@@ -128,7 +128,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             rvTask.getAdapter().notifyDataSetChanged();
             showNoData(nodata, rvTask.getAdapter().getItemCount());
         }
-        Utilities.toast(getActivity(), String.format("Task %s successfully", isCreate ? "added" : "updated"));
+        Utilities.toast(getActivity(), String.format(getString(R.string.task_s_successfully), isCreate ? getString(R.string.added) : getString(R.string.updated)));
     }
 
     @Override
@@ -180,7 +180,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     public void onDelete(RealmTeamTask task) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         task.deleteFromRealm();
-        Utilities.toast(getActivity(), "Task deleted successfully");
+        Utilities.toast(getActivity(), getString(R.string.task_deleted_successfully));
         mRealm.commitTransaction();
         adapterTask.notifyDataSetChanged();
         showNoData(nodata, rvTask.getAdapter().getItemCount());
@@ -193,7 +193,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         List<RealmUserModel> userList = RealmMyTeam.getJoinedMemeber(teamId, mRealm);
         ArrayAdapter<RealmUserModel> adapter = new UserListArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, userList);
         spnUser.setAdapter(adapter);
-        new AlertDialog.Builder(getActivity()).setTitle(R.string.select_member).setView(v).setCancelable(false).setPositiveButton("OK", (dialogInterface, i) -> {
+        new AlertDialog.Builder(getActivity()).setTitle(R.string.select_member).setView(v).setCancelable(false).setPositiveButton(R.string.ok, (dialogInterface, i) -> {
             RealmUserModel user = ((RealmUserModel) spnUser.getSelectedItem());
             String userId = user.getId();
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();

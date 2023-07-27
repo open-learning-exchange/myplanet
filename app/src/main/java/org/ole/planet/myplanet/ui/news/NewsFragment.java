@@ -72,7 +72,7 @@ public class NewsFragment extends BaseNewsFragment {
         KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());
         btnAddStory.setOnClickListener(view -> {
             llAddNews.setVisibility(llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
-            btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? "Hide Add Story" : "Add Story");
+            btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? getString(R.string.hide_add_story) : getString(R.string.add_story));
         });
         if (getArguments().getBoolean("fromLogin")) {
             btnAddStory.setVisibility(View.GONE);
@@ -88,7 +88,7 @@ public class NewsFragment extends BaseNewsFragment {
         btnSubmit.setOnClickListener(view -> {
             String message = etMessage.getText().toString().trim();
             if (message.isEmpty()) {
-                tlMessage.setError("Please enter message");
+                tlMessage.setError(getString(R.string.please_enter_message));
                 return;
             }
             etMessage.setText("");

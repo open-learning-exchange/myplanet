@@ -14,7 +14,6 @@
         android:layout_weight="1"
         android:gravity="center"
         android:padding="@dimen/padding_normal"
-        android:text="text"
         android:textColor="@color/dialog_sync_labels" />
 
     <ImageView

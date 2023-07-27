@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_horizontal"
         android:paddingTop="@dimen/padding_large"
-        android:text="Markdown Filename"
+        android:text="@string/markdown_filename"
         android:textColor="@color/md_black_1000"
         android:textSize="@dimen/text_size_large"
         android:textStyle="bold" />

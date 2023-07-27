@@ -52,7 +52,6 @@
                 android:background="@drawable/oval_white"
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
-                android:text="12"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp"
                 android:textStyle="bold" />

@@ -42,7 +42,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/buttonyellow"
-                    android:drawableLeft="@drawable/ic_edit"
+                    android:drawableStart="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/edit_achievement" />
@@ -111,7 +111,7 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="My Achievements" />
+                    android:text="@string/my_achievements" />
 
                 <TextView
                     android:id="@+id/tv_achievement_header"
@@ -134,7 +134,7 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="References" />
+                    android:text="@string/references" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_other_info"

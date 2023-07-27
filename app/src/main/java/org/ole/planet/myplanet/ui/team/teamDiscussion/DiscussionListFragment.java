@@ -116,10 +116,10 @@ public class DiscussionListFragment extends BaseTeamFragment {
         v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this, 100));
         v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
         layout.setHint(getString(R.string.enter_message));
-        new AlertDialog.Builder(getActivity()).setView(v).setTitle("Add Message").setPositiveButton("Save", (dialogInterface, i) -> {
+        new AlertDialog.Builder(getActivity()).setView(v).setTitle(getString(R.string.add_message)).setPositiveButton(getString(R.string.save), (dialogInterface, i) -> {
             String msg = layout.getEditText().getText().toString().trim();
             if (msg.isEmpty()) {
-                Utilities.toast(getActivity(), "Message is required");
+                Utilities.toast(getActivity(), getString(R.string.message_is_required));
                 return;
             }
             HashMap<String, String> map = new HashMap<>();
@@ -133,7 +133,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
             RealmNews.createNews(map, mRealm, user, imageList);
             Utilities.log("discussion created");
             rvDiscussion.getAdapter().notifyDataSetChanged();
-        }).setNegativeButton("Cancel", null).show();
+        }).setNegativeButton(getString(R.string.cancel), null).show();
     }
 
     @Override

@@ -63,7 +63,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
 
     public void checkDownloadResult(Download download, ProgressDialog progressDialog) {
         if (!download.isFailed()) {
-            progressDialog.setMessage("Downloading .... " + download.getProgress() + "% complete");
+            progressDialog.setMessage(getString(R.string.downloading) + download.getProgress() + "% " + getString(R.string.complete));
             if (download.isCompleteAll()) {
                 progressDialog.dismiss();
                 FileUtils.installApk(this, download.getFileUrl());
@@ -107,7 +107,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
             url_pwd = userinfo[1];
             couchdbURL = url;
         } else if (TextUtils.isEmpty(password)) {
-            DialogUtils.showAlert(this, "", "Pin is required.");
+            DialogUtils.showAlert(this, "", getString(R.string.pin_is_required));
             return "";
         } else {
             url_user = "satellite";
@@ -128,14 +128,14 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
 
     public boolean isUrlValid(String url) {
         if (!URLUtil.isValidUrl(url) || url.equals("http://") || url.equals("https://")) {
-            DialogUtils.showAlert(this, "Invalid Url", "Please enter valid url to continue.");
+            DialogUtils.showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue));
             return false;
         }
         return true;
     }
 
     public void startUpload() {
-        progressDialog.setMessage("Uploading data to server, please wait.....");
+        progressDialog.setMessage(getString(R.string.uploading_data_to_server_please_wait));
         progressDialog.show();
         Utilities.log("Upload : upload started");
         UploadToShelfService.getInstance().uploadUserData(success -> {
@@ -157,7 +157,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
 //        UploadManager.getInstance().uploadHealth();
         UploadManager.getInstance().uploadSubmitPhotos(this);
         UploadManager.getInstance().uploadActivities(this);
-        Toast.makeText(this, "Uploading activities to server, please wait...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show();
     }
 
     protected void hideKeyboard(View view) {
@@ -183,7 +183,7 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         AlertDialog.Builder builder1 = new AlertDialog.Builder(this);
         builder1.setMessage(Message);
         builder1.setCancelable(true);
-        builder1.setNegativeButton("Okay", (dialog, id) -> dialog.cancel());
+        builder1.setNegativeButton(R.string.okay, (dialog, id) -> dialog.cancel());
         AlertDialog alert11 = builder1.create();
         alert11.show();
     }

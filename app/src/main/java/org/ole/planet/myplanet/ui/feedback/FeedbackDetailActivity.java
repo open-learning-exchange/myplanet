@@ -49,14 +49,14 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_feedback_detail);
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        setTitle("Feedback");
+        setTitle(R.string.feedback);
         realm = new DatabaseService(this).getRealmInstance();
         feedback = realm.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
         TextView tvMessage = findViewById(R.id.tv_message);
         TextView tvDate = findViewById(R.id.tv_date);
         if (!TextUtils.isEmpty(feedback.getOpenTime()))
             tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
-        else tvDate.setText("Date : N/A");
+        else tvDate.setText(R.string.date_n_a);
         tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
         closeButton = findViewById(R.id.close_feedback);
         replyButton = findViewById(R.id.reply_feedback);

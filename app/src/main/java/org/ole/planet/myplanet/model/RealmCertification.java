@@ -31,6 +31,10 @@ public class RealmCertification extends RealmObject {
     }
 
     public static boolean isCourseCertified(Realm realm, String courseId) {
+        // FIXME
+        if (courseId == null) {
+            return false;
+        }
         long c = realm.where(RealmCertification.class).contains("courseIds", courseId).count();
         Utilities.log(c + " size");
         return c > 0;
