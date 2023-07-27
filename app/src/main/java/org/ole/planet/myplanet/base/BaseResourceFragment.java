@@ -63,8 +63,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public Realm mRealm;
     public UserProfileDbHandler profileDbHandler;
     public SharedPreferences.Editor editor;
-    public
-    //    ArrayList<Integer> selectedItemsList = new ArrayList<>();
+
     CheckboxListView lv;
     View convertView;
     BroadcastReceiver receiver = new BroadcastReceiver() {
