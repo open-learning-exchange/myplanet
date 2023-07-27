@@ -269,10 +269,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     openCourse(courseList.get(adapterPosition), 0);
                 }
             });
-//            itemView.setOnClickListener(view ->
-//                    openCourse(courseList.get(getAdapterPosition()), 0)
-//            );
-
 
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
                 progressBar.setScaleY(0.3f);
