@@ -48,7 +48,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
                     homeItemClickListener.openCallFragment(MySubmissionFragment())
-                } else if (title == getString(R.string.news)) {
+                } else if (title == getString(R.string.our_news)) {
                     homeItemClickListener.openCallFragment(NewsFragment())
                 } else if (title == getString(R.string.references)) {
                     homeItemClickListener.openCallFragment(ReferenceFragment())
@@ -66,10 +66,10 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     if (!model.id.startsWith("guest")) {
                         homeItemClickListener.openCallFragment(MyHealthFragment())
                     } else {
-                        Utilities.toast(activity, "Feature not available for guest user")
+                        Utilities.toast(activity, getString(R.string.feature_not_available_for_guest_user))
                     }
                 } else {
-                    Utilities.toast(activity, "Feature Not Available")
+                    Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
             }
         }

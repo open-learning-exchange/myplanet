@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.service;
 
+import static android.content.Context.MODE_PRIVATE;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
 
@@ -9,8 +10,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 
-import com.firebase.jobdispatcher.JobParameters;
-import com.firebase.jobdispatcher.JobService;
+import androidx.annotation.NonNull;
+import androidx.work.Worker;
+import androidx.work.WorkerParameters;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
@@ -26,24 +28,36 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 
-public class AutoSyncService extends JobService implements SyncListener, Service.CheckVersionCallback, SuccessListener {
-    SharedPreferences preferences;
+public class AutoSyncWorker extends Worker implements SyncListener, Service.CheckVersionCallback, SuccessListener {
+    private SharedPreferences preferences;
+    private Context context;
 
+    public AutoSyncWorker(
+            @NonNull Context context,
+            @NonNull WorkerParameters workerParams
+    ) {
+        super(context, workerParams);
+        this.context = context;
+    }
+
+    @NonNull
     @Override
-    public boolean onStartJob(JobParameters job) {
-        preferences = getSharedPreferences(SyncManager.PREFS_NAME, MODE_PRIVATE);
+    public Result doWork() {
+        preferences = context.getSharedPreferences(SyncManager.PREFS_NAME, MODE_PRIVATE);
         long lastSync = preferences.getLong("LastSync", 0);
-        long currentTime = new Date().getTime();
+        long currentTime = System.currentTimeMillis();
         int syncInterval = preferences.getInt("autoSyncInterval", 60 * 60);
+
         if ((currentTime - lastSync) > (syncInterval * 1000)) {
-            Utilities.toast(this, "Syncing started...");
-            new Service(this).checkVersion(this, preferences);
+            Utilities.toast(context, "Syncing started...");
+            new Service(context).checkVersion(this, preferences);
         }
-        return false;
+
+        return Result.success();
     }
 
     private boolean isMyServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
             if (serviceClass.getName().equals(service.service.getClassName())) {
                 return true;
@@ -58,16 +72,11 @@ public class AutoSyncService extends JobService implements SyncListener, Service
             if (intent.getAction().equals(MESSAGE_PROGRESS)) {
                 Download download = intent.getParcelableExtra("download");
                 if (!download.isFailed() && download.isCompleteAll()) {
-                    FileUtils.installApk(AutoSyncService.this, download.getFileUrl());
+                    FileUtils.installApk(context, download.getFileUrl());
                 }
             }
         }
     };
-
-    @Override
-    public boolean onStopJob(JobParameters job) {
-        return false;
-    }
 
     @Override
     public void onSyncStarted() {
@@ -82,18 +91,14 @@ public class AutoSyncService extends JobService implements SyncListener, Service
     @Override
     public void onSyncFailed(String msg) {
         if (MainApplication.syncFailedCount > 3) {
-            startActivity(new Intent(this, LoginActivity.class).putExtra("showWifiDialog", true).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            context.startActivity(new Intent(context, LoginActivity.class).putExtra("showWifiDialog", true).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         }
     }
 
     @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
-//        startActivity(new Intent(this, LoginActivity.class)
-//                .putExtra("versionInfo", info)
-//                .putExtra("cancelable", cancelable)
-//                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, this)) {
-            DialogUtils.startDownloadUpdate(this, Utilities.getApkUpdateUrl(info.getLocalapkpath()), null);
+        if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, context)) {
+            DialogUtils.startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), null);
         }
     }
 

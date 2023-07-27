@@ -87,7 +87,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
             pdfView.fromFile(new File(Utilities.SD_PATH, fileName)).defaultPage(0).enableAnnotationRendering(true).onLoad(this).onPageChange(this).scrollHandle(new DefaultScrollHandle(this)).load();
         } catch (Exception e) {
             e.printStackTrace();
-            Toast.makeText(getApplicationContext(), "Unable to load " + fileName, Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show();
         }
     }
 
@@ -104,14 +104,14 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
 
     @Override
     public void onRecordStarted() {
-        Utilities.toast(this, "Recording started....");
-        NotificationUtil.create(this, R.drawable.ic_mic, "Recording Audio", "Ole is recording audio");
+        Utilities.toast(this, getString(R.string.recording_started));
+        NotificationUtil.create(this, R.drawable.ic_mic, "Recording Audio", getString(R.string.ole_is_recording_audio));
         fabRecord.setImageResource(R.drawable.ic_stop);
     }
 
     @Override
     public void onRecordStopped(String outputFile) {
-        Utilities.toast(this, "Recording stopped.");
+        Utilities.toast(this, getString(R.string.recording_stopped));
         NotificationUtil.cancellAll(this);
         if (outputFile != null) {
             updateTranslation(outputFile);
@@ -125,7 +125,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             library.setTranslationAudioPath(outputFile);
             mRealm.commitTransaction();
-            Utilities.toast(this, "Audio file saved in database.");
+            Utilities.toast(this, getString(R.string.audio_file_saved_in_database));
         }
     }
 

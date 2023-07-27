@@ -135,23 +135,23 @@ public class FinanceFragment extends BaseTeamFragment {
     }
 
     private void addTransaction() {
-        new AlertDialog.Builder(getActivity()).setView(setUpAlertUi()).setTitle("Add Transaction").setPositiveButton("Submit", (dialogInterface, i) -> {
+        new AlertDialog.Builder(getActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction).setPositiveButton("Submit", (dialogInterface, i) -> {
             String type = spnType.getSelectedItem().toString();
             Utilities.log(type + " type");
             String note = tlNote.getEditText().getText().toString().trim();
             String amount = tlAmount.getEditText().getText().toString().trim();
 
             if (note.isEmpty()) {
-                Utilities.toast(getActivity(), "Note is required");
+                Utilities.toast(getActivity(), getString(R.string.note_is_required));
             } else if (amount.isEmpty()) {
-                Utilities.toast(getActivity(), "Amount is required");
+                Utilities.toast(getActivity(), getString(R.string.amount_is_required));
             } else if (date == null) {
-                Utilities.toast(getActivity(), "Date is required");
+                Utilities.toast(getActivity(), getString(R.string.date_is_required));
             } else {
                 mRealm.executeTransactionAsync(realm -> {
                     createTransactionObject(realm, type, note, amount, date);
                 }, () -> {
-                    Utilities.toast(getActivity(), "Transaction added");
+                    Utilities.toast(getActivity(), getString(R.string.transaction_added));
                     adapterFinance.notifyDataSetChanged();
                     showNoData(nodata, adapterFinance.getItemCount());
                     calculateTotal(list);

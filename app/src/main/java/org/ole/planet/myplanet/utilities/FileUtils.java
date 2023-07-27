@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utilities;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -17,6 +19,7 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.BuildConfig;
+import org.ole.planet.myplanet.R;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -206,17 +209,24 @@ public class FileUtils {
 
     public static String getImagePath(Context context, Uri uri) {
         Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
-        cursor.moveToFirst();
-        String document_id = cursor.getString(0);
-        document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
-        cursor.close();
+        if (cursor != null && cursor.moveToFirst()) {
+            String document_id = cursor.getString(0);
+            document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
+            cursor.close();
 
-        cursor = context.getContentResolver().query(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
-        cursor.moveToFirst();
-        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-        cursor.close();
-
-        return path;
+            cursor = context.getContentResolver().query(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+                cursor.close();
+                return path;
+            } else {
+                // Handle the case when the cursor is empty or null
+                return null; // or return an appropriate default value or handle the error accordingly
+            }
+        } else {
+            // Handle the case when the cursor is empty or null
+            return null; // or return an appropriate default value or handle the error accordingly
+        }
     }
 
     public static String getMediaType(String path) {
@@ -354,6 +364,6 @@ public class FileUtils {
     public static String getAvailableOverTotalMemoryFormattedString() {
         long available = getTotalAvailableMemory();
         long total = getTotalMemoryCapacity();
-        return "Available Space: " + formatSize(available) + "/" + formatSize(total);
+        return context.getString(R.string.available_space_colon) + formatSize(available) + "/" + formatSize(total);
     }
 }
