@@ -79,7 +79,7 @@ class ChatFragment : Fragment() {
 
         call.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                if (response.body()!!.message == "Success") {
+                if (response.body()!!.status == "Success") {
                     val chatModel = response.body()
 
                     val history: ArrayList<History> = chatModel?.history ?: ArrayList()

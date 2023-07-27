@@ -4,6 +4,8 @@ import com.google.gson.annotations.SerializedName
 
 data class ChatModel(
     @SerializedName("message") var message: String? = null,
+    @SerializedName("error") var error: String? = null,
+    @SerializedName("status") var status: String? = null,
     @SerializedName("chat") var chat: String? = null,
     @SerializedName("history") var history: ArrayList<History> = arrayListOf(),
     @SerializedName("couchDBResponse") var couchDBResponse: CouchDBResponse? = CouchDBResponse()
