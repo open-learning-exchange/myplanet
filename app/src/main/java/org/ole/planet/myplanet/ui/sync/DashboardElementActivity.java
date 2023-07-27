@@ -180,6 +180,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     public void logout() {
         profileDbHandler.onLogout();
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
+        settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).commit();
         Intent loginscreen = new Intent(this, LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(loginscreen);
         doubleBackToExitPressedOnce = true;

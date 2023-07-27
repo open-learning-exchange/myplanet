@@ -296,7 +296,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
-        showNotificationFragment()
+        if(!settings.getBoolean(Constants.KEY_NOTIFICATION_SHOWN, false)) {
+            showNotificationFragment()
+        }
     }
 
     fun showNotificationFragment() {
@@ -304,6 +306,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         fragment.callback = this
         fragment.resourceList = getLibraryList(mRealm)
         fragment.show(childFragmentManager, "")
+        editor.putBoolean(Constants.KEY_NOTIFICATION_SHOWN, true).commit()
     }
 
     override fun showResourceDownloadDialog() {
