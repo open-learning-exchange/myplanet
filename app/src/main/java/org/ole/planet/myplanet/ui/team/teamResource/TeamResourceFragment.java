@@ -61,9 +61,9 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         View convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
         CheckboxListView lv = convertView.findViewById(R.id.alertDialog_listView);
-        alertDialogBuilder.setTitle("Select Resource : ");
+        alertDialogBuilder.setTitle(R.string.select_resource);
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).not().in("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
-        alertDialogBuilder.setView(convertView).setPositiveButton("Add", (dialogInterface, i) -> {
+        alertDialogBuilder.setView(convertView).setPositiveButton(R.string.add, (dialogInterface, i) -> {
             ArrayList<Integer> selected = lv.getSelectedItemsList();
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             for (Integer se : selected) {
@@ -79,7 +79,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
             }
             mRealm.commitTransaction();
             showLibraryList();
-        }).setNegativeButton("Cancel", null);
+        }).setNegativeButton(R.string.cancel, null);
         AlertDialog alertDialog = alertDialogBuilder.create();
         listSetting(alertDialog, libraries, lv);
     }

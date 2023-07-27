@@ -49,7 +49,7 @@ public class AddMyHealthActivity extends AppCompatActivity {
         iv = userModelB.getIv();
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             createMyHealth();
-            Utilities.toast(AddMyHealthActivity.this, "My health saved successfully");
+            Utilities.toast(AddMyHealthActivity.this, getString(R.string.my_health_saved_successfully));
         });
         initViews();
     }

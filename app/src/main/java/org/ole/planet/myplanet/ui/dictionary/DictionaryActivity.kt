@@ -35,10 +35,10 @@ class DictionaryActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_dictionary)
         initActionBar()
-        title = "Dictionary"
+        title = getString(R.string.dictionary)
         mRealm = DatabaseService(this).realmInstance;
         list = mRealm?.where(RealmDictionary::class.java)?.findAll()
-        tv_result.text = "List size ${list?.size}"
+        tv_result.text = "${getString(R.string.list_size)} ${list?.size}"
         Utilities.log("${FileUtils.checkFileExist(Constants.DICTIONARY_URL)} file")
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             Utilities.log("List " + list?.size)
@@ -46,7 +46,7 @@ class DictionaryActivity : BaseActivity() {
         } else {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
-            Utilities.toast(this, "Downloading started, please check notification...")
+            Utilities.toast(this, getString(R.string.downloading_started_please_check_notificati))
             Utilities.openDownloadService(this, list)
         }
     }
@@ -91,7 +91,7 @@ class DictionaryActivity : BaseActivity() {
                     HtmlCompat.FROM_HTML_MODE_LEGACY
                 )
             } else {
-                Utilities.toast(this, "Word not available in our database.")
+                Utilities.toast(this, getString(R.string.word_not_available_in_our_database))
             }
         }
     }
