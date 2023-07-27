@@ -173,7 +173,15 @@ public class RealmSubmission extends RealmObject {
     }
 
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
-        return context.getString(R.string.survey_taken) + mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + context.getString(R.string.times);
+        int submissionCount = mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size();
+
+        String pluralizedString = null;
+        if (submissionCount == 1) {
+            pluralizedString = context.getString(R.string.time);
+        } else if (submissionCount > 1){
+            pluralizedString = context.getString(R.string.times);
+        }
+        return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString;
     }
 
     public static int getNoOfSurveySubmissionByUser(String userId, Realm mRealm) {
