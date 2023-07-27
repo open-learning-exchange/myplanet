@@ -896,6 +896,9 @@
         Se ha utilizado para mejorar la educación temprana, las escuelas secundarias, la salud en las aldeas, el desarrollo de la fuerza laboral juvenil,
         y el desarrollo económico y comunitario.</p>
     <p>Planet alberga un repositorio de recursos gratuitos, de acceso abierto y de dominio público para beneficiar a todos los estudiantes.</p>
+=======
+    <string name="ai_chat">AI Chat</string>
+>>>>>>> chatFeature
 
     <p>myPlanet está diseñado para estar disponible para todos, en todas partes, todo el tiempo. Es portátil, asequible, escalable y sostenible.
     Se ejecuta en cualquier dispositivo Android, como tabletas y teléfonos móviles. Funciona tanto en línea como sin conexión a Internet.</p>
@@ -941,5 +944,6 @@
     <string name="services">Servicios</string>
     <string name="survey_taken">Encuesta Realizada </string>
     <string name="times"> veces</string>
+    <string name="ai_chat">AI Chat</string>
 
 </resources>

@@ -985,6 +985,9 @@
         It has been used to improve early education, secondary schools, village health, youth workforce development,
         and economic and community development.</p>
     <p>Planet houses is a repository of free, open access and public domain resources to benefit all learners.</p>
+=======
+    <string name="ai_chat">AI Chat</string>
+>>>>>>> chatFeature
 
     <p>myPlanet is designed to be available to everyone, everywhere, all the time. It is portable, affordable, scalable and sustainable.
         It runs on any android device such as tablets and mobile phones. It functions off, as well as on, the Internet.</p>
@@ -1030,5 +1033,6 @@
     <string name="services">Services</string>
     <string name="survey_taken">Survey Taken </string>
     <string name="times"> times</string>
+    <string name="ai_chat">AI Chat</string>
 
 </resources>

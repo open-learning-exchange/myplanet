@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.MyPlanet;
+import org.ole.planet.myplanet.ui.chat.ChatModel;
 
 import java.util.Map;
 
@@ -56,5 +57,8 @@ public interface ApiInterface {
 
     @GET
     Call<ResponseBody> isPlanetAvailable(@Url String serverUrl);
+
+    @POST
+    Call<ChatModel> chatGpt(@Url String url, @Body RequestBody requestBody);
 }
 
