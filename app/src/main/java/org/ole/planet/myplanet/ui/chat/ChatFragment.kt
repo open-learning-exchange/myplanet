@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
+import android.text.Editable
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -63,7 +65,7 @@ class ChatFragment : Fragment() {
                 errorIndicator.visibility = View.VISIBLE
                 errorIndicator.text = "Kindly enter message"
             } else {
-                val message = chatMessage.text.toString()
+                val message = "${chatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
                 val jsonContent = "{\"content\": \"$message\"}"
                 val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
@@ -72,6 +74,17 @@ class ChatFragment : Fragment() {
                 errorIndicator.visibility = View.GONE
             }
         }
+
+        chatMessage.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                errorIndicator.visibility = View.GONE
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         return rootView
     }
 
@@ -83,11 +96,12 @@ class ChatFragment : Fragment() {
         val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
         val call = apiInterface.chatGpt("${Utilities.getHostUrl()}:5000", content)
 
+        Log.d("content", "$content")
         call.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
+                Log.d("response", "${response.body()}")
                 if (response.body()!!.status == "Success") {
                     val chatModel = response.body()
-
                     val history: ArrayList<History> = chatModel?.history ?: ArrayList()
 
                     val lastItem = history.lastOrNull()
