@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
+import android.text.TextUtils
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -57,15 +58,20 @@ class ChatFragment : Fragment() {
         }
 
         sendMessage.setOnClickListener {
-            val message = chatMessage.text.toString()
-            mAdapter.addQuery(message)
-            val jsonContent = "{\"content\": \"$message\"}"
-            val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
-            makePostRequest(requestBody)
-            chatMessage.text.clear()
             errorIndicator.visibility = View.GONE
+            if (TextUtils.isEmpty(chatMessage.text.toString().trim())) {
+                errorIndicator.visibility = View.VISIBLE
+                errorIndicator.text = "Kindly enter message"
+            } else {
+                val message = chatMessage.text.toString()
+                mAdapter.addQuery(message)
+                val jsonContent = "{\"content\": \"$message\"}"
+                val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
+                makePostRequest(requestBody)
+                chatMessage.text.clear()
+                errorIndicator.visibility = View.GONE
+            }
         }
-
         return rootView
     }
 
