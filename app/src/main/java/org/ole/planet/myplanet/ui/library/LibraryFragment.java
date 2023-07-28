@@ -90,7 +90,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         etTags = getView().findViewById(R.id.et_tags);
         clearTags = getView().findViewById(R.id.btn_clear_tags);
         tvSelected = getView().findViewById(R.id.tv_selected);
-//        tvMessage = getView().findViewById(R.id.tv_message);
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         initArrays();
@@ -109,13 +108,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             showNoData(tvMessage, adapterLibrary.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
-        //  etTags.addTextChangedListener(this);
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "resources");
             f.setListener(LibraryFragment.this);
             f.show(getChildFragmentManager(), "");
         });
-        //setSearchListener();
+
         showNoData(tvMessage, adapterLibrary.getItemCount());
         clearTagsButton();
         getView().findViewById(R.id.show_filter).setOnClickListener(v -> {

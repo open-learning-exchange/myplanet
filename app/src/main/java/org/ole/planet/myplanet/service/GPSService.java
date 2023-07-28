@@ -28,9 +28,9 @@ public class GPSService extends Service implements LocationListener {
     protected LocationManager locationManager;
     boolean isGPSEnabled = false;
     boolean canGetLocation = false;
-    Location location; // location
-    double latitude; // latitude
-    double longitude; // longitude
+    Location location;
+    double latitude;
+    double longitude;
     SharedPreferences pref;
 
     public GPSService() {

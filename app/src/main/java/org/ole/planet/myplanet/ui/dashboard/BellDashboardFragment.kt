@@ -68,7 +68,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     MainApplication.showHealthDialog = false
                 }.setNegativeButton(getString(R.string.cancel), null).show()
         }
-        // forceDownloadNewsImages();
     }
 
     private fun showBadges() {

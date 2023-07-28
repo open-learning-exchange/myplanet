@@ -341,7 +341,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 showDownloadDialog(getLibraryList(mRealm, selected._id))
                 dialog?.dismiss()
             }
-//        sortList(spnSort, lv);
+
         dialog = AlertDialog.Builder(requireActivity()).setTitle(getString(R.string.select_member))
             .setView(alertHealth).setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
         dialog?.show()

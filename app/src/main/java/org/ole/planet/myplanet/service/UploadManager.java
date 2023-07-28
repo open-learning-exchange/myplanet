@@ -358,7 +358,6 @@ public class UploadManager extends FileUploadService {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/teams", RealmMyTeam.serialize(team)).execute().body();
                     Utilities.log("Team upload " + new Gson().toJson(object));
                     if (object != null) {
-//                        team.set_id(JsonUtils.getString("id", object));
                         team.set_rev(JsonUtils.getString("rev", object));
                         team.setUpdated(false);
                     }

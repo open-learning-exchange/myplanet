@@ -198,7 +198,6 @@ public class Service {
                                     if (response.body() != null && response.body().has("id")) {
                                         retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
                                         saveUserToDb(realm, response.body().get("id").getAsString(), obj, callback);
-//                                            callback.onSuccess("User created successfully");
                                     } else {
                                         callback.onSuccess("Unable to create user");
                                     }

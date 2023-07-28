@@ -59,7 +59,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
@@ -92,7 +91,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         btnResources = v.findViewById(R.id.btn_resources);
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
-//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private void setCourseData() {

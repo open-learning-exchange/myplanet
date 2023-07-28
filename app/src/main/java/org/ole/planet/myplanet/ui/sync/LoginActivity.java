@@ -76,8 +76,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
     private View positiveAction;
-    //    private GifDrawable gifDrawable;
-    //    private CheckBox managerialLogin;
+
     private ImageButton imgBtnSetting;
     private boolean isSync = false, forceSync = false;
     private SwitchCompat switchServerUrl;
@@ -402,7 +401,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         EditText customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
         customDeviceName.setText(getCustomDeviceName());
-//        setUrlAndPin(switchServerUrl.isChecked());
         switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
         setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
         protocol_semantics();
@@ -435,7 +433,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverUrl.setEnabled(!checked);
         serverPassword.clearFocus();
         serverUrl.clearFocus();
-//        serverPassword.setEnabled(!checked);
         protocol_checkin.setEnabled(!checked);
     }
 

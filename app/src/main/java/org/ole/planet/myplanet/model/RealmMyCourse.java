@@ -107,15 +107,6 @@ public class RealmMyCourse extends RealmObject {
         course.setUserId(id);
         mRealm.commitTransaction();
     }
-//
-//    public static String[] getMyCourseIds(Realm mRealm, String userId) {
-//        List<RealmMyCourse> list = mRealm.where(RealmMyCourse.class).equalTo("userId", userId).findAll();
-//        String[] myIds = new String[list.size()];
-//        for (int i = 0; i < list.size(); i++) {
-//            myIds[i] = list.get(i).getCourseId();
-//        }
-//        return myIds;
-//    }
 
     public static JsonArray getMyCourseIds(Realm realm, String userId) {
         List<RealmMyCourse> myCourses = getMyCourseByUserId(userId, realm.where(RealmMyCourse.class).findAll());

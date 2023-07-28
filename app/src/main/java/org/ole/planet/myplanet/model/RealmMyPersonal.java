@@ -42,7 +42,6 @@ public class RealmMyPersonal extends RealmObject {
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object1.addProperty("users", personal.getUserId());
         object.add("privateFor", object1);
-//        object.addProperty("mediaType", FileUtils.getMediaType(personal.getPath()));
         return object;
     }
 

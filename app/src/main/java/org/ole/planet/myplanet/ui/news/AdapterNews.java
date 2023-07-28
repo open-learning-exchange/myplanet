@@ -266,7 +266,6 @@ public class AdapterNews extends BaseNewsAdapter {
 
     private void deletePost(RealmNews news) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-//        RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
         list.remove(news);
         if (news != null) {
             news.deleteFromRealm();

@@ -112,11 +112,6 @@ public class UploadToShelfService {
         List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id", model.getId()).findAll();
         for (RealmMyHealthPojo p : list) {
             p.setUserId(model.get_id());
-//            try {
-//                p.setData(AndroidDecrypter.encrypt(p.getData(), model.getKey(), model.getId()));
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
         }
     }
 
@@ -220,7 +215,6 @@ public class UploadToShelfService {
     public JsonObject getShelfData(Realm realm, String userId, JsonObject jsonDoc) {
         JsonArray myLibs = RealmMyLibrary.getMyLibIds(realm, userId);
         JsonArray myCourses = RealmMyCourse.getMyCourseIds(realm, userId);
-//        JsonArray myTeams = RealmMyTeam.getMyTeamIds(realm, userId);
         JsonArray myMeetups = RealmMeetup.getMyMeetUpIds(realm, userId);
 
         List<String> removedResources = Arrays.asList(RealmRemovedLog.removedIds(realm, "resources", userId));
@@ -235,7 +229,6 @@ public class UploadToShelfService {
         object.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources));
         object.add("resourceIds", mergedResourceIds);
         object.add("courseIds", mergedCoueseIds);
-//        object.add("myTeamIds", mergeJsonArray(myTeams, JsonUtils.getJsonArray("myTeamIds", jsonDoc), removedResources));
         return object;
     }
 
