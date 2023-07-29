@@ -896,17 +896,6 @@
         Il a été utilisé pour améliorer l\'éducation précoce, les écoles secondaires, la santé des villages, le développement de la main-d\'œuvre des jeunes,
         ainsi que le développement économique et communautaire.</p>
     <p>Planet houses est un référentiel de ressources gratuites, en libre accès et du domaine public au profit de tous les apprenants.</p>
-=======
-    <string name="request_to_join">Request To join</string>
-    <string name="filter_labels">Filter Labels</string>
-    <string name="message">message</string>
-    <string name="mistakes">Mistakes</string>
-    <string name="take_survey">Take Survey</string>
-    <string name="checkbox">CheckBox</string>
-    <string name="offer">Offer</string>
-    <string name="request_for_advice">Request for advice</string>
-    <string name="ai_chat">AI Chat</string>
->>>>>>> chatFeature
 
     <p>myPlanet est conçu pour être accessible à tous, partout et à tout moment. Il est portable, abordable, évolutif et durable.
         Il fonctionne sur n\'importe quel appareil Android tel que les tablettes et les téléphones mobiles. Il fonctionne à la fois en ligne et hors ligne.</p>
