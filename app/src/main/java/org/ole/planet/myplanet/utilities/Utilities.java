@@ -132,11 +132,6 @@ public class Utilities {
             String scheme = settings.getString("url_Scheme", "");
             String hostIp = settings.getString("url_Host", "");
             String url = scheme +"://"+ hostIp;
-            Log.d("url_Host", url);
-
-//            if (!url.endsWith("/db")) {
-//                url += "/db";
-//            }
             return url;
         }
         return "";
