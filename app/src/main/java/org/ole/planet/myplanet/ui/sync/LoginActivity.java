@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
@@ -125,7 +124,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             service.checkVersion(this, settings);
         }
         checkUsagesPermission();
-        new GPSService(this);
         setUpChildMode();
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
         forceSyncTrigger();
