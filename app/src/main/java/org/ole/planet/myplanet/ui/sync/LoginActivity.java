@@ -189,7 +189,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         Button btnGuestLogin = findViewById(R.id.btn_guest_login);
         TextView customDeviceName = findViewById(R.id.customDeviceName);
         customDeviceName.setText(getCustomDeviceName());
-        btnSignIn = findViewById(R.id.btn_signin); //buttons
+        btnSignIn = findViewById(R.id.btn_signin);
         btnSignIn.setOnClickListener(view -> submitForm());
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
@@ -272,7 +272,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         declareHideKeyboardElements();
         TextView txtVersion = findViewById(R.id.lblVersion);
         txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
-        inputName = findViewById(R.id.input_name);//editText
+        inputName = findViewById(R.id.input_name);
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));

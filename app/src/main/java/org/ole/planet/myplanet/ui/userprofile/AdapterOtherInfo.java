@@ -39,7 +39,6 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
             JsonObject object = new Gson().fromJson(list.get(position), JsonObject.class);
             String res = JsonUtils.getString("name", object) + "\n" + JsonUtils.getString("relationship", object) + "\n" + JsonUtils.getString("phone", object) + "\n" + JsonUtils.getString("email", object) + "\n";
             ((ViewHolderOtherInfo) holder).tvDescription.setText(res);
-//            ((ViewHolderOtherInfo) holder).tvDescription.setText(JsonUtils.getString("description", object));
         }
     }
 
@@ -55,7 +54,6 @@ public class AdapterOtherInfo extends RecyclerView.Adapter<RecyclerView.ViewHold
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tv_title);
             tvDescription = itemView.findViewById(R.id.tv_description);
-            //  tvTitle.setVisibility(View.GONE);
         }
     }
 }

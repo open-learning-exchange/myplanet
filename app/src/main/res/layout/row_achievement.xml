@@ -56,13 +56,4 @@
             android:layout_height="wrap_content"
             app:flexWrap="wrap" />
     </LinearLayout>
-
-    <!--<Button-->
-    <!--android:id="@+id/btn_attachment"-->
-    <!--android:layout_width="wrap_content"-->
-    <!--android:layout_height="wrap_content"-->
-    <!--android:text="View Attachment"-->
-    <!--android:theme="@style/AccentButton"-->
-    <!--android:visibility="gone" />-->
-
 </LinearLayout>

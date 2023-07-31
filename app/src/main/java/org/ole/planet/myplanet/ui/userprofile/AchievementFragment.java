@@ -63,7 +63,6 @@ public class AchievementFragment extends BaseContainerFragment {
         tvGoal = v.findViewById(R.id.tv_goals);
         tvName = v.findViewById(R.id.tv_name);
         tvFirstName = v.findViewById(R.id.tv_first_name);
-        //  llData = v.findViewById(R.id.ll_data);
         tvPurpose = v.findViewById(R.id.tv_purpose);
         llAchievement = v.findViewById(R.id.ll_achievement);
         tvAchievement = v.findViewById(R.id.tv_achievement_header);

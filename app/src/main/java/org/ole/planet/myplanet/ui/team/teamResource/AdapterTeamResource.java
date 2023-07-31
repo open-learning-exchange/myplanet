@@ -58,7 +58,6 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
                 }
             });
             ((ViewHolderTeamResource) holder).ivRemove.setOnClickListener(view -> {
-                // TODO: 2019-08-21 Remove resource from team
             });
             if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
                 ((ViewHolderTeamResource) holder).ivRemove.setVisibility(View.GONE);

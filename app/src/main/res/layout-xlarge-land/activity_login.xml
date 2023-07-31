@@ -177,13 +177,6 @@
 
             </RelativeLayout>
 
-            <!--<ScrollView-->
-            <!--android:layout_width="match_parent"-->
-            <!--android:layout_height="match_parent"-->
-            <!--android:layout_gravity="center"-->
-            <!--android:gravity="center"-->
-            <!--android:orientation="horizontal">-->
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -230,16 +223,6 @@
                         android:textColorHint="@android:color/darker_gray" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!--                    <CheckBox-->
-                <!--                        android:id="@+id/save"-->
-                <!--                        android:layout_width="match_parent"-->
-                <!--                        android:layout_height="wrap_content"-->
-                <!--                        android:alpha="0.7"-->
-                <!--                        android:fontFamily="sans-serif"-->
-                <!--                        android:text="@string/save_username_and_password"-->
-                <!--                        android:textColor="@color/material_drawer_dark_background"-->
-                <!--                        android:textSize="12sp" />-->
-
                 <CheckBox
                     android:id="@+id/manager_login"
                     android:layout_width="match_parent"
@@ -261,23 +244,6 @@
                     android:text="@string/btn_sign_in"
                     android:textColor="@android:color/white" />
 
-                <!--<Button-->
-                <!--android:id="@+id/btn_guest_login"-->
-                <!--android:layout_width="wrap_content"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:layout_marginTop="10dp"-->
-                <!--android:text="@string/btn_guest_login"-->
-                <!--android:textSize="14sp"-->
-                <!--android:theme="@style/PrimaryFlatButton" />-->
-
-                <!--<Button-->
-                <!--android:id="@+id/become_member"-->
-                <!--android:layout_width="wrap_content"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:layout_gravity="center"-->
-                <!--android:layout_margin="@dimen/padding_normal"-->
-                <!--android:text="Become a member"-->
-                <!--android:theme="@style/PrimaryFlatButton" />-->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -315,7 +281,6 @@
 
                 </LinearLayout>
             </LinearLayout>
-            <!--</ScrollView>-->
         </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -47,7 +47,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? { // Inflate the layout for this fragment
+    ): View? {
         val v = inflater.inflate(R.layout.fragment_team, container, false)
         rvTeamList = v.findViewById(R.id.rv_team_list)
         etSearch = v.findViewById(R.id.et_search)

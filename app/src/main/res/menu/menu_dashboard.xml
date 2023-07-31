@@ -35,14 +35,6 @@
         android:title="@string/alerts"
         app:iconTint="@color/disable_color"
         app:showAsAction="ifRoom" />
-    <!-- TODO: replace above by this one
-    <item
-        android:id="@+id/menu_notifications"
-        android:icon="@drawable/notifications"
-        android:orderInCategory="300"
-        android:title="Alerts"
-        app:actionLayout="@layout/view_notification"
-        app:showAsAction="ifRoom" />-->
     <item
         android:id="@+id/menu_profile"
         android:enabled="false"
@@ -50,7 +42,7 @@
         android:orderInCategory="400"
         android:title="@string/view_profile"
         app:iconTint="@color/disable_color" />
-    <!-- TODO: enable -->
+
     <item
         android:id="@+id/edit_profile"
         android:enabled="false"
@@ -58,7 +50,6 @@
         android:orderInCategory="401"
         android:title="@string/edit_profile"
         app:iconTint="@color/disable_color" />
-    <!-- TODO: enable -->
     <item
         android:id="@+id/change_password"
         android:enabled="false"
@@ -82,10 +73,5 @@
         android:icon="@drawable/en"
         android:orderInCategory="401"
         android:title="@string/logout" />
-    <!--<item-->
-    <!--android:id="@+id/menu_language"-->
-    <!--android:icon="@drawable/en"-->
-    <!--android:orderInCategory="401"-->
-    <!--android:title="User" />-->
 
 </menu>
