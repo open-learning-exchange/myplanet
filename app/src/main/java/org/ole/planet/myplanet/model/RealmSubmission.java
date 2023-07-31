@@ -176,7 +176,7 @@ public class RealmSubmission extends RealmObject {
         int submissionCount = mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size();
 
         String pluralizedString = null;
-        if (submissionCount == 1) {
+        if (submissionCount <= 1) {
             pluralizedString = context.getString(R.string.time);
         } else if (submissionCount > 1){
             pluralizedString = context.getString(R.string.times);
