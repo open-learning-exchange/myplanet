@@ -94,7 +94,7 @@ class ChatFragment : Fragment() {
         imageLoading.visibility = View.VISIBLE
 
         val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
-        val call = apiInterface.chatGpt("${Utilities.getHostUrl()}:5000", content)
+        val call = apiInterface.chatGpt(Utilities.getHostUrl(), content)
 
         Log.d("content", "$content")
         call.enqueue(object : Callback<ChatModel> {
