@@ -65,7 +65,7 @@
                     android:layout_margin="@dimen/padding_small"
                     android:background="@drawable/buttonblue"
                     android:padding="8dp"
-                    android:text="@string/delete_my_course"
+                    android:text="@string/leave"
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"/>
