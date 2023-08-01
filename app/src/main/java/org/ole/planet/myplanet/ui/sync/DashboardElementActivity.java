@@ -106,9 +106,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-//        if (id == R.id.menu_profile) {
-//            return true;
-//        }
         if (id == R.id.menu_goOnline) {
             wifiStatusSwitch();
         } else if (id == R.id.menu_logout) {
@@ -180,6 +177,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     public void logout() {
         profileDbHandler.onLogout();
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
+        settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).commit();
         Intent loginscreen = new Intent(this, LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(loginscreen);
         doubleBackToExitPressedOnce = true;
@@ -218,7 +216,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
         } else if (f instanceof SurveyFragment) {
-            // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
     }
 

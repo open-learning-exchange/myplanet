@@ -35,7 +35,6 @@ public class FeedbackListFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_feedback_list, container, false);
         etMessage = v.findViewById(R.id.et_message);
         rvFeedbacks = v.findViewById(R.id.rv_feedback);

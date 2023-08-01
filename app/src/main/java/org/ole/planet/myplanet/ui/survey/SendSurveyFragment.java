@@ -27,7 +27,6 @@ public class SendSurveyFragment extends BaseDialogFragment {
     CheckboxListView listView;
     Realm mRealm;
     DatabaseService dbService;
-//    ArrayList<Integer> selectedItemsList = new ArrayList<>();
 
     public SendSurveyFragment() {
     }
@@ -54,7 +53,6 @@ public class SendSurveyFragment extends BaseDialogFragment {
         RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("userId", userId).equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id).sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst();
         sub = RealmSubmission.createSubmission(sub, mRealm);
         sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
-        //   sub.setParentId(id + "@" + exam.getCourseId());
         sub.setUserId(userId);
         sub.setType("survey");
         sub.setStatus("pending");
@@ -81,15 +79,6 @@ public class SendSurveyFragment extends BaseDialogFragment {
         ArrayAdapter<RealmUserModel> adapter = new ArrayAdapter<RealmUserModel>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
-//        listView.setOnItemClickListener((adapterView, view, i, l) -> {
-//            String itemSelected = ((TextView) view).getText().toString();
-//            if (selectedItemsList.contains(itemSelected)) {
-//                selectedItemsList.remove(itemSelected);
-//            } else {
-//                selectedItemsList.add(i);
-//            }
-//        });
-
     }
 
     @Override

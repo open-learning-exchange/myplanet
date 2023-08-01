@@ -75,11 +75,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     DrawerLayout dl;
     ImageView img;
 
-//    private GestureDetector mDetector;
-
     private void showShowCaseViewVertical() {
         //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
-
         ShowcaseConfig config = new ShowcaseConfig();
         config.setDelay(500);
         MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP_v2");
@@ -152,7 +149,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         topbarSetting();
         openCallFragment(new BellDashboardFragment());
         bellToolbar.setVisibility(View.VISIBLE);
-        //navigationView.setVisibility(View.GONE);
 
         findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
         findViewById(R.id.img_logo).setOnClickListener(view -> result.openDrawer());
@@ -282,9 +278,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
         result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
             if (drawerItem != null) {
-                // if (drawerItem instanceof Nameable) {
                 menuAction(((Nameable) drawerItem).getName().getTextRes());
-                //   }
             }
             return false;
         }).withDrawerWidthDp(200).build();
@@ -446,20 +440,4 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menu.findItem(R.id.menu_goOnline).setVisible(Constants.showBetaFeature(Constants.KEY_SYNC, this));
         return super.onCreateOptionsMenu(menu);
     }
-
-//    @Override
-//    public boolean dispatchTouchEvent(MotionEvent ev) {
-////        mDetector.onTouchEvent(ev);
-//        return super.dispatchTouchEvent(ev);
-//    }
-
-//
-//    public class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
-//        @Override
-//        public boolean onDoubleTap(MotionEvent e) {
-//            openCallFragment(new ReferenceFragment());
-//            Utilities.toast(getApplicationContext(), "References Opened");
-//            return true;
-//        }
-//    }
 }

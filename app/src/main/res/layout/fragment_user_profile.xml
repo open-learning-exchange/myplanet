@@ -57,35 +57,6 @@
             android:layout_height="wrap_content"
             android:padding="8dp" />
 
-        <!--<TextView-->
-        <!--android:id="@+id/txt_community_name"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-
-        <!--<TextView-->
-        <!--android:id="@+id/txt_visit_count"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-
-        <!--<TextView-->
-        <!--android:id="@+id/txt_last_visit"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-
-        <!--<TextView-->
-        <!--android:id="@+id/txt_max_opened_resource"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-        <!--<TextView-->
-        <!--android:id="@+id/txt_number_resource_open"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>

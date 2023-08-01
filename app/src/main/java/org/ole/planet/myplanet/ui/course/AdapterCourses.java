@@ -147,6 +147,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
         if (holder instanceof ViewHoldercourse) {
+            ViewHoldercourse viewHolder = (ViewHoldercourse) holder;
+            viewHolder.bind(position);
             ((ViewHoldercourse) holder).title.setText(courseList.get(position).getCourseTitle());
             ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
             markwon.setMarkdown(((ViewHoldercourse) holder).desc, courseList.get(position).getDescription());
@@ -246,6 +248,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         LinearLayout llRating;
         FlexboxLayout flexboxLayout;
 
+        private int adapterPosition;
+
         public ViewHoldercourse(View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.title);
@@ -260,7 +264,11 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             checkBox = itemView.findViewById(R.id.checkbox);
             llRating = itemView.findViewById(R.id.ll_rating);
             progressBar = itemView.findViewById(R.id.course_progress);
-            itemView.setOnClickListener(view -> openCourse(courseList.get(getAdapterPosition()), 0));
+            itemView.setOnClickListener(v -> {
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    openCourse(courseList.get(adapterPosition), 0);
+                }
+            });
 
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
                 progressBar.setScaleY(0.3f);
@@ -288,6 +296,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
                 }
             });
+        }
+
+        public void bind(int position) {
+            adapterPosition = position; // Store the adapter position
         }
     }
 }

@@ -230,16 +230,6 @@
                             android:textColorHint="@android:color/darker_gray" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!--                    <CheckBox-->
-                    <!--                        android:id="@+id/save"-->
-                    <!--                        android:layout_width="match_parent"-->
-                    <!--                        android:layout_height="wrap_content"-->
-                    <!--                        android:alpha="0.7"-->
-                    <!--                        android:fontFamily="sans-serif"-->
-                    <!--                        android:text="Save Username and Password"-->
-                    <!--                        android:textColor="@color/material_drawer_dark_background"-->
-                    <!--                        android:textSize="12sp" />-->
-
                     <Button
                         android:id="@+id/btn_signin"
                         android:layout_width="wrap_content"
