@@ -81,14 +81,6 @@ public abstract class PermissionActivity extends AppCompatActivity {
             }
         }
 
-        if (!checkPermission(Manifest.permission.ACCESS_COARSE_LOCATION)) {
-            permissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
-        }
-
-        if (!checkPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-
         if (!permissions.isEmpty()) {
             ActivityCompat.requestPermissions(this, permissions.toArray(new String[0]), PERMISSION_REQUEST_CODE_FILE);
         }
