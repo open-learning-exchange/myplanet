@@ -40,7 +40,6 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_my_personals, container, false);
         pg = new ProgressDialog(getActivity());
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
@@ -56,13 +55,6 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
         });
         return v;
     }
-
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        if (rvMyPersonal != null)
-//            setAdapter();
-//    }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {

@@ -152,17 +152,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 progressDialog.dismiss();
             }
         });
-//        Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
-//            @Override
-//            public void success(Request request, Response response, String s) {
-//
-//            }
-//
-//            @Override
-//            public void failure(Request request, Response response, FuelError fuelError) {
-//
-//            }
-//        });
         return connectionResult;
     }
 
@@ -193,8 +182,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     // Create items in the spinner
     public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
-//        list.add("15 Minutes");
-//        list.add("30 Minutes");
         list.add("1 Hour");
         list.add("3 Hours");
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);

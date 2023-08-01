@@ -19,9 +19,7 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
     ArrayAdapter<RealmUserModel>(activity, view, list) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
         var v = convertView
-//        if (v == null) {
         v = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
-//        }
         val tvName = v?.findViewById<TextView>(R.id.txt_name)
         val joined = v?.findViewById<TextView>(R.id.txt_joined)
         val image = v?.findViewById<ImageView>(R.id.iv_user)

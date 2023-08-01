@@ -47,7 +47,6 @@ public class CheckboxListView extends ListView implements AdapterView.OnItemClic
 
     @Override
     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-        // String itemSelected = ((TextView) view).getText().toString();
         if (selectedItemsList.contains((Integer) i)) {
             selectedItemsList.remove((Integer) i);
         } else {

@@ -104,14 +104,6 @@
 
                 </LinearLayout>
 
-                <!--<include-->
-                <!--layout="@layout/course_detail_content"-->
-                <!--android:layout_height="0dp"-->
-                <!--android:layout_weight="1"-->
-                <!--android:layout_width="match_parent"-->
-                <!--/>-->
-
-
                 <org.ole.planet.myplanet.utilities.CustomViewPager
                     android:id="@+id/view_pager_course"
                     android:layout_width="match_parent"

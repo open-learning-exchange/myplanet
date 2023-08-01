@@ -25,11 +25,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     private boolean isSelectMultiple = false;
     private ArrayList<RealmTag> selectedItemsList = new ArrayList<>();
     private HashMap<String, List<RealmTag>> childMap;
-
-//    public ArrayList<RealmTag> getSelectedItemsList() {
-//        return selectedItemsList;
-//    }
-
     public TagExpandableAdapter(Context context, List<RealmTag> tagList, HashMap<String, List<RealmTag>> childMap, ArrayList<RealmTag> selectedItemsList) {
         this.context = context;
         this.tagList = tagList;
@@ -138,15 +133,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
         RealmTag tag = (RealmTag) getChild(groupPosition, childPosition);
         convertView = inflateView(parent, R.layout.row_adapter_navigation_child);
         TextView tvDrawerTitle = convertView.findViewById(R.id.tv_drawer_title);
-//        CheckBox checkBox = convertView.findViewById(R.id.checkbox);
-//        checkBox.setVisibility(isSelectMultiple ? View.VISIBLE : View.GONE);
-//        checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
-//            if (selectedItemsList.contains(tag)) {
-//                selectedItemsList.remove(tag);
-//            } else {
-//                selectedItemsList.add(tag);
-//            }
-//        });
         createCheckbox(convertView, tag);
         tvDrawerTitle.setText(tag.getName());
         tvDrawerTitle.setOnClickListener(v -> {

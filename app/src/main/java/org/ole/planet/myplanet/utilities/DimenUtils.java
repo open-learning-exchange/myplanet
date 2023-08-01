@@ -9,8 +9,4 @@ public class DimenUtils {
         DisplayMetrics displayMetrics = MainApplication.context.getResources().getDisplayMetrics();
         return Math.round(dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
     }
-//    public static int pxToDp(int px) {
-//        DisplayMetrics displayMetrics = MainApplication.context.getResources().getDisplayMetrics();
-//        return Math.round(px / (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT));
-//    }
 }

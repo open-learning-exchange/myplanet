@@ -90,12 +90,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-//        LinearLayout llRating = v.findViewById(R.id.ll_rating);
-//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-//        TextView average = v.findViewById(R.id.average);
-//        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-//        TextView tv_rating = v.findViewById(R.id.tv_rating);
-//        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private void setLibraryData() {
@@ -116,7 +110,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
         download.setImageResource(library.getResourceOffline() == null || library.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
-//        download.setText(library.getResourceOffline() == null || library.isResourceOffline() ? "Open Resource " : "Download Resource");
         if (FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")) {
             download.setImageResource(R.drawable.ic_play);
         }
@@ -133,7 +126,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         });
         Utilities.log("user id " + profileDbHandler.getUserModel().getId() + " " + library.getUserId().contains(profileDbHandler.getUserModel().getId()));
         boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
-//        remove.setText(isAdd ? "Add To My Library" : "Remove from myLibrary");
         remove.setImageResource(isAdd ? R.drawable.ic_add_library : R.drawable.close_x);
         remove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();

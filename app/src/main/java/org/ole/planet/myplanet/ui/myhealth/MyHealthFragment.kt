@@ -70,7 +70,6 @@ class MyHealthFragment : Fragment() {
 
         Utilities.log("ROLE " + profileDbHandler?.userModel?.roleAsString!!)
         if (profileDbHandler?.userModel?.roleAsString!!.contains("health", true)) {
-//            btnnew_patient.visibility = if (Constants.showBetaFeature(Constants.KEY_HEALTHWORKER, activity)) View.VISIBLE else View.GONE
             btnnew_patient.visibility = View.VISIBLE
             btnnew_patient.setOnClickListener { selectPatient() }
             fab_add_member.show(true)

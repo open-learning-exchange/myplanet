@@ -66,9 +66,6 @@ public class ReferenceFragment extends Fragment {
                         if (position == 0)
                             startActivity(new Intent(getActivity(), OfflineMapActivity.class));
                         else {
-//                            if (homeItemClickListener!=null){
-//
-//                            }
                             startActivity(new Intent(getActivity(), DictionaryActivity.class));
                         }
                         ;

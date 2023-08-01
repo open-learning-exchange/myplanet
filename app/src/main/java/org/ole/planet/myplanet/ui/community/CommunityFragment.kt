@@ -55,7 +55,6 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
                 .sort("time", Sort.DESCENDING).findAll()
-//        rv_community.layoutManager = LinearLayoutManager(activity!!)
         val orientation = resources.configuration.orientation
         changeLayoutManager(orientation)
 
@@ -65,7 +64,6 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
         rv_community.adapter = adapter
-        //  setFlexBox();
         ll_edit_delete.visibility = if (user!!.isManager()) View.VISIBLE else View.GONE
 
     }
