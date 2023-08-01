@@ -45,8 +45,6 @@ public class RealmFeedback extends RealmObject {
     private boolean uploaded;
 
     private String _rev;
-
-    //    private RealmList<RealmMessage> messages;
     private String messages;
 
     private String item;
@@ -190,14 +188,6 @@ public class RealmFeedback extends RealmObject {
     public void setId(String id) {
         this.id = id;
     }
-
-//    public RealmList<RealmMessage> getMessages() {
-//        return messages;
-//    }
-//
-//    public void setMessages(RealmList<RealmMessage> messages) {
-//        this.messages = messages;
-//    }
 
     public String getMessages() {
         return messages;

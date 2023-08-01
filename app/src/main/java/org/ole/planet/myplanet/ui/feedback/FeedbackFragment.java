@@ -131,7 +131,6 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
 
     private void saveData(Realm realm, String urgent, String type, String message) {
         RealmFeedback feedback = realm.createObject(RealmFeedback.class, UUID.randomUUID().toString());
-//        RealmMessage msg = realm.createObject(RealmMessage.class, UUID.randomUUID().toString());
         feedback.setTitle("Question regarding /");
         feedback.setOpenTime(new Date().getTime() + "");
         feedback.setUrl("/");
@@ -153,7 +152,6 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
 
     private void saveData(Realm realm, String urgent, String type, String[] argumentArray) {
         RealmFeedback feedback = realm.createObject(RealmFeedback.class, UUID.randomUUID().toString());
-//        RealmMessage msg = realm.createObject(RealmMessage.class, UUID.randomUUID().toString());
         feedback.setTitle("Question regarding /" + argumentArray[2]);
         feedback.setOpenTime(new Date().getTime() + "");
         feedback.setUrl("/" + argumentArray[2]);

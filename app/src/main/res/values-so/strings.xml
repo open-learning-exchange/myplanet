@@ -932,7 +932,8 @@
     <string name="available_space_colon">Boos la heli karo: </string>
     <string name="community_leaders">Hogaamiyayaasha bulshada</string>
     <string name="services">adeegyo</string>
-    <string name="survey_taken">Soo dhaweyn laga qaadayo </string>
-    <string name="times"> magaalada</string>
+    <string name="survey_taken">Soo dhaweyn laga qaadayo</string>
+    <string name="times">magaalada</string>
+    <string name="time">waqtiga</string>
 
 </resources>

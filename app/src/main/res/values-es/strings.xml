@@ -939,7 +939,8 @@
     <string name="available_space_colon">Espacio disponible: </string>
     <string name="community_leaders">Líderes comunitarios</string>
     <string name="services">Servicios</string>
-    <string name="survey_taken">Encuesta Realizada </string>
-    <string name="times"> veces</string>
+    <string name="survey_taken">Encuesta Realizada</string>
+    <string name="times">veces</string>
+    <string name="time">tiempo</string>
 
 </resources>

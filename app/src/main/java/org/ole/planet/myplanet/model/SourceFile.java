@@ -12,7 +12,6 @@ public class SourceFile {
     private List mSubjects = new ArrayList();
     private List mLevels = new ArrayList();
 
-    // Default Constructor
     public SourceFile() {
     }
 

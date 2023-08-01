@@ -64,9 +64,6 @@
 
                 </LinearLayout>
 
-
-                <!--<include layout="@layout/content_teams_detail"/>-->
-
                 <include layout="@layout/content_team_detail_tab" />
 
             </LinearLayout>

@@ -181,14 +181,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
                             allowSubmission = false;
                         }
                     }
-//                    else{
-//                        for (int x = 0; x < sysDia.length; x++) {
-//                            if (!sysDia[x].matches("-?\\d+") || sysDia[x].isEmpty()) {
-//                                etBloodPressure.setError("Systolic and diastolic must be numbers");
-//                                allowSubmission = false;
-//                            }
-//                        }
-//                    }
                 }
             }
         });

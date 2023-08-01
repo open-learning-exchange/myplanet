@@ -17,7 +17,6 @@ public class CameraUtils {
 
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         int frontCamera = 1;
-        //int backCamera=0;
         Camera camera;
         try {
             Camera.getCameraInfo(frontCamera, cameraInfo);

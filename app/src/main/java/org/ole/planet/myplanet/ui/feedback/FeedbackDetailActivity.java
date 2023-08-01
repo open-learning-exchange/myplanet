@@ -4,6 +4,7 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -71,14 +72,15 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         rv_feedback_reply.setLayoutManager(layoutManager);
         mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
         rv_feedback_reply.setAdapter(mAdapter);
-        updateForClosed();
         closeButton.setOnClickListener(view -> {
-            realm.executeTransaction(realm1 -> {
+            realm.executeTransactionAsync(realm1 -> {
                 RealmFeedback feedback1 = realm1.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
                 feedback1.setStatus("Closed");
+            }, () -> {
                 updateForClosed();
             });
         });
+
         replyButton.setOnClickListener(r -> {
             String message = editText.getText().toString().trim();
             JsonObject object = new JsonObject();
@@ -86,7 +88,7 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             object.addProperty("time", new Date().getTime() + "");
             object.addProperty("user", feedback.getOwner() + "");
             String id = feedback.getId();
-            addReply(realm, object, id);
+            addReply(object, id);
             mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
             rv_feedback_reply.setAdapter(mAdapter);
         });
@@ -99,18 +101,24 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             editText.setVisibility(View.INVISIBLE);
         }
     }
+    
+    
 
-    public void addReply(Realm mRealm, JsonObject obj, String id) {
-        RealmFeedback feedback = mRealm.where(RealmFeedback.class).equalTo("id", id).findFirst();
-        if (feedback != null) {
-            mRealm.executeTransaction(realm -> {
+    public void addReply(JsonObject obj, String id) {
+        realm.executeTransactionAsync(realm -> {
+            RealmFeedback feedback = realm.where(RealmFeedback.class).equalTo("id", id).findFirst();
+            if (feedback != null) {
                 Gson con = new Gson();
                 JsonArray msgArray = con.fromJson(feedback.getMessages(), JsonArray.class);
                 Log.e("Msg", new Gson().toJson(msgArray));
                 msgArray.add(obj);
                 feedback.setMessages(msgArray);
-            });
-        }
+            }
+        }, () -> {
+            updateForClosed();
+            mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
+            rv_feedback_reply.setAdapter(mAdapter);
+        });
     }
 
     @Override

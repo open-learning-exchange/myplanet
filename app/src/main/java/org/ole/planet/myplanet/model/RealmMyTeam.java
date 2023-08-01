@@ -94,7 +94,6 @@ public class RealmMyTeam extends RealmObject {
         myTeams.setLeader(JsonUtils.getBoolean("isLeader", doc));
         myTeams.setAmount(JsonUtils.getInt("amount", doc));
         myTeams.setDate(JsonUtils.getLong("date", doc));
-//        myTeams.setRequests(new Gson().toJson(JsonUtils.getJsonArray("requests", doc)));
         myTeams.setDocType(JsonUtils.getString("docType", doc));
         myTeams.setPublic(JsonUtils.getBoolean("public", doc));
         JsonArray coursesArray = JsonUtils.getJsonArray("courses", doc);

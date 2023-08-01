@@ -934,8 +934,9 @@
     <string name="available_space_colon">المساحة المتوفرة: </string>
     <string name="community_leaders">قادة المجتمع</string>
     <string name="services">الخدمات</string>
-    <string name="survey_taken">تم أخذ الاستبيان </string>
-    <string name="times"> مرات</string>
+    <string name="survey_taken">تم أخذ الاستبيان</string>
+    <string name="times">مرات</string>
+    <string name="time">الوقت</string>
 
 </resources>
 
