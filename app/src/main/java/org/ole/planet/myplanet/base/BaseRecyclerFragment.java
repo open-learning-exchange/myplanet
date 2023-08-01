@@ -180,7 +180,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
         boolean isExists = false;
         for (String q : query) {
-//                li.add(l);
             isExists = title.toLowerCase().contains(q.toLowerCase());
             Utilities.log(title.toLowerCase() + " " + q.toLowerCase() + " is exists " + isExists);
 

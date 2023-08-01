@@ -41,7 +41,6 @@ public class TeamDetailFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_team_detail, container, false);
         boolean isMyTeam = getArguments().getBoolean("isMyTeam", false);
         teamId = getArguments().getString("id");

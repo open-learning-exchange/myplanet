@@ -74,11 +74,9 @@ public class RealmCourseProgress extends RealmObject {
         RealmResults<RealmCourseProgress> progresses = mRealm.where(RealmCourseProgress.class).equalTo("userId", userId).equalTo("passed", true).findAll();
         List<RealmSubmission> list = new ArrayList<>();
         for (RealmCourseProgress progress : progresses) {
-//            if (RealmCertification.isCourseCertified(mRealm, progress.getCourseId())) {
             Utilities.log("Course id  certified " + progress.getCourseId());
             RealmSubmission sub = mRealm.where(RealmSubmission.class).contains("parentId", progress.getCourseId()).equalTo("userId", userId).sort("lastUpdateTime", Sort.DESCENDING).findFirst();
             if (sub != null) list.add(sub);
-//            }
         }
         return list;
     }

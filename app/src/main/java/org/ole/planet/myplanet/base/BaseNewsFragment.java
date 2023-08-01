@@ -96,7 +96,6 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-//        llImage = getView().findViewById(R.id.ll_images);
         if (resultCode == RESULT_OK) {
             Uri url = null;
             String path = "";

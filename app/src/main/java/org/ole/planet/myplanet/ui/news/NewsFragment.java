@@ -64,9 +64,7 @@ public class NewsFragment extends BaseNewsFragment {
         llImage = v.findViewById(R.id.ll_images);
         llAddNews = v.findViewById(R.id.ll_add_news);
         btnAddStory = v.findViewById(R.id.btn_add_story);
-//        thumb = v.findViewById(R.id.thumb);
         btnAddImage = v.findViewById(R.id.add_news_image);
-//        btnShowMain = v.findViewById(R.id.btn_main);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());

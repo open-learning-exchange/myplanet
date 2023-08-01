@@ -43,8 +43,6 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         rvResource = getView().findViewById(R.id.rv_resource);
         tvNodata = getView().findViewById(R.id.tv_nodata);
         showLibraryList();
-//        if (MainApplication.showDownload)
-//            showResourceListDialog();
         getView().findViewById(R.id.fab_add_resource).setOnClickListener(view -> showResourceListDialog());
     }
 

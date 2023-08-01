@@ -68,14 +68,5 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
     public int getItemCount() {
         return list.size();
     }
-//
-//    class ViewHolderTeamCourse extends RecyclerView.ViewHolder {
-//        TextView title, description;
-//
-//        public ViewHolderTeamCourse(View itemView) {
-//            super(itemView);
-//            title = itemView.findViewById(R.id.title);
-//            description = itemView.findViewById(R.id.description);
-//        }
-//    }
+
 }

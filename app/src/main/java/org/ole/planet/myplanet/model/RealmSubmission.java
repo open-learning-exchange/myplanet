@@ -43,7 +43,6 @@ public class RealmSubmission extends RealmObject {
     private long grade;
     private String status;
     private boolean uploaded;
-    /// new
     private String sender;
     private String source;
     private String parentCode;
@@ -67,15 +66,12 @@ public class RealmSubmission extends RealmObject {
         sub.setStartTime(JsonUtils.getLong("startTime", submission));
         sub.setLastUpdateTime(JsonUtils.getLong("lastUpdateTime", submission));
         sub.setParentId(JsonUtils.getString("parentId", submission));
-        ///
         sub.setSender(JsonUtils.getString("sender", submission));
         sub.setSource(JsonUtils.getString("source", submission));
         sub.setParentCode(JsonUtils.getString("parentCode", submission));
         sub.setParent(new Gson().toJson(JsonUtils.getJsonObject("parent", submission)));
-        //
 
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
-//        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("parentId", submission)).findFirst();
         RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm);
         String userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission));
         if (userId.contains("@")) {
@@ -111,14 +107,12 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("androidId", NetworkUtils.getMacAddr());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
-        ///
         object.addProperty("sender", sub.getSender());
         object.addProperty("source", sub.getSource());
         object.addProperty("parentCode", sub.getParentCode());
         JsonObject parent = new Gson().fromJson(sub.getParent(), JsonObject.class);
         object.add("parent", parent);
         Utilities.log("Parent " + sub.getParent());
-        //
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
         Utilities.log("Parent Exam " + (exam == null));
         if (exam != null && parent == null)

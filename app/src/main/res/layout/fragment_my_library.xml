@@ -103,14 +103,6 @@
                         android:entries="@array/sort_by_date"
                         android:padding="@dimen/padding_normal" />
 
-                    <!--                <Button-->
-                    <!--                    android:id="@+id/order_by_date_button"-->
-                    <!--                    android:layout_width="wrap_content"-->
-                    <!--                    android:layout_height="wrap_content"-->
-                    <!--                    android:layout_toLeftOf="@+id/order_by_title_button"-->
-                    <!--                    android:text="Order by Date"-->
-                    <!--                    android:theme="@style/AccentButton"/>-->
-
                 </LinearLayout>
 
                 <TextView

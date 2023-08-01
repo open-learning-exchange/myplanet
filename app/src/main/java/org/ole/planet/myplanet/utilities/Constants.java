@@ -105,14 +105,11 @@ public class Constants {
 
     public static boolean showBetaFeature(String s, Context context) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        //if (betaList.contains(s)) {
         Utilities.log(s + " beta");
         Utilities.log(preferences.getBoolean("beta_function", false) + " beta");
         Utilities.log(preferences.getBoolean(s, false) + " beta");
         Utilities.log((preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, false)) + "");
         return preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, s.equals(KEY_NEWSADDIMAGE));
-        //  }
-//        return true;
     }
 
     public static boolean autoSynFeature(String s, Context context) {

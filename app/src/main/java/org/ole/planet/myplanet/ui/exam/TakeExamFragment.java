@@ -101,9 +101,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private void createSubmission() {
         startTransaction();
-//        if (sub != null && sub.getStatus().equals("complete")) {
-//            sub.setAnswers(new RealmList<>());
-//        }
         sub = RealmSubmission.createSubmission(sub, mRealm);
 
         Utilities.log("Set parent id " + id);
@@ -150,7 +147,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             showCheckBoxes(question, ans);
         }
         header.setText(question.getHeader());
-        // body.setText(question.getBody());
         markwon.setMarkdown(body, question.getBody());
         btnSubmit.setOnClickListener(this);
     }
@@ -289,12 +285,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         Arrays.sort(ar2);
         Utilities.log(Arrays.toString(ar1) + " " + Arrays.toString(ar2));
         return Arrays.equals(ar1, ar2);
-//        for (int i = 0; i < ar2.length; i++) {
-//            if (!ar1[i].equalsIgnoreCase(ar2[i]))
-//                return false;
-//        }
-
-        //   return true;
     }
 
     private void startTransaction() {

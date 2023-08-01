@@ -139,23 +139,6 @@ public class RealmExamQuestion extends RealmObject {
     public String getType() {
         return type;
     }
-//
-//    public JsonArray getChoicesArrayObj(Realm mRealm) {
-//        JsonArray array = new JsonArray();
-//        RealmResults<realm_answerChoices> choices = mRealm.where(realm_answerChoices.class).equalTo("questionId", getId()).findAll();
-//        for (realm_answerChoices s : choices) {
-//            array.add(s.serialize());
-//        }
-//        return array;
-//    }
-//
-//    public JsonArray getChoicesArray() {
-//        JsonArray array = new JsonArray();
-//        for (String s : getChoices()) {
-//            array.add(s);
-//        }
-//        return array;
-//    }
 
     public void setType(String type) {
         this.type = type;
