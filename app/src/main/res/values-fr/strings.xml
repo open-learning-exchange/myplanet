@@ -942,5 +942,6 @@
     <string name="survey_taken">Enquête effectuée</string>
     <string name="times">fois</string>
     <string name="time">temps</string>
+    <string name="ai_chat">AI Chat</string>
 
 </resources>

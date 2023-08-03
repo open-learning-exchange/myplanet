@@ -126,6 +126,22 @@ public class Utilities {
         return "";
     }
 
+    public static String getHostUrl() {
+        SharedPreferences settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String url = null;
+        String scheme = settings.getString("url_Scheme", "");
+        String hostIp = settings.getString("url_Host", "");
+        if (settings.contains("url_Host")) {
+            if (settings.getString("url_Host", "").endsWith(".org")) {
+                url = scheme +"://"+ hostIp + "/ml/";
+            } else {
+                url = scheme +"://"+ hostIp + ":5000";
+            }
+            return url;
+        }
+        return "";
+    }
+
     public static String getUpdateUrl(SharedPreferences settings) {
         String url = settings.getString("couchdbURL", "");
         if (url.endsWith("/db")) {

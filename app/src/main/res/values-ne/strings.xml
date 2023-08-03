@@ -942,5 +942,6 @@
     <string name="survey_taken">सर्वेक्षण लिइएको</string>
     <string name="times">पल्टीहरू</string>
     <string name="time">समय</string>
+    <string name="ai_chat">AI Chat</string>
 
 </resources>

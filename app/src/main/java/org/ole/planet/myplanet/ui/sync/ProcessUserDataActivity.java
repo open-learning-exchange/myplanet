@@ -119,6 +119,8 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
         saveUrlScheme(editor, uri, url, couchdbURL);
         editor.putString("url_user", url_user);
         editor.putString("url_pwd", url_pwd);
+        editor.putString("url_Scheme", uri.getScheme());
+        editor.putString("url_Host", uri.getHost());
         editor.commit();
         if (!couchdbURL.endsWith("db")) {
             couchdbURL += "/db";

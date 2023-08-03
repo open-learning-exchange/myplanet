@@ -588,10 +588,6 @@
     <string name="checkbox">Furaha Qalbigan</string>
     <string name="offer">Ku Dar Hawl</string>
     <string name="request_for_advice">Codso Fikir</string>
-    Somali for hardcoded
-
-    https://chat.openai.com/share/147d7b5e-07d5-4107-9f5b-9040385efba3
-
     <string name="no_images_to_download">Ma jiraan sawirro si aad kuugu diiwaangasho.</string>
     <string name="this_file_type_is_currently_unsupported">Nooca faylkaan waa hadda aan taageerinno.</string>
     <string name="unable_to_open_resource">Lama oggola in aad furto ilaha xogta.</string>
@@ -935,5 +931,6 @@
     <string name="survey_taken">Soo dhaweyn laga qaadayo</string>
     <string name="times">magaalada</string>
     <string name="time">waqtiga</string>
+    <string name="ai_chat">AI Chat</string>
 
 </resources>

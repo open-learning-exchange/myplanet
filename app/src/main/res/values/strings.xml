@@ -1031,5 +1031,6 @@
     <string name="survey_taken">Survey taken</string>
     <string name="times">times</string>
     <string name="time">time</string>
+    <string name="ai_chat">AI Chat</string>
 
 </resources>
