@@ -32,15 +32,6 @@
 
     </LinearLayout>
 
-    <!--<com.google.android.material.floatingactionbutton.FloatingActionButton-->
-    <!--android:layout_width="wrap_content"-->
-    <!--android:layout_gravity="bottom|end"-->
-    <!--android:id="@+id/fab_record"-->
-    <!--app:srcCompat="@drawable/ic_mic"-->
-    <!--android:layout_margin="@dimen/padding_large"-->
-    <!--android:tint="@color/md_white_1000"-->
-    <!--android:layout_height="wrap_content" />-->
-
     <com.github.clans.fab.FloatingActionMenu
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

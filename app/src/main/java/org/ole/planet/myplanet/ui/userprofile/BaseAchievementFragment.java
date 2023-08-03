@@ -91,13 +91,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         return lv;
     }
 
-    public void setUserInfo() {
-        //user.setFirstName(etName.getText().toString());
-        //user.setMiddleName(etMiddleName.getText().toString());
-        //user.setLastName(etLastName.getText().toString());
-        //user.setDob(tvDob.getText().toString());
-        //user.setBirthPlace(etBirthPlace.getText().toString());
-    }
+    public void setUserInfo() {}
 
     public void setAchievementInfo() {
         achievement.setAchievementsHeader(etAchievement.getText().toString().trim());

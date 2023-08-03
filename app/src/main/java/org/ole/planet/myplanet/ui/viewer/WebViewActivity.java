@@ -57,8 +57,6 @@ public class WebViewActivity extends AppCompatActivity {
     }
 
     private void setWebClient() {
-//        wv.setWebChromeClient(new WebChromeClient());
-
         wv.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {

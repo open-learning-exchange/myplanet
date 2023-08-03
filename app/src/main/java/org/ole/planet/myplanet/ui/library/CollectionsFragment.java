@@ -38,7 +38,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     static List<RealmTag> recentList;
     ExpandableListView listTag;
     TextInputLayout tlFilter;
-    //    SwitchCompat switchMany;
     Realm mRealm;
     List<RealmTag> list;
     List<RealmTag> filteredList;
@@ -74,14 +73,11 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_collections, container, false);
         listTag = v.findViewById(R.id.list_tags);
         tlFilter = v.findViewById(R.id.tl_filter);
-//        switchMany = v.findViewById(R.id.switch_many);
         etFilter = v.findViewById(R.id.et_filter);
         btnOk = v.findViewById(R.id.btn_ok);
-//        switchMany.setOnCheckedChangeListener(this);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         filteredList = new ArrayList<>();
         KeyboardUtils.hideSoftKeyboard(getActivity());
@@ -149,7 +145,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
         adapter.setClickListener(this);
         listTag.setAdapter(adapter);
         btnOk.setVisibility(View.VISIBLE);
-//        switchMany.setChecked(true);
     }
 
     private void createChildMap(HashMap<String, List<RealmTag>> childMap, RealmTag t) {
@@ -180,7 +175,6 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
 
     @Override
     public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-        //  adapter.setTagList(list);
         MainApplication.isCollectionSwitchOn = b;
         adapter.setSelectMultiple(b);
         adapter.setTagList(list);

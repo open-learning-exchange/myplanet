@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.service.GPSService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
@@ -76,8 +75,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn;
     private View positiveAction;
-    //    private GifDrawable gifDrawable;
-    //    private CheckBox managerialLogin;
+
     private ImageButton imgBtnSetting;
     private boolean isSync = false, forceSync = false;
     private SwitchCompat switchServerUrl;
@@ -125,7 +123,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             service.checkVersion(this, settings);
         }
         checkUsagesPermission();
-        new GPSService(this);
         setUpChildMode();
         lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
         forceSyncTrigger();
@@ -190,7 +187,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         Button btnGuestLogin = findViewById(R.id.btn_guest_login);
         TextView customDeviceName = findViewById(R.id.customDeviceName);
         customDeviceName.setText(getCustomDeviceName());
-        btnSignIn = findViewById(R.id.btn_signin); //buttons
+        btnSignIn = findViewById(R.id.btn_signin);
         btnSignIn.setOnClickListener(view -> submitForm());
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
@@ -273,7 +270,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         declareHideKeyboardElements();
         TextView txtVersion = findViewById(R.id.lblVersion);
         txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
-        inputName = findViewById(R.id.input_name);//editText
+        inputName = findViewById(R.id.input_name);
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
@@ -402,7 +399,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
         EditText customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
         customDeviceName.setText(getCustomDeviceName());
-//        setUrlAndPin(switchServerUrl.isChecked());
         switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
         setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
         protocol_semantics();
@@ -435,7 +431,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         serverUrl.setEnabled(!checked);
         serverPassword.clearFocus();
         serverUrl.clearFocus();
-//        serverPassword.setEnabled(!checked);
         protocol_checkin.setEnabled(!checked);
     }
 

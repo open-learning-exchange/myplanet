@@ -90,14 +90,6 @@
             android:tint="@color/md_white_1000"
             app:fab_label="@string/menu_surveys" />
 
-        <!--        <com.github.clans.fab.FloatingActionButton-->
-        <!--            android:layout_width="wrap_content"-->
-        <!--            android:src="@drawable/ic_feedback"-->
-        <!--            app:fab_label="@string/menu_feedback"-->
-        <!--            -->
-        <!--            android:id="@+id/fab_feedback"-->
-        <!--            android:layout_height="wrap_content" />-->
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/add_resource"
             android:layout_width="wrap_content"

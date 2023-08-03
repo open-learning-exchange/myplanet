@@ -111,19 +111,6 @@ public class RealmMyLibrary extends RealmObject {
         }
         return libraries;
     }
-
-//
-//    private static boolean containsId(RealmObject item, Class c,String userId) {
-//        if (c == RealmMyCourse.class){
-//           return ((RealmMyCourse) item).getUserId().contains(userId);
-//        }else if(c == RealmMyLibrary.class ){
-//            return ((RealmMyLibrary) item).getUserId().contains(userId);
-//        }else if(c == RealmMyTeam.class){
-//            return ((RealmMyTeam)item).getUserId().contains(userId);
-//        }
-//        return false;
-//    }
-
     public static String[] getIds(Realm mRealm) {
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
         String[] ids = new String[list.size()];
@@ -170,7 +157,6 @@ public class RealmMyLibrary extends RealmObject {
         object.addProperty("androidId", NetworkUtils.getMacAddr());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
-//        object.addProperty("mediaType", personal.getMediaType());
         return object;
     }
 
@@ -232,10 +218,8 @@ public class RealmMyLibrary extends RealmObject {
         if (resource == null) {
             resource = mRealm.createObject(RealmMyLibrary.class, resourceId);
         }
-//        if (!TextUtils.isEmpty(userId) ) {
         resource.setUserId(userId);
         resource.set_id(resourceId);
-//        }
         if (!TextUtils.isEmpty(stepId)) {
             resource.setStepId(stepId);
         }
@@ -505,16 +489,6 @@ public class RealmMyLibrary extends RealmObject {
     public RealmList<String> getTag() {
         return tag;
     }
-//
-//    public String getTagAsString() {
-//        StringBuilder s = new StringBuilder();
-//        String[] tags = getTag().toArray(new String[getTag().size()]);
-//        Arrays.sort(tags);
-//        for (String tag : tags) {
-//            s.append(tag).append(", ");
-//        }
-//        return s.toString();
-//    }
 
     public static String listToString(RealmList<String> list) {
         StringBuilder s = new StringBuilder();
@@ -755,16 +729,6 @@ public class RealmMyLibrary extends RealmObject {
     public boolean needToUpdate() {
         return (getResourceLocalAddress() != null) && !getResourceOffline() || !(TextUtils.equals(get_rev(), getDownloadedRev()));
     }
-
-
-//    public static Set<String> getLanguages(List<RealmMyLibrary> libraries) {
-//        Set<String> list = new HashSet<>();
-//        for (RealmMyLibrary li : libraries) {
-//            if (!TextUtils.isEmpty(li.getLanguage()))
-//                list.add(li.getLanguage());
-//        }
-//        return list;
-//    }
 
     public static Set<String> getLevels(List<RealmMyLibrary> libraries) {
         Set<String> list = new HashSet<>();

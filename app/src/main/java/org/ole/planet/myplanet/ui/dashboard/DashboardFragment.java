@@ -52,7 +52,6 @@ public class DashboardFragment extends BaseDashboardFragment {
 
         (getView().findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
         getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
-            // startActivity(new Intent(getActivity(), AddResourceActivity.class));
             new AddResourceFragment().show(getChildFragmentManager(),  getString(R.string.add_res));
         });
     }
@@ -67,7 +66,6 @@ public class DashboardFragment extends BaseDashboardFragment {
         tv_submission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
         tv_achievement.setVisibility(Constants.showBetaFeature(Constants.KEY_ACHIEVEMENT, getActivity()) ? View.VISIBLE : View.GONE);
         tv_achievement.setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
-//        view.findViewById(R.id.ll_user).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         initView(view);

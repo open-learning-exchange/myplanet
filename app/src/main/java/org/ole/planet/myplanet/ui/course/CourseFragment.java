@@ -87,7 +87,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             showNoData(tvMessage, adapterCourses.getItemCount());
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
-        //btnRemove.setOnClickListener(V -> deleteSelected(true));
+
         btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage(R.string.are_you_sure_you_want_to_delete_these_courses).setPositiveButton(R.string.yes, (dialogInterface, i) -> {
             deleteSelected(true);
         }).setNegativeButton(R.string.no, null).show());
@@ -202,34 +202,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         return builder.create();
     }
 
-
-//    private void setSearchListener() {
-//        etSearch.addTextChangedListener(new TextWatcher() {
-//            @Override
-//            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//            }
-//
-//            @Override
-//            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//                if (!charSequence.toString().isEmpty()) {
-//                    String lastChar = charSequence.toString().substring(charSequence.length() - 1);
-//                    if (lastChar.equals(" ") || lastChar.equals("\n")) {
-//                        adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString().trim(), RealmMyCourse.class));
-//                        etSearch.setText(etSearch.getText().toString().trim());
-//                        showNoData(tvMessage, adapterCourses.getItemCount());
-//                        KeyboardUtils.hideSoftKeyboard(getActivity());
-//                    }
-//                }
-//            }
-//
-//            @Override
-//            public void afterTextChanged(Editable editable) {
-//
-//            }
-//        });
-//    }
-
     @Override
     public void onSelectedListChange(List<RealmMyCourse> list) {
         this.selectedItems = list;
@@ -238,7 +210,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     @Override
     public void onTagClicked(RealmTag tag) {
-//        searchTags.clear();
         if (!searchTags.contains(tag)) searchTags.add(tag);
         adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
         showTagText(searchTags, tvSelected);
