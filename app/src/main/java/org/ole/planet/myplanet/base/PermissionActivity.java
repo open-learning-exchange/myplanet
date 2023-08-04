@@ -5,16 +5,14 @@ import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 import android.provider.Settings;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.appcompat.app.AppCompatActivity;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -69,20 +67,8 @@ public abstract class PermissionActivity extends AppCompatActivity {
             permissions.add(Manifest.permission.CAMERA);
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                intent.setData(Uri.parse("package:" + getPackageName()));
-                startActivityForResult(intent, PERMISSION_REQUEST_CODE_FILE);
-            }
-        } else {
-            if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            }
-        }
-
-        if (!permissions.isEmpty()) {
-            ActivityCompat.requestPermissions(this, permissions.toArray(new String[0]), PERMISSION_REQUEST_CODE_FILE);
+        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
         if (!permissions.isEmpty()) {
