@@ -31,7 +31,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 public class FileUtils {
-    public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
+    public static final String SD_PATH = context.getExternalFilesDir(null) + "/ole";
 
     public static byte[] fullyReadFileToBytes(File f) throws IOException {
         int size = (int) f.length();
