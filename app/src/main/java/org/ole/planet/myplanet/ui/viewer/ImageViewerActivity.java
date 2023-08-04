@@ -34,18 +34,23 @@ public class ImageViewerActivity extends AppCompatActivity {
     }
 
     private void renderImageFile() {
-        // File name to be viewed
         isFullPath = getIntent().getBooleanExtra("isFullPath", false);
         Intent imageOpenIntent = getIntent();
         String fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
-
         if (fileName != null && !fileName.isEmpty()) {
             mImageFileNameTitle.setText(fileName);
             mImageFileNameTitle.setVisibility(View.VISIBLE);
         }
 
         try {
-            Glide.with(getApplicationContext()).load(isFullPath ? new File(fileName) : new File(Utilities.SD_PATH, fileName)).into(mImageViewer);
+            File imageFile;
+            if (isFullPath) {
+                imageFile = new File(fileName);
+            } else {
+                File basePath = getExternalFilesDir(null);
+                imageFile = new File(basePath, "ole/" + fileName);
+            }
+            Glide.with(getApplicationContext()).load(imageFile).into(mImageViewer);
         } catch (Exception e) {
             e.printStackTrace();
         }
