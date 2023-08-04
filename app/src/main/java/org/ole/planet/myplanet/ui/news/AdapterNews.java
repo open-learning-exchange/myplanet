@@ -171,9 +171,14 @@ public class AdapterNews extends BaseNewsAdapter {
             String resourceId = JsonUtils.getString("resourceId", ob.getAsJsonObject());
             RealmMyLibrary library = mRealm.where(RealmMyLibrary.class).equalTo("_id", resourceId).findFirst();
             if (library != null) {
-                Glide.with(context).load(new File(Utilities.SD_PATH, library.getId() + "/" + library.getResourceLocalAddress())).into(((ViewHolderNews) holder).newsImage);
-                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
-                return;
+                File basePath = context.getExternalFilesDir(null);
+                File imageFile = new File(basePath, "ole/" + library.getId() + "/" + library.getResourceLocalAddress());
+
+                if (imageFile.exists()) {
+                    Glide.with(context).load(imageFile).into(((ViewHolderNews) holder).newsImage);
+                    ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                    return;
+                }
             }
         }
         ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
