@@ -28,5 +28,5 @@ jobs:
         run: chmod +x ./gradlew
       - name: Build with Gradle
         run: ./gradlew assembleDebug
-      - name: Build app bundle release (AAB) - ${{ env.main_project_module }} module
-        run: ./gradlew ${{ env.main_project_module }}:bundleRelease
+      - name: Build Release AAB
+        run: ./gradlew bundleRelease
