@@ -36,10 +36,8 @@ public class CSVViewerActivity extends AppCompatActivity {
     }
 
     private void renderCSVFile() {
-        // File name to be viewed
-
-        Intent imageOpenIntent = getIntent();
-        String fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE");
+        Intent csvFileOpenIntent = getIntent();
+        String fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE");
 
         if (fileName != null && !fileName.isEmpty()) {
             mCSVNameTitle.setText(fileName);
@@ -47,17 +45,22 @@ public class CSVViewerActivity extends AppCompatActivity {
         }
 
         try {
-            CSVReader reader = new CSVReader(new FileReader(new File(Utilities.SD_PATH, fileName)), ',', '"');
+            File csvFile;
+            if (fileName.startsWith("/")) {
+                csvFile = new File(fileName);
+            } else {
+                File basePath = getExternalFilesDir(null);
+                csvFile = new File(basePath, "ole/" + fileName);
+            }
 
-            //Get all lines from CSV file
+            CSVReader reader = new CSVReader(new FileReader(csvFile), ',', '"');
+
             List<String[]> allRows = reader.readAll();
 
-            //Read List "allRows" into textview line by line
             for (String[] row : allRows) {
                 mCSVContent.append(Arrays.toString(row));
                 mCSVContent.append("\n");
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }

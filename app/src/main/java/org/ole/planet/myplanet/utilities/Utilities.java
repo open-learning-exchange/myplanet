@@ -31,7 +31,21 @@ import java.util.List;
 import fisk.chipcloud.ChipCloudConfig;
 
 public class Utilities {
-    public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
+    private static Context context;
+
+    public static void setContext(Context ctx) {
+        context = ctx.getApplicationContext();
+    }
+
+    private static String initPath() {
+        if (context != null) {
+            return context.getExternalFilesDir(null) + "/ole/";
+        } else {
+            return "";
+        }
+    }
+
+    public static final String SD_PATH = initPath();
 
     public static void log(String message) {
         Log.d("OLE ", "log: " + message);

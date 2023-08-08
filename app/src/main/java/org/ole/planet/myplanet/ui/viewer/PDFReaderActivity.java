@@ -82,12 +82,18 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
             mPdfFileNameTitle.setText(fileName);
             mPdfFileNameTitle.setVisibility(View.VISIBLE);
         }
-        try {
-            Utilities.log(new File(Utilities.SD_PATH, fileName).getAbsolutePath());
-            pdfView.fromFile(new File(Utilities.SD_PATH, fileName)).defaultPage(0).enableAnnotationRendering(true).onLoad(this).onPageChange(this).scrollHandle(new DefaultScrollHandle(this)).load();
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getApplicationContext(), getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show();
+
+        File file = new File(getExternalFilesDir(null), "ole/" + fileName);
+        if (file.exists()) {
+            try {
+                Utilities.log(file.getAbsolutePath());
+                pdfView.fromFile(file).defaultPage(0).enableAnnotationRendering(true).onLoad(this).onPageChange(this).scrollHandle(new DefaultScrollHandle(this)).load();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(getApplicationContext(), getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(getApplicationContext(), "File not found: " + fileName, Toast.LENGTH_LONG).show();
         }
     }
 

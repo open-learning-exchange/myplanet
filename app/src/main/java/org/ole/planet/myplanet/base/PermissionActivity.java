@@ -10,6 +10,7 @@ import android.provider.Settings;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -56,6 +57,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
         return granted;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     public void requestAllPermissions() {
         ArrayList<String> permissions = new ArrayList<>();
 
@@ -71,9 +73,28 @@ public abstract class PermissionActivity extends AppCompatActivity {
             permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
 
+        if (!checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+
+        if (!checkPermission(Manifest.permission.READ_MEDIA_IMAGES)) {
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
+        }
+
+        if (!checkPermission(Manifest.permission.READ_MEDIA_VIDEO)) {
+            permissions.add(Manifest.permission.READ_MEDIA_VIDEO);
+        }
+
+        if (!checkPermission(Manifest.permission.READ_MEDIA_AUDIO)) {
+            permissions.add(Manifest.permission.READ_MEDIA_AUDIO);
+        }
+
         if (!permissions.isEmpty()) {
             String[] permissionsArray = permissions.toArray(new String[0]);
             ActivityCompat.requestPermissions(this, permissionsArray, PERMISSION_REQUEST_CODE_FILE);
+        } else {
+            // All permissions are already granted
+            Toast.makeText(this, R.string.permissions_granted, Toast.LENGTH_SHORT).show();
         }
     }
 
