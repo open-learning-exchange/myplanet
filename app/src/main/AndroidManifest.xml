@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="org.ole.planet.myplanet">
 
-
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -26,7 +25,8 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
-    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
@@ -42,6 +42,9 @@
         android:theme="@style/MyMaterialTheme"
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
+        <activity
+            android:name=".ui.chat.ChatActivity"
+            />
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
             android:theme="@style/AppTheme" />
@@ -71,14 +74,14 @@
         <activity
             android:name=".ui.library.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.SplashActivity" android:exported="true">
+        <activity
+            android:name=".ui.SplashActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity android:name=".ui.viewer.AudioPlayerActivity" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
@@ -116,7 +119,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="org.ole.planet.myplanet.fileprovider"
@@ -129,4 +131,5 @@
 
         <activity android:name=".ui.viewer.WebViewActivity" />
     </application>
+
 </manifest>
