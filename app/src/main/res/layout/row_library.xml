@@ -51,6 +51,7 @@
                 app:alignItems="flex_start"
                 app:flexWrap="wrap"
                 app:showDivider="middle" />
+
             <TextView
                 android:id="@+id/tv_date"
                 android:layout_width="wrap_content"
@@ -60,7 +61,6 @@
 
 
         </LinearLayout>
-
 
 
         <ImageView
@@ -87,7 +87,7 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:padding="4dp"
-                android:text="0 total"
+                android:text="@string/zero_total"
                 android:textColor="@color/md_black_1000" />
 
             <androidx.appcompat.widget.AppCompatRatingBar
@@ -118,7 +118,7 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:padding="4dp"
-                android:text="0.0"
+                android:text="@string/zero_point_zero"
                 android:textColor="@color/md_black_1000"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
@@ -129,7 +129,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="Average" />
+                android:text="@string/average" />
 
 
         </LinearLayout>

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -23,29 +24,20 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import io.realm.Realm;
 
-/**
- * A placeholder fragment containing a simple view.
- */
 public class DashboardFragment extends BaseDashboardFragment {
-
     public static final String PREFS_NAME = "OLE_PLANET";
     TextView txtFullName, txtVisits, tv_surveys, tv_submission, tv_achievement, txtRole, tv_news;
     String fullName;
     Realm mRealm;
     DatabaseService dbService;
-    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-            250,
-            100
-    );
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(250, 100);
     private UserProfileDbHandler profileDbHandler;
-
 
     public DashboardFragment() {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         declareElements(view);
         onLoaded(view);
@@ -60,8 +52,7 @@ public class DashboardFragment extends BaseDashboardFragment {
 
         (getView().findViewById(R.id.img_survey_warn)).setVisibility(noOfSurvey == 0 ? View.VISIBLE : View.GONE);
         getView().findViewById(R.id.add_resource).setOnClickListener(v -> {
-            // startActivity(new Intent(getActivity(), AddResourceActivity.class));
-            new AddResourceFragment().show(getChildFragmentManager(), "Add Resource");
+            new AddResourceFragment().show(getChildFragmentManager(),  getString(R.string.add_res));
         });
     }
 
@@ -75,11 +66,9 @@ public class DashboardFragment extends BaseDashboardFragment {
         tv_submission.setOnClickListener(view1 -> homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("exam")));
         tv_achievement.setVisibility(Constants.showBetaFeature(Constants.KEY_ACHIEVEMENT, getActivity()) ? View.VISIBLE : View.GONE);
         tv_achievement.setOnClickListener(v -> homeItemClickListener.openCallFragment(new AchievementFragment()));
-//        view.findViewById(R.id.ll_user).setOnClickListener(view13 -> homeItemClickListener.openCallFragment(new UserProfileFragment()));
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         initView(view);
 
     }
-
 }

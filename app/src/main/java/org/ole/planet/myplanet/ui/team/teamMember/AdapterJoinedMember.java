@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team.teamMember;
 
 import android.content.Context;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
@@ -55,30 +56,19 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
         if (holder instanceof ViewHolderUser) {
             String[] overflowMenuOptions;
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
-            ((ViewHolderUser) holder).tvDescription
-                    .setText(list.get(position).getRoleAsString()
-                            + " ("
-                            + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId)
-                            + " visits )");
+            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
 
-
-            boolean isLoggedInUserTeamLeader = this.teamLeaderId != null
-                    && this.teamLeaderId.equals(this.currentUser.getId());
+            boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId());
 
             // If the current user card is the logged in user/team leader
             if (this.teamLeaderId.equals(list.get(position).getId())) {
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
-                ((ViewHolderUser) holder).isLeader.setText("(Team Leader)");
-                //Show no option for leader now
-                ///overflowMenuOptions = new String[] {context.getString(R.string.remove)};
+                ((ViewHolderUser) holder).isLeader.setText("("+ R.string.team_leader +")");
             } else {
                 ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
-                overflowMenuOptions = new String[] {
-                        context.getString(R.string.remove),
-                        context.getString(R.string.make_leader)};
+                overflowMenuOptions = new String[]{context.getString(R.string.remove), context.getString(R.string.make_leader)};
                 checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
             }
-
         }
     }
 
@@ -90,14 +80,13 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
         if (isLoggedInUserTeamLeader) {
             holder.icMore.setVisibility(View.VISIBLE);
             holder.icMore.setOnClickListener(view -> {
-                new AlertDialog.Builder(context)
-                        .setItems(overflowMenuOptions, (dialogInterface, i) -> {
-                            if (i == 0) {
-                                reject(list.get(position), position);
-                            } else {
-                                makeLeader(list.get(position), position);
-                            }
-                        }).setNegativeButton("Dismiss", null).show();
+                new AlertDialog.Builder(context).setItems(overflowMenuOptions, (dialogInterface, i) -> {
+                    if (i == 0) {
+                        reject(list.get(position), position);
+                    } else {
+                        makeLeader(list.get(position), position);
+                    }
+                }).setNegativeButton(R.string.dismiss, null).show();
             });
         } else {
             holder.icMore.setVisibility(View.GONE);
@@ -105,8 +94,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     private void makeLeader(RealmUserModel userModel, int position) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
         RealmMyTeam teamLeader = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (teamLeader != null) {
@@ -122,8 +110,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
     }
 
     private void reject(RealmUserModel userModel, int position) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
         if (team != null) {
             team.deleteFromRealm();
@@ -132,7 +119,6 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
         list.remove(position);
         notifyDataSetChanged();
         Utilities.toast(context, context.getString(R.string.user_removed_from_team));
-
     }
 
     @Override

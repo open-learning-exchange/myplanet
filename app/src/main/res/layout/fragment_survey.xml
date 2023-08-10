@@ -7,43 +7,44 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:layout_height="match_parent">
-
-        <Spinner
-            android:layout_width="wrap_content"
-            android:entries="@array/sort_by_date"
-            android:padding="@dimen/padding_normal"
-            android:id="@+id/spn_sort"
-            android:layout_height="wrap_content"/>
-
-    <FrameLayout
-        android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-
-        <TextView
-            android:id="@+id/tv_message"
+        <Spinner
+            android:id="@+id/spn_sort"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center" />
+            android:entries="@array/sort_by_date"
+            android:padding="@dimen/padding_normal" />
 
-    </FrameLayout>
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+
+            <TextView
+                android:id="@+id/tv_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center" />
+
+        </FrameLayout>
 
     </LinearLayout>
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_new_survey"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="right|bottom"
-        android:id="@+id/fab_add_new_survey"
         android:layout_margin="@dimen/padding_large"
-        android:visibility="invisible"
-        android:src="@drawable/ic_add" />
+        android:src="@drawable/ic_add"
+        android:visibility="invisible" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

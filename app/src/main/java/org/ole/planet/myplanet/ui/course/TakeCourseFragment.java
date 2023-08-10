@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.course;
 
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.CustomViewPager;
+import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
@@ -32,7 +32,6 @@ import java.util.List;
 import io.realm.Realm;
 
 public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChangeListener, View.OnClickListener {
-
     CustomViewPager mViewPager;
     TextView tvCourseTitle, tvCompleted, tvStepTitle, tvSteps;
     SeekBar courseProgress;
@@ -64,12 +63,10 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 position = getArguments().getInt("position");
             }
         }
-
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_take_course, container, false);
         mViewPager = v.findViewById(R.id.view_pager_course);
         initView(v);
@@ -101,7 +98,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             previous.setVisibility(View.GONE);
         }
 
-
         mViewPager.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), courseId, RealmCourseStep.getStepIds(mRealm, courseId)));
         mViewPager.addOnPageChangeListener(this);
         if (mViewPager.getCurrentItem() == 0) {
@@ -111,7 +107,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         setCourseData();
         setListeners();
         mViewPager.setCurrentItem(position);
-
     }
 
     private void setListeners() {
@@ -144,46 +139,42 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         if (!currentCourse.getUserId().contains(userModel.getId())) {
             btnAddRemove.setVisibility(View.VISIBLE);
             btnAddRemove.setText(getString(R.string.join));
+            DialogUtils.getAlertDialog(getActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course), (dialog, which) -> addRemoveCourse());
         } else {
             btnAddRemove.setVisibility(View.GONE);
         }
         RealmCourseActivity.createActivity(mRealm, userModel, currentCourse);
-        tvSteps.setText("Step 0/" + steps.size());
-        if (steps != null)
-            courseProgress.setMax(steps.size());
+        tvSteps.setText(getString(R.string.step) + " 0/" + steps.size());
+        if (steps != null) courseProgress.setMax(steps.size());
         int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
-        if (i < steps.size())
-            courseProgress.setSecondaryProgress(i + 1);
+        if (i < steps.size()) courseProgress.setSecondaryProgress(i + 1);
         courseProgress.setProgress(i);
         courseProgress.setVisibility(currentCourse.getUserId().contains(userModel.getId()) ? View.VISIBLE : View.GONE);
     }
 
     @Override
     public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
     }
 
     @Override
     public void onPageSelected(int position) {
         if (position > 0) {
             tvStepTitle.setText(steps.get(position - 1).getStepTitle());
-            Utilities.log("Po " + position +" " + steps.size());
-            if ((position - 1) < steps.size())
-                changeNextButtonState(position);
+            Utilities.log("Po " + position + " " + steps.size());
+            if ((position - 1) < steps.size()) changeNextButtonState(position);
         } else {
             next.setClickable(true);
             next.setTextColor(getResources().getColor(R.color.md_white_1000));
             tvStepTitle.setText(currentCourse.getCourseTitle());
         }
         int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
-        if (i < steps.size())
-            courseProgress.setSecondaryProgress(i + 1);
+        if (i < steps.size()) courseProgress.setSecondaryProgress(i + 1);
         courseProgress.setProgress(i);
         tvSteps.setText(String.format("Step %d/%d", position, steps.size()));
     }
 
     private void changeNextButtonState(int position) {
-        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) +" is step completed");
+        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) + " is step completed");
         if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
             next.setClickable(true);
             next.setTextColor(getResources().getColor(R.color.md_white_1000));
@@ -217,7 +208,6 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickRight()) {
                     mViewPager.setCurrentItem(mViewPager.getCurrentItem() + 1);
                     previous.setTextColor(getResources().getColor(R.color.md_white_1000));
-
                 }
                 onClickNext();
                 break;
@@ -234,8 +224,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     }
 
     private void addRemoveCourse() {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         if (currentCourse.getUserId().contains(userModel.getId())) {
             currentCourse.removeUserId(userModel.getId());
             RealmRemovedLog.onRemove(mRealm, "courses", userModel.getId(), courseId);
@@ -254,6 +243,4 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     public boolean isValidClickLeft() {
         return mViewPager.getAdapter() != null && mViewPager.getCurrentItem() > 0;
     }
-
-
 }

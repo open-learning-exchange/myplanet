@@ -162,6 +162,4 @@ public class RealmTeamLog extends RealmObject {
         tag.setTeamType(JsonUtils.getString("teamType", act));
     }
 
-
 }
-

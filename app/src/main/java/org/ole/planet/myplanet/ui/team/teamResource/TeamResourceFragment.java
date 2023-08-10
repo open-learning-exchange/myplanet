@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamResource;
 
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,11 +10,9 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -27,11 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TeamResourceFragment extends BaseTeamFragment implements TeamPageListener {
-
     AdapterTeamResource adapterLibrary;
     RecyclerView rvResource;
     TextView tvNodata;
@@ -39,15 +32,10 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
     public TeamResourceFragment() {
     }
 
-
-
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_team_resource, container, false);
     }
-
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
@@ -55,13 +43,8 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         rvResource = getView().findViewById(R.id.rv_resource);
         tvNodata = getView().findViewById(R.id.tv_nodata);
         showLibraryList();
-//        if (MainApplication.showDownload)
-//            showResourceListDialog();
         getView().findViewById(R.id.fab_add_resource).setOnClickListener(view -> showResourceListDialog());
     }
-
-
-
 
     private void showLibraryList() {
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
@@ -76,12 +59,11 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         View convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
         CheckboxListView lv = convertView.findViewById(R.id.alertDialog_listView);
-        alertDialogBuilder.setTitle("Select Resource : ");
+        alertDialogBuilder.setTitle(R.string.select_resource);
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).not().in("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
-        alertDialogBuilder.setView(convertView).setPositiveButton("Add", (dialogInterface, i) -> {
+        alertDialogBuilder.setView(convertView).setPositiveButton(R.string.add, (dialogInterface, i) -> {
             ArrayList<Integer> selected = lv.getSelectedItemsList();
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
                 team.setTeamId(teamId);
@@ -95,7 +77,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
             }
             mRealm.commitTransaction();
             showLibraryList();
-        }).setNegativeButton("Cancel", null);
+        }).setNegativeButton(R.string.cancel, null);
         AlertDialog alertDialog = alertDialogBuilder.create();
         listSetting(alertDialog, libraries, lv);
     }
@@ -114,7 +96,6 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         alertDialog.show();
         (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
     }
-
 
     @Override
     public void onAddDocument() {

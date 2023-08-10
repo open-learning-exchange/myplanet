@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.ui.mymeetup;
 
-
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,11 +28,7 @@ import java.util.HashMap;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class MyMeetupDetailFragment extends Fragment implements View.OnClickListener {
-
     LinearLayout llContent;
     RealmMeetup meetups;
     Realm mRealm;
@@ -58,16 +55,15 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_my_meetup_detail, container, false);
         listDesc = v.findViewById(R.id.list_desc);
         listUsers = v.findViewById(R.id.list_users);
         tvJoined = v.findViewById(R.id.tv_joined);
         btnInvite = v.findViewById(R.id.btn_invite);
-        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
+        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnLeave = v.findViewById(R.id.btn_leave);
-        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE :View.GONE );
+        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         btnLeave.setOnClickListener(this);
         title = v.findViewById(R.id.meetup_title);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
@@ -88,7 +84,7 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
         String[] ids = RealmMeetup.getJoinedUserIds(mRealm);
         RealmResults<RealmUserModel> users = mRealm.where(RealmUserModel.class).in("id", ids).findAll();
         listUsers.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, users));
-        tvJoined.setText(String.format("Joined Members : %s", users.size() == 0 ? "(0)\nNo members has joined this meet up" : users.size()));
+        tvJoined.setText(String.format(getString(R.string.joined_members_colon) + " %s", users.size() == 0 ? "(0)\n " + getString(R.string.no_members_has_joined_this_meet_up) : users.size()));
     }
 
     private void setUpData() {
@@ -116,15 +112,14 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
         }
     }
 
-
     private void leaveJoinMeetUp() {
         mRealm.executeTransaction(realm -> {
             if (meetups.getUserId().isEmpty()) {
                 meetups.setUserId(user.getId());
-                btnLeave.setText("Leave");
+                btnLeave.setText(R.string.leave);
             } else {
                 meetups.setUserId("");
-                btnLeave.setText("Join");
+                btnLeave.setText(R.string.join);
             }
         });
     }

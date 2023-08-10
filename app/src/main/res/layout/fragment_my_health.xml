@@ -7,18 +7,18 @@
     tools:context=".ui.myhealth.MyHealthFragment">
 
     <androidx.cardview.widget.CardView
+        android:id="@+id/card_vital_sign"
         android:layout_width="match_parent"
         android:layout_height="200dp"
         app:cardCornerRadius="@dimen/padding_normal"
         app:cardElevation="4dp"
-        android:id="@+id/card_vital_sign"
         app:cardUseCompatPadding="true">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Vital Signs Record"
+            android:text="@string/vital_signs_record"
             android:textSize="24sp" />
 
     </androidx.cardview.widget.CardView>

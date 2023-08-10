@@ -42,7 +42,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/buttonyellow"
-                    android:drawableLeft="@drawable/ic_edit"
+                    android:drawableStart="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/edit_achievement" />
@@ -59,8 +59,8 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_gravity="center">
+                    android:layout_gravity="center"
+                    android:orientation="horizontal">
 
                     <ImageView
                         android:layout_width="@dimen/image_size_home_card"
@@ -68,8 +68,8 @@
                         android:layout_gravity="center"
                         android:layout_marginLeft="16dp"
                         android:layout_marginRight="16dp"
-                        android:tint="@color/md_black_1000"
-                        app:srcCompat="@drawable/my_achievement" />
+                        app:srcCompat="@drawable/my_achievement"
+                        app:tint="@color/md_black_1000" />
 
                     <TextView
                         android:id="@+id/tv_name"
@@ -81,8 +81,8 @@
                         android:layout_gravity="center"
                         android:layout_marginLeft="16dp"
                         android:layout_marginRight="16dp"
-                        android:tint="@color/md_black_1000"
-                        app:srcCompat="@drawable/my_achievement" />
+                        app:srcCompat="@drawable/my_achievement"
+                        app:tint="@color/md_black_1000" />
 
                 </LinearLayout>
 
@@ -111,7 +111,7 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="My Achievements" />
+                    android:text="@string/my_achievements" />
 
                 <TextView
                     android:id="@+id/tv_achievement_header"
@@ -134,7 +134,7 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="References" />
+                    android:text="@string/references" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_other_info"

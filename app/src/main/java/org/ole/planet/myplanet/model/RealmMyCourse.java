@@ -103,26 +103,15 @@ public class RealmMyCourse extends RealmObject {
     }
 
     public static void createMyCourse(RealmMyCourse course, Realm mRealm, String id) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         course.setUserId(id);
         mRealm.commitTransaction();
     }
-//
-//    public static String[] getMyCourseIds(Realm mRealm, String userId) {
-//        List<RealmMyCourse> list = mRealm.where(RealmMyCourse.class).equalTo("userId", userId).findAll();
-//        String[] myIds = new String[list.size()];
-//        for (int i = 0; i < list.size(); i++) {
-//            myIds[i] = list.get(i).getCourseId();
-//        }
-//        return myIds;
-//    }
 
     public static JsonArray getMyCourseIds(Realm realm, String userId) {
         List<RealmMyCourse> myCourses = getMyCourseByUserId(userId, realm.where(RealmMyCourse.class).findAll());
         JsonArray ids = new JsonArray();
-        for (RealmObject lib : myCourses
-        ) {
+        for (RealmObject lib : myCourses) {
             ids.add(((RealmMyCourse) lib).getCourseId());
         }
         return ids;
@@ -145,8 +134,7 @@ public class RealmMyCourse extends RealmObject {
             this.userId = new RealmList<>();
         }
 
-        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId))
-            this.userId.add(userId);
+        if (!this.userId.contains(userId) && !TextUtils.isEmpty(userId)) this.userId.add(userId);
     }
 
     public void removeUserId(String userId) {

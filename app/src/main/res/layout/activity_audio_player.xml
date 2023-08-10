@@ -8,10 +8,10 @@
 
 
     <com.example.jean.jcplayer.view.JcPlayerView
-        android:layout_width="match_parent"
         android:id="@+id/jcplayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_gravity="center"
-        android:gravity="center"
-        android:layout_height="match_parent"/>
+        android:gravity="center" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

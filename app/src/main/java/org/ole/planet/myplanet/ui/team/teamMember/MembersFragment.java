@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamMember;
 
-
-import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -11,12 +9,7 @@ import org.ole.planet.myplanet.model.RealmUserModel;
 
 import java.util.List;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class MembersFragment extends BaseMemberFragment {
-
-
     public MembersFragment() {
     }
 

@@ -11,8 +11,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/bg_white"
         android:layout_margin="@dimen/fab_margin"
+        android:background="@color/bg_white"
         android:baselineAligned="false"
         android:elevation="2dp"
         android:focusableInTouchMode="true"
@@ -38,24 +38,23 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="top|center"
                 android:layout_gravity="center"
+                android:gravity="top|center"
                 android:orientation="vertical"
                 android:textAlignment="center">
 
                 <ImageView
                     android:id="@+id/logoImageView"
                     android:layout_width="100dp"
-                    android:tint="@color/md_white_1000"
                     android:layout_height="100dp"
-                    android:contentDescription="TODO"
-                    app:srcCompat="@drawable/ole_logo" />
+                    android:contentDescription="@string/ole_logo"
+                    app:srcCompat="@drawable/ole_logo"
+                    app:tint="@color/md_white_1000" />
 
                 <TextView
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
-                    android:layout_height="0dp"
-                    android:layout_weight="0.7"
+                    android:layout_height="wrap_content"
                     android:text="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
@@ -93,35 +92,37 @@
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:textSize="12sp" />
+
                 <TextView
                     android:id="@+id/customDeviceName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
-                    />
+                    android:textSize="12sp" />
 
 
                 <Button
-                    android:layout_width="wrap_content"
-                    android:layout_gravity="center"
                     android:id="@+id/open_community"
-                    android:text="Open Community"
-                    android:textColor="@color/md_white_1000"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:gravity="center"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:layout_height="wrap_content"/>
+                    android:text="@string/open_community"
+                    android:textColor="@color/md_white_1000"
+                    android:theme="@style/PrimaryFlatButton" />
 
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
+
                     <ImageView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:srcCompat="@drawable/baseline_storage_24"
-                        android:paddingHorizontal="@dimen/padding_small"/>
+                        android:paddingHorizontal="@dimen/padding_small"
+                        app:srcCompat="@drawable/baseline_storage_24" />
+
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
@@ -145,7 +146,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
 
-               >
+                >
 
                 <ImageView
                     android:id="@+id/syncIcon"
@@ -161,9 +162,9 @@
                     android:id="@+id/lblLastSyncDate"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
-                    android:text="----"
                     android:gravity="center"
+                    android:padding="@dimen/padding_small"
+                    android:text="@string/dash_4"
                     android:textAlignment="center" />
 
                 <ImageButton
@@ -188,9 +189,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
                     android:gravity="center"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_normal">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/input_layout_name"
@@ -229,27 +230,16 @@
                             android:textColorHint="@android:color/darker_gray" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-<!--                    <CheckBox-->
-<!--                        android:id="@+id/save"-->
-<!--                        android:layout_width="match_parent"-->
-<!--                        android:layout_height="wrap_content"-->
-<!--                        android:alpha="0.7"-->
-<!--                        android:fontFamily="sans-serif"-->
-<!--                        android:text="@string/save_username_and_password"-->
-<!--                        android:textColor="@color/material_drawer_dark_background"-->
-<!--                        android:textSize="12sp" />-->
-
-
                     <CheckBox
                         android:id="@+id/manager_login"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:alpha="0.7"
-                        android:visibility="gone"
                         android:fontFamily="sans-serif"
                         android:text="@string/managerial_login"
                         android:textColor="@color/material_drawer_dark_background"
-                        android:textSize="12sp" />
+                        android:textSize="12sp"
+                        android:visibility="gone" />
 
 
                     <Button
@@ -264,37 +254,37 @@
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_marginTop="8dp"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp">
 
                         <Button
                             android:id="@+id/btn_guest_login"
                             android:layout_width="0dp"
-                            android:layout_weight="1"
                             android:layout_height="wrap_content"
-                            android:text="@string/btn_guest_login"
                             android:layout_gravity="center"
+                            android:layout_weight="1"
+                            android:text="@string/btn_guest_login"
                             android:textSize="14sp"
                             android:theme="@style/PrimaryFlatButton" />
 
                         <Button
                             android:id="@+id/become_member"
                             android:layout_width="0dp"
-                            android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
-                            android:text="Become a member"
+                            android:layout_weight="1"
+                            android:text="@string/become_a_member"
                             android:theme="@style/PrimaryFlatButton" />
 
 
                         <Button
                             android:id="@+id/btn_feedback"
                             android:layout_width="0dp"
-                            android:layout_weight="1"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:layout_margin="@dimen/padding_normal"
-                            android:text="Feedback"
+                            android:layout_weight="1"
+                            android:text="@string/feedback"
                             android:theme="@style/PrimaryFlatButton" />
 
                     </LinearLayout>

@@ -14,8 +14,8 @@
             android:id="@+id/spn_sort"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:entries="@array/sort_member"
             android:layout_gravity="center"
+            android:entries="@array/sort_member"
             android:minWidth="150dp"
             android:padding="8dp" />
 
@@ -26,7 +26,7 @@
             android:layout_gravity="right"
             android:minWidth="150dp"
             android:padding="8dp"
-            android:text="Add Member"
+            android:text="@string/add_member"
             android:textSize="14sp"
             android:theme="@style/PrimaryButton"
             android:visibility="gone" />
@@ -36,7 +36,7 @@
         android:id="@+id/et_search"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:hint="@string/search"
+        android:hint="@string/search_dots"
         android:inputType="text"
         android:maxLines="1" />
 

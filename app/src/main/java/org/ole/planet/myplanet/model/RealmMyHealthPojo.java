@@ -142,7 +142,6 @@ public class RealmMyHealthPojo extends RealmObject {
         this.data = data;
     }
 
-
     public void setTemperature(int temperature) {
         this.temperature = temperature;
     }
@@ -251,10 +250,8 @@ public class RealmMyHealthPojo extends RealmObject {
 
     public static JsonObject serialize(RealmMyHealthPojo health) {
         JsonObject object = new JsonObject();
-        if (!TextUtils.isEmpty(health.getUserId()))
-            object.addProperty("_id", health.getUserId());
-        if (!TextUtils.isEmpty(health.get_rev()))
-            object.addProperty("_rev", health.get_rev());
+        if (!TextUtils.isEmpty(health.getUserId())) object.addProperty("_id", health.getUserId());
+        if (!TextUtils.isEmpty(health.get_rev())) object.addProperty("_rev", health.get_rev());
         object.addProperty("data", health.getData());
 
         JsonUtils.addFloat(object, "temperature", health.getTemperature());

@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
-import java.util.HashMap;
 
 import io.realm.Realm;
 
@@ -40,7 +39,6 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
         return "";
     }
 
-
     public void showShareButton(RecyclerView.ViewHolder holder, RealmNews news) {
         ((ViewHolderNews) holder).btnShare.setVisibility((news.isCommunityNews() || fromLogin) ? View.GONE : View.VISIBLE);
         ((ViewHolderNews) holder).btnShare.setOnClickListener(view -> {
@@ -50,15 +48,13 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
             ob.addProperty("_id", currentUser.getPlanetCode() + "@" + currentUser.getParentCode());
             ob.addProperty("sharedDate", Calendar.getInstance().getTimeInMillis());
             array.add(ob);
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             news.setViewIn(new Gson().toJson(array));
             mRealm.commitTransaction();
-            Utilities.toast(context, "Shared to community");
+            Utilities.toast(context, context.getString(R.string.shared_to_community));
             ((ViewHolderNews) holder).btnShare.setVisibility(View.GONE);
         });
     }
-
 
     public class ViewHolderNews extends RecyclerView.ViewHolder {
         public TextView tvName, tvDate, tvMessage;
@@ -84,6 +80,4 @@ public abstract class BaseNewsAdapter extends RecyclerView.Adapter<RecyclerView.
             fbChips = itemView.findViewById(R.id.fb_chips);
         }
     }
-
-
 }

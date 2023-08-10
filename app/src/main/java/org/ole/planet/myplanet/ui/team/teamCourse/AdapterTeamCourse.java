@@ -3,8 +3,10 @@ package org.ole.planet.myplanet.ui.team.teamCourse;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,7 +28,6 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
     private OnHomeItemClickListener listener;
     private SharedPreferences settings;
     private String teamCreator;
-
 
     public AdapterTeamCourse(Context context, List<RealmMyCourse> list, Realm mRealm, String teamId, SharedPreferences settings) {
         this.context = context;
@@ -67,14 +68,5 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
     public int getItemCount() {
         return list.size();
     }
-//
-//    class ViewHolderTeamCourse extends RecyclerView.ViewHolder {
-//        TextView title, description;
-//
-//        public ViewHolderTeamCourse(View itemView) {
-//            super(itemView);
-//            title = itemView.findViewById(R.id.title);
-//            description = itemView.findViewById(R.id.description);
-//        }
-//    }
+
 }

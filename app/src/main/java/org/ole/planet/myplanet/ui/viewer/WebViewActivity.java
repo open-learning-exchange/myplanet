@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.viewer;
 
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -9,13 +8,11 @@ import android.text.TextUtils;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
-import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -23,7 +20,6 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 public class WebViewActivity extends AppCompatActivity {
-
     ProgressBar pBar;
     boolean fromDeepLink = false;
     String link;
@@ -61,8 +57,6 @@ public class WebViewActivity extends AppCompatActivity {
     }
 
     private void setWebClient() {
-//        wv.setWebChromeClient(new WebChromeClient());
-
         wv.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -74,6 +68,7 @@ public class WebViewActivity extends AppCompatActivity {
                 Uri i = Uri.parse(url);
                 tv_source.setText(i.getHost());
             }
+
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
@@ -81,14 +76,13 @@ public class WebViewActivity extends AppCompatActivity {
         });
     }
 
-
     private void clearCookie() {
         CookieSyncManager.createInstance(this);
         CookieManager cookieManager = CookieManager.getInstance();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             cookieManager.removeAllCookies(aBoolean -> {
             });
-        }else{
+        } else {
             cookieManager.removeAllCookie();
         }
     }
@@ -98,7 +92,7 @@ public class WebViewActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 (WebViewActivity.this).setProgress(newProgress);
-                Utilities.log("Url " + view.getUrl() );
+                Utilities.log("Url " + view.getUrl());
                 if (view.getUrl().endsWith("/eng/")) {
                     finish();
                 }
@@ -112,9 +106,5 @@ public class WebViewActivity extends AppCompatActivity {
                 super.onReceivedTitle(view, title);
             }
         });
-
-
     }
-
-
 }

@@ -1,4 +1,4 @@
-<resources xmlns:android="http://schemas.android.com/tools">
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Toolbar -->
 
     <!-- Base application theme. -->
@@ -32,7 +32,7 @@
         <item name="android:background">@color/black_overlay</item>
     </style>
 
-    <style name="MyMaterialTheme" parent="MyMaterialTheme.Base"></style>
+    <style name="MyMaterialTheme" parent="MyMaterialTheme.Base" />
 
     <style name="MyMaterialTheme.Base" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="windowNoTitle">true</item>

@@ -41,5 +41,4 @@ public class RealmTeamNotification extends RealmObject {
     public void setType(String type) {
         this.type = type;
     }
-
 }

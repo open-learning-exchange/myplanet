@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.model;
 
 public class FeedbackReply {
-    String message,user,date;
+    String message, user, date;
 
     public FeedbackReply(String message, String user, String date) {
         this.message = message;

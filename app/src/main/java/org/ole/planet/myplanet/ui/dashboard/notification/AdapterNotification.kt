@@ -11,8 +11,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.model.Notifications
 
-
-class AdapterNotification(var context: Context, var list: List<Notifications>, var callback: NotificationCallback) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterNotification(
+    var context: Context, var list: List<Notifications>, var callback: NotificationCallback
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         var v = LayoutInflater.from(context).inflate(R.layout.row_notification, parent, false)
         return ViewHolderNotification(v)
@@ -40,11 +41,9 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
         }
     }
 
-
-    internal inner class ViewHolderNotification(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    internal inner class ViewHolderNotification(itemView: View) :
+        RecyclerView.ViewHolder(itemView) {
         var title: TextView = itemView.findViewById(R.id.title)
         var icon: ImageView = itemView.findViewById(R.id.icon)
     }
-
-
 }

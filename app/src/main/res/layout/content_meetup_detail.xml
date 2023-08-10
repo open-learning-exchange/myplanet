@@ -4,7 +4,6 @@
     android:layout_height="match_parent"
     android:orientation="horizontal">
 
-
     <ListView
         android:id="@+id/list_desc"
         android:layout_width="0dp"
@@ -22,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="Joined Members : "
+            android:text="@string/joined_members_colon"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large" />
 
@@ -31,6 +30,4 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </LinearLayout>
-
-
 </LinearLayout>

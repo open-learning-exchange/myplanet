@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.ui.userprofile;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +13,9 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.google.gson.JsonArray;
 
 import org.ole.planet.myplanet.R;
@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,11 +43,9 @@ public class BaseAchievementFragment extends BaseContainerFragment {
     CheckBox checkBox;
     String dob = "";
 
-
     public void initializeData() {
         if (achievement == null) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
             return;
         } else {
@@ -59,7 +56,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
             etGoals.setText(achievement.getGoals());
             checkBox.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
         }
-        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? "Birth Date" : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        tvDob.setText(TextUtils.isEmpty(user.getDob()) ? getString(R.string.birth_date) : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         resourceArray = new JsonArray();
         etName.setText(user.getFirstName());
         etMiddleName.setText(user.getMiddleName());
@@ -74,8 +71,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         ArrayList<Integer> selected = new ArrayList();
         for (int i = 0; i < list.size(); i++) {
             names.add(list.get(i).getTitle());
-            if (prevList.contains(list.get(i).getTitle()))
-                selected.add(i);
+            if (prevList.contains(list.get(i).getTitle())) selected.add(i);
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {
@@ -95,14 +91,7 @@ public class BaseAchievementFragment extends BaseContainerFragment {
         return lv;
     }
 
-
-    public void setUserInfo() {
-        //user.setFirstName(etName.getText().toString());
-        //user.setMiddleName(etMiddleName.getText().toString());
-        //user.setLastName(etLastName.getText().toString());
-        //user.setDob(tvDob.getText().toString());
-        //user.setBirthPlace(etBirthPlace.getText().toString());
-    }
+    public void setUserInfo() {}
 
     public void setAchievementInfo() {
         achievement.setAchievementsHeader(etAchievement.getText().toString().trim());

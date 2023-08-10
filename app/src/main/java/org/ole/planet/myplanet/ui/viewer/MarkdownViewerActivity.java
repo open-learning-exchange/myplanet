@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -14,13 +15,10 @@ import java.io.File;
 
 import br.tiagohm.markdownview.MarkdownView;
 
-
 public class MarkdownViewerActivity extends AppCompatActivity {
-
     private TextView mMarkdownNameTitle;
     private MarkdownView mMarkdownContent;
     private String fileName;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,16 +34,25 @@ public class MarkdownViewerActivity extends AppCompatActivity {
     }
 
     private void renderMarkdownFile() {
-        // File name to be viewed
-
         Intent markdownOpenIntent = getIntent();
-        fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE");
+        String fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE");
 
         if (fileName != null && !fileName.isEmpty()) {
             mMarkdownNameTitle.setText(fileName);
             mMarkdownNameTitle.setVisibility(View.VISIBLE);
         }
 
-        mMarkdownContent.loadMarkdownFromFile(new File(Utilities.SD_PATH, fileName));
+        try {
+            File basePath = getExternalFilesDir(null);
+            File markdownFile = new File(basePath, "ole/" + fileName);
+
+            if (markdownFile.exists()) {
+                mMarkdownContent.loadMarkdownFromFile(markdownFile);
+            } else {
+                Toast.makeText(this, getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

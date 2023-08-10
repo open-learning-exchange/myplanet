@@ -31,7 +31,7 @@
                     android:background="@drawable/bg_green"
                     android:button="@android:color/transparent"
                     android:padding="@dimen/padding_normal"
-                    android:text="Exams"
+                    android:text="@string/exams"
                     android:textSize="20sp" />
 
                 <RadioButton
@@ -41,7 +41,7 @@
                     android:background="@drawable/bg_green"
                     android:button="@android:color/transparent"
                     android:padding="@dimen/padding_normal"
-                    android:text="Survey"
+                    android:text="@string/survey"
                     android:textSize="20sp" />
 
             </RadioGroup>
@@ -58,10 +58,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:maxLines="1"
-                    android:inputType="text"
                     android:drawableLeft="@drawable/ic_search"
-                    android:hint="Search" />
+                    android:hint="@string/search"
+                    android:inputType="text"
+                    android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
@@ -76,7 +76,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Name"
+                android:text="@string/name"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp" />
 
@@ -84,17 +84,17 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Status"
+                android:text="@string/status"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp" />
 
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Submitted by"
                 android:id="@+id/submitted_by"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/submitted_by"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp" />
 
@@ -102,7 +102,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Updated On"
+                android:text="@string/updated_on"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp" />
 

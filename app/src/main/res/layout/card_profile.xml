@@ -30,7 +30,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_small"
-                android:text="Leonard Maximus Mensah"
                 android:textAlignment="center"
                 android:textColor="@color/textColorPrimary"
                 android:textSize="18sp"
@@ -53,7 +52,6 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:padding="4dp"
-                android:text="10 Visits"
                 android:textColor="@color/textColorPrimary" />
 
         </LinearLayout>

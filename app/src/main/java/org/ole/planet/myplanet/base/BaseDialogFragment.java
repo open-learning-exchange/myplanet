@@ -1,12 +1,13 @@
 package org.ole.planet.myplanet.base;
 
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 
-
 public abstract class BaseDialogFragment extends DialogFragment {
-  public  String id;
+    public String id;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -16,6 +17,5 @@ public abstract class BaseDialogFragment extends DialogFragment {
         }
     }
 
-     protected abstract String getKey();
-
+    protected abstract String getKey();
 }

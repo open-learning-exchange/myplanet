@@ -23,25 +23,25 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-
-/**
- * A simple [Fragment] subclass.
- */
 class MyActivityFragment : Fragment() {
     lateinit var realm: Realm;
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View? {
         return inflater.inflate(R.layout.fragment_my_activity, container, false)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        var userModel = UserProfileDbHandler(activity!!).userModel
-        realm = DatabaseService(activity!!).realmInstance
+        var userModel = UserProfileDbHandler(requireActivity()).userModel
+        realm = DatabaseService(requireActivity()).realmInstance
         var calendar = Calendar.getInstance()
 
         calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - 1)
-        var resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id).between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis).findAll()
+        var resourceActivity =
+            realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id)
+                .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
+                .findAll()
 
         var countMap = HashMap<String, Int>();
         var format = SimpleDateFormat("MMM")
@@ -60,7 +60,7 @@ class MyActivityFragment : Fragment() {
         var i = 0;
         for (entry in countMap.keys) {
             var key = format.parse(entry)
-            var en = BarEntry( key.month.toFloat(), countMap[entry]!!.toFloat())
+            var en = BarEntry(key.month.toFloat(), countMap[entry]!!.toFloat())
             entries.add(en)
             i = i.plus(1)
         }
@@ -70,22 +70,20 @@ class MyActivityFragment : Fragment() {
         val dataSet = BarDataSet(entries, "No of login ")
 
         val lineData = BarData(dataSet)
-        chart.setData(lineData)
+        chart.data = lineData
         var d = Description()
         d.text = "Login Activity chart"
         chart.description = d
-        chart.xAxis.valueFormatter = object: ValueFormatter(){
+        chart.xAxis.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 Utilities.log("value ${value.toInt()}")
                 return getMonth(value.toInt())
             }
         }
         chart.invalidate()
-
-
     }
 
-    public fun  getMonth( month: Int) : String {
-        return  DateFormatSymbols().months[month];
+    public fun getMonth(month: Int): String {
+        return DateFormatSymbols().months[month];
     }
 }

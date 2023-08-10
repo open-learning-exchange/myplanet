@@ -57,7 +57,6 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderMyHealthExamination) {
-
             ((ViewHolderMyHealthExamination) holder).temp.setText(checkEmpty(list.get(position).getTemperature()));
             ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
             JsonObject encrypted = list.get(position).getEncryptedDataAsJson(this.userModel);
@@ -73,7 +72,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
                 ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\n" + name);
                 holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_grey_50));
             } else {
-                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\nSelf Examination");
+                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + context.getString(R.string.self_examination));
                 holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
             }
             ((ViewHolderMyHealthExamination) holder).pulse.setText(checkEmptyInt(list.get(position).getPulse()));
@@ -95,7 +94,6 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         return value == 0 ? "" : value + "";
     }
 
-
     private void showAlert(int position, JsonObject encrypted) {
         RealmMyHealthPojo realmExamination = list.get(position);
 
@@ -103,23 +101,14 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         TextView tvVitals = v.findViewById(R.id.tv_vitals);
         TextView tvCondition = v.findViewById(R.id.tv_condition);
         TextView tvOtherNotes = v.findViewById(R.id.tv_other_notes);
-        tvVitals.setText("Temperature : " + checkEmpty(realmExamination.getTemperature()) + "\n" +
-                "Pulse : " + checkEmptyInt(realmExamination.getPulse()) + "\n" +
-                "Blood Pressure : " + realmExamination.getBp() + "\n" +
-                "Height : " + checkEmpty(realmExamination.getHeight()) + "\n" +
-                "Weight : " + checkEmpty(realmExamination.getWeight()) + "\n" +
-                "Vision : " + realmExamination.getVision() + "\n" +
-                "Hearing : " + realmExamination.getHearing() + "\n"
-        );
+        tvVitals.setText(context.getString(R.string.temperature_colon) + checkEmpty(realmExamination.getTemperature()) + "\n" + context.getString(R.string.pulse_colon) + checkEmptyInt(realmExamination.getPulse()) + "\n" + context.getString(R.string.blood_pressure_colon) + realmExamination.getBp() + "\n" + context.getString(R.string.height_colon) + checkEmpty(realmExamination.getHeight()) + "\n" + context.getString(R.string.weight_colon) + checkEmpty(realmExamination.getWeight()) + "\n" + context.getString(R.string.vision_colon) + realmExamination.getVision() + "\n" + context.getString(R.string.hearing_colon) + realmExamination.getHearing() + "\n");
 
-      showConditions(tvCondition, realmExamination);
+        showConditions(tvCondition, realmExamination);
         showEncryptedData(tvOtherNotes, encrypted);
-        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy"))
-                .setView(v)
-                .setPositiveButton("OK", null).create();
+        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy")).setView(v).setPositiveButton("OK", null).create();
         long time = new Date().getTime() - 5000 * 60;
         if (realmExamination.getDate() >= time) {
-            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "Edit", (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("id", list.get(position).get_id()).putExtra("userId", mh.get_id())));
+            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit), (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("id", list.get(position).get_id()).putExtra("userId", mh.get_id())));
         }
         dialog.show();
     }
@@ -130,22 +119,14 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         StringBuilder conditions = new StringBuilder();
         for (String key : keys) {
             if (conditionsMap.get(key).getAsBoolean()) {
-                conditions.append(key +", ");
+                conditions.append(key + ", ");
             }
         }
         tvCondition.setText(conditions);
     }
 
     private void showEncryptedData(TextView tvOtherNotes, JsonObject encrypted) {
-        tvOtherNotes.setText("Observations & Notes : " + Utilities.checkNA(JsonUtils.getString("notes", encrypted)) + "\n"
-                + "Diagnosis : " + Utilities.checkNA(JsonUtils.getString("diagnosis", encrypted)) + "\n"
-                + "Treatments : " + Utilities.checkNA(JsonUtils.getString("treatments", encrypted))
-                + "\n" + "Medications : " + Utilities.checkNA(JsonUtils.getString("medications", encrypted))
-                + "\n" + "Immunizations : " + Utilities.checkNA(JsonUtils.getString("immunizations", encrypted))
-                + "\n" + "Allergies : " + Utilities.checkNA(JsonUtils.getString("allergies", encrypted)) +
-                "\n" + "X-rays : " + Utilities.checkNA(JsonUtils.getString("xrays", encrypted)) + "\n" +
-                "Lab Tests : " + Utilities.checkNA(JsonUtils.getString("tests", encrypted)) + "\n" +
-                "Referrals : " + Utilities.checkNA(JsonUtils.getString("referrals", encrypted)) + "\n");
+        tvOtherNotes.setText(R.string.observations_notes_colon + Utilities.checkNA(JsonUtils.getString("notes", encrypted)) + "\n" + R.string.diagnosis_colon + Utilities.checkNA(JsonUtils.getString("diagnosis", encrypted)) + "\n" + R.string.treatments_colon + Utilities.checkNA(JsonUtils.getString("treatments", encrypted)) + "\n" + R.string.medications_colon + Utilities.checkNA(JsonUtils.getString("medications", encrypted)) + "\n" + R.string.immunizations_colon + Utilities.checkNA(JsonUtils.getString("immunizations", encrypted)) + "\n" + R.string.allergies_colon + Utilities.checkNA(JsonUtils.getString("allergies", encrypted)) + "\n" + R.string.x_rays_colon + Utilities.checkNA(JsonUtils.getString("xrays", encrypted)) + "\n" + R.string.lab_tests_colon + Utilities.checkNA(JsonUtils.getString("tests", encrypted)) + "\n" + R.string.referrals_colon + Utilities.checkNA(JsonUtils.getString("referrals", encrypted)) + "\n");
     }
 
     @Override

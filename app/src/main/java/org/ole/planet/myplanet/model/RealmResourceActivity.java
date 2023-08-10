@@ -29,7 +29,6 @@ public class RealmResourceActivity extends RealmObject {
 
     private String resourceId;
 
-
     private String parentCode;
 
     private String type;
@@ -109,7 +108,6 @@ public class RealmResourceActivity extends RealmObject {
         this.user = user;
     }
 
-
     public static JsonObject serializeResourceActivities(RealmResourceActivity realm_resourceActivities) {
         JsonObject ob = new JsonObject();
         ob.addProperty("user", realm_resourceActivities.getUser());
@@ -124,17 +122,14 @@ public class RealmResourceActivity extends RealmObject {
         return ob;
     }
 
-
     public static void onSynced(Realm mRealm, SharedPreferences settings) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
-        RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", ""))
-                .findFirst();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+        RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", "")).findFirst();
         if (user == null) {
             Utilities.log("User is null");
             return;
         }
-        if (user.getId().startsWith("guest")){
+        if (user.getId().startsWith("guest")) {
             return;
         }
         RealmResourceActivity activities = mRealm.createObject(RealmResourceActivity.class, UUID.randomUUID().toString());
@@ -149,5 +144,4 @@ public class RealmResourceActivity extends RealmObject {
 
         mRealm.commitTransaction();
     }
-
 }

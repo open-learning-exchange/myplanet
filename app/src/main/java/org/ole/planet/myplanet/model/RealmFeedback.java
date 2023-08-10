@@ -45,8 +45,6 @@ public class RealmFeedback extends RealmObject {
     private boolean uploaded;
 
     private String _rev;
-
-    //    private RealmList<RealmMessage> messages;
     private String messages;
 
     private String item;
@@ -64,8 +62,8 @@ public class RealmFeedback extends RealmObject {
         object.addProperty("type", feedback.getType());
         object.addProperty("url", feedback.getUrl());
         object.addProperty("parentCode", feedback.getParentCode());
-        object.addProperty("state",feedback.getState());
-        object.addProperty("item",feedback.getItem());
+        object.addProperty("state", feedback.getState());
+        object.addProperty("item", feedback.getItem());
         if (feedback.get_id() != null) object.addProperty("_id", feedback.get_id());
         if (feedback.get_rev() != null) object.addProperty("_rev", feedback.get_rev());
         JsonParser parser = new JsonParser();
@@ -74,7 +72,7 @@ public class RealmFeedback extends RealmObject {
         } catch (Exception err) {
             err.printStackTrace();
         }
-        Utilities.log("OBJECT " +  new Gson().toJson(object));
+        Utilities.log("OBJECT " + new Gson().toJson(object));
         return object;
     }
 
@@ -91,11 +89,11 @@ public class RealmFeedback extends RealmObject {
         feedback.setOpenTime(JsonUtils.getString("openTime", act));
         feedback.setType(JsonUtils.getString("type", act));
         feedback.setUrl(JsonUtils.getString("url", act));
-        feedback.setParentCode(JsonUtils.getString("parentCode",act));
+        feedback.setParentCode(JsonUtils.getString("parentCode", act));
         feedback.setMessages(new Gson().toJson(JsonUtils.getJsonArray("messages", act)));
         feedback.setUploaded(true);
-        feedback.setItem(JsonUtils.getString("item",act));
-        feedback.setState(JsonUtils.getString("state",act));
+        feedback.setItem(JsonUtils.getString("item", act));
+        feedback.setState(JsonUtils.getString("state", act));
         feedback.set_rev(JsonUtils.getString("_rev", act));
     }
 
@@ -191,30 +189,20 @@ public class RealmFeedback extends RealmObject {
         this.id = id;
     }
 
-//    public RealmList<RealmMessage> getMessages() {
-//        return messages;
-//    }
-//
-//    public void setMessages(RealmList<RealmMessage> messages) {
-//        this.messages = messages;
-//    }
-
-
     public String getMessages() {
         return messages;
     }
 
     public List<FeedbackReply> getMessageList() {
         JsonParser parser = new JsonParser();
-        if (TextUtils.isEmpty(messages))
-            return null;
-        List<FeedbackReply> feedbackReplies= new ArrayList<>();
+        if (TextUtils.isEmpty(messages)) return null;
+        List<FeedbackReply> feedbackReplies = new ArrayList<>();
         JsonElement e = parser.parse(messages);
         JsonArray ar = e.getAsJsonArray();
         if (ar.size() > 0) {
-            for(int i = 1; i < ar.size(); i ++ ){
+            for (int i = 1; i < ar.size(); i++) {
                 JsonObject ob = ar.get(i).getAsJsonObject();
-                feedbackReplies.add(new FeedbackReply(ob.get("message").getAsString(),ob.get("user").getAsString(),ob.get("time").getAsString()));
+                feedbackReplies.add(new FeedbackReply(ob.get("message").getAsString(), ob.get("user").getAsString(), ob.get("time").getAsString()));
             }
         }
         return feedbackReplies;
@@ -222,8 +210,7 @@ public class RealmFeedback extends RealmObject {
 
     public String getMessage() {
         JsonParser parser = new JsonParser();
-        if (TextUtils.isEmpty(messages))
-            return "";
+        if (TextUtils.isEmpty(messages)) return "";
         JsonElement e = parser.parse(messages);
         JsonArray ar = e.getAsJsonArray();
         if (ar.size() > 0) {

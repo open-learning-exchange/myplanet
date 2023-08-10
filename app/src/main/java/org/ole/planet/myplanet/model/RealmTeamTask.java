@@ -6,16 +6,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.TimeUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.security.PrivateKey;
-import java.sql.Time;
-import java.util.UUID;
 
 import io.realm.Realm;
 import io.realm.RealmObject;
-import io.realm.RealmResults;
 import io.realm.annotations.PrimaryKey;
 
 public class RealmTeamTask extends RealmObject {
@@ -46,8 +39,7 @@ public class RealmTeamTask extends RealmObject {
         task.setSync(new Gson().toJson(JsonUtils.getJsonObject("sync", obj)));
         task.setTeamId(JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj)));
         JsonObject user = JsonUtils.getJsonObject("assignee", obj);
-        if (user.has("_id"))
-            task.setAssignee(JsonUtils.getString("_id", user));
+        if (user.has("_id")) task.setAssignee(JsonUtils.getString("_id", user));
         task.setCompleted(JsonUtils.getBoolean("completed", obj));
     }
 
@@ -78,7 +70,7 @@ public class RealmTeamTask extends RealmObject {
 
     public static JsonObject serialize(Realm realm, RealmTeamTask task) {
         JsonObject object = new JsonObject();
-        if (!TextUtils.isEmpty(task.get_id())){
+        if (!TextUtils.isEmpty(task.get_id())) {
             object.addProperty("_id", task.get_id());
             object.addProperty("_rev", task.get_rev());
         }
@@ -88,10 +80,8 @@ public class RealmTeamTask extends RealmObject {
         object.addProperty("completed", task.isCompleted());
         object.addProperty("completedTime", task.getCompletedTime());
         RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", task.getAssignee()).findFirst();
-        if (user != null)
-            object.add("assignee", user.serialize());
-        else
-            object.addProperty("assignee", "");
+        if (user != null) object.add("assignee", user.serialize());
+        else object.addProperty("assignee", "");
         object.add("sync", new Gson().fromJson(task.getSync(), JsonObject.class));
         object.add("link", new Gson().fromJson(task.getLink(), JsonObject.class));
         return object;

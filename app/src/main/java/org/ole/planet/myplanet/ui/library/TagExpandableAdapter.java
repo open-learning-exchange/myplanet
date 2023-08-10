@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
+
 import androidx.appcompat.widget.AppCompatImageView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,11 +18,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
-/**
- * Created by rowsun on 1/22/18.
- */
-
 public class TagExpandableAdapter extends BaseExpandableListAdapter {
     private Context context;
     private List<RealmTag> tagList;
@@ -28,11 +25,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     private boolean isSelectMultiple = false;
     private ArrayList<RealmTag> selectedItemsList = new ArrayList<>();
     private HashMap<String, List<RealmTag>> childMap;
-
-//    public ArrayList<RealmTag> getSelectedItemsList() {
-//        return selectedItemsList;
-//    }
-
     public TagExpandableAdapter(Context context, List<RealmTag> tagList, HashMap<String, List<RealmTag>> childMap, ArrayList<RealmTag> selectedItemsList) {
         this.context = context;
         this.tagList = tagList;
@@ -98,7 +90,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
         createCheckbox(convertView, tagList.get(groupPosition));
         drawerTitle.setText(headerTitle);
 
-
         if (!childMap.containsKey(tagList.get(groupPosition).getId())) {
             nonChildTitle.setVisibility(View.VISIBLE);
             drawerTitle.setVisibility(View.GONE);
@@ -142,15 +133,6 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
         RealmTag tag = (RealmTag) getChild(groupPosition, childPosition);
         convertView = inflateView(parent, R.layout.row_adapter_navigation_child);
         TextView tvDrawerTitle = convertView.findViewById(R.id.tv_drawer_title);
-//        CheckBox checkBox = convertView.findViewById(R.id.checkbox);
-//        checkBox.setVisibility(isSelectMultiple ? View.VISIBLE : View.GONE);
-//        checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
-//            if (selectedItemsList.contains(tag)) {
-//                selectedItemsList.remove(tag);
-//            } else {
-//                selectedItemsList.add(tag);
-//            }
-//        });
         createCheckbox(convertView, tag);
         tvDrawerTitle.setText(tag.getName());
         tvDrawerTitle.setOnClickListener(v -> {

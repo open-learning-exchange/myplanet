@@ -1,9 +1,10 @@
 package org.ole.planet.myplanet.datamanager;
 
+import static org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
-import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -13,12 +14,9 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.callback.SuccessListener;
-import org.ole.planet.myplanet.model.DocumentResponse;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
-import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
-import org.ole.planet.myplanet.model.Rows;
 import org.ole.planet.myplanet.service.UploadToShelfService;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
@@ -32,17 +30,12 @@ import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import io.realm.Realm;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-
-import static org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX;
 
 public class Service {
     private Context context;
@@ -52,7 +45,6 @@ public class Service {
         this.context = context;
         preferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
     }
-
 
     public void healthAccess(SuccessListener listener) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -171,8 +163,6 @@ public class Service {
         });
     }
 
-
-
     public void isPlanetAvailable(PlanetAvailableListener callback) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.isPlanetAvailable(Utilities.getUpdateUrl(preferences)).enqueue(new Callback<ResponseBody>() {
@@ -208,7 +198,6 @@ public class Service {
                                     if (response.body() != null && response.body().has("id")) {
                                         retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
                                         saveUserToDb(realm, response.body().get("id").getAsString(), obj, callback);
-//                                            callback.onSuccess("User created successfully");
                                     } else {
                                         callback.onSuccess("Unable to create user");
                                     }
@@ -235,8 +224,7 @@ public class Service {
                     callback.onSuccess("User already exists");
                     return;
                 }
-                if (!realm.isInTransaction())
-                    realm.beginTransaction();
+                if (!realm.isInTransaction()) realm.beginTransaction();
                 RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings);
                 String keyString = AndroidDecrypter.generateKey();
                 String iv = AndroidDecrypter.generateIv();
@@ -251,10 +239,8 @@ public class Service {
         });
     }
 
-
     private void saveUserToDb(Realm realm, String id, JsonObject obj, CreateUserCallback callback) {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
-
         realm.executeTransactionAsync(realm1 -> {
             ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
             try {
@@ -272,7 +258,6 @@ public class Service {
             callback.onSuccess("Unable to save user please sync");
         });
     }
-
 
     public void syncPlanetServers(Realm realm, SuccessListener callback) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
@@ -296,9 +281,7 @@ public class Service {
                             community.setParentDomain(JsonUtils.getString("parentDomain", jsonDoc));
                             community.setRegistrationRequest(JsonUtils.getString("registrationRequest", jsonDoc));
                         }
-
                     });
-
                     callback.onSuccess("Server sync successfully");
                 }
             }

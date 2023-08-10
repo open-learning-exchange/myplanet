@@ -5,7 +5,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.userprofile.UserProfileFragment">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -35,7 +34,7 @@
             android:id="@+id/bt_profile_pic"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Add Profile Picture" />
+            android:text="@string/add_profile_picture" />
 
         <TextView
             android:id="@+id/txt_email"
@@ -57,35 +56,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp" />
-
-        <!--<TextView-->
-        <!--android:id="@+id/txt_community_name"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-
-        <!--<TextView-->
-        <!--android:id="@+id/txt_visit_count"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-
-        <!--<TextView-->
-        <!--android:id="@+id/txt_last_visit"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-
-        <!--<TextView-->
-        <!--android:id="@+id/txt_max_opened_resource"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
-        <!--<TextView-->
-        <!--android:id="@+id/txt_number_resource_open"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_gravity="center" />-->
 
     </LinearLayout>
 

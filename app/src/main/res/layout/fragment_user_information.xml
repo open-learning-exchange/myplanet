@@ -1,4 +1,5 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -128,11 +129,11 @@
                 android:layout_gravity="center_vertical"
                 android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
-                android:drawableRight="@drawable/ic_date"
                 android:gravity="center_vertical"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/birth_date"
-                android:textSize="@dimen/text_size_mid" />
+                android:textSize="@dimen/text_size_mid"
+                app:drawableRightCompat="@drawable/ic_date" />
 
         </LinearLayout>
 
@@ -206,20 +207,20 @@
 
             <Button
                 android:id="@+id/btn_submit"
+                style="@style/GreyButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/button_update"
-                style="@style/GreyButtons"
+                android:layout_marginRight="10dp"
                 android:background="@drawable/buttongrey"
-                android:layout_marginRight="10dp"/>
+                android:text="@string/button_update" />
 
             <Button
                 android:id="@+id/btn_cancel"
+                style="@style/GreyButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/button_cancel"
                 android:background="@drawable/buttongrey"
-                style="@style/GreyButtons" />
+                android:text="@string/button_cancel" />
 
         </LinearLayout>
 

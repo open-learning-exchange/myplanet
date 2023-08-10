@@ -39,7 +39,6 @@ import io.noties.markwon.Markwon;
 import io.realm.Realm;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     private Context context;
     private List<RealmMyLibrary> libraryList;
     private List<RealmMyLibrary> selectedItems;
@@ -49,7 +48,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private HashMap<String, JsonObject> ratingMap;
     private OnRatingChangeListener ratingChangeListener;
     private Markwon markwon;
-
     private Realm realm;
 
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
@@ -59,12 +57,10 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.realm = realm;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
-        config = Utilities.getCloudConfig()
-                .selectMode(ChipCloud.SelectMode.single);
+        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single);
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
         }
-
     }
 
     public void setRatingChangeListener(OnRatingChangeListener ratingChangeListener) {
@@ -98,7 +94,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHolderLibrary) holder).title.setText(libraryList.get(position).getTitle());
             Utilities.log(libraryList.get(position).getDescription());
             markwon.setMarkdown(((ViewHolderLibrary) holder).desc, libraryList.get(position).getDescription());
-            ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + " Total");
+            ((ViewHolderLibrary) holder).timesRated.setText(libraryList.get(position).getTimesRated() + context.getString(R.string.total));
             ((ViewHolderLibrary) holder).checkBox.setChecked(selectedItems.contains(libraryList.get(position)));
             ((ViewHolderLibrary) holder).rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
             ((ViewHolderLibrary) holder).tvDate.setText(TimeUtils.formatDate(libraryList.get(position).getCreatedDate(), "MMM dd, yyyy"));
@@ -119,7 +115,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             homeItemClickListener.openLibraryDetailFragment(library);
         }
     }
-
 
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
@@ -146,7 +141,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        TextView title, desc, rating, tvDate,timesRated, average;
+        TextView title, desc, rating, tvDate, timesRated, average;
         CheckBox checkBox;
         AppCompatRatingBar ratingBar;
         FlexboxLayout flexboxDrawable;

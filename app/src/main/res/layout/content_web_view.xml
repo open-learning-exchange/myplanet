@@ -23,7 +23,7 @@
             android:layout_gravity="center_vertical"
             android:padding="8dp"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="#000000" />
+            ads:tint="#000000" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -39,7 +39,7 @@
                 android:layout_weight="1"
                 android:gravity="center_horizontal"
                 android:maxLines="1"
-                android:text="Title"
+                android:text="@string/title"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
@@ -50,7 +50,7 @@
                 android:layout_weight="1"
                 android:gravity="center_horizontal"
                 android:maxLines="1"
-                android:text="Source"
+                android:text="@string/source"
                 android:textSize="10sp" />
 
         </LinearLayout>

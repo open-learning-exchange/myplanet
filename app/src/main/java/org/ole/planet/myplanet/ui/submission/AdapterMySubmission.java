@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.ui.submission;
 
 import android.content.Context;
 import android.os.Bundle;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -44,7 +46,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
             this.listener = (OnHomeItemClickListener) context;
         }
         if (list != null && list.isEmpty()) {
-            Toast.makeText(getApplicationContext(), "No items", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getApplicationContext(), context.getString(R.string.no_items), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -68,13 +70,10 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
             if (examHashMap.containsKey(list.get(position).getParentId()))
                 ((ViewHolderMySurvey) holder).title.setText(examHashMap.get(list.get(position).getParentId()).getName());
             holder.itemView.setOnClickListener(view -> {
-                if (type.equals("survey"))
-                    openSurvey(listener, list.get(position).getId(), true);
-                else
-                    openSubmissionDetail(listener, list.get(position).getId());
+                if (type.equals("survey")) openSurvey(listener, list.get(position).getId(), true);
+                else openSubmissionDetail(listener, list.get(position).getId());
             });
         }
-
     }
 
     private void showSubmittedBy(TextView submitted_by, int position) {
@@ -83,15 +82,13 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
             JSONObject ob = new JSONObject(list.get(position).getUser());
             submitted_by.setText(ob.optString("name"));
         } catch (Exception e) {
-                RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
-                if (user != null)
-                    submitted_by.setText(user.getName());
+            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
+            if (user != null) submitted_by.setText(user.getName());
         }
     }
 
     private void openSubmissionDetail(OnHomeItemClickListener listener, String id) {
         if (listener != null) {
-
         }
     }
 
@@ -126,7 +123,6 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
             status = itemView.findViewById(R.id.status);
             date = itemView.findViewById(R.id.date);
             submitted_by = itemView.findViewById(R.id.submitted_by);
-
         }
     }
 }

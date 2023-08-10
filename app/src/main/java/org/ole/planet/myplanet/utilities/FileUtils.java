@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utilities;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
@@ -17,6 +19,7 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.BuildConfig;
+import org.ole.planet.myplanet.R;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,8 +31,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 
 public class FileUtils {
-    public static final String SD_PATH = Environment.getExternalStorageDirectory() + "/ole";
-
+    public static final String SD_PATH = context.getExternalFilesDir(null) + "/ole";
 
     public static byte[] fullyReadFileToBytes(File f) throws IOException {
         int size = (int) f.length();
@@ -37,7 +39,6 @@ public class FileUtils {
         byte[] tmpBuff = new byte[size];
         FileInputStream fis = new FileInputStream(f);
         try {
-
             int read = fis.read(bytes, 0, size);
             if (read < size) {
                 int remain = size - read;
@@ -53,26 +54,26 @@ public class FileUtils {
         } finally {
             fis.close();
         }
-
         return bytes;
     }
 
     private static File createFilePath(String folder, String filename) {
-        File f = new File(folder);
-        if (!f.exists())
-            f.mkdirs();
+        File directory = new File(folder);
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw new RuntimeException("Failed to create directory: " + directory.getAbsolutePath());
+            }
+        }
         Utilities.log("Return file " + folder + "/" + filename);
-        return new File(f, filename);
+        return new File(directory, filename);
     }
 
     public static File getSDPathFromUrl(String url) {
-
         return createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
     }
 
     public static boolean checkFileExist(String url) {
-        if (url == null || url.isEmpty())
-            return false;
+        if (url == null || url.isEmpty()) return false;
         File f = createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
         return f.exists();
     }
@@ -81,6 +82,7 @@ public class FileUtils {
         try {
             return url.substring(url.lastIndexOf("/") + 1);
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }
@@ -91,15 +93,15 @@ public class FileUtils {
             Utilities.log("Id " + sp[1]);
             return sp[1];
         } catch (Exception e) {
+            e.printStackTrace();
         }
         return "";
     }
 
-
     public static String getFileExtension(String address) {
         if (TextUtils.isEmpty(address))
             return "";
-        String filenameArray[] = address.split("\\.");
+        String[] filenameArray = address.split("\\.");
         return filenameArray[filenameArray.length - 1];
     }
 
@@ -165,7 +167,6 @@ public class FileUtils {
         }
     }
 
-
     public static String getRealPathFromURI(Context context, Uri contentUri) {
         Cursor cursor = null;
         try {
@@ -181,8 +182,6 @@ public class FileUtils {
         }
     }
 
-
-
     public static String convertStreamToString(InputStream is) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
@@ -195,12 +194,12 @@ public class FileUtils {
     }
 
     public static String getStringFromFile(File fl) throws Exception {
-
         FileInputStream fin = new FileInputStream(fl);
         String ret = convertStreamToString(fin);
         fin.close();
         return ret;
     }
+
     public static void openOleFolder(Fragment context, int request) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         Uri uri = Uri.parse(Utilities.SD_PATH);
@@ -208,39 +207,39 @@ public class FileUtils {
         context.startActivityForResult(Intent.createChooser(intent, "Open folder"), request);
     }
 
-
     public static String getImagePath(Context context, Uri uri) {
         Cursor cursor = context.getContentResolver().query(uri, null, null, null, null);
-        cursor.moveToFirst();
-        String document_id = cursor.getString(0);
-        document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
-        cursor.close();
+        if (cursor != null && cursor.moveToFirst()) {
+            String document_id = cursor.getString(0);
+            document_id = document_id.substring(document_id.lastIndexOf(":") + 1);
+            cursor.close();
 
-        cursor = context.getContentResolver().query(
-                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
-        cursor.moveToFirst();
-        String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
-        cursor.close();
-
-        return path;
+            cursor = context.getContentResolver().query(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", new String[]{document_id}, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                String path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+                cursor.close();
+                return path;
+            } else {
+                // Handle the case when the cursor is empty or null
+                return null; // or return an appropriate default value or handle the error accordingly
+            }
+        } else {
+            // Handle the case when the cursor is empty or null
+            return null; // or return an appropriate default value or handle the error accordingly
+        }
     }
 
     public static String getMediaType(String path) {
         String ext = getFileExtension(path);
-        if (ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("png"))
-            return "image";
-        else if (ext.equalsIgnoreCase("mp4"))
-            return "mp4";
-        else if (ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("aac"))
-            return "audio";
+        if (ext.equalsIgnoreCase("jpg") || ext.equalsIgnoreCase("png")) return "image";
+        else if (ext.equalsIgnoreCase("mp4")) return "mp4";
+        else if (ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("aac")) return "audio";
         return "";
     }
 
     // Disk space utilities
 
     /**
-     *
      * @return Total internal memory capacity.
      */
     public static long getTotalInternalMemorySize() {
@@ -263,8 +262,7 @@ public class FileUtils {
     }
 
     public static boolean externalMemoryAvailable() {
-        return android.os.Environment.getExternalStorageState().equals(
-                android.os.Environment.MEDIA_MOUNTED);
+        return android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED);
     }
 
     /**
@@ -285,7 +283,6 @@ public class FileUtils {
     }
 
     /**
-     *
      * @return Total capacity of the external memory
      */
     public static long getTotalExternalMemorySize() {
@@ -302,12 +299,12 @@ public class FileUtils {
 
     /**
      * Coverts Bytes to KB/MB/GB and changes magnitude accordingly.
+     *
      * @param size
      * @return A string with size followed by an appropriate suffix
      */
     public static String formatSize(long size) {
         String suffix = null;
-
         if (size >= 1024) {
             suffix = "KB";
             size /= 1024;
@@ -361,14 +358,12 @@ public class FileUtils {
      * A method that returns a formatted string
      * of the format "Available Space / Total Space".
      * param None
+     *
      * @return Available space and total space
      */
     public static String getAvailableOverTotalMemoryFormattedString() {
         long available = getTotalAvailableMemory();
         long total = getTotalMemoryCapacity();
-        return "Available Space: "
-                + formatSize(available)
-                + "/"
-                + formatSize(total);
+        return context.getString(R.string.available_space_colon) + formatSize(available) + "/" + formatSize(total);
     }
 }

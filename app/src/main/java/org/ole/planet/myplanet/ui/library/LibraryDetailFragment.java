@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
 
-
 public class LibraryDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView author, pubishedBy, title, media, subjects, license, language, resource, type;
     AppCompatImageButton download, remove;
@@ -61,8 +60,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         View v = inflater.inflate(R.layout.fragment_library_detail, container, false);
         dbService = new DatabaseService(getActivity());
@@ -92,12 +90,6 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
-//        LinearLayout llRating = v.findViewById(R.id.ll_rating);
-//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-//        TextView average = v.findViewById(R.id.average);
-//        average.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
-//        TextView tv_rating = v.findViewById(R.id.tv_rating);
-//        tv_rating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private void setLibraryData() {
@@ -117,31 +109,26 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         }
 
         download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
-        download.setImageResource(library.getResourceOffline() == null || library.isResourceOffline() ?R.drawable.ic_eye : R.drawable.ic_download);
-//        download.setText(library.getResourceOffline() == null || library.isResourceOffline() ? "Open Resource " : "Download Resource");
+        download.setImageResource(library.getResourceOffline() == null || library.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
         if (FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")) {
             download.setImageResource(R.drawable.ic_play);
         }
         setClickListeners();
     }
 
-
     public void setClickListeners() {
-
         download.setOnClickListener(view -> {
             if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
-                Toast.makeText(getActivity(), "Link not available", Toast.LENGTH_LONG).show();
+                Toast.makeText(getActivity(), getString(R.string.link_not_available), Toast.LENGTH_LONG).show();
                 return;
             }
             openResource(library);
         });
         Utilities.log("user id " + profileDbHandler.getUserModel().getId() + " " + library.getUserId().contains(profileDbHandler.getUserModel().getId()));
         boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
-//        remove.setText(isAdd ? "Add To My Library" : "Remove from myLibrary");
-        remove.setImageResource(isAdd? R.drawable.ic_add_library : R.drawable.close_x);
+        remove.setImageResource(isAdd ? R.drawable.ic_add_library : R.drawable.close_x);
         remove.setOnClickListener(view -> {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             if (isAdd) {
                 library.setUserId(profileDbHandler.getUserModel().getId());
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
@@ -149,7 +136,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
                 library.removeUserId(profileDbHandler.getUserModel().getId());
                 RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
             }
-            Utilities.toast(getActivity(), "Resource " + (isAdd ? " added to" : " removed from ") + " my library");
+            Utilities.toast(getActivity(), getString(R.string.resources) + (isAdd ? getString(R.string.added_to) : getString(R.string.removed_from) + getString(R.string.my_library)));
             setLibraryData();
         });
     }

@@ -58,11 +58,11 @@
             android:layout_alignParentEnd="true"
             android:layout_marginTop="10dp"
             android:layout_marginBottom="10dp"
-            android:scaleType="fitCenter"
             android:adjustViewBounds="true"
             android:background="@null"
             android:enabled="false"
             android:padding="@dimen/padding_normal"
+            android:scaleType="fitCenter"
             android:src="@drawable/ic_round_drag" />
 
     </RelativeLayout>

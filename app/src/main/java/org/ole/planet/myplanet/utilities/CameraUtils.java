@@ -9,14 +9,14 @@ import java.io.FileOutputStream;
 import java.util.Date;
 
 public class CameraUtils {
-  public  interface ImageCaptureCallback{
+    public interface ImageCaptureCallback {
         void onImageCapture(String fileUri);
     }
+
     public static void CapturePhoto(final ImageCaptureCallback callback) {
 
         Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
         int frontCamera = 1;
-        //int backCamera=0;
         Camera camera;
         try {
             Camera.getCameraInfo(frontCamera, cameraInfo);

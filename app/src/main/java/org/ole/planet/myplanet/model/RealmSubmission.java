@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet.model;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.content.Context;
 import android.text.TextUtils;
 
-import androidx.annotation.NonNull;
-
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
@@ -27,8 +27,6 @@ import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.Sort;
-import okhttp3.Request;
-import retrofit2.Response;
 
 public class RealmSubmission extends RealmObject {
     @io.realm.annotations.PrimaryKey
@@ -45,12 +43,10 @@ public class RealmSubmission extends RealmObject {
     private long grade;
     private String status;
     private boolean uploaded;
-    /// new
     private String sender;
     private String source;
     private String parentCode;
     private String parent;
-
 
     public static void insert(Realm mRealm, JsonObject submission) {
         if (submission.has("_attachments")) {
@@ -70,15 +66,12 @@ public class RealmSubmission extends RealmObject {
         sub.setStartTime(JsonUtils.getLong("startTime", submission));
         sub.setLastUpdateTime(JsonUtils.getLong("lastUpdateTime", submission));
         sub.setParentId(JsonUtils.getString("parentId", submission));
-        ///
         sub.setSender(JsonUtils.getString("sender", submission));
         sub.setSource(JsonUtils.getString("source", submission));
         sub.setParentCode(JsonUtils.getString("parentCode", submission));
         sub.setParent(new Gson().toJson(JsonUtils.getJsonObject("parent", submission)));
-        //
 
         sub.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", submission)));
-//        RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", JsonUtils.getString("parentId", submission)).findFirst();
         RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm);
         String userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission));
         if (userId.contains("@")) {
@@ -103,10 +96,8 @@ public class RealmSubmission extends RealmObject {
             examId = sub.getParentId().split("@")[0];
         }
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", examId).findFirst();
-        if (!TextUtils.isEmpty(sub.get_id()))
-            object.addProperty("_id", sub.get_id());
-        if (!TextUtils.isEmpty(sub.get_rev()))
-            object.addProperty("_rev", sub.get_rev());
+        if (!TextUtils.isEmpty(sub.get_id())) object.addProperty("_id", sub.get_id());
+        if (!TextUtils.isEmpty(sub.get_rev())) object.addProperty("_rev", sub.get_rev());
         object.addProperty("parentId", sub.getParentId());
         object.addProperty("type", sub.getType());
         object.addProperty("grade", sub.getGrade());
@@ -116,17 +107,15 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("androidId", NetworkUtils.getMacAddr());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
-        ///
         object.addProperty("sender", sub.getSender());
         object.addProperty("source", sub.getSource());
         object.addProperty("parentCode", sub.getParentCode());
         JsonObject parent = new Gson().fromJson(sub.getParent(), JsonObject.class);
-        object.add("parent",parent );
+        object.add("parent", parent);
         Utilities.log("Parent " + sub.getParent());
-        //
         object.add("answers", RealmAnswer.serializeRealmAnswer(sub.getAnswers()));
-        Utilities.log("Parent Exam "  + (exam == null) );
-        if (exam != null && parent==null)
+        Utilities.log("Parent Exam " + (exam == null));
+        if (exam != null && parent == null)
             object.add("parent", RealmStepExam.serializeExam(mRealm, exam));
         if (TextUtils.isEmpty(sub.getUser())) {
             object.add("user", user.serialize());
@@ -136,9 +125,7 @@ public class RealmSubmission extends RealmObject {
         }
         Utilities.log("SerializeExamResult sub " + object);
         return object;
-
     }
-
 
     public long getLastUpdateTime() {
         return lastUpdateTime;
@@ -155,11 +142,7 @@ public class RealmSubmission extends RealmObject {
         }
 
         Utilities.log("Is step completed " + exam.getId() + " " + userId);
-        return realm.where(RealmSubmission.class)
-                .equalTo("userId", userId)
-                .contains("parentId", exam.getId())
-                .notEqualTo("status", "pending")
-                .findFirst() != null;
+        return realm.where(RealmSubmission.class).equalTo("userId", userId).contains("parentId", exam.getId()).notEqualTo("status", "pending").findFirst() != null;
     }
 
     public static RealmSubmission createSubmission(RealmSubmission sub, Realm mRealm) {
@@ -171,8 +154,7 @@ public class RealmSubmission extends RealmObject {
 
     public static void continueResultUpload(RealmSubmission sub, ApiInterface apiInterface, Realm realm, Context context) throws IOException {
         JsonObject object = null;
-        if (!TextUtils.isEmpty(sub.getUserId()) && sub.getUserId().startsWith("guest"))
-            return;
+        if (!TextUtils.isEmpty(sub.getUserId()) && sub.getUserId().startsWith("guest")) return;
         if (TextUtils.isEmpty(sub.get_id())) {
             object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", RealmSubmission.serializeExamResult(realm, sub, context)).execute().body();
         } else {
@@ -184,9 +166,16 @@ public class RealmSubmission extends RealmObject {
         }
     }
 
-
     public static String getNoOfSubmissionByUser(String id, String userId, Realm mRealm) {
-        return "Survey Taken " + mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size() + " times";
+        int submissionCount = mRealm.where(RealmSubmission.class).equalTo("parentId", id).equalTo("userId", userId).findAll().size();
+
+        String pluralizedString = null;
+        if (submissionCount <= 1) {
+            pluralizedString = context.getString(R.string.time);
+        } else if (submissionCount > 1){
+            pluralizedString = context.getString(R.string.times);
+        }
+        return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString;
     }
 
     public static int getNoOfSurveySubmissionByUser(String userId, Realm mRealm) {
@@ -326,7 +315,6 @@ public class RealmSubmission extends RealmObject {
         this.parent = parent;
     }
 
-
     public static HashMap<String, RealmStepExam> getExamMap(Realm mRealm, List<RealmSubmission> submissions) {
         HashMap<String, RealmStepExam> exams = new HashMap<>();
         for (RealmSubmission sub : submissions) {
@@ -335,8 +323,7 @@ public class RealmSubmission extends RealmObject {
                 id = sub.getParentId().split("@")[0];
             }
             RealmStepExam survey = mRealm.where(RealmStepExam.class).equalTo("id", id).findFirst();
-            if (survey != null)
-                exams.put(sub.getParentId(), survey);
+            if (survey != null) exams.put(sub.getParentId(), survey);
         }
         return exams;
     }
@@ -344,5 +331,4 @@ public class RealmSubmission extends RealmObject {
     private static boolean checkParentId(String parentId) {
         return parentId != null && parentId.contains("@");
     }
-
 }

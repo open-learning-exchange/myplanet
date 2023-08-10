@@ -8,8 +8,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 public class TimeUtils {
-
-
     public static String getFormatedDate(long date) {
         try {
             Date d = new Date(date);
@@ -33,7 +31,6 @@ public class TimeUtils {
         SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         return dateformat.format(data);
     }
-
 
     public static int getAge(String date) {
         SimpleDateFormat dateformat1 = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -71,7 +68,6 @@ public class TimeUtils {
         }
     }
 
-
     public static String currentDate() {
         Calendar c = Calendar.getInstance();
         SimpleDateFormat dateformat = new SimpleDateFormat("EEE dd, MMMM yyyy");
@@ -102,16 +98,13 @@ public class TimeUtils {
         return datetime;
     }
 
-
     public static long dateToLong(String date) {
         try {
             SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             return dateformat.parse(date).getTime();
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         return 0;
     }
-
-
 }

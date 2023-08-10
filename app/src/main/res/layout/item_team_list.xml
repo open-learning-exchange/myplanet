@@ -1,75 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tableTitle"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:layout_marginTop="4dp"
+    android:stretchColumns="*">
 
-    <TextView
-        android:id="@+id/name"
-        android:layout_width="0dp"
+    <TableRow
+        android:id="@+id/firstRow"
+        android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="2"
-        android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000"
-        android:textStyle="bold" />
+        android:layout_margin="4dp">
 
-    <TextView
-        android:id="@+id/created"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="2"
-        android:alpha="0.8"
-        android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000" />
-
-    <TextView
-        android:id="@+id/type"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="2"
-        android:alpha="0.8"
-        android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000" />
-
-
-    <TextView
-        android:id="@+id/no_of_visits"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="2"
-        android:alpha="0.8"
-        android:padding="@dimen/padding_small"
-        android:textColor="@color/md_black_1000" />
-
-
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="2">
-
-        <Button
-            android:id="@+id/join_leave"
+        <TextView
+            android:id="@+id/name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Request To join"
-            android:textSize="10sp" />
+            android:padding="@dimen/padding_small"
+            android:textColor="@color/md_black_1000"
+            android:textStyle="bold" />
 
-        <Button
-            android:id="@+id/edit_team"
+        <TextView
+            android:id="@+id/created"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Edit"
-            android:textSize="10sp"
-            android:visibility="gone" />
+            android:padding="@dimen/padding_small"
+            android:textColor="@color/md_black_1000" />
 
-        <Button
-            android:id="@+id/btn_feedback"
+        <TextView
+            android:id="@+id/type"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Feedback"
-            android:textSize="10sp" />
-    </LinearLayout>
-</LinearLayout>
+            android:padding="@dimen/padding_small"
+            android:textColor="@color/md_black_1000" />
+
+        <TextView
+            android:id="@+id/no_of_visits"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="@dimen/padding_small"
+            android:textColor="@color/md_black_1000" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ltButtons"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2">
+
+            <Button
+                android:id="@+id/join_leave"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Request To join"
+                android:textSize="10sp"
+                app:layout_constraintEnd_toStartOf="@id/edit_team"
+                app:layout_constraintHorizontal_chainStyle="packed"
+                app:layout_constraintHorizontal_weight="1"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/edit_team"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/edit"
+                android:textSize="10sp"
+                android:visibility="gone"
+                app:layout_constraintEnd_toStartOf="@id/btn_feedback"
+                app:layout_constraintHorizontal_weight="1"
+                app:layout_constraintStart_toEndOf="@id/join_leave"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <Button
+                android:id="@+id/btn_feedback"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/menu_feedback"
+                android:textSize="10sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_weight="1"
+                app:layout_constraintStart_toEndOf="@id/edit_team"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </TableRow>
+</TableLayout>

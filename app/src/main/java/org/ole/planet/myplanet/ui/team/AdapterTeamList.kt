@@ -7,8 +7,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -21,7 +24,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, fragmentManager: FragmentManager) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterTeamList(
+    private val context: Context,
+    private val list: List<RealmMyTeam>,
+    private val mRealm: Realm,
+    fragmentManager: FragmentManager
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val user: RealmUserModel
     private var type: String? = ""
     private val fragmentManager: FragmentManager
@@ -47,6 +55,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             holder.type.visibility = if (type == null) View.VISIBLE else View.GONE
             holder.editTeam.visibility = if (RealmMyTeam.getTeamLeader(list[position]._id, mRealm) == user.id) View.VISIBLE else View.GONE
             holder.name.text = list[position].name
+
             holder.noOfVisits.text = RealmTeamLog.getVisitByTeam(mRealm, list[position]._id).toString() + ""
             val isMyTeam = list[position].isMyTeam(user.id, mRealm)
             showActionButton(isMyTeam, holder, position)
@@ -71,31 +80,36 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     fun getBundle(team: RealmMyTeam): Bundle {
         val bundle = Bundle()
-        if (team.type.isEmpty()) bundle.putString("state", "teams") else bundle.putString("state", team.type + "s")
+        if (team.type.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
+            "state", team.type + "s"
+        )
         bundle.putString("item", team._id)
         bundle.putString("parentCode", "dev")
         return bundle
     }
 
-    private fun showActionButton(isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int) {
+    private fun showActionButton(
+        isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int
+    ) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id, mRealm)) {
                 (holder as ViewHolderTeam).action.text = "Leave"
                 holder.action.setOnClickListener { view: View? ->
-                    AlertDialog.Builder(context).setMessage(R.string.confirm_exit).setPositiveButton("Yes") { dialogInterface: DialogInterface?, i: Int ->
-                        list[position].leave(user, mRealm)
-                        notifyDataSetChanged()
-                    }.setNegativeButton("No", null).show()
+                    AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
+                        .setPositiveButton(R.string.yes) { dialogInterface: DialogInterface?, i: Int ->
+                            list[position].leave(user, mRealm)
+                            notifyDataSetChanged()
+                        }.setNegativeButton(R.string.no, null).show()
                 }
             } else {
                 (holder as ViewHolderTeam).action.visibility = View.GONE
                 return
             }
         } else if (list[position].requested(user.id, mRealm)) {
-            (holder as ViewHolderTeam).action.text = "Requested"
+            (holder as ViewHolderTeam).action.text = context.getString(R.string.requested)
             holder.action.isEnabled = false
         } else {
-            (holder as ViewHolderTeam).action.text = "Request to Join"
+            (holder as ViewHolderTeam).action.text = context.getString(R.string.request_to_join)
             holder.action.setOnClickListener { view: View? ->
                 RealmMyTeam.requestToJoin(list[position]._id, user, mRealm)
                 notifyDataSetChanged()
@@ -120,6 +134,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         var action: Button
         var feedback: Button
         var editTeam: Button
+        var ltButtons: ConstraintLayout
 
         init {
             name = itemView.findViewById(R.id.name)
@@ -129,6 +144,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             editTeam = itemView.findViewById(R.id.edit_team)
             noOfVisits = itemView.findViewById(R.id.no_of_visits)
             feedback = itemView.findViewById(R.id.btn_feedback)
+            ltButtons = itemView.findViewById(R.id.ltButtons)
         }
     }
 

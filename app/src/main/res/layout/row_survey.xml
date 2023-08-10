@@ -65,15 +65,15 @@
                 android:id="@+id/send_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Send Survey"
-                android:theme="@style/AccentButton"
-                android:layout_marginRight="10dp"/>
+                android:layout_marginEnd="10dp"
+                android:text="@string/send_survey"
+                android:theme="@style/AccentButton" />
 
             <Button
                 android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Take Survey"
+                android:text="@string/take_survey"
                 android:theme="@style/AccentButton" />
 
         </LinearLayout>

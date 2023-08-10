@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.tabs.TabLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/tab_layout"
     android:layout_width="wrap_content"
     android:layout_height="?attr/actionBarSize"
-    app:tabTextColor="@color/md_white_1000"
-    android:id="@+id/tab_layout"
-    app:tabMode="scrollable"
+    android:orientation="vertical"
     app:tabMinWidth="100dp"
+    app:tabMode="scrollable"
     app:tabSelectedTextColor="@color/md_black_1000"
-    android:orientation="vertical">
+    app:tabTextColor="@color/md_white_1000">
 
 
     <com.google.android.material.tabs.TabItem
@@ -45,31 +45,11 @@
         android:icon="@drawable/business"
         android:text="@string/enterprises" />
 
-<!--    <com.google.android.material.tabs.TabItem-->
-<!--        android:id="@+id/menu_survey"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:visibility="gone"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:icon="@drawable/survey"-->
-<!--        android:text="@string/menu_surveys" />-->
-
     <com.google.android.material.tabs.TabItem
         android:id="@+id/menu_community"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/survey"
         android:text="@string/menu_community" />
-    <!--
-        <com.google.android.material.tabs.TabItem
-            android:id="@+id/menu_feedback"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:icon="@drawable/feedback"
-            android:text="@string/menu_feedback" />-->
 
-    <!--<com.google.android.material.tabs.TabItem-->
-    <!--android:layout_width="wrap_content"-->
-    <!--android:layout_height="wrap_content"-->
-    <!--android:icon="@drawable/logout"-->
-    <!--android:text="@string/logout" />-->
 </com.google.android.material.tabs.TabLayout>

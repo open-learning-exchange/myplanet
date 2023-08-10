@@ -29,7 +29,6 @@ public class RealmCourseActivity extends RealmObject {
 
     private String courseId;
 
-
     private String parentCode;
 
     private String type;
@@ -109,10 +108,8 @@ public class RealmCourseActivity extends RealmObject {
         this.user = user;
     }
 
-
     public static void createActivity(Realm realm, RealmUserModel userModel, RealmMyCourse course) {
-        if (!realm.isInTransaction())
-            realm.beginTransaction();
+        if (!realm.isInTransaction()) realm.beginTransaction();
         RealmCourseActivity activity = realm.createObject(RealmCourseActivity.class, UUID.randomUUID().toString());
         activity.setType("visit");
         activity.setTitle(course.getCourseTitle());
@@ -138,6 +135,4 @@ public class RealmCourseActivity extends RealmObject {
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
         return ob;
     }
-
-
 }

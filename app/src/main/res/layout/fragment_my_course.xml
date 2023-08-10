@@ -37,11 +37,24 @@
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
-                    android:text="My Courses"
+                    android:text="@string/my_courses"
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
 
+                <TextView
+                    android:id="@+id/tv_add"
+                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/join_selected"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableLeftCompat="@drawable/ic_add_library" />
 
                 <Button
                     android:id="@+id/btn_remove"
@@ -50,12 +63,11 @@
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
                     android:background="@drawable/buttonblue"
-                    android:padding="@dimen/padding_small"
+                    android:padding="8dp"
                     android:text="@string/leave"
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone" />
-
+                    android:visibility="gone"/>
 
             </LinearLayout>
 
@@ -63,6 +75,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="end"
                 android:padding="@dimen/padding_small">
 
                 <TextView
@@ -98,18 +111,18 @@
                 <TextView
                     android:id="@+id/tv_delete"
                     android:layout_width="0dp"
-                    android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
+                    android:layout_weight="1"
                     android:background="?attr/selectableItemBackground"
-                    android:drawableStart="@drawable/ic_delete"
                     android:drawablePadding="4dp"
                     android:gravity="center"
                     android:text="@string/remove_selected"
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone" />
+                    android:visibility="gone"
+                    app:drawableStartCompat="@drawable/ic_delete" />
 
 
                 <TextView
@@ -190,7 +203,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:text="Filter"
+                android:text="@string/filter"
                 android:textColor="@color/colorPrimaryDark"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -212,7 +225,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="4dp"
-                        android:text="Grade Level" />
+                        android:text="@string/grade_level" />
 
                     <Spinner
                         android:id="@+id/spn_grade"
@@ -232,7 +245,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="4dp"
-                        android:text="Subject Level" />
+                        android:text="@string/subject_level" />
 
                     <Spinner
                         android:id="@+id/spn_subject"
@@ -255,7 +268,7 @@
                     android:layout_margin="4dp"
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
-                    android:text="Order by Date"
+                    android:text="@string/order_by_date"
                     android:textColor="@color/md_white_1000" />
 
                 <Button
@@ -265,7 +278,7 @@
                     android:layout_margin="4dp"
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
-                    android:text="Order by Title"
+                    android:text="@string/order_by_title"
                     android:textColor="@color/md_white_1000" />
             </LinearLayout>
 

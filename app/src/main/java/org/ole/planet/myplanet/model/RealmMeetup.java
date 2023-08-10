@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 import io.realm.Case;
 import io.realm.Realm;
@@ -72,7 +71,6 @@ public class RealmMeetup extends RealmObject {
 
     }
 
-
     public String getTeamId() {
         return teamId;
     }
@@ -90,17 +88,14 @@ public class RealmMeetup extends RealmObject {
     }
 
     public static JsonArray getMyMeetUpIds(Realm realm, String userId) {
-        RealmResults<RealmMeetup> meetups = realm.where(RealmMeetup.class).isNotEmpty("userId")
-                .equalTo("userId", userId, Case.INSENSITIVE).findAll();
+        RealmResults<RealmMeetup> meetups = realm.where(RealmMeetup.class).isNotEmpty("userId").equalTo("userId", userId, Case.INSENSITIVE).findAll();
 
         JsonArray ids = new JsonArray();
-        for (RealmMeetup lib : meetups
-        ) {
+        for (RealmMeetup lib : meetups) {
             ids.add(lib.getMeetupId());
         }
         return ids;
     }
-
 
     public String getEndTime() {
         return endTime;
@@ -257,7 +252,6 @@ public class RealmMeetup extends RealmObject {
         }
         return myIds;
     }
-
 
     public static String checkNull(String s) {
         return TextUtils.isEmpty(s) ? "" : s;

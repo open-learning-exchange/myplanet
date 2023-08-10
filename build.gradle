@@ -1,45 +1,41 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-
 buildscript {
-    ext.kotlin_version = '1.3.50'
+    ext.kotlin_version = '1.7.10'
     ext {
         setup = [
-                compileSdk: 28,
+                compileSdk: 33,
                 buildTools: "28.0.0",
                 minSdk    : 19,
-                targetSdk : 28
+                targetSdk : 33
         ]
-
         versions = [
                 supportLib: "28.0.0"
         ]
     }
 
     repositories {
-        jcenter()
-        google()
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
-        classpath 'io.realm:realm-gradle-plugin:5.14.0'
+        classpath 'com.android.tools.build:gradle:8.0.0'
+        classpath "io.realm:realm-gradle-plugin:10.15.1"
+        classpath "com.google.dagger:hilt-android-gradle-plugin:2.44"
+
         classpath 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
 }
-
 allprojects {
     repositories {
         google()
-        jcenter()
-        maven { url 'https://google.bintray.com/exoplayer/' }
-        maven { url 'https://google.bintray.com/flexbox-layout/' }
         mavenCentral()
+        jcenter()
         maven { url "https://jitpack.io" }
+        maven { url "https://maven.google.com" }
     }
 }
 

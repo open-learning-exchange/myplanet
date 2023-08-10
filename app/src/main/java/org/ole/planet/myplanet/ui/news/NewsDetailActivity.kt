@@ -36,22 +36,21 @@ class NewsDetailActivity : BaseActivity() {
         var id = intent.getStringExtra("newsId")
         news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (news == null) {
-            Utilities.toast(this, "New not available")
+            Utilities.toast(this, getString(R.string.new_not_available))
             finish()
             return
         }
         var user = UserProfileDbHandler(this).userModel
         var userId = user.id
         realm.executeTransactionAsync {
-            var newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
+            var newsLog: RealmNewsLog =
+                it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
             newsLog.androidId = NetworkUtils.getMacAddr()
             newsLog.type = "news"
             newsLog.time = Date().time
-            if (user != null)
-                newsLog.userId = userId
+            if (user != null) newsLog.userId = userId
         }
         initViews()
-
     }
 
     private fun initViews() {
@@ -65,14 +64,28 @@ class NewsDetailActivity : BaseActivity() {
                 val ob = it.asJsonObject
                 val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
                 val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
-                val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-                msg = msg.replace(markDown, "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>", false)
+                val library =
+                    realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
+                msg = msg.replace(
+                    markDown,
+                    "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
+                    false
+                )
             }
             loadImage()
         }
-        msg = msg.replace("\n", "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 20px;\" >")
+        msg = msg.replace(
+            "\n",
+            "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 20px;\" >"
+        )
         tv_detail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
-        tv_detail.loadDataWithBaseURL(null, "<html><body><div style=\" word-wrap: break-word;  word-spacing: 20px;\" >$msg</div></body></html>", "text/html", "utf-8", null)
+        tv_detail.loadDataWithBaseURL(
+            null,
+            "<html><body><div style=\" word-wrap: break-word;  word-spacing: 20px;\" >$msg</div></body></html>",
+            "text/html",
+            "utf-8",
+            null
+        )
     }
 
     private fun loadLocalImage(): String {
@@ -80,10 +93,13 @@ class NewsDetailActivity : BaseActivity() {
         try {
             val imgObject = Gson().fromJson(news!!.imageUrls[0], JsonObject::class.java)
             img.visibility = View.VISIBLE
-            Glide.with(this@NewsDetailActivity).load(File(JsonUtils.getString("imageUrl", imgObject))).into(img)
+            Glide.with(this@NewsDetailActivity)
+                .load(File(JsonUtils.getString("imageUrl", imgObject))).into(img)
             news!!.imageUrls.forEach {
                 val imgObject = Gson().fromJson(it, JsonObject::class.java)
-                msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString("imageUrl", imgObject) + "\"><br/>"
+                msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
+                    "imageUrl", imgObject
+                ) + "\"><br/>"
             }
         } catch (e: Exception) {
             loadImage()
@@ -95,11 +111,12 @@ class NewsDetailActivity : BaseActivity() {
         if (news?.imagesArray!!.size() > 0) {
             val ob = news!!.imagesArray[0].asJsonObject
             val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
-            val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
+            val library =
+                realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
             if (library != null) {
                 Glide.with(this)
-                        .load(File(Utilities.SD_PATH, library.id + "/" + library.resourceLocalAddress))
-                        .into(img)
+                    .load(File(Utilities.SD_PATH, library.id + "/" + library.resourceLocalAddress))
+                    .into(img)
                 img.visibility = View.VISIBLE
                 return
             }

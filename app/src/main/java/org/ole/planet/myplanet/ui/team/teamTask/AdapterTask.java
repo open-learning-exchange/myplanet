@@ -25,7 +25,6 @@ import java.util.List;
 import io.realm.Realm;
 
 public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     private Context context;
     private List<RealmTeamTask> list;
     private OnCompletedListener listener;
@@ -35,7 +34,6 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         this.context = context;
         this.list = list;
         this.realm = mRealm;
-
     }
 
     public void setListener(OnCompletedListener listener) {
@@ -52,10 +50,10 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderTask) {
-            ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle() );
+            ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
             ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
             Utilities.log(list.get(position).getDeadline() + "");
-            ((ViewHolderTask) holder).deadline.setText("Deadline : " + TimeUtils.formatDate(list.get(position).getDeadline())  + (list.get(position).isCompleted() ? "\nCompleted : " + TimeUtils.formatDate(list.get(position).getCompletedTime()) : ""));
+            ((ViewHolderTask) holder).deadline.setText(context.getString(R.string.deadline_colon) + TimeUtils.formatDate(list.get(position).getDeadline()) + (list.get(position).isCompleted() ? context.getString(R.string.completed_colon) + TimeUtils.formatDate(list.get(position).getCompletedTime()) : ""));
             showAssignee(holder, list.get(position));
             ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
                 if (listener != null) listener.onCheckChange(list.get(position), b);
@@ -67,8 +65,7 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (listener != null) listener.onEdit(list.get(position));
             });
             ((ViewHolderTask) holder).deleteTask.setOnClickListener(view -> {
-                if (listener != null)
-                    listener.onDelete(list.get(position));
+                if (listener != null) listener.onDelete(list.get(position));
             });
             holder.itemView.setOnClickListener(view -> DialogUtils.showCloseAlert(context, list.get(position).getTitle(), list.get(position).getDescription()));
         }
@@ -78,11 +75,10 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         if (!TextUtils.isEmpty(realmTeamTask.getAssignee())) {
             RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", realmTeamTask.getAssignee()).findFirst();
             if (model != null) {
-                ((ViewHolderTask) holder).assignee.setText("Assigned to : " + model.getName());
+                ((ViewHolderTask) holder).assignee.setText(context.getString(R.string.assigned_to_colon) + model.getName());
             }
         } else {
             ((ViewHolderTask) holder).assignee.setText(R.string.no_assignee);
-
         }
     }
 

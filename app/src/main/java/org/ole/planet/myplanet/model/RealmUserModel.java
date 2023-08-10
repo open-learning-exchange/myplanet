@@ -69,8 +69,8 @@ public class RealmUserModel extends RealmObject {
         if (get_id().isEmpty()) {
             object.addProperty("password", getPassword());
             object.addProperty("macAddress", NetworkUtils.getMacAddr());
-            object.addProperty("androidId",NetworkUtils.getMacAddr());
-            object.addProperty("uniqueAndroidId",VersionUtils.getAndroidId(MainApplication.context));
+            object.addProperty("androidId", NetworkUtils.getMacAddr());
+            object.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context));
             object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
         } else {
             object.addProperty("derived_key", getDerived_key());
@@ -91,7 +91,7 @@ public class RealmUserModel extends RealmObject {
         object.addProperty("birthDate", getDob());
         try {
             object.addProperty("iterations", Integer.parseInt(getIterations()));
-        }catch (Exception e){
+        } catch (Exception e) {
             object.addProperty("iterations", 10);
         }
         object.addProperty("parentCode", getParentCode());
@@ -164,16 +164,14 @@ public class RealmUserModel extends RealmObject {
         JsonArray rolesArray = new JsonArray();
         rolesArray.add("guest");
         object.add("roles", rolesArray);
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         return RealmUserModel.populateUsersTable(object, mRealm, settings);
     }
 
     public static RealmUserModel populateUsersTable(JsonObject jsonDoc, Realm mRealm, SharedPreferences settings) {
         try {
             String _id = JsonUtils.getString("_id", jsonDoc);
-            if (_id.isEmpty())
-                _id = UUID.randomUUID().toString();
+            if (_id.isEmpty()) _id = UUID.randomUUID().toString();
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("_id", _id).findFirst();
 
             if (user == null) {
@@ -187,8 +185,6 @@ public class RealmUserModel extends RealmObject {
         }
         return null;
     }
-
-
 
     public static boolean isUserExists(Realm realm, String name) {
         return realm.where(RealmUserModel.class).equalTo("name", name).count() > 0;
@@ -213,8 +209,7 @@ public class RealmUserModel extends RealmObject {
         user.setPlanetCode(JsonUtils.getString("planetCode", jsonDoc));
         user.setParentCode(JsonUtils.getString("parentCode", jsonDoc));
         user.setEmail(JsonUtils.getString("email", jsonDoc));
-        if (user.get_id().isEmpty())
-            user.setPassword(JsonUtils.getString("password", jsonDoc));
+        if (user.get_id().isEmpty()) user.setPassword(JsonUtils.getString("password", jsonDoc));
         user.setPhoneNumber(JsonUtils.getString("phoneNumber", jsonDoc));
         user.setPassword_scheme(JsonUtils.getString("password_scheme", jsonDoc));
         user.setIterations(JsonUtils.getString("iterations", jsonDoc));
@@ -248,8 +243,7 @@ public class RealmUserModel extends RealmObject {
 
     public JsonArray getRoles() {
         JsonArray ar = new JsonArray();
-        for (String s : roles
-        ) {
+        for (String s : roles) {
             ar.add(s);
         }
         return ar;
@@ -347,7 +341,6 @@ public class RealmUserModel extends RealmObject {
     public String getFullName() {
         return firstName + " " + lastName;
     }
-
 
     public Boolean getUserAdmin() {
         return isUserAdmin;
@@ -469,10 +462,8 @@ public class RealmUserModel extends RealmObject {
         return roles.toString().toLowerCase().contains("leader");
     }
 
-
     @Override
     public String toString() {
         return firstName + " " + lastName;
     }
-
 }

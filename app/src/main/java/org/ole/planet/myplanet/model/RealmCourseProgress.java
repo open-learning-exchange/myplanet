@@ -74,12 +74,9 @@ public class RealmCourseProgress extends RealmObject {
         RealmResults<RealmCourseProgress> progresses = mRealm.where(RealmCourseProgress.class).equalTo("userId", userId).equalTo("passed", true).findAll();
         List<RealmSubmission> list = new ArrayList<>();
         for (RealmCourseProgress progress : progresses) {
-//            if (RealmCertification.isCourseCertified(mRealm, progress.getCourseId())) {
             Utilities.log("Course id  certified " + progress.getCourseId());
             RealmSubmission sub = mRealm.where(RealmSubmission.class).contains("parentId", progress.getCourseId()).equalTo("userId", userId).sort("lastUpdateTime", Sort.DESCENDING).findFirst();
-            if (sub != null)
-                list.add(sub);
-//            }
+            if (sub != null) list.add(sub);
         }
         return list;
     }
@@ -94,7 +91,6 @@ public class RealmCourseProgress extends RealmObject {
         }
         return i;
     }
-
 
     public String get_rev() {
         return _rev;
@@ -153,8 +149,7 @@ public class RealmCourseProgress extends RealmObject {
     }
 
     public static void insert(Realm mRealm, JsonObject act) {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         Utilities.log("insert course progresss " + new Gson().toJson(act));
         RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
         if (courseProgress == null)
@@ -169,7 +164,7 @@ public class RealmCourseProgress extends RealmObject {
         courseProgress.setCreatedOn(JsonUtils.getString("createdOn", act));
         courseProgress.setCreatedDate(JsonUtils.getLong("createdDate", act));
         courseProgress.setUpdatedDate(JsonUtils.getLong("updatedDate", act));
-        mRealm.beginTransaction();
+        mRealm.commitTransaction();
     }
 
     public String getId() {

@@ -3,24 +3,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="@dimen/padding_normal"
-    android:paddingBottom="@dimen/padding_normal"
     android:paddingStart="@dimen/padding_normal"
-    android:paddingEnd="@dimen/padding_very_large">
+    android:paddingTop="@dimen/padding_normal"
+    android:paddingEnd="@dimen/padding_very_large"
+    android:paddingBottom="@dimen/padding_normal">
 
     <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="0dp"
         android:id="@+id/tl_tags"
-        android:visibility="gone"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:visibility="gone">
 
         <EditText
             android:id="@+id/et_tags"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:hint="Filter Labels" />
+            android:hint="@string/filter_labels"
+            android:visibility="gone" />
 
         <com.google.android.flexbox.FlexboxLayout
             android:id="@+id/flexbox_tags"
@@ -41,14 +41,14 @@
 
         <EditText
             android:id="@+id/et_search"
-            android:maxLines="1"
-            android:inputType="text"
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:layout_gravity="center"
-            android:gravity="bottom"
-            android:hint="@string/search"
             android:background="@null"
+            android:gravity="bottom"
+            android:hint="@string/search_dots"
+            android:inputType="text"
+            android:maxLines="1"
             android:padding="@dimen/padding_normal" />
     </com.google.android.material.textfield.TextInputLayout>
 

@@ -26,49 +26,50 @@
 
                 <LinearLayout
                     android:layout_width="0dp"
-                    android:orientation="vertical"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
                     <TextView
                         android:id="@+id/title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:autoText="true"
-                        android:textStyle="bold"
                         android:padding="8dp"
-                        android:text="myPlanet"
+                        android:text="@string/app_project_name"
                         android:textColor="@color/md_white_1000"
-                        android:textSize="18sp" />
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/subtitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:paddingLeft="8dp"
-                        android:textColor="@color/md_white_1000"
-                        />
+                        android:paddingStart="8dp"
+                        android:textColor="@color/md_white_1000" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/ll_action_buttons"
-                    android:layout_gravity="right"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right">
+
                     <Button
-                        style="@style/YellowButtons"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
                         android:id="@+id/btn_add_doc"
-                        android:layout_gravity="center"
-                        android:text="Add Documents" />
-                    <Button
                         style="@style/YellowButtons"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:id="@+id/btn_leave"
                         android:layout_gravity="center"
-                        android:text="Leave" />
+                        android:text="@string/add_documents" />
+
+                    <Button
+                        android:id="@+id/btn_leave"
+                        style="@style/YellowButtons"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="@string/leave" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -77,8 +78,8 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:orientation="vertical"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <androidx.viewpager.widget.ViewPager
                 android:id="@+id/view_pager"
@@ -89,13 +90,12 @@
                     android:id="@+id/tab_layout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:tabMaxWidth="0dp"
                     app:tabGravity="fill"
+                    app:tabMaxWidth="0dp"
                     app:tabMode="fixed" />
             </androidx.viewpager.widget.ViewPager>
 
         </LinearLayout>
-
 
 
     </LinearLayout>

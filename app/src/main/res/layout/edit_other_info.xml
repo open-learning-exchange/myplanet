@@ -20,13 +20,13 @@
 
         <Button
             android:id="@+id/edit"
+            style="@style/GreyButtons"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Edit"
             android:background="@drawable/buttongrey"
-            android:visibility="visible"
-            style="@style/GreyButtons" />
+            android:text="@string/edit"
+            android:visibility="visible" />
 
         <ImageView
             android:id="@+id/iv_delete"

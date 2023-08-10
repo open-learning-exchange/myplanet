@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.team.teamCourse;
 
-
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -18,21 +18,15 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
 
 import io.realm.RealmResults;
 
-/**
- * A simple {@link Fragment} subclass.
- */
 public class TeamCourseFragment extends BaseTeamFragment {
-
     RecyclerView rvCourse;
     TextView tvNodata;
 
     public TeamCourseFragment() {
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_team_course, container, false);
         initView(v);
         return v;

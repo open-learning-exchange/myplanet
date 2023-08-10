@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -33,7 +34,6 @@ import br.tiagohm.markdownview.MarkdownView;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
-
 public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView subjectLevel, gradeLevel, method, language, noOfExams;
     LinearLayout llRating;
@@ -49,7 +49,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     public CourseDetailFragment() {
     }
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,11 +57,8 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         }
     }
 
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
@@ -79,6 +75,11 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         setCourseData();
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+    }
+
     private void initView(View v) {
         description = v.findViewById(R.id.description);
         subjectLevel = v.findViewById(R.id.subject_level);
@@ -90,9 +91,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         btnResources = v.findViewById(R.id.btn_resources);
         btnOpen = v.findViewById(R.id.btn_open);
         llRating = v.findViewById(R.id.ll_rating);
-//        llRating.setVisibility(Constants.showBetaFeature(Constants.KEY_RATING, getActivity()) ? View.VISIBLE : View.GONE);
     }
-
 
     private void setCourseData() {
         subjectLevel.setText(courses.getSubjectLevel());
@@ -101,17 +100,9 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         language.setText(courses.getLanguageOfInstruction());
         description.loadMarkdown(courses.getDescription());
         noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
-        final RealmResults resources = mRealm.where(RealmMyLibrary.class)
-                .equalTo("courseId", id)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+        final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
         setResourceButton(resources, btnResources);
-        final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class)
-                .equalTo("resourceOffline", true)
-                .equalTo("courseId", id)
-                .isNotNull("resourceLocalAddress")
-                .findAll();
+        final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll();
         setOpenResourceButton(downloadedResources, btnOpen);
         onRatingChanged();
         setStepsList();
@@ -121,9 +112,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
         rv_step_list.setLayoutManager(new LinearLayoutManager(getActivity()));
         rv_step_list.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
-
     }
-
 
     @Override
     public void onRatingChanged() {

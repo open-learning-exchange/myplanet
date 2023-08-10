@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface OnLibraryItemSelected {
     void onSelectedListChange(List<RealmMyLibrary> list);
-    void onTagClicked( RealmTag realmTag);
+
+    void onTagClicked(RealmTag realmTag);
 }

@@ -37,13 +37,12 @@
                 android:layout_weight="1" />
 
 
-
             <include
                 layout="@layout/home_card_meetups"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:visibility="gone"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:visibility="gone" />
 
             <include
                 layout="@layout/home_card_mylife"

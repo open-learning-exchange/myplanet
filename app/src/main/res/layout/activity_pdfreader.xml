@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     tools:context="org.ole.planet.myplanet.ui.viewer.PDFReaderActivity">
 
@@ -32,33 +32,24 @@
 
     </LinearLayout>
 
-    <!--<com.google.android.material.floatingactionbutton.FloatingActionButton-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_gravity="bottom|end"-->
-        <!--android:id="@+id/fab_record"-->
-        <!--app:srcCompat="@drawable/ic_mic"-->
-        <!--android:layout_margin="@dimen/padding_large"-->
-        <!--android:tint="@color/md_white_1000"-->
-        <!--android:layout_height="wrap_content" />-->
-
     <com.github.clans.fab.FloatingActionMenu
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/padding_large"
-        android:layout_height="wrap_content">
+        android:layout_margin="@dimen/padding_large">
 
         <com.github.clans.fab.FloatingActionButton
-            android:layout_width="wrap_content"
             android:id="@+id/fab_record"
-            app:fab_label="Record Audio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@drawable/ic_mic"
-            android:layout_height="wrap_content" />
+            app:fab_label="Record Audio" />
 
         <com.github.clans.fab.FloatingActionButton
-            android:layout_width="wrap_content"
             android:id="@+id/fab_play"
-            app:fab_label="Play Audio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:src="@drawable/ic_play_white"
-            android:layout_height="wrap_content" />
+            app:fab_label="Play Audio" />
     </com.github.clans.fab.FloatingActionMenu>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

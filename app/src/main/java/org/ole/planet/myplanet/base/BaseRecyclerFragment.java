@@ -54,10 +54,9 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     }
 
     public static void showNoData(View v, int count) {
-        if (v == null)
-            return;
+        if (v == null) return;
         v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
-        ((TextView) v).setText("No data available, please check and try again.");
+        ((TextView) v).setText(R.string.no_data_available_please_check_and_try_again);
     }
 
     public abstract int getLayout();
@@ -73,8 +72,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(getLayout(), container, false);
         settings = getActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         recyclerView = v.findViewById(R.id.recycler);
@@ -117,13 +115,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
                 RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
                 RealmMyLibrary.createFromResource(myObject, mRealm, model.getId());
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
-                Utilities.toast(getActivity(), "Added to my library");
+                Utilities.toast(getActivity(), getString(R.string.added_to_my_library));
                 recyclerView.setAdapter(getAdapter());
             } else {
                 RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
                 RealmMyCourse.createMyCourse(myObject, mRealm, model.getId());
                 RealmRemovedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().getId(), myObject.getCourseId());
-                Utilities.toast(getActivity(), "Added to my courses");
+                Utilities.toast(getActivity(), getString(R.string.added_to_my_courses));
                 recyclerView.setAdapter(getAdapter());
             }
             showNoData(tvMessage, getAdapter().getItemCount());
@@ -132,8 +130,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
 
     public void deleteSelected(boolean deleteProgress) {
         for (int i = 0; i < selectedItems.size(); i++) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmObject object = (RealmObject) selectedItems.get(i);
             deleteCourseProgress(deleteProgress, object);
             removeFromShelf(object);
@@ -147,10 +144,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
             mRealm.where(RealmCourseProgress.class).equalTo("courseId", ((RealmMyCourse) object).getCourseId()).findAll().deleteAllFromRealm();
             List<RealmStepExam> examList = mRealm.where(RealmStepExam.class).equalTo("courseId", ((RealmMyCourse) object).getCourseId()).findAll();
             for (RealmStepExam exam : examList) {
-                mRealm.where(RealmSubmission.class)
-                        .equalTo("parentId", exam.getId())
-                        .notEqualTo("type", "survey")
-                        .equalTo("uploaded", false).findAll().deleteAllFromRealm();
+                mRealm.where(RealmSubmission.class).equalTo("parentId", exam.getId()).notEqualTo("type", "survey").equalTo("uploaded", false).findAll().deleteAllFromRealm();
             }
         }
     }
@@ -164,8 +158,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
         for (RealmTag tg : tags) {
             long count = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("tagId", tg.getId()).equalTo("linkId", course.getCourseId()).count();
-            if (count > 0 && !courses.contains(course))
-                courses.add(course);
+            if (count > 0 && !courses.contains(course)) courses.add(course);
         }
     }
 
@@ -187,14 +180,12 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).getCourseTitle();
         boolean isExists = false;
         for (String q : query) {
-//                li.add(l);
             isExists = title.toLowerCase().contains(q.toLowerCase());
             Utilities.log(title.toLowerCase() + " " + q.toLowerCase() + " is exists " + isExists);
 
             if (!isExists) break;
         }
-        if (isExists)
-            li.add(l);
+        if (isExists) li.add(l);
     }
 
     public List<RealmMyLibrary> filterLibraryByTag(String s, List<RealmTag> tags) {
@@ -211,7 +202,6 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         }
         return libraries;
     }
-
 
     public List<RealmMyCourse> filterCourseByTag(String s, List<RealmTag> tags) {
         if (tags.size() == 0 && s.isEmpty()) {
@@ -231,8 +221,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
         for (RealmTag tg : tags) {
             long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.getId()).count();
-            if (count > 0 && !libraries.contains(library))
-                libraries.add(library);
+            if (count > 0 && !libraries.contains(library)) libraries.add(library);
         }
     }
 
@@ -246,8 +235,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
 
     public List<RealmMyCourse> applyCourseFilter(List<RealmMyCourse> courses) {
         Utilities.log("apply course filter");
-        if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel))
-            return courses;
+        if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses;
         List<RealmMyCourse> newList = new ArrayList<>();
         for (RealmMyCourse l : courses) {
             Utilities.log("grade " + gradeLevel);

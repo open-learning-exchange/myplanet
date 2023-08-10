@@ -22,12 +22,6 @@
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/md_black_1000"
                 android:textSize="16sp" />
-            <!--<Button-->
-            <!--android:id="@+id/add_message"-->
-            <!--android:layout_width="wrap_content"-->
-            <!--android:layout_height="wrap_content"-->
-            <!--android:layout_margin="@dimen/padding_normal"-->
-            <!--android:text="@string/add_message" />-->
 
         </LinearLayout>
     </ScrollView>
@@ -93,15 +87,6 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-
-                <!--<Button-->
-                <!--android:id="@+id/btn_main_conversation"-->
-                <!--android:layout_width="wrap_content"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:theme="@style/PrimaryFlatButton"-->
-                <!--android:layout_margin="@dimen/padding_normal"-->
-                <!--android:text="@string/show_main_conversation"-->
-                <!--android:visibility="gone" />-->
                 <Button
                     android:id="@+id/add_message"
                     android:layout_width="wrap_content"
@@ -122,14 +107,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
-            <!--<com.google.android.material.floatingactionbutton.FloatingActionButton-->
-            <!--android:layout_width="wrap_content"-->
-            <!--android:layout_gravity="bottom|right"-->
-            <!--app:srcCompat="@drawable/ic_messages"-->
-            <!--android:tint="@color/md_white_1000"-->
-            <!--android:layout_margin="@dimen/padding_large"-->
-            <!--android:id="@+id/fab_add_message"-->
-            <!--android:layout_height="wrap_content" />-->
         </FrameLayout>
 
     </LinearLayout>

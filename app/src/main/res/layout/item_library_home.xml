@@ -6,23 +6,21 @@
     android:background="@color/md_amber_500"
     android:orientation="horizontal">
 
-
-
     <TextView
-        android:layout_width="0dp"
-        android:layout_weight="1"
-        android:layout_height="match_parent"
         android:id="@+id/title"
-        android:text="text"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_gravity="center"
+        android:layout_weight="1"
+        android:gravity="center"
         android:padding="@dimen/padding_normal"
-        android:textColor="@color/dialog_sync_labels"
-        android:gravity="center" />
+        android:textColor="@color/dialog_sync_labels" />
+
     <ImageView
+        android:id="@+id/detail"
         android:layout_width="@dimen/menu_item_icon_size"
         android:layout_height="@dimen/menu_item_icon_size"
         android:layout_gravity="top"
-        android:id="@+id/detail"
         android:layout_margin="@dimen/padding_small"
         app:srcCompat="@drawable/ic_more" />
 </LinearLayout>

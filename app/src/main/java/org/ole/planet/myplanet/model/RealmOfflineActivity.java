@@ -52,7 +52,6 @@ public class RealmOfflineActivity extends RealmObject {
         this._id = _id;
     }
 
-
     public String getUserName() {
         return userName;
     }

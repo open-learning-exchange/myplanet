@@ -2,8 +2,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="@dimen/padding_normal"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:padding="@dimen/padding_normal">
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/padding_normal"
         android:paddingRight="@dimen/padding_normal"
-        android:text="@string/deadline"
+        android:text="@string/deadline_required"
         android:textColor="@color/colorPrimaryDark" />
 
 
@@ -46,7 +46,6 @@
             android:hint="@string/description" />
 
     </com.google.android.material.textfield.TextInputLayout>
-
 
 
 </LinearLayout>

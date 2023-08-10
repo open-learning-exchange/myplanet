@@ -14,7 +14,8 @@ import kotlinx.android.synthetic.main.item_progress.view.*
 import kotlinx.android.synthetic.main.row_my_progress.view.*
 import org.ole.planet.myplanet.R
 
-class AdapterMyProgress(private val context: Context, private val list: JsonArray) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterMyProgress(private val context: Context, private val list: JsonArray) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_my_progress, parent, false)
@@ -25,17 +26,20 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
         if (holder is ViewHolderMyProgress) {
             holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
             if (list[position].asJsonObject.has("progress")) {
-                holder.tvDescription.text = "Current step : " + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() + " of " + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
+                holder.tvDescription.text =
+                    context.getString(R.string.current_step) + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() + context.getString(R.string.of) + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
                 holder.itemView.setOnClickListener {
-                    context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", list[position].asJsonObject["courseId"].asString))
+                    context.startActivity(
+                        Intent(
+                            context, CourseProgressActivity::class.java
+                        ).putExtra("courseId", list[position].asJsonObject["courseId"].asString)
+                    )
                 }
             }
-            if (list[position].asJsonObject.has("mistakes"))
-                holder.tvTotal.text = list[position].asJsonObject["mistakes"].asString
-            else
-                holder.tvTotal.text = "0"
+            if (list[position].asJsonObject.has("mistakes")) holder.tvTotal.text =
+                list[position].asJsonObject["mistakes"].asString
+            else holder.tvTotal.text = "0"
             showStepMistakes(holder, position);
-
         }
     }
 
@@ -49,7 +53,8 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
                 stepView.mistake.text = Html.fromHtml("<b>Mistake</b>")
                 holder.llProgress.addView(stepView)
                 stepMistake.keySet().forEach {
-                    var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
+                    var stepView =
+                        LayoutInflater.from(context).inflate(R.layout.item_progress, null)
                     stepView.step.text = (it.toInt().plus(1).toString())
                     stepView.mistake.text = stepMistake[it].asInt.toString()
                     holder.llProgress.addView(stepView)

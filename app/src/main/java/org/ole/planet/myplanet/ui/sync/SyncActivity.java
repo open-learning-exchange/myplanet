@@ -59,16 +59,17 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     boolean connectionResult;
     Realm mRealm;
     SharedPreferences.Editor editor;
-    int[] syncTimeInteval = {10 * 60, 15 * 60, 30 * 60, 60 * 60, 3 * 60 * 60};
+    int[] syncTimeInteval = {60 * 60, 3 * 60 * 60};
     ImageView syncIcon;
     AnimationDrawable syncIconDrawable;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         editor = settings.edit();
         mRealm = new DatabaseService(this).getRealmInstance();
-        requestPermission();
+        requestAllPermissions();
         progressDialog = new ProgressDialog(this);
         progressDialog.setCancelable(false);
     }
@@ -104,10 +105,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
-
     public void setUpChildMode() {
-        if (!settings.getBoolean("isChild", false))
-            return;
+        if (!settings.getBoolean("isChild", false)) return;
         RecyclerView rvTeams = findViewById(R.id.rv_teams);
         TextView tvNodata = findViewById(R.id.tv_nodata);
 
@@ -122,9 +121,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
-
     public boolean isServerReachable(String processedUrl) throws Exception {
-        progressDialog.setMessage("Connecting to server....");
+        progressDialog.setMessage(getString(R.string.connecting_to_server));
         progressDialog.show();
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         Utilities.log(processedUrl + "/_all_dbs");
@@ -137,35 +135,23 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     List<String> myList = Arrays.asList(ss.split(","));
                     Utilities.log("List size " + ss);
                     if (myList.size() < 8) {
-                        alertDialogOkay("Check the server address again. What i connected to wasn't the Planet Server");
+                        alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server));
                     } else {
                         startSync();
                     }
                 } catch (Exception e) {
-                    alertDialogOkay("Device couldn't reach server. Check and try again");
+                    alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again));
                     progressDialog.dismiss();
                 }
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
-                alertDialogOkay("Device couldn't reach server. Check and try again");
-                if (mRealm != null)
-                    mRealm.close();
+                alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again));
+                if (mRealm != null) mRealm.close();
                 progressDialog.dismiss();
             }
         });
-//        Fuel.get(processedUrl + "/_all_dbs").responseString(new Handler<String>() {
-//            @Override
-//            public void success(Request request, Response response, String s) {
-//
-//            }
-//
-//            @Override
-//            public void failure(Request request, Response response, FuelError fuelError) {
-//
-//            }
-//        });
         return connectionResult;
     }
 
@@ -183,7 +169,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncDropdownAdd();
     }
 
-
     // Converts OS date to human date
     public String convertDate() {
         // Context goes here
@@ -197,8 +182,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     // Create items in the spinner
     public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
-//        list.add("15 Minutes");
-//        list.add("30 Minutes");
         list.add("1 Hour");
         list.add("3 Hours");
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);
@@ -216,7 +199,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode) {
         this.settings = settings;
         if (mRealm.isEmpty()) {
-            alertDialogOkay("Server not configured properly. Connect this device with Planet server");
+            alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server));
             return false;
         } else {
             return checkName(username, password, isManagerMode);
@@ -227,9 +210,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     private Boolean checkName(String username, String password, boolean isManagerMode) {
         try {
             AndroidDecrypter decrypt = new AndroidDecrypter();
-            RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class)
-                    .equalTo("name", username)
-                    .findAll();
+            RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class).equalTo("name", username).findAll();
             for (RealmUserModel user : db_users) {
                 if (user.get_id().isEmpty()) {
                     if (username.equals(user.getName()) && password.equals(user.getPassword())) {
@@ -238,8 +219,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     }
                 } else {
                     if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
-                        if (isManagerMode && !user.isManager())
-                            return false;
+                        if (isManagerMode && !user.isManager()) return false;
                         saveUserInfoPref(settings, password, user);
                         return true;
                     }
@@ -252,12 +232,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         return false;
     }
 
-
     public void startSync() {
         Utilities.log("Start sync");
-
         SyncManager.getInstance().start(SyncActivity.this);
-
     }
 
     public String saveConfigAndContinue(MaterialDialog dialog) {
@@ -269,18 +246,15 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         String pin = ((EditText) dialog.getCustomView().findViewById(R.id.input_server_Password)).getText().toString();
         settings.edit().putString("customDeviceName", ((EditText) dialog.getCustomView().findViewById(R.id.deviceName)).getText().toString()).commit();
         url = protocol + url;
-        if (isUrlValid(url))
-            processedUrl = setUrlParts(url, pin, this);
+        if (isUrlValid(url)) processedUrl = setUrlParts(url, pin, this);
         return processedUrl;
     }
 
-
     @Override
     public void onSyncStarted() {
-        progressDialog.setMessage("Syncing data, Please wait...");
+        progressDialog.setMessage(getString(R.string.syncing_data_please_wait));
         progressDialog.show();
     }
-
 
     @Override
     public void onSyncFailed(final String s) {
@@ -290,24 +264,26 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         syncIcon.invalidateDrawable(syncIconDrawable);
 
         runOnUiThread(() -> {
-            DialogUtils.showAlert(SyncActivity.this, "Sync Failed", s);
+            DialogUtils.showAlert(SyncActivity.this, getString(R.string.sync_failed), s);
             DialogUtils.showWifiSettingDialog(SyncActivity.this);
         });
     }
 
     @Override
     public void onSyncComplete() {
-        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
-        syncIconDrawable.stop();
-        syncIconDrawable.selectDrawable(0);
-        syncIcon.invalidateDrawable(syncIconDrawable);
-        DialogUtils.showSnack(findViewById(android.R.id.content), "Sync Completed");
         progressDialog.dismiss();
+        runOnUiThread(() -> {
+            syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+            syncIconDrawable.stop();
+            syncIconDrawable.selectDrawable(0);
+            syncIcon.invalidateDrawable(syncIconDrawable);
+        });
+        DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
+
         if (settings.getBoolean("isChild", false)) {
             runOnUiThread(() -> setUpChildMode());
         }
 
         NotificationUtil.cancellAll(this);
     }
-
 }

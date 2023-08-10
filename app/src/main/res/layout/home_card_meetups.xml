@@ -19,16 +19,16 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:background="@color/md_purple_700"
-                android:orientation="vertical"
                 android:layout_gravity="center"
+                android:background="@color/md_purple_700"
                 android:gravity="center"
+                android:orientation="vertical"
                 android:padding="@dimen/padding_normal">
 
                 <ImageView
+                    android:id="@+id/myMeetUpsImageButton"
                     android:layout_width="@dimen/image_size_home_card"
                     android:layout_height="@dimen/image_size_home_card"
-                    android:id="@+id/myMeetUpsImageButton"
                     android:layout_marginLeft="16dp"
                     android:layout_marginRight="16dp"
                     app:srcCompat="@drawable/meetups" />
@@ -52,7 +52,6 @@
                 android:background="@drawable/oval_white"
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
-                android:text="12"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp"
                 android:textStyle="bold" />

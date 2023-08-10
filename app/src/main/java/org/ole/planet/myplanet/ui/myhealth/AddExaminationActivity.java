@@ -43,8 +43,7 @@ import io.realm.Realm;
 public class AddExaminationActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
     Realm mRealm;
     String userId;
-    EditText etOtherDiagnosis, etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing,
-            etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
+    EditText etOtherDiagnosis, etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing, etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
     RealmUserModel user;
     RealmUserModel currentUser;
     RealmMyHealthPojo pojo;
@@ -55,7 +54,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     Boolean allowSubmission = true;
     int otherDiagId;
     private ChipCloudConfig config;
-
 
     private void initViews() {
         etTemperature = findViewById(R.id.et_temperature);
@@ -113,7 +111,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         validateFields();
         findViewById(R.id.btn_save).setOnClickListener(view -> {
             if (!isValidInput() || !allowSubmission) {
-                Utilities.toast(this, "Invalid input");
+                Utilities.toast(this, getString(R.string.invalid_input));
                 return;
             }
             saveData();
@@ -161,43 +159,32 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (!etBloodPressure.getText().toString().contains("/")) {
-                    etBloodPressure.setError("Blood Pressure should be numeric systolic/diastolic");
+                    etBloodPressure.setError(getString(R.string.blood_pressure_should_be_numeric_systolic_diastolic));
                     allowSubmission = false;
                 } else {
                     String[] sysDia = etBloodPressure.getText().toString().trim().split("/");
                     if (sysDia.length > 2 || sysDia.length < 1) {
-                        etBloodPressure.setError("Blood Pressure should be systolic/diastolic");
+                        etBloodPressure.setError(getString(R.string.blood_pressure_should_be_systolic_diastolic));
                         allowSubmission = false;
                     } else {
                         try {
                             int sys = Integer.parseInt(sysDia[0]);
                             int dis = Integer.parseInt(sysDia[1]);
                             if ((sys < 60 || dis < 40) || (sys > 300 || dis > 200)) {
-                                etBloodPressure.setError("Bp must be between 60/40 and 300/200");
+                                etBloodPressure.setError(getString(R.string.bp_must_be_between_60_40_and_300_200));
                                 allowSubmission = false;
                             } else {
                                 allowSubmission = true;
                             }
                         } catch (Exception e) {
-                            etBloodPressure.setError("Systolic and diastolic must be numbers");
+                            etBloodPressure.setError(getString(R.string.systolic_and_diastolic_must_be_numbers));
                             allowSubmission = false;
                         }
-
                     }
-
-//                    else{
-//                        for (int x = 0; x < sysDia.length; x++) {
-//                            if (!sysDia[x].matches("-?\\d+") || sysDia[x].isEmpty()) {
-//                                etBloodPressure.setError("Systolic and diastolic must be numbers");
-//                                allowSubmission = false;
-//                            }
-//                        }
-//                    }
                 }
             }
         });
     }
-
 
     private void showOtherDiagnosis() {
         flexboxOther.removeAllViews();
@@ -243,7 +230,6 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             c.setOnCheckedChangeListener(this);
             flexboxLayout.addView(c);
         }
-
 //        flexboxLayout.addView(otherDiag);
     }
 
@@ -254,8 +240,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void initHealth() {
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
         health.setLastExamination(new Date().getTime());
@@ -266,8 +251,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     private void saveData() {
 
-        if (!mRealm.isInTransaction())
-            mRealm.beginTransaction();
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         createPojo();
         if (examination == null) {
             String userId = AndroidDecrypter.generateIv();
@@ -314,20 +298,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             e.printStackTrace();
         }
         mRealm.commitTransaction();
-        Utilities.toast(this, "Added successfully");
+        Utilities.toast(this, getString(R.string.added_successfully));
         super.finish();
     }
 
     private boolean getHasInfo() {
-        return !TextUtils.isEmpty(etAllergies.getText().toString())
-                || !TextUtils.isEmpty(etDiag.getText().toString())
-                || !TextUtils.isEmpty(etImmunization.getText().toString())
-                || !TextUtils.isEmpty(etMedications.getText().toString())
-                || !TextUtils.isEmpty(etObservation.getText().toString())
-                || !TextUtils.isEmpty(etReferrals.getText().toString())
-                || !TextUtils.isEmpty(etLabtest.getText().toString())
-                || !TextUtils.isEmpty(etTretments.getText().toString())
-                || !TextUtils.isEmpty(etXray.getText().toString());
+        return !TextUtils.isEmpty(etAllergies.getText().toString()) || !TextUtils.isEmpty(etDiag.getText().toString()) || !TextUtils.isEmpty(etImmunization.getText().toString()) || !TextUtils.isEmpty(etMedications.getText().toString()) || !TextUtils.isEmpty(etObservation.getText().toString()) || !TextUtils.isEmpty(etReferrals.getText().toString()) || !TextUtils.isEmpty(etLabtest.getText().toString()) || !TextUtils.isEmpty(etTretments.getText().toString()) || !TextUtils.isEmpty(etXray.getText().toString());
     }
 
     private boolean isValidInput() {
@@ -336,16 +312,16 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         boolean isValidHeight = 1 <= getFloat(etHeight.getText().toString().trim()) && getFloat(etHeight.getText().toString().trim()) <= 250 || getFloat(etHeight.getText().toString().trim()) == 0;
         boolean isValidWeight = 1 <= getFloat(etWeight.getText().toString().trim()) && getFloat(etWeight.getText().toString().trim()) <= 150 || getFloat(etWeight.getText().toString().trim()) == 0;
         if (!isValidTemp) {
-            etTemperature.setError("Invalid input , must be between 30 and 40");
+            etTemperature.setError(getString(R.string.invalid_input_must_be_between_30_and_40));
         }
         if (!isValidPulse) {
-            etPulseRate.setError("Invalid input , must be between 40 and 120");
+            etPulseRate.setError(getString(R.string.invalid_input_must_be_between_40_and_120));
         }
         if (!isValidHeight) {
-            etHeight.setError("Invalid input , must be between 1 and 250");
+            etHeight.setError(getString(R.string.invalid_input_must_be_between_1_and_250));
         }
         if (!isValidWeight) {
-            etWeight.setError("Invalid input , must be between 1 and 150");
+            etWeight.setError(getString(R.string.invalid_input_must_be_between_1_and_150));
         }
         return isValidTemp && isValidHeight && isValidPulse && isValidWeight;
     }
@@ -381,7 +357,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 //            }
         } catch (Exception e) {
             e.printStackTrace();
-            Utilities.toast(this, "Unable to add health record.");
+            Utilities.toast(this, getString(R.string.unable_to_add_health_record));
         }
     }
 
@@ -396,10 +372,10 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     @Override
     public void finish() {
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setMessage("Are you sure you want to exit? Your data will be lost.");
-        alertDialogBuilder.setPositiveButton("Yes, I want to exit. ", (dialogInterface, i) -> {
+        alertDialogBuilder.setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost);
+        alertDialogBuilder.setPositiveButton(getString(R.string.yes_i_want_to_exit), (dialogInterface, i) -> {
             super.finish();
-        }).setNegativeButton("Cancel", null);
+        }).setNegativeButton(getString(R.string.cancel), null);
         alertDialogBuilder.show();
     }
 

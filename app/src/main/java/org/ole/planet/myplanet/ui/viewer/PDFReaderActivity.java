@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -30,9 +31,7 @@ import java.io.File;
 
 import io.realm.Realm;
 
-public class PDFReaderActivity extends AppCompatActivity implements OnPageChangeListener, OnLoadCompleteListener,
-        OnPageErrorListener, AudioRecorderService.AudioRecordListener {
-
+public class PDFReaderActivity extends AppCompatActivity implements OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecorderService.AudioRecordListener {
     private static final String TAG = "PDF Reader Log";
     private TextView mPdfFileNameTitle;
     private String fileName;
@@ -70,7 +69,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         });
 
         fabPlay.setOnClickListener(view -> {
-            if (library!=null && !TextUtils.isEmpty(library.getTranslationAudioPath())){
+            if (library != null && !TextUtils.isEmpty(library.getTranslationAudioPath())) {
                 IntentUtils.openAudioFile(this, library.getTranslationAudioPath());
             }
         });
@@ -83,30 +82,26 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
             mPdfFileNameTitle.setText(fileName);
             mPdfFileNameTitle.setVisibility(View.VISIBLE);
         }
-        try {
-            Utilities.log(new File(Utilities.SD_PATH, fileName).getAbsolutePath());
-            pdfView.fromFile(new File(Utilities.SD_PATH, fileName))
-                    .defaultPage(0)
-                    .enableAnnotationRendering(true)
-                    .onLoad(this)
-                    .onPageChange(this)
-                    .scrollHandle(new DefaultScrollHandle(this))
-                    .load();
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getApplicationContext(), "Unable to load " + fileName, Toast.LENGTH_LONG).show();
+
+        File file = new File(getExternalFilesDir(null), "ole/" + fileName);
+        if (file.exists()) {
+            try {
+                Utilities.log(file.getAbsolutePath());
+                pdfView.fromFile(file).defaultPage(0).enableAnnotationRendering(true).onLoad(this).onPageChange(this).scrollHandle(new DefaultScrollHandle(this)).load();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(getApplicationContext(), getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show();
+            }
+        } else {
+            Toast.makeText(getApplicationContext(), "File not found: " + fileName, Toast.LENGTH_LONG).show();
         }
-
-
     }
 
     @Override
-    public void loadComplete(int nbPages) {
-    }
+    public void loadComplete(int nbPages) {}
 
     @Override
-    public void onPageChanged(int page, int pageCount) {
-    }
+    public void onPageChanged(int page, int pageCount) {}
 
     @Override
     public void onPageError(int page, Throwable t) {
@@ -115,29 +110,28 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
 
     @Override
     public void onRecordStarted() {
-        Utilities.toast(this, "Recording started....");
-        NotificationUtil.create(this, R.drawable.ic_mic, "Recording Audio", "Ole is recording audio");
+        Utilities.toast(this, getString(R.string.recording_started));
+        NotificationUtil.create(this, R.drawable.ic_mic, "Recording Audio", getString(R.string.ole_is_recording_audio));
         fabRecord.setImageResource(R.drawable.ic_stop);
     }
 
     @Override
     public void onRecordStopped(String outputFile) {
-        Utilities.toast(this, "Recording stopped.");
+        Utilities.toast(this, getString(R.string.recording_stopped));
         NotificationUtil.cancellAll(this);
         if (outputFile != null) {
             updateTranslation(outputFile);
-            AddResourceFragment.showAlert(this,outputFile);
+            AddResourceFragment.showAlert(this, outputFile);
         }
         fabRecord.setImageResource(R.drawable.ic_mic);
     }
 
     private void updateTranslation(String outputFile) {
         if (library != null) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             library.setTranslationAudioPath(outputFile);
             mRealm.commitTransaction();
-            Utilities.toast(this, "Audio file saved in database.");
+            Utilities.toast(this, getString(R.string.audio_file_saved_in_database));
         }
     }
 

@@ -35,46 +35,43 @@
             app:totalWidth="20dp" />
 
         <TextView
-            android:layout_width="wrap_content"
             android:id="@+id/tv_course"
-            android:textSize="18sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="8dp"
             android:textColor="@color/md_black_1000"
-            android:layout_height="wrap_content"/>
-
+            android:textSize="18sp" />
 
 
         <TextView
-            android:layout_width="wrap_content"
             android:id="@+id/tv_progress"
-            android:textSize="16sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="8dp"
             android:textColor="@color/md_black_1000"
-            android:layout_height="wrap_content"/>
-
+            android:textSize="16sp" />
 
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Steps"
-            android:padding="8dp"
             android:layout_gravity="center"
             android:gravity="center"
+            android:padding="8dp"
+            android:text="@string/steps"
             android:textColor="@color/md_black_1000"
             android:textSize="18sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_progress"
-            android:padding="8dp"
             android:layout_width="wrap_content"
-            android:layout_gravity="center"
             android:layout_height="wrap_content"
-           />
+            android:layout_gravity="center"
+            android:padding="8dp" />
 
     </LinearLayout>
 

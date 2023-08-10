@@ -4,7 +4,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class Download implements Parcelable {
-
     public static final Parcelable.Creator<Download> CREATOR = new Parcelable.Creator<Download>() {
         public Download createFromParcel(Parcel in) {
             return new Download(in);
@@ -23,9 +22,7 @@ public class Download implements Parcelable {
     private String message;
     private String fileUrl;
 
-    public Download() {
-
-    }
+    public Download() {}
 
     private Download(Parcel in) {
         fileName = in.readString();
@@ -109,7 +106,6 @@ public class Download implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-
         dest.writeString(fileName);
         dest.writeInt(progress);
         dest.writeInt(currentFileSize);

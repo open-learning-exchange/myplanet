@@ -57,7 +57,6 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     String photo_path = "";
     String Submit_id = "";
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,10 +76,8 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             id = getArguments().getString("id");
             if (isMySurvey) {
                 sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
-                if (sub.getParentId().contains("@"))
-                    id = sub.getParentId().split("@")[0];
-                else
-                    id = sub.getParentId();
+                if (sub.getParentId().contains("@")) id = sub.getParentId().split("@")[0];
+                else id = sub.getParentId();
             }
         }
     }
@@ -100,6 +97,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     boolean isLastAnsvalid;
+
     public void checkAnsAndContinue(boolean cont) {
         if (cont) {
             isLastAnsvalid = true;
@@ -112,32 +110,26 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void continueExam() {
-
         if (currentIndex < questions.size()) {
             startExam(questions.get(currentIndex));
         } else if (type.startsWith("survey")) {
             showUserInfoDialog();
         } else {
             saveCourseProgress();
-            new AlertDialog.Builder(getActivity())
-                    .setTitle("Thank you for taking this " + type + ". We wish you all the best")
-                    .setPositiveButton("Finish", (dialogInterface, i) -> {
-                        getActivity().onBackPressed();
-                        try {
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }).show();
+            new AlertDialog.Builder(getActivity()).setTitle(getString(R.string.thank_you_for_taking_this) + type + getString(R.string.we_wish_you_all_the_best)).setPositiveButton("Finish", (dialogInterface, i) -> {
+                getActivity().onBackPressed();
+                try {
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }).show();
         }
     }
 
     private void saveCourseProgress() {
-        RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class)
-                .equalTo("courseId", exam.getCourseId()).equalTo("stepNum", stepNumber)
-                .findFirst();
+        RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", exam.getCourseId()).equalTo("stepNum", stepNumber).findFirst();
         if (progress != null) {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             progress.setPassed(sub.getStatus().equals("graded"));
             mRealm.commitTransaction();
         }
@@ -147,16 +139,13 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         if (!isMySurvey && !exam.isFromNation()) {
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
-            if (!mRealm.isInTransaction())
-                mRealm.beginTransaction();
-            sub.setStatus("complete");
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+            sub.setStatus(getString(R.string.complete));
             mRealm.commitTransaction();
-            Utilities.toast(getActivity(), "Thank you for taking this survey.");
+            Utilities.toast(getActivity(), getString(R.string.thank_you_for_taking_this_survey));
             getActivity().onBackPressed();
         }
-
     }
-
 
     public boolean showErrorMessage(String s) {
         if (ans.isEmpty() && listAns.isEmpty()) {
@@ -189,7 +178,6 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
 
     abstract void startExam(RealmExamQuestion question);
 
-
     public void insert_into_submitPhotos(String submit_id) {
         mRealm.beginTransaction();
         RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class, UUID.randomUUID().toString());
@@ -204,18 +192,14 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         Utilities.log(submit.getPhoto_location());
         Utilities.log("insert_into_submitPhotos");
         mRealm.commitTransaction();
-
-
     }
 
     @Override
     public void onImageCapture(String fileUri) {
-
         photo_path = fileUri;
         insert_into_submitPhotos(Submit_id);
         Utilities.log(photo_path);
     }
-
 
     public void setMarkdownViewAndShowInput(EditText etAnswer, String type, String oldAnswer) {
         etAnswer.setVisibility(View.VISIBLE);
@@ -227,22 +211,17 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             etAnswer.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
                 }
 
                 @Override
                 public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
                 }
 
                 @Override
                 public void afterTextChanged(Editable editable) {
-
                 }
             });
         }
-
         etAnswer.setText(oldAnswer);
     }
-
 }

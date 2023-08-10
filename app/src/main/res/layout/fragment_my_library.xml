@@ -1,4 +1,5 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/my_library_parent_layout"
     android:layout_width="match_parent"
@@ -10,7 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
 
 
         <LinearLayout
@@ -63,68 +63,60 @@
             </LinearLayout>
 
             <LinearLayout
-                    android:layout_width="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:paddingRight="@dimen/_10dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="right"
-                    android:paddingRight="@dimen/_10dp">
+                    android:orientation="horizontal">
 
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_fragment_info"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small"
-                                android:textColor="@color/md_white_1000"
-                                android:textSize="@dimen/text_size_mid" />
-
-                            <TextView
-                                android:id="@+id/tv_selected"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_small"
-                                android:textColor="@color/md_white_1000"
-                                android:textSize="@dimen/text_size_mid" />
-                        </LinearLayout>
-
-                        <Spinner
-                            android:id="@+id/spn_sort"
+                        <TextView
+                            android:id="@+id/tv_fragment_info"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:entries="@array/sort_by_date"
-                            android:padding="@dimen/padding_normal" />
+                            android:padding="@dimen/padding_small"
+                            android:textColor="@color/md_white_1000"
+                            android:textSize="@dimen/text_size_mid" />
 
-                        <!--                <Button-->
-                        <!--                    android:id="@+id/order_by_date_button"-->
-                        <!--                    android:layout_width="wrap_content"-->
-                        <!--                    android:layout_height="wrap_content"-->
-                        <!--                    android:layout_toLeftOf="@+id/order_by_title_button"-->
-                        <!--                    android:text="Order by Date"-->
-                        <!--                    android:theme="@style/AccentButton"/>-->
-
+                        <TextView
+                            android:id="@+id/tv_selected"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/padding_small"
+                            android:textColor="@color/md_white_1000"
+                            android:textSize="@dimen/text_size_mid" />
                     </LinearLayout>
 
-                    <TextView
+                    <Spinner
+                        android:id="@+id/spn_sort"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:entries="@array/sort_by_date"
+                        android:padding="@dimen/padding_normal" />
+
+                </LinearLayout>
+
+                <TextView
                     android:id="@+id/tv_add"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_gravity="center"
                     android:background="?attr/selectableItemBackground"
-                    android:drawableLeft="@drawable/ic_add_library"
                     android:drawablePadding="8dp"
                     android:gravity="center"
                     android:text="@string/add_to_mylib"
                     android:textColor="@drawable/tv_color"
-                    android:textSize="@dimen/text_size_mid" />
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableLeftCompat="@drawable/ic_add_library" />
 
 
                 <TextView
@@ -134,15 +126,15 @@
                     android:layout_gravity="center"
                     android:layout_marginStart="@dimen/padding_normal"
                     android:background="?attr/selectableItemBackground"
-                    android:drawableStart="@drawable/ic_delete"
                     android:drawablePadding="4dp"
                     android:gravity="center"
                     android:text="@string/remove_selected"
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone" />
+                    android:visibility="gone"
+                    app:drawableStartCompat="@drawable/ic_delete" />
 
-                </LinearLayout>
+            </LinearLayout>
 
 
         </LinearLayout>

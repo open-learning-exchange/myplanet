@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
+import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +14,11 @@ import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.widget.Toast;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.menu.ActionMenuItemView;
@@ -20,10 +27,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.Toast;
-
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -31,7 +34,6 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
-import org.ole.planet.myplanet.ui.community.CommunityFragment;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment;
@@ -43,12 +45,6 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.Utilities;
-
-import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
-
-/**
- * Extra class for excess methods in DashboardActivity activities
- */
 
 public abstract class DashboardElementActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
     public BottomNavigationView navigationView;
@@ -110,9 +106,6 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-//        if (id == R.id.menu_profile) {
-//            return true;
-//        }
         if (id == R.id.menu_goOnline) {
             wifiStatusSwitch();
         } else if (id == R.id.menu_logout) {
@@ -135,20 +128,24 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     }
 
     @SuppressLint("RestrictedApi")
-    private void wifiStatusSwitch() {
+    public void wifiStatusSwitch() {
         ActionMenuItemView goOnline = findViewById(R.id.menu_goOnline);
         Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
         ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+
+        Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+        startActivity(intent);
+
         if (mWifi.isConnected()) {
             wifi.setWifiEnabled(false);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
-            Toast.makeText(this, "Wifi is turned Off. Saving battery power", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show();
         } else {
             wifi.setWifiEnabled(true);
-            Toast.makeText(this, "Turning on Wifi. Please wait...", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show();
             (new Handler()).postDelayed(this::connectToWifi, 5000);
             resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
             goOnline.setIcon(resIcon);
@@ -161,7 +158,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         WifiManager wifiManager = (WifiManager) MainApplication.context.getSystemService(WIFI_SERVICE);
         int netId = -1;
         if (wifiManager == null) {
-            Utilities.toast(this, "Unable to connect to planet wifi.");
+            Utilities.toast(this, getString(R.string.unable_to_connect_to_planet_wifi));
             return;
         }
 
@@ -169,18 +166,18 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             if (tmp.networkId > -1 && tmp.networkId == id) {
                 netId = tmp.networkId;
                 wifiManager.enableNetwork(netId, true);
-                Toast.makeText(this, "You are now connected " + netId, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.you_are_now_connected + netId, Toast.LENGTH_SHORT).show();
                 LocalBroadcastManager.getInstance(this).sendBroadcast(new Intent("ACTION_NETWORK_CHANGED"));
                 break;
             }
             Utilities.log("SSID " + tmp.SSID);
         }
-
     }
 
     public void logout() {
         profileDbHandler.onLogout();
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
+        settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).commit();
         Intent loginscreen = new Intent(this, LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(loginscreen);
         doubleBackToExitPressedOnce = true;
@@ -193,11 +190,10 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
             super.finish();
         } else {
             this.doubleBackToExitPressedOnce = true;
-            Toast.makeText(this, "Press BACK again to exit", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show();
             new Handler().postDelayed(() -> doubleBackToExitPressedOnce = false, 2000);
         }
     }
-
 
     public void showRatingDialog(String type, String resource_id, String title, OnRatingChangeListener listener) {
         RatingFragment f = RatingFragment.newInstance(type, resource_id, title);
@@ -212,19 +208,15 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         if (f instanceof CourseFragment) {
             if ("shelf".equals(fragmentTag))
                 navigationView.getMenu().findItem(R.id.menu_mycourses).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
+            else navigationView.getMenu().findItem(R.id.menu_courses).setChecked(true);
         } else if (f instanceof LibraryFragment) {
             if ("shelf".equals(fragmentTag))
                 navigationView.getMenu().findItem(R.id.menu_mylibrary).setChecked(true);
-            else
-                navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
+            else navigationView.getMenu().findItem(R.id.menu_library).setChecked(true);
         } else if (f instanceof DashboardFragment) {
             navigationView.getMenu().findItem(R.id.menu_home).setChecked(true);
         } else if (f instanceof SurveyFragment) {
-            // navigationView.getMenu().findItem(R.id.menu_survey).setChecked(true);
         }
-
     }
 
     public void openEnterpriseFragment() {

@@ -3,34 +3,34 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:minWidth="250dp"
     android:gravity="center"
+    android:minWidth="250dp"
     android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_gravity="right"
-        android:gravity="right"
-        android:layout_height="wrap_content">
+        android:gravity="right">
 
         <ImageView
             android:id="@+id/img_chat"
-            app:srcCompat="@drawable/message_alert"
-            android:tint="@color/md_red_500"
             android:layout_width="@dimen/_24dp"
+            android:layout_height="@dimen/_24dp"
             android:layout_margin="@dimen/padding_small"
             android:visibility="gone"
-            android:layout_height="@dimen/_24dp" />
+            app:srcCompat="@drawable/message_alert"
+            app:tint="@color/md_red_500" />
 
 
         <ImageView
             android:id="@+id/img_task"
-            android:layout_margin="@dimen/padding_small"
-            app:srcCompat="@drawable/ic_warn"
             android:layout_width="@dimen/_24dp"
+            android:layout_height="@dimen/_24dp"
+            android:layout_margin="@dimen/padding_small"
             android:visibility="gone"
-            android:tint="@color/md_red_500"
-            android:layout_height="@dimen/_24dp" />
+            app:srcCompat="@drawable/ic_warn"
+            app:tint="@color/md_red_500" />
 
     </LinearLayout>
 
@@ -50,6 +50,4 @@
             android:padding="@dimen/padding_normal"
             android:textColor="@color/md_black_1000" />
     </LinearLayout>
-
-
 </FrameLayout>

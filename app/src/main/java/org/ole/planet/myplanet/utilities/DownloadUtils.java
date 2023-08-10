@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DownloadUtils {
-
     public static ArrayList downloadAllFiles(List<RealmMyLibrary> db_myLibrary, SharedPreferences settings) {
         ArrayList urls = new ArrayList();
         for (int i = 0; i < db_myLibrary.size(); i++) {

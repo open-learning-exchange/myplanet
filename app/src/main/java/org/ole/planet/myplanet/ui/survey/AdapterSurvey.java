@@ -22,7 +22,6 @@ import java.util.List;
 import io.realm.Realm;
 
 public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
     private Context context;
     private List<RealmStepExam> examList;
     private OnHomeItemClickListener listener;
@@ -37,9 +36,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
         if (context instanceof OnHomeItemClickListener) {
             this.listener = (OnHomeItemClickListener) context;
         }
-
     }
-
 
     @NonNull
     @Override
@@ -60,7 +57,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 ho.sendSurvey.setVisibility(View.GONE);
                 ho.startSurvey.setVisibility(View.GONE);
             }
-            ho.startSurvey.setText(examList.get(position).isFromNation() ? "Take Survey" : "Record Survey");
+            ho.startSurvey.setText(examList.get(position).isFromNation() ? context.getString(R.string.take_survey) : context.getString(R.string.record_survey));
             String noOfSubmission = RealmSubmission.getNoOfSubmissionByUser(examList.get(position).getId(), userId, mRealm);
             String subDate = RealmSubmission.getRecentSubmissionDate(examList.get(position).getId(), userId, mRealm);
             ho.noSubmission.setText(noOfSubmission);
@@ -91,8 +88,7 @@ public class AdapterSurvey extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             sendSurvey.setVisibility(View.GONE);
             sendSurvey.setOnClickListener(view -> {
                 RealmStepExam current = examList.get(getAdapterPosition());
-                if (listener != null)
-                    listener.sendSurvey(current);
+                if (listener != null) listener.sendSurvey(current);
             });
         }
     }

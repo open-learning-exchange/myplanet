@@ -1,0 +1,80 @@
+name: Build, Sign and Release APK
+on: 
+  push:
+    branches:
+      - 'master'
+  workflow_dispatch:
+
+jobs:
+  build_and_release:
+    name: Build and Release APK
+    runs-on: ubuntu-latest
+
+    env:
+      ANDROID_NDK_VERSION: "21.3.6528147"
+      BUILD_TOOLS_VERSION: "30.0.2"
+
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 17 for Android
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+
+      - name: Install Android NDK and Make Gradle Wrapper Executable
+        run: |
+          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
+          chmod +x ./gradlew
+
+      - name: Build APK and List Build Artifacts
+        run: |
+          ./gradlew build
+          ls -alR app/build/outputs/apk
+
+      - name: Sign Android APK
+        uses: Tlaster/android-sign@v1.2.2
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          output: build/release/signed
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Copy Debug Build to Release Directory and Generate SHA256
+        run: |
+          cp app/build/outputs/apk/debug/* build/release/signed/
+          mv build/release/signed/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
+          cd build/release/signed/
+          sha256sum myPlanet.apk > myPlanet.apk.sha256
+
+      - name: Extract Version from XML File
+        id: getVersion
+        uses: mavrosxristoforos/get-xml-info@1.0
+        with:
+          xml-file: 'app/src/main/res/values/versions.xml'
+          xpath: '//string'
+
+      - name: Rename APK with Version and Branch for Artifact
+        if: github.ref != 'refs/heads/master'
+        run: |
+          mv build/release/signed/myPlanet.apk build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk
+
+      - name: Upload APK as Build Artifact
+        if: github.ref != 'refs/heads/master'
+        uses: actions/upload-artifact@v2
+        with:
+          name: APK
+          path: build/release/signed/*
+
+      - name: Release Signed APK on GitHub
+        if: github.ref == 'refs/heads/master'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/release/signed/*
+          tag: v${{ steps.getVersion.outputs.info }}
+          overwrite: true
+          file_glob: true

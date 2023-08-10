@@ -17,29 +17,6 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             app:tbgCheckedButton="@+id/btn_year">
-
-<!--            <com.nex3z.togglebuttongroup.button.LabelToggle-->
-<!--                android:id="@+id/btn_year"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:padding="@dimen/padding_normal"-->
-<!--                android:text="Year" />-->
-
-<!--            <com.nex3z.togglebuttongroup.button.LabelToggle-->
-<!--                android:id="@+id/btn_month"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:padding="@dimen/padding_normal"-->
-<!--                android:text="Month" />-->
-
-<!--            <com.nex3z.togglebuttongroup.button.LabelToggle-->
-<!--                android:id="@+id/btn_week"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:padding="@dimen/padding_normal"-->
-<!--                android:text="Week" />-->
-
-
         </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>
 
         <com.github.mikephil.charting.charts.BarChart

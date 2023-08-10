@@ -22,8 +22,8 @@
 
         <View
             android:layout_width="match_parent"
-            android:background="@color/colorPrimaryDark"
-            android:layout_height="@dimen/_1dp"/>
+            android:layout_height="@dimen/_1dp"
+            android:background="@color/colorPrimaryDark" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -49,8 +49,8 @@
                     android:background="@drawable/oval_primary"
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
-                    android:tint="@color/colorPrimaryDark"
-                    app:srcCompat="@drawable/ic_camera" />
+                    app:srcCompat="@drawable/ic_camera"
+                    app:tint="@color/colorPrimaryDark" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -80,8 +80,8 @@
                     android:background="@drawable/oval_primary"
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
-                    android:tint="@color/colorPrimaryDark"
-                    app:srcCompat="@drawable/ic_record_video" />
+                    app:srcCompat="@drawable/ic_record_video"
+                    app:tint="@color/colorPrimaryDark" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -111,8 +111,8 @@
                     android:background="@drawable/oval_primary"
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
-                    android:tint="@color/colorPrimaryDark"
-                    app:srcCompat="@drawable/ic_mic" />
+                    app:srcCompat="@drawable/ic_mic"
+                    app:tint="@color/colorPrimaryDark" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -124,13 +124,12 @@
 
             </LinearLayout>
 
-
             <LinearLayout
+                android:id="@+id/ll_draft"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:layout_weight="1"
-                android:id="@+id/ll_draft"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center"
                 android:orientation="vertical">
@@ -143,8 +142,8 @@
                     android:background="@drawable/oval_primary"
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
-                    android:tint="@color/colorPrimaryDark"
-                    app:srcCompat="@drawable/ic_folder" />
+                    app:srcCompat="@drawable/ic_folder"
+                    app:tint="@color/colorPrimaryDark" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -155,11 +154,6 @@
                     android:textColor="@color/colorPrimaryDark" />
 
             </LinearLayout>
-
-
         </LinearLayout>
-
-
     </LinearLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

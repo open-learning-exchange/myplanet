@@ -2,8 +2,10 @@ package org.ole.planet.myplanet.ui.team.teamResource;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -56,7 +58,6 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
                 }
             });
             ((ViewHolderTeamResource) holder).ivRemove.setOnClickListener(view -> {
-                // TODO: 2019-08-21 Remove resource from team
             });
             if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
                 ((ViewHolderTeamResource) holder).ivRemove.setVisibility(View.GONE);

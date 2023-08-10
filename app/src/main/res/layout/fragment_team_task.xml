@@ -1,21 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     tools:context=".ui.team.teamTask.TeamTaskFragment">
-
-
-        <!--<ToggleButton-->
-            <!--android:layout_width="wrap_content"-->
-            <!--android:id="@+id/task_toggle"-->
-            <!--android:textOff="My Task"-->
-            <!--android:textOn="All Task"-->
-            <!---->
-            <!--android:layout_height="wrap_content" />-->
-
 
     <com.nex3z.togglebuttongroup.SingleSelectToggleGroup
         android:id="@+id/task_toggle"
@@ -25,24 +15,24 @@
 
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_all"
-            android:padding="@dimen/padding_normal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="All Task"/>
+            android:padding="@dimen/padding_normal"
+            android:text="@string/all_task" />
 
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_my"
             android:layout_width="wrap_content"
-            android:padding="@dimen/padding_normal"
             android:layout_height="wrap_content"
-            android:text="My task"/>
+            android:padding="@dimen/padding_normal"
+            android:text="@string/my_task" />
 
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_completed"
             android:layout_width="wrap_content"
-            android:padding="@dimen/padding_normal"
             android:layout_height="wrap_content"
-            android:text="Completed"/>
+            android:padding="@dimen/padding_normal"
+            android:text="@string/completed" />
 
 
     </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>

@@ -6,14 +6,10 @@
     android:background="@color/colorPrimary"
     tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardFragment">
 
-
-
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
 
         <include
             layout="@layout/card_profile_bell"
@@ -51,9 +47,7 @@
             android:layout_height="0dp"
             android:layout_weight="1" />
 
-
     </LinearLayout>
-
 
     <com.github.clans.fab.FloatingActionMenu
         android:layout_width="wrap_content"
@@ -63,7 +57,6 @@
         app:menu_icon="@drawable/ic_dashboard"
         app:menu_open="arc_left"
         app:menu_scr="@drawable/ic_dashboard">
-
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_my_activity"
@@ -97,14 +90,6 @@
             android:tint="@color/md_white_1000"
             app:fab_label="@string/menu_surveys" />
 
-        <!--        <com.github.clans.fab.FloatingActionButton-->
-        <!--            android:layout_width="wrap_content"-->
-        <!--            android:src="@drawable/ic_feedback"-->
-        <!--            app:fab_label="@string/menu_feedback"-->
-        <!--            -->
-        <!--            android:id="@+id/fab_feedback"-->
-        <!--            android:layout_height="wrap_content" />-->
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/add_resource"
             android:layout_width="wrap_content"
@@ -126,8 +111,8 @@
 
         <TextView
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:padding="@dimen/padding_normal"
             android:text="@string/update_profile_alert"
             android:textColor="@color/md_black_1000" />
@@ -137,6 +122,6 @@
             android:layout_width="@dimen/_30dp"
             android:layout_height="@dimen/_30dp"
             android:src="@drawable/close_x"
-            android:tint="@color/md_black_1000" />
+            app:tint="@color/md_black_1000" />
     </LinearLayout>
 </FrameLayout>

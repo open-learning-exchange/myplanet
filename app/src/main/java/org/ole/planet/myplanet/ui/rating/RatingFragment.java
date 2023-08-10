@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.ui.rating;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatRatingBar;
 import androidx.fragment.app.DialogFragment;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,7 +31,6 @@ import io.realm.Realm;
 import static android.content.Context.MODE_PRIVATE;
 
 public class RatingFragment extends DialogFragment {
-
     DatabaseService databaseService;
     RealmUserModel model;
     String id = "", type = "", title = "";
@@ -40,6 +41,7 @@ public class RatingFragment extends DialogFragment {
     SharedPreferences settings;
     OnRatingChangeListener listener;
     RealmRating previousRating;
+
     public void setListener(OnRatingChangeListener listener) {
         this.listener = listener;
     }
@@ -57,7 +59,6 @@ public class RatingFragment extends DialogFragment {
     public RatingFragment() {
     }
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,8 +71,7 @@ public class RatingFragment extends DialogFragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_rating, container, false);
         submit = v.findViewById(R.id.btn_submit);
         cancel = v.findViewById(R.id.btn_cancel);
@@ -87,10 +87,9 @@ public class RatingFragment extends DialogFragment {
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        model = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", ""))
-                .findFirst();
-        previousRating =   mRealm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
-        if (previousRating!=null){
+        model = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", "")).findFirst();
+        previousRating = mRealm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
+        if (previousRating != null) {
             ratingBar.setRating(previousRating.getRate());
             etComment.setText(previousRating.getComment());
         }
@@ -105,13 +104,11 @@ public class RatingFragment extends DialogFragment {
             RealmRating ratingObject = realm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
             if (ratingObject == null)
                 ratingObject = realm.createObject(RealmRating.class, UUID.randomUUID().toString());
-            model = realm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", ""))
-                    .findFirst();
+            model = realm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", "")).findFirst();
             setData(model, ratingObject, comment, rating);
         }, () -> {
             Utilities.toast(getActivity(), "Thank you, your rating is submitted.");
-            if (listener!=null)
-                listener.onRatingChanged();
+            if (listener != null) listener.onRatingChanged();
             dismiss();
         });
     }
