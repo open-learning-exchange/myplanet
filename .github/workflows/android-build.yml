@@ -23,7 +23,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           cache: 'gradle'
-      - name: install Android NDK
+      - name: install NDK
         run: |
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
           chmod +x ./gradlew
