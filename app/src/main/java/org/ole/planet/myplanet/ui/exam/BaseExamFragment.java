@@ -52,7 +52,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     RealmSubmission sub;
     HashMap<String, String> listAns;
     boolean isMySurvey;
-    String mac_addr = NetworkUtils.getMacAddr();
+    String mac_addr = NetworkUtils.getUniqueIdentifier();
     String date = new Date().toString();
     String photo_path = "";
     String Submit_id = "";

@@ -104,7 +104,7 @@ public class RealmSubmission extends RealmObject {
         object.addProperty("startTime", sub.getStartTime());
         object.addProperty("lastUpdateTime", sub.getLastUpdateTime());
         object.addProperty("status", sub.getStatus());
-        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object.addProperty("sender", sub.getSender());

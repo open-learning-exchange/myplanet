@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.news
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebSettings
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -12,7 +11,6 @@ import kotlinx.android.synthetic.main.activity_news_detail.*
 import kotlinx.android.synthetic.main.content_news_detail.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.base.BaseNewsAdapter.ViewHolderNews
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
@@ -45,7 +43,7 @@ class NewsDetailActivity : BaseActivity() {
         realm.executeTransactionAsync {
             var newsLog: RealmNewsLog =
                 it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
-            newsLog.androidId = NetworkUtils.getMacAddr()
+            newsLog.androidId = NetworkUtils.getUniqueIdentifier()
             newsLog.type = "news"
             newsLog.time = Date().time
             if (user != null) newsLog.userId = userId
