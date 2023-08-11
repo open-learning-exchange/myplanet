@@ -31,8 +31,15 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
         String filePath = getIntent().getStringExtra("TOUCHED_FILE");
         jcAudios = new ArrayList<>();
         isFullPath = getIntent().getBooleanExtra("isFullPath", false);
-        String fullPath = String.valueOf(new File(Utilities.SD_PATH, filePath));
-        if (isFullPath) fullPath = String.valueOf(new File(filePath));
+        String fullPath;
+
+        if (isFullPath) {
+            fullPath = filePath;
+        } else {
+            File basePath = getExternalFilesDir(null);
+            fullPath = new File(basePath, "ole/" + filePath).getAbsolutePath();
+        }
+
         jcAudios.add(JcAudio.createFromFilePath(fullPath));
         jcplayer.initPlaylist(jcAudios, null);
         jcplayer.getRootView().findViewById(R.id.btnNext).setVisibility(View.GONE);

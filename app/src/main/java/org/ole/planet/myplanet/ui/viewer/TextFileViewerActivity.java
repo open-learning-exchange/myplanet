@@ -36,33 +36,30 @@ public class TextFileViewerActivity extends AppCompatActivity {
     private void renderTextFile() {
         Intent textFileOpenIntent = getIntent();
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE");
-
         if (fileName != null && !fileName.isEmpty()) {
             mTextFileNameTitle.setText(fileName);
             mTextFileNameTitle.setVisibility(View.VISIBLE);
         }
-
         renderTextFileThread();
     }
-
     private void renderTextFileThread() {
         Thread openTextFileThread = new Thread() {
             @Override
             public void run() {
                 try {
-                    File file = new File(Utilities.SD_PATH, fileName);
+                    File basePath = getExternalFilesDir(null);
+                    File file = new File(basePath, "ole/" + fileName);
+
                     StringBuilder text = new StringBuilder();
 
                     BufferedReader reader = new BufferedReader(new FileReader(file));
                     String line;
-
                     while ((line = reader.readLine()) != null) {
                         text.append(line);
                         text.append('\n');
                     }
                     reader.close();
                     mTextFileContent.setText(text.toString());
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
