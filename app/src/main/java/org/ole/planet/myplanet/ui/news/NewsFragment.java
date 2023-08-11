@@ -100,6 +100,7 @@ public class NewsFragment extends BaseNewsFragment {
             imageList.clear();
             llImage.removeAllViews();
             adapterNews.addItem(n);
+            setData(getNewsList());
         });
         btnAddImage.setOnClickListener(v -> {
             llImage = v.findViewById(R.id.ll_images);
