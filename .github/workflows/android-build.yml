@@ -14,6 +14,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_NDK_VERSION: "21.3.6528147"
+      BUILD_TOOLS_VERSION: "30.0.2"
+
     steps:
       - uses: actions/checkout@v3
       - name: Set up JDK 17
