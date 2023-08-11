@@ -54,6 +54,7 @@ jobs:
       - run: ls -alR app/build/outputs/bundle/release
 
       - uses: r0adkll/sign-android-release@v1
+        id: signaab
         with:
           releaseDirectory: app/build/outputs/bundle/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
@@ -64,7 +65,7 @@ jobs:
       - run: |
           ls -alR app/build/outputs/bundle/release
           cp app/build/outputs/bundle/release/app-release.aab build/release/signed/
-          cp ${{ steps.sign_aab.outputs.signedReleaseFile }} build/release/signed/app-release-signed.aab
+          cp ${{ steps.signaab.outputs.signedReleaseFile }} build/release/signed/app-release-signed.aab
 
       - run: ls -alR build/release/signed
 
