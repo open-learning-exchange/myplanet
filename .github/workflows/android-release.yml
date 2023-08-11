@@ -19,13 +19,6 @@ jobs:
       - name: checkout repository code
         uses: actions/checkout@v3
 
-      - name: setup JDK 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-          cache: 'gradle'
-
       - name: extract version from xml
         id: getVersion
         uses: mavrosxristoforos/get-xml-info@1.0
@@ -33,7 +26,14 @@ jobs:
           xml-file: 'app/src/main/res/values/versions.xml'
           xpath: '//string'
 
-      - name: install Android NDK
+      - name: setup JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: install NDK
         run: |
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
           chmod +x ./gradlew
