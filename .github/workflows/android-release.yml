@@ -75,6 +75,7 @@ jobs:
           cd build/release/signed/
           sha256sum myPlanet.apk > myPlanet.apk.sha256
           sha256sum myPlanet.aab > myPlanet.aab.sha256
+          cd -
           ls -alR build/release/signed
 
       - name: rename APK/AAB with version and branch for artifact
@@ -84,6 +85,7 @@ jobs:
           mv build/release/signed/myPlanet.apk.sha256 build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk.sha256
           mv build/release/signed/myPlanet.aab build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.aab
           mv build/release/signed/myPlanet.aab.sha256 build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.aab.sha256
+          ls -alR build/release/signed
 
       - name: upload APK/AAB as build artifact
         if: github.ref != 'refs/heads/master'
