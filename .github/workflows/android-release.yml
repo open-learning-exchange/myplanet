@@ -26,6 +26,13 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
+      - name: extract version from xml
+        id: getVersion
+        uses: mavrosxristoforos/get-xml-info@1.0
+        with:
+          xml-file: 'app/src/main/res/values/versions.xml'
+          xpath: '//string'
+
       - name: install Android NDK
         run: |
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
@@ -51,10 +58,8 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - run: ls -alR app/build/outputs/bundle/release
-
-      - uses: r0adkll/sign-android-release@v1
-        id: signaab
+      - name: sign release AAB
+        uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: app/build/outputs/bundle/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
@@ -62,40 +67,32 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - run: |
-          ls -alR app/build/outputs/bundle/release
-          cp app/build/outputs/bundle/release/app-release.aab build/release/signed/
-          cp ${{ steps.signaab.outputs.signedReleaseFile }} build/release/signed/app-release-signed.aab
-
-      - run: ls -alR build/release/signed
-
-      - name: Copy Debug Build to Release Directory and Generate SHA256
+      - name: copy builds to directory and generate sha256
         run: |
-          cp app/build/outputs/apk/debug/* build/release/signed/
+          cp app/build/outputs/apk/debug/m* build/release/signed/
+          cp app/build/outputs/bundle/release/app-release.aab build/release/signed/myPlanet.aab
           mv build/release/signed/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
           cd build/release/signed/
           sha256sum myPlanet.apk > myPlanet.apk.sha256
+          sha256sum myPlanet.aab > myPlanet.aab.sha256
+          ls -alR build/release/signed
 
-      - name: Extract Version from XML File
-        id: getVersion
-        uses: mavrosxristoforos/get-xml-info@1.0
-        with:
-          xml-file: 'app/src/main/res/values/versions.xml'
-          xpath: '//string'
-
-      - name: Rename APK with Version and Branch for Artifact
+      - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
         run: |
           mv build/release/signed/myPlanet.apk build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk
+          mv build/release/signed/myPlanet.apk.sha256 build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk.sha256
+          mv build/release/signed/myPlanet.aab build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.aab
+          mv build/release/signed/myPlanet.aab.sha256 build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.aab.sha256
 
-      - name: Upload APK as Build Artifact
+      - name: upload APK/AAB as build artifact
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v2
         with:
           name: APK
           path: build/release/signed/*
 
-      - name: Release Signed APK on GitHub
+      - name: release signed APK and AAB on GitHub
         if: github.ref == 'refs/heads/master'
         uses: svenstaro/upload-release-action@v2
         with:
