@@ -55,10 +55,13 @@ jobs:
         with:
           releaseDirectory: app/build/outputs/bundle/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          output: build/release/signed
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
+
+      - run: |
+          ls -alR app/build/outputs/bundle/release
+          cp app/build/outputs/bundle/release/* build/release/signed/
 
       - run: ls -alR build/release/signed
 
