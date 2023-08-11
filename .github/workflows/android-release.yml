@@ -29,7 +29,7 @@ jobs:
         run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.3.6528147" --sdk_root=${ANDROID_SDK_ROOT}
       - name: Make gradlew executable
         run: chmod +x ./gradlew
-\
+
       - name: Build APK and List Build Artifacts
         run: |
           ./gradlew build
