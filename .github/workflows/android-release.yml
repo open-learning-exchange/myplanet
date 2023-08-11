@@ -25,10 +25,10 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Install NDK
-        run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.3.6528147" --sdk_root=${ANDROID_SDK_ROOT}
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Install Android NDK and Make Gradle Wrapper Executable
+        run: |
+          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
+          chmod +x ./gradlew
 
       - name: Build APK and List Build Artifacts
         run: |
