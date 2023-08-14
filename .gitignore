@@ -12,6 +12,7 @@ Thumbs.db
 # Application files
 *.apk
 *.ap_
+*.aab
 
 # ART/Dalvik VM files
 *.dex
@@ -28,6 +29,7 @@ out
 .gradle
 build
 app/build
+app/release
 
 # Local configuration
 local.properties
