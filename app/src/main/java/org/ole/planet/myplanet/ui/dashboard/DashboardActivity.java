@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
-import org.ole.planet.myplanet.ui.chat.ChatFragment;
+import org.ole.planet.myplanet.ui.chat.ChatActivity;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
@@ -159,7 +159,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.action_chat:
-                        openCallFragment(new ChatFragment());
+                        startActivity(new Intent(DashboardActivity.this, ChatActivity.class));
                         break;
                     case R.id.menu_goOnline:
                         wifiStatusSwitch();
