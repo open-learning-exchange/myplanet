@@ -48,6 +48,9 @@ jobs:
           ./gradlew bundleRelease
           ls -alR app/build/outputs/bundle
 
+      - run: ls -alR app/build/outputs
+      #/proguard/release/mapping/mapping.txt
+
       - name: sign release APK
         uses: Tlaster/android-sign@v1.2.2
         with:
@@ -86,7 +89,7 @@ jobs:
           releaseFiles: build/release/signed/myPlanet.aab
           track: production
           releaseName: ${{ steps.getVersion.outputs.info }}
-          changesNotSentForReview: true
+          #changesNotSentForReview: true
           #mappingFile:
 
       - name: rename APK/AAB with version and branch for artifact
