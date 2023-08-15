@@ -1,17 +1,18 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.content.Intent
+import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.util.Log
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import okhttp3.MediaType
@@ -19,30 +20,35 @@ import okhttp3.RequestBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class ChatFragment : Fragment() {
+class ChatActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var sendMessage: ImageView
     private lateinit var chatMessage: EditText
     private lateinit var imageLoading: ImageView
     private lateinit var mAdapter: ChatAdapter
     private lateinit var errorIndicator: TextView
+    private lateinit var back: ImageView
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val rootView = inflater.inflate(R.layout.fragment_chat, container, false)
-        sendMessage = rootView.findViewById(R.id.button_gchat_send)
-        chatMessage = rootView.findViewById(R.id.edit_gchat_message)
-        recyclerView = rootView.findViewById(R.id.recycler_gchat)
-        imageLoading = rootView.findViewById(R.id.image_gchat_loading)
-        errorIndicator = rootView.findViewById(R.id.text_gchat_indicator)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_chat)
 
-        mAdapter = ChatAdapter(ArrayList(), requireContext())
+        sendMessage = findViewById(R.id.button_gchat_send)
+        chatMessage = findViewById(R.id.edit_gchat_message)
+        recyclerView = findViewById(R.id.recycler_gchat)
+        imageLoading = findViewById(R.id.image_gchat_loading)
+        errorIndicator = findViewById(R.id.text_gchat_indicator)
+        back = findViewById(R.id.back)
+
+        mAdapter = ChatAdapter(ArrayList(), this)
         recyclerView.adapter = mAdapter
-        val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(requireContext()) {
+        val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {
             override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
                 return RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
@@ -85,7 +91,19 @@ class ChatFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        return rootView
+        back.setOnClickListener {
+            val intent = Intent(this, DashboardActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(intent)
+            finish()
+        }
+
+        val callback = object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                onBackPressed()
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, callback)
     }
 
     fun makePostRequest(content: RequestBody) {
@@ -134,5 +152,12 @@ class ChatFragment : Fragment() {
                 imageLoading.visibility = View.INVISIBLE
             }
         })
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        val intent = Intent(this, DashboardActivity::class.java)
+        startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+        finish()
     }
 }
