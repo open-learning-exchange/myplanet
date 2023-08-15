@@ -6,18 +6,19 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import kotlinx.android.synthetic.main.fragment_members.rv_member
-import kotlinx.android.synthetic.main.fragment_members.tv_nodata
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class LeadersFragment : Fragment() {
+    private lateinit var fragmentMembersBinding: FragmentMembersBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_members, container, false)
+        fragmentMembersBinding = FragmentMembersBinding.inflate(inflater, container, false)
+        return fragmentMembersBinding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -25,16 +26,16 @@ class LeadersFragment : Fragment() {
         var mRealm = DatabaseService(requireActivity()).realmInstance;
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
         if (leaders.isEmpty()) {
-            tv_nodata.text = getString(R.string.no_data_available)
+            fragmentMembersBinding.tvNodata.text = getString(R.string.no_data_available)
         } else {
-            rv_member.layoutManager = GridLayoutManager(activity, 2)
+            fragmentMembersBinding.rvMember.layoutManager = GridLayoutManager(activity, 2)
             val list = ArrayList<RealmUserModel>()
             for (team in leaders) {
                 val model =
                     mRealm.where(RealmUserModel::class.java).equalTo("id", team.user_id).findFirst()
                 if (model != null && !list.contains(model)) list.add(model)
             }
-            rv_member.adapter = AdapterLeader(requireActivity(), list)
+            fragmentMembersBinding.rvMember.adapter = AdapterLeader(requireActivity(), list)
         }
     }
 }
