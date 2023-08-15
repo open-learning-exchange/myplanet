@@ -1,28 +1,31 @@
-name: Android Check CI
+name: myPlanet build test
 
 on:
   push:
     branches:
       - '*'
       - '!master'
-
-#on:
 #  workflow_dispatch:
-#    inputs:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      ANDROID_NDK_VERSION: "21.3.6528147"
+      BUILD_TOOLS_VERSION: "30.0.2"
+
     steps:
-      - uses: actions/checkout@v1
-      - name: Set up JDK 17
-        uses: actions/setup-java@v1
+      - uses: actions/checkout@v3
+      - name: setup JDK 17
+        uses: actions/setup-java@v3
         with:
-          java-version: 17
-      - name: Install NDK
-        run: echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;21.3.6528147" --sdk_root=${ANDROID_SDK_ROOT}
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
-      - name: Build with Gradle
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+      - name: install NDK
+        run: |
+          echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
+          chmod +x ./gradlew
+      - name: build debug as test
         run: ./gradlew assembleDebug
