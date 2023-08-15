@@ -11,8 +11,10 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.webkit.URLUtil;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -274,6 +276,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
+        inputPassword.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE ||
+                    (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                btnSignIn.performClick();
+                return true;
+            }
+            return false;
+        });
         setUplanguageButton();
         if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             inputName.setText(settings.getString(getString(R.string.login_user), ""));
