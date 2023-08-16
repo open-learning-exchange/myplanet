@@ -10,26 +10,26 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.applandeo.materialcalendarview.CalendarView;
 import com.applandeo.materialcalendarview.EventDay;
 import com.applandeo.materialcalendarview.exceptions.OutOfDateRangeException;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.databinding.FragmentCalendarBinding;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
 public class CalendarFragment extends Fragment {
+    private FragmentCalendarBinding calendarBinding;
     OnHomeItemClickListener listener;
 
     public void addEvents() {
         List<EventDay> events = new ArrayList<>();
         Calendar calendar = Calendar.getInstance();
         events.add(new EventDay(calendar, R.drawable.bg_label_checked));
-        CalendarView calendarView = (CalendarView) getView().findViewById(R.id.calendarView);
-        calendarView.setEvents(events);
+        calendarBinding.calendarView.setEvents(events);
     }
 
     @Override
@@ -45,20 +45,20 @@ public class CalendarFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        CalendarView v = (CalendarView) inflater.inflate(R.layout.fragment_calendar, container, false);
+        calendarBinding = FragmentCalendarBinding.inflate(inflater, container, false);
 
-        v.setOnDayClickListener(eventDay -> {
+        calendarBinding.calendarView.setOnDayClickListener(eventDay -> {
             Calendar clickedDayCalendar = eventDay.getCalendar();
         });
 
         Calendar calendar = Calendar.getInstance();
 
         try {
-            v.setDate(calendar.getTime());
+            calendarBinding.calendarView.setDate(calendar.getTime());
         } catch (OutOfDateRangeException e) {
             e.printStackTrace();
         }
-        return v;
+        return calendarBinding.getRoot();
     }
 
     @Override

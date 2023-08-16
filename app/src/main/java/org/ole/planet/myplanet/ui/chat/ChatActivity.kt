@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -9,15 +8,13 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import okhttp3.MediaType
 import okhttp3.RequestBody
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ActivityChatBinding
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -27,27 +24,16 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class ChatActivity : AppCompatActivity() {
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var sendMessage: ImageView
-    private lateinit var chatMessage: EditText
-    private lateinit var imageLoading: ImageView
+    private lateinit var activityChatBinding: ActivityChatBinding
     private lateinit var mAdapter: ChatAdapter
-    private lateinit var errorIndicator: TextView
-    private lateinit var back: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_chat)
-
-        sendMessage = findViewById(R.id.button_gchat_send)
-        chatMessage = findViewById(R.id.edit_gchat_message)
-        recyclerView = findViewById(R.id.recycler_gchat)
-        imageLoading = findViewById(R.id.image_gchat_loading)
-        errorIndicator = findViewById(R.id.text_gchat_indicator)
-        back = findViewById(R.id.back)
+        activityChatBinding = ActivityChatBinding.inflate(layoutInflater)
+        setContentView(activityChatBinding.root)
 
         mAdapter = ChatAdapter(ArrayList(), this)
-        recyclerView.adapter = mAdapter
+        activityChatBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {
             override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
                 return RecyclerView.LayoutParams(
@@ -55,43 +41,43 @@ class ChatActivity : AppCompatActivity() {
                 )
             }
         }
-        recyclerView.layoutManager = layoutManager
-        recyclerView.isNestedScrollingEnabled = true
-        recyclerView.setHasFixedSize(true)
+        activityChatBinding.recyclerGchat.layoutManager = layoutManager
+        activityChatBinding.recyclerGchat.isNestedScrollingEnabled = true
+        activityChatBinding.recyclerGchat.setHasFixedSize(true)
 
 
         if (mAdapter.itemCount > 0) {
-            recyclerView.scrollToPosition(mAdapter.itemCount - 1)
-            recyclerView.smoothScrollToPosition(mAdapter.itemCount - 1)
+            activityChatBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+            activityChatBinding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
         }
 
-        sendMessage.setOnClickListener {
-            errorIndicator.visibility = View.GONE
-            if (TextUtils.isEmpty(chatMessage.text.toString().trim())) {
-                errorIndicator.visibility = View.VISIBLE
-                errorIndicator.text = "Kindly enter message"
+        activityChatBinding.buttonGchatSend.setOnClickListener {
+            activityChatBinding.textGchatIndicator.visibility = View.GONE
+            if (TextUtils.isEmpty(activityChatBinding.editGchatMessage.text.toString().trim())) {
+                activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
+                activityChatBinding.textGchatIndicator.text = "Kindly enter message"
             } else {
-                val message = "${chatMessage.text}".replace("\n", " ")
+                val message = "${activityChatBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
                 val jsonContent = "{\"content\": \"$message\"}"
                 val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                 makePostRequest(requestBody)
-                chatMessage.text.clear()
-                errorIndicator.visibility = View.GONE
+                activityChatBinding.editGchatMessage.text.clear()
+                activityChatBinding.textGchatIndicator.visibility = View.GONE
             }
         }
 
-        chatMessage.addTextChangedListener(object : TextWatcher {
+        activityChatBinding.editGchatMessage.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                errorIndicator.visibility = View.GONE
+                activityChatBinding.textGchatIndicator.visibility = View.GONE
             }
 
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        back.setOnClickListener {
+        activityChatBinding.back.setOnClickListener {
             val intent = Intent(this, DashboardActivity::class.java)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             startActivity(intent)
@@ -107,9 +93,9 @@ class ChatActivity : AppCompatActivity() {
     }
 
     fun makePostRequest(content: RequestBody) {
-        sendMessage.isEnabled = false
-        chatMessage.isEnabled = false
-        imageLoading.visibility = View.VISIBLE
+        activityChatBinding.buttonGchatSend.isEnabled = false
+        activityChatBinding.editGchatMessage.isEnabled = false
+        activityChatBinding.imageGchatLoading.visibility = View.VISIBLE
 
         val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
         val call = apiInterface.chatGpt(Utilities.getHostUrl(), content)
@@ -133,23 +119,23 @@ class ChatActivity : AppCompatActivity() {
                         }
                     }
                 } else {
-                    errorIndicator.visibility = View.VISIBLE
-                    errorIndicator.text = "${response.body()!!.message}"
+                    activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
+                    activityChatBinding.textGchatIndicator.text = "${response.body()!!.message}"
                     Log.d("failed chat message", "${response.body()!!.message}")
                 }
 
-                sendMessage.isEnabled = true
-                chatMessage.isEnabled = true
-                imageLoading.visibility = View.INVISIBLE
+                activityChatBinding.buttonGchatSend.isEnabled = true
+                activityChatBinding.editGchatMessage.isEnabled = true
+                activityChatBinding.imageGchatLoading.visibility = View.INVISIBLE
             }
 
             override fun onFailure(call: Call<ChatModel>, t: Throwable) {
                 Log.d("onFailure chat message", "${t.message}")
-                errorIndicator.visibility = View.VISIBLE
-                errorIndicator.text = "${t.message}"
-                sendMessage.isEnabled = true
-                chatMessage.isEnabled = true
-                imageLoading.visibility = View.INVISIBLE
+                activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
+                activityChatBinding.textGchatIndicator.text = "${t.message}"
+                activityChatBinding.buttonGchatSend.isEnabled = true
+                activityChatBinding.editGchatMessage.isEnabled = true
+                activityChatBinding.imageGchatLoading.visibility = View.INVISIBLE
             }
         })
     }
