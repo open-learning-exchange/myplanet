@@ -99,19 +99,17 @@
 
                 <TextView
                     android:id="@+id/tv_delete"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:layout_weight="1"
+                    android:layout_margin="@dimen/_10dp"
                     android:background="?attr/selectableItemBackground"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
+                    android:gravity="start|center_vertical"
+                    android:visibility="gone"
                     android:text="@string/remove_selected"
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone"
-                    app:drawableStartCompat="@drawable/ic_delete" />
+                    app:drawableLeftCompat="@drawable/ic_delete" />
 
 
                 <ImageButton
