@@ -57,20 +57,23 @@ public class ManagerSync {
         apiInterface.getJsonObject("Basic " + Base64.encodeToString((userName + ":" + password).getBytes(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:" + userName)).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
-                JsonObject jsonDoc = response.body();
-                if (jsonDoc != null) {
-                    AndroidDecrypter decrypt = new AndroidDecrypter();
-                    String derivedKey = jsonDoc.get("derived_key").getAsString();
-                    String salt = jsonDoc.get("salt").getAsString();
-                    if (decrypt.AndroidDecrypter(userName, password, derivedKey, salt)) {
-                        checkManagerAndInsert(jsonDoc, mRealm, listener);
+                if (response.isSuccessful() && response.body() != null) {
+                    JsonObject jsonDoc = response.body();
+                    if (jsonDoc.has("derived_key") && jsonDoc.has("salt")) {
+                        AndroidDecrypter decrypt = new AndroidDecrypter();
+                        String derivedKey = jsonDoc.get("derived_key").getAsString();
+                        String salt = jsonDoc.get("salt").getAsString();
+                        if (decrypt.AndroidDecrypter(userName, password, derivedKey, salt)) {
+                            checkManagerAndInsert(jsonDoc, mRealm, listener);
+                        } else {
+                            listener.onSyncFailed("Name or password is incorrect.");
+                        }
                     } else {
-                        listener.onSyncFailed("Name or password is incorrect.");
+                        listener.onSyncFailed("JSON response is missing required keys.");
                     }
                 } else {
                     listener.onSyncFailed("Name or password is incorrect.");
                 }
-
             }
 
             @Override

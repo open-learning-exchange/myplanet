@@ -100,6 +100,7 @@ public class NewsFragment extends BaseNewsFragment {
             imageList.clear();
             llImage.removeAllViews();
             adapterNews.addItem(n);
+            setData(getNewsList());
         });
         btnAddImage.setOnClickListener(v -> {
             llImage = v.findViewById(R.id.ll_images);
@@ -150,6 +151,8 @@ public class NewsFragment extends BaseNewsFragment {
         adapterNews.registerAdapterDataObserver(observer);
         rvNews.setAdapter(adapterNews);
         showNoData(tvMessage, adapterNews.getItemCount());
+        llAddNews.setVisibility(View.GONE);
+        btnAddStory.setText(getString(R.string.add_story));
     }
 
     @Override
