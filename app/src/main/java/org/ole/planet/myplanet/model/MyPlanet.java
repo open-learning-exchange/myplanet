@@ -178,10 +178,6 @@ public class MyPlanet implements Serializable {
             object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
             object.addProperty("deviceName", NetworkUtils.getDeviceName());
             object.addProperty("time", new Date().getTime());
-            JsonObject gps = new JsonObject();
-            gps.addProperty("latitude", pref.getString("last_lat", ""));
-            gps.addProperty("longitude", pref.getString("last_lng", ""));
-            object.add("gps", gps);
             arr.add(object);
         }
     }
