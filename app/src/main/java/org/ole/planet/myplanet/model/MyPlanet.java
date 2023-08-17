@@ -145,10 +145,6 @@ public class MyPlanet implements Serializable {
         postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
         postJSON.addProperty("time", new Date().getTime());
         postJSON.addProperty("type", "sync");
-        JsonObject gps = new JsonObject();
-        gps.addProperty("latitude", pref.getString("last_lat", ""));
-        gps.addProperty("longitude", pref.getString("last_lng", ""));
-        postJSON.add("gps", gps);
         return postJSON;
     }
 
