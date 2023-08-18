@@ -89,7 +89,7 @@ jobs:
           releaseFiles: build/release/signed/myPlanet.aab
           track: production
           releaseName: "966 (${{ steps.getVersion.outputs.info }})"
-          #changesNotSentForReview: true
+          changesNotSentForReview: true
           #mappingFile:
 
       - name: rename APK/AAB with version and branch for artifact
