@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,6 +43,15 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     public FeedbackFragment() {
     }
 
+    public interface OnFeedbackSubmittedListener {
+        void onFeedbackSubmitted();
+    }
+
+    private OnFeedbackSubmittedListener mListener;
+
+    public void setOnFeedbackSubmittedListener(OnFeedbackSubmittedListener listener) {
+        mListener = listener;
+    }
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -113,6 +123,9 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
             mRealm.executeTransactionAsync(realm -> saveData(realm, urgent, type, message), () ->
                     Utilities.toast(getActivity(), String.valueOf(R.string.feedback_saved)));
         Toast.makeText(getActivity(), R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show();
+        if (mListener != null) {
+            mListener.onFeedbackSubmitted();
+        }
     }
 
     public String[] getArgumentArray(String message) {
