@@ -6,20 +6,31 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
-import kotlinx.android.synthetic.main.activity_course_progress.*
+import kotlinx.android.synthetic.main.activity_course_progress.progressView
+import kotlinx.android.synthetic.main.activity_course_progress.rv_progress
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class CourseProgressActivity : BaseActivity() {
+    private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
     lateinit var realm: Realm;
     lateinit var user: RealmUserModel;
     lateinit var courseId: String;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_course_progress)
+        activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
+        setContentView(activityCourseProgressBinding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString();
         realm = DatabaseService(this).realmInstance
@@ -33,10 +44,10 @@ class CourseProgressActivity : BaseActivity() {
                 (progress["current"].asInt.div(progress["max"].asInt)) * 100, true
             )
         }
-        tv_course.text = course!!.courseTitle
-        tv_progress.text =
+        activityCourseProgressBinding.tvCourse.text = course!!.courseTitle
+        activityCourseProgressBinding.tvProgress.text =
             getString(R.string.progress) + courseProgress[courseId]!!["current"].asString + getString(R.string.of) + courseProgress[courseId]!!["max"].asString
-        rv_progress.layoutManager = GridLayoutManager(this, 4)
+        activityCourseProgressBinding.rvProgress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }
 

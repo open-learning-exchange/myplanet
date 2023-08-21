@@ -11,18 +11,24 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
-import kotlinx.android.synthetic.main.fragment_my_progress.*
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.FragmentMyProgressBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class MyProgressFragment : Fragment() {
+    private lateinit var fragmentMyProgressBinding: FragmentMyProgressBinding
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_my_progress, container, false)
+        fragmentMyProgressBinding = FragmentMyProgressBinding.inflate(inflater, container, false)
+        return fragmentMyProgressBinding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -50,8 +56,8 @@ class MyProgressFragment : Fragment() {
             submissionMap(submissions, realm, examIds, totalMistakes, obj)
             arr.add(obj)
         }
-        rv_myprogress.layoutManager = LinearLayoutManager(requireActivity())
-        rv_myprogress.adapter = AdapterMyProgress(requireActivity(), arr)
+        fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
+        fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), arr)
     }
 
     private fun submissionMap(
