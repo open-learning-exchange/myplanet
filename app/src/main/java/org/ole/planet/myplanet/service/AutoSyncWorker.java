@@ -9,6 +9,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.work.Worker;
@@ -46,10 +48,13 @@ public class AutoSyncWorker extends Worker implements SyncListener, Service.Chec
         preferences = context.getSharedPreferences(SyncManager.PREFS_NAME, MODE_PRIVATE);
         long lastSync = preferences.getLong("LastSync", 0);
         long currentTime = System.currentTimeMillis();
-        int syncInterval = preferences.getInt("autoSyncInterval", 60 * 60);
 
-        if ((currentTime - lastSync) > (syncInterval * 1000)) {
-            Utilities.toast(context, "Syncing started...");
+        if ((currentTime - lastSync) > (30)) {
+            // Post a Runnable to the main thread's Handler to show the Toast
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            mainHandler.post(() -> {
+                Utilities.toast(context, "Syncing started...");
+            });
             new Service(context).checkVersion(this, preferences);
         }
 
