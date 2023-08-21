@@ -48,8 +48,9 @@ public class AutoSyncWorker extends Worker implements SyncListener, Service.Chec
         preferences = context.getSharedPreferences(SyncManager.PREFS_NAME, MODE_PRIVATE);
         long lastSync = preferences.getLong("LastSync", 0);
         long currentTime = System.currentTimeMillis();
+        int syncInterval = preferences.getInt("autoSyncInterval", 60 * 60);
 
-        if ((currentTime - lastSync) > (30)) {
+        if ((currentTime - lastSync) > (syncInterval * 1000)) {
             // Post a Runnable to the main thread's Handler to show the Toast
             Handler mainHandler = new Handler(Looper.getMainLooper());
             mainHandler.post(() -> {
