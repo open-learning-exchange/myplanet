@@ -120,7 +120,6 @@ public class MyPlanet implements Serializable {
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
-        postJSON.addProperty("macAddress", NetworkUtils.getUniqueIdentifier());
         postJSON.addProperty("type", "usages");
         postJSON.add("usages", getTabletUsages(context, pref));
         return postJSON;
@@ -136,7 +135,6 @@ public class MyPlanet implements Serializable {
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
-        postJSON.addProperty("uniqueDeviceId", NetworkUtils.getUniqueIdentifier());
         postJSON.addProperty("version", VersionUtils.getVersionCode(context));
         postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
         postJSON.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
