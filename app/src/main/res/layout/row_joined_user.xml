@@ -8,44 +8,57 @@
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="wrap_content">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/memberImage"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="@dimen/_40dp"
+            android:src="@drawable/profile"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/tv_title"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp" />
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_10dp"
+            android:textColor="@color/md_black_1000"
+            android:textSize="18sp"
+            app:layout_constraintStart_toEndOf="@+id/memberImage"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <ImageView
-                android:id="@+id/ic_more"
-                android:layout_width="@dimen/_40dp"
-                android:layout_height="@dimen/_40dp"
-                android:padding="4dp"
-                android:visibility="gone"
-                app:srcCompat="@drawable/ic_more"
-                app:tint="@color/md_black_1000" />
-
-
-        </LinearLayout>
+        <ImageView
+            android:id="@+id/ic_more"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="@dimen/_40dp"
+            android:padding="4dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_more"
+            app:tint="@color/md_black_1000" />
 
         <TextView
             android:id="@+id/tv_description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_10dp"
+            app:layout_constraintStart_toEndOf="@+id/memberImage"
+            app:layout_constraintTop_toBottomOf="@+id/tv_title" />
 
         <TextView
             android:id="@+id/tv_is_leader"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="gone" />
-    </LinearLayout>
+            android:layout_marginStart="@dimen/_10dp"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@+id/memberImage"
+            app:layout_constraintTop_toBottomOf="@+id/tv_description" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
