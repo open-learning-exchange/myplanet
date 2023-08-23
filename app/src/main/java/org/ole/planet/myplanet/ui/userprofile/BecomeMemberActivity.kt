@@ -115,7 +115,7 @@ class BecomeMemberActivity : BaseActivity() {
             if (level == null) {
                 Utilities.toast(this, getString(R.string.level_is_required));
             }
-            if (password!!.isEmpty() && phoneNumber!!.isNotEmpty()) {
+            if (password.isEmpty() && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
                 password = phoneNumber
                 ///Add dialog that using phone as password , Agree / disagree
@@ -177,8 +177,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("gender", gender)
             obj.addProperty("type", "user")
             obj.addProperty("betaEnabled", false)
-            obj.addProperty("macAddress", NetworkUtils.getMacAddr())
-            obj.addProperty("androidId", NetworkUtils.getMacAddr())
+            obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
             obj.addProperty(
                 "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)

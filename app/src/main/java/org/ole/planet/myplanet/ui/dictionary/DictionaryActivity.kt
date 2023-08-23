@@ -37,7 +37,7 @@ class DictionaryActivity : BaseActivity() {
         initActionBar()
         title = getString(R.string.dictionary)
         mRealm = DatabaseService(this).realmInstance;
-        list = mRealm?.where(RealmDictionary::class.java)?.findAll()
+        list = mRealm.where(RealmDictionary::class.java)?.findAll()
         tv_result.text = "${getString(R.string.list_size)} ${list?.size}"
         Utilities.log("${FileUtils.checkFileExist(Constants.DICTIONARY_URL)} file")
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
@@ -56,7 +56,7 @@ class DictionaryActivity : BaseActivity() {
             var data =
                 FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
             var json = Gson().fromJson(data, JsonArray::class.java)
-            mRealm?.executeTransactionAsync { it ->
+            mRealm.executeTransactionAsync { it ->
                 json.forEach { js ->
                     var doc = js.asJsonObject
                     var dict = it.where(RealmDictionary::class.java)
@@ -87,7 +87,7 @@ class DictionaryActivity : BaseActivity() {
                 ?.equalTo("word", et_search.text.toString(), Case.INSENSITIVE)?.findFirst()
             if (dict != null) {
                 tv_result.text = HtmlCompat.fromHtml(
-                    "Definition of '<b>" + dict?.word + "</b>'<br/><br/>\n " + "<b>" + dict?.definition + "\n</b><br/><br/><br/>" + "<b>Synonym : </b>" + dict?.synonym + "\n<br/><br/>" + "<b>Antonoym : </b>" + dict?.antonoym + "\n<br/>",
+                    "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " + "<b>" + dict.definition + "\n</b><br/><br/><br/>" + "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" + "<b>Antonoym : </b>" + dict.antonoym + "\n<br/>",
                     HtmlCompat.FROM_HTML_MODE_LEGACY
                 )
             } else {

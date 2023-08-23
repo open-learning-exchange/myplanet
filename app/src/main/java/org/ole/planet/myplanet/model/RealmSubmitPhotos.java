@@ -14,7 +14,7 @@ public class RealmSubmitPhotos extends RealmObject {
     private String Exam_id;
     private String member_id;
     private String date;
-    private String mac_address;
+    private String unique_id;
     private String photo_location;
     private boolean uploaded;
 
@@ -66,12 +66,12 @@ public class RealmSubmitPhotos extends RealmObject {
         return date;
     }
 
-    public void setMac_address(String mac_address) {
-        this.mac_address = mac_address;
+    public void setUnique_id(String unique_id) {
+        this.unique_id = unique_id;
     }
 
-    public String getMac_address() {
-        return mac_address;
+    public String getUnique_id() {
+        return unique_id;
     }
 
     public void setPhoto_location(String photo_location) {
@@ -128,7 +128,7 @@ public class RealmSubmitPhotos extends RealmObject {
         obj.addProperty("exam_id", submit.getExam_id());
         obj.addProperty("member_id", submit.getMember_id());
         obj.addProperty("date", submit.getDate());
-        obj.addProperty("mac_address", submit.getMac_address());
+        obj.addProperty("mac_address", submit.getUnique_id());
         obj.addProperty("photo_location", submit.getPhoto_location());
 
         return obj;

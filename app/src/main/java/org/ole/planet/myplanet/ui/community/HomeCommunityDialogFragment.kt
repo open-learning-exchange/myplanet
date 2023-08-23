@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
@@ -34,8 +35,8 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         fragmentTeamDetailBinding.viewPager.adapter =
             CommunityPagerAdapter(childFragmentManager, sPlanetcode + "@" + sParentcode, true)
         fragmentTeamDetailBinding.title.text = sPlanetcode
-        fragmentTeamDetailBinding.title.setTextColor(resources.getColor(R.color.md_black_1000))
-        fragmentTeamDetailBinding.subtitle.setTextColor(resources.getColor(R.color.md_black_1000))
+        fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
     }
