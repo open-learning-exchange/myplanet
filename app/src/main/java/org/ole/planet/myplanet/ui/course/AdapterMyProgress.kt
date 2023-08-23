@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.text.HtmlCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonArray
 import kotlinx.android.synthetic.main.item_progress.view.*
@@ -49,8 +50,8 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
             holder.llProgress.removeAllViews()
             if (stepMistake.keySet().size > 0) {
                 var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
-                stepView.step.text = Html.fromHtml("<b>Step</b>")
-                stepView.mistake.text = Html.fromHtml("<b>Mistake</b>")
+                stepView.step.text = HtmlCompat.fromHtml("<b>Step</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
+                stepView.mistake.text = HtmlCompat.fromHtml("<b>Mistake</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
                 holder.llProgress.addView(stepView)
                 stepMistake.keySet().forEach {
                     var stepView =
