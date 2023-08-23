@@ -177,8 +177,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("gender", gender)
             obj.addProperty("type", "user")
             obj.addProperty("betaEnabled", false)
-            obj.addProperty("macAddress", NetworkUtils.getMacAddr())
-            obj.addProperty("androidId", NetworkUtils.getMacAddr())
+            obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
             obj.addProperty(
                 "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
