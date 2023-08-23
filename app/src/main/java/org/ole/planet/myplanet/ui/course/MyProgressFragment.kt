@@ -72,11 +72,11 @@ class MyProgressFragment : Fragment() {
                         .findFirst()
                 if (examIds.contains(question!!.examId)) {
                     totalMistakes1 += r.mistakes
-                    if (mistakesMap.containsKey(question!!.examId)) {
-                        mistakesMap[examIds.indexOf(question!!.examId).toString()] =
-                            mistakesMap[question!!.examId]!!.plus(r.mistakes)
+                    if (mistakesMap.containsKey(question.examId)) {
+                        mistakesMap[examIds.indexOf(question.examId).toString()] =
+                            mistakesMap[question.examId]!!.plus(r.mistakes)
                     } else {
-                        mistakesMap[examIds.indexOf(question!!.examId).toString()] = r.mistakes
+                        mistakesMap[examIds.indexOf(question.examId).toString()] = r.mistakes
                     }
                 }
             }

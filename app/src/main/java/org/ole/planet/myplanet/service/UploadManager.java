@@ -112,7 +112,7 @@ public class UploadManager extends FileUploadService {
                 public void onFailure(Call<JsonObject> call, Throwable t) {
                 }
             });
-            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getMacAddr()).enqueue(new Callback<JsonObject>() {
+            apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/myplanet_activities/" + VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier()).enqueue(new Callback<JsonObject>() {
                 @Override
                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                     JsonObject object = response.body();
@@ -176,7 +176,7 @@ public class UploadManager extends FileUploadService {
         object.addProperty("resideOn", user.getParentCode());
         object.addProperty("sourcePlanet", user.getPlanetCode());
         JsonObject object1 = new JsonObject();
-        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
         object.add("privateFor", object1);
