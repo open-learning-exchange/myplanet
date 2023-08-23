@@ -111,4 +111,3 @@ object Tutorials {
 
     private var mClickListener = View.OnClickListener { queue.cancel(true) }
 }
-}

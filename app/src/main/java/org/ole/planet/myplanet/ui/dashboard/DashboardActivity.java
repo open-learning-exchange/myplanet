@@ -50,8 +50,10 @@ import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.DashboardReferenceHolder;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
+import org.ole.planet.myplanet.utilities.Tutorials;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -198,7 +200,23 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuco = tl.getTabAt(5);
 
         showShowCaseViewVertical();
+        setupTutorials();
+        Tutorials.INSTANCE.dashboardTutorials(this);
         hideWifi();
+    }
+
+    private void setupTutorials() {
+        DashboardReferenceHolder referenceHolder = new DashboardReferenceHolder();
+        referenceHolder.begin = findViewById(R.id.menu_library);
+        referenceHolder.img = findViewById(R.id.img_logo);
+        referenceHolder.menuh = tl.getTabAt(0);
+        referenceHolder.menul = tl.getTabAt(1);
+        referenceHolder.menuc = tl.getTabAt(2);
+        referenceHolder.menue = tl.getTabAt(3);
+        referenceHolder.menuco = tl.getTabAt(4);
+        referenceHolder.menut = tl.getTabAt(5);
+
+        Tutorials.INSTANCE.setDashboardReferenceHolder(referenceHolder);
     }
 
     private void hideWifi() {
