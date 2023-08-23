@@ -10,7 +10,7 @@ class DashboardReferenceHolder {
     lateinit var menuh: TabLayout.Tab
     lateinit var menul: TabLayout.Tab
     lateinit var menuc: TabLayout.Tab
+    lateinit var menut: TabLayout.Tab
     lateinit var menue: TabLayout.Tab
     lateinit var menuco: TabLayout.Tab
-    lateinit var menut: TabLayout.Tab
 }

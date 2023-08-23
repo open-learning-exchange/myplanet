@@ -212,9 +212,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         referenceHolder.menuh = tl.getTabAt(0);
         referenceHolder.menul = tl.getTabAt(1);
         referenceHolder.menuc = tl.getTabAt(2);
-        referenceHolder.menue = tl.getTabAt(3);
-        referenceHolder.menuco = tl.getTabAt(4);
-        referenceHolder.menut = tl.getTabAt(5);
+        referenceHolder.menut = tl.getTabAt(3);
+        referenceHolder.menue = tl.getTabAt(4);
+        referenceHolder.menuco = tl.getTabAt(5);
 
         Tutorials.INSTANCE.setDashboardReferenceHolder(referenceHolder);
     }
