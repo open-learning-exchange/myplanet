@@ -55,7 +55,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         txt_date.text = TimeUtils.formatDate(Date().time)
         txt_community_name.text = model.planetCode
         (activity as DashboardActivity?)?.supportActionBar?.hide()
-        add_resource.setOnClickListener { v: View? ->
+        add_resource.setOnClickListener {
             AddResourceFragment().show(
                 childFragmentManager, getString(R.string.add_res)
             )
@@ -64,7 +64,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
             AlertDialog.Builder(activity!!)
                 .setMessage(getString(R.string.health_record_not_available_sync_health_data))
-                .setPositiveButton(getString(R.string.sync)) { dialogInterface: DialogInterface?, i: Int ->
+                .setPositiveButton(getString(R.string.sync)) { _: DialogInterface?, _: Int ->
                     syncKeyId()
                     MainApplication.showHealthDialog = false
                 }.setNegativeButton(getString(R.string.cancel), null).show()
