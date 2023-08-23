@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -63,6 +64,7 @@ import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
+    public static final String PREFS_NAME = "OLE_PLANET";
     AccountHeader headerResult;
     RealmUserModel user;
     private Drawer result = null;
@@ -200,8 +202,19 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menuco = tl.getTabAt(5);
 
         showShowCaseViewVertical();
-        setupTutorials();
-        Tutorials.INSTANCE.dashboardTutorials(this);
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean tutorialsShown = sharedPreferences.getBoolean("tutorials_shown", false);
+
+        if (!tutorialsShown) {
+            setupTutorials();
+            Tutorials.INSTANCE.dashboardTutorials(this);
+
+            // Update the preference to mark tutorials as shown
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("tutorials_shown", true);
+            editor.apply();
+        }
+
         hideWifi();
     }
 
@@ -217,6 +230,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         referenceHolder.menuco = tl.getTabAt(5);
 
         Tutorials.INSTANCE.setDashboardReferenceHolder(referenceHolder);
+
     }
 
     private void hideWifi() {
