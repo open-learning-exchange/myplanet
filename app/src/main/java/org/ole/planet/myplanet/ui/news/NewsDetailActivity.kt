@@ -7,8 +7,9 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
-import kotlinx.android.synthetic.main.activity_news_detail.*
-import kotlinx.android.synthetic.main.content_news_detail.*
+import kotlinx.android.synthetic.main.activity_news_detail.img
+import kotlinx.android.synthetic.main.activity_news_detail.toolbar
+import kotlinx.android.synthetic.main.content_news_detail.tv_detail
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -20,7 +21,8 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-import java.util.*
+import java.util.Date
+import java.util.UUID
 
 class NewsDetailActivity : BaseActivity() {
     var news: RealmNews? = null
@@ -74,12 +76,12 @@ class NewsDetailActivity : BaseActivity() {
         }
         msg = msg.replace(
             "\n",
-            "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 20px;\" >"
+            "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 2px;\" >"
         )
         tv_detail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
         tv_detail.loadDataWithBaseURL(
             null,
-            "<html><body><div style=\" word-wrap: break-word;  word-spacing: 20px;\" >$msg</div></body></html>",
+            "<html><body><div style=\" word-wrap: break-word;  word-spacing: 2px;\" >$msg</div></body></html>",
             "text/html",
             "utf-8",
             null

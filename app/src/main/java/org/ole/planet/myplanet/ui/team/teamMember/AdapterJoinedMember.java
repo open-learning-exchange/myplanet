@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
@@ -22,6 +24,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import io.realm.Realm;
 
 public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -57,7 +60,11 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
             String[] overflowMenuOptions;
             ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
             ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
-
+            Picasso.get()
+                    .load(list.get(position).getUserImage())
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .into(((ViewHolderUser) holder).memberImage);
             boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId());
 
             // If the current user card is the logged in user/team leader
@@ -128,12 +135,14 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
 
     class ViewHolderUser extends AdapterOtherInfo.ViewHolderOtherInfo {
         ImageView icMore;
+        CircleImageView memberImage;
         TextView isLeader;
 
         public ViewHolderUser(View itemView) {
             super(itemView);
             icMore = itemView.findViewById(R.id.ic_more);
             isLeader = itemView.findViewById(R.id.tv_is_leader);
+            memberImage = itemView.findViewById(R.id.memberImage);
         }
     }
 }

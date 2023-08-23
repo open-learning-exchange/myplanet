@@ -6,18 +6,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import kotlinx.android.synthetic.main.fragment_team_detail.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.*
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
-
+    private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_team_detail, container, false)
+        fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
+        return fragmentTeamDetailBinding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -26,16 +27,16 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun initCommunityTab() {
-        ll_action_buttons.visibility = View.GONE
+        fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
         var settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
         var sPlanetcode = settings.getString("planetCode", "")
         var sParentcode = settings.getString("parentCode", "")
-        view_pager.adapter =
+        fragmentTeamDetailBinding.viewPager.adapter =
             CommunityPagerAdapter(childFragmentManager, sPlanetcode + "@" + sParentcode, true)
-        title.text = sPlanetcode
-        title.setTextColor(resources.getColor(R.color.md_black_1000))
-        subtitle.setTextColor(resources.getColor(R.color.md_black_1000))
-        subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
-        tab_layout.setupWithViewPager(view_pager)
+        fragmentTeamDetailBinding.title.text = sPlanetcode
+        fragmentTeamDetailBinding.title.setTextColor(resources.getColor(R.color.md_black_1000))
+        fragmentTeamDetailBinding.subtitle.setTextColor(resources.getColor(R.color.md_black_1000))
+        fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
+        fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
     }
 }
