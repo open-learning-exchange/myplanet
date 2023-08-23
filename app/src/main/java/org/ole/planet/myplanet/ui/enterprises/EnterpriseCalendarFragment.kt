@@ -101,8 +101,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     meetup.description = desc
                     meetup.meetupLocation = loc
                     meetup.creator = user.id
-                    meetup.startDate = start!!.timeInMillis
-                    if (end != null) meetup.endDate = end!!.timeInMillis
+                    meetup.startDate = start.timeInMillis
+                    if (end != null) meetup.endDate = end.timeInMillis
                     meetup.endTime = endTime.text.toString()
                     meetup.startTime = startTime.text.toString()
                     val rb = v.findViewById<RadioButton>(radioGroup.checkedRadioButtonId)
