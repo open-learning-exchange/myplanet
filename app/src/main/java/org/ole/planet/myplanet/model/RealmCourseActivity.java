@@ -1,11 +1,8 @@
 package org.ole.planet.myplanet.model;
 
-import android.content.SharedPreferences;
-
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.NetworkUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.UUID;
@@ -131,7 +128,7 @@ public class RealmCourseActivity extends RealmObject {
         ob.addProperty("time", realm_courseActivities.getTime());
         ob.addProperty("createdOn", realm_courseActivities.getCreatedOn());
         ob.addProperty("parentCode", realm_courseActivities.getParentCode());
-        ob.addProperty("androidId", NetworkUtils.getMacAddr());
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
         return ob;
     }
