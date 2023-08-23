@@ -170,7 +170,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
             override fun bind(container: MonthViewContainer, month: CalendarMonth) {
                 container.textView.setTextColor(activity!!.resources.getColor(R.color.colorPrimaryDark))
                 container.textView.text =
-                    "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
+                    "${month.yearMonth.month.name.lowercase(Locale.ROOT)
+                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }} ${month.year}"
             }
         }
     }

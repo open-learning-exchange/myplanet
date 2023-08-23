@@ -87,7 +87,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 team.docType = "link"
                 team.isUpdated = true
                 team.title = title
-                team.route = """/${type.toLowerCase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
+                team.route = """/${type.lowercase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
                 dismiss()
 
             }
