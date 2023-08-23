@@ -49,8 +49,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         return view
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         txt_date.text = TimeUtils.formatDate(Date().time)
         txt_community_name.text = model.planetCode
         (activity as DashboardActivity?)?.supportActionBar?.hide()
