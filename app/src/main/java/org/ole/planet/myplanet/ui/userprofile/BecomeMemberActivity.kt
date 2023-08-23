@@ -115,7 +115,7 @@ class BecomeMemberActivity : BaseActivity() {
             if (level == null) {
                 Utilities.toast(this, getString(R.string.level_is_required));
             }
-            if (password!!.isEmpty() && phoneNumber!!.isNotEmpty()) {
+            if (password.isEmpty() && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
                 password = phoneNumber
                 ///Add dialog that using phone as password , Agree / disagree
