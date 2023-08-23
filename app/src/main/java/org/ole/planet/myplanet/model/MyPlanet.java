@@ -116,11 +116,10 @@ public class MyPlanet implements Serializable {
 
         MyPlanet planet = new Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet.class);
         if (planet != null) postJSON.addProperty("planetVersion", planet.getPlanetVersion());
-        postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getMacAddr());
+        postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier());
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
-        postJSON.addProperty("macAddress", NetworkUtils.getMacAddr());
         postJSON.addProperty("type", "usages");
         postJSON.add("usages", getTabletUsages(context, pref));
         return postJSON;
@@ -136,10 +135,9 @@ public class MyPlanet implements Serializable {
         postJSON.addProperty("last_synced", pref.getLong("LastSync", 0));
         postJSON.addProperty("parentCode", model.getParentCode());
         postJSON.addProperty("createdOn", model.getPlanetCode());
-        postJSON.addProperty("macAddress", NetworkUtils.getMacAddr());
         postJSON.addProperty("version", VersionUtils.getVersionCode(context));
         postJSON.addProperty("versionName", VersionUtils.getVersionName(context));
-        postJSON.addProperty("androidId", NetworkUtils.getMacAddr());
+        postJSON.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context));
         postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         postJSON.addProperty("deviceName", NetworkUtils.getDeviceName());
@@ -174,7 +172,7 @@ public class MyPlanet implements Serializable {
             object.addProperty("totalUsed", totalUsed > 0 ? totalUsed : 0);
             object.addProperty("version", VersionUtils.getVersionCode(context));
             object.addProperty("versionName", VersionUtils.getVersionName(context));
-            object.addProperty("androidId", NetworkUtils.getMacAddr());
+            object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
             object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
             object.addProperty("deviceName", NetworkUtils.getDeviceName());
             object.addProperty("time", new Date().getTime());
