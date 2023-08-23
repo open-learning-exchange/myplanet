@@ -11,6 +11,7 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -168,7 +169,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
             override fun create(view: View) = MonthViewContainer(view)
             override fun bind(container: MonthViewContainer, month: CalendarMonth) {
-                container.textView.setTextColor(activity!!.resources.getColor(R.color.colorPrimaryDark))
+                container.textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark))
                 container.textView.text =
                     "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
             }
@@ -197,8 +198,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                             activity!!, event.title, event.description
                         )
                     }
-                    container.textView.setBackgroundColor(resources.getColor(R.color.colorPrimaryDark))
-                    container.textView.setTextColor(resources.getColor(R.color.md_white_1000))
+                    container.textView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark))
+                    container.textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 }
             }
         }

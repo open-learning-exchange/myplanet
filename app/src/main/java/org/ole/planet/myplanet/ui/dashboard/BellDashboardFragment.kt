@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.card_profile_bell.ll_badges
 import kotlinx.android.synthetic.main.card_profile_bell.txt_community_name
@@ -91,9 +92,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setColor(questions: Long, courseId: String, star: ImageView) =
         if (RealmCertification.isCourseCertified(mRealm, courseId)) {
-            star.setColorFilter(resources.getColor(R.color.colorPrimary))
+            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
-            star.setColorFilter(resources.getColor(R.color.md_blue_grey_300))
+            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
         }
 
     private fun declareElements(view: View) {
