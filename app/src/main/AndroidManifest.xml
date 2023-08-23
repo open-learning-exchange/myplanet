@@ -44,7 +44,13 @@
         tools:replace="android:label">
         <activity
             android:name=".ui.onBoarding.OnBoardingActivity"
-            android:exported="false" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity android:name=".ui.chat.ChatActivity" />
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
@@ -78,11 +84,7 @@
         <activity
             android:name=".ui.SplashActivity"
             android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <activity android:name=".ui.viewer.AudioPlayerActivity" />
         <activity

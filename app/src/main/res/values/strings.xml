@@ -1032,5 +1032,8 @@
     <string name="times">times</string>
     <string name="time">time</string>
     <string name="ai_chat">AI Chat</string>
-
+    <string name="ob_get_started">GET STARTED</string>
+    <string name="ob_desc1">Welcome to myPlanet. myPlanet is a mobile application that serves as an offline version of the Planet learning system</string>
+    <string name="ob_desc2">It allows users to access the learning resources, such as books, videos, and learning games, provided by the Planet server</string>
+    <string name="ob_desc3">With myPlanet, users can have an offline learning experience and access the extensive library of learning materials without the need for internet connectivity</string>
 </resources>
