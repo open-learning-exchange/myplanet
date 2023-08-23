@@ -349,7 +349,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         dialog = AlertDialog.Builder(requireActivity()).setTitle(getString(R.string.select_member))
             .setView(alertHealth).setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-        dialog?.show()
+        dialog.show()
     }
 
     override fun syncKeyId() {
