@@ -27,12 +27,12 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
         tvName?.text = """${um?.fullName} (${um?.name})"""
         joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
 
-        if (!TextUtils.isEmpty(um?.userImage)) Picasso.get().load(um?.userImage)
+        if (!TextUtils.isEmpty(um.userImage)) Picasso.get().load(um.userImage)
             .placeholder(R.drawable.profile).into(image, object : Callback {
                 override fun onSuccess() {}
                 override fun onError(e: Exception) {
                     e.printStackTrace()
-                    val f = File(um?.userImage)
+                    val f = File(um.userImage)
                     Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile)
                         .into(image)
                 }
