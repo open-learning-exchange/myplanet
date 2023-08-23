@@ -83,9 +83,6 @@ class OnBoardingActivity : AppCompatActivity() {
             if (currentPosition < mAdapter.count - 1) {
                 binding.pagerIntroduction.setCurrentItem(currentPosition + 1, true)
             }
-//            else {
-//                finishTutorial()
-//            }
         }
 
         setUiPageViewController()
