@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
-        v.setOnClickListener { view: View? ->
+        v.setOnClickListener {
             if (homeItemClickListener != null) {
                 val b = Bundle()
                 b.putString("id", id)
@@ -44,7 +44,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     }
 
     fun handleClickMyLife(title: String, v: View) {
-        v.setOnClickListener { view: View? ->
+        v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
                     homeItemClickListener.openCallFragment(MySubmissionFragment())

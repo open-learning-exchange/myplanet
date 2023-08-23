@@ -253,7 +253,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener { v: View? ->
+        textView.setOnClickListener {
             items?.let {
                 openResource(it)
             }
@@ -335,7 +335,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val lv = alertHealth.list
         lv.adapter = adapter
         lv.onItemClickListener =
-            AdapterView.OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
+            AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
                 val selected = lv.adapter.getItem(i) as RealmUserModel
                 Utilities.log("On item selected");
                 showDownloadDialog(getLibraryList(mRealm, selected._id))

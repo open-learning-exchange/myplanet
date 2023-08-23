@@ -49,7 +49,7 @@ class BecomeMemberActivity : BaseActivity() {
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
-            this, { datePicker, i, i1, i2 ->
+            this, { _, i, i1, i2 ->
                 dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
                 txt_dob.text = dob
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]

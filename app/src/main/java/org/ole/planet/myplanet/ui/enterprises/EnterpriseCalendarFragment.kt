@@ -51,7 +51,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         end = Calendar.getInstance()
         var fab = v.findViewById<View>(R.id.add_event)
         showHideFab(fab)
-        v.findViewById<View>(R.id.add_event).setOnClickListener { view -> showMeetupAlert() }
+        v.findViewById<View>(R.id.add_event).setOnClickListener { showMeetupAlert() }
         rvCalendar = v.findViewById(R.id.rv_calendar)
         return v
     }
@@ -83,7 +83,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         setTimePicker(endTime)
 
         AlertDialog.Builder(requireActivity()).setView(v)
-            .setPositiveButton("Save") { dialogInterface, i ->
+            .setPositiveButton("Save") { _, _ ->
                 val ttl = title.text.toString()
                 val desc = description.text.toString()
                 val loc = location.text.toString()
@@ -123,9 +123,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun setDatePickerListener(view: TextView, date: Calendar?) {
         val c = Calendar.getInstance()
-        view.setOnClickListener { v ->
+        view.setOnClickListener {
 
-            DatePickerDialog(requireActivity(), { vi, year, monthOfYear, dayOfMonth ->
+            DatePickerDialog(requireActivity(), { _, year, monthOfYear, dayOfMonth ->
                 date!!.set(Calendar.YEAR, year)
                 date.set(Calendar.MONTH, monthOfYear)
                 date.set(Calendar.DAY_OF_MONTH, dayOfMonth)
@@ -137,9 +137,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun setTimePicker(time: TextView) {
         val c = Calendar.getInstance()
-        time.setOnClickListener { v ->
+        time.setOnClickListener {
             val timePickerDialog = TimePickerDialog(
-                activity, { view, hourOfDay, minute ->
+                activity, { _, hourOfDay, minute ->
                     time.text = String.format("%02d:%02d", hourOfDay, minute)
                 }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true
             )
