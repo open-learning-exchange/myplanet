@@ -4,23 +4,24 @@ import android.content.Context
 import android.content.Intent
 import android.text.Html
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.text.HtmlCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonArray
-import kotlinx.android.synthetic.main.item_progress.view.*
-import kotlinx.android.synthetic.main.row_my_progress.view.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ItemProgressBinding
+import org.ole.planet.myplanet.databinding.RowMyProgressBinding
 
 class AdapterMyProgress(private val context: Context, private val list: JsonArray) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private lateinit var rowMyProgressBinding: RowMyProgressBinding
+    private lateinit var itemProgressBinding: ItemProgressBinding
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val v = LayoutInflater.from(context).inflate(R.layout.row_my_progress, parent, false)
-        return ViewHolderMyProgress(v)
+        rowMyProgressBinding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderMyProgress(rowMyProgressBinding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -47,18 +48,17 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
     private fun showStepMistakes(holder: ViewHolderMyProgress, position: Int) {
         if (list[position].asJsonObject.has("stepMistake")) {
             var stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
-            holder.llProgress.removeAllViews()
+            rowMyProgressBinding.llProgress.removeAllViews()
+            itemProgressBinding = ItemProgressBinding.inflate(LayoutInflater.from(context))
             if (stepMistake.keySet().size > 0) {
-                var stepView = LayoutInflater.from(context).inflate(R.layout.item_progress, null)
-                stepView.step.text = HtmlCompat.fromHtml("<b>Step</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
-                stepView.mistake.text = HtmlCompat.fromHtml("<b>Mistake</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
-                holder.llProgress.addView(stepView)
+                itemProgressBinding.step.text = HtmlCompat.fromHtml("<b>Step</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
+                itemProgressBinding.mistake.text = HtmlCompat.fromHtml("<b>Mistake</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
+                rowMyProgressBinding.llProgress.addView(itemProgressBinding.root)
+                
                 stepMistake.keySet().forEach {
-                    var stepView =
-                        LayoutInflater.from(context).inflate(R.layout.item_progress, null)
-                    stepView.step.text = (it.toInt().plus(1).toString())
-                    stepView.mistake.text = stepMistake[it].asInt.toString()
-                    holder.llProgress.addView(stepView)
+                    itemProgressBinding.step.text = (it.toInt().plus(1).toString())
+                    itemProgressBinding.mistake.text = stepMistake[it].asInt.toString()
+                    rowMyProgressBinding.llProgress.addView(itemProgressBinding.root)
                 }
             }
         }
@@ -68,11 +68,10 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
         return list.size()
     }
 
-    internal inner class ViewHolderMyProgress(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var tvTitle: TextView = itemView.tv_title
-        var tvTotal: TextView = itemView.tv_total
-        var llProgress: LinearLayout = itemView.ll_progress
-        var tvDescription: TextView = itemView.tv_description
-
+    internal inner class ViewHolderMyProgress(private val rowMyProgressBinding: RowMyProgressBinding) : RecyclerView.ViewHolder(rowMyProgressBinding.root) {
+        var tvTitle = rowMyProgressBinding.tvTitle
+        var tvTotal = rowMyProgressBinding.tvTotal
+        var llProgress = rowMyProgressBinding.llProgress
+        var tvDescription = rowMyProgressBinding.tvDescription
     }
 }
