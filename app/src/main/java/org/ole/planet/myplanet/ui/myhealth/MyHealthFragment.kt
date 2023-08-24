@@ -131,7 +131,7 @@ class MyHealthFragment : Fragment() {
         setTextWatcher(etSearch, btnAddMember, lv)
         lv.adapter = adapter
         lv.onItemClickListener =
-            OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
+            OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
                 val selected = lv.adapter.getItem(i) as RealmUserModel
                 userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
                 getHealthRecords(userId)
@@ -252,7 +252,7 @@ class MyHealthFragment : Fragment() {
                 isNestedScrollingEnabled = false
                 adapter = adap
             }
-            rv_records.post { rv_records!!.scrollToPosition(list!!.size - 1) }
+            rv_records.post { rv_records!!.scrollToPosition(list.size - 1) }
         } else {
             txt_other_need!!.text = ""
             txt_special_needs!!.text = ""

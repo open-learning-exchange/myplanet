@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.card_profile_bell.ll_badges
 import kotlinx.android.synthetic.main.card_profile_bell.txt_community_name
@@ -54,7 +55,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         txt_date.text = TimeUtils.formatDate(Date().time)
         txt_community_name.text = model.planetCode
         (activity as DashboardActivity?)?.supportActionBar?.hide()
-        add_resource.setOnClickListener { v: View? ->
+        add_resource.setOnClickListener {
             AddResourceFragment().show(
                 childFragmentManager, getString(R.string.add_res)
             )
@@ -63,7 +64,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
             AlertDialog.Builder(activity!!)
                 .setMessage(getString(R.string.health_record_not_available_sync_health_data))
-                .setPositiveButton(getString(R.string.sync)) { dialogInterface: DialogInterface?, i: Int ->
+                .setPositiveButton(getString(R.string.sync)) { _: DialogInterface?, _: Int ->
                     syncKeyId()
                     MainApplication.showHealthDialog = false
                 }.setNegativeButton(getString(R.string.cancel), null).show()
@@ -91,9 +92,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setColor(questions: Long, courseId: String, star: ImageView) =
         if (RealmCertification.isCourseCertified(mRealm, courseId)) {
-            star.setColorFilter(resources.getColor(R.color.colorPrimary))
+            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
-            star.setColorFilter(resources.getColor(R.color.md_blue_grey_300))
+            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
         }
 
     private fun declareElements(view: View) {

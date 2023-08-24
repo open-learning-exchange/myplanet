@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import com.squareup.picasso.Callback
@@ -130,7 +131,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         for (items in dbMylibrary) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_library_home, null)
             setTextColor(v.findViewById(R.id.title), itemCnt, RealmMyLibrary::class.java)
-            v.setBackgroundColor(resources.getColor(if (itemCnt % 2 == 0) R.color.md_white_1000 else R.color.md_grey_300))
+            val colorResId = if (itemCnt % 2 == 0) R.color.md_white_1000 else R.color.md_grey_300
+            val color = context?.let { ContextCompat.getColor(it, colorResId) }
+            if (color != null) {
+                v.setBackgroundColor(color)
+            }
             ((v.title) as TextView).text = items.title
             v.detail.setOnClickListener {
                 if (homeItemClickListener != null) homeItemClickListener.openLibraryDetailFragment(
@@ -253,7 +258,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener { v: View? ->
+        textView.setOnClickListener {
             items?.let {
                 openResource(it)
             }
@@ -335,7 +340,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val lv = alertHealth.list
         lv.adapter = adapter
         lv.onItemClickListener =
-            AdapterView.OnItemClickListener { adapterView: AdapterView<*>?, view: View, i: Int, l: Long ->
+            AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
                 val selected = lv.adapter.getItem(i) as RealmUserModel
                 Utilities.log("On item selected");
                 showDownloadDialog(getLibraryList(mRealm, selected._id))
@@ -344,7 +349,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         dialog = AlertDialog.Builder(requireActivity()).setTitle(getString(R.string.select_member))
             .setView(alertHealth).setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-        dialog?.show()
+        dialog.show()
     }
 
     override fun syncKeyId() {

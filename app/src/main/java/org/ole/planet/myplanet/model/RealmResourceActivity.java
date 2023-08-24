@@ -117,7 +117,7 @@ public class RealmResourceActivity extends RealmObject {
         ob.addProperty("time", realm_resourceActivities.getTime());
         ob.addProperty("createdOn", realm_resourceActivities.getCreatedOn());
         ob.addProperty("parentCode", realm_resourceActivities.getParentCode());
-        ob.addProperty("androidId", NetworkUtils.getMacAddr());
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
         return ob;
     }
