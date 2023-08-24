@@ -5,6 +5,9 @@ import android.content.Intent
 import android.text.Html
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.core.text.HtmlCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonArray
 import org.ole.planet.myplanet.R
@@ -48,9 +51,10 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
             rowMyProgressBinding.llProgress.removeAllViews()
             itemProgressBinding = ItemProgressBinding.inflate(LayoutInflater.from(context))
             if (stepMistake.keySet().size > 0) {
-                itemProgressBinding.step.text = Html.fromHtml("<b>Step</b>")
-                itemProgressBinding.mistake.text = Html.fromHtml("<b>Mistake</b>")
+                itemProgressBinding.step.text = HtmlCompat.fromHtml("<b>Step</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
+                itemProgressBinding.mistake.text = HtmlCompat.fromHtml("<b>Mistake</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
                 rowMyProgressBinding.llProgress.addView(itemProgressBinding.root)
+                
                 stepMistake.keySet().forEach {
                     itemProgressBinding.step.text = (it.toInt().plus(1).toString())
                     itemProgressBinding.mistake.text = stepMistake[it].asInt.toString()

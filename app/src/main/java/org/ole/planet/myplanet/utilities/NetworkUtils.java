@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utilities;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -7,9 +9,9 @@ import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.provider.Settings;
 import android.text.TextUtils;
 
-import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment;
 
 import java.net.NetworkInterface;
@@ -18,12 +20,12 @@ import java.util.List;
 
 public class NetworkUtils {
     public static boolean isWifiEnabled() {
-        WifiManager mng = (WifiManager) MainApplication.context.getSystemService(Context.WIFI_SERVICE);
+        WifiManager mng = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         return mng != null && mng.isWifiEnabled();
     }
 
     public static boolean isWifiConnected() {
-        ConnectivityManager connManager = (ConnectivityManager) MainApplication.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         return mWifi.isConnected();
     }
@@ -54,13 +56,20 @@ public class NetworkUtils {
     }
 
     public static boolean isNetworkConnected() {
-        ConnectivityManager cm = (ConnectivityManager) MainApplication.context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getActiveNetworkInfo();
         if (ni == null) {
             return false;
         } else {
             return true;
         }
+    }
+
+    public static String getUniqueIdentifier() {
+        String androidId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        String buildId = Build.ID;
+
+        return androidId + "_" + buildId;
     }
 
     public static String getMacAddr() {
