@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonArray
 import kotlinx.android.synthetic.main.row_my_progress_grid.view.*
@@ -23,12 +24,12 @@ class AdapterProgressGrid(private val context: Context, private val list: JsonAr
             if (list[position].asJsonObject.has("percentage")) {
                 holder.tvProgress.text = list[position].asJsonObject["percentage"].asString + "%"
                 if (list[position].asJsonObject["completed"].asBoolean) {
-                    holder.itemView.setBackgroundColor(context.resources.getColor(R.color.md_green_500))
+                    holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_500))
                 } else {
-                    holder.itemView.setBackgroundColor(context.resources.getColor(R.color.md_yellow_500))
+                    holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_yellow_500))
                 }
             } else {
-                holder.itemView.setBackgroundColor(context.resources.getColor(R.color.md_red_500))
+                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_red_500))
             }
         }
     }
