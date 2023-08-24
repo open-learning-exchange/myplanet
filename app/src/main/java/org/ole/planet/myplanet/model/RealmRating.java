@@ -209,7 +209,7 @@ public class RealmRating extends RealmObject {
         ob.addProperty("planetCode", realm_rating.getPlanetCode());
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
-        ob.addProperty("androidId", NetworkUtils.getMacAddr());
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         return ob;
     }
 
