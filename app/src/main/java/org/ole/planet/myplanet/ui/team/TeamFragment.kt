@@ -200,13 +200,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun getList(query: RealmQuery<RealmMyTeam>): List<RealmMyTeam> {
-        var query = query
-        query = if (TextUtils.isEmpty(type) || type == "team") {
-            query.notEqualTo("type", "enterprise")
+        var queried = query
+        queried = if (TextUtils.isEmpty(type) || type == "team") {
+            queried.notEqualTo("type", "enterprise")
         } else {
-            query.equalTo("type", "enterprise")
+            queried.equalTo("type", "enterprise")
         }
-        return query.findAll()
+        return queried.findAll()
     }
 
     private fun setTeamList() {
