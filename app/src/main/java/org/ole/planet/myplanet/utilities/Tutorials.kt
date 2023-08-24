@@ -10,48 +10,47 @@ import me.toptas.fancyshowcase.FocusShape
 import me.toptas.fancyshowcase.listener.OnViewInflateListener
 import org.ole.planet.myplanet.MainApplication.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 
 object Tutorials {
     private var queue = FancyShowCaseQueue()
-    private lateinit var dashboardReferenceHolder: DashboardReferenceHolder
+    private lateinit var tutorialsReferenceHolder: TutorialsReferenceHolder
 
-    fun setDashboardReferenceHolder(holder: DashboardReferenceHolder) {
-        dashboardReferenceHolder = holder
+    fun setTutorialsReferenceHolder(holder: TutorialsReferenceHolder) {
+        tutorialsReferenceHolder = holder
     }
 
-    fun loginTutorials(bind: ActivityLoginBinding, activity: FragmentActivity) {
-        val a = fancyShowCaseViewRoundedRectSkippable(activity, bind.syncIcon, context.getString(R.string.press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data))
-        val b = fancyShowCaseViewRoundedRectSkippable(activity, bind.imgBtnSetting, context.getString(R.string.press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process))
+    fun loginTutorials(activity: FragmentActivity) {
+        val a = fancyShowCaseViewRoundedRectSkippable(activity, tutorialsReferenceHolder.syncIcon, context.getString(R.string.press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data))
+        val b = fancyShowCaseViewRoundedRectSkippable(activity, tutorialsReferenceHolder.imgBtnSetting, context.getString(R.string.press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process))
         show(a, b)
     }
 
     fun dashboardTutorials(activity: FragmentActivity) {
         val a = fancyShowCaseViewRoundedRectSkippable(activity,
-            dashboardReferenceHolder.begin, context.getString(R.string.please_make_sure_your_device_is_horizontal));
+            tutorialsReferenceHolder.begin, context.getString(R.string.please_make_sure_your_device_is_horizontal));
         val b = fancyShowCaseViewRoundedRectSkippable(activity,
-            dashboardReferenceHolder.img, context.getString(R.string.click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys));
-        val c = dashboardReferenceHolder.menuh.customView?.let {
+            tutorialsReferenceHolder.img, context.getString(R.string.click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys));
+        val c = tutorialsReferenceHolder.menuh.customView?.let {
             fancyShowCaseViewRoundedRectSkippable(activity,
                 it, context.getString(R.string.navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams))
         };
-        val d = dashboardReferenceHolder.menul.customView?.let {
+        val d = tutorialsReferenceHolder.menul.customView?.let {
             fancyShowCaseViewRoundedRectSkippable(activity,
                 it, context.getString(R.string.navigate_to_the_library_tab_to_access_resources_in_your_community))
         };
-        val e = dashboardReferenceHolder.menuc.customView?.let {
+        val e = tutorialsReferenceHolder.menuc.customView?.let {
             fancyShowCaseViewRoundedRectSkippable(activity,
                 it, context.getString(R.string.navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community))
         };
-        val f = dashboardReferenceHolder.menut.customView?.let {
+        val f = tutorialsReferenceHolder.menut.customView?.let {
             fancyShowCaseViewRoundedRectSkippable(activity,
                 it, context.getString(R.string.navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams))
         };
-        val g = dashboardReferenceHolder.menue.customView?.let {
+        val g = tutorialsReferenceHolder.menue.customView?.let {
             fancyShowCaseViewRoundedRectSkippable(activity,
                 it, context.getString(R.string.navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community))
         };
-        val h = dashboardReferenceHolder.menuco.customView?.let {
+        val h = tutorialsReferenceHolder.menuco.customView?.let {
             fancyShowCaseViewRoundedRectSkippable(activity,
                 it, context.getString(R.string.navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community))
         };

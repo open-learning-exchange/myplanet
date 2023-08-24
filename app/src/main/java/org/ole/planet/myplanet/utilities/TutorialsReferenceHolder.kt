@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.utilities
 
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ImageView
 import com.google.android.material.tabs.TabLayout
 
-class DashboardReferenceHolder {
+class TutorialsReferenceHolder {
     lateinit var begin: View
     lateinit var img: ImageView
     lateinit var menuh: TabLayout.Tab
@@ -13,4 +14,6 @@ class DashboardReferenceHolder {
     lateinit var menut: TabLayout.Tab
     lateinit var menue: TabLayout.Tab
     lateinit var menuco: TabLayout.Tab
+    lateinit var syncIcon: ImageView
+    lateinit var imgBtnSetting: ImageButton
 }

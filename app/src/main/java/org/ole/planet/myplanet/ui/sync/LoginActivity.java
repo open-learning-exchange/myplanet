@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -48,10 +49,12 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.TutorialsReferenceHolder;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.Tutorials;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
@@ -141,6 +144,18 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
 
         if (settings.getBoolean("firstRun", true)) showShowCaseView();
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean loginTutorialsShown = sharedPreferences.getBoolean("login_tutorials_shown", false);
+
+        if (!loginTutorialsShown) {
+            setupTutorials();
+            Tutorials.INSTANCE.loginTutorials(this);
+
+            // Update the preference to mark tutorials as shown
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("login_tutorials_shown", true);
+            editor.apply();
+        }
     }
 
     private boolean forceSyncTrigger() {
@@ -256,6 +271,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 DialogUtils.showAlert(LoginActivity.this, "Error", getString(R.string.planet_server_not_reachable));
             }
         });
+    }
+
+    private void setupTutorials() {
+        TutorialsReferenceHolder referenceHolder = new TutorialsReferenceHolder();
+        referenceHolder.syncIcon = findViewById(R.id.syncIcon);
+        referenceHolder.imgBtnSetting = findViewById(R.id.imgBtnSetting);
+        Tutorials.INSTANCE.setTutorialsReferenceHolder(referenceHolder);
     }
 
     public void declareMoreElements() {

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -51,7 +53,7 @@ import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.Constants;
-import org.ole.planet.myplanet.utilities.DashboardReferenceHolder;
+import org.ole.planet.myplanet.utilities.TutorialsReferenceHolder;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.Tutorials;
@@ -64,7 +66,6 @@ import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
-    public static final String PREFS_NAME = "OLE_PLANET";
     AccountHeader headerResult;
     RealmUserModel user;
     private Drawer result = null;
@@ -219,7 +220,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void setupTutorials() {
-        DashboardReferenceHolder referenceHolder = new DashboardReferenceHolder();
+        TutorialsReferenceHolder referenceHolder = new TutorialsReferenceHolder();
         referenceHolder.begin = findViewById(R.id.menu_library);
         referenceHolder.img = findViewById(R.id.img_logo);
         referenceHolder.menuh = tl.getTabAt(0);
@@ -229,7 +230,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         referenceHolder.menue = tl.getTabAt(4);
         referenceHolder.menuco = tl.getTabAt(5);
 
-        Tutorials.INSTANCE.setDashboardReferenceHolder(referenceHolder);
+        Tutorials.INSTANCE.setTutorialsReferenceHolder(referenceHolder);
 
     }
 
