@@ -45,7 +45,7 @@ class NewsDetailActivity : BaseActivity() {
         realm.executeTransactionAsync {
             var newsLog: RealmNewsLog =
                 it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
-            newsLog.androidId = NetworkUtils.getMacAddr()
+            newsLog.androidId = NetworkUtils.getUniqueIdentifier()
             newsLog.type = "news"
             newsLog.time = Date().time
             if (user != null) newsLog.userId = userId

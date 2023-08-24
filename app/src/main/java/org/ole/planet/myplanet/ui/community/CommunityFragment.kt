@@ -29,7 +29,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     override fun showReply(news: RealmNews, fromLogin: Boolean) {
         startActivity(
-            Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id)
+            Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
         )
     }

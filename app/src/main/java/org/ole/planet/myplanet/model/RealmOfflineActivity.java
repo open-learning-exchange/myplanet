@@ -132,7 +132,7 @@ public class RealmOfflineActivity extends RealmObject {
         ob.addProperty("logoutTime", realm_offlineActivities.getLogoutTime());
         ob.addProperty("createdOn", realm_offlineActivities.getCreatedOn());
         ob.addProperty("parentCode", realm_offlineActivities.getParentCode());
-        ob.addProperty("androidId", NetworkUtils.getMacAddr());
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         if (realm_offlineActivities.get_id() != null) {
