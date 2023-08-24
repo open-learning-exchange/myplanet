@@ -16,7 +16,7 @@ class AdapterLeader(var context: Context, var leaders: List<RealmUserModel>) :
     }
 
     override fun getItemCount(): Int {
-        return leaders!!.size
+        return leaders.size
     }
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderLeader) {

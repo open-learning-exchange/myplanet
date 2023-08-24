@@ -61,9 +61,6 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
 
-import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
-import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
-
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     public static final String MESSAGE_PROGRESS = "message_progress";
     AccountHeader headerResult;
@@ -80,24 +77,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     View begin;
     DrawerLayout dl;
     ImageView img;
-
-    private void showShowCaseViewVertical() {
-        //NOTE: MaterialShowCaseView only runs a sequence with a specific sequence ID once
-        ShowcaseConfig config = new ShowcaseConfig();
-        config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "DASHBOARD_HELP_v2");
-        sequence.setConfig(config);
-        sequence.addSequenceItem(begin, getString(R.string.please_make_sure_your_device_is_horizontal), getString(R.string.got_it));
-        sequence.addSequenceItem(img, getString(R.string.click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys), getString(R.string.got_it));
-        sequence.addSequenceItem(menuh.getCustomView(), getString(R.string.navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams), getString(R.string.got_it));
-        sequence.addSequenceItem(menul.getCustomView(), getString(R.string.navigate_to_the_library_tab_to_access_resources_in_your_community), getString(R.string.got_it));
-        sequence.addSequenceItem(menuc.getCustomView(), getString(R.string.navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community), getString(R.string.got_it));
-        sequence.addSequenceItem(menut.getCustomView(), getString(R.string.navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams), getString(R.string.got_it));
-        sequence.addSequenceItem(menue.getCustomView(), getString(R.string.navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community), getString(R.string.got_it));
-        sequence.addSequenceItem(menuco.getCustomView(), getString(R.string.navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community), getString(R.string.got_it));
-        sequence.start();
-    }
-
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -202,7 +181,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menue = tl.getTabAt(4);
         menuco = tl.getTabAt(5);
 
-        showShowCaseViewVertical();
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean tutorialsShown = sharedPreferences.getBoolean("tutorials_shown", false);
 

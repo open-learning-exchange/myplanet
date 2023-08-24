@@ -49,7 +49,7 @@ class BecomeMemberActivity : BaseActivity() {
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
-            this, { datePicker, i, i1, i2 ->
+            this, { _, i, i1, i2 ->
                 dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
                 txt_dob.text = dob
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
@@ -115,7 +115,7 @@ class BecomeMemberActivity : BaseActivity() {
             if (level == null) {
                 Utilities.toast(this, getString(R.string.level_is_required));
             }
-            if (password!!.isEmpty() && phoneNumber!!.isNotEmpty()) {
+            if (password.isEmpty() && phoneNumber!!.isNotEmpty()) {
                 et_re_password.setText(phoneNumber)
                 password = phoneNumber
                 ///Add dialog that using phone as password , Agree / disagree
@@ -177,8 +177,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("gender", gender)
             obj.addProperty("type", "user")
             obj.addProperty("betaEnabled", false)
-            obj.addProperty("macAddress", NetworkUtils.getMacAddr())
-            obj.addProperty("androidId", NetworkUtils.getMacAddr())
+            obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
             obj.addProperty(
                 "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)

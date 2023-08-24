@@ -51,8 +51,8 @@ class NotificationFragment : BottomSheetDialogFragment() {
         return bottomSheetDialog
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         var model = UserProfileDbHandler(activity).userModel
         val surveyList = mRealm!!.where(RealmSubmission::class.java).equalTo("userId", model.id)
             .equalTo("status", "pending").equalTo("type", "survey").findAll()
