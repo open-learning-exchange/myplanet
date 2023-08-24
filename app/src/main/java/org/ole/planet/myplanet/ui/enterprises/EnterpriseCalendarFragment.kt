@@ -149,8 +149,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         Utilities.log(teamId)
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId)
             .greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
