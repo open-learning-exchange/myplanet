@@ -943,5 +943,7 @@
     <string name="times">fois</string>
     <string name="time">temps</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="unselect_all">Unselect All</string>
+    <string name="select_all">Select All</string>
 
 </resources>

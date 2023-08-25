@@ -51,6 +51,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     List<RealmTag> searchTags;
     Spinner spn;
     AlertDialog confirmation;
+    private boolean allItemsSelected = false;
 
     public CourseFragment() {
     }
@@ -157,6 +158,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
             adapterCourses.selectAllItems(!allSelected);
+            if (!allSelected) {
+                selectAll.setText(getString(R.string.unselect_all) );
+            } else {
+                selectAll.setText(getString(R.string.select_all));
+            }
         });
     }
 

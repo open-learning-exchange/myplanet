@@ -932,5 +932,7 @@
     <string name="times">magaalada</string>
     <string name="time">waqtiga</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="unselect_all">Unselect All</string>
+    <string name="select_all">Select All</string>
 
 </resources>

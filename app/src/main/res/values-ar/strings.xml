@@ -938,5 +938,7 @@
     <string name="times">مرات</string>
     <string name="time">الوقت</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="unselect_all">Unselect All</string>
+    <string name="select_all">Select All</string>
 
 </resources>
