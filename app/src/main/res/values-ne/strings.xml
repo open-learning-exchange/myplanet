@@ -943,7 +943,7 @@
     <string name="times">पल्टीहरू</string>
     <string name="time">समय</string>
     <string name="ai_chat">AI Chat</string>
-    <string name="unselect_all">Unselect All</string>
-    <string name="select_all">Select All</string>
+    <string name="unselect_all">सबै चयन गर्दिन</string>
+    <string name="select_all">सबै चयन गर्नुहोस्</string>
 
 </resources>
