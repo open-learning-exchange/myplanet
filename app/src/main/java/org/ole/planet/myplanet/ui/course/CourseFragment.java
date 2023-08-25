@@ -46,7 +46,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
-    Button btnRemove, orderByDate, orderByTitle;
+    Button btnRemove, orderByDate, orderByTitle, selectAll;
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
     Spinner spn;
@@ -153,6 +153,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
         spnGrade.setOnItemSelectedListener(itemSelectedListener);
         spnSubject.setOnItemSelectedListener(itemSelectedListener);
+        selectAll = getView().findViewById(R.id.selectAll);
+        selectAll.setOnClickListener(view -> {
+            boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
+            adapterCourses.selectAllItems(!allSelected);
+        });
     }
 
     private AdapterView.OnItemSelectedListener itemSelectedListener = new AdapterView.OnItemSelectedListener() {

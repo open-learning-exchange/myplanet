@@ -178,6 +178,22 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
+    public void selectAllItems(boolean selectAll) {
+        if (selectAll) {
+            selectedItems.clear();
+            selectedItems.addAll(courseList);
+        } else {
+            selectedItems.clear();
+        }
+
+        notifyDataSetChanged();
+
+        if (listener != null) {
+            listener.onSelectedListChange(selectedItems);
+        }
+    }
+
+
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
