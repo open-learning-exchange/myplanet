@@ -131,7 +131,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
 
-        if (settings.getBoolean("firstRun", true)) showShowCaseView();
         SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean loginTutorialsShown = sharedPreferences.getBoolean("login_tutorials_shown", false);
 
