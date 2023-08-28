@@ -154,7 +154,7 @@ public class RealmMyLibrary extends RealmObject {
         object.addProperty("resideOn", user.getPlanetCode());
         object.addProperty("updatedDate", Calendar.getInstance().getTimeInMillis());
         object.addProperty("createdDate", personal.getCreatedDate());
-        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
         return object;
