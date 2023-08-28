@@ -59,7 +59,7 @@ class AdapterTeamList(
             holder.noOfVisits.text = RealmTeamLog.getVisitByTeam(mRealm, list[position]._id).toString() + ""
             val isMyTeam = list[position].isMyTeam(user.id, mRealm)
             showActionButton(isMyTeam, holder, position)
-            holder.itemView.setOnClickListener { view: View? ->
+            holder.itemView.setOnClickListener {
                 if (context is OnHomeItemClickListener) {
                     val f = TeamDetailFragment()
                     val b = Bundle()
@@ -69,12 +69,12 @@ class AdapterTeamList(
                     (context as OnHomeItemClickListener).openCallFragment(f)
                 }
             }
-            holder.feedback.setOnClickListener { v2: View? ->
+            holder.feedback.setOnClickListener {
                 val feedbackFragment = FeedbackFragment()
                 feedbackFragment.show(fragmentManager, "")
                 feedbackFragment.arguments = getBundle(list[position])
             }
-            holder.editTeam.setOnClickListener { view: View? -> teamListener!!.onEditTeam(list[position]) }
+            holder.editTeam.setOnClickListener { teamListener!!.onEditTeam(list[position]) }
         }
     }
 
@@ -94,9 +94,9 @@ class AdapterTeamList(
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id, mRealm)) {
                 (holder as ViewHolderTeam).action.text = "Leave"
-                holder.action.setOnClickListener { view: View? ->
+                holder.action.setOnClickListener {
                     AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
-                        .setPositiveButton(R.string.yes) { dialogInterface: DialogInterface?, i: Int ->
+                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             list[position].leave(user, mRealm)
                             notifyDataSetChanged()
                         }.setNegativeButton(R.string.no, null).show()
@@ -110,7 +110,7 @@ class AdapterTeamList(
             holder.action.isEnabled = false
         } else {
             (holder as ViewHolderTeam).action.text = context.getString(R.string.request_to_join)
-            holder.action.setOnClickListener { view: View? ->
+            holder.action.setOnClickListener {
                 RealmMyTeam.requestToJoin(list[position]._id, user, mRealm)
                 notifyDataSetChanged()
             }

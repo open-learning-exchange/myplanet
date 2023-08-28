@@ -29,8 +29,8 @@ class ServicesFragment : Fragment() {
         return fragmentServicesBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentServicesBinding.fab.setOnClickListener {
@@ -63,12 +63,12 @@ class ServicesFragment : Fragment() {
                 val route = team.route.split("/")
                 if (route.size >= 3) {
                     val f = TeamDetailFragment()
-                    val b = Bundle()
+                    val c = Bundle()
                     var teamObject =
                         mRealm!!.where(RealmMyTeam::class.java).equalTo("_id", route[3]).findFirst()
-                    b.putString("id", route[3])
-                    b.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm))
-                    f.arguments = b
+                    c.putString("id", route[3])
+                    c.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm))
+                    f.arguments = c
                     (context as OnHomeItemClickListener).openCallFragment(f)
                 }
             }

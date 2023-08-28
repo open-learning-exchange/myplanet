@@ -68,8 +68,7 @@ public class RealmUserModel extends RealmObject {
         object.add("roles", getRoles());
         if (get_id().isEmpty()) {
             object.addProperty("password", getPassword());
-            object.addProperty("macAddress", NetworkUtils.getMacAddr());
-            object.addProperty("androidId", NetworkUtils.getMacAddr());
+            object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
             object.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context));
             object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context));
         } else {

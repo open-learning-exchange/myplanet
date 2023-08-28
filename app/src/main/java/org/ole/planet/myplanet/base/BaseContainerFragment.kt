@@ -39,8 +39,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     var rating: TextView? = null
     var ratingBar: AppCompatRatingBar? = null
     lateinit var profileDbHandler: UserProfileDbHandler
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
     }
 
