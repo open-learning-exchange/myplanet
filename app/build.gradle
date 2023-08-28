@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode 986
-        versionName "0.9.86"
+        versionCode 987
+        versionName "0.9.87"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -126,7 +126,7 @@ dependencies {
     implementation project(':library')
     implementation 'org.jetbrains:annotations:15.0'
     implementation 'com.github.kizitonwose:CalendarView:0.3.1'
-    implementation "io.noties.markwon:editor:4.2.0"
+    implementation "io.noties.markwon:editor:4.6.2"
     implementation "androidx.core:core-ktx:1.10.1"
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
