@@ -5,20 +5,16 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.JsonObject;
 
-import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
+import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmCourseStep;
 import org.ole.planet.myplanet.model.RealmMyCourse;
@@ -30,21 +26,16 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 
 import java.util.List;
 
-import br.tiagohm.markdownview.MarkdownView;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class CourseDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
-    TextView subjectLevel, gradeLevel, method, language, noOfExams;
-    LinearLayout llRating;
-    MarkdownView description;
+    private FragmentCourseDetailBinding fragmentCourseDetailBinding;
     DatabaseService dbService;
     Realm mRealm;
     RealmMyCourse courses;
     RealmUserModel user;
     String id;
-    Button btnResources, btnOpen;
-    RecyclerView rv_step_list;
 
     public CourseDetailFragment() {
     }
@@ -59,13 +50,12 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_course_detail, container, false);
+        fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         courses = mRealm.where(RealmMyCourse.class).equalTo("courseId", id).findFirst();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
-        initView(v);
-        return v;
+        return fragmentCourseDetailBinding.getRoot();
     }
 
     @Override
@@ -80,38 +70,25 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         super.onViewCreated(view, savedInstanceState);
     }
 
-    private void initView(View v) {
-        description = v.findViewById(R.id.description);
-        subjectLevel = v.findViewById(R.id.subject_level);
-        gradeLevel = v.findViewById(R.id.grade_level);
-        language = v.findViewById(R.id.language);
-        rv_step_list = v.findViewById(R.id.steps_list);
-        method = v.findViewById(R.id.method);
-        noOfExams = v.findViewById(R.id.no_of_exams);
-        btnResources = v.findViewById(R.id.btn_resources);
-        btnOpen = v.findViewById(R.id.btn_open);
-        llRating = v.findViewById(R.id.ll_rating);
-    }
-
     private void setCourseData() {
-        subjectLevel.setText(courses.getSubjectLevel());
-        method.setText(courses.getMethod());
-        gradeLevel.setText(courses.getGradeLevel());
-        language.setText(courses.getLanguageOfInstruction());
-        description.loadMarkdown(courses.getDescription());
-        noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
+        fragmentCourseDetailBinding.subjectLevel.setText(courses.getSubjectLevel());
+        fragmentCourseDetailBinding.method.setText(courses.getMethod());
+        fragmentCourseDetailBinding.gradeLevel.setText(courses.getGradeLevel());
+        fragmentCourseDetailBinding.language.setText(courses.getLanguageOfInstruction());
+        fragmentCourseDetailBinding.description.loadMarkdown(courses.getDescription());
+        fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
-        setResourceButton(resources, btnResources);
+        setResourceButton(resources, fragmentCourseDetailBinding.btnResources);
         final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll();
-        setOpenResourceButton(downloadedResources, btnOpen);
+        setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding.btnOpen);
         onRatingChanged();
         setStepsList();
     }
 
     private void setStepsList() {
         List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
-        rv_step_list.setLayoutManager(new LinearLayoutManager(getActivity()));
-        rv_step_list.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
+        fragmentCourseDetailBinding.stepsList.setLayoutManager(new LinearLayoutManager(getActivity()));
+        fragmentCourseDetailBinding.stepsList.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
     }
 
     @Override
