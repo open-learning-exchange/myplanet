@@ -45,7 +45,7 @@ class NewsDetailActivity : BaseActivity() {
         realm.executeTransactionAsync {
             var newsLog: RealmNewsLog =
                 it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
-            newsLog.androidId = NetworkUtils.getMacAddr()
+            newsLog.androidId = NetworkUtils.getUniqueIdentifier()
             newsLog.type = "news"
             newsLog.time = Date().time
             if (user != null) newsLog.userId = userId
@@ -96,9 +96,9 @@ class NewsDetailActivity : BaseActivity() {
             Glide.with(this@NewsDetailActivity)
                 .load(File(JsonUtils.getString("imageUrl", imgObject))).into(img)
             news!!.imageUrls.forEach {
-                val imgObject = Gson().fromJson(it, JsonObject::class.java)
+                val imageObject = Gson().fromJson(it, JsonObject::class.java)
                 msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
-                    "imageUrl", imgObject
+                    "imageUrl", imageObject
                 ) + "\"><br/>"
             }
         } catch (e: Exception) {
