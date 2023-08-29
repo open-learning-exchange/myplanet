@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
@@ -32,7 +33,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
-        v.setOnClickListener { view: View? ->
+        v.setOnClickListener {
             if (homeItemClickListener != null) {
                 val b = Bundle()
                 b.putString("id", id)
@@ -44,7 +45,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     }
 
     fun handleClickMyLife(title: String, v: View) {
-        v.setOnClickListener { view: View? ->
+        v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
                     homeItemClickListener.openCallFragment(MySubmissionFragment())
@@ -100,7 +101,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     }
 
     fun setTextColor(textView: TextView, itemCnt: Int, c: Class<*>?) {
-        textView.setTextColor(resources.getColor(R.color.md_black_1000))
+        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         setBackgroundColor(textView, itemCnt)
     }
 
@@ -149,7 +150,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (count % 2 == 0) {
             v.setBackgroundResource(R.drawable.light_rect)
         } else {
-            v.setBackgroundColor(resources.getColor(R.color.md_grey_300))
+            v.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.md_grey_300))
         }
     }
 }

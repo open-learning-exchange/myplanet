@@ -37,7 +37,7 @@ public class RealmMyPersonal extends RealmObject {
         object.addProperty("resourceType", "Activities");
         object.addProperty("private", true);
         JsonObject object1 = new JsonObject();
-        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object1.addProperty("users", personal.getUserId());
