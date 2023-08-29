@@ -82,15 +82,21 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         });
 
         replyButton.setOnClickListener(r -> {
-            String message = editText.getText().toString().trim();
-            JsonObject object = new JsonObject();
-            object.addProperty("message", message);
-            object.addProperty("time", new Date().getTime() + "");
-            object.addProperty("user", feedback.getOwner() + "");
-            String id = feedback.getId();
-            addReply(object, id);
-            mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
-            rv_feedback_reply.setAdapter(mAdapter);
+            if (TextUtils.isEmpty(editText.getText().toString().trim())) {
+                editText.setError("Kindly enter reply message");
+            } else {
+                String message = editText.getText().toString().trim();
+                JsonObject object = new JsonObject();
+                object.addProperty("message", message);
+                object.addProperty("time", new Date().getTime() + "");
+                object.addProperty("user", feedback.getOwner() + "");
+                String id = feedback.getId();
+                addReply(object, id);
+                mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
+                rv_feedback_reply.setAdapter(mAdapter);
+                editText.setText("");
+                editText.clearFocus();
+            }
         });
     }
 
