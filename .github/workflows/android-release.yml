@@ -19,6 +19,12 @@ jobs:
       - name: checkout repository code
         uses: actions/checkout@v3
 
+      - name: expose version from build.gradle
+        uses: michpohl/android-expose-version-name-action@v1.0.0
+        with:
+          expose-version-name: 'true'
+          expose-version-code: 'true'
+
       - name: extract version from xml
         id: getVersion
         uses: mavrosxristoforos/get-xml-info@1.0
@@ -47,9 +53,6 @@ jobs:
         run: |
           ./gradlew bundleRelease
           ls -alR app/build/outputs/bundle
-
-      - run: ls -alR app/build/outputs
-      #/proguard/release/mapping/mapping.txt
 
       - name: sign release APK
         uses: Tlaster/android-sign@v1.2.2
@@ -88,9 +91,8 @@ jobs:
           packageName: org.ole.planet.myplanet
           releaseFiles: build/release/signed/myPlanet.aab
           track: production
-          releaseName: "966 (${{ steps.getVersion.outputs.info }})"
+          releaseName: "${{env.ANDROID_VERSION_CODE}} (${{env.ANDROID_VERSION_NAME}})"
           changesNotSentForReview: true
-          #mappingFile:
 
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
