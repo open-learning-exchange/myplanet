@@ -92,7 +92,7 @@ jobs:
           releaseFiles: build/release/signed/myPlanet.aab
           track: production
           releaseName: "${{env.ANDROID_VERSION_CODE}} (${{env.ANDROID_VERSION_NAME}})"
-          changesNotSentForReview: true
+          changesNotSentForReview: 'true'
 
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
@@ -117,5 +117,5 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/release/signed/*
           tag: v${{ steps.getVersion.outputs.info }}
-          overwrite: true
-          file_glob: true
+          overwrite: 'true'
+          file_glob: 'true'
