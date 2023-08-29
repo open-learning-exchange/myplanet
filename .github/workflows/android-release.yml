@@ -85,15 +85,15 @@ jobs:
           ls -alR build/release/signed
 
       - name: publish to playstore
-        uses: r0adkll/upload-google-play@v1
+        uses: r0adkll/upload-google-play@v1.1.1
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: org.ole.planet.myplanet
           releaseFiles: build/release/signed/myPlanet.aab
           track: production
           releaseName: "${{env.ANDROID_VERSION_CODE}} (${{env.ANDROID_VERSION_NAME}})"
-          changesNotSentForReview: 'true'
-          #mappingFile: ...
+          changesNotSentForReview: true
+          status: draft
 
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
