@@ -98,7 +98,7 @@ public class RealmApkLog extends RealmObject {
         object.addProperty("createdOn", log.getCreatedOn());
         object.addProperty("androidId", log.getCreatedOn());
         object.addProperty("createdOn", log.getCreatedOn());
-        object.addProperty("androidId", NetworkUtils.getMacAddr());
+        object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());
         object.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         object.addProperty("parentCode", log.getParentCode());

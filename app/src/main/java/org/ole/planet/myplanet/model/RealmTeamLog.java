@@ -136,7 +136,7 @@ public class RealmTeamLog extends RealmObject {
         ob.addProperty("teamType", log.getTeamType());
         ob.addProperty("time", log.getTime());
         ob.addProperty("teamId", log.getTeamId());
-        ob.addProperty("androidId", NetworkUtils.getMacAddr());
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         ob.addProperty("deviceName", NetworkUtils.getDeviceName());
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context));
         if (!TextUtils.isEmpty(log.get_rev())) {
