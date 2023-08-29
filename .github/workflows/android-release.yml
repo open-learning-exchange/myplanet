@@ -91,8 +91,8 @@ jobs:
           packageName: org.ole.planet.myplanet
           releaseFiles: build/release/signed/myPlanet.aab
           track: production
-          releaseName: "${{env.ANDROID_VERSION_CODE}} (${{env.ANDROID_VERSION_NAME}})"
           changesNotSentForReview: 'true'
+          releaseName: "${{env.ANDROID_VERSION_CODE}} (${{env.ANDROID_VERSION_NAME}})"
 
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
