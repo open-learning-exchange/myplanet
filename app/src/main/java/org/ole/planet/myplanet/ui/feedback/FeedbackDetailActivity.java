@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.FeedbackReply;
 import org.ole.planet.myplanet.model.RealmFeedback;
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.Date;
@@ -82,15 +84,21 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         });
 
         replyButton.setOnClickListener(r -> {
-            String message = editText.getText().toString().trim();
-            JsonObject object = new JsonObject();
-            object.addProperty("message", message);
-            object.addProperty("time", new Date().getTime() + "");
-            object.addProperty("user", feedback.getOwner() + "");
-            String id = feedback.getId();
-            addReply(object, id);
-            mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
-            rv_feedback_reply.setAdapter(mAdapter);
+            if (TextUtils.isEmpty(editText.getText().toString().trim())) {
+                editText.setError("Kindly enter reply message");
+            } else {
+                String message = editText.getText().toString().trim();
+                JsonObject object = new JsonObject();
+                object.addProperty("message", message);
+                object.addProperty("time", new Date().getTime() + "");
+                object.addProperty("user", feedback.getOwner() + "");
+                String id = feedback.getId();
+                addReply(object, id);
+                mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
+                rv_feedback_reply.setAdapter(mAdapter);
+                editText.setText("");
+                editText.clearFocus();
+            }
         });
     }
 
@@ -99,10 +107,16 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             closeButton.setEnabled(false);
             replyButton.setEnabled(false);
             editText.setVisibility(View.INVISIBLE);
+            navigateToFeedbackListFragment();
         }
     }
-    
-    
+
+    private void navigateToFeedbackListFragment() {
+        Intent intent = new Intent(this, DashboardActivity.class);
+        intent.putExtra("fragmentToOpen", "feedbackList");
+        startActivity(intent);
+        finish();
+    }
 
     public void addReply(JsonObject obj, String id) {
         realm.executeTransactionAsync(realm -> {
