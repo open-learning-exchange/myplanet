@@ -99,7 +99,7 @@ jobs:
 
       - name: upload APK/AAB as build artifact
         if: github.ref != 'refs/heads/master'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: APK
           path: build/release/signed/*
