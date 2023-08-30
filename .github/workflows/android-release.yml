@@ -92,7 +92,7 @@ jobs:
           releaseFiles: build/release/signed/myPlanet.aab
           track: internal
           releaseName: "${{env.ANDROID_VERSION_CODE}} (${{env.ANDROID_VERSION_NAME}})"
-          changesNotSentForReview: true
+          #changesNotSentForReview: true
           status: completed
 
       - name: rename APK/AAB with version and branch for artifact
