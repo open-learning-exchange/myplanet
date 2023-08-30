@@ -90,10 +90,10 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: org.ole.planet.myplanet
           releaseFiles: build/release/signed/myPlanet.aab
-          track: production
+          track: internal
           releaseName: "${{env.ANDROID_VERSION_CODE}} (${{env.ANDROID_VERSION_NAME}})"
           changesNotSentForReview: true
-          status: draft
+          status: completed
 
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
