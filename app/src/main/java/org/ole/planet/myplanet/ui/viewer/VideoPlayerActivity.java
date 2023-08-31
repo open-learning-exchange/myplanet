@@ -17,7 +17,6 @@ import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
 import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
@@ -28,6 +27,7 @@ import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.gson.Gson;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Map;
 
 public class VideoPlayerActivity extends AppCompatActivity implements AuthSessionUpdater.AuthCallback {
+    private ActivityExoPlayerVideoBinding activityExoPlayerVideoBinding;
     SimpleExoPlayer exoPlayer;
-    SimpleExoPlayerView exoPlayerView;
     String auth = "";
     String videoURL = "";
     SharedPreferences settings;
@@ -45,9 +45,9 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_exo_player_video);
+        activityExoPlayerVideoBinding = ActivityExoPlayerVideoBinding.inflate(getLayoutInflater());
+        setContentView(activityExoPlayerVideoBinding.getRoot());
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
-        exoPlayerView = findViewById(R.id.exo_player_simple);
 
         Intent intentExtras = getIntent();
         Bundle extras = intentExtras.getExtras();
@@ -89,7 +89,7 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
         MediaSource mediaSource = new ExtractorMediaSource(videoUri, defaultHttpDataSourceFactory, extractorsFactory, null, null);
 
-        exoPlayerView.setPlayer(exoPlayer);
+        activityExoPlayerVideoBinding.exoPlayerSimple.setPlayer(exoPlayer);
         exoPlayer.prepare(mediaSource);
         exoPlayer.setPlayWhenReady(true);
     }
@@ -109,7 +109,7 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
         DataSource.Factory factory = () -> fileDataSource;
         MediaSource audioSource = new ExtractorMediaSource(fileDataSource.getUri(), factory, new DefaultExtractorsFactory(), null, null);
 
-        exoPlayerView.setPlayer(exoPlayer);
+        activityExoPlayerVideoBinding.exoPlayerSimple.setPlayer(exoPlayer);
         exoPlayer.prepare(audioSource);
         exoPlayer.setPlayWhenReady(true);
     }
