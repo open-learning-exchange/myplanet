@@ -58,7 +58,7 @@ jobs:
       - name: copy builds to directory and generate sha256
         run: |
           cd output
-          cp app/build/outputs/apk/release/myPlanet-build.apk .
+          cp ../app/build/outputs/apk/release/myPlanet-build.apk .
           sha256sum myPlanet.apk > myPlanet.apk.sha256
           sha256sum myPlanet.aab > myPlanet.aab.sha256
           cd -
@@ -88,7 +88,8 @@ jobs:
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v3
         with:
-          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
+          #name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
+          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}
           path: output/*
           retention-days: 9
 
