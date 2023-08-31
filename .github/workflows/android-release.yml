@@ -47,7 +47,7 @@ jobs:
           ./gradlew bundleRelease
           ls -alR app/build/outputs/bundle
           mkdir -p output
-          cp app/build/outputs/apk/debug/m* output/
+          cp app/build/outputs/apk/debug/myPlanet-build.apk output/
 
 #      - name: sign release APK
 #        uses: Tlaster/android-sign@v1.2.2
@@ -80,7 +80,7 @@ jobs:
       - name: copy builds to directory and generate sha256
         run: |
           cp app/build/outputs/bundle/release/app-release.aab output/myPlanet.aab
-          cp app/build/outputs/bundle/release/m*.apk output/myPlanet.apk
+          cp app/build/outputs/apk/release/myPlanet-build.apk output/myPlanet.apk
           cd output
           sha256sum myPlanet.apk > myPlanet.apk.sha256
           sha256sum myPlanet.aab > myPlanet.aab.sha256
