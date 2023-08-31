@@ -79,7 +79,7 @@ jobs:
           ls -alR output
 
       - name: publish to playstore
-        #if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: r0adkll/upload-google-play@v1.1.1
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
@@ -102,7 +102,7 @@ jobs:
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v3
         with:
-          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${BRANCHNAME}
+          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
           path: output/*
           retention-days: 9
 
