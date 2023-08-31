@@ -938,5 +938,7 @@
     <string name="times">مرات</string>
     <string name="time">الوقت</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="kindly_enter_comment">يُرجى إدخال التعليق</string>
+    <string name="kindly_give_a_rating">يرجى التقييم</string>
 
 </resources>

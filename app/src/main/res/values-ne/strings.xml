@@ -943,5 +943,7 @@
     <string name="times">पल्टीहरू</string>
     <string name="time">समय</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="kindly_enter_comment">कृपया टिप्पणी प्रविष्ट गर्नुहोस्</string>
+    <string name="kindly_give_a_rating">कृपया मूल्याङ्कन दिनुहोस्</string>
 
 </resources>
