@@ -43,21 +43,13 @@ jobs:
           ./gradlew build bundleRelease
           ls -alR app/build/outputs
           mkdir -p output
-          cp app/build/outputs/apk/debug/myPlanet-build.apk output/
+          cp app/build/outputs/bundle/release/app-release.aab output/myPlanet.aab
+          cp app/build/outputs/apk/release/myPlanet-build.apk output/myPlanet.apk
 
-      - name: sign release APK
+      - name: sign release APK and AAB
         uses: noriban/sign-android-release@v3
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-
-      - name: sign release AAB
-        uses: noriban/sign-android-release@v3
-        with:
-          releaseDirectory: app/build/outputs/bundle/release
+          releaseDirectory: output
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -65,9 +57,8 @@ jobs:
 
       - name: copy builds to directory and generate sha256
         run: |
-          cp app/build/outputs/bundle/release/app-release.aab output/myPlanet.aab
-          cp app/build/outputs/apk/release/myPlanet-build.apk output/myPlanet.apk
           cd output
+          cp app/build/outputs/apk/release/myPlanet-build.apk .
           sha256sum myPlanet.apk > myPlanet.apk.sha256
           sha256sum myPlanet.aab > myPlanet.aab.sha256
           cd -
